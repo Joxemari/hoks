@@ -46,7 +46,7 @@ nav {
   <a class="nav-logo" href="index.html">hoks</a>
   <ul class="nav-links">
     <li class="nav-dropdown">
-      <a href="index.html"${isWork ? ' class="active"' : ''}>work</a>
+      <a href="javascript:void(0)">work</a>
       <ul class="dropdown">
         ${workLinks}
       </ul>

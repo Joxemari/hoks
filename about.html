@@ -7,18 +7,77 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Nunito', sans-serif; background: #fff; color: #111; }
+:root { --f: 'Nunito', sans-serif; }
+body { font-family: var(--f); background: #fff; color: #111; }
 
+/* ABOUT */
+.about-wrap {
+  padding: 8rem 2rem 6rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
 
+.about-heading {
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-weight: 400;
+  line-height: 1.7;
+  color: #111;
+  margin-bottom: 2rem;
+}
+
+.about-contact {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.about-contact a {
+  color: #111;
+  text-decoration: none;
+  border-bottom: 1px solid #111;
+}
+
+footer {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-copy {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.footer-links a {
+  font-size: 11px;
+  color: #aaa;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footer-links a:hover {
+  color: #111;
+}
 </style>
 </head>
 <body>
 <script src="nav.js"></script>
 <div class="about-wrap">
   <p class="about-heading" id="about-text">joxemari gallastegi is a generative artist based in Spain. His work is characterised by bold form, vibrant colour, and the beauty of controlled randomness — algorithmic systems that make each piece unique by design.</p>
-  <p class="about-contact">Contact: <a href="/cdn-cgi/l/email-protection#12787d6a777f75737e7e73616677757b52757f737b7e3c717d7f"><span class="__cf_email__" data-cfemail="254f4a5d40484244494944565140424c654248444c490b464a48">[email&#160;protected]</span></a></p>
+  <p class="about-contact">Contact: <a href="mailto:joxemgalalstegi@gmail.com">joxemgalalstegi@gmail.com</a></p>
 </div>
 <footer>
   <span class="footer-copy">© 2026 hoks</span>
   <div class="footer-links">
-    <a href=
+    <a href="mailto:joxemgalalstegi@gmail.com">Contact</a>
+    <a href="https://instagram.com" target="_blank">Instagram</a>
+  </div>
+</footer>
+</body>
+</html>
