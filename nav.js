@@ -13,9 +13,8 @@ nav {
 .nav-links > li > a { font-size: 13px; font-weight: 400; letter-spacing: 0.02em; text-decoration: none; color: #aaa; transition: color 0.15s; }
 .nav-links > li > a:hover, .nav-links > li > a.active { color: #111; }
 .nav-label { font-size: 13px; font-weight: 400; letter-spacing: 0.02em; color: #aaa; transition: color 0.15s; cursor: default; }
-.nav-dropdown { position: relative; }
-.nav-dropdown::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 45px; z-index: 50; }
-.dropdown { display: none; position: absolute; top: calc(100% - 5px); left: 0; background: #fff; border: 1px solid #e8e8e8; border-radius: 4px; padding: 6px 0; list-style: none; min-width: 140px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+.nav-dropdown { position: relative; padding-bottom: 30px; }
+.dropdown { display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #e8e8e8; border-radius: 4px; padding: 6px 0; list-style: none; min-width: 140px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
 .dropdown li a { display: block; padding: 8px 16px; font-size: 13px; color: #aaa; white-space: nowrap; text-decoration: none; }
 .dropdown li a:hover { color: #111; }
 .nav-dropdown:hover .dropdown { display: block; }
