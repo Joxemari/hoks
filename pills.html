@@ -24,7 +24,7 @@ header {
 .header-title { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
 
 /* LAYOUT */
-.layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 61px); }
+.layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 62px); }
 
 /* SIDEBAR */
 .sidebar {
@@ -112,10 +112,14 @@ canvas { border-radius: 6px; display: block; max-width: 100%; box-shadow: 0 2px 
 </head>
 <body>
 
-<header>
-  <a class="logo-link" href="index.html">← hoks palettes</a>
-  <span class="header-title">Pills</span>
-</header>
+<nav>
+  <a class="nav-logo" href="index.html">hoks</a>
+  <ul class="nav-links">
+    <li><a href="index.html" class="active">work</a></li>
+    <li><a href="about.html">about</a></li>
+    <li><a href="palettes.html">palettes</a></li>
+  </ul>
+</nav>
 
 <div class="layout">
   <aside class="sidebar">
@@ -308,6 +312,13 @@ function saveGallery() {
   try { localStorage.setItem(LS_GALLERY_KEY, JSON.stringify(gallery)); } catch(e) { toast('no se pudo guardar (localStorage lleno)'); }
 }
 
+function deleteFromGallery(i) {
+  gallery.splice(i, 1);
+  saveGallery();
+  renderGallery();
+  toast('iteración eliminada');
+}
+
 function renderGallery() {
   const section = document.getElementById('gallerySection');
   const grid = document.getElementById('galleryGrid');
@@ -316,7 +327,10 @@ function renderGallery() {
   grid.innerHTML = gallery.map((item, i) => `
     <div class="gallery-thumb" data-i="${i}">
       <img src="${item.dataUrl}" alt="pill ${item.seed}">
-      <div class="gallery-thumb-seed">${item.seed} · ${item.palette}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 6px 4px;">
+        <span class="gallery-thumb-seed" style="padding:0;">${item.seed}</span>
+        <button onclick="event.stopPropagation();deleteFromGallery(${i})" style="background:none;border:none;cursor:pointer;font-size:11px;color:#bbbbbb;padding:0;" title="Delete">✕</button>
+      </div>
     </div>
   `).join('');
   grid.querySelectorAll('.gallery-thumb').forEach(el => {

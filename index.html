@@ -3,845 +3,229 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hoks Palettes</title>
-<meta name="description" content="A personal color palette collection">
-<meta property="og:title" content="Hoks Palettes">
-<meta property="og:description" content="A personal color palette collection">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://hoks.github.io/">
-<meta property="og:image" content="https://hoks.github.io/preview.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Hoks Palettes">
-<meta name="twitter:description" content="A personal color palette collection">
-<meta name="twitter:image" content="https://hoks.github.io/preview.png">
-<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAA0CAYAAADrPTp5AAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAAOElEQVR4nO3OMQEAMAyAMFr/njcZfYIBMtXrsL2cAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFR9hGUBZ/l8M6AAAAAASUVORK5CYII=">
+<title>hoks</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --f: 'Nunito', sans-serif; }
+body { font-family: var(--f); background: #fff; color: #111; }
 
-:root {
-  --bg: #ffffff;
-  --surface: #f7f7f7;
-  --ink: #111111;
-  --ink2: #888888;
-  --ink3: #bbbbbb;
-  --border: #e8e8e8;
-  --border-dark: #d0d0d0;
-  --accent: #111111;
-  --f: 'Nunito', sans-serif;
-  --r: 3px;
-}
 
-body {
-  font-family: var(--f);
-  background: var(--bg);
-  color: var(--ink);
+
+/* WORK — full-screen images */
+.work-section { padding-top: 61px; }
+.work-item {
+  position: relative; cursor: pointer;
   min-height: 100vh;
-  padding-bottom: 8rem;
+  display: flex; align-items: center; justify-content: center;
+  background: #ffffff;
+  padding: 1rem;
 }
-
-/* ── HEADER ─────────────────────────────── */
-header {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2.5rem 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.header-left { display: flex; align-items: center; }
-
-.logo {
-  height: 40px;
-  width: auto;
-  display: block;
-}
-
-.btn-new {
-  font-family: var(--f);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  background: var(--ink);
-  color: #fff;
-  border: none;
-  border-radius: var(--r);
-  padding: 11px 22px;
-  cursor: pointer;
-  transition: opacity 0.15s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.btn-new:hover { opacity: 0.75; }
-
-/* ── CONTROLS ────────────────────────────── */
-.controls {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 1.5rem 2rem;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-}
-
-.search-wrap { flex: 1; min-width: 160px; }
-
-.search-wrap input {
-  width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 9px 14px;
-  font-family: var(--f);
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--ink);
-  outline: none;
-  transition: border-color 0.15s;
-}
-.search-wrap input:focus { border-color: var(--border-dark); }
-.search-wrap input::placeholder { color: var(--ink3); }
-
-.sort-select {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 9px 12px;
-  font-family: var(--f);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink);
-  cursor: pointer;
-  outline: none;
-}
-
-.count {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink3);
-  white-space: nowrap;
-}
-
-/* ── GRID ────────────────────────────────── */
-.grid {
-  max-width: 1100px;
-  margin: 2.5rem auto 0;
-  padding: 0 2rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}
-
-/* ── CARD ────────────────────────────────── */
-.palette-card {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-  transition: border-color 0.15s;
+.work-item-inner {
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
 }
-
-.palette-card:hover { border-color: var(--border-dark); }
-
-.swatches {
-  display: flex;
-  height: 80px;
-  overflow: hidden;
-}
-
-.swatch {
-  flex: 1;
-  cursor: pointer;
-  position: relative;
-  transition: flex 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.swatch:hover { flex: 2.5; }
-
-.swatch-tip {
-  position: absolute;
-  bottom: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.65);
-  color: #fff;
-  font-family: monospace;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 3px 7px;
-  border-radius: 2px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.12s;
-}
-.swatch:hover .swatch-tip { opacity: 1; }
-
-.card-body { padding: 12px 14px 0; flex: 1; }
-
-.card-name {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  color: var(--ink);
-}
-
-.card-tags { display: flex; gap: 4px; flex-wrap: wrap; }
-
-.tag {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink3);
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  padding: 2px 6px;
-}
-
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 14px 10px;
-  gap: 8px;
-  margin-top: auto;
-}
-
-.hex-list { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
-
-.hex-chip {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--ink3);
-  cursor: pointer;
-  font-family: monospace;
-  transition: color 0.12s;
-}
-.hex-chip:hover { color: var(--ink); }
-
-.card-actions { display: flex; gap: 2px; flex-shrink: 0; }
-
-.btn-icon {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--ink3);
-  font-size: 12px;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 2px;
-  transition: color 0.12s, background 0.12s;
-}
-.btn-icon:hover { color: var(--ink); background: var(--surface); }
-
-
-/* ── TOGGLE ──────────────────────────────── */
-.toggle { position:relative; width:32px; height:18px; flex-shrink:0; display:inline-block; }
-.toggle input { opacity:0; width:0; height:0; position:absolute; }
-.toggle-track {
-  position:absolute; inset:0; background:var(--border-dark);
-  border-radius:9px; cursor:pointer; transition:background 0.2s;
-}
-.toggle input:checked + .toggle-track { background:#111111; }
-.toggle-thumb {
-  position:absolute; top:3px; left:3px; width:12px; height:12px;
-  background:#fff; border-radius:50%; transition:transform 0.2s; pointer-events:none;
-  z-index:1;
-}
-.toggle input:checked + .toggle-track + .toggle-thumb { transform:translateX(14px); }
-.palette-card.inactive { opacity:0.45; }
-.card-meta { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
-.card-date { font-size:9px; color:var(--ink3); font-family:monospace; }
-
-/* ── EMPTY ────────────────────────────────── */
-.empty-state {
-  grid-column: 1/-1;
-  padding: 6rem 2rem;
-  text-align: center;
-}
-.empty-big { font-size: 1.5rem; font-weight: 300; color: var(--ink3); letter-spacing: -0.02em; margin-bottom: 8px; }
-.empty-sub { font-size: 12px; color: var(--ink3); font-weight: 400; }
-
-/* ── MODAL ────────────────────────────────── */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1rem;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s;
-}
-.overlay.open { opacity: 1; pointer-events: all; }
-
-.modal {
-  background: var(--bg);
-  border: 1px solid var(--border-dark);
-  border-radius: 4px;
-  padding: 2rem;
-  width: 100%;
-  max-width: 440px;
-  max-height: 90vh;
-  overflow-y: auto;
-  transform: translateY(8px);
-  transition: transform 0.2s cubic-bezier(0.4,0,0.2,1);
-  opacity: 0;
-  transition: transform 0.2s, opacity 0.18s;
-}
-.overlay.open .modal { transform: translateY(0); opacity: 1; }
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.6rem;
-}
-
-.modal h2 {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--ink3);
-  font-size: 18px;
-  line-height: 1;
-  padding: 2px 6px;
-  transition: color 0.12s;
-}
-.modal-close:hover { color: var(--ink); }
-
-.field { margin-bottom: 1.1rem; }
-
-.field label {
+.work-item canvas {
   display: block;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink3);
-  margin-bottom: 6px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 5rem);
+  width: auto;
+  height: auto;
 }
-
-.field input, .field textarea {
-  width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 9px 12px;
-  font-family: var(--f);
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--ink);
-  outline: none;
-  transition: border-color 0.15s;
-}
-.field input:focus, .field textarea:focus { border-color: var(--border-dark); background: #fff; }
-
-.color-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; min-height: 4px; }
-
-.chip {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  padding: 4px 10px 4px 7px;
+.work-item-caption {
   font-size: 11px;
-  font-weight: 600;
+  color: #aaaaaa;
   font-family: monospace;
-  color: var(--ink);
+  letter-spacing: 0.04em;
+  padding-top: 6px;
+  text-align: right;
 }
-.chip-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1px solid rgba(0,0,0,0.12);
-  flex-shrink: 0;
+.work-item-label {
+  position: absolute; bottom: 2rem; left: 2rem;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(0,0,0,0.4);
+  transition: color 0.2s;
 }
-.chip-rm {
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: var(--ink3);
-  font-size: 14px;
-  line-height: 1;
-  padding: 0;
-  margin-left: 3px;
-  font-family: var(--f);
-  transition: color 0.12s;
-}
-.chip-rm:hover { color: var(--ink); }
+.work-item:hover .work-item-label { color: rgba(0,0,0,0.8); }
 
-.add-row { display: flex; gap: 8px; align-items: center; }
-
-.add-row input[type="color"] {
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 2px;
-  background: var(--surface);
-  cursor: pointer;
-  flex-shrink: 0;
+/* ABOUT */
+#about {
+  display: none;
+  padding: 8rem 2rem 6rem;
+  max-width: 700px; margin: 0 auto;
 }
-
-.add-row input[type="text"] {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 9px 12px;
-  font-family: monospace;
-  font-size: 12px;
-  color: var(--ink);
-  outline: none;
-  transition: border-color 0.15s;
+#about.visible { display: block; }
+.about-heading {
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-weight: 400; line-height: 1.7;
+  color: #111; margin-bottom: 2rem;
 }
-.add-row input[type="text"]:focus { border-color: var(--border-dark); }
-
-.btn-add-color {
-  font-family: var(--f);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 9px 14px;
-  cursor: pointer;
-  color: var(--ink);
-  white-space: nowrap;
-  transition: border-color 0.15s, background 0.15s;
+.about-contact {
+  font-size: 13px; color: #aaa;
 }
-.btn-add-color:hover { border-color: var(--border-dark); background: #fff; }
+.about-contact a { color: #111; text-decoration: none; border-bottom: 1px solid #111; }
 
-.preview-strip {
-  height: 14px;
-  border-radius: 2px;
-  border: 1px solid var(--border);
-  overflow: hidden;
-  display: flex;
-  margin-top: 10px;
+/* PALETTES link page */
+#palettes-page {
+  display: none;
+  padding: 8rem 2rem 6rem;
+  max-width: 700px; margin: 0 auto;
 }
-.preview-strip span { flex: 1; }
-
-.modal-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 1.6rem;
-  padding-top: 1.2rem;
-  border-top: 1px solid var(--border);
+#palettes-page.visible { display: block; }
+.palettes-goto {
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-weight: 400; line-height: 1.7; color: #111;
+  margin-bottom: 2.5rem;
 }
-
-.btn-cancel {
-  font-family: var(--f);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 9px 18px;
-  color: var(--ink2);
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.btn-cancel:hover { border-color: var(--border-dark); }
-
-.btn-save {
-  font-family: var(--f);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: var(--ink);
-  color: #fff;
-  border: none;
-  border-radius: var(--r);
-  padding: 9px 22px;
-  cursor: pointer;
+.big-link {
+  display: inline-block; font-size: 13px; font-weight: 700;
+  letter-spacing: 0.10em; text-transform: uppercase;
+  text-decoration: none; color: #111;
+  border-bottom: 1px solid #111; padding-bottom: 3px;
   transition: opacity 0.15s;
 }
-.btn-save:hover { opacity: 0.75; }
+.big-link:hover { opacity: 0.45; }
 
-/* ── TOAST ────────────────────────────────── */
-.toast {
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%) translateY(6px);
-  background: var(--ink);
-  color: #fff;
-  font-family: var(--f);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 10px 20px;
-  border-radius: 2px;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
-  z-index: 200;
-  white-space: nowrap;
+footer {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e8e8e8;
+  display: flex; align-items: center; justify-content: space-between;
 }
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.footer-copy { font-size: 11px; color: #aaa; }
+.footer-links { display: flex; gap: 1.5rem; }
+.footer-links a { font-size: 11px; color: #aaa; text-decoration: none; transition: color 0.15s; }
+.footer-links a:hover { color: #111; }
 
-@media (max-width: 520px) {
-  header { padding: 2.5rem 1.2rem 1.5rem; flex-direction: column; align-items: flex-start; }
-  .controls, .grid { padding: 0 1.2rem; }
-  .grid { margin-top: 1.5rem; }
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.4rem 2rem;
+  background: rgba(255,255,255,0.94); backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e8e8e8;
+  font-family: 'Nunito', sans-serif;
 }
+.nav-logo { font-size: 14px; font-weight: 700; letter-spacing: 0.02em; text-decoration: none; color: #111; }
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-links a { font-size: 13px; font-weight: 400; letter-spacing: 0.02em; text-decoration: none; color: #aaa; transition: color 0.15s; }
+.nav-links a:hover, .nav-links a.active { color: #111; }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="header-left">
-    <img class="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAA0CAYAAADrPTp5AAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAAOElEQVR4nO3OMQEAMAyAMFr/njcZfYIBMtXrsL2cAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFR9hGUBZ/l8M6AAAAAASUVORK5CYII=" alt="Hoks">
-  </div>
-  <button class="btn-new" onclick="openModal()">+ new palette</button>
-</header>
+<nav>
+  <a class="nav-logo" href="index.html">hoks</a>
+  <ul class="nav-links">
+    <li><a href="index.html" class="active">work</a></li>
+    <li><a href="about.html">about</a></li>
+    <li><a href="palettes.html">palettes</a></li>
+  </ul>
+</nav>
 
-<div class="controls">
-  <div class="search-wrap">
-    <input type="text" id="search" placeholder="search by name or tag…">
-  </div>
-  <select class="sort-select" id="sort">
-    <option value="newest">newest first</option>
-    <option value="oldest">oldest first</option>
-    <option value="name">name</option>
-    <option value="colors">no. of colors</option>
-  </select>
-  <span class="count" id="count"></span>
-</div>
+<main id="main-content">
 
-<div class="grid" id="grid"></div>
-
-<div class="overlay" id="overlay" onclick="closeIfBg(event)">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 id="modalTitle">new palette</h2>
-      <button class="modal-close" onclick="closeModal()">×</button>
-    </div>
-
-    <div class="field">
-      <label>name</label>
-      <input type="text" id="palName" placeholder="palette name…">
-    </div>
-
-    <div class="field">
-      <label>tags (comma separated)</label>
-      <input type="text" id="palTags" placeholder="warm, nature, dark…">
-    </div>
-
-    <div class="field">
-      <label>colors</label>
-      <div class="color-chips" id="colorChips"></div>
-      <div class="add-row">
-        <input type="color" id="picker" value="#226699">
-        <input type="text" id="hexInput" placeholder="#226699" maxlength="7">
-        <button class="btn-add-color" onclick="addColor()">add</button>
+  <!-- WORK -->
+  <div class="work-section" id="work-section">
+    <div class="work-item" onclick="window.location.href='pills.html'">
+      <div class="work-item-inner">
+        <canvas id="c1" width="1414" height="1000"></canvas>
+        <div class="work-item-caption" id="c1-caption">Pills</div>
       </div>
-      <div class="preview-strip" id="preview" style="display:none"></div>
     </div>
-
-    <div class="field">
-      <label>notes (optional)</label>
-      <textarea id="palNotes" rows="2" placeholder="inspired by…" style="resize:vertical;"></textarea>
+    <div class="work-item" onclick="window.location.href='pills.html'">
+      <div class="work-item-inner">
+        <canvas id="c2" width="1414" height="1000"></canvas>
+        <div class="work-item-caption" id="c2-caption">Pills</div>
+      </div>
     </div>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">cancel</button>
-      <button class="btn-save" onclick="savePal()">save</button>
+    <div class="work-item" onclick="window.location.href='pills.html'">
+      <div class="work-item-inner">
+        <canvas id="c3" width="1414" height="1000"></canvas>
+        <div class="work-item-caption" id="c3-caption">Pills</div>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  
+  <div id="palettes-page">
+    <p class="palettes-goto">A curated collection of colour palettes that power the generative works.</p>
+    <a class="big-link" href="palettes.html">Open palette library →</a>
+  </div>
+
+</main>
+
+<footer>
+  <span class="footer-copy">© 2026 hoks</span>
+  <div class="footer-links">
+    <a href="mailto:hello@hoks.art">Contact</a>
+    <a href="https://instagram.com" target="_blank">Instagram</a>
+  </div>
+</footer>
 
 <script>
-const KEY = 'colorpals_v3';
-const DEFAULTS = [
-  { id:1,  name:"Science", active:true, active:true,    colors:["#ffe819","#000000"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-300000 },
-  { id:2,  name:"Mondrian", active:true,   colors:["#0a0a0a","#f7f3f2","#0077e1","#f5d216","#fc3503"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-299000 },
-  { id:3,  name:"Paint", active:true,      colors:["#b30000","#e6cf00","#1283b3","#fafafa","#0a0a0a"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-298000 },
-  { id:4,  name:"Morning", active:true,    colors:["#ffd919","#262104","#fffbe6"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-297000 },
-  { id:5,  name:"Evening", active:true,    colors:["#ff4f19","#15084d","#5ce6e6"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-296000 },
-  { id:6,  name:"Marble", active:true,     colors:["#218ad4","#76df55","#0b1435","#ffffff"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-295000 },
-  { id:7,  name:"Troll", active:true,      colors:["#294984","#6ca0a7","#ffc789","#df5f50","#5a3034","#fff1dd"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-294000 },
-  { id:8,  name:"Meta", active:true,       colors:["#226699","#dd2e44","#ffcc4d"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-293000 },
-  { id:9,  name:"Splash", active:true,     colors:["#32312e","#795330","#c7ae82","#f5f2e3"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-292000 },
-  { id:10, name:"Sheets",     colors:["#025760","#7fd0d3","#b3ead7","#eff7f5","#fae9c1","#f8ca75","#e88d44"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-291000 },
-  { id:11, name:"Her",        colors:["#cd1440","#fafafa"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-290000 },
-  { id:12, name:"Fans",       colors:["#000000","#83a6bc","#faece1","#bab1a8"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-289000 },
-  { id:13, name:"Light",      colors:["#00b2b4","#fdd35b","#3b4696","#f4737d","#333333"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-288000 },
-  { id:14, name:"Escape",     colors:["#f3e17e","#dd483c","#4b8a5f","#0d150b","#faf8e2"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-287000 },
-  { id:15, name:"Play",       colors:["#e20404","#fcd202","#ffffff","#000000"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-286000 },
-  { id:16, name:"Repetition", colors:["#2c2060","#4bd3e5","#fffbe6","#ffd919","#ff4f19"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-285000 },
-  { id:17, name:"North",      colors:["#dc060e","#ffd400","#0064b0","#001a5b","#ffffff"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-284000 },
-  { id:18, name:"Commit",     colors:["#563d7c","#0096d8","#f4e361","#f24679"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-283000 },
-  { id:19, name:"Wheel",      colors:["#ffe140","#ffa922","#1bc0c6","#2484ae","#134e6e"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-282000 },
-  { id:20, name:"Edit",       colors:["#1c1c1c","#f47a9d","#f4ea7a","#f2f2f2"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-281000 },
-  { id:21, name:"Optical",    colors:["#f2eb8a","#fed000","#fc8405","#ed361a","#e2f0f3","#b3dce0","#4464a1","#203051","#ffc5c7","#f398c3","#cf3895","#6d358a","#06b4b0","#4b8a5f"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-280000 },
-  { id:22, name:"Homage",     colors:["#fef9c6","#ffcc4d","#f5b800","#56a1c4","#4464a1","#ee726b","#df5f50","#5a3034"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-279000 },
-  { id:23, name:"Base",       colors:["#f0f0f0","#8c8c8c","#0f0f0f","#0863d3","#f5d216","#f43809","#08b233","#9913bf"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-278000 },
-  { id:24, name:"Ten",        colors:["#fffbe6","#050505","#abcd5e","#29ac9f","#14976b","#b3dce0","#62b6de","#2b67af","#f589a3","#ef562f","#fc8405","#f9d531"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-277000 },
-  { id:25, name:"Iris",       colors:["#ebedec","#71859d","#f6d448","#fafafa"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-276000 },
-  { id:26, name:"Right",      colors:["#4464a1","#62b6de","#b3dce0","#fafafa","#ffc5c7","#ee726b","#cd1440"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-275000 },
-  { id:27, name:"Slussen",    colors:["#fafafa","#f398c3","#f44e24","#f4d730","#23b247","#2a76d3","#0a0a0a"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-274000 },
-  { id:28, name:"Poet",       colors:["#f4f3ed","#efc807","#ed5d53","#e2dbb5","#45291c","#080b0f"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-273000 },
-  { id:29, name:"Daily",      colors:["#131314","#272829","#ffe18e","#fff0c6"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-272000 },
-  { id:30, name:"Podcast",    colors:["#584594","#e488b7","#d74c41","#f0d235","#36ad63","#69bcea","#fdfdfd"], tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-271000 },
+const LS_GALLERY = 'hoks-pills-gallery';
+const FALLBACK_PALS = [
+  ["#4464a1","#56a1c4","#ee726b","#ffc5c7","#fef9c6","#df5f50","#f5b800","#ffcc4d","#4b8a5f","#eff7f5"],
+  ["#f15946","#e01a4f","#f5a623","#f7dc6f","#2ecc71","#1abc9c","#3498db","#9b59b6","#f0f0f0","#1a1a2e"],
+  ["#2d4739","#4a7c59","#8fbc8f","#d4e6c3","#f0ead6","#c9b99a","#8b7355","#5c4a3a","#e8dcc8","#b5c9b7"],
 ];
 
-let pals = (() => { try { const r=localStorage.getItem(KEY); return r?JSON.parse(r):[...DEFAULTS]; } catch(e){ return [...DEFAULTS]; }})();
-let editId = null, tmpColors = [];
-
-const $ = id => document.getElementById(id);
-
-function persist() { try { localStorage.setItem(KEY, JSON.stringify(pals)); } catch(e){} }
-
-function render() {
-  const q = $('search').value.toLowerCase().trim();
-  const srt = $('sort').value;
-  let list = pals.filter(p => !q || p.name.toLowerCase().includes(q) || (p.tags||[]).some(t=>t.toLowerCase().includes(q)));
-  if (srt==='newest') list.sort((a,b)=>b.created-a.created);
-  if (srt==='oldest') list.sort((a,b)=>a.created-b.created);
-  if (srt==='name') list.sort((a,b)=>a.name.localeCompare(b.name,'es'));
-  if (srt==='colors') list.sort((a,b)=>b.colors.length-a.colors.length);
-
-  $('count').textContent = list.length + (list.length===1?' palette':' palettes');
-  const grid = $('grid');
-
-  if (!list.length) {
-    grid.innerHTML = `<div class="empty-state"><p class="empty-big">no results</p><p class="empty-sub">try a different search term or add a new palette.</p></div>`;
-    return;
+function drawPills(canvas, colors, seed) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  let s = seed | 0;
+  const rng = () => { s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/4294967296; };
+  const bg = colors[Math.floor(rng()*colors.length)];
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+  const n = 5 + Math.floor(rng()*6);
+  const maxSize = Math.min(W,H)*(0.28+rng()*0.18);
+  const thickness = maxSize*0.7;
+  for (let i=0;i<n;i++) {
+    const halfLen=maxSize/4, angle=rng()*Math.PI*2;
+    const dx=Math.cos(angle)*halfLen, dy=Math.sin(angle)*halfLen;
+    const m=thickness/2;
+    const x=m+Math.abs(dx)+rng()*(W-m*2-Math.abs(dx)*2);
+    const y=m+Math.abs(dy)+rng()*(H-m*2-Math.abs(dy)*2);
+    const col=colors[Math.floor(rng()*colors.length)];
+    const r=parseInt(col.slice(1,3),16),g=parseInt(col.slice(3,5),16),b=parseInt(col.slice(5,7),16);
+    ctx.globalCompositeOperation=rng()<0.5?'multiply':'source-over';
+    ctx.strokeStyle=`rgb(${r},${g},${b})`;
+    ctx.lineWidth=thickness; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(x-dx,y-dy); ctx.lineTo(x+dx,y+dy); ctx.stroke();
   }
-
-  grid.innerHTML = list.map(p => {
-    const isActive = p.active !== false;
-    const d = new Date(p.created || Date.now());
-    const dateStr = d.toLocaleString('es', {month:'short', year:'numeric'});
-    return `
-    <div class="palette-card${isActive ? '' : ' inactive'}">
-      <div class="swatches">
-        ${p.colors.map(c=>`<div class="swatch" style="background:${c}" data-hex="${c}"><span class="swatch-tip">${c}</span></div>`).join('')}
-      </div>
-      <div class="card-body">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
-          <div style="display:flex;align-items:baseline;gap:7px;min-width:0;">
-            <div class="card-name">${esc(p.name)}</div>
-            <span class="card-date">${dateStr}</span>
-          </div>
-          <label class="toggle" title="${isActive ? 'Activa' : 'Inactiva'}">
-            <input type="checkbox" ${isActive ? 'checked' : ''} data-toggle="${p.id}">
-            <div class="toggle-track"></div>
-            <div class="toggle-thumb"></div>
-          </label>
-        </div>
-        ${p.tags?.length ? `<div class="card-tags">${p.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
-      </div>
-      <div class="card-footer">
-        <div class="hex-list">${p.colors.map(c=>`<span class="hex-chip" data-hex="${c}" title="copiar">${c}</span>`).join('')}</div>
-        <div class="card-actions">
-          <button class="btn-icon" title="copy all" data-copyall="${p.id}">⎘</button>
-          <button class="btn-icon" title="edit" data-edit="${p.id}">✎</button>
-          <button class="btn-icon" title="delete" data-del="${p.id}">✕</button>
-        </div>
-      </div>
-    </div>
-  `}).join('');
+  ctx.globalCompositeOperation='source-over';
 }
 
-const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-async function copyText(t) {
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(t);
-    } else {
-      const ta = document.createElement('textarea');
-      ta.value = t;
-      ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
-      document.body.appendChild(ta);
-      ta.focus(); ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
-    toast('copied: ' + t);
-  } catch(e) {
-    toast('copy failed');
-  }
-}
-
-function copySwatch(hex, el) {
-  copyText(hex);
-  const tip = el.querySelector('.swatch-tip');
-  if (tip) { tip.textContent='✓'; setTimeout(()=>{ tip.textContent=hex; },1200); }
-}
-
-function copyAll(id) {
-  const p = pals.find(x=>x.id===id);
-  if (p) copyText(p.colors.join(', '));
-}
-
-function deletePal(id) {
-  if (!confirm('Delete this palette?')) return;
-  pals = pals.filter(p=>p.id!==id);
-  persist(); render(); toast('palette deleted');
-}
-
-function editPal(id) {
-  const p = pals.find(x=>x.id===id);
-  if (!p) return;
-  editId = id;
-  $('modalTitle').textContent = 'edit palette';
-  $('palName').value = p.name;
-  $('palTags').value = (p.tags||[]).join(', ');
-  $('palNotes').value = p.notes||'';
-  tmpColors = [...p.colors];
-  refreshChips();
-  openModal(true);
-}
-
-function openModal(keep) {
-  if (!keep) {
-    editId = null;
-    $('modalTitle').textContent = 'new palette';
-    $('palName').value = '';
-    $('palTags').value = '';
-    $('palNotes').value = '';
-    tmpColors = [];
-    refreshChips();
-  }
-  $('overlay').classList.add('open');
-  setTimeout(()=>$('palName').focus(), 150);
-}
-
-function closeModal() { $('overlay').classList.remove('open'); }
-function closeIfBg(e) { if (e.target===$('overlay')) closeModal(); }
-
-function addColor() {
-  let h = $('hexInput').value.trim();
-  if (!h) h = $('picker').value;
-  if (!h.startsWith('#')) h = '#'+h;
-  if (!/^#[0-9a-fA-F]{6}$/.test(h)) { toast('invalid hex — e.g. #ff5500'); return; }
-  if (tmpColors.length>=10) { toast('max 10 colors'); return; }
-  tmpColors.push(h.toLowerCase());
-  $('hexInput').value = '';
-  refreshChips();
-}
-
-$('picker').addEventListener('input', () => { $('hexInput').value = $('picker').value; });
-$('hexInput').addEventListener('input', () => {
-  let v = $('hexInput').value.trim();
-  if (!v.startsWith('#')) v='#'+v;
-  if (/^#[0-9a-fA-F]{6}$/.test(v)) $('picker').value = v;
-});
-$('hexInput').addEventListener('keydown', e => { if (e.key==='Enter') addColor(); });
-
-function refreshChips() {
-  $('colorChips').innerHTML = tmpColors.map((c,i)=>`
-    <div class="chip">
-      <span class="chip-dot" style="background:${c}"></span>
-      <span>${c}</span>
-      <button class="chip-rm" onclick="rmColor(${i})">×</button>
-    </div>`).join('');
-  const prev = $('preview');
-  if (tmpColors.length) {
-    prev.style.display='flex';
-    prev.innerHTML = tmpColors.map(c=>`<span style="background:${c}"></span>`).join('');
+function loadCanvases() {
+  let gallery = [];
+  try { gallery = JSON.parse(localStorage.getItem(LS_GALLERY)||'[]'); } catch(e) {}
+  const canvases = ['c1','c2','c3'];
+  if (gallery.length >= 3) {
+    canvases.forEach((id, i) => {
+      const canvas = document.getElementById(id);
+      const item = gallery[i];
+      const img = new Image();
+      img.onload = () => {
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+      img.src = item.dataUrl;
+      const cap = document.getElementById(id + '-caption');
+      if (cap) cap.textContent = 'Pills · #' + item.seed;
+    });
   } else {
-    prev.style.display='none';
+    const seeds = [Math.random()*99999|0, Math.random()*99999|0, Math.random()*99999|0];
+    canvases.forEach((id, i) => {
+      const canvas = document.getElementById(id);
+      const pal = FALLBACK_PALS[i % FALLBACK_PALS.length];
+      drawPills(canvas, pal, seeds[i]);
+      const cap = document.getElementById(id + '-caption');
+      if (cap) cap.textContent = 'Pills · #' + seeds[i];
+    });
   }
 }
 
-function rmColor(i) { tmpColors.splice(i,1); refreshChips(); }
-
-function savePal() {
-  const name = $('palName').value.trim();
-  if (!name) { toast('please add a name'); return; }
-  if (!tmpColors.length) { toast('add at least one color'); return; }
-  const tags = $('palTags').value.split(',').map(t=>t.trim()).filter(Boolean);
-  const notes = $('palNotes').value.trim();
-  if (editId !== null) {
-    const i = pals.findIndex(p=>p.id===editId);
-    if (i>=0) pals[i] = {...pals[i], name, colors:[...tmpColors], tags, notes};
-    toast('palette updated');
-  } else {
-    pals.unshift({id:Date.now(), name, colors:[...tmpColors], tags, notes, created:Date.now()});
-    toast('palette saved');
-  }
-  persist(); closeModal(); render();
-}
-
-function toast(msg) {
-  const t = $('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2400);
-}
-
-$('search').addEventListener('input', render);
-$('sort').addEventListener('change', render);
-
-document.addEventListener('click', e => {
-  const tog = e.target.closest('input[data-toggle]');
-  if (tog) {
-    const id = Number(tog.dataset.toggle);
-    const p = pals.find(x=>x.id===id);
-    if (p) { p.active = tog.checked; persist(); render(); }
-    return;
-  }
-
-  const swatch = e.target.closest('.swatch[data-hex]');
-  if (swatch) { copySwatch(swatch.dataset.hex, swatch); return; }
-
-  const chip = e.target.closest('.hex-chip[data-hex]');
-  if (chip) { copyText(chip.dataset.hex); return; }
-
-  const copyAll = e.target.closest('[data-copyall]');
-  if (copyAll) { const p = pals.find(x=>x.id==copyAll.dataset.copyall); if(p) copyText(p.colors.join(', ')); return; }
-
-  const edit = e.target.closest('[data-edit]');
-  if (edit) { editPal(Number(edit.dataset.edit)); return; }
-
-  const del = e.target.closest('[data-del]');
-  if (del) { deletePal(Number(del.dataset.del)); return; }
-});
-
-render();
+loadCanvases();
 </script>
 </body>
 </html>

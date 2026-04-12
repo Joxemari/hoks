@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hoks — about</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Nunito', sans-serif; background: #fff; color: #111; }
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.4rem 2rem;
+  background: rgba(255,255,255,0.94); backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e8e8e8;
+  font-family: 'Nunito', sans-serif;
+}
+.nav-logo { font-size: 14px; font-weight: 700; letter-spacing: 0.02em; text-decoration: none; color: #111; }
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-links a { font-size: 13px; font-weight: 400; letter-spacing: 0.02em; text-decoration: none; color: #aaa; transition: color 0.15s; }
+.nav-links a:hover, .nav-links a.active { color: #111; }
+
+.about-wrap {
+  padding: 10rem 2rem 6rem;
+  max-width: 680px; margin: 0 auto;
+}
+.about-heading {
+  font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+  font-weight: 300; line-height: 1.75;
+  color: #111; margin-bottom: 2.5rem;
+}
+.about-contact {
+  font-size: 13px; color: #aaa;
+}
+.about-contact a { color: #111; text-decoration: none; border-bottom: 1px solid #111; }
+footer {
+  padding: 1.5rem 2rem; border-top: 1px solid #e8e8e8;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: 'Nunito', sans-serif;
+}
+.footer-copy { font-size: 11px; color: #aaa; }
+.footer-links { display: flex; gap: 1.5rem; }
+.footer-links a { font-size: 11px; color: #aaa; text-decoration: none; }
+.footer-links a:hover { color: #111; }
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-logo" href="index.html">hoks</a>
+  <ul class="nav-links">
+    <li><a href="index.html">work</a></li>
+    <li><a href="about.html" class="active">about</a></li>
+    <li><a href="palettes.html">palettes</a></li>
+  </ul>
+</nav>
+<div class="about-wrap">
+  <p class="about-heading" id="about-text">joxemari gallastegi is a generative artist based in Spain. His work is characterised by bold form, vibrant colour, and the beauty of controlled randomness — algorithmic systems that make each piece unique by design.</p>
+  <p class="about-contact">Contact: <a href="mailto:hello@hoks.art">hello@hoks.art</a></p>
+</div>
+<footer>
+  <span class="footer-copy">© 2026 hoks</span>
+  <div class="footer-links">
+    <a href="mailto:hello@hoks.art">Contact</a>
+    <a href="https://instagram.com" target="_blank">Instagram</a>
+  </div>
+</footer>
+</body>
+</html>
