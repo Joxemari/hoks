@@ -12,6 +12,7 @@ nav {
 .nav-links { display: flex; gap: 2rem; list-style: none; align-items: center; }
 .nav-links > li > a { font-size: 13px; font-weight: 400; letter-spacing: 0.02em; text-decoration: none; color: #aaa; transition: color 0.15s; }
 .nav-links > li > a:hover, .nav-links > li > a.active { color: #111; }
+.nav-label { font-size: 13px; font-weight: 400; letter-spacing: 0.02em; color: #aaa; transition: color 0.15s; cursor: default; }
 .nav-dropdown { position: relative; }
 .nav-dropdown > a { position: relative; }
 .nav-dropdown > a::after { content: ''; display: block; position: absolute; left: 0; right: 0; height: 20px; bottom: -20px; }
@@ -46,7 +47,7 @@ nav {
   <a class="nav-logo" href="index.html">hoks</a>
   <ul class="nav-links">
     <li class="nav-dropdown">
-      <a href="javascript:void(0)">work</a>
+      <span class="nav-label">work</span>
       <ul class="dropdown">
         ${workLinks}
       </ul>

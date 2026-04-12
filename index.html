@@ -140,7 +140,7 @@ footer {
 <footer>
   <span class="footer-copy">© 2026 hoks</span>
   <div class="footer-links">
-    <a href="mailto:joxemgalalstegi@gmail.com">Contact</a>
+    <a href="mailto:joxemgallastegi@gmail.com">Contact</a>
     <a href="https://instagram.com" target="_blank">Instagram</a>
   </div>
 </footer>
@@ -202,4 +202,11 @@ function loadCanvases() {
       const canvas = document.getElementById(id);
       const pal = FALLBACK_PALS[i % FALLBACK_PALS.length];
       drawPills(canvas, pal, seeds[i]);
-      const cap = d
+      const cap = document.getElementById(id + '-caption');
+      if (cap) cap.textContent = 'Pills · #' + seeds[i];
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadCanvases);
+</script>
