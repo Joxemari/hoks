@@ -9,82 +9,11 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Nunito', sans-serif; background: #fff; color: #111; }
 
-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1.4rem 2rem;
-  background: rgba(255,255,255,0.94); backdrop-filter: blur(8px);
-  border-bottom: 1px solid #e8e8e8;
-  font-family: 'Nunito', sans-serif;
-}
-.nav-logo { font-size: 14px; font-weight: 700; letter-spacing: 0.02em; text-decoration: none; color: #111; }
-.nav-links { display: flex; gap: 2rem; list-style: none; }
-.nav-links a { font-size: 13px; font-weight: 400; letter-spacing: 0.02em; text-decoration: none; color: #aaa; transition: color 0.15s; }
-.nav-links a:hover, .nav-links a.active { color: #111; }
 
-.about-wrap {
-  padding: 10rem 2rem 6rem;
-  max-width: 680px; margin: 0 auto;
-}
-.about-heading {
-  font-size: clamp(1.1rem, 2.2vw, 1.5rem);
-  font-weight: 300; line-height: 1.75;
-  color: #111; margin-bottom: 2.5rem;
-}
-.about-contact {
-  font-size: 13px; color: #aaa;
-}
-.about-contact a { color: #111; text-decoration: none; border-bottom: 1px solid #111; }
-footer {
-  padding: 1.5rem 2rem; border-top: 1px solid #e8e8e8;
-  display: flex; align-items: center; justify-content: space-between;
-  font-family: 'Nunito', sans-serif;
-}
-.footer-copy { font-size: 11px; color: #aaa; }
-.footer-links { display: flex; gap: 1.5rem; }
-.footer-links a { font-size: 11px; color: #aaa; text-decoration: none; }
-.footer-links a:hover { color: #111; }
-
-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1.4rem 2rem;
-  background: rgba(255,255,255,0.94); backdrop-filter: blur(8px);
-  border-bottom: 1px solid #e8e8e8;
-  font-family: 'Nunito', sans-serif;
-}
-.nav-logo { font-size: 14px; font-weight: 700; letter-spacing: 0.02em; text-decoration: none; color: #111; }
-.nav-links { display: flex; gap: 2rem; list-style: none; align-items: center; }
-.nav-links > li > a { font-size: 13px; font-weight: 400; letter-spacing: 0.02em; text-decoration: none; color: #aaa; transition: color 0.15s; }
-.nav-links > li > a:hover, .nav-links > li > a.active { color: #111; }
-.nav-dropdown { position: relative; }
-.dropdown {
-  display: none;
-  position: absolute; top: calc(100% + 10px); left: 0;
-  background: #fff; border: 1px solid #e8e8e8;
-  border-radius: 4px; padding: 6px 0;
-  list-style: none; min-width: 120px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-}
-.dropdown li a { display: block; padding: 7px 16px; font-size: 13px; color: #aaa; white-space: nowrap; text-decoration: none; }
-.dropdown li a:hover { color: #111; }
-.nav-dropdown:hover .dropdown { display: block; }
 </style>
 </head>
 <body>
-<nav>
-  <a class="nav-logo" href="index.html">hoks</a>
-  <ul class="nav-links">
-    <li class="nav-dropdown">
-      <a href="index.html">work</a>
-      <ul class="dropdown">
-        <li><a href="pills.html">Pills</a></li>
-      </ul>
-    </li>
-    <li><a href="about.html" class="active">about</a></li>
-    <li><a href="palettes.html">palettes</a></li>
-  </ul>
-</nav>
+<script src="nav.js"></script>
 <div class="about-wrap">
   <p class="about-heading" id="about-text">joxemari gallastegi is a generative artist based in Spain. His work is characterised by bold form, vibrant colour, and the beauty of controlled randomness — algorithmic systems that make each piece unique by design.</p>
   <p class="about-contact">Contact: <a href="/cdn-cgi/l/email-protection#12787d6a777f75737e7e73616677757b52757f737b7e3c717d7f"><span class="__cf_email__" data-cfemail="254f4a5d40484244494944565140424c654248444c490b464a48">[email&#160;protected]</span></a></p>
