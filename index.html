@@ -78,7 +78,7 @@ function drawPills(canvas, colors, seed) {
   const W = canvas.width, H = canvas.height;
   let s = seed | 0;
   const rng = () => { s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/4294967296; };
-  // Off-white background preserved
+  ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = '#f5f0ea'; ctx.fillRect(0,0,W,H);
   const n = 5 + Math.floor(rng()*6);
   const maxSize = Math.min(W,H)*(0.28+rng()*0.18);
@@ -95,8 +95,8 @@ function drawPills(canvas, colors, seed) {
     ctx.strokeStyle=`rgb(${r},${g},${b})`;
     ctx.lineWidth=thickness; ctx.lineCap='round';
     ctx.beginPath(); ctx.moveTo(x-dx,y-dy); ctx.lineTo(x+dx,y+dy); ctx.stroke();
+    ctx.globalCompositeOperation='source-over';
   }
-  ctx.globalCompositeOperation='source-over';
 }
 
 function loadCanvases() {

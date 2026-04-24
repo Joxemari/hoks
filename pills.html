@@ -501,103 +501,114 @@ function saveToGallery() {
 function exportCard() {
   const src=document.getElementById('c');
   const seed=document.getElementById('seedDisplay')?.textContent||'';
-  const traits=lastTraits,overall=lastOverall;
-  if(!traits.length)return;
-  const RL={common:'Common',uncommon:'Uncommon',rare:'Rare',superrare:'Super Rare',legendary:'Legendary'};
-  const RC={'common':'#f1efe8','uncommon':'#e1f5ee','rare':'#e6f1fb','superrare':'#eeedfe','legendary':'#faeeda'};
-  const RT={'common':'#5f5e5a','uncommon':'#085041','rare':'#0c447c','superrare':'#3c3489','legendary':'#633806'};
+  const traits=lastTraits, overall=lastOverall;
+  if(!traits.length) return;
+
+  const SC=3; // scale factor for sharpness
+  const mono=`${11*SC}px 'Courier New', Courier, monospace`;
+  const monoSm=`${9*SC}px 'Courier New', Courier, monospace`;
+  const monoBold=`700 ${11*SC}px 'Courier New', Courier, monospace`;
+
+  const RL={common:'COMMON',uncommon:'UNCOMMON',rare:'RARE',superrare:'SUPER RARE',legendary:'LEGENDARY'};
+  const RC={common:'#f1efe8',uncommon:'#d4f0e4',rare:'#ddeaf8',superrare:'#eae8fc',legendary:'#faeeda'};
+  const RT={common:'#888',uncommon:'#085041',rare:'#0c447c',superrare:'#3c3489',legendary:'#633806'};
   const rKey=s=>(s||'common').toLowerCase().replace(' ','');
-  const SC=2;
-  const mono='Courier New, monospace';
-  const sideW=300*SC,artW=540*SC;
-  const CW=sideW+artW;
-  const artH=Math.round(artW*src.height/src.width);
-  const CH=artH;
-  const padH=28*SC,padV=24*SC,padC=18*SC,lh=30*SC;
-  const dotR=5*SC,fsPILLS=9*SC,fsSeed=8*SC,fsLabel=9*SC,fsBody=12*SC,fsBadge=9*SC;
-  const card=document.createElement('canvas');
-  card.width=CW; card.height=CH;
-  const ctx=card.getContext('2d');
-  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,sideW,CH);
-  ctx.fillStyle='#f5f0ea'; ctx.fillRect(sideW,0,artW,CH);
-  const framePad=20*SC,innerW=artW-framePad*2,innerH=CH-framePad*2;
-  const srcAR=src.width/src.height,colAR=innerW/innerH;
-  let dw,dh,dx,dy;
-  if(srcAR>colAR){dw=innerW;dh=Math.round(innerW/srcAR);dx=sideW+framePad;dy=framePad+Math.round((innerH-dh)/2);}
-  else{dh=innerH;dw=Math.round(innerH*srcAR);dx=sideW+framePad+Math.round((innerW-dw)/2);dy=framePad;}
-  ctx.drawImage(src,dx,dy,dw,dh);
-  ctx.fillStyle='#e0e0e0'; ctx.fillRect(sideW-SC,0,SC,CH);
-  let curY=padV;
-  ctx.fillStyle='#555'; ctx.font=`400 ${fsPILLS}px ${mono}`;
-  ctx.fillText('PILLS',padH,curY+fsPILLS); curY+=fsPILLS+8*SC;
-  const ts=currentTimestamp;
-  const tsStr=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-  ctx.fillStyle='#ccc'; ctx.font=`400 ${fsSeed}px ${mono}`;
-  ctx.fillText('SEED '+seed+' '+tsStr,padH,curY+fsSeed); curY+=fsSeed+20*SC;
-  const cardX=padH-4*SC,cardW2=sideW-padH-4*SC;
-  const disclaimerLines=4,dLineH=10*SC,disclaimerReserve=disclaimerLines*(dLineH+3*SC)+14*SC;
-  const cardH=CH-curY-disclaimerReserve;
-  ctx.fillStyle='#f2f2f2';
-  roundRect(ctx,cardX,curY,cardW2,cardH,6*SC); ctx.fill();
-  const labelY=curY+padC+fsLabel;
-  ctx.fillStyle='#555'; ctx.font=`400 ${fsLabel}px ${mono}`;
-  ctx.fillText('TRAITS',cardX+padC,labelY);
-  ctx.fillStyle='#e0e0e0'; ctx.fillRect(cardX+padC,labelY+4*SC,cardW2-padC*2,SC);
-  const valRight=cardX+cardW2-padC,rowsStartY=labelY+8*SC;
-  traits.forEach((t,i)=>{
-    const y=rowsStartY+lh*i+lh*0.72;
-    ctx.fillStyle='#888'; ctx.font=`400 ${fsBody*0.78}px ${mono}`;
-    ctx.fillText(t.key.toUpperCase(),cardX+padC,y);
-    const rLabel=RL[t.rarity]||t.rarity,rk=rKey(t.rarity);
-    ctx.font=`700 ${fsBadge}px ${mono}`;
-    const bw=ctx.measureText(rLabel).width+12*SC,bx=valRight-bw;
-    ctx.fillStyle=RC[rk]||RC.common; roundRect(ctx,bx,y-13*SC,bw,18*SC,9*SC); ctx.fill();
-    ctx.fillStyle=RT[rk]||RT.common; ctx.fillText(rLabel,bx+6*SC,y-1*SC);
-    ctx.font=`700 ${fsBody}px ${mono}`;
-    const valStr=String(t.val),gap=6*SC;
-    if(t.colors){
-      const dots=t.colors.slice(0,6),dotsW=dots.length*(dotR*2+2*SC);
-      const nameW=ctx.measureText(valStr).width,startX=bx-gap-nameW-4*SC-dotsW;
-      dots.forEach((c,di)=>{
-        ctx.beginPath(); ctx.arc(startX+di*(dotR*2+2*SC)+dotR,y-dotR*0.3,dotR,0,Math.PI*2);
-        ctx.fillStyle=c; ctx.fill();
-        ctx.strokeStyle='rgba(0,0,0,0.1)'; ctx.lineWidth=SC; ctx.stroke();
-      });
-      ctx.fillStyle='#111'; ctx.fillText(valStr,startX+dotsW+4*SC,y);
-    } else {
-      const nameW=ctx.measureText(valStr).width;
-      ctx.fillStyle='#111'; ctx.fillText(valStr,bx-gap-nameW,y);
-    }
-  });
-  const divY=rowsStartY+lh*traits.length+4*SC;
-  ctx.fillStyle='#e0e0e0'; ctx.fillRect(cardX+padC,divY,cardW2-padC*2,SC);
-  const oy=divY+lh*0.72;
-  ctx.fillStyle='#666'; ctx.font=`400 ${fsBody}px ${mono}`; ctx.fillText('Overall',cardX+padC,oy);
-  const rkO=rKey(overall),obw=ctx.measureText(RL[rkO]||overall).width+12*SC,obx=valRight-obw;
-  ctx.fillStyle=RC[rkO]||RC.common; roundRect(ctx,obx,oy-13*SC,obw,18*SC,9*SC); ctx.fill();
-  ctx.fillStyle=RT[rkO]||RT.common; ctx.font=`700 ${fsBadge}px ${mono}`;
-  ctx.fillText(RL[rkO]||overall,obx+6*SC,oy-1*SC);
-  const disclaimer='Each iteration is unique. Rarity is probabilistic — it quantifies the statistical likelihood of a given combination of traits.';
-  const dfs=7*SC; ctx.fillStyle='#999'; ctx.font=`italic 400 ${dfs}px ${mono}`; ctx.textBaseline='top';
-  const maxW=sideW-padH*2,words=disclaimer.split(' ');
-  let line='',dY=curY+cardH+8*SC;
-  for(const w of words){
-    const test=line?line+' '+w:w;
-    if(ctx.measureText(test).width>maxW&&line){ctx.fillText(line,padH,dY);dY+=dfs+2*SC;line=w;}
-    else line=test;
+
+  // Card dimensions — artwork is primary, info strip below
+  const artW = src.width * SC;
+  const artH = src.height * SC;
+  const stripH = 72 * SC;
+  const CW = artW;
+  const CH = artH + stripH;
+
+  const card = document.createElement('canvas');
+  card.width = CW; card.height = CH;
+  const ctx = card.getContext('2d');
+
+  // ── ARTWORK (full bleed, no frame) ──────────────────────────────────────
+  ctx.drawImage(src, 0, 0, artW, artH);
+
+  // ── INFO STRIP ──────────────────────────────────────────────────────────
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, artH, CW, stripH);
+
+  // top border of strip
+  ctx.fillStyle = '#e8e8e8';
+  ctx.fillRect(0, artH, CW, SC);
+
+  const pad = 20 * SC;
+  const midY = artH + stripH / 2;
+
+  // LEFT: work name + seed
+  ctx.fillStyle = '#111';
+  ctx.font = monoBold;
+  ctx.textBaseline = 'middle';
+  ctx.fillText('PILLS', pad, midY - 9*SC);
+
+  const ts = currentTimestamp;
+  const tsStr = ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})
+    + ' · ' + ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  ctx.fillStyle = '#bbb';
+  ctx.font = monoSm;
+  ctx.fillText('SEED ' + seed + '  ' + tsStr, pad, midY + 9*SC);
+
+  // CENTER: palette dots
+  const palTrait = traits.find(t => t.colors);
+  if (palTrait) {
+    const dotR = 7 * SC;
+    const gap = 5 * SC;
+    const colors = palTrait.colors.slice(0, 8);
+    const dotsW = colors.length * (dotR*2 + gap) - gap;
+    let dotX = CW/2 - dotsW/2;
+    colors.forEach(c => {
+      ctx.beginPath();
+      ctx.arc(dotX + dotR, midY, dotR, 0, Math.PI*2);
+      ctx.fillStyle = c;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+      ctx.lineWidth = SC;
+      ctx.stroke();
+      dotX += dotR*2 + gap;
+    });
   }
-  if(line)ctx.fillText(line,padH,dY);
-  ctx.textBaseline='alphabetic';
-  card.toBlob(async blob=>{
-    try{
-      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+
+  // RIGHT: overall rarity badge + palette name
+  const rkO = rKey(overall);
+  const rLabel = RL[rkO] || overall.toUpperCase();
+  ctx.font = monoBold;
+  const badgeW = ctx.measureText(rLabel).width + 16*SC;
+  const badgeH = 22*SC;
+  const badgeX = CW - pad - badgeW;
+  const badgeY = midY - badgeH/2;
+
+  // badge bg
+  ctx.fillStyle = RC[rkO] || RC.common;
+  roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 3*SC); ctx.fill();
+  ctx.fillStyle = RT[rkO] || RT.common;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(rLabel, badgeX + 8*SC, midY);
+
+  // palette name above badge
+  const palName = palTrait ? palTrait.val : '';
+  ctx.fillStyle = '#888';
+  ctx.font = monoSm;
+  ctx.textAlign = 'right';
+  ctx.fillText(palName.toUpperCase(), CW - pad, midY - 9*SC);
+  ctx.textAlign = 'left';
+
+  // ── COPY / DOWNLOAD ─────────────────────────────────────────────────────
+  card.toBlob(async blob => {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
       toast('Card copied to clipboard');
-    }catch(e){
-      const a=document.createElement('a');
-      a.download='pills_card_'+currentSeed+'.png'; a.href=card.toDataURL('image/png'); a.click();
+    } catch(e) {
+      const a = document.createElement('a');
+      a.download = 'pills_' + currentSeed + '.png';
+      a.href = card.toDataURL('image/png');
+      a.click();
       toast('Downloaded (clipboard not supported)');
     }
-  },'image/png');
+  }, 'image/png');
 }
 
 function roundRect(ctx,x,y,w,h,r){

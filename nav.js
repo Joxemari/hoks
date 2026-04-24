@@ -2,7 +2,6 @@
 const FAVICON = `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><circle cx='50' cy='50' r='40' fill='%23111'/></svg>">`;
 
 const NAV_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap');
 *, *::before, *::after { box-sizing: border-box; }
 body { font-family: 'Courier New', Courier, monospace; }
 nav {
@@ -13,45 +12,24 @@ nav {
 }
 .nav-logo {
   display: flex; align-items: center;
-  text-decoration: none; color: #111;
+  text-decoration: none;
 }
 .nav-logo-dot {
-  width: 18px; height: 18px; border-radius: 50%;
+  width: 16px; height: 16px; border-radius: 50%;
   background: #111; flex-shrink: 0;
 }
 .nav-links {
   display: flex; gap: 2.5rem; list-style: none;
   align-items: center; margin: 0; padding: 0;
 }
-.nav-links a, .nav-label {
+.nav-links a {
   font-family: 'Courier New', Courier, monospace;
   font-size: 11px; font-weight: 400; letter-spacing: 0.12em;
   text-transform: uppercase; text-decoration: none;
-  color: #aaa; transition: color 0.15s; cursor: pointer;
+  color: #bbb; transition: color 0.15s;
 }
-.nav-links a:hover, .nav-links a.active { color: #111; }
-.nav-dropdown { position: relative; }
-.nav-dropdown::after {
-  content: ''; position: absolute;
-  top: 100%; left: -10px; right: -10px; height: 1rem;
-}
-.dropdown {
-  position: absolute; top: calc(100% + 0.6rem); right: 0;
-  background: #fff; border: 1px solid #e8e8e8;
-  border-radius: 2px; padding: 4px 0; list-style: none;
-  min-width: 110px; box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-  opacity: 0; visibility: hidden;
-  transition: opacity 0.18s, visibility 0.18s; pointer-events: none;
-}
-.nav-dropdown:hover .dropdown { opacity: 1; visibility: visible; pointer-events: auto; }
-.dropdown li a {
-  display: block; padding: 6px 14px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase;
-  color: #aaa; white-space: nowrap; text-decoration: none;
-}
-.dropdown li a:hover { color: #111; }
-/* Common footer */
+.nav-links a:hover { color: #111; }
+.nav-links a.active { color: #111; }
 .site-footer {
   padding: 1.2rem 2rem;
   border-top: 1px solid #e8e8e8;
@@ -63,34 +41,24 @@ nav {
 .footer-links { display: flex; gap: 1.5rem; }
 .footer-links a {
   font-size: 10px; color: #ccc; text-decoration: none;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  transition: color 0.15s;
+  letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s;
 }
 .footer-links a:hover { color: #111; }
-body {
-  display: flex; flex-direction: column; min-height: 100vh;
-}
-/* flex: 1 on the first child after nav so footer always pushes to bottom */
-body > nav + * { flex: 1; }
-body > .layout { flex: 1; }
+body { display: flex; flex-direction: column; min-height: 100vh; }
 `;
 
 const style = document.createElement('style');
 style.textContent = NAV_CSS;
 document.head.appendChild(style);
 
-// Favicon
 if (!document.querySelector('link[rel="icon"]')) {
   document.head.insertAdjacentHTML('beforeend', FAVICON);
 }
 
 const path = window.location.pathname.split('/').pop() || 'index.html';
+const isWork = path === 'index.html' || path === '' || path === 'pills.html';
 const isAbout = path === 'about.html';
 const isPalettes = path === 'palettes.html';
-const works = [{ name: 'Pills', href: 'pills.html' }];
-const workLinks = works.map(w =>
-  `<li><a href="${w.href}"${path === w.href ? ' class="active"' : ''}>${w.name}</a></li>`
-).join('\n');
 
 const nav = document.createElement('nav');
 nav.innerHTML = `
@@ -98,20 +66,19 @@ nav.innerHTML = `
     <span class="nav-logo-dot"></span>
   </a>
   <ul class="nav-links">
-    <li class="nav-dropdown">
-      <span class="nav-label${works.some(w=>w.href===path)?' active':''}">Work</span>
-      <ul class="dropdown">${workLinks}</ul>
-    </li>
-    <li><a href="about.html"${isAbout?' class="active"':''}>About</a></li>
-    <li><a href="palettes.html"${isPalettes?' class="active"':''}>Palettes</a></li>
+    <li><a href="index.html"${isWork ? ' class="active"' : ''}>Work</a></li>
+    <li><a href="about.html"${isAbout ? ' class="active"' : ''}>About</a></li>
+    <li><a href="palettes.html"${isPalettes ? ' class="active"' : ''}>Palettes</a></li>
   </ul>`;
 document.body.insertBefore(nav, document.body.firstChild);
 
-// Common footer — inject before </body>
+// Push main content so footer sits at bottom
+document.querySelectorAll('main, #main-content, .about-wrap, .work-section').forEach(el => el.style.flex = '1');
+
 const footer = document.createElement('footer');
 footer.className = 'site-footer';
 footer.innerHTML = `
-  <span class="footer-copy">© 2026 HOKS</span>
+  <span class="footer-copy">© 2026 hoks</span>
   <div class="footer-links">
     <a href="mailto:joxemgallastegi@gmail.com">Contact</a>
     <a href="https://instagram.com" target="_blank">Instagram</a>
