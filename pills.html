@@ -278,34 +278,57 @@ function overallRarity(archProb, palProb, rarestFinish) {
   return 'legendary';
 }
 
-function loadPalettes() {
+const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
+const GH_TOKEN_KEY = 'hoks-gh-token';
+const REPO = 'Joxemari/hoks';
+
+async function ghPush(path, content) {
+  const token = localStorage.getItem(GH_TOKEN_KEY);
+  if (!token) return;
+  let sha;
   try {
-    const raw = localStorage.getItem(LS_PALS_KEY);
-    const stored = raw ? JSON.parse(raw) : null;
-    // Merge stored with DEFAULTS — add Memphis if not present
-    if (stored) {
-      const hasMemphis = stored.find(p => p.name === 'Memphis');
-      palettes = hasMemphis ? stored : [...stored, MEMPHIS];
-    } else {
-      palettes = [...DEFAULTS];
-    }
-    palettes = palettes.filter(p => p.active !== false);
-    if (!palettes.length) palettes = [...DEFAULTS];
-  } catch(e) { palettes = [...DEFAULTS]; }
-  // Normalise probs
-  const total = palettes.length;
-  palettes = palettes.map(p => ({ ...p, prob: 1/total }));
+    const r = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (r.ok) sha = (await r.json()).sha;
+  } catch(e) {}
+  const body = { message: 'update ' + path, content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))) };
+  if (sha) body.sha = sha;
+  await fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
+    method: 'PUT',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
+function loadPalettes() {
+  fetch(RAW + 'palettes.json?t=' + Date.now())
+    .then(r => r.ok ? r.json() : [...DEFAULTS])
+    .then(data => {
+      palettes = data.filter(p => p.active !== false);
+      if (!palettes.length) palettes = [...DEFAULTS];
+      palettes = palettes.map(p => ({ ...p, prob: 1/palettes.length }));
+      if (palettes.length) draw(currentSeed);
+    })
+    .catch(() => {
+      palettes = [...DEFAULTS].map(p => ({ ...p, prob: 1/DEFAULTS.length }));
+      draw(currentSeed);
+    });
 }
 
 function loadGallery() {
-  try { gallery = JSON.parse(localStorage.getItem(LS_GALLERY_KEY)||'[]'); } catch(e) { gallery = []; }
-  renderGallery();
+  fetch(RAW + 'gallery.json?t=' + Date.now())
+    .then(r => r.ok ? r.json() : [])
+    .then(data => { gallery = data; renderGallery(); })
+    .catch(() => { gallery = []; renderGallery(); });
 }
-function saveGallery() {
-  try { localStorage.setItem(LS_GALLERY_KEY, JSON.stringify(gallery)); } catch(e) { toast('Storage full'); }
+
+async function saveGallery() {
+  await ghPush('data/gallery.json', gallery);
 }
-function deleteFromGallery(i) {
-  gallery.splice(i,1); saveGallery(); renderGallery(); toast('Iteration deleted');
+
+async function deleteFromGallery(i) {
+  gallery.splice(i,1); await saveGallery(); renderGallery(); toast('Iteration deleted');
 }
 function renderGallery() {
   const section = document.getElementById('gallerySection');
@@ -495,13 +518,13 @@ function downloadHD() {
   toast('PNG downloaded');
 }
 
-function saveToGallery() {
+async function saveToGallery() {
   const src=document.getElementById('c');
   // Save at canvas resolution — preserves off-white bg since we always fill it
   const dataUrl=src.toDataURL('image/jpeg',0.9);
   gallery.unshift({seed:currentSeed, dataUrl, savedAt: Date.now()});
   if(gallery.length>50) gallery=gallery.slice(0,50);
-  saveGallery(); renderGallery(); toast('Saved to gallery');
+  toast('Saving…'); await saveGallery(); renderGallery(); toast('Saved to gallery');
 }
 
 function exportCard() {
