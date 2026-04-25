@@ -284,17 +284,40 @@ const REPO = 'Joxemari/hoks';
 
 async function ghPush(path, content) {
   const token = localStorage.getItem(GH_TOKEN_KEY);
-  if (!token) return;
+  if (!token) return; // no token, skip (visitor mode)
   let sha;
   try {
-    const r = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
+    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
       headers: { 'Authorization': 'Bearer ' + token }
     });
     if (r.ok) sha = (await r.json()).sha;
   } catch(e) {}
-  const body = { message: 'update ' + path, content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))) };
+  const body = { message: `update ${path}`, content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))) };
   if (sha) body.sha = sha;
-  await fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
+  await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+    method: 'PUT',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
+const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
+const GH_TOKEN_KEY = 'hoks-gh-token';
+const REPO = 'Joxemari/hoks';
+
+async function ghPush(path, content) {
+  const token = localStorage.getItem(GH_TOKEN_KEY);
+  if (!token) return;
+  let sha;
+  try {
+    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (r.ok) sha = (await r.json()).sha;
+  } catch(e) {}
+  const body = { message: `update ${path}`, content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))) };
+  if (sha) body.sha = sha;
+  await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
     method: 'PUT',
     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
@@ -308,7 +331,7 @@ function loadPalettes() {
       palettes = data.filter(p => p.active !== false);
       if (!palettes.length) palettes = [...DEFAULTS];
       palettes = palettes.map(p => ({ ...p, prob: 1/palettes.length }));
-      if (palettes.length) draw(currentSeed);
+      draw(currentSeed);
     })
     .catch(() => {
       palettes = [...DEFAULTS].map(p => ({ ...p, prob: 1/DEFAULTS.length }));
@@ -330,6 +353,24 @@ async function saveGallery() {
 async function deleteFromGallery(i) {
   gallery.splice(i,1); await saveGallery(); renderGallery(); toast('Iteration deleted');
 }
+
+function loadExactIteration(item) {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  img.onload = () => { ctx.globalCompositeOperation='source-over'; ctx.drawImage(img,0,0,canvas.width,canvas.height); };
+  img.src = item.dataUrl;
+  currentSeed = item.seed;
+  currentTimestamp = item.savedAt ? new Date(item.savedAt) : new Date();
+  const sd = document.getElementById('seedDisplay');
+  const td = document.getElementById('timestampDisplay');
+  if (sd) sd.textContent = '#' + item.seed;
+  if (td) { const ts=currentTimestamp; td.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+  const tl = document.getElementById('traitList');
+  if (tl) tl.innerHTML = '<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">Saved iteration — generate a new one to see traits.</div>';
+  const or = document.getElementById('overallRarity');
+  if (or) or.innerHTML = '';
+}
 function renderGallery() {
   const section = document.getElementById('gallerySection');
   const grid = document.getElementById('galleryGrid');
@@ -347,9 +388,8 @@ function renderGallery() {
   grid.querySelectorAll('.gallery-thumb').forEach(el => {
     el.addEventListener('click', () => {
       const item = gallery[parseInt(el.dataset.i)];
-      loadExactIteration(item);
+      if (item) loadExactIteration(item);
     });
-  });
   });
 }
 
@@ -512,8 +552,11 @@ function generate() { currentSeed=rand32(); currentTimestamp=new Date(); draw(cu
 function downloadHD() {
   const src=document.getElementById('c');
   const hd=document.createElement('canvas');
-  hd.width=src.width*4; hd.height=src.height*4;
-  const ctx=hd.getContext('2d'); ctx.scale(4,4); ctx.drawImage(src,0,0);
+  const scale=4;
+  hd.width=src.width*scale; hd.height=src.height*scale;
+  const ctx=hd.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(src, 0, 0, hd.width, hd.height);
   const a=document.createElement('a');
   a.download=`pills_${currentSeed}.png`; a.href=hd.toDataURL('image/png'); a.click();
   toast('PNG downloaded');
@@ -521,11 +564,13 @@ function downloadHD() {
 
 async function saveToGallery() {
   const src=document.getElementById('c');
-  // Save at canvas resolution — preserves off-white bg since we always fill it
   const dataUrl=src.toDataURL('image/jpeg',0.9);
   gallery.unshift({seed:currentSeed, dataUrl, savedAt: Date.now()});
   if(gallery.length>50) gallery=gallery.slice(0,50);
-  toast('Saving…'); await saveGallery(); renderGallery(); toast('Saved to gallery');
+  toast('Saving…');
+  await saveGallery();
+  renderGallery();
+  toast('Saved to gallery');
 }
 
 function exportCard() {
@@ -693,53 +738,20 @@ function toast(msg){
 }
 
 document.getElementById('c').addEventListener('click',generate);
-function loadExactIteration(item) {
-  // Load exact saved image into canvas
-  const canvas = document.getElementById('c');
-  const ctx = canvas.getContext('2d');
-  const img = new Image();
-  img.onload = () => {
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  };
-  img.src = item.dataUrl;
-  currentSeed = item.seed;
-  currentTimestamp = item.savedAt ? new Date(item.savedAt) : new Date();
-  // Update seed display and timestamp
-  const sd = document.getElementById('seedDisplay');
-  const td = document.getElementById('timestampDisplay');
-  if (sd) sd.textContent = '#' + item.seed;
-  if (td) {
-    const ts = currentTimestamp;
-    td.textContent = ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) + ' · ' + ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-  }
-  // Clear traits since we're viewing a saved image
-  const tl = document.getElementById('traitList');
-  const or = document.getElementById('overallRarity');
-  if (tl) tl.innerHTML = '<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">Saved iteration — generate a new one to see traits.</div>';
-  if (or) or.innerHTML = '';
+// Check URL param ?i=N to load exact gallery item from landing
+const _urlParams = new URLSearchParams(window.location.search);
+const _urlIdx = _urlParams.get('i');
+if (_urlIdx !== null) {
+  const _waitGallery = setInterval(() => {
+    if (gallery.length > 0) {
+      clearInterval(_waitGallery);
+      const item = gallery[parseInt(_urlIdx)];
+      if (item) loadExactIteration(item);
+    }
+  }, 100);
 }
 
-// Check URL params on load
-function checkUrlParams() {
-  const params = new URLSearchParams(window.location.search);
-  const idx = params.get('i');
-  const seedParam = params.get('seed');
-  if (idx !== null) {
-    // Wait for gallery to load then show exact item
-    const waitForGallery = setInterval(() => {
-      if (gallery.length > 0) {
-        clearInterval(waitForGallery);
-        const item = gallery[parseInt(idx)];
-        if (item) loadExactIteration(item);
-      }
-    }, 100);
-  } else if (seedParam) {
-    currentSeed = parseInt(seedParam);
-  }
-}
-
-loadPalettes(); loadGallery(); checkUrlParams();
+loadPalettes(); loadGallery();
 if(palettes.length) draw(currentSeed);
 </script>
 </body>

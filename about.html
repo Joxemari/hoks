@@ -12,7 +12,8 @@ body { background: #fff; color: #111; }
   font-family: 'Courier New', Courier, monospace;
   font-size: clamp(0.9rem, 1.8vw, 1.1rem);
   font-weight: 400; line-height: 1.8; color: #111;
-  margin-bottom: 3rem; letter-spacing: 0.01em; display: block;
+  margin-bottom: 3rem; letter-spacing: 0.01em;
+  display: block;
 }
 .about-contact {
   font-family: 'Courier New', Courier, monospace;
@@ -38,8 +39,9 @@ fetch('https://raw.githubusercontent.com/Joxemari/hoks/main/data/site.json?t=' +
     const t = document.getElementById('about-text');
     const c = document.getElementById('about-contact');
     if (t && d.aboutText) t.textContent = d.aboutText;
-    if (c && d.footerEmail) c.innerHTML = 'Contact: <a href="mailto:' + d.footerEmail + '">' + d.footerEmail + '<\/a>';
-  }).catch(() => {});
+    if (c && d.footerEmail) c.innerHTML = `Contact: <a href="mailto:${d.footerEmail}">${d.footerEmail}</a>`;
+  })
+  .catch(() => {});
 </script>
 </body>
 </html>

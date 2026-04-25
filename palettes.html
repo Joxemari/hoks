@@ -204,7 +204,6 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
     <span class="count" id="count"></span>
   </div>
   <div class="controls-right">
-    
   </div>
 </div>
 
@@ -303,7 +302,11 @@ async function loadPalettes() {
   render();
 }
 
-function persist() {}
+function persist() {
+  // no-op: palettes.html is read-only for visitors.
+  // All writes go through admin.html via GitHub API.
+}
+
 
 function render() {
   const q = $('search').value.toLowerCase().trim();
@@ -321,7 +324,7 @@ function render() {
   }
   grid.innerHTML = list.map(p => {
     const isActive = p.active !== false;
-    if (!isActive) return '';
+    if (!isActive) return ''; // hide inactive palettes from public view
     return `
     <div class="palette-card">
       <div class="swatches">
@@ -407,16 +410,12 @@ function toast(msg){ const t=$('toast');t.textContent=msg;t.classList.add('show'
 $('search').addEventListener('input',render);
 $('sort').addEventListener('change',render);
 document.addEventListener('click',e=>{
-  const tog=e.target.closest('input[data-toggle]');
-  if(tog){const id=Number(tog.dataset.toggle);const p=pals.find(x=>x.id===id);if(p){p.active=tog.checked;persist();render();}return;}
   const swatch=e.target.closest('.swatch[data-hex]');
   if(swatch){copySwatch(swatch.dataset.hex,swatch);return;}
   const chip=e.target.closest('.hex-chip[data-hex]');
   if(chip){copyText(chip.dataset.hex);return;}
   const ca=e.target.closest('[data-copyall]');
   if(ca){const p=pals.find(x=>x.id==ca.dataset.copyall);if(p)copyText(p.colors.join(', '));return;}
-  
-  
 });
 loadPalettes();
 </script>
