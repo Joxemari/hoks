@@ -50,7 +50,7 @@ nav {
 .nav-work { position: relative; padding-bottom: 8px; margin-bottom: -8px; }
 .nav-work-label { display: block; }
 .nav-work-dropdown {
-  position: absolute; top: calc(100% + 6px); right: 0;
+  position: absolute; top: calc(100% + 4px); right: 0;
   background: #fff; border: 1px solid #e8e8e8;
   padding: 4px 0; list-style: none; min-width: 100px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.06);
