@@ -303,17 +303,18 @@ async function ghPush(path, content) {
 
 
 function loadPalettes() {
+  const _isExact = new URLSearchParams(window.location.search).get('i') !== null;
   fetch(RAW + 'palettes.json?t=' + Date.now())
     .then(r => r.ok ? r.json() : [...DEFAULTS])
     .then(data => {
       palettes = data.filter(p => p.active !== false);
       if (!palettes.length) palettes = [...DEFAULTS];
       palettes = palettes.map(p => ({ ...p, prob: 1/palettes.length }));
-      draw(currentSeed);
+      if (!_isExact) draw(currentSeed);
     })
     .catch(() => {
       palettes = [...DEFAULTS].map(p => ({ ...p, prob: 1/DEFAULTS.length }));
-      draw(currentSeed);
+      if (!_isExact) draw(currentSeed);
     });
 }
 
@@ -563,7 +564,6 @@ function exportCard() {
   const RC={common:'#f1efe8',uncommon:'#d4f0e4',rare:'#ddeaf8',superrare:'#eae8fc',legendary:'#faeeda'};
   const RT={common:'#999',uncommon:'#085041',rare:'#0c447c',superrare:'#3c3489',legendary:'#633806'};
   const rKey=s=>(s||'common').toLowerCase().replace(' ','');
-
   const artW = src.width * SC;
   const artH = src.height * SC;
   const stripH = Math.round(artH * 0.22);
