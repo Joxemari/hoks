@@ -44,19 +44,19 @@ body { background: #fff; color: #111; }
 <script src="nav.js"></script>
 <main id="main-content">
   <div class="work-section" id="work-section">
-    <div class="work-item" onclick="window.location.href='pills.html?i=0'">
+    <div class="work-item" onclick="window.location.href='pills.html'">
       <div class="work-item-inner">
         <canvas id="c1" width="1414" height="1000"></canvas>
         <div class="work-item-caption" id="c1-caption">Pills</div>
       </div>
     </div>
-    <div class="work-item" onclick="window.location.href='pills.html?i=1'">
+    <div class="work-item" onclick="window.location.href='pills.html'">
       <div class="work-item-inner">
         <canvas id="c2" width="1414" height="1000"></canvas>
         <div class="work-item-caption" id="c2-caption">Pills</div>
       </div>
     </div>
-    <div class="work-item" onclick="window.location.href='pills.html?i=2'">
+    <div class="work-item" onclick="window.location.href='pills.html'">
       <div class="work-item-inner">
         <canvas id="c3" width="1414" height="1000"></canvas>
         <div class="work-item-caption" id="c3-caption">Pills</div>
@@ -105,37 +105,35 @@ function loadCanvases() {
   fetch(RAW + 'gallery.json?t=' + Date.now())
     .then(r => r.ok ? r.json() : [])
     .then(gallery => {
-      if (gallery.length >= 3) {
-        canvases.forEach((id, i) => {
-          const canvas = document.getElementById(id);
-          const item = gallery[i];
-          const img = new Image();
-          img.onload = () => { canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height); };
-          img.src = item.dataUrl;
-          const cap = document.getElementById(id+'-caption');
-          if (cap) {
-            const d = item.savedAt ? new Date(item.savedAt) : new Date();
-            const dateStr = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-            cap.textContent = 'Pills · #' + item.seed + ' · ' + dateStr;
-          }
-        });
-      } else {
-        drawFallbacks();
-      }
+      // Only show as many works as we have saved items
+      canvases.forEach((id, i) => {
+        const section = document.getElementById('work-section');
+        const items = section ? section.querySelectorAll('.work-item') : [];
+        if (i >= gallery.length) {
+          // Hide work items that have no saved image
+          if (items[i]) items[i].style.display = 'none';
+          return;
+        }
+        const canvas = document.getElementById(id);
+        const item = gallery[i];
+        const img = new Image();
+        img.onload = () => { canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height); };
+        img.src = item.dataUrl;
+        const cap = document.getElementById(id+'-caption');
+        if (cap) {
+          const d = item.savedAt ? new Date(item.savedAt) : new Date();
+          const dateStr = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+          cap.textContent = 'Pills · #' + item.seed + ' · ' + dateStr;
+        }
+      });
     })
-    .catch(() => drawFallbacks());
-
-  function drawFallbacks() {
-    const seeds = [Math.random()*99999|0, Math.random()*99999|0, Math.random()*99999|0];
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-    canvases.forEach((id, i) => {
-      const canvas = document.getElementById(id);
-      drawPills(canvas, FALLBACK_PALS[i%FALLBACK_PALS.length], seeds[i]);
-      const cap = document.getElementById(id+'-caption');
-      if (cap) cap.textContent = 'Pills · #' + seeds[i] + ' · ' + dateStr;
+    .catch(() => {
+      // On error, hide all work items
+      ['c1','c2','c3'].forEach(id => {
+        const canvas = document.getElementById(id);
+        if (canvas) drawFallback(canvas, id);
+      });
     });
-  }
 }
 document.addEventListener('DOMContentLoaded', loadCanvases);
 </script>
