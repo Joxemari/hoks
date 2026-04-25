@@ -347,8 +347,9 @@ function renderGallery() {
   grid.querySelectorAll('.gallery-thumb').forEach(el => {
     el.addEventListener('click', () => {
       const item = gallery[parseInt(el.dataset.i)];
-      currentSeed = item.seed; draw(currentSeed);
+      loadExactIteration(item);
     });
+  });
   });
 }
 
@@ -692,7 +693,53 @@ function toast(msg){
 }
 
 document.getElementById('c').addEventListener('click',generate);
-loadPalettes(); loadGallery();
+function loadExactIteration(item) {
+  // Load exact saved image into canvas
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  img.onload = () => {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  };
+  img.src = item.dataUrl;
+  currentSeed = item.seed;
+  currentTimestamp = item.savedAt ? new Date(item.savedAt) : new Date();
+  // Update seed display and timestamp
+  const sd = document.getElementById('seedDisplay');
+  const td = document.getElementById('timestampDisplay');
+  if (sd) sd.textContent = '#' + item.seed;
+  if (td) {
+    const ts = currentTimestamp;
+    td.textContent = ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) + ' · ' + ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  }
+  // Clear traits since we're viewing a saved image
+  const tl = document.getElementById('traitList');
+  const or = document.getElementById('overallRarity');
+  if (tl) tl.innerHTML = '<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">Saved iteration — generate a new one to see traits.</div>';
+  if (or) or.innerHTML = '';
+}
+
+// Check URL params on load
+function checkUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  const idx = params.get('i');
+  const seedParam = params.get('seed');
+  if (idx !== null) {
+    // Wait for gallery to load then show exact item
+    const waitForGallery = setInterval(() => {
+      if (gallery.length > 0) {
+        clearInterval(waitForGallery);
+        const item = gallery[parseInt(idx)];
+        if (item) loadExactIteration(item);
+      }
+    }, 100);
+  } else if (seedParam) {
+    currentSeed = parseInt(seedParam);
+  }
+}
+
+loadPalettes(); loadGallery(); checkUrlParams();
 if(palettes.length) draw(currentSeed);
 </script>
 </body>
