@@ -111,15 +111,21 @@ function loadCanvases() {
       img.onload = () => { canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height); };
       img.src = item.dataUrl;
       const cap = document.getElementById(id+'-caption');
-      if (cap) cap.textContent = 'PILLS · #' + item.seed;
+      if (cap) {
+        const d = item.savedAt ? new Date(item.savedAt) : new Date();
+        const dateStr = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+        cap.textContent = 'Pills · #' + item.seed + ' · ' + dateStr;
+      }
     });
   } else {
     const seeds = [Math.random()*99999|0, Math.random()*99999|0, Math.random()*99999|0];
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
     canvases.forEach((id, i) => {
       const canvas = document.getElementById(id);
       drawPills(canvas, FALLBACK_PALS[i%FALLBACK_PALS.length], seeds[i]);
       const cap = document.getElementById(id+'-caption');
-      if (cap) cap.textContent = 'PILLS · #' + seeds[i];
+      if (cap) cap.textContent = 'Pills · #' + seeds[i] + ' · ' + dateStr;
     });
   }
 }

@@ -221,6 +221,12 @@ const DEFAULTS = [
   { id:28, name:"Poet",       colors:["#f4f3ed","#efc807","#ed5d53","#e2dbb5","#45291c","#080b0f"],                            prob:0.033 },
   { id:29, name:"Daily",      colors:["#131314","#272829","#ffe18e","#fff0c6"],                                                 prob:0.033 },
   { id:30, name:"Podcast",    colors:["#584594","#e488b7","#d74c41","#f0d235","#36ad63","#69bcea","#fdfdfd"],                  prob:0.033 },
+  { id:31, name:"Itten I",   colors:["#e8b84b","#9b7fb6","#7a6b8a","#c9a227"], prob:0.033 },
+  { id:32, name:"Itten II",  colors:["#e07b39","#4a7fb5","#3a6090","#c96a28"], prob:0.033 },
+  { id:33, name:"Itten III", colors:["#c0392b","#2a7f6f","#1a6a5a","#a93226"], prob:0.033 },
+  { id:34, name:"Itten IV",  colors:["#c0392b","#2e86ab","#1a6e8a","#a93226"], prob:0.033 },
+  { id:35, name:"Itten V",   colors:["#7b4fa6","#8ab540","#6a9a30","#6a3d8a"], prob:0.033 },
+  { id:36, name:"Itten VI",  colors:["#3a8a4a","#7b4fa6","#6a3d8a","#2a7a3a"], prob:0.033 },
   MEMPHIS,
 ];
 
@@ -493,7 +499,7 @@ function saveToGallery() {
   const src=document.getElementById('c');
   // Save at canvas resolution — preserves off-white bg since we always fill it
   const dataUrl=src.toDataURL('image/jpeg',0.9);
-  gallery.unshift({seed:currentSeed,dataUrl});
+  gallery.unshift({seed:currentSeed, dataUrl, savedAt: Date.now()});
   if(gallery.length>50) gallery=gallery.slice(0,50);
   saveGallery(); renderGallery(); toast('Saved to gallery');
 }
@@ -504,111 +510,148 @@ function exportCard() {
   const traits=lastTraits, overall=lastOverall;
   if(!traits.length) return;
 
-  const SC=3; // scale factor for sharpness
-  const mono=`${11*SC}px 'Courier New', Courier, monospace`;
-  const monoSm=`${9*SC}px 'Courier New', Courier, monospace`;
-  const monoBold=`700 ${11*SC}px 'Courier New', Courier, monospace`;
-
+  const SC=3;
+  const mono=`'Courier New', Courier, monospace`;
   const RL={common:'COMMON',uncommon:'UNCOMMON',rare:'RARE',superrare:'SUPER RARE',legendary:'LEGENDARY'};
   const RC={common:'#f1efe8',uncommon:'#d4f0e4',rare:'#ddeaf8',superrare:'#eae8fc',legendary:'#faeeda'};
-  const RT={common:'#888',uncommon:'#085041',rare:'#0c447c',superrare:'#3c3489',legendary:'#633806'};
+  const RT={common:'#999',uncommon:'#085041',rare:'#0c447c',superrare:'#3c3489',legendary:'#633806'};
   const rKey=s=>(s||'common').toLowerCase().replace(' ','');
 
-  // Card dimensions — artwork is primary, info strip below
+  // Layout: full-width artwork + traits strip below
   const artW = src.width * SC;
   const artH = src.height * SC;
-  const stripH = 72 * SC;
+  const pad = 22*SC;
+  const rowH = 28*SC;
+  const headerH = 52*SC;
+  const dividerH = SC;
+  const traitRows = traits.length + 1; // +1 for overall
+  const stripH = headerH + dividerH + traitRows*rowH + pad*1.5;
   const CW = artW;
   const CH = artH + stripH;
 
   const card = document.createElement('canvas');
-  card.width = CW; card.height = CH;
+  card.width=CW; card.height=CH;
   const ctx = card.getContext('2d');
 
-  // ── ARTWORK (full bleed, no frame) ──────────────────────────────────────
+  // Artwork
   ctx.drawImage(src, 0, 0, artW, artH);
 
-  // ── INFO STRIP ──────────────────────────────────────────────────────────
-  ctx.fillStyle = '#ffffff';
+  // Strip background
+  ctx.fillStyle='#ffffff';
   ctx.fillRect(0, artH, CW, stripH);
-
-  // top border of strip
-  ctx.fillStyle = '#e8e8e8';
+  ctx.fillStyle='#e8e8e8';
   ctx.fillRect(0, artH, CW, SC);
 
-  const pad = 20 * SC;
-  const midY = artH + stripH / 2;
+  ctx.textBaseline='middle';
 
-  // LEFT: work name + seed
-  ctx.fillStyle = '#111';
-  ctx.font = monoBold;
-  ctx.textBaseline = 'middle';
-  ctx.fillText('PILLS', pad, midY - 9*SC);
-
+  // Header row: PILLS left, seed center, date right
+  const headerMidY = artH + headerH/2;
   const ts = currentTimestamp;
-  const tsStr = ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})
-    + ' · ' + ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-  ctx.fillStyle = '#bbb';
-  ctx.font = monoSm;
-  ctx.fillText('SEED ' + seed + '  ' + tsStr, pad, midY + 9*SC);
+  const dateStr = ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})
+    +' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 
-  // CENTER: palette dots
-  const palTrait = traits.find(t => t.colors);
-  if (palTrait) {
-    const dotR = 7 * SC;
-    const gap = 5 * SC;
-    const colors = palTrait.colors.slice(0, 8);
-    const dotsW = colors.length * (dotR*2 + gap) - gap;
-    let dotX = CW/2 - dotsW/2;
-    colors.forEach(c => {
-      ctx.beginPath();
-      ctx.arc(dotX + dotR, midY, dotR, 0, Math.PI*2);
-      ctx.fillStyle = c;
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-      ctx.lineWidth = SC;
-      ctx.stroke();
-      dotX += dotR*2 + gap;
-    });
-  }
+  ctx.font=`700 ${11*SC}px ${mono}`;
+  ctx.fillStyle='#111';
+  ctx.textAlign='left';
+  ctx.fillText('PILLS', pad, headerMidY);
 
-  // RIGHT: overall rarity badge + palette name
-  const rkO = rKey(overall);
-  const rLabel = RL[rkO] || overall.toUpperCase();
-  ctx.font = monoBold;
-  const badgeW = ctx.measureText(rLabel).width + 16*SC;
-  const badgeH = 22*SC;
-  const badgeX = CW - pad - badgeW;
-  const badgeY = midY - badgeH/2;
+  ctx.font=`400 ${9*SC}px ${mono}`;
+  ctx.fillStyle='#aaa';
+  ctx.textAlign='center';
+  ctx.fillText('SEED '+seed, CW/2, headerMidY - 7*SC);
+  ctx.fillText(dateStr, CW/2, headerMidY + 7*SC);
 
-  // badge bg
-  ctx.fillStyle = RC[rkO] || RC.common;
-  roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 3*SC); ctx.fill();
-  ctx.fillStyle = RT[rkO] || RT.common;
-  ctx.textBaseline = 'middle';
-  ctx.fillText(rLabel, badgeX + 8*SC, midY);
+  // Divider
+  const divY = artH + headerH;
+  ctx.fillStyle='#e8e8e8';
+  ctx.fillRect(pad, divY, CW-pad*2, SC);
 
-  // palette name above badge
-  const palName = palTrait ? palTrait.val : '';
-  ctx.fillStyle = '#888';
-  ctx.font = monoSm;
-  ctx.textAlign = 'right';
-  ctx.fillText(palName.toUpperCase(), CW - pad, midY - 9*SC);
-  ctx.textAlign = 'left';
+  // Trait rows
+  const valRight = CW - pad;
+  traits.forEach((t, i) => {
+    const rowY = divY + dividerH + rowH*i + rowH/2;
 
-  // ── COPY / DOWNLOAD ─────────────────────────────────────────────────────
-  card.toBlob(async blob => {
-    try {
-      await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+    // Key
+    ctx.font=`400 ${9*SC}px ${mono}`;
+    ctx.fillStyle='#aaa';
+    ctx.textAlign='left';
+    ctx.fillText(t.key.toUpperCase(), pad, rowY);
+
+    // Rarity badge
+    const rk=rKey(t.rarity);
+    const rLabel=RL[rk]||'COMMON';
+    ctx.font=`700 ${8*SC}px ${mono}`;
+    const bw=ctx.measureText(rLabel).width+10*SC;
+    const bh=16*SC;
+    const bx=valRight-bw;
+    const by=rowY-bh/2;
+    ctx.fillStyle=RC[rk]||RC.common;
+    roundRect(ctx,bx,by,bw,bh,3*SC); ctx.fill();
+    ctx.fillStyle=RT[rk]||RT.common;
+    ctx.textAlign='left';
+    ctx.fillText(rLabel, bx+5*SC, rowY);
+
+    // Value
+    ctx.font=`700 ${10*SC}px ${mono}`;
+    ctx.fillStyle='#111';
+    ctx.textAlign='right';
+    const valStr=String(t.val);
+
+    if(t.colors) {
+      // Draw palette dots then name
+      const dotR=5*SC, gap=3*SC;
+      const dots=t.colors.slice(0,8);
+      const nameW=ctx.measureText(valStr).width;
+      const dotsW=dots.length*(dotR*2+gap)-gap;
+      const totalW=dotsW+8*SC+nameW;
+      let dotX=bx-8*SC-totalW;
+      dots.forEach(c=>{
+        ctx.beginPath();
+        ctx.arc(dotX+dotR, rowY, dotR, 0, Math.PI*2);
+        ctx.fillStyle=c; ctx.fill();
+        ctx.strokeStyle='rgba(0,0,0,0.08)'; ctx.lineWidth=SC; ctx.stroke();
+        dotX+=dotR*2+gap;
+      });
+      ctx.fillStyle='#111';
+      ctx.textAlign='right';
+      ctx.fillText(valStr, bx-8*SC, rowY);
+    } else {
+      ctx.fillText(valStr, bx-8*SC, rowY);
+    }
+  });
+
+  // Overall row
+  const overallRowY = divY + dividerH + rowH*traits.length + rowH/2;
+  // Divider above overall
+  ctx.fillStyle='#e8e8e8';
+  ctx.fillRect(pad, divY + dividerH + rowH*traits.length, CW-pad*2, SC);
+
+  ctx.font=`400 ${9*SC}px ${mono}`;
+  ctx.fillStyle='#aaa'; ctx.textAlign='left';
+  ctx.fillText('OVERALL', pad, overallRowY);
+
+  const rkO=rKey(overall);
+  const oLabel=RL[rkO]||'COMMON';
+  ctx.font=`700 ${8*SC}px ${mono}`;
+  const obw=ctx.measureText(oLabel).width+10*SC;
+  const obh=16*SC;
+  const obx=valRight-obw;
+  ctx.fillStyle=RC[rkO]||RC.common;
+  roundRect(ctx,obx,overallRowY-obh/2,obw,obh,3*SC); ctx.fill();
+  ctx.fillStyle=RT[rkO]||RT.common;
+  ctx.fillText(oLabel, obx+5*SC, overallRowY);
+
+  card.toBlob(async blob=>{
+    try{
+      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
       toast('Card copied to clipboard');
-    } catch(e) {
-      const a = document.createElement('a');
-      a.download = 'pills_' + currentSeed + '.png';
-      a.href = card.toDataURL('image/png');
-      a.click();
+    }catch(e){
+      const a=document.createElement('a');
+      a.download='pills_'+currentSeed+'.png';
+      a.href=card.toDataURL('image/png'); a.click();
       toast('Downloaded (clipboard not supported)');
     }
-  }, 'image/png');
+  },'image/png');
 }
 
 function roundRect(ctx,x,y,w,h,r){

@@ -27,20 +27,9 @@ body { background: #fff; color: #111; }
 <script src="nav.js"></script>
 <main>
   <div class="about-wrap">
-    <p id="about-text"></p>
-    <p class="about-contact" id="about-contact"></p>
+    <p id="about-text">Joxemari Gallastegi is a generative artist based in Spain. His work is characterised by bold form, vibrant colour, and the beauty of controlled randomness — algorithmic systems that make each piece unique by design.</p>
+    <p class="about-contact">Contact: <a href="mailto:joxemgallastegi@gmail.com">joxemgallastegi@gmail.com</a></p>
   </div>
 </main>
-<script>
-// Fill contact from site content (nav.js already fills about-text)
-(function() {
-  const SITE_KEY = 'hoks-site-content';
-  const defaults = { footerEmail: 'joxemgallastegi@gmail.com' };
-  let c = defaults;
-  try { c = { ...defaults, ...JSON.parse(localStorage.getItem(SITE_KEY)||'{}') }; } catch(e) {}
-  const el = document.getElementById('about-contact');
-  if (el) el.innerHTML = `Contact: <a href="mailto:${c.footerEmail}">${c.footerEmail}</a>`;
-})();
-</script>
 </body>
 </html>

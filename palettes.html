@@ -24,7 +24,10 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
   padding: 1.2rem 2rem;
   display: flex; gap: 10px; align-items: center;
   border-bottom: 1px solid var(--border);
+  justify-content: space-between;
 }
+.controls-left { display: flex; gap: 10px; align-items: center; flex: 1; }
+.controls-right { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
 .search-wrap { flex: 1; min-width: 160px; }
 .search-wrap input {
   width: 100%; background: var(--surface);
@@ -188,17 +191,21 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
 <script src="nav.js"></script>
 
 <div class="controls">
-  <div class="search-wrap">
-    <input type="text" id="search" placeholder="Search by name or tag…">
+  <div class="controls-left">
+    <div class="search-wrap">
+      <input type="text" id="search" placeholder="Search by name or tag…">
+    </div>
+    <select class="sort-select" id="sort">
+      <option value="newest">Newest</option>
+      <option value="oldest">Oldest</option>
+      <option value="name">Name</option>
+      <option value="colors">Colors</option>
+    </select>
+    <span class="count" id="count"></span>
   </div>
-  <select class="sort-select" id="sort">
-    <option value="newest">Newest</option>
-    <option value="oldest">Oldest</option>
-    <option value="name">Name</option>
-    <option value="colors">Colors</option>
-  </select>
-  <span class="count" id="count"></span>
-  <button class="btn-new" onclick="openModal()">+ New Palette</button>
+  <div class="controls-right">
+    <button class="btn-new" onclick="openModal()">+ New Palette</button>
+  </div>
 </div>
 
 <div class="grid" id="grid"></div>
@@ -274,6 +281,12 @@ const DEFAULTS = [
   { id:28, name:"Poet",       active:true, colors:["#f4f3ed","#efc807","#ed5d53","#e2dbb5","#45291c","#080b0f"],                            tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-273000 },
   { id:29, name:"Daily",      active:true, colors:["#131314","#272829","#ffe18e","#fff0c6"],                                                 tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-272000 },
   { id:30, name:"Podcast",    active:true, colors:["#584594","#e488b7","#d74c41","#f0d235","#36ad63","#69bcea","#fdfdfd"],                  tags:["roni kaufman"], notes:"from ronikaufman.github.io/color_pals", created:Date.now()-271000 },
+  { id:31, name:"Itten I — Yellow & Violet",      active:true, colors:["#e8b84b","#9b7fb6","#7a6b8a","#c9a227"], tags:["itten","complementary","1944"], notes:"Complementary contrast after Johannes Itten, designed by Heinrich Kümpel, 1944", created:Date.now()-270000 },
+  { id:32, name:"Itten II — Orange & Blue",        active:true, colors:["#e07b39","#4a7fb5","#3a6090","#c96a28"], tags:["itten","complementary","1944"], notes:"Complementary contrast after Johannes Itten, designed by Heinrich Kümpel, 1944", created:Date.now()-269000 },
+  { id:33, name:"Itten III — Red & Teal",          active:true, colors:["#c0392b","#2a7f6f","#1a6a5a","#a93226"], tags:["itten","complementary","1944"], notes:"Complementary contrast after Johannes Itten, designed by Heinrich Kümpel, 1944", created:Date.now()-268000 },
+  { id:34, name:"Itten IV — Red & Cyan",           active:true, colors:["#c0392b","#2e86ab","#1a6e8a","#a93226"], tags:["itten","complementary","1944"], notes:"Complementary contrast after Johannes Itten, designed by Heinrich Kümpel, 1944", created:Date.now()-267000 },
+  { id:35, name:"Itten V — Purple & Yellow-Green", active:true, colors:["#7b4fa6","#8ab540","#6a9a30","#6a3d8a"], tags:["itten","complementary","1944"], notes:"Complementary contrast after Johannes Itten, designed by Heinrich Kümpel, 1944", created:Date.now()-266000 },
+  { id:36, name:"Itten VI — Green & Purple",       active:true, colors:["#3a8a4a","#7b4fa6","#6a3d8a","#2a7a3a"], tags:["itten","complementary","1944"], notes:"Complementary contrast after Johannes Itten, designed by Heinrich Kümpel, 1944", created:Date.now()-265000 },
   MEMPHIS,
 ];
 
