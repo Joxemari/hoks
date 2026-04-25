@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hoks — admin</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #111; --ink2: #888; --ink3: #bbb;
+  --bg: #fff; --surface: #f7f7f7;
+  --border: #e8e8e8; --border-dark: #d0d0d0;
+  --f: 'Courier New', Courier, monospace;
+  --r: 2px;
+}
+body { font-family: var(--f); background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+/* ── LOGIN ── */
+#login-screen {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; flex-direction: column; gap: 1.5rem;
+}
+.login-logo { width: 20px; height: 20px; border-radius: 50%; background: #111; }
+.login-title { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); }
+.login-form { display: flex; flex-direction: column; gap: 10px; width: 260px; }
+.login-form input {
+  font-family: var(--f); font-size: 13px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 10px 14px; outline: none;
+  letter-spacing: 0.06em; transition: border-color 0.15s;
+}
+.login-form input:focus { border-color: var(--border-dark); }
+.login-form input::placeholder { color: var(--ink3); letter-spacing: 0.04em; }
+.btn-login {
+  font-family: var(--f); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  background: var(--ink); color: #fff; border: none;
+  border-radius: var(--r); padding: 11px; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-login:hover { opacity: 0.75; }
+.login-error { font-size: 10px; color: #c00; letter-spacing: 0.06em; text-transform: uppercase; display: none; }
+.login-error.show { display: block; }
+
+/* ── ADMIN PANEL ── */
+#admin-panel { display: none; }
+#admin-panel.show { display: block; }
+
+header {
+  position: sticky; top: 0; z-index: 10;
+  background: #fff; border-bottom: 1px solid var(--border);
+  padding: 0 2rem; height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-left { display: flex; align-items: center; gap: 1rem; }
+.header-dot { width: 14px; height: 14px; border-radius: 50%; background: #111; }
+.header-title { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); }
+.btn-logout {
+  font-family: var(--f); font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; background: none; border: 1px solid var(--border);
+  border-radius: var(--r); padding: 6px 14px; cursor: pointer; color: var(--ink3);
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-logout:hover { color: var(--ink); border-color: var(--border-dark); }
+
+.panel-body { max-width: 900px; margin: 0 auto; padding: 3rem 2rem 6rem; display: flex; flex-direction: column; gap: 3rem; }
+
+/* ── SECTIONS ── */
+.section-title {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--ink3);
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  margin-bottom: 1.2rem;
+}
+
+/* ── ABOUT EDITOR ── */
+.about-editor { display: flex; flex-direction: column; gap: 10px; }
+.field-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); margin-bottom: 4px; display: block; }
+textarea.about-text {
+  font-family: var(--f); font-size: 13px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 12px 14px; outline: none;
+  resize: vertical; width: 100%; line-height: 1.7;
+  transition: border-color 0.15s; min-height: 120px;
+}
+textarea.about-text:focus { border-color: var(--border-dark); background: #fff; }
+.footer-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+input.field-input {
+  font-family: var(--f); font-size: 12px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 9px 12px; outline: none; width: 100%;
+  transition: border-color 0.15s;
+}
+input.field-input:focus { border-color: var(--border-dark); background: #fff; }
+.btn-save-section {
+  font-family: var(--f); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--ink); color: #fff; border: none;
+  border-radius: var(--r); padding: 10px 20px; cursor: pointer;
+  transition: opacity 0.15s; align-self: flex-start;
+}
+.btn-save-section:hover { opacity: 0.75; }
+
+/* ── PALETTES ── */
+.pal-controls { display: flex; gap: 10px; margin-bottom: 1.2rem; align-items: center; }
+.pal-search {
+  flex: 1; font-family: var(--f); font-size: 12px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 8px 12px; outline: none;
+}
+.pal-search:focus { border-color: var(--border-dark); }
+.btn-new-pal {
+  font-family: var(--f); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--ink); color: #fff; border: none;
+  border-radius: var(--r); padding: 8px 16px; cursor: pointer;
+  white-space: nowrap; transition: opacity 0.15s;
+}
+.btn-new-pal:hover { opacity: 0.75; }
+.pal-list { display: flex; flex-direction: column; gap: 6px; }
+.pal-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r);
+  transition: border-color 0.15s;
+}
+.pal-row:hover { border-color: var(--border-dark); }
+.pal-swatches { display: flex; gap: 3px; flex-shrink: 0; }
+.pal-swatch { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.08); flex-shrink: 0; }
+.pal-name { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; flex: 1; text-transform: uppercase; }
+.pal-tags { font-size: 9px; color: var(--ink3); letter-spacing: 0.06em; }
+.pal-active { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; }
+.pal-active.on { color: #085041; }
+.pal-active.off { color: var(--ink3); }
+.pal-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.btn-sm {
+  font-family: var(--f); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  background: none; border: 1px solid var(--border);
+  border-radius: var(--r); padding: 5px 10px; cursor: pointer;
+  color: var(--ink3); transition: all 0.12s;
+}
+.btn-sm:hover { color: var(--ink); border-color: var(--border-dark); }
+.btn-sm.danger:hover { color: #c00; border-color: #c00; }
+.btn-sm.toggle-on { color: #085041; border-color: #d4f0e4; background: #d4f0e4; }
+.btn-sm.toggle-off { color: var(--ink3); }
+
+/* ── GALLERY ── */
+.gallery-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px;
+}
+.gal-thumb {
+  border: 1px solid var(--border); border-radius: var(--r); overflow: hidden;
+  position: relative; transition: border-color 0.15s;
+}
+.gal-thumb:hover { border-color: var(--border-dark); }
+.gal-thumb img { width: 100%; display: block; }
+.gal-thumb-info {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 8px; background: #fff;
+}
+.gal-seed { font-size: 9px; color: var(--ink3); font-family: var(--f); letter-spacing: 0.04em; }
+.btn-del-gal {
+  background: none; border: none; cursor: pointer;
+  font-size: 11px; color: var(--ink3); padding: 0;
+  transition: color 0.12s;
+}
+.btn-del-gal:hover { color: #c00; }
+.empty-msg { font-size: 11px; color: var(--ink3); letter-spacing: 0.06em; text-transform: uppercase; padding: 2rem 0; }
+
+/* ── MODAL ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 1rem; opacity: 0; pointer-events: none;
+  transition: opacity 0.18s;
+}
+.overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--bg); border: 1px solid var(--border-dark);
+  border-radius: 3px; padding: 1.8rem; width: 100%; max-width: 420px;
+  max-height: 90vh; overflow-y: auto;
+  transform: translateY(8px); opacity: 0;
+  transition: transform 0.2s, opacity 0.18s;
+}
+.overlay.open .modal { transform: translateY(0); opacity: 1; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4rem; }
+.modal-title { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.modal-close { background: none; border: none; cursor: pointer; color: var(--ink3); font-size: 18px; line-height: 1; padding: 2px 6px; }
+.modal-close:hover { color: var(--ink); }
+.mfield { margin-bottom: 1rem; }
+.mfield label { display: block; font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); margin-bottom: 5px; }
+.mfield input, .mfield textarea {
+  width: 100%; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 8px 10px; font-family: var(--f);
+  font-size: 12px; color: var(--ink); outline: none;
+  transition: border-color 0.15s;
+}
+.mfield input:focus, .mfield textarea:focus { border-color: var(--border-dark); background: #fff; }
+.color-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.chip {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 2px; padding: 3px 8px 3px 6px;
+  font-size: 10px; font-family: var(--f); color: var(--ink);
+}
+.chip-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; }
+.chip-rm { border: none; background: none; cursor: pointer; color: var(--ink3); font-size: 13px; padding: 0; margin-left: 2px; }
+.chip-rm:hover { color: #c00; }
+.add-row { display: flex; gap: 6px; align-items: center; }
+.add-row input[type="color"] { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: var(--r); padding: 2px; background: var(--surface); cursor: pointer; flex-shrink: 0; }
+.add-row input[type="text"] { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 10px; font-family: var(--f); font-size: 11px; color: var(--ink); outline: none; }
+.btn-add-c { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px; cursor: pointer; color: var(--ink); white-space: nowrap; }
+.preview-strip { height: 10px; border-radius: 2px; border: 1px solid var(--border); overflow: hidden; display: flex; margin-top: 8px; }
+.preview-strip span { flex: 1; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.btn-cancel { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: none; border: 1px solid var(--border); border-radius: var(--r); padding: 8px 16px; color: var(--ink3); cursor: pointer; }
+.btn-cancel:hover { border-color: var(--border-dark); color: var(--ink); }
+.btn-confirm { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: var(--ink); color: #fff; border: none; border-radius: var(--r); padding: 8px 20px; cursor: pointer; }
+.btn-confirm:hover { opacity: 0.75; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 2rem; left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  background: var(--ink); color: #fff;
+  font-family: var(--f); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 10px 20px; border-radius: 2px;
+  opacity: 0; pointer-events: none;
+  transition: all 0.2s; z-index: 300; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-logo"></div>
+  <div class="login-title">hoks admin</div>
+  <form class="login-form" onsubmit="doLogin(event)">
+    <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password">
+    <button type="submit" class="btn-login">Enter</button>
+    <div class="login-error" id="login-error">Incorrect password</div>
+  </form>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin-panel">
+  <header>
+    <div class="header-left">
+      <div class="header-dot"></div>
+      <span class="header-title">Admin Panel</span>
+    </div>
+    <div style="display:flex;gap:1rem;align-items:center;">
+      <a href="index.html" style="font-family:var(--f);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink3);text-decoration:none;">← Site</a>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <div class="panel-body">
+
+    <!-- ABOUT -->
+    <section>
+      <div class="section-title">About</div>
+      <div class="about-editor">
+        <div>
+          <label class="field-label">Bio text</label>
+          <textarea class="about-text" id="about-text" rows="4"></textarea>
+        </div>
+        <div class="footer-fields">
+          <div>
+            <label class="field-label">Contact email</label>
+            <input type="email" class="field-input" id="footer-email" placeholder="email@example.com">
+          </div>
+          <div>
+            <label class="field-label">Instagram URL</label>
+            <input type="url" class="field-input" id="footer-instagram" placeholder="https://instagram.com/...">
+          </div>
+        </div>
+        <button class="btn-save-section" onclick="saveAbout()">Save About</button>
+      </div>
+    </section>
+
+    <!-- PALETTES -->
+    <section>
+      <div class="section-title">Palettes</div>
+      <div class="pal-controls">
+        <input type="text" class="pal-search" id="pal-search" placeholder="Search…" oninput="renderPals()">
+        <button class="btn-new-pal" onclick="openPalModal()">+ New Palette</button>
+      </div>
+      <div class="pal-list" id="pal-list"></div>
+    </section>
+
+    <!-- GALLERY -->
+    <section>
+      <div class="section-title">Gallery — Pills</div>
+      <div class="gallery-grid" id="gal-grid"></div>
+    </section>
+
+  </div>
+</div>
+
+<!-- PALETTE MODAL -->
+<div class="overlay" id="pal-overlay" onclick="closeIfBg(event,'pal-overlay')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="pal-modal-title">New Palette</span>
+      <button class="modal-close" onclick="closePalModal()">×</button>
+    </div>
+    <div class="mfield">
+      <label>Name</label>
+      <input type="text" id="pal-name" placeholder="Palette name…">
+    </div>
+    <div class="mfield">
+      <label>Tags (comma separated)</label>
+      <input type="text" id="pal-tags" placeholder="warm, bold…">
+    </div>
+    <div class="mfield">
+      <label>Colors</label>
+      <div class="color-chips" id="color-chips"></div>
+      <div class="add-row">
+        <input type="color" id="c-picker" value="#226699">
+        <input type="text" id="c-hex" placeholder="#226699" maxlength="7">
+        <button class="btn-add-c" onclick="addColor()">Add</button>
+      </div>
+      <div class="preview-strip" id="c-preview" style="display:none"></div>
+    </div>
+    <div class="mfield">
+      <label>Notes</label>
+      <textarea id="pal-notes" rows="2" placeholder="Inspired by…" style="resize:vertical;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closePalModal()">Cancel</button>
+      <button class="btn-confirm" onclick="savePalette()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PAL_KEY  = 'colorpals_v3';
+const GAL_KEY  = 'hoks-pills-gallery';
+const SITE_KEY = 'hoks-site-content';
+const SESSION_KEY = 'hoks-admin';
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+// Password hash — change this to your own SHA-256 hash
+// Default password: "hoks2026" — generate your own at: https://emn178.github.io/online-tools/sha256.html
+const PW_HASH = '3dc68e7d54a9fb681c60b644ce5b7b7979d251352055df9dffbd10d84f764cb5'; // REPLACE THIS
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  const pw = document.getElementById('pw-input').value;
+  const hash = await sha256(pw);
+  if (hash === PW_HASH) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-panel').classList.add('show');
+    init();
+  } else {
+    document.getElementById('login-error').classList.add('show');
+    document.getElementById('pw-input').value = '';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+function init() {
+  loadAbout();
+  renderPals();
+  renderGallery();
+}
+
+// Check if already logged in
+if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-panel').classList.add('show');
+  init();
+}
+
+// ── ABOUT ─────────────────────────────────────────────────────────────────
+const SITE_DEFAULTS = {
+  aboutText: 'Joxemari Gallastegi is a generative artist based in Spain. His work is characterised by bold form, vibrant colour, and the beauty of controlled randomness — algorithmic systems that make each piece unique by design.',
+  footerEmail: 'joxemgallastegi@gmail.com',
+  footerInstagram: 'https://instagram.com'
+};
+
+function getSiteContent() {
+  try { return { ...SITE_DEFAULTS, ...JSON.parse(localStorage.getItem(SITE_KEY) || '{}') }; }
+  catch(e) { return { ...SITE_DEFAULTS }; }
+}
+
+function loadAbout() {
+  const c = getSiteContent();
+  document.getElementById('about-text').value = c.aboutText;
+  document.getElementById('footer-email').value = c.footerEmail;
+  document.getElementById('footer-instagram').value = c.footerInstagram;
+}
+
+function saveAbout() {
+  const c = getSiteContent();
+  c.aboutText = document.getElementById('about-text').value.trim();
+  c.footerEmail = document.getElementById('footer-email').value.trim();
+  c.footerInstagram = document.getElementById('footer-instagram').value.trim();
+  localStorage.setItem(SITE_KEY, JSON.stringify(c));
+  toast('About saved');
+}
+
+// ── PALETTES ──────────────────────────────────────────────────────────────
+let pals = [];
+let editId = null;
+let tmpColors = [];
+
+function loadPals() {
+  try { pals = JSON.parse(localStorage.getItem(PAL_KEY) || 'null') || []; }
+  catch(e) { pals = []; }
+}
+
+function savePals() {
+  localStorage.setItem(PAL_KEY, JSON.stringify(pals));
+}
+
+function renderPals() {
+  loadPals();
+  const q = document.getElementById('pal-search').value.toLowerCase().trim();
+  let list = pals.filter(p => !q || p.name.toLowerCase().includes(q) || (p.tags||[]).some(t=>t.toLowerCase().includes(q)));
+  const el = document.getElementById('pal-list');
+  if (!list.length) { el.innerHTML = `<div class="empty-msg">No palettes found</div>`; return; }
+  el.innerHTML = list.map(p => {
+    const active = p.active !== false;
+    return `<div class="pal-row">
+      <div class="pal-swatches">${p.colors.slice(0,8).map(c=>`<div class="pal-swatch" style="background:${c}"></div>`).join('')}</div>
+      <div class="pal-name">${esc(p.name)}</div>
+      <div class="pal-tags">${(p.tags||[]).join(', ')}</div>
+      <div class="pal-active ${active?'on':'off'}">${active?'On':'Off'}</div>
+      <div class="pal-actions">
+        <button class="btn-sm ${active?'toggle-on':'toggle-off'}" onclick="togglePal(${p.id})">${active?'Disable':'Enable'}</button>
+        <button class="btn-sm" onclick="editPal(${p.id})">Edit</button>
+        <button class="btn-sm danger" onclick="deletePal(${p.id})">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togglePal(id) {
+  loadPals();
+  const p = pals.find(x=>x.id===id);
+  if (p) { p.active = !(p.active !== false); savePals(); renderPals(); toast(`${p.name} ${p.active?'enabled':'disabled'}`); }
+}
+
+function deletePal(id) {
+  if (!confirm('Delete this palette?')) return;
+  loadPals();
+  pals = pals.filter(p=>p.id!==id);
+  savePals(); renderPals(); toast('Palette deleted');
+}
+
+function editPal(id) {
+  loadPals();
+  const p = pals.find(x=>x.id===id);
+  if (!p) return;
+  editId = id;
+  document.getElementById('pal-modal-title').textContent = 'Edit Palette';
+  document.getElementById('pal-name').value = p.name;
+  document.getElementById('pal-tags').value = (p.tags||[]).join(', ');
+  document.getElementById('pal-notes').value = p.notes||'';
+  tmpColors = [...p.colors];
+  refreshChips();
+  document.getElementById('pal-overlay').classList.add('open');
+}
+
+function openPalModal() {
+  editId = null;
+  document.getElementById('pal-modal-title').textContent = 'New Palette';
+  document.getElementById('pal-name').value = '';
+  document.getElementById('pal-tags').value = '';
+  document.getElementById('pal-notes').value = '';
+  tmpColors = [];
+  refreshChips();
+  document.getElementById('pal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('pal-name').focus(), 150);
+}
+
+function closePalModal() { document.getElementById('pal-overlay').classList.remove('open'); }
+function closeIfBg(e, id) { if(e.target===document.getElementById(id)) document.getElementById(id).classList.remove('open'); }
+
+function addColor() {
+  let h = document.getElementById('c-hex').value.trim();
+  if (!h) h = document.getElementById('c-picker').value;
+  if (!h.startsWith('#')) h = '#'+h;
+  if (!/^#[0-9a-fA-F]{6}$/.test(h)) { toast('Invalid hex'); return; }
+  if (tmpColors.length >= 10) { toast('Max 10 colors'); return; }
+  tmpColors.push(h.toLowerCase());
+  document.getElementById('c-hex').value = '';
+  refreshChips();
+}
+
+document.getElementById('c-picker').addEventListener('input', () => { document.getElementById('c-hex').value = document.getElementById('c-picker').value; });
+document.getElementById('c-hex').addEventListener('input', () => {
+  let v = document.getElementById('c-hex').value.trim();
+  if (!v.startsWith('#')) v='#'+v;
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) document.getElementById('c-picker').value = v;
+});
+document.getElementById('c-hex').addEventListener('keydown', e => { if(e.key==='Enter') addColor(); });
+
+function refreshChips() {
+  document.getElementById('color-chips').innerHTML = tmpColors.map((c,i)=>`
+    <div class="chip">
+      <span class="chip-dot" style="background:${c}"></span>
+      <span>${c}</span>
+      <button class="chip-rm" onclick="rmColor(${i})">×</button>
+    </div>`).join('');
+  const prev = document.getElementById('c-preview');
+  if (tmpColors.length) {
+    prev.style.display = 'flex';
+    prev.innerHTML = tmpColors.map(c=>`<span style="background:${c}"></span>`).join('');
+  } else { prev.style.display = 'none'; }
+}
+
+function rmColor(i) { tmpColors.splice(i,1); refreshChips(); }
+
+function savePalette() {
+  const name = document.getElementById('pal-name').value.trim();
+  if (!name) { toast('Add a name'); return; }
+  if (!tmpColors.length) { toast('Add at least one color'); return; }
+  const tags = document.getElementById('pal-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const notes = document.getElementById('pal-notes').value.trim();
+  loadPals();
+  if (editId !== null) {
+    const i = pals.findIndex(p=>p.id===editId);
+    if (i>=0) pals[i] = { ...pals[i], name, colors:[...tmpColors], tags, notes };
+    toast('Palette updated');
+  } else {
+    pals.unshift({ id: Date.now(), name, colors:[...tmpColors], tags, notes, active:true, created:Date.now() });
+    toast('Palette saved');
+  }
+  savePals(); closePalModal(); renderPals();
+}
+
+// ── GALLERY ───────────────────────────────────────────────────────────────
+function renderGallery() {
+  let gallery = [];
+  try { gallery = JSON.parse(localStorage.getItem(GAL_KEY)||'[]'); } catch(e){}
+  const grid = document.getElementById('gal-grid');
+  if (!gallery.length) { grid.innerHTML = `<div class="empty-msg">No saved editions</div>`; return; }
+  grid.innerHTML = gallery.map((item,i) => `
+    <div class="gal-thumb">
+      <img src="${item.dataUrl}" alt="pill ${item.seed}">
+      <div class="gal-thumb-info">
+        <span class="gal-seed">#${item.seed}</span>
+        <button class="btn-del-gal" onclick="deleteGallery(${i})" title="Delete">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function deleteGallery(i) {
+  let gallery = [];
+  try { gallery = JSON.parse(localStorage.getItem(GAL_KEY)||'[]'); } catch(e){}
+  gallery.splice(i,1);
+  localStorage.setItem(GAL_KEY, JSON.stringify(gallery));
+  renderGallery();
+  toast('Edition deleted');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>

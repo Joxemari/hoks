@@ -7,35 +7,40 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #fff; color: #111; }
-.about-wrap {
-  padding: 10rem 2rem 6rem;
-  max-width: 640px; margin: 0 auto;
-}
-.about-heading {
+.about-wrap { padding: 10rem 2rem 6rem; max-width: 640px; margin: 0 auto; }
+#about-text {
   font-family: 'Courier New', Courier, monospace;
-  font-size: clamp(0.9rem, 1.8vw, 1.15rem);
-  font-weight: 400; line-height: 1.8;
-  color: #111; margin-bottom: 3rem;
-  letter-spacing: 0.01em;
+  font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+  font-weight: 400; line-height: 1.8; color: #111;
+  margin-bottom: 3rem; letter-spacing: 0.01em;
+  display: block;
 }
 .about-contact {
   font-family: 'Courier New', Courier, monospace;
   font-size: 11px; color: #aaa;
   letter-spacing: 0.1em; text-transform: uppercase;
 }
-.about-contact a {
-  color: #111; text-decoration: none;
-  border-bottom: 1px solid #111;
-}
+.about-contact a { color: #111; text-decoration: none; border-bottom: 1px solid #111; }
 </style>
 </head>
 <body>
 <script src="nav.js"></script>
 <main>
   <div class="about-wrap">
-    <p class="about-heading">Joxemari Gallastegi is a generative artist based in Spain. His work is characterised by bold form, vibrant colour, and the beauty of controlled randomness — algorithmic systems that make each piece unique by design.</p>
-    <p class="about-contact">Contact: <a href="mailto:joxemgallastegi@gmail.com">joxemgallastegi@gmail.com</a></p>
+    <p id="about-text"></p>
+    <p class="about-contact" id="about-contact"></p>
   </div>
 </main>
+<script>
+// Fill contact from site content (nav.js already fills about-text)
+(function() {
+  const SITE_KEY = 'hoks-site-content';
+  const defaults = { footerEmail: 'joxemgallastegi@gmail.com' };
+  let c = defaults;
+  try { c = { ...defaults, ...JSON.parse(localStorage.getItem(SITE_KEY)||'{}') }; } catch(e) {}
+  const el = document.getElementById('about-contact');
+  if (el) el.innerHTML = `Contact: <a href="mailto:${c.footerEmail}">${c.footerEmail}</a>`;
+})();
+</script>
 </body>
 </html>
