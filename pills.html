@@ -301,28 +301,6 @@ async function ghPush(path, content) {
   });
 }
 
-const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
-const GH_TOKEN_KEY = 'hoks-gh-token';
-const REPO = 'Joxemari/hoks';
-
-async function ghPush(path, content) {
-  const token = localStorage.getItem(GH_TOKEN_KEY);
-  if (!token) return;
-  let sha;
-  try {
-    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (r.ok) sha = (await r.json()).sha;
-  } catch(e) {}
-  const body = { message: `update ${path}`, content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))) };
-  if (sha) body.sha = sha;
-  await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
-    method: 'PUT',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-}
 
 function loadPalettes() {
   fetch(RAW + 'palettes.json?t=' + Date.now())
