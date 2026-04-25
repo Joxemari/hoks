@@ -204,7 +204,7 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
     <span class="count" id="count"></span>
   </div>
   <div class="controls-right">
-    <button class="btn-new" onclick="openModal()">+ New Palette</button>
+    
   </div>
 </div>
 
@@ -290,20 +290,20 @@ const DEFAULTS = [
   MEMPHIS,
 ];
 
-let pals = (() => {
-  try {
-    const r = localStorage.getItem(KEY);
-    if (!r) return [...DEFAULTS];
-    const stored = JSON.parse(r);
-    // Inject Memphis if missing
-    const hasMemphis = stored.find(p => p.name === 'Memphis');
-    return hasMemphis ? stored : [...stored, MEMPHIS];
-  } catch(e) { return [...DEFAULTS]; }
-})();
-
+let pals = [];
 let editId = null, tmpColors = [];
 const $ = id => document.getElementById(id);
-function persist() { try { localStorage.setItem(KEY, JSON.stringify(pals)); } catch(e){} }
+const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
+
+async function loadPalettes() {
+  try {
+    const r = await fetch(RAW + 'palettes.json?t=' + Date.now());
+    pals = r.ok ? await r.json() : [...DEFAULTS];
+  } catch(e) { pals = [...DEFAULTS]; }
+  render();
+}
+
+function persist() {}
 
 function render() {
   const q = $('search').value.toLowerCase().trim();
@@ -321,27 +321,20 @@ function render() {
   }
   grid.innerHTML = list.map(p => {
     const isActive = p.active !== false;
+    if (!isActive) return '';
     return `
-    <div class="palette-card${isActive?'':' inactive'}">
+    <div class="palette-card">
       <div class="swatches">
         ${p.colors.map(c=>`<div class="swatch" style="background:${c}" data-hex="${c}"><span class="swatch-tip">${c}</span></div>`).join('')}
       </div>
       <div class="card-body">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;">
-          <div class="card-name">${esc(p.name)}</div>
-          <label class="toggle" title="${isActive?'Active':'Inactive'}">
-            <input type="checkbox" ${isActive?'checked':''} data-toggle="${p.id}">
-            <div class="toggle-track"></div><div class="toggle-thumb"></div>
-          </label>
-        </div>
+        <div class="card-name">${esc(p.name)}</div>
         ${p.tags?.length?`<div class="card-tags">${p.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
       </div>
       <div class="card-footer">
         <div class="hex-list">${p.colors.map(c=>`<span class="hex-chip" data-hex="${c}">${c}</span>`).join('')}</div>
         <div class="card-actions">
           <button class="btn-icon" title="Copy all" data-copyall="${p.id}">⎘</button>
-          <button class="btn-icon" title="Edit" data-edit="${p.id}">✎</button>
-          <button class="btn-icon" title="Delete" data-del="${p.id}">✕</button>
         </div>
       </div>
     </div>`}).join('');
@@ -422,12 +415,10 @@ document.addEventListener('click',e=>{
   if(chip){copyText(chip.dataset.hex);return;}
   const ca=e.target.closest('[data-copyall]');
   if(ca){const p=pals.find(x=>x.id==ca.dataset.copyall);if(p)copyText(p.colors.join(', '));return;}
-  const ed=e.target.closest('[data-edit]');
-  if(ed){editPal(Number(ed.dataset.edit));return;}
-  const dl=e.target.closest('[data-del]');
-  if(dl){deletePal(Number(dl.dataset.del));return;}
+  
+  
 });
-render();
+loadPalettes();
 </script>
 </body>
 </html>
