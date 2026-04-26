@@ -24,14 +24,15 @@ nav {
 .nav-work.active > .nav-work-label { color: #111; }
 .nav-work { position: relative; }
 .nav-work-dropdown {
-  position: absolute; top: calc(100% + 12px); right: -16px;
+  position: absolute; top: 100%; right: -16px;
   background: #fff; border-top: 2px solid #111;
   border-left: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; border-bottom: 1px solid #e8e8e8;
   padding: 8px 0; list-style: none; min-width: 140px;
   opacity: 0; visibility: hidden; pointer-events: none;
-  transform: translateY(-6px); transition: opacity 0.15s, visibility 0.15s, transform 0.15s;
+  transition: opacity 0.15s, visibility 0.15s;
 }
-.nav-work-dropdown.open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
+.nav-work:hover .nav-work-dropdown,
+.nav-work-dropdown.open { opacity: 1; visibility: visible; pointer-events: auto; }
 .nav-work-dropdown::before {
   content: ''; position: absolute; top: -7px; right: 22px;
   width: 6px; height: 6px; background: #111;
