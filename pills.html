@@ -131,7 +131,7 @@ const REPO = 'Joxemari/hoks';
 
 // ── PALETTE PROB (age-based scarcity) ─────────────────
 function ageWeight(createdMs) {
-  if (!createdMs || createdMs < 1000) return 1.0;
+  if (!createdMs || createdMs < 1000000000000) return 4.0; // treat legacy/no-date as newest
   const ageDays = (Date.now() - createdMs) / 86400000;
   if (ageDays < 30)  return 4.0;
   if (ageDays < 90)  return 2.0;
@@ -327,41 +327,25 @@ function draw(s) {
     pills.push({cx,cy,hl,angle,color,style,thickness});
   }
 
-  // Clear and draw background immediately
+  // Draw background — always reset composite first
   ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = OFF_WHITE; ctx.fillRect(0,0,W,H);
   let bgTrait = 'Off-white';
   if (rng.bool(0.6)) { ctx.fillStyle = rng.pickFrom(colors); ctx.fillRect(0,0,W,H); bgTrait = 'Colored'; }
 
-  // Show counter
-  const counter = document.getElementById('revealCounter');
-  counter.classList.add('visible');
-
-  // Draw pills progressively with delay
-  let i = 0;
+    // Draw all pills instantly
   const styleCount = {};
-  const stepDelay = Math.max(20, Math.min(120, 600 / numShapes));
-
-  function step() {
-    if (i >= pills.length) {
-      ctx.globalCompositeOperation = 'source-over';
-      counter.classList.remove('visible');
-      _generating = false;
-      updateTraits(arch, pal, styleCount, bgTrait, numShapes, s);
-      return;
-    }
-    const pill = pills[i];
+  for (const pill of pills) {
     styleCount[pill.style] = (styleCount[pill.style]||0) + 1;
     const x1 = pill.cx - Math.cos(pill.angle)*pill.hl;
     const y1 = pill.cy - Math.sin(pill.angle)*pill.hl;
     const x2 = pill.cx + Math.cos(pill.angle)*pill.hl;
     const y2 = pill.cy + Math.sin(pill.angle)*pill.hl;
     drawPill(ctx, x1, y1, x2, y2, pill.thickness, pill.color, pill.style, rng, colors);
-    counter.textContent = `${i+1} / ${numShapes}`;
-    i++;
-    setTimeout(step, stepDelay);
   }
-  step();
+  ctx.globalCompositeOperation = 'source-over';
+  _generating = false;
+  updateTraits(arch, pal, styleCount, bgTrait, numShapes, s);
 }
 
 function updateTraits(arch, pal, styleCount, bgTrait, numShapes, s) {
