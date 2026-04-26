@@ -280,7 +280,7 @@ function draw(seed) {
       </span>
     </div>`).join('');
   document.getElementById('overallRarity').innerHTML=`<span class="badge ${RC[overall]}">${RL[overall]}</span>`;
-  document.getElementById('seedDisplay').textContent='#'+seed;
+  animateSeed(seed);
   const ts=currentTimestamp,tsEl=document.getElementById('timestampDisplay');
   if(tsEl) tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
@@ -351,6 +351,38 @@ function exportCard(){
 // ── BATCH ─────────────────────────────────────────────
 function checkBatchButton(){try{const active=JSON.parse(localStorage.getItem('hoks-active-batch')||'null');const btn=document.getElementById('batchBtn');if(btn){if(active&&active.work==='dtk'){btn.style.display='';btn.textContent=`+ Save to Batch "${active.name}" (${active.items.length})`;}else btn.style.display='none';}}catch(e){}}
 function saveToBatch(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/jpeg',0.9);const key='hoks-active-batch';try{const active=JSON.parse(localStorage.getItem(key)||'null');if(!active||active.work!=='dtk'){toast('No active DTK batch — create one in Admin');return;}active.items.push({seed:currentSeed,dataUrl,savedAt:Date.now()});localStorage.setItem(key,JSON.stringify(active));checkBatchButton();toast(`Added to batch "${active.name}" (${active.items.length} total)`);}catch(e){toast('Error saving to batch');}}
+
+
+// ── SEED SCRAMBLE ANIMATION ───────────────────────────
+function animateSeed(targetSeed) {
+  const el = document.getElementById('seedDisplay');
+  if (!el) return;
+  const target = String(targetSeed);
+  const chars = '0123456789';
+  const duration = 600; // ms
+  const steps = 18;
+  const interval = duration / steps;
+  let step = 0;
+  const timer = setInterval(() => {
+    step++;
+    const progress = step / steps;
+    // Resolve digits from left to right
+    const resolved = Math.floor(progress * target.length);
+    let display = '#';
+    for (let i = 0; i < target.length; i++) {
+      if (i < resolved) {
+        display += target[i];
+      } else {
+        display += chars[Math.floor(Math.random() * chars.length)];
+      }
+    }
+    el.textContent = display;
+    if (step >= steps) {
+      clearInterval(timer);
+      el.textContent = '#' + target;
+    }
+  }, interval);
+}
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
 

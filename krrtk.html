@@ -298,7 +298,7 @@ function updateTraits(pal, drawnCount, totalCount, depthLevel, seed) {
       </span>
     </div>`).join('');
   document.getElementById('overallRarity').innerHTML=`<span class="badge ${RC[overall]}">${RL[overall]}</span>`;
-  document.getElementById('seedDisplay').textContent='#'+seed;
+  animateSeed(seed);
   const ts=currentTimestamp,tsEl=document.getElementById('timestampDisplay');
   if(tsEl)tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
@@ -362,6 +362,38 @@ function exportCard(){
   ctx.fillStyle=RC2[rkO]||RC2.common;roundRect(ctx,obx,overallRowY-obh/2,obw,obh,Math.round(obh*0.25));ctx.fill();
   ctx.fillStyle=RT2[rkO]||RT2.common;ctx.fillText(RL2[rkO]||'COMMON',obx+Math.round(rowH*0.15),overallRowY);
   card.toBlob(async blob=>{try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast('Card copied to clipboard');}catch(e){const a=document.createElement('a');a.download='krrtk_'+currentSeed+'.png';a.href=card.toDataURL('image/png');a.click();toast('Downloaded');}});
+}
+
+
+// ── SEED SCRAMBLE ANIMATION ───────────────────────────
+function animateSeed(targetSeed) {
+  const el = document.getElementById('seedDisplay');
+  if (!el) return;
+  const target = String(targetSeed);
+  const chars = '0123456789';
+  const duration = 600; // ms
+  const steps = 18;
+  const interval = duration / steps;
+  let step = 0;
+  const timer = setInterval(() => {
+    step++;
+    const progress = step / steps;
+    // Resolve digits from left to right
+    const resolved = Math.floor(progress * target.length);
+    let display = '#';
+    for (let i = 0; i < target.length; i++) {
+      if (i < resolved) {
+        display += target[i];
+      } else {
+        display += chars[Math.floor(Math.random() * chars.length)];
+      }
+    }
+    el.textContent = display;
+    if (step >= steps) {
+      clearInterval(timer);
+      el.textContent = '#' + target;
+    }
+  }, interval);
 }
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}

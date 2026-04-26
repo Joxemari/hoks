@@ -82,7 +82,6 @@ nav.innerHTML = `
         <li><a href="pills.html"${path==='pills.html'?' class="active"':''}>PLLS</a></li>
         <li><a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}>KRRTK</a></li>
         <li><a href="dtk.html"${path==='dtk.html'?' class="active"':''}>DTK</a></li>
-        <li><a href="dtk.html"${path==='dtk.html'?' class="active"':''}>DTK</a></li>
       </ul>
     </li>
     <li><a href="about.html"${isAbout?' class="active"':''}>About</a></li>
