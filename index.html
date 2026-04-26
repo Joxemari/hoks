@@ -49,17 +49,23 @@ body { background: #fff; color: #111; }
 <script>
 const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
 
-function addWorkItem(section, type, canvas, isSquare, label, idx) {
+function addWorkItem(section, type, el, isSquare, label, idx) {
   const div = document.createElement('div');
   div.className = 'work-item';
   div.onclick = () => window.location.href = `${type}.html?i=${idx}`;
   const inner = document.createElement('div');
   inner.className = 'work-item-inner';
-  if (isSquare) canvas.classList.add('square');
+  // If it's a canvas, add class; if it's an img, apply square sizing via inline style
+  if (el.tagName === 'CANVAS') {
+    if (isSquare) el.classList.add('square');
+  } else {
+    // img element - already has width:50vw, set height for square
+    if (isSquare) { el.style.width = '50vw'; el.style.height = '50vw'; el.style.objectFit = 'cover'; }
+  }
   const cap = document.createElement('div');
   cap.className = 'work-item-caption';
   cap.textContent = label;
-  inner.appendChild(canvas);
+  inner.appendChild(el);
   inner.appendChild(cap);
   div.appendChild(inner);
   section.appendChild(div);
@@ -102,12 +108,13 @@ function loadCanvases() {
       // Use native canvas resolution — CSS handles display size
       const W = isSquare ? 600 : 1414;
       const H = isSquare ? 600 : 1000;
-      const canvas = document.createElement('canvas');
-      canvas.width = W; canvas.height = H;
-      const ctx = canvas.getContext('2d');
       const img = new Image();
-      img.onload = () => ctx.drawImage(img, 0, 0, W, H);
       img.src = item.dataUrl;
+      img.style.display = 'block';
+      img.style.width = '50vw';
+      img.style.height = 'auto';
+      img.style.outline = '1px solid rgba(0,0,0,0.07)';
+      // Use img directly instead of canvas to avoid upscaling artifacts
       const d = item.savedAt ? new Date(item.savedAt) : new Date();
       const dateStr = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
       const label = (type==='krrtk'?'KRRTK':type==='dtk'?'DTK':type==='bzrs'?'BZRS':type==='krrtkg'?'KRRTKG':type==='dtkg'?'DTKG':'PLLS')+' · #'+item.seed+' · '+dateStr;
