@@ -214,6 +214,12 @@ function loadPalettes() {
 }
 
 // ── DRAW — faithful port of DTK/Borobilak ─────────────
+function hexToRgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+function softLight(base,blend){if(blend<=0.5)return base-(1-2*blend)*base*(1-base);const d=base<=0.25?((16*base-12)*base+4)*base:Math.sqrt(base);return base+(2*blend-1)*(d-base);}
+function drawMeshGradient(ctx,W,H,colors,rng){const n=colors.length;const c00=hexToRgb(colors[rng.int(0,n-1)]);const c10=hexToRgb(colors[rng.int(0,n-1)]);const c01=hexToRgb(colors[rng.int(0,n-1)]);const c11=hexToRgb(colors[rng.int(0,n-1)]);const img=ctx.createImageData(W,H);const px=img.data;for(let y=0;y<H;y++){const ty=y/(H-1);for(let x=0;x<W;x++){const tx=x/(W-1);const r=(1-tx)*(1-ty)*c00[0]+tx*(1-ty)*c10[0]+(1-tx)*ty*c01[0]+tx*ty*c11[0];const g=(1-tx)*(1-ty)*c00[1]+tx*(1-ty)*c10[1]+(1-tx)*ty*c01[1]+tx*ty*c11[1];const b=(1-tx)*(1-ty)*c00[2]+tx*(1-ty)*c10[2]+(1-tx)*ty*c01[2]+tx*ty*c11[2];const idx=(y*W+x)*4;px[idx]=r;px[idx+1]=g;px[idx+2]=b;px[idx+3]=255;}}ctx.putImageData(img,0,0);}
+function bakeGrain(W,H,cols){let aR=0,aG=0,aB=0;for(const h of cols){const[r,g,b]=hexToRgb(h);aR+=r;aG+=g;aB+=b;}aR/=cols.length;aG/=cols.length;aB/=cols.length;const l=0.299*aR+0.587*aG+0.114*aB+1;const tR=aR/l,tG=aG/l,tB=aB/l;const n=W*H;const gR=new Float32Array(n),gG=new Float32Array(n),gB=new Float32Array(n),gA=new Float32Array(n);for(let i=0;i<n;i++){let v=0;for(let k=0;k<3;k++)v+=Math.random();const m=(v/3-0.5)*1.0;gR[i]=0.5+m*(0.6+tR*0.4);gG[i]=0.5+m*(0.6+tG*0.4);gB[i]=0.5+m*(0.6+tB*0.4);gA[i]=0.4+Math.random()*0.4;}return{gR,gG,gB,gA};}
+function applyGrain(ctx,W,H,grain){const img=ctx.getImageData(0,0,W,H);const px=img.data;const{gR,gG,gB,gA}=grain;for(let i=0;i<W*H;i++){const pi=i*4,a=gA[i];for(let c=0;c<3;c++){const base=px[pi+c]/255,gr=[gR[i],gG[i],gB[i]][c];const bl=softLight(base,gr);px[pi+c]=Math.min(255,Math.max(0,((bl*a+base*(1-a))*255)|0));}}ctx.putImageData(img,0,0);}
+
 function draw(seed) {
   if (!palettes.length) return;
   const canvas = document.getElementById('c');
