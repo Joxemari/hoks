@@ -164,7 +164,7 @@
   {
     "id": 11,
     "name": "Her",
-    "active": true,
+    "active": false,
     "colors": [
       "#cd1440",
       "#fafafa"
@@ -178,7 +178,7 @@
   {
     "id": 12,
     "name": "Fans",
-    "active": true,
+    "active": false,
     "colors": [
       "#000000",
       "#83a6bc",
@@ -194,7 +194,7 @@
   {
     "id": 13,
     "name": "Light",
-    "active": true,
+    "active": false,
     "colors": [
       "#00b2b4",
       "#fdd35b",
@@ -211,7 +211,7 @@
   {
     "id": 14,
     "name": "Escape",
-    "active": true,
+    "active": false,
     "colors": [
       "#f3e17e",
       "#dd483c",
@@ -228,7 +228,7 @@
   {
     "id": 15,
     "name": "Play",
-    "active": true,
+    "active": false,
     "colors": [
       "#e20404",
       "#fcd202",
@@ -244,7 +244,7 @@
   {
     "id": 16,
     "name": "Repetition",
-    "active": true,
+    "active": false,
     "colors": [
       "#2c2060",
       "#4bd3e5",
@@ -261,7 +261,7 @@
   {
     "id": 17,
     "name": "North",
-    "active": true,
+    "active": false,
     "colors": [
       "#dc060e",
       "#ffd400",
@@ -278,7 +278,7 @@
   {
     "id": 18,
     "name": "Commit",
-    "active": true,
+    "active": false,
     "colors": [
       "#563d7c",
       "#0096d8",
@@ -294,7 +294,7 @@
   {
     "id": 19,
     "name": "Wheel",
-    "active": true,
+    "active": false,
     "colors": [
       "#ffe140",
       "#ffa922",
@@ -311,7 +311,7 @@
   {
     "id": 20,
     "name": "Edit",
-    "active": true,
+    "active": false,
     "colors": [
       "#1c1c1c",
       "#f47a9d",
@@ -327,7 +327,7 @@
   {
     "id": 21,
     "name": "Optical",
-    "active": true,
+    "active": false,
     "colors": [
       "#f2eb8a",
       "#fed000",
@@ -353,7 +353,7 @@
   {
     "id": 22,
     "name": "Homage",
-    "active": true,
+    "active": false,
     "colors": [
       "#fef9c6",
       "#ffcc4d",
@@ -373,7 +373,7 @@
   {
     "id": 23,
     "name": "Base",
-    "active": true,
+    "active": false,
     "colors": [
       "#f0f0f0",
       "#8c8c8c",
@@ -393,7 +393,7 @@
   {
     "id": 24,
     "name": "Ten",
-    "active": true,
+    "active": false,
     "colors": [
       "#fffbe6",
       "#050505",
@@ -417,7 +417,7 @@
   {
     "id": 25,
     "name": "Iris",
-    "active": true,
+    "active": false,
     "colors": [
       "#ebedec",
       "#71859d",
@@ -433,7 +433,7 @@
   {
     "id": 26,
     "name": "Right",
-    "active": true,
+    "active": false,
     "colors": [
       "#4464a1",
       "#62b6de",
@@ -452,7 +452,7 @@
   {
     "id": 27,
     "name": "Slussen",
-    "active": true,
+    "active": false,
     "colors": [
       "#fafafa",
       "#f398c3",
@@ -505,7 +505,7 @@
   {
     "id": 30,
     "name": "Podcast",
-    "active": true,
+    "active": false,
     "colors": [
       "#584594",
       "#e488b7",
@@ -524,7 +524,7 @@
   {
     "id": 31,
     "name": "Itten I — Yellow & Violet",
-    "active": true,
+    "active": false,
     "colors": [
       "#e8b84b",
       "#9b7fb6",
@@ -542,7 +542,7 @@
   {
     "id": 32,
     "name": "Itten II — Orange & Blue",
-    "active": true,
+    "active": false,
     "colors": [
       "#e07b39",
       "#4a7fb5",
@@ -578,7 +578,7 @@
   {
     "id": 34,
     "name": "Itten IV — Red & Cyan",
-    "active": true,
+    "active": false,
     "colors": [
       "#c0392b",
       "#2e86ab",
@@ -596,7 +596,7 @@
   {
     "id": 35,
     "name": "Itten V — Purple & Yellow-Green",
-    "active": true,
+    "active": false,
     "colors": [
       "#7b4fa6",
       "#8ab540",
@@ -614,7 +614,7 @@
   {
     "id": 99,
     "name": "Memphis",
-    "active": true,
+    "active": false,
     "colors": [
       "#ff6b6b",
       "#feca57",
