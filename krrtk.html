@@ -371,11 +371,12 @@ function animateSeed(targetSeed) {
   if (!el) return;
   const target = String(targetSeed);
   const chars = '0123456789';
-  const steps = 20;
-  const duration = 700;
+  const steps = 22;
+  const duration = 800;
   const interval = duration / steps;
   let step = 0;
-  const timer = setInterval(() => {
+  if (el._scrambleTimer) clearInterval(el._scrambleTimer);
+  el._scrambleTimer = setInterval(() => {
     step++;
     const resolved = Math.floor((step / steps) * target.length);
     let display = '#';
@@ -383,7 +384,10 @@ function animateSeed(targetSeed) {
       display += i < resolved ? target[i] : chars[Math.floor(Math.random() * 10)];
     }
     el.textContent = display;
-    if (step >= steps) { clearInterval(timer); el.textContent = '#' + target; }
+    if (step >= steps) {
+      clearInterval(el._scrambleTimer);
+      el.textContent = '#' + target;
+    }
   }, interval);
 }
 
