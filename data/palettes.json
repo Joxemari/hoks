@@ -614,7 +614,7 @@
   {
     "id": 99,
     "name": "Memphis",
-    "active": true,
+    "active": false,
     "colors": [
       "#ff6b6b",
       "#feca57",
