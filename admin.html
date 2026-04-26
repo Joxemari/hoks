@@ -419,7 +419,7 @@ async function loadAll(){
     ghRead('dtkg.json').then(d=>d||[]),
     ghRead('site.json').then(d=>d||{}),
   ]);
-  loadWorks();renderPalettes();renderGallery();renderBatches();loadSiteForm();
+  renderPalettes();renderGallery();renderBatches();loadSiteForm();if(typeof loadWorks==="function")loadWorks();
 }
 
 // ── PALETTE PROB ──────────────────────────────────────
