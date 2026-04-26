@@ -278,7 +278,7 @@
   {
     "id": 18,
     "name": "Commit",
-    "active": true,
+    "active": false,
     "colors": [
       "#563d7c",
       "#0096d8",
