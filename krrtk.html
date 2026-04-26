@@ -245,7 +245,11 @@ function draw(seed) {
   // Assign draw/skip probabilities
   const toDraw = squares.map(() => rng.next() > threshold);
   const drawCount = toDraw.filter(Boolean).length;
-  const density = drawCount > squares.length*0.5 ? 'Dense' : drawCount > squares.length*0.25 ? 'Scattered' : 'Open';
+  // Compute depth: how many subdivision levels occurred
+  const minSize = Math.min(...squares.map(sq => sq.size));
+  const depthLevel = Math.round(Math.log2(a / Math.max(minSize, 1)));
+  // Background color was set first
+  const bgColorHex = colors[rng2 ? rng2.int(0,colors.length-1) : 0] || colors[0];
 
   // Draw all squares instantly
   for (let j = 0; j < squares.length; j++) {
@@ -255,17 +259,21 @@ function draw(seed) {
     }
   }
   _generating = false;
-  updateTraits(pal, density, squares.length, seed);
+  updateTraits(pal, drawCount, squares.length, depthLevel, bgColorHex, seed);
 }
 
-function updateTraits(pal, density, squareCount, seed) {
+function updateTraits(pal, drawnCount, totalCount, depthLevel, bgColor, seed) {
   const palRarity = palRarityFromProb(pal.prob);
-  const densityRarity = DENSITY_RARITY[density]||'common';
-  const overall = overallRarity(pal.prob, densityRarity);
+  const coveragePct = Math.round((drawnCount / Math.max(1, totalCount)) * 100);
+  const coverageLabel = coveragePct > 65 ? 'Dense' : coveragePct > 35 ? 'Balanced' : 'Sparse';
+  const coverageRarity = coveragePct > 65 ? 'uncommon' : coveragePct < 20 ? 'rare' : 'common';
+  const depthRarity = depthLevel >= 4 ? 'rare' : depthLevel === 3 ? 'uncommon' : 'common';
+  const overall = overallRarity(pal.prob, coverageRarity);
   const traits = [
-    {key:'Palette', val:pal.name, colors:pal.colors, rarity:palRarity},
-    {key:'Density', val:density, rarity:densityRarity},
-    {key:'Squares', val:squareCount, rarity:'common'},
+    {key:'Palette',    val:pal.name, colors:pal.colors, rarity:palRarity},
+    {key:'Depth',      val:depthLevel + ' levels', rarity:depthRarity},
+    {key:'Coverage',   val:coverageLabel + ' ' + coveragePct + '%', rarity:coverageRarity},
+    {key:'Background', val:bgColor, rarity:'common'},
   ];
   lastTraits=traits; lastOverall=overall;
   document.getElementById('traitList').innerHTML=traits.map(t=>`
