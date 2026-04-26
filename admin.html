@@ -200,6 +200,13 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
         </div>
         <div class="gallery-grid" id="gallery-dtk-grid"></div>
       </div>
+      <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
+        <div class="section-header">
+          <span class="section-title">BZRS Gallery (<span id="gal-bzrs-count">0</span>)</span>
+          <button class="btn btn-danger" onclick="clearBzrsGallery()">Clear All</button>
+        </div>
+        <div class="gallery-grid" id="gallery-bzrs-grid"></div>
+      </div>
     </div>
 
     <!-- BATCHES -->
@@ -213,6 +220,7 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
               <option value="pills">PLLS</option>
               <option value="krrtk">KRRTK</option>
               <option value="dtk">DTK</option>
+              <option value="bzrs">BZRS</option>
             </select>
           </div>
           <div class="batch-field">
@@ -347,13 +355,14 @@ function switchTab(name){
 }
 
 // ── LOAD ──────────────────────────────────────────────
-let pals=[],gallery=[],galleryKrrtk=[],galleryDtk=[],site={};
+let pals=[],gallery=[],galleryKrrtk=[],galleryDtk=[],galleryBzrs=[],site={};
 async function loadAll(){
-  [pals,gallery,galleryKrrtk,galleryDtk,site]=await Promise.all([
+  [pals,gallery,galleryKrrtk,galleryDtk,galleryBzrs,site]=await Promise.all([
     ghRead('palettes.json').then(d=>d||[]),
     ghRead('plls.json').then(d=>d||[]),
     ghRead('krrtk.json').then(d=>d||[]),
     ghRead('dtk.json').then(d=>d||[]),
+    ghRead('bzrs.json').then(d=>d||[]),
     ghRead('site.json').then(d=>d||{}),
   ]);
   renderPalettes();renderGallery();renderBatches();loadSiteForm();
@@ -432,6 +441,8 @@ async function clearAllGallery(){if(!confirm('Clear all Pills gallery?'))return;
 async function clearKrrtkGallery(){if(!confirm('Clear all KRRTK gallery?'))return;galleryKrrtk=[];await ghFetch('data/krrtk.json',[],'clear krrtk gallery');renderGallery();toast('Cleared');}
 async function deleteDtkItem(i){if(!confirm('Delete?'))return;galleryDtk.splice(i,1);await ghFetch('data/dtk.json',galleryDtk,'delete dtk item');renderGallery();toast('Deleted');}
 async function clearDtkGallery(){if(!confirm('Clear all DTK gallery?'))return;galleryDtk=[];await ghFetch('data/dtk.json',[],'clear dtk gallery');renderGallery();toast('Cleared');}
+async function deleteBzrsItem(i){if(!confirm('Delete?'))return;galleryBzrs.splice(i,1);await ghFetch('data/bzrs.json',galleryBzrs,'delete bzrs item');renderGallery();toast('Deleted');}
+async function clearBzrsGallery(){if(!confirm('Clear all BZRS gallery?'))return;galleryBzrs=[];await ghFetch('data/bzrs.json',[],'clear bzrs gallery');renderGallery();toast('Cleared');}
 
 // ── BATCHES ───────────────────────────────────────────
 function getBatches(){try{return JSON.parse(localStorage.getItem(BATCH_KEY)||'[]');}catch(e){return[];}}

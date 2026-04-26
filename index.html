@@ -103,11 +103,13 @@ function loadCanvases() {
     fetch(RAW+'plls.json?t='+Date.now()).then(r=>r.ok?r.json():[]).catch(()=>[]),
     fetch(RAW+'krrtk.json?t='+Date.now()).then(r=>r.ok?r.json():[]).catch(()=>[]),
     fetch(RAW+'dtk.json?t='+Date.now()).then(r=>r.ok?r.json():[]).catch(()=>[]),
-  ]).then(([pills, krrtk, dtk]) => {
+    fetch(RAW+'bzrs.json?t='+Date.now()).then(r=>r.ok?r.json():[]).catch(()=>[]),
+  ]).then(([pills, krrtk, dtk, bzrs]) => {
     const works = [];
     pills.slice(0,2).forEach((item,i) => works.push({type:'pills',item,idx:i}));
     krrtk.slice(0,2).forEach((item,i) => works.push({type:'krrtk',item,idx:i}));
     dtk.slice(0,2).forEach((item,i) => works.push({type:'dtk',item,idx:i}));
+    bzrs.slice(0,2).forEach((item,i) => works.push({type:'bzrs',item,idx:i}));
     if (works.length < 4) {
       pills.slice(2,4).forEach((item,i) => works.push({type:'pills',item,idx:i+2}));
     }
@@ -124,7 +126,7 @@ function loadCanvases() {
     }
 
     works.forEach(({type,item,idx}) => {
-      const isSquare = type === 'krrtk' || type === 'dtk';
+      const isSquare = type === 'krrtk' || type === 'dtk' || type === 'bzrs';
       // Use native canvas resolution — CSS handles display size
       const W = isSquare ? 600 : 1414;
       const H = isSquare ? 600 : 1000;
@@ -136,7 +138,7 @@ function loadCanvases() {
       img.src = item.dataUrl;
       const d = item.savedAt ? new Date(item.savedAt) : new Date();
       const dateStr = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-      const label = (type==='krrtk'?'KRRTK':type==='dtk'?'DTK':'PLLS')+' · #'+item.seed+' · '+dateStr;
+      const label = (type==='krrtk'?'KRRTK':type==='dtk'?'DTK':type==='bzrs'?'BZRS':'PLLS')+' · #'+item.seed+' · '+dateStr;
       addWorkItem(section, type, canvas, isSquare, label, idx);
     });
   });
