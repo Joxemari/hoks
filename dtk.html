@@ -361,31 +361,38 @@ function checkBatchButton(){try{const active=JSON.parse(localStorage.getItem('ho
 function saveToBatch(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/jpeg',0.9);const key='hoks-active-batch';try{const active=JSON.parse(localStorage.getItem(key)||'null');if(!active||active.work!=='dtk'){toast('No active DTK batch — create one in Admin');return;}active.items.push({seed:currentSeed,dataUrl,savedAt:Date.now()});localStorage.setItem(key,JSON.stringify(active));checkBatchButton();toast(`Added to batch "${active.name}" (${active.items.length} total)`);}catch(e){toast('Error saving to batch');}}
 
 
-// ── SEED SCRAMBLE ─────────────────────────────────────
-function animateSeed(targetSeed) {
+
+
+// ── SEED SCRAMBLE + DELAYED DRAW ──────────────────────
+function scrambleAndDraw(seed, drawFn) {
   const el = document.getElementById('seedDisplay');
-  if (!el) return;
-  const target = String(targetSeed);
+  const target = String(seed);
   const chars = '0123456789';
   const steps = 22;
-  const duration = 800;
-  const interval = duration / steps;
+  const duration = 750;
   let step = 0;
-  if (el._scrambleTimer) clearInterval(el._scrambleTimer);
-  el._scrambleTimer = setInterval(() => {
-    step++;
-    const resolved = Math.floor((step / steps) * target.length);
-    let display = '#';
-    for (let i = 0; i < target.length; i++) {
-      display += i < resolved ? target[i] : chars[Math.floor(Math.random() * 10)];
-    }
-    el.textContent = display;
-    if (step >= steps) {
-      clearInterval(el._scrambleTimer);
-      el.textContent = '#' + target;
-    }
-  }, interval);
+  if (el && el._scrambleTimer) clearInterval(el._scrambleTimer);
+  if (el) {
+    el._scrambleTimer = setInterval(() => {
+      step++;
+      const resolved = Math.floor((step / steps) * target.length);
+      let display = '#';
+      for (let i = 0; i < target.length; i++) {
+        display += i < resolved ? target[i] : chars[Math.floor(Math.random() * 10)];
+      }
+      el.textContent = display;
+      if (step >= steps) {
+        clearInterval(el._scrambleTimer);
+        el.textContent = '#' + target;
+        drawFn();
+      }
+    }, duration / steps);
+  } else {
+    drawFn();
+  }
 }
+
+function animateSeed(seed) { scrambleAndDraw(seed, () => {}); }
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
 
