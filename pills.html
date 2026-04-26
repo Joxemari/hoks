@@ -543,38 +543,7 @@ function exportCard() {
 
 
 
-// ── SEED SCRAMBLE + DELAYED DRAW ──────────────────────
-function scrambleAndDraw(seed, drawFn) {
-  const el = document.getElementById('seedDisplay');
-  const target = String(seed);
-  const chars = '0123456789';
-  const steps = 22;
-  const duration = 750;
-  let step = 0;
-  if (el && el._scrambleTimer) clearInterval(el._scrambleTimer);
-  if (el) {
-    el._scrambleTimer = setInterval(() => {
-      step++;
-      const resolved = Math.floor((step / steps) * target.length);
-      let display = '#';
-      for (let i = 0; i < target.length; i++) {
-        display += i < resolved ? target[i] : chars[Math.floor(Math.random() * 10)];
-      }
-      el.textContent = display;
-      if (step >= steps) {
-        clearInterval(el._scrambleTimer);
-        el.textContent = '#' + target;
-        drawFn();
-      }
-    }, duration / steps);
-  } else {
-    drawFn();
-  }
-}
 
-function animateSeed(seed) {
-  scrambleAndDraw(seed, () => {});
-}
 
 
 // ── PALETTE LOCK (admin only) ──────────────────────────
@@ -628,6 +597,49 @@ function getActivePalette(rng) {
     return palettes[_lockedPalIdx];
   }
   return rng ? rng.weighted(palettes) : palettes[Math.floor(Math.random()*palettes.length)];
+}
+
+
+// ── SCRAMBLE + BLUR REVEAL ─────────────────────────────
+function scrambleAndDraw(seed, drawFn) {
+  const el = document.getElementById('seedDisplay');
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const target = String(seed);
+  const chars = '0123456789';
+  const steps = 22;
+  const duration = 750;
+  const stepMs = duration / steps;
+  let step = 0;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.style.filter = 'blur(18px)';
+  canvas.style.opacity = '0.4';
+  canvas.style.transition = 'filter 0.3s ease, opacity 0.3s ease';
+  if (el && el._scrambleTimer) clearInterval(el._scrambleTimer);
+  if (el) {
+    el._scrambleTimer = setInterval(() => {
+      step++;
+      const resolved = Math.floor((step / steps) * target.length);
+      let display = '#';
+      for (let i = 0; i < target.length; i++) {
+        display += i < resolved ? target[i] : chars[Math.floor(Math.random() * 10)];
+      }
+      el.textContent = display;
+      if (step >= steps) {
+        clearInterval(el._scrambleTimer);
+        el.textContent = '#' + target;
+        drawFn();
+        requestAnimationFrame(() => {
+          canvas.style.filter = 'blur(0px)';
+          canvas.style.opacity = '1';
+        });
+      }
+    }, stepMs);
+  } else { drawFn(); }
+}
+function animateSeed(seed) {
+  const el = document.getElementById('seedDisplay');
+  if (el) el.textContent = '#' + seed;
 }
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
