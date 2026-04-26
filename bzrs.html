@@ -253,25 +253,6 @@ function renderGallery(){const section=document.getElementById('gallerySection')
 
 function downloadHD(){const src=document.getElementById('c');const hd=document.createElement('canvas');hd.width=src.width*12;hd.height=src.height*12;const ctx=hd.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.scale(12,12);ctx.drawImage(src,0,0);const a=document.createElement('a');a.download=`bzrs_${currentSeed}.png`;a.href=hd.toDataURL('image/png');a.click();toast('PNG downloaded — print-ready');}
 
-// ── SEED SCRAMBLE ─────────────────────────────────────
-function animateSeed(targetSeed){
-  const el=document.getElementById('seedDisplay');
-  if(!el)return;
-  const target=String(targetSeed);
-  const chars='0123456789';
-  const steps=20,duration=700;
-  let step=0;
-  const timer=setInterval(()=>{
-    step++;
-    const resolved=Math.floor((step/steps)*target.length);
-    let display='#';
-    for(let i=0;i<target.length;i++){
-      display+=i<resolved?target[i]:chars[Math.floor(Math.random()*10)];
-    }
-    el.textContent=display;
-    if(step>=steps){clearInterval(timer);el.textContent='#'+target;}
-  },duration/steps);
-}
 
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 
@@ -326,6 +307,38 @@ function exportCard(){
 
 function checkBatchButton(){try{const active=JSON.parse(localStorage.getItem('hoks-active-batch')||'null');const btn=document.getElementById('batchBtn');if(btn){if(active&&active.work==='bzrs'){btn.style.display='';btn.textContent=`+ Save to Batch "${active.name}" (${active.items.length})`;}else btn.style.display='none';}}catch(e){}}
 function saveToBatch(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/jpeg',0.9);const key='hoks-active-batch';try{const active=JSON.parse(localStorage.getItem(key)||'null');if(!active||active.work!=='bzrs'){toast('No active BZRS batch — create one in Admin');return;}active.items.push({seed:currentSeed,dataUrl,savedAt:Date.now()});localStorage.setItem(key,JSON.stringify(active));checkBatchButton();toast(`Added to batch "${active.name}" (${active.items.length} total)`);}catch(e){toast('Error');}}
+
+
+// ── SEED SCRAMBLE + DELAYED DRAW ──────────────────────
+function scrambleAndDraw(seed, drawFn) {
+  const el = document.getElementById('seedDisplay');
+  const target = String(seed);
+  const chars = '0123456789';
+  const steps = 22;
+  const duration = 750;
+  let step = 0;
+  if (el && el._scrambleTimer) clearInterval(el._scrambleTimer);
+  if (el) {
+    el._scrambleTimer = setInterval(() => {
+      step++;
+      const resolved = Math.floor((step / steps) * target.length);
+      let display = '#';
+      for (let i = 0; i < target.length; i++) {
+        display += i < resolved ? target[i] : chars[Math.floor(Math.random() * 10)];
+      }
+      el.textContent = display;
+      if (step >= steps) {
+        clearInterval(el._scrambleTimer);
+        el.textContent = '#' + target;
+        drawFn();
+      }
+    }, duration / steps);
+  } else {
+    drawFn();
+  }
+}
+
+function animateSeed(seed) { scrambleAndDraw(seed, () => {}); }
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
 
