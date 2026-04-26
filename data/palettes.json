@@ -145,7 +145,7 @@
   {
     "id": 10,
     "name": "Sheets",
-    "active": true,
+    "active": false,
     "colors": [
       "#025760",
       "#7fd0d3",
