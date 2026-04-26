@@ -226,9 +226,11 @@ function draw(seed) {
   ctx.fillStyle = colors[rng.int(0, colors.length-1)];
   ctx.fillRect(0, 0, W, H);
 
-  // Build all squares first (faithful to original accumulation behavior)
+  // Build all squares — index-based loop so pushed squares get iterated (faithful to p5 behavior)
   let squares = [{ x:margin, y:margin, size:a, color:colors[rng.int(0,colors.length-1)] }];
-  for (let sq of squares) {
+  let si = 0;
+  while (si < squares.length) {
+    const sq = squares[si];
     if (sq.size > a/4) {
       const ns = sq.size/2;
       squares.push(
@@ -237,9 +239,10 @@ function draw(seed) {
         {x:sq.x,      y:sq.y+ns,   size:ns, color:colors[rng.int(0,colors.length-1)]},
         {x:sq.x+ns,   y:sq.y+ns,   size:ns, color:colors[rng.int(0,colors.length-1)]}
       );
-      // Original splice bug preserved: removes last element not current
-      squares.splice(squares.length-5, 1);
+      // Original splice bug preserved: splice(-1,1) removes last pushed square
+      squares.splice(squares.length-1, 1);
     }
+    si++;
   }
 
   // Assign draw/skip probabilities
