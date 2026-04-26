@@ -2,7 +2,7 @@
   {
     "id": 1,
     "name": "Science",
-    "active": true,
+    "active": false,
     "colors": [
       "#ffe819",
       "#000000"
