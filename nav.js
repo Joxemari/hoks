@@ -24,15 +24,14 @@ nav {
 .nav-work.active > .nav-work-label { color: #111; }
 .nav-work { position: relative; }
 .nav-work-dropdown {
-  position: absolute; top: 100%; right: -16px;
+  position: absolute; top: calc(100% + 12px); right: -16px;
   background: #fff; border-top: 2px solid #111;
   border-left: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; border-bottom: 1px solid #e8e8e8;
   padding: 8px 0; list-style: none; min-width: 140px;
   opacity: 0; visibility: hidden; pointer-events: none;
-  transition: opacity 0.15s, visibility 0.15s;
+  transform: translateY(-6px); transition: opacity 0.15s, visibility 0.15s, transform 0.15s;
 }
-.nav-work:hover .nav-work-dropdown,
-.nav-work-dropdown.open { opacity: 1; visibility: visible; pointer-events: auto; }
+.nav-work-dropdown.open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
 .nav-work-dropdown::before {
   content: ''; position: absolute; top: -7px; right: 22px;
   width: 6px; height: 6px; background: #111;
@@ -66,7 +65,7 @@ if (!document.querySelector('link[rel="icon"]')) {
 }
 
 const path = window.location.pathname.split('/').pop() || 'index.html';
-const isWork = ['index.html','','pills.html','krrtk.html'].includes(path);
+const isWork = ['index.html','','pills.html','krrtk.html','dtk.html'].includes(path);
 const isAbout = path === 'about.html';
 const isPalettes = path === 'palettes.html';
 
@@ -82,6 +81,8 @@ nav.innerHTML = `
       <ul class="nav-work-dropdown" id="nav-work-dropdown">
         <li><a href="pills.html"${path==='pills.html'?' class="active"':''}>PLLS</a></li>
         <li><a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}>KRRTK</a></li>
+        <li><a href="dtk.html"${path==='dtk.html'?' class="active"':''}>DTK</a></li>
+        <li><a href="dtk.html"${path==='dtk.html'?' class="active"':''}>DTK</a></li>
       </ul>
     </li>
     <li><a href="about.html"${isAbout?' class="active"':''}>About</a></li>

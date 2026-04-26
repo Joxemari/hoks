@@ -182,7 +182,7 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
     <!-- GALLERY -->
     <div class="tab-panel" id="tab-gallery">
       <div class="section-header">
-        <span class="section-title">Public Gallery (<span id="gal-count">0</span>)</span>
+        <span class="section-title">PLLS Gallery (<span id="gal-count">0</span>)</span>
         <button class="btn btn-danger" onclick="clearAllGallery()">Clear All</button>
       </div>
       <div class="gallery-grid" id="gallery-grid"></div>
@@ -192,6 +192,13 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
           <button class="btn btn-danger" onclick="clearKrrtkGallery()">Clear All</button>
         </div>
         <div class="gallery-grid" id="gallery-krrtk-grid"></div>
+      </div>
+      <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
+        <div class="section-header">
+          <span class="section-title">DTK Gallery (<span id="gal-dtk-count">0</span>)</span>
+          <button class="btn btn-danger" onclick="clearDtkGallery()">Clear All</button>
+        </div>
+        <div class="gallery-grid" id="gallery-dtk-grid"></div>
       </div>
     </div>
 
@@ -205,6 +212,7 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
             <select id="batch-work">
               <option value="pills">PLLS</option>
               <option value="krrtk">KRRTK</option>
+              <option value="dtk">DTK</option>
             </select>
           </div>
           <div class="batch-field">
@@ -339,12 +347,13 @@ function switchTab(name){
 }
 
 // ── LOAD ──────────────────────────────────────────────
-let pals=[],gallery=[],galleryKrrtk=[],site={};
+let pals=[],gallery=[],galleryKrrtk=[],galleryDtk=[],site={};
 async function loadAll(){
-  [pals,gallery,galleryKrrtk,site]=await Promise.all([
+  [pals,gallery,galleryKrrtk,galleryDtk,site]=await Promise.all([
     ghRead('palettes.json').then(d=>d||[]),
     ghRead('plls.json').then(d=>d||[]),
     ghRead('krrtk.json').then(d=>d||[]),
+    ghRead('dtk.json').then(d=>d||[]),
     ghRead('site.json').then(d=>d||{}),
   ]);
   renderPalettes();renderGallery();renderBatches();loadSiteForm();
@@ -411,16 +420,18 @@ function renderGallery(){
   $('gal-count').textContent=gallery.length;
   const grid=$('gallery-grid');
   if(!gallery.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-  else grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button title="Add to batch" onclick="addGalleryToBatch('pills',${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;transition:color 0.12s;" onmouseover="this.style.color='#111'" onmouseout="this.style.color=''">+B</button><button class="gallery-del" onclick="deleteGalleryItem(${i})">✕</button></div></div></div>`).join('');
+  else grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><button class="gallery-del" onclick="deleteGalleryItem(${i})">✕</button></div></div>`).join('');
   $('gal-krrtk-count').textContent=galleryKrrtk.length;
   const kgrid=$('gallery-krrtk-grid');
   if(!galleryKrrtk.length){kgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-  else kgrid.innerHTML=galleryKrrtk.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button title="Add to batch" onclick="addGalleryToBatch('krrtk',${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;transition:color 0.12s;" onmouseover="this.style.color='#111'" onmouseout="this.style.color=''">+B</button><button class="gallery-del" onclick="deleteKrrtkItem(${i})">✕</button></div></div></div>`).join('');
+  else kgrid.innerHTML=galleryKrrtk.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><button class="gallery-del" onclick="deleteKrrtkItem(${i})">✕</button></div></div>`).join('');
 }
 async function deleteGalleryItem(i){if(!confirm('Delete?'))return;gallery.splice(i,1);await ghFetch('data/plls.json',gallery,'delete gallery item');renderGallery();toast('Deleted');}
 async function deleteKrrtkItem(i){if(!confirm('Delete?'))return;galleryKrrtk.splice(i,1);await ghFetch('data/krrtk.json',galleryKrrtk,'delete krrtk item');renderGallery();toast('Deleted');}
 async function clearAllGallery(){if(!confirm('Clear all Pills gallery?'))return;gallery=[];await ghFetch('data/plls.json',[],'clear pills gallery');renderGallery();toast('Cleared');}
 async function clearKrrtkGallery(){if(!confirm('Clear all KRRTK gallery?'))return;galleryKrrtk=[];await ghFetch('data/krrtk.json',[],'clear krrtk gallery');renderGallery();toast('Cleared');}
+async function deleteDtkItem(i){if(!confirm('Delete?'))return;galleryDtk.splice(i,1);await ghFetch('data/dtk.json',galleryDtk,'delete dtk item');renderGallery();toast('Deleted');}
+async function clearDtkGallery(){if(!confirm('Clear all DTK gallery?'))return;galleryDtk=[];await ghFetch('data/dtk.json',[],'clear dtk gallery');renderGallery();toast('Cleared');}
 
 // ── BATCHES ───────────────────────────────────────────
 function getBatches(){try{return JSON.parse(localStorage.getItem(BATCH_KEY)||'[]');}catch(e){return[];}}
@@ -505,18 +516,6 @@ function renderBatches(){
       </div>
       ${b.items.length?`<div class="batch-thumbs">${b.items.map((item,i)=>`<div class="batch-thumb"><img src="${item.dataUrl}"><div class="batch-thumb-label">#${item.seed}</div><button class="batch-thumb-del" onclick="removeBatchItem(${b.id},${i})">✕</button></div>`).join('')}</div>`:'<div style="padding:14px;font-size:9px;color:var(--ink3);letter-spacing:0.06em;">Empty batch</div>'}
     </div>`).join('');
-}
-
-function addGalleryToBatch(work, idx) {
-  const active = getActiveBatch();
-  if (!active) { toast('No active batch — create one first'); return; }
-  if (active.work !== work) { toast(`Active batch is for ${active.work.toUpperCase()}, not ${work.toUpperCase()}`); return; }
-  const item = work === 'pills' ? gallery[idx] : galleryKrrtk[idx];
-  if (!item) return;
-  active.items.push({ seed: item.seed, dataUrl: item.dataUrl, savedAt: item.savedAt || Date.now() });
-  setActiveBatch(active);
-  renderBatches();
-  toast(`Added #${item.seed} to batch "${active.name}"`);
 }
 
 // Expose for pills/krrtk pages to call

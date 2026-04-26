@@ -77,11 +77,15 @@ function loadCanvases() {
   const section = document.getElementById('work-section');
   Promise.all([
     fetch(RAW+'plls.json?t='+Date.now()).then(r=>r.ok?r.json():[]).catch(()=>[]),
-    fetch(RAW+'gallery_krrtk.json?t='+Date.now()).then(r=>r.ok?r.json():[]).catch(()=>[]),
-  ]).then(([pills, krrtk]) => {
+    fetch(RAW+'krrtk.json?t='+Date.now()).then(r=>r.ok?r.json():[]).catch(()=>[]),
+    fetch(RAW+'dtk.json?t='+Date.now()).then(r=>r.ok?r.json():[]).catch(()=>[]),
+  ]).then(([pills, krrtk, dtk]) => {
     const works = [];
-    pills.slice(0,3).forEach((item,i) => works.push({type:'pills',item,idx:i}));
-    krrtk.slice(0,2).forEach((item,i) => works.push({type:'krrtk',item,idx:i}));
+    // Show up to 2 from each type, ensuring both appear if they have saves
+    // Show 1-2 from each work type that has saves
+    if (pills.length)  pills.slice(0,2).forEach((item,i) => works.push({type:'pills',item,idx:i}));
+    if (krrtk.length)  krrtk.slice(0,2).forEach((item,i) => works.push({type:'krrtk',item,idx:i}));
+    if (dtk.length)    dtk.slice(0,2).forEach((item,i) => works.push({type:'dtk',item,idx:i}));
 
     if (!works.length) {
       // Fallback — show 3 generated pills
@@ -105,7 +109,7 @@ function loadCanvases() {
       img.src=item.dataUrl;
       const d=item.savedAt?new Date(item.savedAt):new Date();
       const dateStr=d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-      const label=(type==='krrtk'?'KRRTK':'PLLS')+' · #'+item.seed+' · '+dateStr;
+      const label=(type==='krrtk'?'KRRTK':type==='dtk'?'DTK':'PLLS')+' · #'+item.seed+' · '+dateStr;
       addWorkItem(section,type,canvas,isSquare,label,idx);
     });
   });
@@ -114,7 +118,7 @@ function loadCanvases() {
 function addWorkItem(section,type,canvas,isSquare,label,idx) {
   const div=document.createElement('div');
   div.className='work-item';
-  div.onclick=()=>window.location.href=`${type==='krrtk'?'krrtk':'pills'}.html?i=${idx}`;
+  div.onclick=()=>window.location.href=`${type==='krrtk'?'krrtk':type==='dtk'?'dtk':'pills'}.html?i=${idx}`;
   const inner=document.createElement('div'); inner.className='work-item-inner';
   if(isSquare) canvas.classList.add('square');
   const cap=document.createElement('div'); cap.className='work-item-caption'; cap.textContent=label;
