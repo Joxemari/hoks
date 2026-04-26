@@ -411,11 +411,11 @@ function renderGallery(){
   $('gal-count').textContent=gallery.length;
   const grid=$('gallery-grid');
   if(!gallery.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-  else grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><button class="gallery-del" onclick="deleteGalleryItem(${i})">✕</button></div></div>`).join('');
+  else grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button title="Add to batch" onclick="addGalleryToBatch('pills',${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;transition:color 0.12s;" onmouseover="this.style.color='#111'" onmouseout="this.style.color=''">+B</button><button class="gallery-del" onclick="deleteGalleryItem(${i})">✕</button></div></div></div>`).join('');
   $('gal-krrtk-count').textContent=galleryKrrtk.length;
   const kgrid=$('gallery-krrtk-grid');
   if(!galleryKrrtk.length){kgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-  else kgrid.innerHTML=galleryKrrtk.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><button class="gallery-del" onclick="deleteKrrtkItem(${i})">✕</button></div></div>`).join('');
+  else kgrid.innerHTML=galleryKrrtk.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button title="Add to batch" onclick="addGalleryToBatch('krrtk',${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;transition:color 0.12s;" onmouseover="this.style.color='#111'" onmouseout="this.style.color=''">+B</button><button class="gallery-del" onclick="deleteKrrtkItem(${i})">✕</button></div></div></div>`).join('');
 }
 async function deleteGalleryItem(i){if(!confirm('Delete?'))return;gallery.splice(i,1);await ghFetch('data/plls.json',gallery,'delete gallery item');renderGallery();toast('Deleted');}
 async function deleteKrrtkItem(i){if(!confirm('Delete?'))return;galleryKrrtk.splice(i,1);await ghFetch('data/krrtk.json',galleryKrrtk,'delete krrtk item');renderGallery();toast('Deleted');}
@@ -505,6 +505,18 @@ function renderBatches(){
       </div>
       ${b.items.length?`<div class="batch-thumbs">${b.items.map((item,i)=>`<div class="batch-thumb"><img src="${item.dataUrl}"><div class="batch-thumb-label">#${item.seed}</div><button class="batch-thumb-del" onclick="removeBatchItem(${b.id},${i})">✕</button></div>`).join('')}</div>`:'<div style="padding:14px;font-size:9px;color:var(--ink3);letter-spacing:0.06em;">Empty batch</div>'}
     </div>`).join('');
+}
+
+function addGalleryToBatch(work, idx) {
+  const active = getActiveBatch();
+  if (!active) { toast('No active batch — create one first'); return; }
+  if (active.work !== work) { toast(`Active batch is for ${active.work.toUpperCase()}, not ${work.toUpperCase()}`); return; }
+  const item = work === 'pills' ? gallery[idx] : galleryKrrtk[idx];
+  if (!item) return;
+  active.items.push({ seed: item.seed, dataUrl: item.dataUrl, savedAt: item.savedAt || Date.now() });
+  setActiveBatch(active);
+  renderBatches();
+  toast(`Added #${item.seed} to batch "${active.name}"`);
 }
 
 // Expose for pills/krrtk pages to call
