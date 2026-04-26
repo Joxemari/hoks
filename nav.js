@@ -1,18 +1,6 @@
 (function() {
 const FAVICON = `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><circle cx='50' cy='50' r='40' fill='%23111'/></svg>">`;
 
-const SITE_KEY = 'hoks-site-content';
-const SITE_DEFAULTS = {
-  aboutText: 'Joxemari Gallastegi is a generative artist based in Spain. His work is characterised by bold form, vibrant colour, and the beauty of controlled randomness — algorithmic systems that make each piece unique by design.',
-  footerEmail: 'joxemgallastegi@gmail.com',
-  footerInstagram: 'https://instagram.com'
-};
-
-function getSiteContent() {
-  try { return { ...SITE_DEFAULTS, ...JSON.parse(localStorage.getItem(SITE_KEY) || '{}') }; }
-  catch(e) { return { ...SITE_DEFAULTS }; }
-}
-
 const NAV_CSS = `
 *, *::before, *::after { box-sizing: border-box; }
 body { font-family: 'Courier New', Courier, monospace; }
@@ -22,50 +10,38 @@ nav {
   padding: 0 2rem; height: 52px;
   background: #fff; border-bottom: 1px solid #e8e8e8;
 }
-.nav-logo {
-  display: flex; align-items: center; gap: 10px;
-  text-decoration: none; color: #111;
-}
-.nav-logo-dot {
-  width: 14px; height: 14px; border-radius: 50%;
-  background: #111; flex-shrink: 0;
-}
-.nav-logo-name {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 12px; font-weight: 400; letter-spacing: 0.08em;
-  color: #111;
-}
-.nav-links {
-  display: flex; gap: 2.5rem; list-style: none;
-  align-items: center; margin: 0; padding: 0;
-}
+.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #111; }
+.nav-logo-dot { width: 14px; height: 14px; border-radius: 50%; background: #111; flex-shrink: 0; }
+.nav-logo-name { font-family: 'Courier New', Courier, monospace; font-size: 12px; font-weight: 400; letter-spacing: 0.08em; color: #111; }
+.nav-links { display: flex; gap: 2.5rem; list-style: none; align-items: center; margin: 0; padding: 0; }
 .nav-links a, .nav-work-label {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 11px; font-weight: 400; letter-spacing: 0.12em;
-  text-transform: uppercase; text-decoration: none;
-  color: #bbb; transition: color 0.15s; cursor: pointer;
+  font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: 400;
+  letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none;
+  color: #bbb; transition: color 0.15s; cursor: pointer; user-select: none;
 }
-.nav-links a:hover, .nav-links a.active,
+.nav-links a:hover, .nav-links a.active { color: #111; }
+.nav-work-label:hover { color: #111; }
 .nav-work.active > .nav-work-label { color: #111; }
-.nav-work { position: relative; padding-bottom: 8px; margin-bottom: -8px; }
-.nav-work-label { display: block; }
+.nav-work { position: relative; }
 .nav-work-dropdown {
-  position: absolute; top: calc(100% + 6px); right: 0;
-  background: #fff; border: 1px solid #e8e8e8;
-  padding: 4px 0; list-style: none; min-width: 100px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  position: absolute; top: calc(100% + 12px); right: -16px;
+  background: #fff; border-top: 2px solid #111;
+  border-left: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; border-bottom: 1px solid #e8e8e8;
+  padding: 8px 0; list-style: none; min-width: 140px;
   opacity: 0; visibility: hidden; pointer-events: none;
-  transition: opacity 0.15s, visibility 0.15s;
+  transform: translateY(-6px); transition: opacity 0.15s, visibility 0.15s, transform 0.15s;
 }
-.nav-work:hover .nav-work-dropdown {
-  opacity: 1; visibility: visible; pointer-events: auto;
+.nav-work-dropdown.open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
+.nav-work-dropdown::before {
+  content: ''; position: absolute; top: -7px; right: 22px;
+  width: 6px; height: 6px; background: #111;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
 }
 .nav-work-dropdown li a {
-  display: block; padding: 6px 14px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase;
-  color: #bbb; white-space: nowrap; text-decoration: none;
-  transition: color 0.15s;
+  display: block; padding: 7px 20px;
+  font-family: 'Courier New', Courier, monospace; font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: #bbb; white-space: nowrap; text-decoration: none; transition: color 0.15s;
 }
 .nav-work-dropdown li a:hover, .nav-work-dropdown li a.active { color: #111; }
 .site-footer {
@@ -75,10 +51,7 @@ nav {
 }
 .footer-copy { font-size: 10px; color: #ccc; letter-spacing: 0.08em; text-transform: uppercase; }
 .footer-links { display: flex; gap: 1.5rem; }
-.footer-links a {
-  font-size: 10px; color: #ccc; text-decoration: none;
-  letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s;
-}
+.footer-links a { font-size: 10px; color: #ccc; text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s; }
 .footer-links a:hover { color: #111; }
 body { display: flex; flex-direction: column; min-height: 100vh; }
 `;
@@ -92,7 +65,7 @@ if (!document.querySelector('link[rel="icon"]')) {
 }
 
 const path = window.location.pathname.split('/').pop() || 'index.html';
-const isWork = path === 'index.html' || path === '' || path === 'pills.html';
+const isWork = ['index.html','','pills.html','krrtk.html'].includes(path);
 const isAbout = path === 'about.html';
 const isPalettes = path === 'palettes.html';
 
@@ -104,9 +77,10 @@ nav.innerHTML = `
   </a>
   <ul class="nav-links">
     <li class="nav-work${isWork?' active':''}">
-      <span class="nav-work-label">Work</span>
-      <ul class="nav-work-dropdown">
-        <li><a href="pills.html"${path==='pills.html'?' class="active"':''}>Pills</a></li>
+      <span class="nav-work-label" id="nav-work-label">Work</span>
+      <ul class="nav-work-dropdown" id="nav-work-dropdown">
+        <li><a href="pills.html"${path==='pills.html'?' class="active"':''}>PLLS</a></li>
+        <li><a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}>KRRTK</a></li>
       </ul>
     </li>
     <li><a href="about.html"${isAbout?' class="active"':''}>About</a></li>
@@ -114,33 +88,23 @@ nav.innerHTML = `
   </ul>`;
 document.body.insertBefore(nav, document.body.firstChild);
 
-// Dynamic footer from site content
-const c = getSiteContent();
+const workLabel = document.getElementById('nav-work-label');
+const workDropdown = document.getElementById('nav-work-dropdown');
+if (workLabel && workDropdown) {
+  workLabel.addEventListener('click', e => { e.stopPropagation(); workDropdown.classList.toggle('open'); });
+  document.addEventListener('click', () => workDropdown.classList.remove('open'));
+  workDropdown.addEventListener('click', e => e.stopPropagation());
+}
+
+document.querySelectorAll('main, #main-content, .about-wrap, .work-section').forEach(el => el.style.flex = '1');
+
 const footer = document.createElement('footer');
 footer.className = 'site-footer';
 footer.innerHTML = `
   <span class="footer-copy">© 2026 hoks</span>
   <div class="footer-links">
-    <a href="mailto:${c.footerEmail}">Contact</a>
-    <a href="${c.footerInstagram}" target="_blank">Instagram</a>
+    <a href="mailto:joxemgallastegi@gmail.com">Contact</a>
+    <a href="https://instagram.com" target="_blank">Instagram</a>
   </div>`;
 document.body.appendChild(footer);
-
-// Push main content so footer sits at bottom — after DOM ready
-function fixFlex() {
-  document.querySelectorAll('main, #main-content, .about-wrap, .work-section, .layout').forEach(el => {
-    el.style.flex = '1';
-  });
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', fixFlex);
-} else {
-  fixFlex();
-}
-
-// Dynamic about text
-if (isAbout) {
-  const aboutEl = document.getElementById('about-text');
-  if (aboutEl) aboutEl.textContent = c.aboutText;
-}
 })();

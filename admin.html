@@ -7,124 +7,137 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --f: 'Courier New', Courier, monospace;
-  --ink: #111; --ink2: #888; --ink3: #bbb;
-  --bg: #fff; --surface: #f7f7f7;
-  --border: #e8e8e8; --border-dark: #ccc;
+  --f: 'Courier New', Courier, monospace; --ink: #111; --ink3: #bbb;
+  --bg: #fff; --surface: #f7f7f7; --border: #e8e8e8; --border-dark: #ccc;
   --r: 2px; --red: #c0392b;
 }
 body { font-family: var(--f); background: var(--bg); color: var(--ink); min-height: 100vh; }
-#login-screen {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  min-height: 100vh; gap: 1.5rem; padding: 2rem;
-}
-#login-screen h1 { font-size: 11px; font-weight: 400; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink3); }
-.login-form { display: flex; flex-direction: column; gap: 10px; width: 260px; }
-.login-form input {
-  width: 100%; background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r); padding: 10px 14px; font-family: var(--f);
-  font-size: 12px; color: var(--ink); outline: none; text-align: center;
-  letter-spacing: 0.08em; transition: border-color 0.15s;
-}
-.login-form input:focus { border-color: var(--border-dark); }
-.login-form button {
-  font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
-  text-transform: uppercase; background: var(--ink); color: #fff; border: none;
-  border-radius: var(--r); padding: 10px; cursor: pointer; transition: opacity 0.15s;
-}
-.login-form button:hover { opacity: 0.75; }
-.login-error { font-size: 10px; color: var(--red); letter-spacing: 0.06em; text-align: center; display: none; }
-#admin-screen { display: none; }
-header {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 2rem; height: 52px; background: #fff; border-bottom: 1px solid var(--border);
-}
-.header-logo { display: flex; align-items: center; gap: 10px; }
-.header-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); }
-.header-name { font-size: 11px; letter-spacing: 0.08em; }
-.header-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); border: 1px solid var(--red); border-radius: 2px; padding: 2px 7px; }
-.header-right { display: flex; align-items: center; gap: 1.5rem; }
-.header-nav a { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; color: var(--ink3); transition: color 0.15s; }
-.header-nav a:hover { color: var(--ink); }
-.btn-logout { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: none; color: var(--ink3); border: 1px solid var(--border); border-radius: var(--r); padding: 7px 14px; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
-.btn-logout:hover { color: var(--ink); border-color: var(--border-dark); }
-.admin-layout { max-width: 1000px; margin: 0 auto; padding: 80px 2rem 6rem; }
-.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 2.5rem; }
-.tab-btn { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; background: none; border: none; border-bottom: 2px solid transparent; padding: 12px 20px; cursor: pointer; color: var(--ink3); transition: color 0.15s; margin-bottom: -1px; }
-.tab-btn:hover { color: var(--ink); }
-.tab-btn.active { color: var(--ink); border-bottom-color: var(--ink); }
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
-.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-.section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); }
-.btn { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: var(--ink); color: #fff; border: none; border-radius: var(--r); padding: 8px 16px; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
-.btn:hover { opacity: 0.75; }
-.btn-outline { background: none; color: var(--ink); border: 1px solid var(--border-dark); }
-.btn-outline:hover { opacity: 1; border-color: var(--ink); }
-.btn-danger { background: none; color: var(--red); border: 1px solid var(--red); }
-.btn-danger:hover { background: var(--red); color: #fff; opacity: 1; }
-.palette-list { display: flex; flex-direction: column; gap: 8px; }
-.palette-row { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 10px 14px; transition: border-color 0.15s; }
-.palette-row:hover { border-color: var(--border-dark); }
-.pal-swatches { display: flex; gap: 3px; flex-shrink: 0; }
-.pal-swatch { width: 18px; height: 18px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.08); }
-.pal-name { flex: 1; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
-.pal-tags { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
-.toggle { position: relative; width: 28px; height: 15px; display: inline-block; }
-.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-.toggle-track { position: absolute; inset: 0; background: var(--border); border-radius: 8px; cursor: pointer; transition: background 0.2s; }
-.toggle input:checked + .toggle-track { background: var(--ink); }
-.toggle-thumb { position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; background: #fff; border-radius: 50%; transition: transform 0.2s; pointer-events: none; z-index: 1; }
-.toggle input:checked + .toggle-track + .toggle-thumb { transform: translateX(13px); }
-.pal-actions { display: flex; gap: 4px; flex-shrink: 0; }
-.icon-btn { font-family: var(--f); font-size: 11px; background: none; border: 1px solid var(--border); border-radius: var(--r); width: 28px; height: 28px; cursor: pointer; color: var(--ink3); display: flex; align-items: center; justify-content: center; transition: color 0.12s, border-color 0.12s; }
-.icon-btn:hover { color: var(--ink); border-color: var(--border-dark); }
-.icon-btn.del:hover { color: var(--red); border-color: var(--red); }
-.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-.gallery-item { border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
-.gallery-item img { width: 100%; display: block; }
-.gallery-item-footer { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 6px; font-size: 9px; color: var(--ink3); }
-.gallery-del { background: none; border: none; cursor: pointer; color: var(--ink3); font-size: 12px; transition: color 0.12s; }
-.gallery-del:hover { color: var(--red); }
-.settings-form { display: flex; flex-direction: column; gap: 1.2rem; max-width: 600px; }
-.field label { display: block; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; }
-.field input, .field textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 9px 12px; font-family: var(--f); font-size: 12px; color: var(--ink); outline: none; transition: border-color 0.15s; }
-.field input:focus, .field textarea:focus { border-color: var(--border-dark); background: #fff; }
-.field textarea { resize: vertical; line-height: 1.7; }
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.18s; }
-.overlay.open { opacity: 1; pointer-events: all; }
-.modal { background: var(--bg); border: 1px solid var(--border-dark); border-radius: 3px; padding: 1.8rem; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; transform: translateY(8px); opacity: 0; transition: transform 0.2s, opacity 0.18s; }
-.overlay.open .modal { transform: translateY(0); opacity: 1; }
-.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4rem; }
-.modal h2 { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
-.modal-close { background: none; border: none; cursor: pointer; color: var(--ink3); font-size: 18px; }
-.modal-close:hover { color: var(--ink); }
-.color-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; min-height: 4px; }
-.chip { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 2px; padding: 3px 8px 3px 6px; font-size: 10px; }
-.chip-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; }
-.chip-rm { border: none; background: none; cursor: pointer; color: var(--ink3); font-size: 13px; padding: 0; transition: color 0.12s; }
-.chip-rm:hover { color: var(--red); }
-.add-row { display: flex; gap: 6px; align-items: center; }
-.add-row input[type="color"] { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: var(--r); padding: 2px; background: var(--surface); cursor: pointer; flex-shrink: 0; }
-.add-row input[type="text"] { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 10px; font-family: var(--f); font-size: 11px; color: var(--ink); outline: none; }
-.add-row input[type="text"]:focus { border-color: var(--border-dark); }
-.btn-add-color { font-family: var(--f); font-weight: 700; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; background: var(--surface); border: 1px solid var(--border-dark); border-radius: var(--r); padding: 8px 12px; cursor: pointer; color: var(--ink); white-space: nowrap; }
-.btn-add-color:hover { border-color: var(--ink); }
-.preview-strip { height: 10px; border-radius: 2px; border: 1px solid var(--border); overflow: hidden; display: flex; margin-top: 8px; }
-.preview-strip span { flex: 1; }
-.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid var(--border); }
-.pwd-form { max-width: 300px; display: flex; flex-direction: column; gap: 10px; }
-.saving-indicator { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; display: none; }
-.saving-indicator.show { display: inline; }
-.toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(6px); background: var(--ink); color: #fff; font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 9px 18px; border-radius: 2px; opacity: 0; pointer-events: none; transition: all 0.2s; z-index: 300; }
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.empty-state { padding: 3rem 0; text-align: center; font-size: 11px; color: var(--ink3); letter-spacing: 0.06em; }
+#login-screen { display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:1.5rem;padding:2rem; }
+#login-screen h1 { font-size:11px;font-weight:400;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink3); }
+.login-form { display:flex;flex-direction:column;gap:10px;width:260px; }
+.login-form input { width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-family:var(--f);font-size:12px;color:var(--ink);outline:none;text-align:center;letter-spacing:0.08em;transition:border-color 0.15s; }
+.login-form input:focus { border-color:var(--border-dark); }
+.login-form button { font-family:var(--f);font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:10px;cursor:pointer;transition:opacity 0.15s; }
+.login-form button:hover { opacity:0.75; }
+.login-error { font-size:10px;color:var(--red);letter-spacing:0.06em;text-align:center;display:none; }
+#admin-screen { display:none; }
+header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:52px;background:#fff;border-bottom:1px solid var(--border); }
+.header-logo { display:flex;align-items:center;gap:10px; }
+.header-dot { width:12px;height:12px;border-radius:50%;background:var(--ink); }
+.header-name { font-size:11px;letter-spacing:0.08em; }
+.header-badge { font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--red);border:1px solid var(--red);border-radius:2px;padding:2px 7px; }
+.header-right { display:flex;align-items:center;gap:1.5rem; }
+.header-nav a { font-size:11px;letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;color:var(--ink3);transition:color 0.15s; }
+.header-nav a:hover { color:var(--ink); }
+.saving-indicator { font-size:9px;color:var(--ink3);letter-spacing:0.1em;text-transform:uppercase;display:none; }
+.saving-indicator.show { display:inline; }
+.btn-logout { font-family:var(--f);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:none;color:var(--ink3);border:1px solid var(--border);border-radius:var(--r);padding:7px 14px;cursor:pointer;transition:color 0.15s,border-color 0.15s; }
+.btn-logout:hover { color:var(--ink);border-color:var(--border-dark); }
+.admin-layout { max-width:1000px;margin:0 auto;padding:80px 2rem 6rem; }
+.tabs { display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:2.5rem; }
+.tab-btn { font-family:var(--f);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:12px 20px;cursor:pointer;color:var(--ink3);transition:color 0.15s;margin-bottom:-1px; }
+.tab-btn:hover { color:var(--ink); }
+.tab-btn.active { color:var(--ink);border-bottom-color:var(--ink); }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+.section-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem; }
+.section-title { font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink3); }
+.btn { font-family:var(--f);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:8px 16px;cursor:pointer;transition:opacity 0.15s;white-space:nowrap; }
+.btn:hover { opacity:0.75; }
+.btn-outline { background:none;color:var(--ink);border:1px solid var(--border-dark); }
+.btn-outline:hover { opacity:1;border-color:var(--ink); }
+.btn-danger { background:none;color:var(--red);border:1px solid var(--red); }
+.btn-danger:hover { background:var(--red);color:#fff;opacity:1; }
+/* PALETTE LIST */
+.palette-list { display:flex;flex-direction:column;gap:8px; }
+.palette-row { display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;transition:border-color 0.15s; }
+.palette-row:hover { border-color:var(--border-dark); }
+.palette-row.inactive-row { opacity:0.45;filter:grayscale(1); }
+.pal-swatches { display:flex;gap:3px;flex-shrink:0; }
+.pal-swatch { width:18px;height:18px;border-radius:2px;border:1px solid rgba(0,0,0,0.08); }
+.pal-info { flex:1;min-width:0; }
+.pal-name { font-size:11px;font-weight:700;letter-spacing:0.04em; }
+.pal-meta { font-size:9px;color:var(--ink3);letter-spacing:0.04em;margin-top:2px; }
+.prob-badge { font-size:8px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:1px 6px;border-radius:20px;white-space:nowrap;flex-shrink:0; }
+.prob-common    { background:#f1efe8;color:#5f5e5a; }
+.prob-uncommon  { background:#e1f5ee;color:#085041; }
+.prob-rare      { background:#e6f1fb;color:#0c447c; }
+.prob-superrare { background:#eeedfe;color:#3c3489; }
+.prob-legendary { background:#faeeda;color:#633806; }
+.toggle { position:relative;width:28px;height:15px;display:inline-block; }
+.toggle input { opacity:0;width:0;height:0;position:absolute; }
+.toggle-track { position:absolute;inset:0;background:var(--border);border-radius:8px;cursor:pointer;transition:background 0.2s; }
+.toggle input:checked + .toggle-track { background:var(--ink); }
+.toggle-thumb { position:absolute;top:2px;left:2px;width:11px;height:11px;background:#fff;border-radius:50%;transition:transform 0.2s;pointer-events:none;z-index:1; }
+.toggle input:checked + .toggle-track + .toggle-thumb { transform:translateX(13px); }
+.pal-actions { display:flex;gap:4px;flex-shrink:0; }
+.icon-btn { font-family:var(--f);font-size:11px;background:none;border:1px solid var(--border);border-radius:var(--r);width:28px;height:28px;cursor:pointer;color:var(--ink3);display:flex;align-items:center;justify-content:center;transition:color 0.12s,border-color 0.12s; }
+.icon-btn:hover { color:var(--ink);border-color:var(--border-dark); }
+.icon-btn.del:hover { color:var(--red);border-color:var(--red); }
+/* GALLERY */
+.gallery-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px; }
+.gallery-item { border:1px solid var(--border);border-radius:var(--r);overflow:hidden; }
+.gallery-item img { width:100%;display:block; }
+.gallery-item-footer { display:flex;align-items:center;justify-content:space-between;padding:4px 8px 6px;font-size:9px;color:var(--ink3); }
+.gallery-del { background:none;border:none;cursor:pointer;color:var(--ink3);font-size:12px;transition:color 0.12s; }
+.gallery-del:hover { color:var(--red); }
+/* SETTINGS */
+.settings-form { display:flex;flex-direction:column;gap:1.2rem;max-width:600px; }
+.field label { display:block;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px; }
+.field input,.field textarea { width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-family:var(--f);font-size:12px;color:var(--ink);outline:none;transition:border-color 0.15s; }
+.field input:focus,.field textarea:focus { border-color:var(--border-dark);background:#fff; }
+.field textarea { resize:vertical;line-height:1.7; }
+/* BATCH */
+.batch-setup { background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:1.5rem;margin-bottom:2rem;display:flex;flex-direction:column;gap:12px; }
+.batch-row { display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap; }
+.batch-field { display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px; }
+.batch-field label { font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink3); }
+.batch-field input,.batch-field select { background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-family:var(--f);font-size:11px;color:var(--ink);outline:none;transition:border-color 0.15s; }
+.batch-field input:focus,.batch-field select:focus { border-color:var(--border-dark); }
+.batch-status { font-size:10px;color:var(--ink3);letter-spacing:0.06em; }
+.batch-status span { font-weight:700;color:var(--ink); }
+.batch-list { display:flex;flex-direction:column;gap:16px; }
+.batch-card { border:1px solid var(--border);border-radius:3px;overflow:hidden; }
+.batch-header { display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border); }
+.batch-title { font-size:11px;font-weight:700;letter-spacing:0.06em; }
+.batch-meta { font-size:9px;color:var(--ink3);letter-spacing:0.04em; }
+.batch-actions { display:flex;gap:6px; }
+.batch-thumbs { display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;padding:10px; }
+.batch-thumb { position:relative;border-radius:2px;overflow:hidden;border:1px solid var(--border);cursor:default; }
+.batch-thumb img { width:100%;display:block; }
+.batch-thumb-label { font-size:8px;font-family:var(--f);color:var(--ink3);padding:3px 5px;background:var(--bg);letter-spacing:0.04em; }
+.batch-thumb-del { position:absolute;top:4px;right:4px;background:rgba(255,255,255,0.85);border:none;cursor:pointer;color:var(--ink3);font-size:11px;width:20px;height:20px;border-radius:2px;display:flex;align-items:center;justify-content:center;transition:color 0.12s; }
+.batch-thumb-del:hover { color:var(--red); }
+/* MODAL */
+.overlay { position:fixed;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;z-index:200;padding:1rem;opacity:0;pointer-events:none;transition:opacity 0.18s; }
+.overlay.open { opacity:1;pointer-events:all; }
+.modal { background:var(--bg);border:1px solid var(--border-dark);border-radius:3px;padding:1.8rem;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;transform:translateY(8px);opacity:0;transition:transform 0.2s,opacity 0.18s; }
+.overlay.open .modal { transform:translateY(0);opacity:1; }
+.modal-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem; }
+.modal h2 { font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase; }
+.modal-close { background:none;border:none;cursor:pointer;color:var(--ink3);font-size:18px; }
+.modal-close:hover { color:var(--ink); }
+.color-chips { display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;min-height:4px; }
+.chip { display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:3px 8px 3px 6px;font-size:10px; }
+.chip-dot { width:10px;height:10px;border-radius:50%;border:1px solid rgba(0,0,0,0.1);flex-shrink:0; }
+.chip-rm { border:none;background:none;cursor:pointer;color:var(--ink3);font-size:13px;padding:0;transition:color 0.12s; }
+.chip-rm:hover { color:var(--red); }
+.add-row { display:flex;gap:6px;align-items:center; }
+.add-row input[type="color"] { width:34px;height:34px;border:1px solid var(--border);border-radius:var(--r);padding:2px;background:var(--surface);cursor:pointer;flex-shrink:0; }
+.add-row input[type="text"] { flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-family:var(--f);font-size:11px;color:var(--ink);outline:none; }
+.add-row input[type="text"]:focus { border-color:var(--border-dark); }
+.btn-add-color { font-family:var(--f);font-weight:700;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;background:var(--surface);border:1px solid var(--border-dark);border-radius:var(--r);padding:8px 12px;cursor:pointer;color:var(--ink);white-space:nowrap; }
+.btn-add-color:hover { border-color:var(--ink); }
+.preview-strip { height:10px;border-radius:2px;border:1px solid var(--border);overflow:hidden;display:flex;margin-top:8px; }
+.preview-strip span { flex:1; }
+.modal-actions { display:flex;gap:8px;justify-content:flex-end;margin-top:1.4rem;padding-top:1rem;border-top:1px solid var(--border); }
+.pwd-form { max-width:300px;display:flex;flex-direction:column;gap:10px; }
+.toast { position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(6px);background:var(--ink);color:#fff;font-family:var(--f);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:9px 18px;border-radius:2px;opacity:0;pointer-events:none;transition:all 0.2s;z-index:300; }
+.toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
+.empty-state { padding:3rem 0;text-align:center;font-size:11px;color:var(--ink3);letter-spacing:0.06em; }
 </style>
 </head>
 <body>
-
 <div id="login-screen">
   <h1>hoks · admin</h1>
   <div class="login-form">
@@ -142,9 +155,7 @@ header {
       <span class="header-badge">admin</span>
     </div>
     <div class="header-right">
-      <nav class="header-nav">
-        <a href="index.html" target="_blank">↗ site</a>
-      </nav>
+      <nav class="header-nav"><a href="index.html" target="_blank">↗ site</a></nav>
       <span class="saving-indicator" id="saving">saving…</span>
       <button class="btn-logout" onclick="logout()">Log out</button>
     </div>
@@ -154,10 +165,12 @@ header {
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('palettes')">Palettes</button>
       <button class="tab-btn" onclick="switchTab('gallery')">Gallery</button>
+      <button class="tab-btn" onclick="switchTab('batches')">Batches</button>
       <button class="tab-btn" onclick="switchTab('site')">Site</button>
       <button class="tab-btn" onclick="switchTab('security')">Security</button>
     </div>
 
+    <!-- PALETTES -->
     <div class="tab-panel active" id="tab-palettes">
       <div class="section-header">
         <span class="section-title">Palettes (<span id="pal-count">0</span>)</span>
@@ -166,33 +179,77 @@ header {
       <div class="palette-list" id="palette-list"></div>
     </div>
 
+    <!-- GALLERY -->
     <div class="tab-panel" id="tab-gallery">
       <div class="section-header">
-        <span class="section-title">Saved Iterations (<span id="gal-count">0</span>)</span>
+        <span class="section-title">Public Gallery (<span id="gal-count">0</span>)</span>
         <button class="btn btn-danger" onclick="clearAllGallery()">Clear All</button>
       </div>
       <div class="gallery-grid" id="gallery-grid"></div>
+      <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
+        <div class="section-header">
+          <span class="section-title">KRRTK Gallery (<span id="gal-krrtk-count">0</span>)</span>
+          <button class="btn btn-danger" onclick="clearKrrtkGallery()">Clear All</button>
+        </div>
+        <div class="gallery-grid" id="gallery-krrtk-grid"></div>
+      </div>
     </div>
 
+    <!-- BATCHES -->
+    <div class="tab-panel" id="tab-batches">
+      <div class="batch-setup">
+        <div class="section-title" style="margin-bottom:4px">New Batch</div>
+        <div class="batch-row">
+          <div class="batch-field">
+            <label>Work</label>
+            <select id="batch-work">
+              <option value="pills">PLLS</option>
+              <option value="krrtk">KRRTK</option>
+            </select>
+          </div>
+          <div class="batch-field">
+            <label>Batch Name</label>
+            <input type="text" id="batch-name" placeholder="e.g. Spring 2026">
+          </div>
+          <button class="btn" style="flex-shrink:0;align-self:flex-end" onclick="createBatch()">Create Batch</button>
+        </div>
+      </div>
+
+      <div id="active-batch-panel" style="display:none;margin-bottom:2rem;border:2px solid var(--ink);border-radius:3px;overflow:hidden;">
+        <div style="padding:12px 14px;background:var(--ink);display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:0.06em;" id="active-batch-title">—</span>
+            <span style="font-size:9px;color:#888;margin-left:10px;letter-spacing:0.06em;" id="active-batch-work"></span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="batch-status">Selected: <span id="active-batch-count">0</span></span>
+            <button class="btn" style="background:#fff;color:var(--ink);font-size:9px;padding:6px 12px;" onclick="closeBatch()">Close Batch</button>
+          </div>
+        </div>
+        <div style="padding:10px;">
+          <div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;margin-bottom:8px;">Go to <a id="active-batch-link" href="pills.html" target="_blank" style="color:var(--ink);text-decoration:underline;">PLLS</a>, generate iterations and click <strong>Save to Batch</strong> on the works you want to include.</div>
+          <div class="batch-thumbs" id="active-batch-thumbs"></div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Saved Batches (<span id="batch-count">0</span>)</span>
+      </div>
+      <div class="batch-list" id="batch-list"></div>
+    </div>
+
+    <!-- SITE -->
     <div class="tab-panel" id="tab-site">
       <div class="section-title" style="margin-bottom:1.5rem">Site Content</div>
       <div class="settings-form">
-        <div class="field">
-          <label>About Text</label>
-          <textarea id="about-text-input" rows="5"></textarea>
-        </div>
-        <div class="field">
-          <label>Contact Email</label>
-          <input type="email" id="email-input">
-        </div>
-        <div class="field">
-          <label>Instagram URL</label>
-          <input type="url" id="instagram-input">
-        </div>
+        <div class="field"><label>About Text</label><textarea id="about-text-input" rows="5"></textarea></div>
+        <div class="field"><label>Contact Email</label><input type="email" id="email-input"></div>
+        <div class="field"><label>Instagram URL</label><input type="url" id="instagram-input"></div>
         <button class="btn" onclick="saveSiteContent()" style="width:fit-content">Save & Publish</button>
       </div>
     </div>
 
+    <!-- SECURITY -->
     <div class="tab-panel" id="tab-security">
       <div class="section-title" style="margin-bottom:1.5rem">Change Password</div>
       <div class="pwd-form">
@@ -212,6 +269,7 @@ header {
   </div>
 </div>
 
+<!-- Palette Modal -->
 <div class="overlay" id="overlay" onclick="closeIfBg(event)">
   <div class="modal">
     <div class="modal-header">
@@ -237,241 +295,243 @@ header {
     </div>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
-const PWD_KEY     = 'hoks-admin-pwd';
-const SESSION_KEY = 'hoks-admin-session';
-const TOKEN_KEY   = 'hoks-gh-token';
-const DEFAULT_PWD = 'hoks2026';
-const REPO        = 'Joxemari/hoks';
-const DATA_BASE   = `https://api.github.com/repos/${REPO}/contents/data/`;
-const RAW_BASE    = `https://raw.githubusercontent.com/${REPO}/main/data/`;
+const PWD_KEY='hoks-admin-pwd', SESSION_KEY='hoks-admin-session', TOKEN_KEY='hoks-gh-token';
+const BATCH_KEY='hoks-batches', ACTIVE_BATCH_KEY='hoks-active-batch';
+const DEFAULT_PWD='hoks2026';
+const REPO='Joxemari/hoks';
+const RAW_BASE=`https://raw.githubusercontent.com/${REPO}/main/data/`;
+const $=id=>document.getElementById(id);
 
-const $ = id => document.getElementById(id);
-
-// ── GITHUB API ───────────────────────────────────────
-function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
-
-async function ghFetch(path, content, msg) {
-  const token = getToken();
+// ── GITHUB ────────────────────────────────────────────
+function getToken(){return localStorage.getItem(TOKEN_KEY)||'';}
+async function ghFetch(path,content,msg){
+  const token=getToken();if(!token){toast('No GitHub token');return false;}
   showSaving(true);
   let sha;
-  try {
-    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (r.ok) { sha = (await r.json()).sha; }
-  } catch(e) {}
-
-  const body = { message: msg, content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))) };
-  if (sha) body.sha = sha;
-  const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
-    method: 'PUT',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+  try{const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{headers:{'Authorization':'Bearer '+token}});if(r.ok)sha=(await r.json()).sha;}catch(e){}
+  const body={message:msg,content:btoa(unescape(encodeURIComponent(JSON.stringify(content,null,2))))};
+  if(sha)body.sha=sha;
+  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body)});
   showSaving(false);
-  if (!r.ok) { const d = await r.json(); toast('GitHub error: ' + (d.message||r.status)); return false; }
+  if(!r.ok){const d=await r.json();toast('GitHub error: '+(d.message||r.status));return false;}
   return true;
 }
+async function ghRead(path){const r=await fetch(RAW_BASE+path+'?t='+Date.now());if(!r.ok)return null;return r.json();}
+function showSaving(v){$('saving').classList.toggle('show',v);}
 
-async function ghRead(path) {
-  const r = await fetch(RAW_BASE + path + '?t=' + Date.now());
-  if (!r.ok) return null;
-  return r.json();
-}
+// ── AUTH ──────────────────────────────────────────────
+function getStoredPwd(){return localStorage.getItem(PWD_KEY)||DEFAULT_PWD;}
+function tryLogin(){if($('pwd-input').value===getStoredPwd()){sessionStorage.setItem(SESSION_KEY,'1');showAdmin();}else{$('login-error').style.display='block';$('pwd-input').value='';$('pwd-input').focus();}}
+function logout(){sessionStorage.removeItem(SESSION_KEY);location.reload();}
+function showAdmin(){$('login-screen').style.display='none';$('admin-screen').style.display='block';loadAll();}
+if(sessionStorage.getItem(SESSION_KEY)==='1')showAdmin();
+$('pwd-input').addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
 
-function showSaving(v) { $('saving').classList.toggle('show', v); }
-
-// ── AUTH ─────────────────────────────────────────────
-function getStoredPwd() { return localStorage.getItem(PWD_KEY) || DEFAULT_PWD; }
-function tryLogin() {
-  if ($('pwd-input').value === getStoredPwd()) {
-    sessionStorage.setItem(SESSION_KEY, '1');
-    showAdmin();
-  } else {
-    $('login-error').style.display = 'block';
-    $('pwd-input').value = ''; $('pwd-input').focus();
-  }
-}
-function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
-function showAdmin() {
-  $('login-screen').style.display = 'none';
-  $('admin-screen').style.display = 'block';
-  loadAll();
-}
-if (sessionStorage.getItem(SESSION_KEY) === '1') showAdmin();
-$('pwd-input').addEventListener('keydown', e => { if (e.key==='Enter') tryLogin(); });
-
-// ── TABS ─────────────────────────────────────────────
-const TAB_NAMES = ['palettes','gallery','site','security'];
-function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', TAB_NAMES[i]===name));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+// ── TABS ──────────────────────────────────────────────
+const TAB_NAMES=['palettes','gallery','batches','site','security'];
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',TAB_NAMES[i]===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   $('tab-'+name).classList.add('active');
 }
 
-// ── LOAD ─────────────────────────────────────────────
-let pals = [], gallery = [], site = {};
-async function loadAll() {
-  [pals, gallery, site] = await Promise.all([
-    ghRead('palettes.json').then(d => d||[]),
-    ghRead('gallery.json').then(d => d||[]),
-    ghRead('site.json').then(d => d||{}),
+// ── LOAD ──────────────────────────────────────────────
+let pals=[],gallery=[],galleryKrrtk=[],site={};
+async function loadAll(){
+  [pals,gallery,galleryKrrtk,site]=await Promise.all([
+    ghRead('palettes.json').then(d=>d||[]),
+    ghRead('plls.json').then(d=>d||[]),
+    ghRead('krrtk.json').then(d=>d||[]),
+    ghRead('site.json').then(d=>d||{}),
   ]);
-  renderPalettes(); renderGallery(); loadSiteForm();
+  renderPalettes();renderGallery();renderBatches();loadSiteForm();
 }
 
-// ── PALETTES ─────────────────────────────────────────
-function renderPalettes() {
-  $('pal-count').textContent = pals.length;
-  const list = $('palette-list');
-  if (!pals.length) { list.innerHTML='<div class="empty-state">No palettes yet</div>'; return; }
-  list.innerHTML = pals.map((p,i) => `
-    <div class="palette-row">
+// ── PALETTE PROB ──────────────────────────────────────
+function ageWeight(c){if(!c||c<1000)return 1;const d=(Date.now()-c)/86400000;if(d<30)return 4;if(d<90)return 2;if(d<180)return 1;if(d<365)return 0.4;return 0.15;}
+function computeProbs(data){
+  const active=data.filter(p=>p.active!==false);
+  const totalW=active.reduce((s,p)=>s+ageWeight(p.created),0);
+  return data.map(p=>({...p,prob:p.active!==false?ageWeight(p.created)/totalW:0}));
+}
+function probRarity(prob){if(prob>0.08)return{label:'Common',cls:'common'};if(prob>0.03)return{label:'Uncommon',cls:'uncommon'};if(prob>0.01)return{label:'Rare',cls:'rare'};if(prob>0.003)return{label:'Super Rare',cls:'superrare'};return{label:'Legendary',cls:'legendary'};}
+function fmtDate(ms){if(!ms||ms<1000)return'—';return new Date(ms).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
+
+// ── PALETTES ──────────────────────────────────────────
+function renderPalettes(){
+  const data=computeProbs(pals);
+  $('pal-count').textContent=data.length;
+  const list=$('palette-list');
+  if(!data.length){list.innerHTML='<div class="empty-state">No palettes yet</div>';return;}
+  list.innerHTML=data.map((p,i)=>{
+    const active=p.active!==false;
+    const rarity=active?probRarity(p.prob):null;
+    return`<div class="palette-row${active?'':' inactive-row'}">
       <div class="pal-swatches">${p.colors.slice(0,8).map(c=>`<span class="pal-swatch" style="background:${esc(c)}"></span>`).join('')}</div>
-      <div style="flex:1;min-width:0">
+      <div class="pal-info">
         <div class="pal-name">${esc(p.name)}</div>
-        ${p.tags?.length?`<div class="pal-tags">${p.tags.map(t=>esc(t)).join(', ')}</div>`:''}
+        <div class="pal-meta">${fmtDate(p.created)}${active&&rarity?' · '+(p.prob*100).toFixed(1)+'% chance':' · inactive'}</div>
       </div>
-      <label class="toggle">
-        <input type="checkbox" ${p.active!==false?'checked':''} onchange="togglePal(${i},this.checked)">
-        <div class="toggle-track"></div><div class="toggle-thumb"></div>
-      </label>
+      ${rarity?`<span class="prob-badge prob-${rarity.cls}">${rarity.label}</span>`:`<span class="prob-badge prob-common" style="opacity:0.4">Inactive</span>`}
+      <label class="toggle"><input type="checkbox" ${active?'checked':''} onchange="togglePal(${i},this.checked)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
       <div class="pal-actions">
-        <button class="icon-btn" title="Edit" onclick="editPal(${i})">✎</button>
-        <button class="icon-btn del" title="Delete" onclick="deletePal(${i})">✕</button>
+        <button class="icon-btn" onclick="editPal(${i})">✎</button>
+        <button class="icon-btn del" onclick="deletePal(${i})">✕</button>
       </div>
-    </div>`).join('');
+    </div>`}).join('');
 }
+async function togglePal(i,val){pals[i].active=val;await ghFetch('data/palettes.json',pals,`toggle palette: ${pals[i].name}`);renderPalettes();toast(val?'Palette activated':'Deactivated');}
+async function deletePal(i){if(!confirm('Delete this palette?'))return;const name=pals[i].name;pals.splice(i,1);await ghFetch('data/palettes.json',pals,`delete: ${name}`);renderPalettes();toast('Deleted');}
 
-async function togglePal(i, val) {
-  pals[i].active = val;
-  await ghFetch('data/palettes.json', pals, `toggle palette: ${pals[i].name}`);
-  toast(val ? 'Palette activated' : 'Palette deactivated');
-}
-
-async function deletePal(i) {
-  if (!confirm('Delete this palette?')) return;
-  const name = pals[i].name;
-  pals.splice(i,1);
-  await ghFetch('data/palettes.json', pals, `delete palette: ${name}`);
-  renderPalettes(); toast('Palette deleted');
-}
-
-// ── PALETTE MODAL ─────────────────────────────────────
-let editIdx = null, tmpColors = [];
-function openPalModal(idx) {
-  editIdx = idx !== undefined ? idx : null;
-  const p = editIdx !== null ? pals[editIdx] : null;
-  $('modal-title').textContent = p ? 'Edit Palette' : 'New Palette';
-  $('pal-name').value = p?.name || '';
-  $('pal-tags').value = (p?.tags||[]).join(', ');
-  $('pal-notes').value = p?.notes || '';
-  tmpColors = p ? [...p.colors] : [];
-  refreshChips();
-  $('overlay').classList.add('open');
-  setTimeout(()=>$('pal-name').focus(),100);
-}
-function closePalModal() { $('overlay').classList.remove('open'); }
-function closeIfBg(e) { if (e.target===$('overlay')) closePalModal(); }
-function addColor() {
-  let h = $('hex-input').value.trim() || $('color-picker').value;
-  if (!h.startsWith('#')) h='#'+h;
-  if (!/^#[0-9a-fA-F]{6}$/.test(h)) { toast('Invalid hex'); return; }
-  if (tmpColors.length>=12) { toast('Max 12 colors'); return; }
-  tmpColors.push(h.toLowerCase()); $('hex-input').value=''; refreshChips();
-}
+let editIdx=null,tmpColors=[];
+function openPalModal(idx){editIdx=idx!==undefined?idx:null;const p=editIdx!==null?pals[editIdx]:null;$('modal-title').textContent=p?'Edit Palette':'New Palette';$('pal-name').value=p?.name||'';$('pal-tags').value=(p?.tags||[]).join(', ');$('pal-notes').value=p?.notes||'';tmpColors=p?[...p.colors]:[];refreshChips();$('overlay').classList.add('open');setTimeout(()=>$('pal-name').focus(),100);}
+function closePalModal(){$('overlay').classList.remove('open');}
+function closeIfBg(e){if(e.target===$('overlay'))closePalModal();}
+function addColor(){let h=$('hex-input').value.trim()||$('color-picker').value;if(!h.startsWith('#'))h='#'+h;if(!/^#[0-9a-fA-F]{6}$/.test(h)){toast('Invalid hex');return;}if(tmpColors.length>=12){toast('Max 12');return;}tmpColors.push(h.toLowerCase());$('hex-input').value='';refreshChips();}
 $('color-picker').addEventListener('input',()=>$('hex-input').value=$('color-picker').value);
-$('hex-input').addEventListener('input',()=>{ let v=$('hex-input').value.trim(); if(!v.startsWith('#'))v='#'+v; if(/^#[0-9a-fA-F]{6}$/.test(v))$('color-picker').value=v; });
-$('hex-input').addEventListener('keydown',e=>{ if(e.key==='Enter')addColor(); });
-function refreshChips() {
-  $('color-chips').innerHTML = tmpColors.map((c,i)=>`<div class="chip"><span class="chip-dot" style="background:${c}"></span><span>${c}</span><button class="chip-rm" onclick="rmColor(${i})">×</button></div>`).join('');
-  const prev=$('preview');
-  if(tmpColors.length){prev.style.display='flex';prev.innerHTML=tmpColors.map(c=>`<span style="background:${c}"></span>`).join('');}
-  else prev.style.display='none';
-}
+$('hex-input').addEventListener('input',()=>{let v=$('hex-input').value.trim();if(!v.startsWith('#'))v='#'+v;if(/^#[0-9a-fA-F]{6}$/.test(v))$('color-picker').value=v;});
+$('hex-input').addEventListener('keydown',e=>{if(e.key==='Enter')addColor();});
+function refreshChips(){$('color-chips').innerHTML=tmpColors.map((c,i)=>`<div class="chip"><span class="chip-dot" style="background:${c}"></span><span>${c}</span><button class="chip-rm" onclick="rmColor(${i})">×</button></div>`).join('');const prev=$('preview');if(tmpColors.length){prev.style.display='flex';prev.innerHTML=tmpColors.map(c=>`<span style="background:${c}"></span>`).join('');}else prev.style.display='none';}
 function rmColor(i){tmpColors.splice(i,1);refreshChips();}
 function editPal(i){openPalModal(i);}
-async function savePalette() {
-  const name=$('pal-name').value.trim();
-  if(!name){toast('Add a name');return;}
-  if(!tmpColors.length){toast('Add at least one color');return;}
-  const tags=$('pal-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
-  const notes=$('pal-notes').value.trim();
-  if(editIdx!==null){
-    pals[editIdx]={...pals[editIdx],name,colors:[...tmpColors],tags,notes};
-    toast('Palette updated');
-  }else{
-    pals.unshift({id:Date.now(),name,colors:[...tmpColors],tags,notes,active:true,created:Date.now()});
-    toast('Palette saved');
-  }
-  await ghFetch('data/palettes.json',pals,`${editIdx!==null?'update':'add'} palette: ${name}`);
-  closePalModal(); renderPalettes();
+async function savePalette(){
+  const name=$('pal-name').value.trim();if(!name){toast('Add a name');return;}if(!tmpColors.length){toast('Add at least one color');return;}
+  const tags=$('pal-tags').value.split(',').map(t=>t.trim()).filter(Boolean),notes=$('pal-notes').value.trim();
+  if(editIdx!==null){pals[editIdx]={...pals[editIdx],name,colors:[...tmpColors],tags,notes};toast('Palette updated');}
+  else{pals.unshift({id:Date.now(),name,colors:[...tmpColors],tags,notes,active:true,created:Date.now()});toast('Palette saved');}
+  await ghFetch('data/palettes.json',pals,(editIdx!==null?'update':'add')+' palette: '+name);
+  closePalModal();renderPalettes();
 }
 
 // ── GALLERY ───────────────────────────────────────────
-function renderGallery() {
-  $('gal-count').textContent = gallery.length;
+function renderGallery(){
+  $('gal-count').textContent=gallery.length;
   const grid=$('gallery-grid');
-  if(!gallery.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';return;}
-  grid.innerHTML=gallery.map((item,i)=>`
-    <div class="gallery-item">
-      <img src="${item.dataUrl}" alt="seed ${item.seed}" loading="lazy">
-      <div class="gallery-item-footer">
-        <span>#${item.seed}</span>
-        <button class="gallery-del" onclick="deleteGalleryItem(${i})">✕</button>
+  if(!gallery.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
+  else grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><button class="gallery-del" onclick="deleteGalleryItem(${i})">✕</button></div></div>`).join('');
+  $('gal-krrtk-count').textContent=galleryKrrtk.length;
+  const kgrid=$('gallery-krrtk-grid');
+  if(!galleryKrrtk.length){kgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
+  else kgrid.innerHTML=galleryKrrtk.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><button class="gallery-del" onclick="deleteKrrtkItem(${i})">✕</button></div></div>`).join('');
+}
+async function deleteGalleryItem(i){if(!confirm('Delete?'))return;gallery.splice(i,1);await ghFetch('data/plls.json',gallery,'delete gallery item');renderGallery();toast('Deleted');}
+async function deleteKrrtkItem(i){if(!confirm('Delete?'))return;galleryKrrtk.splice(i,1);await ghFetch('data/krrtk.json',galleryKrrtk,'delete krrtk item');renderGallery();toast('Deleted');}
+async function clearAllGallery(){if(!confirm('Clear all Pills gallery?'))return;gallery=[];await ghFetch('data/plls.json',[],'clear pills gallery');renderGallery();toast('Cleared');}
+async function clearKrrtkGallery(){if(!confirm('Clear all KRRTK gallery?'))return;galleryKrrtk=[];await ghFetch('data/krrtk.json',[],'clear krrtk gallery');renderGallery();toast('Cleared');}
+
+// ── BATCHES ───────────────────────────────────────────
+function getBatches(){try{return JSON.parse(localStorage.getItem(BATCH_KEY)||'[]');}catch(e){return[];}}
+function saveBatches(b){localStorage.setItem(BATCH_KEY,JSON.stringify(b));}
+function getActiveBatch(){try{return JSON.parse(localStorage.getItem(ACTIVE_BATCH_KEY)||'null');}catch(e){return null;}}
+function setActiveBatch(b){if(b)localStorage.setItem(ACTIVE_BATCH_KEY,JSON.stringify(b));else localStorage.removeItem(ACTIVE_BATCH_KEY);}
+
+function createBatch(){
+  const name=$('batch-name').value.trim();if(!name){toast('Add a batch name');return;}
+  const work=$('batch-work').value;
+  const active=getActiveBatch();
+  if(active){if(!confirm('You have an open batch. Close it and start a new one?'))return;closeBatch();}
+  const batch={id:Date.now(),name,work,items:[],created:Date.now()};
+  setActiveBatch(batch);
+  $('batch-name').value='';
+  renderBatches();
+  toast('Batch "'+name+'" started — go to '+work.toUpperCase()+' and save works');
+}
+
+function closeBatch(){
+  const active=getActiveBatch();
+  if(!active)return;
+  if(active.items.length===0){if(!confirm('This batch is empty. Discard it?'))return;setActiveBatch(null);renderBatches();return;}
+  const batches=getBatches();batches.unshift(active);saveBatches(batches);setActiveBatch(null);renderBatches();
+  toast('Batch "'+active.name+'" saved with '+active.items.length+' work'+( active.items.length===1?'':'s'));
+}
+
+function removeBatchItem(batchId,itemIdx){
+  const active=getActiveBatch();
+  if(active&&active.id===batchId){active.items.splice(itemIdx,1);setActiveBatch(active);renderBatches();return;}
+  const batches=getBatches();const b=batches.find(x=>x.id===batchId);if(!b)return;b.items.splice(itemIdx,1);saveBatches(batches);renderBatches();
+}
+
+function deleteBatch(id){
+  if(!confirm('Delete this batch?'))return;
+  const batches=getBatches().filter(b=>b.id!==id);saveBatches(batches);renderBatches();toast('Batch deleted');
+}
+
+function downloadBatch(id){
+  const batches=[...getBatches()];const active=getActiveBatch();if(active)batches.unshift(active);
+  const b=batches.find(x=>x.id===id);if(!b||!b.items.length){toast('No items in batch');return;}
+  b.items.forEach((item,i)=>{
+    const a=document.createElement('a');
+    a.href=item.dataUrl;
+    a.download=`${b.work}_${b.name.replace(/\s+/g,'_')}_${i+1}_${item.seed}.jpg`;
+    setTimeout(()=>a.click(),i*200);
+  });
+  toast('Downloading '+b.items.length+' files…');
+}
+
+function renderBatches(){
+  const active=getActiveBatch();
+  const panel=$('active-batch-panel');
+  if(active){
+    panel.style.display='block';
+    $('active-batch-title').textContent=active.name;
+    $('active-batch-work').textContent=active.work.toUpperCase()+' · '+active.items.length+' item'+( active.items.length===1?'':'s');
+    $('active-batch-count').textContent=active.items.length;
+    $('active-batch-link').href=active.work+'.html';
+    $('active-batch-link').textContent=active.work==='krrtk'?'KRRTK':'PLLS';
+    $('active-batch-thumbs').innerHTML=active.items.length
+      ?active.items.map((item,i)=>`<div class="batch-thumb"><img src="${item.dataUrl}"><div class="batch-thumb-label">#${item.seed}</div><button class="batch-thumb-del" onclick="removeBatchItem(${active.id},${i})">✕</button></div>`).join('')
+      :'<div style="font-size:9px;color:var(--ink3);padding:8px;letter-spacing:0.06em;">No items yet — go generate and save to batch</div>';
+  } else {
+    panel.style.display='none';
+  }
+  const batches=getBatches();
+  $('batch-count').textContent=batches.length;
+  const list=$('batch-list');
+  if(!batches.length){list.innerHTML='<div class="empty-state">No batches yet</div>';return;}
+  list.innerHTML=batches.map(b=>`
+    <div class="batch-card">
+      <div class="batch-header">
+        <div>
+          <div class="batch-title">${esc(b.name)}</div>
+          <div class="batch-meta">${b.work.toUpperCase()} · ${b.items.length} work${b.items.length===1?'':'s'} · ${fmtDate(b.created)}</div>
+        </div>
+        <div class="batch-actions">
+          <button class="btn btn-outline" style="font-size:9px;padding:6px 10px;" onclick="downloadBatch(${b.id})">↓ Download All</button>
+          <button class="btn btn-danger" style="font-size:9px;padding:6px 10px;" onclick="deleteBatch(${b.id})">Delete</button>
+        </div>
       </div>
+      ${b.items.length?`<div class="batch-thumbs">${b.items.map((item,i)=>`<div class="batch-thumb"><img src="${item.dataUrl}"><div class="batch-thumb-label">#${item.seed}</div><button class="batch-thumb-del" onclick="removeBatchItem(${b.id},${i})">✕</button></div>`).join('')}</div>`:'<div style="padding:14px;font-size:9px;color:var(--ink3);letter-spacing:0.06em;">Empty batch</div>'}
     </div>`).join('');
 }
-async function deleteGalleryItem(i) {
-  if(!confirm('Delete this iteration?'))return;
-  gallery.splice(i,1);
-  await ghFetch('data/gallery.json',gallery,'delete gallery item');
-  renderGallery(); toast('Iteration deleted');
-}
-async function clearAllGallery() {
-  if(!confirm('Clear all saved iterations?'))return;
-  gallery=[];
-  await ghFetch('data/gallery.json',[],'clear gallery');
-  renderGallery(); toast('Gallery cleared');
-}
 
-// ── SITE ─────────────────────────────────────────────
-function loadSiteForm() {
-  $('about-text-input').value = site.aboutText||'';
-  $('email-input').value = site.footerEmail||'';
-  $('instagram-input').value = site.footerInstagram||'';
-}
-async function saveSiteContent() {
-  const data={aboutText:$('about-text-input').value.trim(),footerEmail:$('email-input').value.trim(),footerInstagram:$('instagram-input').value.trim()};
-  const ok=await ghFetch('data/site.json',data,'update site content');
-  if(ok) toast('Site content published');
-}
+// Expose for pills/krrtk pages to call
+window.addToBatch = function(work, item) {
+  const active = getActiveBatch();
+  if (!active) { return false; }
+  if (active.work !== work) { return false; }
+  active.items.push(item);
+  setActiveBatch(active);
+  return true;
+};
+window.getActiveBatchInfo = function() {
+  const b = getActiveBatch();
+  return b ? { name: b.name, work: b.work, count: b.items.length } : null;
+};
+
+// ── SITE ──────────────────────────────────────────────
+function loadSiteForm(){$('about-text-input').value=site.aboutText||'';$('email-input').value=site.footerEmail||'';$('instagram-input').value=site.footerInstagram||'';}
+async function saveSiteContent(){const data={aboutText:$('about-text-input').value.trim(),footerEmail:$('email-input').value.trim(),footerInstagram:$('instagram-input').value.trim()};const ok=await ghFetch('data/site.json',data,'update site content');if(ok)toast('Published ✓ — live in ~30s');}
 
 // ── SECURITY ──────────────────────────────────────────
-function changePassword() {
-  const current=$('pwd-current').value,newP=$('pwd-new').value,conf=$('pwd-confirm').value;
-  if(current!==getStoredPwd()){toast('Current password incorrect');return;}
-  if(!newP){toast('New password cannot be empty');return;}
-  if(newP!==conf){toast('Passwords do not match');return;}
-  localStorage.setItem(PWD_KEY,newP);
-  $('pwd-current').value='';$('pwd-new').value='';$('pwd-confirm').value='';
-  toast('Password updated');
-}
-function saveToken() {
-  const t=$('gh-token-input').value.trim();
-  if(!t){toast('Token cannot be empty');return;}
-  localStorage.setItem(TOKEN_KEY,t);
-  $('gh-token-input').value='';
-  toast('Token saved');
-}
+function changePassword(){const c=$('pwd-current').value,n=$('pwd-new').value,cf=$('pwd-confirm').value;if(c!==getStoredPwd()){toast('Incorrect current password');return;}if(!n){toast('New password empty');return;}if(n!==cf){toast('Passwords do not match');return;}localStorage.setItem(PWD_KEY,n);$('pwd-current').value='';$('pwd-new').value='';$('pwd-confirm').value='';toast('Password updated');}
+function saveToken(){const t=$('gh-token-input').value.trim();if(!t){toast('Token cannot be empty');return;}localStorage.setItem(TOKEN_KEY,t);$('gh-token-input').value='';toast('Token saved');}
 
 // ── UTILS ─────────────────────────────────────────────
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 </script>
 </body>
 </html>

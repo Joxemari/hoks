@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pills — hoks</title>
+<title>PLLS — hoks</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -13,130 +13,71 @@
   --f: 'Courier New', Courier, monospace; --r: 2px;
 }
 body { font-family: var(--f); background: var(--bg); color: var(--ink); min-height: 100vh; }
-.layout {
-  display: grid; grid-template-columns: 240px 1fr;
-  min-height: calc(100vh - 52px); margin-top: 52px;
-}
-/* SIDEBAR */
+.layout { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 52px); margin-top: 52px; }
 .sidebar {
   border-right: 1px solid var(--border); padding: 1.2rem;
   display: flex; flex-direction: column; gap: 1.2rem;
-  overflow-y: auto; max-height: calc(100vh - 52px);
-  position: sticky; top: 52px;
+  overflow-y: auto; max-height: calc(100vh - 52px); position: sticky; top: 52px;
 }
 .sidebar-section { display: flex; flex-direction: column; gap: 6px; }
-.sidebar-label {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--ink3);
-}
+.sidebar-label { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); }
 .btn {
-  font-family: var(--f); font-size: 10px; font-weight: 700;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  background: var(--ink); color: #fff; border: none;
-  border-radius: var(--r); padding: 9px 14px;
-  cursor: pointer; transition: opacity 0.15s; width: 100%; text-align: center;
+  font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--ink); color: #fff; border: none; border-radius: var(--r);
+  padding: 9px 14px; cursor: pointer; transition: opacity 0.15s; width: 100%; text-align: center;
 }
 .btn:hover { opacity: 0.75; }
-.btn-outline {
-  background: transparent; color: var(--ink);
-  border: 1px solid var(--border-dark);
-}
+.btn-outline { background: transparent; color: var(--ink); border: 1px solid var(--border-dark); }
 .btn-outline:hover { background: var(--surface); opacity: 1; }
 .seed-display {
   font-family: var(--f); font-size: 10px; color: var(--ink3);
   padding: 5px 8px; background: var(--surface);
-  border-radius: var(--r); border: 1px solid var(--border);
-  word-break: break-all; letter-spacing: 0.04em;
+  border-radius: var(--r); border: 1px solid var(--border); letter-spacing: 0.04em;
 }
-/* TRAITS — fix overlap */
 .trait-list { display: flex; flex-direction: column; gap: 5px; }
-.trait-row {
-  display: flex; justify-content: space-between;
-  align-items: flex-start; font-size: 10px; gap: 4px;
-  flex-wrap: wrap;
-}
-.trait-key {
-  color: var(--ink3); flex-shrink: 0;
-  text-transform: uppercase; font-size: 9px;
-  letter-spacing: 0.07em; font-weight: 400;
-  min-width: 56px; padding-top: 2px;
-}
-.trait-right {
-  display: flex; align-items: center; gap: 4px;
-  flex-wrap: wrap; justify-content: flex-end; flex: 1;
-}
+.trait-row { display: flex; justify-content: space-between; align-items: flex-start; font-size: 10px; gap: 4px; flex-wrap: wrap; }
+.trait-key { color: var(--ink3); flex-shrink: 0; text-transform: uppercase; font-size: 9px; letter-spacing: 0.07em; font-weight: 400; min-width: 56px; padding-top: 2px; }
+.trait-right { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; flex: 1; }
 .trait-val { font-weight: 700; font-size: 10px; word-break: break-word; text-align: right; }
-.badge {
-  font-size: 8px; padding: 1px 5px;
-  border-radius: 20px; white-space: nowrap; font-weight: 700;
-  letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0;
-}
-.common { background: #f1efe8; color: #5f5e5a; }
-.uncommon { background: #e1f5ee; color: #085041; }
-.rare { background: #e6f1fb; color: #0c447c; }
+.badge { font-size: 8px; padding: 1px 5px; border-radius: 20px; white-space: nowrap; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0; }
+.common    { background: #f1efe8; color: #5f5e5a; }
+.uncommon  { background: #e1f5ee; color: #085041; }
+.rare      { background: #e6f1fb; color: #0c447c; }
 .superrare { background: #eeedfe; color: #3c3489; }
 .legendary { background: #faeeda; color: #633806; }
-.overall-row {
-  margin-top: 4px; padding-top: 6px;
-  border-top: 1px solid var(--border);
-  display: flex; justify-content: space-between; align-items: center;
-}
-.overall-label {
-  font-size: 9px; color: var(--ink3); font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.08em;
-}
-/* CANVAS */
+.overall-row { margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.overall-label { font-size: 9px; color: var(--ink3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
 .canvas-area {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 2rem; gap: 0.8rem;
-  background: var(--surface); min-height: calc(100vh - 52px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2rem; gap: 0.8rem; background: var(--surface); min-height: calc(100vh - 52px);
+  position: relative;
 }
 canvas {
-  display: block;
-  height: min(72vh, 580px);
-  width: auto;
-  max-width: calc(100vw - 280px);
-  cursor: pointer;
-  background: #f5f0ea;
-  outline: 1px solid rgba(0,0,0,0.12);
+  display: block; height: min(72vh, 580px); width: auto;
+  max-width: calc(100vw - 280px); cursor: pointer;
+  background: #f5f0ea; outline: 1px solid rgba(0,0,0,0.12);
 }
-.canvas-hint {
-  font-family: var(--f); font-size: 9px;
-  color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase;
+/* Progressive reveal overlay */
+.reveal-overlay {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  pointer-events: none; gap: 12px;
 }
-/* GALLERY */
+.reveal-counter {
+  font-family: var(--f); font-size: 11px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--ink3);
+  opacity: 0; transition: opacity 0.3s;
+}
+.reveal-counter.visible { opacity: 1; }
+.canvas-hint { font-family: var(--f); font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; }
 .gallery-section { border-top: 1px solid var(--border); padding: 1.5rem 2rem; }
-.gallery-title {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--ink3); margin-bottom: 1rem;
-}
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;
-}
-.gallery-thumb {
-  border-radius: 2px; overflow: hidden;
-  border: 1px solid var(--border); cursor: pointer;
-  transition: border-color 0.15s; position: relative;
-}
+.gallery-title { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); margin-bottom: 1rem; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.gallery-thumb { border-radius: 2px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; transition: border-color 0.15s; }
 .gallery-thumb:hover { border-color: var(--border-dark); }
 .gallery-thumb img { width: 100%; display: block; }
-.gallery-thumb-seed {
-  font-size: 9px; font-family: var(--f); color: var(--ink3);
-  padding: 4px 6px; background: var(--bg);
-  letter-spacing: 0.04em; text-transform: uppercase;
-}
-.toast {
-  position: fixed; bottom: 2rem; left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--ink); color: #fff;
-  font-family: var(--f); font-size: 10px; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  padding: 9px 18px; border-radius: 2px;
-  opacity: 0; transition: opacity 0.2s, transform 0.2s;
-  pointer-events: none; z-index: 100;
-}
+.gallery-thumb-seed { font-size: 9px; font-family: var(--f); color: var(--ink3); padding: 4px 6px; background: var(--bg); letter-spacing: 0.04em; text-transform: uppercase; }
+.toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 9px 18px; border-radius: 2px; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 100; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
@@ -145,9 +86,10 @@ canvas {
 <div class="layout">
   <aside class="sidebar">
     <div class="sidebar-section">
-      <button class="btn" onclick="generate()">↻ Generate</button>
+      <button class="btn" id="generateBtn" onclick="generate()">↻ Generate</button>
       <button class="btn btn-outline" onclick="exportCard()">⎘ Copy Card</button>
       <button class="btn btn-outline" onclick="saveToGallery()">+ Save</button>
+      <button class="btn btn-outline" id="batchBtn" onclick="saveToBatch()" style="display:none">+ Save to Batch</button>
       <button class="btn btn-outline" onclick="downloadHD()">↓ Download PNG</button>
     </div>
     <div class="sidebar-section">
@@ -170,6 +112,9 @@ canvas {
   <main>
     <div class="canvas-area">
       <canvas id="c" width="1414" height="1000"></canvas>
+      <div class="reveal-overlay" id="revealOverlay">
+        <div class="reveal-counter" id="revealCounter"></div>
+      </div>
       <div class="canvas-hint">Click canvas to generate new variation</div>
     </div>
     <div class="gallery-section" id="gallerySection" style="display:none">
@@ -180,58 +125,75 @@ canvas {
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const LS_PALS_KEY = 'colorpals_v3';
-const LS_GALLERY_KEY = 'hoks-pills-gallery';
+const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
+const GH_TOKEN_KEY = 'hoks-gh-token';
+const REPO = 'Joxemari/hoks';
 
-// Memphis/leopard palette added
-const MEMPHIS = {
-  id: 99, name: "Memphis",
-  colors: ["#ff6b6b","#feca57","#48dbfb","#ff9ff3","#54a0ff","#5f27cd","#00d2d3","#ff9f43","#1dd1a1","#2e2e2e"],
-  prob: 0.033
-};
+// ── PALETTE PROB (age-based scarcity) ─────────────────
+function ageWeight(createdMs) {
+  if (!createdMs || createdMs < 1000) return 1.0;
+  const ageDays = (Date.now() - createdMs) / 86400000;
+  if (ageDays < 30)  return 4.0;
+  if (ageDays < 90)  return 2.0;
+  if (ageDays < 180) return 1.0;
+  if (ageDays < 365) return 0.4;
+  return 0.15;
+}
+function normalizePalettes(pals) {
+  const weights = pals.map(p => ageWeight(p.created));
+  const total = weights.reduce((a,b) => a+b, 0);
+  return pals.map((p,i) => ({ ...p, prob: weights[i]/total }));
+}
+function palRarityFromProb(prob) {
+  if (prob > 0.08)  return 'common';
+  if (prob > 0.03)  return 'uncommon';
+  if (prob > 0.01)  return 'rare';
+  if (prob > 0.003) return 'superrare';
+  return 'legendary';
+}
 
 const DEFAULTS = [
-  { id:1,  name:"Science",    colors:["#ffe819","#000000"],                                                                     prob:0.033 },
-  { id:2,  name:"Mondrian",   colors:["#0a0a0a","#f7f3f2","#0077e1","#f5d216","#fc3503"],                                      prob:0.033 },
-  { id:3,  name:"Paint",      colors:["#b30000","#e6cf00","#1283b3","#fafafa","#0a0a0a"],                                      prob:0.033 },
-  { id:4,  name:"Morning",    colors:["#ffd919","#262104","#fffbe6"],                                                           prob:0.033 },
-  { id:5,  name:"Evening",    colors:["#ff4f19","#15084d","#5ce6e6"],                                                           prob:0.033 },
-  { id:6,  name:"Marble",     colors:["#218ad4","#76df55","#0b1435","#ffffff"],                                                 prob:0.033 },
-  { id:7,  name:"Troll",      colors:["#294984","#6ca0a7","#ffc789","#df5f50","#5a3034","#fff1dd"],                            prob:0.033 },
-  { id:8,  name:"Meta",       colors:["#226699","#dd2e44","#ffcc4d"],                                                           prob:0.033 },
-  { id:9,  name:"Splash",     colors:["#32312e","#795330","#c7ae82","#f5f2e3"],                                                 prob:0.033 },
-  { id:10, name:"Sheets",     colors:["#025760","#7fd0d3","#b3ead7","#eff7f5","#fae9c1","#f8ca75","#e88d44"],                  prob:0.033 },
-  { id:11, name:"Her",        colors:["#cd1440","#fafafa"],                                                                     prob:0.033 },
-  { id:12, name:"Fans",       colors:["#000000","#83a6bc","#faece1","#bab1a8"],                                                 prob:0.033 },
-  { id:13, name:"Light",      colors:["#00b2b4","#fdd35b","#3b4696","#f4737d","#333333"],                                      prob:0.033 },
-  { id:14, name:"Escape",     colors:["#f3e17e","#dd483c","#4b8a5f","#0d150b","#faf8e2"],                                      prob:0.033 },
-  { id:15, name:"Play",       colors:["#e20404","#fcd202","#ffffff","#000000"],                                                 prob:0.033 },
-  { id:16, name:"Repetition", colors:["#2c2060","#4bd3e5","#fffbe6","#ffd919","#ff4f19"],                                      prob:0.033 },
-  { id:17, name:"North",      colors:["#dc060e","#ffd400","#0064b0","#001a5b","#ffffff"],                                      prob:0.033 },
-  { id:18, name:"Commit",     colors:["#563d7c","#0096d8","#f4e361","#f24679"],                                                 prob:0.033 },
-  { id:19, name:"Wheel",      colors:["#ffe140","#ffa922","#1bc0c6","#2484ae","#134e6e"],                                      prob:0.033 },
-  { id:20, name:"Edit",       colors:["#1c1c1c","#f47a9d","#f4ea7a","#f2f2f2"],                                                prob:0.033 },
-  { id:21, name:"Optical",    colors:["#f2eb8a","#fed000","#fc8405","#ed361a","#e2f0f3","#b3dce0","#4464a1","#203051","#ffc5c7","#f398c3","#cf3895","#6d358a","#06b4b0","#4b8a5f"], prob:0.033 },
-  { id:22, name:"Homage",     colors:["#fef9c6","#ffcc4d","#f5b800","#56a1c4","#4464a1","#ee726b","#df5f50","#5a3034"],        prob:0.033 },
-  { id:23, name:"Base",       colors:["#f0f0f0","#8c8c8c","#0f0f0f","#0863d3","#f5d216","#f43809","#08b233","#9913bf"],        prob:0.033 },
-  { id:24, name:"Ten",        colors:["#fffbe6","#050505","#abcd5e","#29ac9f","#14976b","#b3dce0","#62b6de","#2b67af","#f589a3","#ef562f","#fc8405","#f9d531"], prob:0.033 },
-  { id:25, name:"Iris",       colors:["#ebedec","#71859d","#f6d448","#fafafa"],                                                 prob:0.033 },
-  { id:26, name:"Right",      colors:["#4464a1","#62b6de","#b3dce0","#fafafa","#ffc5c7","#ee726b","#cd1440"],                  prob:0.033 },
-  { id:27, name:"Slussen",    colors:["#fafafa","#f398c3","#f44e24","#f4d730","#23b247","#2a76d3","#0a0a0a"],                  prob:0.033 },
-  { id:28, name:"Poet",       colors:["#f4f3ed","#efc807","#ed5d53","#e2dbb5","#45291c","#080b0f"],                            prob:0.033 },
-  { id:29, name:"Daily",      colors:["#131314","#272829","#ffe18e","#fff0c6"],                                                 prob:0.033 },
-  { id:30, name:"Podcast",    colors:["#584594","#e488b7","#d74c41","#f0d235","#36ad63","#69bcea","#fdfdfd"],                  prob:0.033 },
-  { id:31, name:"Itten I",   colors:["#e8b84b","#9b7fb6","#7a6b8a","#c9a227"], prob:0.033 },
-  { id:32, name:"Itten II",  colors:["#e07b39","#4a7fb5","#3a6090","#c96a28"], prob:0.033 },
-  { id:33, name:"Itten III", colors:["#c0392b","#2a7f6f","#1a6a5a","#a93226"], prob:0.033 },
-  { id:34, name:"Itten IV",  colors:["#c0392b","#2e86ab","#1a6e8a","#a93226"], prob:0.033 },
-  { id:35, name:"Itten V",   colors:["#7b4fa6","#8ab540","#6a9a30","#6a3d8a"], prob:0.033 },
-  { id:36, name:"Itten VI",  colors:["#3a8a4a","#7b4fa6","#6a3d8a","#2a7a3a"], prob:0.033 },
-  MEMPHIS,
+  { id:1,  name:"Science",    active:true, colors:["#ffe819","#000000"], created:1 },
+  { id:2,  name:"Mondrian",   active:true, colors:["#0a0a0a","#f7f3f2","#0077e1","#f5d216","#fc3503"], created:2 },
+  { id:3,  name:"Paint",      active:true, colors:["#b30000","#e6cf00","#1283b3","#fafafa","#0a0a0a"], created:3 },
+  { id:4,  name:"Morning",    active:true, colors:["#ffd919","#262104","#fffbe6"], created:4 },
+  { id:5,  name:"Evening",    active:true, colors:["#ff4f19","#15084d","#5ce6e6"], created:5 },
+  { id:6,  name:"Marble",     active:true, colors:["#218ad4","#76df55","#0b1435","#ffffff"], created:6 },
+  { id:7,  name:"Troll",      active:true, colors:["#294984","#6ca0a7","#ffc789","#df5f50","#5a3034","#fff1dd"], created:7 },
+  { id:8,  name:"Meta",       active:true, colors:["#226699","#dd2e44","#ffcc4d"], created:8 },
+  { id:9,  name:"Splash",     active:true, colors:["#32312e","#795330","#c7ae82","#f5f2e3"], created:9 },
+  { id:10, name:"Sheets",     active:true, colors:["#025760","#7fd0d3","#b3ead7","#eff7f5","#fae9c1","#f8ca75","#e88d44"], created:10 },
+  { id:11, name:"Her",        active:true, colors:["#cd1440","#fafafa"], created:11 },
+  { id:12, name:"Fans",       active:true, colors:["#000000","#83a6bc","#faece1","#bab1a8"], created:12 },
+  { id:13, name:"Light",      active:true, colors:["#00b2b4","#fdd35b","#3b4696","#f4737d","#333333"], created:13 },
+  { id:14, name:"Escape",     active:true, colors:["#f3e17e","#dd483c","#4b8a5f","#0d150b","#faf8e2"], created:14 },
+  { id:15, name:"Play",       active:true, colors:["#e20404","#fcd202","#ffffff","#000000"], created:15 },
+  { id:16, name:"Repetition", active:true, colors:["#2c2060","#4bd3e5","#fffbe6","#ffd919","#ff4f19"], created:16 },
+  { id:17, name:"North",      active:true, colors:["#dc060e","#ffd400","#0064b0","#001a5b","#ffffff"], created:17 },
+  { id:18, name:"Commit",     active:true, colors:["#563d7c","#0096d8","#f4e361","#f24679"], created:18 },
+  { id:19, name:"Wheel",      active:true, colors:["#ffe140","#ffa922","#1bc0c6","#2484ae","#134e6e"], created:19 },
+  { id:20, name:"Edit",       active:true, colors:["#1c1c1c","#f47a9d","#f4ea7a","#f2f2f2"], created:20 },
+  { id:21, name:"Optical",    active:true, colors:["#f2eb8a","#fed000","#fc8405","#ed361a","#e2f0f3","#b3dce0","#4464a1","#203051","#ffc5c7","#f398c3","#cf3895","#6d358a","#06b4b0","#4b8a5f"], created:21 },
+  { id:22, name:"Homage",     active:true, colors:["#fef9c6","#ffcc4d","#f5b800","#56a1c4","#4464a1","#ee726b","#df5f50","#5a3034"], created:22 },
+  { id:23, name:"Base",       active:true, colors:["#f0f0f0","#8c8c8c","#0f0f0f","#0863d3","#f5d216","#f43809","#08b233","#9913bf"], created:23 },
+  { id:24, name:"Ten",        active:true, colors:["#fffbe6","#050505","#abcd5e","#29ac9f","#14976b","#b3dce0","#62b6de","#2b67af","#f589a3","#ef562f","#fc8405","#f9d531"], created:24 },
+  { id:25, name:"Iris",       active:true, colors:["#ebedec","#71859d","#f6d448","#fafafa"], created:25 },
+  { id:26, name:"Right",      active:true, colors:["#4464a1","#62b6de","#b3dce0","#fafafa","#ffc5c7","#ee726b","#cd1440"], created:26 },
+  { id:27, name:"Slussen",    active:true, colors:["#fafafa","#f398c3","#f44e24","#f4d730","#23b247","#2a76d3","#0a0a0a"], created:27 },
+  { id:28, name:"Poet",       active:true, colors:["#f4f3ed","#efc807","#ed5d53","#e2dbb5","#45291c","#080b0f"], created:28 },
+  { id:29, name:"Daily",      active:true, colors:["#131314","#272829","#ffe18e","#fff0c6"], created:29 },
+  { id:30, name:"Podcast",    active:true, colors:["#584594","#e488b7","#d74c41","#f0d235","#36ad63","#69bcea","#fdfdfd"], created:30 },
+  { id:31, name:"Itten I",    active:true, colors:["#e8b84b","#9b7fb6","#7a6b8a","#c9a227"], created:31 },
+  { id:32, name:"Itten II",   active:true, colors:["#e07b39","#4a7fb5","#3a6090","#c96a28"], created:32 },
+  { id:33, name:"Itten III",  active:true, colors:["#c0392b","#2a7f6f","#1a6a5a","#a93226"], created:33 },
+  { id:34, name:"Itten IV",   active:true, colors:["#c0392b","#2e86ab","#1a6e8a","#a93226"], created:34 },
+  { id:35, name:"Itten V",    active:true, colors:["#7b4fa6","#8ab540","#6a9a30","#6a3d8a"], created:35 },
+  { id:36, name:"Itten VI",   active:true, colors:["#3a8a4a","#7b4fa6","#6a3d8a","#2a7a3a"], created:36 },
+  { id:99, name:"Memphis",    active:true, colors:["#ff6b6b","#feca57","#48dbfb","#ff9ff3","#54a0ff","#5f27cd","#00d2d3","#ff9f43","#1dd1a1","#2e2e2e"], created:99 },
 ];
 
 const ARCHETYPES = [
-  { name:"Scattered", prob:0.60, sizeMin:0.30, sizeMax:0.45, pillMin:5, pillMax:12 },
+  { name:"Scattered", prob:0.60, sizeMin:0.30, sizeMax:0.45, pillMin:5,  pillMax:12 },
   { name:"Dense",     prob:0.25, sizeMin:0.20, sizeMax:0.35, pillMin:10, pillMax:20 },
   { name:"Solo",      prob:0.15, sizeMin:0.40, sizeMax:0.60, pillMin:1,  pillMax:4  },
 ];
@@ -243,21 +205,19 @@ const FINISH_PROBS  = {
 };
 const FINISH_RARITY = { solid:"common", multiply:"common", translucent:"rare", outline:"rare", grain:"rare", gradient:"rare" };
 const RARITY_ORDER  = { common:0, uncommon:1, rare:2, superrare:3, legendary:4 };
+const OFF_WHITE     = '#f5f0ea';
 const GRAIN_TILE    = 16;
 const OVERLAP_TOL   = { Solo:0.15, Scattered:0.35, Dense:0.60 };
 const PLACEMENT_ATT = 20;
-const OFF_WHITE     = '#f5f0ea';
 
-let palettes = [];
-let currentSeed = rand32();
-let gallery = [];
-let lastTraits = [], lastOverall = '';
-let currentTimestamp = new Date();
+let palettes = [], currentSeed = rand32(), gallery = [];
+let lastTraits = [], lastOverall = '', currentTimestamp = new Date();
+let _generating = false;
 
 function rand32() { return Math.random() * 0xFFFFFFFF >>> 0; }
 
 class Rng {
-  constructor(s) { this.s = s | 0; }
+  constructor(s) { this.s = s|0; }
   next() { this.s=(this.s*1664525+1013904223)&0xffffffff; return (this.s>>>0)/4294967296; }
   range(a,b) { return a+this.next()*(b-a); }
   int(a,b) { return Math.floor(this.range(a,b+1)); }
@@ -278,13 +238,10 @@ function overallRarity(archProb, palProb, rarestFinish) {
   return 'legendary';
 }
 
-const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
-const GH_TOKEN_KEY = 'hoks-gh-token';
-const REPO = 'Joxemari/hoks';
-
+// ── GITHUB ────────────────────────────────────────────
 async function ghPush(path, content) {
   const token = localStorage.getItem(GH_TOKEN_KEY);
-  if (!token) return; // no token, skip (visitor mode)
+  if (!token) return;
   let sha;
   try {
     const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
@@ -301,215 +258,130 @@ async function ghPush(path, content) {
   });
 }
 
-
+// ── PALETTES ──────────────────────────────────────────
 function loadPalettes() {
   const _isExact = new URLSearchParams(window.location.search).get('i') !== null;
   fetch(RAW + 'palettes.json?t=' + Date.now())
     .then(r => r.ok ? r.json() : [...DEFAULTS])
     .then(data => {
-      palettes = data.filter(p => p.active !== false);
-      if (!palettes.length) palettes = [...DEFAULTS];
-      palettes = palettes.map(p => ({ ...p, prob: 1/palettes.length }));
+      const active = data.filter(p => p.active !== false);
+      palettes = normalizePalettes(active.length ? active : [...DEFAULTS]);
       if (!_isExact) draw(currentSeed);
     })
     .catch(() => {
-      palettes = [...DEFAULTS].map(p => ({ ...p, prob: 1/DEFAULTS.length }));
+      palettes = normalizePalettes([...DEFAULTS]);
       if (!_isExact) draw(currentSeed);
     });
 }
 
-function loadGallery() {
-  fetch(RAW + 'gallery.json?t=' + Date.now())
-    .then(r => r.ok ? r.json() : [])
-    .then(data => { gallery = data; renderGallery(); })
-    .catch(() => { gallery = []; renderGallery(); });
-}
+// ── DRAWING ───────────────────────────────────────────
+function pillClipPath(ctx,x1,y1,x2,y2,t){const r=t/2,a=Math.atan2(y2-y1,x2-x1);ctx.beginPath();ctx.arc(x1,y1,r,a+Math.PI/2,a+Math.PI*1.5);ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2);ctx.closePath();}
+function drawGrain(ctx,x1,y1,x2,y2,t,color,rng){const[r,g,b]=hexToRgb(color);const alt=rng.bool(0.5)?'#0a0a0a':'#eff7f5';const angle=Math.atan2(y2-y1,x2-x1);const cx=(x1+x2)/2,cy=(y1+y2)/2;const halfLen=Math.hypot(x2-x1,y2-y1)/2+t/2,hw=t/2;const C=[[cx+Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen+Math.cos(angle)*hw],[cx+Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen-Math.cos(angle)*hw],[cx-Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen+Math.cos(angle)*hw],[cx-Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen-Math.cos(angle)*hw]];const xs=C.map(c=>c[0]),ys=C.map(c=>c[1]);const minX=Math.floor(Math.min(...xs)/GRAIN_TILE)*GRAIN_TILE,maxX=Math.ceil(Math.max(...xs)/GRAIN_TILE)*GRAIN_TILE;const minY=Math.floor(Math.min(...ys)/GRAIN_TILE)*GRAIN_TILE,maxY=Math.ceil(Math.max(...ys)/GRAIN_TILE)*GRAIN_TILE;ctx.save();pillClipPath(ctx,x1,y1,x2,y2,t);ctx.clip();for(let tx=minX;tx<maxX;tx+=GRAIN_TILE)for(let ty=minY;ty<maxY;ty+=GRAIN_TILE){const col=Math.round(tx/GRAIN_TILE),row=Math.round(ty/GRAIN_TILE);ctx.fillStyle=(col+row)%2===0?`rgb(${r},${g},${b})`:alt;ctx.fillRect(tx,ty,GRAIN_TILE,GRAIN_TILE);}ctx.restore();}
+function drawPill(ctx,x1,y1,x2,y2,t,color,style,rng,colors){const[r,g,b]=hexToRgb(color);ctx.save();if(style==='solid'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=`rgb(${r},${g},${b})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='multiply'){ctx.globalCompositeOperation='multiply';ctx.strokeStyle=`rgb(${r},${g},${b})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='translucent'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=`rgba(${r},${g},${b},${rng.range(0.22,0.55)})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='outline'){const bw=Math.max(5,t*0.06),oc=rng.bool(0.5)?'#0a0a0a':'#eff7f5';ctx.globalCompositeOperation='source-over';pillClipPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fill();pillClipPath(ctx,x1,y1,x2,y2,t);ctx.strokeStyle=oc;ctx.lineWidth=bw;ctx.stroke();}else if(style==='grain'){drawGrain(ctx,x1,y1,x2,y2,t,color,rng);}else if(style==='gradient'){ctx.globalCompositeOperation='source-over';const a=Math.atan2(y2-y1,x2-x1),px=-Math.sin(a),py=Math.cos(a),h=t/2;const grad=ctx.createLinearGradient((x1+x2)/2+px*h,(y1+y2)/2+py*h,(x1+x2)/2-px*h,(y1+y2)/2-py*h);const[r2,g2,b2]=hexToRgb(rng.pickFrom(colors));grad.addColorStop(0,`rgb(${r},${g},${b})`);grad.addColorStop(1,`rgb(${r2},${g2},${b2})`);pillClipPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=grad;ctx.fill();}ctx.restore();}
+function pickFinish(rng,archName){const probs=FINISH_PROBS[archName];let v=rng.next(),acc=0;for(const[s,p]of Object.entries(probs)){acc+=p;if(v<acc)return s;}return'solid';}
+function pillsOverlapTooMuch(ax,ay,aHL,at,bx,by,bHL,bt,tol){const dist=Math.hypot(ax-bx,ay-by),reach=(at+bt)/2+Math.min(aHL,bHL)*0.5;return Math.max(0,reach-dist)/((at/2+bt/2))>tol;}
 
-async function saveGallery() {
-  await ghPush('data/gallery.json', gallery);
-}
+// ── PROGRESSIVE DRAW ──────────────────────────────────
+function draw(s) {
+  if (!palettes.length || _generating) return;
+  _generating = true;
 
-async function deleteFromGallery(i) {
-  gallery.splice(i,1); await saveGallery(); renderGallery(); toast('Iteration deleted');
-}
-
-function loadExactIteration(item) {
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d');
-  const img = new Image();
-  img.onload = () => { ctx.globalCompositeOperation='source-over'; ctx.drawImage(img,0,0,canvas.width,canvas.height); };
-  img.src = item.dataUrl;
-  currentSeed = item.seed;
-  currentTimestamp = item.savedAt ? new Date(item.savedAt) : new Date();
-  const sd = document.getElementById('seedDisplay');
-  const td = document.getElementById('timestampDisplay');
-  if (sd) sd.textContent = '#' + item.seed;
-  if (td) { const ts=currentTimestamp; td.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
-  const tl = document.getElementById('traitList');
-  if (tl) tl.innerHTML = '<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">Saved iteration — generate a new one to see traits.</div>';
-  const or = document.getElementById('overallRarity');
-  if (or) or.innerHTML = '';
-}
-function renderGallery() {
-  const section = document.getElementById('gallerySection');
-  const grid = document.getElementById('galleryGrid');
-  if (!gallery.length) { section.style.display='none'; return; }
-  section.style.display = 'block';
-  grid.innerHTML = gallery.map((item,i) => `
-    <div class="gallery-thumb" data-i="${i}">
-      <img src="${item.dataUrl}" alt="pill ${item.seed}">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 6px 4px;">
-        <span class="gallery-thumb-seed">#${item.seed}</span>
-        <button onclick="event.stopPropagation();deleteFromGallery(${i})"
-          style="background:none;border:none;cursor:pointer;font-size:11px;color:#bbb;padding:0;">✕</button>
-      </div>
-    </div>`).join('');
-  grid.querySelectorAll('.gallery-thumb').forEach(el => {
-    el.addEventListener('click', () => {
-      const item = gallery[parseInt(el.dataset.i)];
-      if (item) loadExactIteration(item);
-    });
-  });
-}
+  const W = canvas.width, H = canvas.height;
+  const rng = new Rng(s);
 
-// ── DRAWING ────────────────────────────────────────────────────────────────
-function pillClipPath(ctx,x1,y1,x2,y2,t) {
-  const r=t/2,a=Math.atan2(y2-y1,x2-x1);
-  ctx.beginPath();
-  ctx.arc(x1,y1,r,a+Math.PI/2,a+Math.PI*1.5);
-  ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2);
-  ctx.closePath();
-}
-function drawGrain(ctx,x1,y1,x2,y2,t,color,rng) {
-  const [r,g,b]=hexToRgb(color);
-  const alt=rng.bool(0.5)?'#0a0a0a':'#eff7f5';
-  const angle=Math.atan2(y2-y1,x2-x1);
-  const cx=(x1+x2)/2,cy=(y1+y2)/2;
-  const halfLen=Math.hypot(x2-x1,y2-y1)/2+t/2,hw=t/2;
-  const C=[[cx+Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen+Math.cos(angle)*hw],
-            [cx+Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen-Math.cos(angle)*hw],
-            [cx-Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen+Math.cos(angle)*hw],
-            [cx-Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen-Math.cos(angle)*hw]];
-  const xs=C.map(c=>c[0]),ys=C.map(c=>c[1]);
-  const minX=Math.floor(Math.min(...xs)/GRAIN_TILE)*GRAIN_TILE,maxX=Math.ceil(Math.max(...xs)/GRAIN_TILE)*GRAIN_TILE;
-  const minY=Math.floor(Math.min(...ys)/GRAIN_TILE)*GRAIN_TILE,maxY=Math.ceil(Math.max(...ys)/GRAIN_TILE)*GRAIN_TILE;
-  ctx.save(); pillClipPath(ctx,x1,y1,x2,y2,t); ctx.clip();
-  for(let tx=minX;tx<maxX;tx+=GRAIN_TILE)
-    for(let ty=minY;ty<maxY;ty+=GRAIN_TILE){
-      const col=Math.round(tx/GRAIN_TILE),row=Math.round(ty/GRAIN_TILE);
-      ctx.fillStyle=(col+row)%2===0?`rgb(${r},${g},${b})`:alt;
-      ctx.fillRect(tx,ty,GRAIN_TILE,GRAIN_TILE);
+  const arch = rng.weighted(ARCHETYPES);
+  const pal  = rng.weighted(palettes);
+  const colors = pal.colors;
+  const sizePct = rng.range(arch.sizeMin, arch.sizeMax);
+  const maxSize = Math.min(W,H) * sizePct;
+  const thickness = maxSize * 0.7;
+  const numShapes = rng.int(arch.pillMin, arch.pillMax);
+  const tol = OVERLAP_TOL[arch.name];
+
+  // Compute all pill positions first
+  const pills = [];
+  const placed = [];
+  for (let i = 0; i < numShapes; i++) {
+    const hl = maxSize/4, margin = thickness/2;
+    let cx, cy, angle, ok = false;
+    for (let att = 0; att < PLACEMENT_ATT; att++) {
+      angle = rng.range(0, Math.PI*2);
+      const dx = Math.cos(angle)*hl, dy = Math.sin(angle)*hl;
+      cx = rng.range(margin+Math.abs(dx), W-margin-Math.abs(dx));
+      cy = rng.range(margin+Math.abs(dy), H-margin-Math.abs(dy));
+      let bad = false;
+      for (const p of placed) if (pillsOverlapTooMuch(cx,cy,hl,thickness,p.cx,p.cy,p.hl,p.t,tol)){bad=true;break;}
+      if (!bad){ok=true;break;}
     }
-  ctx.restore();
-}
-function drawPill(ctx,x1,y1,x2,y2,t,color,style,rng,colors) {
-  const [r,g,b]=hexToRgb(color);
-  ctx.save();
-  if(style==='solid'){
-    ctx.globalCompositeOperation='source-over';
-    ctx.strokeStyle=`rgb(${r},${g},${b})`; ctx.lineWidth=t; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-  } else if(style==='multiply'){
-    ctx.globalCompositeOperation='multiply';
-    ctx.strokeStyle=`rgb(${r},${g},${b})`; ctx.lineWidth=t; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-  } else if(style==='translucent'){
-    ctx.globalCompositeOperation='source-over';
-    ctx.strokeStyle=`rgba(${r},${g},${b},${rng.range(0.22,0.55)})`; ctx.lineWidth=t; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-  } else if(style==='outline'){
-    const bw=Math.max(5,t*0.06),oc=rng.bool(0.5)?'#0a0a0a':'#eff7f5';
-    ctx.globalCompositeOperation='source-over';
-    pillClipPath(ctx,x1,y1,x2,y2,t); ctx.fillStyle=`rgb(${r},${g},${b})`; ctx.fill();
-    pillClipPath(ctx,x1,y1,x2,y2,t); ctx.strokeStyle=oc; ctx.lineWidth=bw; ctx.stroke();
-  } else if(style==='grain'){
-    drawGrain(ctx,x1,y1,x2,y2,t,color,rng);
-  } else if(style==='gradient'){
-    ctx.globalCompositeOperation='source-over';
-    const a=Math.atan2(y2-y1,x2-x1),px=-Math.sin(a),py=Math.cos(a),h=t/2;
-    const grad=ctx.createLinearGradient((x1+x2)/2+px*h,(y1+y2)/2+py*h,(x1+x2)/2-px*h,(y1+y2)/2-py*h);
-    const [r2,g2,b2]=hexToRgb(rng.pickFrom(colors));
-    grad.addColorStop(0,`rgb(${r},${g},${b})`); grad.addColorStop(1,`rgb(${r2},${g2},${b2})`);
-    pillClipPath(ctx,x1,y1,x2,y2,t); ctx.fillStyle=grad; ctx.fill();
-  }
-  ctx.restore();
-}
-function pickFinish(rng,archName) {
-  const probs=FINISH_PROBS[archName]; let v=rng.next(),acc=0;
-  for(const [s,p] of Object.entries(probs)){acc+=p;if(v<acc)return s;} return 'solid';
-}
-function pillsOverlapTooMuch(ax,ay,aHL,at,bx,by,bHL,bt,tol) {
-  const dist=Math.hypot(ax-bx,ay-by),reach=(at+bt)/2+Math.min(aHL,bHL)*0.5;
-  return Math.max(0,reach-dist)/((at/2+bt/2)) > tol;
-}
-
-function draw(s) {
-  if(!palettes.length) return;
-  const canvas=document.getElementById('c');
-  const ctx=canvas.getContext('2d');
-  const W=canvas.width,H=canvas.height;
-  const rng=new Rng(s);
-  const arch=rng.weighted(ARCHETYPES);
-  const pal=rng.weighted(palettes);
-  const colors=pal.colors;
-  const sizePct=rng.range(arch.sizeMin,arch.sizeMax);
-  const maxSize=Math.min(W,H)*sizePct;
-  const thickness=maxSize*0.7;
-  const numShapes=rng.int(arch.pillMin,arch.pillMax);
-  const tol=OVERLAP_TOL[arch.name];
-  ctx.globalCompositeOperation='source-over';
-  ctx.fillStyle=OFF_WHITE; ctx.fillRect(0,0,W,H);
-
-  let bgTrait='Off-white';
-  if(rng.bool(0.6)){
-    ctx.fillStyle=rng.pickFrom(colors); ctx.fillRect(0,0,W,H); bgTrait='Colored';
-  }
-
-  const placed=[],styleCount={};
-  for(let i=0;i<numShapes;i++){
-    const hl=maxSize/4,margin=thickness/2;
-    let cx,cy,angle,ok=false;
-    for(let att=0;att<PLACEMENT_ATT;att++){
-      angle=rng.range(0,Math.PI*2);
-      const dx=Math.cos(angle)*hl,dy=Math.sin(angle)*hl;
-      cx=rng.range(margin+Math.abs(dx),W-margin-Math.abs(dx));
-      cy=rng.range(margin+Math.abs(dy),H-margin-Math.abs(dy));
-      let bad=false;
-      for(const p of placed) if(pillsOverlapTooMuch(cx,cy,hl,thickness,p.cx,p.cy,p.hl,p.t,tol)){bad=true;break;}
-      if(!bad){ok=true;break;}
-    }
-    if(!ok){
-      angle=rng.range(0,Math.PI*2);
-      const dx=Math.cos(angle)*hl,dy=Math.sin(angle)*hl;
-      cx=rng.range(margin+Math.abs(dx),W-margin-Math.abs(dx));
-      cy=rng.range(margin+Math.abs(dy),H-margin-Math.abs(dy));
+    if (!ok){
+      angle = rng.range(0, Math.PI*2);
+      const dx = Math.cos(angle)*hl, dy = Math.sin(angle)*hl;
+      cx = rng.range(margin+Math.abs(dx), W-margin-Math.abs(dx));
+      cy = rng.range(margin+Math.abs(dy), H-margin-Math.abs(dy));
     }
     placed.push({cx,cy,hl,t:thickness});
-    const color=rng.pickFrom(colors);
-    const style=pickFinish(rng,arch.name);
-    styleCount[style]=(styleCount[style]||0)+1;
-    drawPill(ctx,cx-Math.cos(angle)*hl,cy-Math.sin(angle)*hl,
-                  cx+Math.cos(angle)*hl,cy+Math.sin(angle)*hl,
-                  thickness,color,style,rng,colors);
+    const color = rng.pickFrom(colors);
+    const style = pickFinish(rng, arch.name);
+    pills.push({cx,cy,hl,angle,color,style,thickness});
   }
-  ctx.globalCompositeOperation='source-over';
 
-  const specials=Object.keys(styleCount).filter(k=>k!=='solid'&&k!=='multiply');
-  const rarestFinish=specials.length?specials.sort((a,b)=>RARITY_ORDER[FINISH_RARITY[b]]-RARITY_ORDER[FINISH_RARITY[a]])[0]:'solid';
-  const finishDisplay=[...specials.sort((a,b)=>RARITY_ORDER[FINISH_RARITY[b]]-RARITY_ORDER[FINISH_RARITY[a]]),...(Object.keys(styleCount).filter(k=>k==='solid'||k==='multiply').length?['standard']:[])];
-  const overall=overallRarity(arch.prob,pal.prob,rarestFinish);
-  const finishRarity=specials.length?FINISH_RARITY[rarestFinish]:'common';
+  // Clear and draw background immediately
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = OFF_WHITE; ctx.fillRect(0,0,W,H);
+  let bgTrait = 'Off-white';
+  if (rng.bool(0.6)) { ctx.fillStyle = rng.pickFrom(colors); ctx.fillRect(0,0,W,H); bgTrait = 'Colored'; }
+
+  // Show counter
+  const counter = document.getElementById('revealCounter');
+  counter.classList.add('visible');
+
+  // Draw pills progressively with delay
+  let i = 0;
+  const styleCount = {};
+  const stepDelay = Math.max(20, Math.min(120, 600 / numShapes));
+
+  function step() {
+    if (i >= pills.length) {
+      ctx.globalCompositeOperation = 'source-over';
+      counter.classList.remove('visible');
+      _generating = false;
+      updateTraits(arch, pal, styleCount, bgTrait, numShapes, s);
+      return;
+    }
+    const pill = pills[i];
+    styleCount[pill.style] = (styleCount[pill.style]||0) + 1;
+    const x1 = pill.cx - Math.cos(pill.angle)*pill.hl;
+    const y1 = pill.cy - Math.sin(pill.angle)*pill.hl;
+    const x2 = pill.cx + Math.cos(pill.angle)*pill.hl;
+    const y2 = pill.cy + Math.sin(pill.angle)*pill.hl;
+    drawPill(ctx, x1, y1, x2, y2, pill.thickness, pill.color, pill.style, rng, colors);
+    counter.textContent = `${i+1} / ${numShapes}`;
+    i++;
+    setTimeout(step, stepDelay);
+  }
+  step();
+}
+
+function updateTraits(arch, pal, styleCount, bgTrait, numShapes, s) {
+  const specials = Object.keys(styleCount).filter(k=>k!=='solid'&&k!=='multiply');
+  const rarestFinish = specials.length ? specials.sort((a,b)=>RARITY_ORDER[FINISH_RARITY[b]]-RARITY_ORDER[FINISH_RARITY[a]])[0] : 'solid';
+  const finishDisplay = [...specials.sort((a,b)=>RARITY_ORDER[FINISH_RARITY[b]]-RARITY_ORDER[FINISH_RARITY[a]]),...(Object.keys(styleCount).filter(k=>k==='solid'||k==='multiply').length?['standard']:[])];
+  const overall = overallRarity(arch.prob, pal.prob, rarestFinish);
+  const finishRarity = specials.length ? FINISH_RARITY[rarestFinish] : 'common';
+  const palRarity = palRarityFromProb(pal.prob);
   const RL={common:'Common',uncommon:'Uncommon',rare:'Rare',superrare:'Super Rare',legendary:'Legendary'};
   const RC={common:'common',uncommon:'uncommon',rare:'rare',superrare:'superrare',legendary:'legendary'};
-  const traits=[
-    {key:'Density',  val:arch.name,              rarity:ARCH_RARITY[arch.name]},
-    {key:'Palette',  val:pal.name, colors:pal.colors, rarity:'common'},
-    {key:'Finish',   val:finishDisplay.join(', '),rarity:finishRarity},
-    {key:'Bg',       val:bgTrait,                 rarity:bgTrait==='Colored'?'common':'uncommon'},
-    {key:'Pills',    val:numShapes,               rarity:'common'},
+  const traits = [
+    {key:'Density', val:arch.name, rarity:ARCH_RARITY[arch.name]},
+    {key:'Palette', val:pal.name, colors:pal.colors, rarity:palRarity},
+    {key:'Finish',  val:finishDisplay.join(', '), rarity:finishRarity},
+    {key:'Bg',      val:bgTrait, rarity:bgTrait==='Colored'?'common':'uncommon'},
+    {key:'Pills',   val:numShapes, rarity:'common'},
   ];
-  lastTraits=traits; lastOverall=overall;
-  document.getElementById('traitList').innerHTML=traits.map(t=>`
+  lastTraits = traits; lastOverall = overall;
+  document.getElementById('traitList').innerHTML = traits.map(t=>`
     <div class="trait-row">
       <span class="trait-key">${t.key}</span>
       <span class="trait-right">
@@ -519,219 +391,191 @@ function draw(s) {
       </span>
     </div>`).join('');
   document.getElementById('overallRarity').innerHTML=`<span class="badge ${RC[overall]}">${RL[overall]}</span>`;
-  const ts=currentTimestamp;
-  const tsStr=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-  document.getElementById('seedDisplay').textContent='#'+s;
-  const tsEl=document.getElementById('timestampDisplay');
-  if(tsEl)tsEl.textContent=tsStr;
+  document.getElementById('seedDisplay').textContent = '#' + s;
+  const ts = currentTimestamp;
+  const tsEl = document.getElementById('timestampDisplay');
+  if(tsEl) tsEl.textContent = ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
 
-function generate() { currentSeed=rand32(); currentTimestamp=new Date(); draw(currentSeed); }
+function generate() {
+  if (_generating) return;
+  currentSeed = rand32();
+  currentTimestamp = new Date();
+  draw(currentSeed);
+}
 
+// ── GALLERY ───────────────────────────────────────────
+function loadGallery() {
+  fetch(RAW + 'plls.json?t=' + Date.now())
+    .then(r => r.ok ? r.json() : [])
+    .then(data => { gallery = data; renderGallery(); })
+    .catch(() => { gallery = []; renderGallery(); });
+}
+async function saveGallery() { await ghPush('data/plls.json', gallery); }
+async function saveToGallery() {
+  const src = document.getElementById('c');
+  const dataUrl = src.toDataURL('image/jpeg', 0.9);
+  gallery.unshift({seed:currentSeed, dataUrl, savedAt:Date.now()});
+  if(gallery.length>50) gallery=gallery.slice(0,50);
+  toast('Saving…'); await saveGallery(); renderGallery(); toast('Saved to gallery');
+}
+function loadExactIteration(item) {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  img.onload = () => { ctx.globalCompositeOperation='source-over'; ctx.drawImage(img,0,0,canvas.width,canvas.height); };
+  img.src = item.dataUrl;
+  currentSeed = item.seed;
+  currentTimestamp = item.savedAt ? new Date(item.savedAt) : new Date();
+  document.getElementById('seedDisplay').textContent = '#'+item.seed;
+  const tsEl = document.getElementById('timestampDisplay');
+  const ts = currentTimestamp;
+  if(tsEl) tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  const tl=document.getElementById('traitList');
+  if(tl) tl.innerHTML='<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">Saved iteration — generate a new one to see traits.</div>';
+  const or=document.getElementById('overallRarity'); if(or) or.innerHTML='';
+}
+function renderGallery() {
+  const section=document.getElementById('gallerySection'),grid=document.getElementById('galleryGrid');
+  if(!gallery.length){section.style.display='none';return;}
+  section.style.display='block';
+  grid.innerHTML=gallery.map((item,i)=>`
+    <div class="gallery-thumb" data-i="${i}">
+      <img src="${item.dataUrl}" alt="pill ${item.seed}">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 6px 4px;">
+        <span class="gallery-thumb-seed">#${item.seed}</span>
+      </div>
+    </div>`).join('');
+  grid.querySelectorAll('.gallery-thumb').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const item=gallery[parseInt(el.dataset.i)];
+      if(item) loadExactIteration(item);
+    });
+  });
+}
+
+// ── DOWNLOAD / EXPORT ─────────────────────────────────
 function downloadHD() {
   const src=document.getElementById('c');
   const hd=document.createElement('canvas');
-  const scale=4;
-  hd.width=src.width*scale; hd.height=src.height*scale;
-  const ctx=hd.getContext('2d');
-  ctx.imageSmoothingEnabled=false;
-  ctx.drawImage(src, 0, 0, hd.width, hd.height);
+  hd.width=src.width*4;hd.height=src.height*4;
+  const ctx=hd.getContext('2d');ctx.scale(4,4);ctx.drawImage(src,0,0);
   const a=document.createElement('a');
-  a.download=`pills_${currentSeed}.png`; a.href=hd.toDataURL('image/png'); a.click();
+  a.download=`pills_${currentSeed}.png`;a.href=hd.toDataURL('image/png');a.click();
   toast('PNG downloaded');
 }
 
-async function saveToGallery() {
-  const src=document.getElementById('c');
-  const dataUrl=src.toDataURL('image/jpeg',0.9);
-  gallery.unshift({seed:currentSeed, dataUrl, savedAt: Date.now()});
-  if(gallery.length>50) gallery=gallery.slice(0,50);
-  toast('Saving…');
-  await saveGallery();
-  renderGallery();
-  toast('Saved to gallery');
-}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 
 function exportCard() {
   const src=document.getElementById('c');
-  const seed=document.getElementById('seedDisplay')?.textContent||'';
-  const traits=lastTraits, overall=lastOverall;
-  if(!traits.length) return;
-
-  const SC=3;
-  const mono=`'Courier New', Courier, monospace`;
-  const RL={common:'COMMON',uncommon:'UNCOMMON',rare:'RARE',superrare:'SUPER RARE',legendary:'LEGENDARY'};
-  const RC={common:'#f1efe8',uncommon:'#d4f0e4',rare:'#ddeaf8',superrare:'#eae8fc',legendary:'#faeeda'};
-  const RT={common:'#999',uncommon:'#085041',rare:'#0c447c',superrare:'#3c3489',legendary:'#633806'};
+  const traits=lastTraits,overall=lastOverall;
+  if(!traits.length)return;
+  const SC=3,mono=`'Courier New', Courier, monospace`;
+  const RL2={common:'COMMON',uncommon:'UNCOMMON',rare:'RARE',superrare:'SUPER RARE',legendary:'LEGENDARY'};
+  const RC2={common:'#f1efe8',uncommon:'#d4f0e4',rare:'#ddeaf8',superrare:'#eae8fc',legendary:'#faeeda'};
+  const RT2={common:'#999',uncommon:'#085041',rare:'#0c447c',superrare:'#3c3489',legendary:'#633806'};
   const rKey=s=>(s||'common').toLowerCase().replace(' ','');
-  const artW = src.width * SC;
-  const artH = src.height * SC;
-  const stripH = Math.round(artH * 0.22);
-  const pad = Math.round(artW * 0.025);
-  const headerH = Math.round(stripH * 0.32);
-  const rowH = Math.round((stripH - headerH) / (traits.length + 2));
-  const dividerH = Math.max(1, Math.round(artH * 0.001));
-  const fs = Math.round(artW * 0.0075);
-  const fsSm = Math.round(fs * 0.78);
-  const fsBadge = Math.round(fs * 0.7);
-  const CW = artW;
-  const CH = artH + stripH;
-
-  const card = document.createElement('canvas');
-  card.width=CW; card.height=CH;
-  const ctx = card.getContext('2d');
-
-  // Artwork
-  ctx.drawImage(src, 0, 0, artW, artH);
-
-  // Strip background
-  ctx.fillStyle='#ffffff';
-  ctx.fillRect(0, artH, CW, stripH);
-  ctx.fillStyle='#e8e8e8';
-  ctx.fillRect(0, artH, CW, SC);
-
+  const artW=src.width*SC,artH=src.height*SC;
+  const stripH=Math.round(artH*0.22);
+  const pad=Math.round(artW*0.025);
+  const headerH=Math.round(stripH*0.32);
+  const rowH=Math.round((stripH-headerH)/(traits.length+2));
+  const divH=Math.max(1,Math.round(artH*0.001));
+  const fs=Math.round(artW*0.0075),fsSm=Math.round(fs*0.78),fsBadge=Math.round(fs*0.7);
+  const card=document.createElement('canvas');
+  card.width=artW;card.height=artH+stripH;
+  const ctx=card.getContext('2d');
+  ctx.drawImage(src,0,0,artW,artH);
+  ctx.fillStyle='#fff';ctx.fillRect(0,artH,artW,stripH);
+  ctx.fillStyle='#e8e8e8';ctx.fillRect(0,artH,artW,divH);
   ctx.textBaseline='middle';
-
-  // Header row: PILLS left, seed center, date right
-  const headerMidY = artH + headerH/2;
-  const ts = currentTimestamp;
-  const dateStr = ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})
-    +' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-
-  ctx.font=`700 ${11*SC}px ${mono}`;
-  ctx.fillStyle='#111';
-  ctx.textAlign='left';
-  ctx.fillText('PILLS', pad, headerMidY);
-
-  ctx.font=`400 ${9*SC}px ${mono}`;
-  ctx.fillStyle='#aaa';
-  ctx.textAlign='center';
-  ctx.fillText('SEED '+seed, CW/2, headerMidY - 7*SC);
-  ctx.fillText(dateStr, CW/2, headerMidY + 7*SC);
-
-  // Divider
-  const divY = artH + headerH;
-  ctx.fillStyle='#e8e8e8';
-  ctx.fillRect(pad, divY, CW-pad*2, SC);
-
-  // Trait rows
-  const valRight = CW - pad;
-  traits.forEach((t, i) => {
-    const rowY = divY + dividerH + rowH*i + rowH/2;
-
-    // Key
-    ctx.font=`400 ${9*SC}px ${mono}`;
-    ctx.fillStyle='#aaa';
-    ctx.textAlign='left';
-    ctx.fillText(t.key.toUpperCase(), pad, rowY);
-
-    // Rarity badge
-    const rk=rKey(t.rarity);
-    const rLabel=RL[rk]||'COMMON';
-    ctx.font=`700 ${8*SC}px ${mono}`;
-    const bw=ctx.measureText(rLabel).width+10*SC;
-    const bh=16*SC;
-    const bx=valRight-bw;
-    const by=rowY-bh/2;
-    ctx.fillStyle=RC[rk]||RC.common;
-    roundRect(ctx,bx,by,bw,bh,3*SC); ctx.fill();
-    ctx.fillStyle=RT[rk]||RT.common;
-    ctx.textAlign='left';
-    ctx.fillText(rLabel, bx+5*SC, rowY);
-
-    // Value
-    ctx.font=`700 ${10*SC}px ${mono}`;
-    ctx.fillStyle='#111';
-    ctx.textAlign='right';
-    const valStr=String(t.val);
-
-    if(t.colors) {
-      // Draw palette dots then name
-      const dotR=5*SC, gap=3*SC;
-      const dots=t.colors.slice(0,8);
-      const nameW=ctx.measureText(valStr).width;
-      const dotsW=dots.length*(dotR*2+gap)-gap;
-      const totalW=dotsW+8*SC+nameW;
-      let dotX=bx-8*SC-totalW;
-      dots.forEach(c=>{
-        ctx.beginPath();
-        ctx.arc(dotX+dotR, rowY, dotR, 0, Math.PI*2);
-        ctx.fillStyle=c; ctx.fill();
-        ctx.strokeStyle='rgba(0,0,0,0.08)'; ctx.lineWidth=SC; ctx.stroke();
-        dotX+=dotR*2+gap;
-      });
-      ctx.fillStyle='#111';
-      ctx.textAlign='right';
-      ctx.fillText(valStr, bx-8*SC, rowY);
-    } else {
-      ctx.fillText(valStr, bx-8*SC, rowY);
-    }
+  const headerMidY=artH+headerH/2;
+  const ts=currentTimestamp;
+  const dateStr=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  ctx.font=`700 ${fs}px ${mono}`;ctx.fillStyle='#111';ctx.textAlign='left';ctx.fillText('PLLS',pad,headerMidY);
+  ctx.font=`400 ${fsSm}px ${mono}`;ctx.fillStyle='#aaa';ctx.textAlign='center';
+  ctx.fillText('SEED #'+currentSeed,artW/2,headerMidY-fsSm*0.7);
+  ctx.fillText(dateStr,artW/2,headerMidY+fsSm*0.7);
+  const divY=artH+headerH;
+  ctx.fillStyle='#e8e8e8';ctx.fillRect(pad,divY,artW-pad*2,divH);
+  const valRight=artW-pad;
+  traits.forEach((t,i)=>{
+    const rowY=divY+divH+rowH*i+rowH/2;
+    ctx.font=`400 ${fsSm}px ${mono}`;ctx.fillStyle='#aaa';ctx.textAlign='left';ctx.fillText(t.key.toUpperCase(),pad,rowY);
+    const rk=rKey(t.rarity),rLabel=RL2[rk]||'COMMON';
+    ctx.font=`700 ${fsBadge}px ${mono}`;
+    const bw=ctx.measureText(rLabel).width+Math.round(rowH*0.3),bh=Math.round(rowH*0.6),bx=valRight-bw;
+    ctx.fillStyle=RC2[rk]||RC2.common;roundRect(ctx,bx,rowY-bh/2,bw,bh,Math.round(bh*0.25));ctx.fill();
+    ctx.fillStyle=RT2[rk]||RT2.common;ctx.textAlign='left';ctx.fillText(rLabel,bx+Math.round(rowH*0.15),rowY);
+    ctx.font=`700 ${fs}px ${mono}`;ctx.fillStyle='#111';ctx.textAlign='right';
+    if(t.colors){
+      const dotR=Math.round(rowH*0.22),gap=Math.round(rowH*0.1),dots=t.colors.slice(0,6);
+      const nameW=ctx.measureText(String(t.val)).width,dotsW=dots.length*(dotR*2+gap)-gap;
+      let dotX=bx-gap*2-dotsW-nameW-gap;
+      dots.forEach(c=>{ctx.beginPath();ctx.arc(dotX+dotR,rowY,dotR,0,Math.PI*2);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle='rgba(0,0,0,0.08)';ctx.lineWidth=1;ctx.stroke();dotX+=dotR*2+gap;});
+      ctx.fillStyle='#111';ctx.textAlign='right';ctx.fillText(String(t.val),bx-gap*2,rowY);
+    } else { ctx.fillText(String(t.val),bx-Math.round(rowH*0.2),rowY); }
   });
-
-  // Overall row
-  const overallRowY = divY + dividerH + rowH*traits.length + rowH/2;
-  // Divider above overall
-  ctx.fillStyle='#e8e8e8';
-  ctx.fillRect(pad, divY + dividerH + rowH*traits.length, CW-pad*2, SC);
-
-  ctx.font=`400 ${9*SC}px ${mono}`;
-  ctx.fillStyle='#aaa'; ctx.textAlign='left';
-  ctx.fillText('OVERALL', pad, overallRowY);
-
+  const overallRowY=divY+divH+rowH*traits.length+rowH/2;
+  ctx.fillStyle='#e8e8e8';ctx.fillRect(pad,divY+divH+rowH*traits.length,artW-pad*2,divH);
+  ctx.font=`400 ${fsSm}px ${mono}`;ctx.fillStyle='#aaa';ctx.textAlign='left';ctx.fillText('OVERALL',pad,overallRowY);
   const rkO=rKey(overall);
-  const oLabel=RL[rkO]||'COMMON';
-  ctx.font=`700 ${8*SC}px ${mono}`;
-  const obw=ctx.measureText(oLabel).width+10*SC;
-  const obh=16*SC;
-  const obx=valRight-obw;
-  ctx.fillStyle=RC[rkO]||RC.common;
-  roundRect(ctx,obx,overallRowY-obh/2,obw,obh,3*SC); ctx.fill();
-  ctx.fillStyle=RT[rkO]||RT.common;
-  ctx.fillText(oLabel, obx+5*SC, overallRowY);
-
+  ctx.font=`700 ${fsBadge}px ${mono}`;
+  const obw=ctx.measureText(RL2[rkO]||'COMMON').width+Math.round(rowH*0.3),obh=Math.round(rowH*0.6),obx=valRight-obw;
+  ctx.fillStyle=RC2[rkO]||RC2.common;roundRect(ctx,obx,overallRowY-obh/2,obw,obh,Math.round(obh*0.25));ctx.fill();
+  ctx.fillStyle=RT2[rkO]||RT2.common;ctx.fillText(RL2[rkO]||'COMMON',obx+Math.round(rowH*0.15),overallRowY);
   card.toBlob(async blob=>{
-    try{
-      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
-      toast('Card copied to clipboard');
-    }catch(e){
-      const a=document.createElement('a');
-      a.download='pills_'+currentSeed+'.png';
-      a.href=card.toDataURL('image/png'); a.click();
-      toast('Downloaded (clipboard not supported)');
-    }
+    try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast('Card copied to clipboard');}
+    catch(e){const a=document.createElement('a');a.download='pills_'+currentSeed+'.png';a.href=card.toDataURL('image/png');a.click();toast('Downloaded');}
   },'image/png');
 }
 
-function roundRect(ctx,x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+
+// ── BATCH ─────────────────────────────────────────────
+function checkBatchButton() {
+  try {
+    const key = 'hoks-active-batch';
+    const active = JSON.parse(localStorage.getItem(key)||'null');
+    const btn = document.getElementById('batchBtn');
+    if (btn) {
+      if (active && active.work === 'pills') {
+        btn.style.display = '';
+        btn.textContent = `+ Save to Batch "${active.name}" (${active.items.length})`;
+      } else {
+        btn.style.display = 'none';
+      }
+    }
+  } catch(e) {}
 }
 
-function toast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2200);
+function saveToBatch() {
+  const src = document.getElementById('c');
+  const dataUrl = src.toDataURL('image/jpeg', 0.9);
+  const key = 'hoks-active-batch';
+  try {
+    const active = JSON.parse(localStorage.getItem(key)||'null');
+    if (!active || active.work !== 'pills') { toast('No active PLLS batch — create one in Admin'); return; }
+    active.items.push({ seed: currentSeed, dataUrl, savedAt: Date.now() });
+    localStorage.setItem(key, JSON.stringify(active));
+    checkBatchButton();
+    toast(`Added to batch "${active.name}" (${active.items.length} total)`);
+  } catch(e) { toast('Error saving to batch'); }
+}
+
+// URL param
+const _urlParams=new URLSearchParams(window.location.search),_urlIdx=_urlParams.get('i');
+if(_urlIdx!==null){
+  const _wait=setInterval(()=>{if(gallery.length>0){clearInterval(_wait);const item=gallery[parseInt(_urlIdx)];if(item)loadExactIteration(item);}},100);
+  setTimeout(()=>clearInterval(_wait),5000);
 }
 
 document.getElementById('c').addEventListener('click',generate);
-// Check URL param ?i=N to load exact gallery item from landing
-const _urlParams = new URLSearchParams(window.location.search);
-const _urlIdx = _urlParams.get('i');
-if (_urlIdx !== null) {
-  const _waitGallery = setInterval(() => {
-    if (gallery.length > 0) {
-      clearInterval(_waitGallery);
-      const item = gallery[parseInt(_urlIdx)];
-      if (item) loadExactIteration(item);
-    }
-  }, 100);
-}
-
-loadPalettes(); loadGallery();
-if(palettes.length) draw(currentSeed);
+loadPalettes();
+loadGallery();
+checkBatchButton();
+setInterval(checkBatchButton, 3000);
 </script>
 </body>
 </html>
