@@ -228,7 +228,7 @@
   {
     "id": 15,
     "name": "Play",
-    "active": true,
+    "active": false,
     "colors": [
       "#e20404",
       "#fcd202",
@@ -244,7 +244,7 @@
   {
     "id": 16,
     "name": "Repetition",
-    "active": true,
+    "active": false,
     "colors": [
       "#2c2060",
       "#4bd3e5",
