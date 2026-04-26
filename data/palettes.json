@@ -433,7 +433,7 @@
   {
     "id": 26,
     "name": "Right",
-    "active": true,
+    "active": false,
     "colors": [
       "#4464a1",
       "#62b6de",
