@@ -122,8 +122,10 @@
   }
 
   // Fondo: sólido, radial o diagonal (devuelve los 2 colores usados).
-  function drawBg(ctx, W, H, colors, rng) {
-    const mode = rng.weighted([{ prob: 0.15, v: 'radial' }, { prob: 0.15, v: 'diagonal' }, { prob: 0.70, v: 'solid' }]).v;
+  // forceMode (opcional): 'solid' | 'radial' | 'diagonal' para fijarlo desde el lab.
+  function drawBg(ctx, W, H, colors, rng, forceMode) {
+    const mode = (forceMode && forceMode !== 'auto') ? forceMode
+      : rng.weighted([{ prob: 0.15, v: 'radial' }, { prob: 0.15, v: 'diagonal' }, { prob: 0.70, v: 'solid' }]).v;
     const c1 = rng.pickFrom(colors), rest = colors.filter(x => x !== c1), c2 = rng.pickFrom(rest.length ? rest : colors);
     const [r1, g1, b1] = E.hexToRgb(c1), [r2, g2, b2] = E.hexToRgb(c2);
     ctx.save(); ctx.globalCompositeOperation = 'source-over';
@@ -167,7 +169,7 @@
     const thick = maxSize * rng.range(0.62, 0.78) * (params.thickness || 1);
     const tol = OL_TOL[arch.name] * Math.min(1.0, num / 8);
 
-    const bgColors = drawBg(ctx, W, H, colors, rng);
+    const bgColors = drawBg(ctx, W, H, colors, rng, params.bgMode);
 
     const pills = [], placed = [];
     for (let i = 0; i < num; i++) {

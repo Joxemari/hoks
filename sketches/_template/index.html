@@ -17,6 +17,7 @@
   input[type=range] { width: 100%; accent-color: var(--ink); cursor: pointer; }
   input[type=number], select { font-family: var(--f); font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 2px; width: 100%; }
   .val { font-size: 11px; font-weight: 700; min-width: 30px; text-align: right; color: var(--ink3); }
+  .hintline { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
   button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
   button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
   button:hover { opacity: 0.78; }
@@ -24,7 +25,7 @@
   .seed-box button { width:34px; padding:6px 0; }
   .seed-box input { text-align:center; }
   .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 1.5rem; background: var(--surface); overflow: auto; }
-  #single { max-width: min(100%, calc(100vh - 120px) * 1.414); max-height: calc(100vh - 120px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
+  #single { max-width: min(100%, calc((100vh - 120px) * 1.414)); max-height: calc(100vh - 120px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
   .sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 980px; }
   .sheet canvas { width: 100%; outline: 1px solid rgba(0,0,0,0.1); cursor: pointer; display:block; }
   .sheet figcaption { padding: 3px 2px; font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
@@ -49,15 +50,19 @@
       </div>
       <button id="rnd">↻ New seed (space)</button>
     </div>
-    <div class="group"><span class="lbl">Palette</span><select id="pal"></select></div>
+    <div class="group">
+      <span class="lbl">Palette · <span id="palCount">…</span></span>
+      <select id="pal"></select>
+      <span class="hintline">incluye activas e inactivas</span>
+    </div>
     <div class="group">
       <span class="lbl">Count · <span id="countV">auto</span></span>
       <input type="range" id="count" min="0" max="60" step="1" value="0">
-      <span class="hint">0 = aleatorio</span>
+      <span class="hintline">0 = aleatorio</span>
     </div>
     <div class="group">
-      <span class="lbl">Grain</span>
-      <div class="row"><input type="range" id="grain" min="0" max="2" step="0.1" value="1"><span class="val" id="grainV">1.0</span></div>
+      <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
+      <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
     </div>
     <div class="group">
       <button id="save">↓ Save PNG (s)</button>
@@ -91,9 +96,11 @@ function palOpts() { const v = $('pal').value; return v === 'auto' ? { palettes:
 
 function renderSingle() {
   $('seed').value = seed;
-  const res = WORK.render(sctx, W, H, seed >>> 0, { ...palOpts(), params: params() });
-  $('status').textContent = `seed #${seed}`;
-  drawTraits(WORK.traits(res));
+  try {
+    const res = WORK.render(sctx, W, H, seed >>> 0, { ...palOpts(), params: params() });
+    $('status').textContent = `seed #${seed}`;
+    drawTraits(WORK.traits(res));
+  } catch (e) { $('status').textContent = '⚠ ' + e.message; console.error(e); }
 }
 function drawTraits(t) {
   $('traits').innerHTML = t.list.map(x => `
@@ -107,7 +114,7 @@ function renderSheet() {
   for (let i = 0; i < SHEET_N; i++) {
     const s = (base + i * 0x9E3779B1) >>> 0;
     const c = document.createElement('canvas'); c.width = SHEET_W; c.height = SHEET_H;
-    WORK.render(c.getContext('2d'), SHEET_W, SHEET_H, s, { ...palOpts(), params: params() });
+    try { WORK.render(c.getContext('2d'), SHEET_W, SHEET_H, s, { ...palOpts(), params: params() }); } catch (e) {}
     const fig = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = '#' + s;
     fig.appendChild(c); fig.appendChild(cap);
     c.addEventListener('click', () => { seed = s; setSheet(false); });
@@ -122,6 +129,11 @@ function setSheet(on) {
   if (on) { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; } else renderSingle();
 }
 function refresh() { sheetMode ? renderSheet() : renderSingle(); }
+function populateSelect() {
+  $('palCount').textContent = PALETTES.length;
+  $('pal').innerHTML = '<option value="auto">Random (weighted)</option>' +
+    PALETTES.map((pl, i) => `<option value="${i}">${pl.name}${pl.active === false ? ' · (inactive)' : ''}</option>`).join('');
+}
 
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
 $('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
@@ -142,11 +154,10 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'g' || e.key === 'G') setSheet(!sheetMode);
 });
 
-HOKS.loadPalettes().then(p => {
-  PALETTES = p;
-  $('pal').innerHTML = '<option value="auto">Random (weighted)</option>' + PALETTES.map((pl, i) => `<option value="${i}">${pl.name}</option>`).join('');
-  renderSingle();
-});
+// Init: pinta YA con fallback, luego trae TODAS las paletas.
+populateSelect();
+renderSingle();
+HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});
 </script>
 </body>
 </html>

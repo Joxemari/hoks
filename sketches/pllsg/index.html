@@ -23,12 +23,12 @@
   .seed-box { display:flex; gap:4px; }
   .seed-box button { width:34px; padding:6px 0; }
   .seed-box input { text-align:center; }
+  .hintline { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
   .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 1.5rem; background: var(--surface); overflow: auto; }
-  #single { max-width: min(100%, calc(100vh - 120px) * 1.414); max-height: calc(100vh - 120px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
+  #single { max-width: min(100%, calc((100vh - 120px) * 1.414)); max-height: calc(100vh - 120px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
   .sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 980px; }
   .sheet canvas { width: 100%; outline: 1px solid rgba(0,0,0,0.1); cursor: pointer; display:block; }
-  .sheet figure { font-size: 9px; color: var(--ink3); }
-  .sheet figcaption { padding: 3px 2px; letter-spacing: 0.04em; }
+  .sheet figcaption { padding: 3px 2px; font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
   .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; }
   .traits { font-size: 10px; display:flex; flex-direction:column; gap:4px; }
   .traits .t { display:flex; justify-content:space-between; gap:6px; }
@@ -53,14 +53,15 @@
     </div>
 
     <div class="group">
-      <span class="lbl">Palette</span>
+      <span class="lbl">Palette · <span id="palCount">…</span></span>
       <select id="pal"></select>
+      <span class="hintline">incluye activas e inactivas</span>
     </div>
 
     <div class="group">
       <span class="lbl">Archetype</span>
       <select id="arch">
-        <option value="auto">Auto (weighted)</option>
+        <option value="auto">Auto (probabilidad)</option>
         <option value="Scattered">Scattered</option>
         <option value="Dense">Dense</option>
         <option value="Solo">Solo</option>
@@ -69,19 +70,30 @@
     </div>
 
     <div class="group">
+      <span class="lbl">Background</span>
+      <select id="bg">
+        <option value="auto">Auto (probabilidad)</option>
+        <option value="solid">Solid</option>
+        <option value="radial">Radial</option>
+        <option value="diagonal">Diagonal</option>
+      </select>
+    </div>
+
+    <div class="group">
       <span class="lbl">Pill count · <span id="countV">auto</span></span>
       <input type="range" id="count" min="0" max="30" step="1" value="0">
-      <span class="hint">0 = del arquetipo</span>
+      <span class="hintline">0 = el del arquetipo</span>
     </div>
 
     <div class="group">
-      <span class="lbl">Thickness</span>
-      <div class="row"><input type="range" id="thick" min="0.5" max="1.5" step="0.05" value="1"><span class="val" id="thickV">1.0</span></div>
+      <span class="lbl">Grosor cápsula (×) · <span id="thickV">1.0</span></span>
+      <input type="range" id="thick" min="0.5" max="1.5" step="0.05" value="1">
+      <span class="hintline">multiplica el grosor base · 1 = del algoritmo</span>
     </div>
 
     <div class="group">
-      <span class="lbl">Grain</span>
-      <div class="row"><input type="range" id="grain" min="0" max="2" step="0.1" value="1"><span class="val" id="grainV">1.0</span></div>
+      <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
+      <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
     </div>
 
     <div class="group">
@@ -104,14 +116,14 @@
 <script src="../_engine.js"></script>
 <script src="./algo.js"></script>
 <script>
-const WORK = HOKS.PLLSG;           // ← para clonar a otra obra, cambia solo esto
-const W = 1414, H = 1000;          // resolución de producción (el PNG coincide)
+const WORK = HOKS.PLLSG;            // ← para clonar a otra obra, cambia solo esto
+const W = 1414, H = 1000;           // resolución de producción (el PNG coincide)
 const SHEET_N = 12, SHEET_W = 354, SHEET_H = 250;
 
 const single = document.getElementById('single');
 const sctx = single.getContext('2d');
-let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
-let seed = (Math.random() * 0xFFFFFFFF) >>> 0;
+let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);   // arranca con fallback; se actualiza al cargar
+let seed = (Math.random() * 0xFFFFFFFF) >>> 0;          // random de salida
 let sheetMode = false;
 
 const $ = id => document.getElementById(id);
@@ -120,6 +132,7 @@ function params() {
   return {
     grainScale: parseFloat($('grain').value),
     archetype: $('arch').value,
+    bgMode: $('bg').value,
     count: parseInt($('count').value, 10) || 0,
     thickness: parseFloat($('thick').value),
   };
@@ -131,9 +144,14 @@ function palOpts() {
 
 function renderSingle() {
   $('seed').value = seed;
-  const res = WORK.render(sctx, W, H, seed >>> 0, { ...palOpts(), params: params() });
-  $('status').textContent = `seed #${seed}`;
-  drawTraits(WORK.traits(res));
+  try {
+    const res = WORK.render(sctx, W, H, seed >>> 0, { ...palOpts(), params: params() });
+    $('status').textContent = `seed #${seed}`;
+    drawTraits(WORK.traits(res));
+  } catch (e) {
+    $('status').textContent = '⚠ ' + e.message;
+    console.error(e);
+  }
 }
 
 function drawTraits(t) {
@@ -152,7 +170,7 @@ function renderSheet() {
     const s = (base + i * 0x9E3779B1) >>> 0;       // seeds bien repartidas
     const c = document.createElement('canvas');
     c.width = SHEET_W; c.height = SHEET_H;
-    WORK.render(c.getContext('2d'), SHEET_W, SHEET_H, s, { ...palOpts(), params: params() });
+    try { WORK.render(c.getContext('2d'), SHEET_W, SHEET_H, s, { ...palOpts(), params: params() }); } catch (e) {}
     const fig = document.createElement('figure');
     const cap = document.createElement('figcaption');
     cap.textContent = '#' + s;
@@ -173,6 +191,12 @@ function setSheet(on) {
 
 function refresh() { sheetMode ? renderSheet() : renderSingle(); }
 
+function populateSelect() {
+  $('palCount').textContent = PALETTES.length;
+  $('pal').innerHTML = '<option value="auto">Random (weighted)</option>' +
+    PALETTES.map((pl, i) => `<option value="${i}">${pl.name}${pl.active === false ? ' · (inactive)' : ''}</option>`).join('');
+}
+
 // ── Controls ──
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
 $('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
@@ -180,6 +204,7 @@ $('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('pal').onchange = refresh;
 $('arch').onchange = refresh;
+$('bg').onchange = refresh;
 $('count').oninput = () => { $('countV').textContent = $('count').value === '0' ? 'auto' : $('count').value; refresh(); };
 $('thick').oninput = () => { $('thickV').textContent = parseFloat($('thick').value).toFixed(2); refresh(); };
 $('grain').oninput = () => { $('grainV').textContent = parseFloat($('grain').value).toFixed(1); refresh(); };
@@ -199,13 +224,12 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'g' || e.key === 'G') setSheet(!sheetMode);
 });
 
-// ── Init: carga paletas vivas, luego dibuja ──
-HOKS.loadPalettes().then(p => {
-  PALETTES = p;
-  $('pal').innerHTML = '<option value="auto">Random (weighted)</option>' +
-    PALETTES.map((pl, i) => `<option value="${i}">${pl.name}</option>`).join('');
-  renderSingle();
-});
+// ── Init: pinta YA con el fallback (nunca en blanco), luego trae TODAS las paletas ──
+populateSelect();
+renderSingle();
+HOKS.loadAllPalettes().then(p => {
+  if (p && p.length) { PALETTES = p; populateSelect(); refresh(); }
+}).catch(() => {});
 </script>
 </body>
 </html>

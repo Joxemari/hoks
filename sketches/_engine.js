@@ -104,6 +104,14 @@
     } catch (e) { return normalizePalettes(DEFAULTS); }
   }
 
+  // TODAS las paletas (activas + inactivas) — para el laboratorio, donde se prueba con todo.
+  async function loadAllPalettes() {
+    try {
+      const data = await fetch(RAW + 'palettes.json?t=' + Date.now()).then(r => r.ok ? r.json() : null);
+      return normalizePalettes((data && data.length) ? data : DEFAULTS);
+    } catch (e) { return normalizePalettes(DEFAULTS); }
+  }
+
   // Fallback mínimo para que el laboratorio funcione sin red.
   const DEFAULTS = [
     { id: 1,  name: 'Science', colors: ['#ffe819', '#000000'], created: 1 },
@@ -116,6 +124,6 @@
   global.HOKS = {
     Rng, hexToRgb, luma, lerpColor, softLight,
     drawMeshGradient, bakeGrain, applyGrain,
-    ageWeight, normalizePalettes, palRarity, loadPalettes, DEFAULTS,
+    ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
