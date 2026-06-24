@@ -105,6 +105,11 @@
       <span class="lbl">Traits</span>
       <div class="traits" id="traits"></div>
     </div>
+
+    <div class="group">
+      <span class="lbl">Probabilidades (definidas en algo.js)</span>
+      <div class="hintline" id="probs" style="line-height:1.7"></div>
+    </div>
   </aside>
 
   <main class="stage">
@@ -113,9 +118,14 @@
     <span class="hint" id="status">—</span>
   </main>
 
-<script src="../_engine.js"></script>
-<script src="./algo.js"></script>
+<script src="../_engine.js?v=2"></script>
+<script src="./algo.js?v=2"></script>
 <script>
+// Guardia: si el motor o el algoritmo no cargaron, dilo en pantalla (no fallo mudo).
+if (typeof HOKS === 'undefined' || !HOKS.PLLSG || !HOKS.loadAllPalettes) {
+  document.body.innerHTML = '<div style="padding:3rem;font-family:Courier New,monospace;font-size:13px;line-height:1.8;color:#111">⚠ No se cargó el motor del laboratorio (sketches/_engine.js / sketches/pllsg/algo.js).<br><br>Prueba una <b>recarga forzada</b> (Ctrl/Cmd&#8209;Shift&#8209;R). Si persiste tras el redespliegue de Pages, avísame.</div>';
+  throw new Error('HOKS engine not loaded');
+}
 const WORK = HOKS.PLLSG;            // ← para clonar a otra obra, cambia solo esto
 const W = 1414, H = 1000;           // resolución de producción (el PNG coincide)
 const SHEET_N = 12, SHEET_W = 354, SHEET_H = 250;
@@ -224,7 +234,14 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'g' || e.key === 'G') setSheet(!sheetMode);
 });
 
+function showProbs() {
+  const A = WORK.ARCHETYPES.map(a => `${a.name} · ${Math.round(a.prob*100)}% · ${a.pillMin}–${a.pillMax} pills`).join('<br>');
+  const F = Object.entries(WORK.FINISH_PROBS).map(([k, v]) => `${k} ${Math.round(v*100)}%`).join(' · ');
+  $('probs').innerHTML = `<b>Arquetipo</b><br>${A}<br><br><b>Acabado</b><br>${F}`;
+}
+
 // ── Init: pinta YA con el fallback (nunca en blanco), luego trae TODAS las paletas ──
+showProbs();
 populateSelect();
 renderSingle();
 HOKS.loadAllPalettes().then(p => {
