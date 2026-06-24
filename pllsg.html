@@ -111,6 +111,9 @@ canvas { display: block; height: min(72vh, 580px); width: auto; max-width: calc(
 </head>
 <body>
 <script src="nav.js"></script>
+<!-- Fuente única del algoritmo: el mismo código que el laboratorio (sketches/pllsg/). -->
+<script src="sketches/_engine.js?v=1"></script>
+<script src="sketches/pllsg/algo.js?v=1"></script>
 <div class="layout">
   <aside class="sidebar">
     <div class="sidebar-section">
@@ -535,53 +538,17 @@ var _generating = false;
 function draw(seed) {
   if(!palettes.length||_generating)return;
   _generating=true;
-  const canvas=document.getElementById('c'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
-  const rng=new Rng(seed);
-  const pal=getActivePalette(rng),colors=pal.colors,blndOp=pickBlendOp(colors);
-  const arch=rng.weighted(ARCHETYPES),num=rng.int(arch.pillMin,arch.pillMax);
-  const maxSize=Math.min(W,H)*0.85/Math.sqrt(num),thick=maxSize*rng.range(0.62,0.78);
-  const tol=OL_TOL[arch.name]*Math.min(1.0,num/8);
-  const bgColors=drawBg(ctx,W,H,colors,rng);
-
-  const pills=[],placed=[];
-  for(let i=0;i<num;i++){
-    const hl=maxSize/4;let cx,cy,angle,ok=false;
-    for(let att=0;att<PLACE_ATT;att++){
-      angle=rng.range(0,Math.PI*2);cx=rng.range(maxSize/3,W-maxSize/3);cy=rng.range(maxSize/3,H-maxSize/3);
-      let bad=false;const md=(thick+hl*1.5)*(1.0-tol);
-      for(const p of placed){if(Math.hypot(cx-p.cx,cy-p.cy)<md){bad=true;break;}if(pillsOverlap(cx,cy,hl,thick,p.cx,p.cy,p.hl,p.t,tol)){bad=true;break;}}
-      if(!bad){ok=true;break;}
-    }
-    if(!ok){angle=rng.range(0,Math.PI*2);cx=rng.range(maxSize/3,W-maxSize/3);cy=rng.range(maxSize/3,H-maxSize/3);}
-    placed.push({cx,cy,hl,t:thick});
-    const bgL=bgColors.map(c=>luma(c)),cOk=c=>bgL.every(bl=>Math.abs(luma(c)-bl)>0.12);
-    const pc=colors.filter(cOk).length?colors.filter(cOk):colors.filter(c=>!bgColors.includes(c)).length?colors.filter(c=>!bgColors.includes(c)):colors;
-    pills.push({cx,cy,hl,angle,col:rng.pickFrom(pc),style:pickFinish(rng,arch.name),thick});
-  }
-
-  const styleCount={};
-  for(const p of pills){
-    styleCount[p.style]=(styleCount[p.style]||0)+1;
-    const dx=Math.cos(p.angle)*p.hl,dy=Math.sin(p.angle)*p.hl;
-    drawPill(ctx,p.cx-dx,p.cy-dy,p.cx+dx,p.cy+dy,p.thick,p.col,p.style,rng,colors,blndOp);
-  }
-  applyGrain(ctx,W,H,bakeGrain(W,H,colors,GRAIN_SCALE));
+  const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+  // Fuente única: el algoritmo vive en sketches/pllsg/algo.js (el mismo que el laboratorio).
+  const res=HOKS.PLLSG.render(ctx,canvas.width,canvas.height,seed,{
+    palettes, locked:_paletteLocked, lockedIdx:_lockedPalIdx,
+    params:{ grainScale:GRAIN_SCALE }
+  });
   _generating=false;
 
 // ── TRAITS ────────────────────────────────────────
-  const palRarity=palRarityFromProb(pal.prob);
-  const archRarity=arch.name==='Solo'?'rare':arch.name==='Dense'?'uncommon':'common';
-  const dominantFinish=Object.entries(styleCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||'solid';
-  const finishRarity=dominantFinish==='grain'||dominantFinish==='gradient'?'rare':dominantFinish==='outline'||dominantFinish==='translucent'?'uncommon':'common';
-  const score=pal.prob*(archRarity==='rare'?0.3:archRarity==='uncommon'?0.7:1)*(finishRarity==='rare'?0.3:finishRarity==='uncommon'?0.7:1);
-  const overall=score>0.06?'common':score>0.025?'uncommon':score>0.008?'rare':score>0.002?'superrare':'legendary';
-
-  const traits=[
-    {key:'Palette',  val:pal.name,      colors:pal.colors, rarity:palRarity},
-    {key:'Archetype',val:arch.name+' · '+numShapes+' pills', rarity:archRarity},
-    {key:'Finish',   val:dominantFinish, rarity:finishRarity},
-    {key:'Texture',  val:'Grain + Gradient', rarity:'rare'},
-  ];
+  const tr=HOKS.PLLSG.traits(res);
+  const traits=tr.list, overall=tr.overall;
   lastTraits=traits;lastOverall=overall;
 
   document.getElementById('traitList').innerHTML=traits.map(t=>`

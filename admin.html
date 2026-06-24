@@ -516,10 +516,6 @@ function getStoredPwd(){return localStorage.getItem(PWD_KEY)||DEFAULT_PWD;}
 function tryLogin(){if($('pwd-input').value===getStoredPwd()){sessionStorage.setItem(SESSION_KEY,'1');localStorage.setItem(SESSION_KEY,'1');showAdmin();}else{$('login-error').style.display='block';$('pwd-input').value='';$('pwd-input').focus();}}
 function logout(){sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);location.reload();}
 function showAdmin(){$('login-screen').style.display='none';$('admin-screen').style.display='block';loadAll();switchTab('works');}
-if(sessionStorage.getItem(SESSION_KEY)==='1' || localStorage.getItem(SESSION_KEY)==='1') {
-  sessionStorage.setItem(SESSION_KEY,'1'); // sync to session so subsequent checks work
-  showAdmin();
-}
 $('pwd-input').addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
 
 // ── TABS ──────────────────────────────────────────────
@@ -804,6 +800,12 @@ function saveToken(){const t=$('gh-token-input').value.trim();if(!t){toast('Toke
 // ── UTILS ─────────────────────────────────────────────
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+
+// ── AUTO-LOGIN (al final: TAB_NAMES y el resto del estado ya están inicializados) ──
+if(sessionStorage.getItem(SESSION_KEY)==='1' || localStorage.getItem(SESSION_KEY)==='1') {
+  sessionStorage.setItem(SESSION_KEY,'1'); // sync a sesión para checks posteriores
+  showAdmin();
+}
 </script>
 </body>
 </html>
