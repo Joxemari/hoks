@@ -85,9 +85,9 @@
   }
 
   function drawPill(ctx, x1, y1, x2, y2, t, col, style, rng, colors, blndOp) {
-    const [r, g, b] = E.hexToRgb(col), W = ctx.canvas.width, H = ctx.canvas.height, safeR = t / 2 + 2;
-    x1 = Math.max(safeR, Math.min(W - safeR, x1)); y1 = Math.max(safeR, Math.min(H - safeR, y1));
-    x2 = Math.max(safeR, Math.min(W - safeR, x2)); y2 = Math.max(safeR, Math.min(H - safeR, y2));
+    // Sin clamping de extremos: la colocación ya garantiza que la cápsula cabe.
+    // (Clampar movía los extremos → cambiaba la longitud → proporciones distintas.)
+    const [r, g, b] = E.hexToRgb(col);
     ctx.save();
     if (style === 'solid') {
       ctx.globalCompositeOperation = 'source-over';
@@ -171,13 +171,16 @@
 
     const bgColors = drawBg(ctx, W, H, colors, rng, params.bgMode);
 
+    // Margen = extensión máxima de la cápsula desde su centro (hl + radio del cap).
+    // Así todas caben sin recortes → todas conservan la MISMA proporción.
+    const reach = maxSize / 4 + thick / 2, mx = Math.min(reach, W / 2), my = Math.min(reach, H / 2);
     const pills = [], placed = [];
     for (let i = 0; i < num; i++) {
       const hl = maxSize / 4;
       let cx, cy, angle, ok = false;
       for (let att = 0; att < PLACE_ATT; att++) {
         angle = rng.range(0, Math.PI * 2);
-        cx = rng.range(maxSize / 3, W - maxSize / 3); cy = rng.range(maxSize / 3, H - maxSize / 3);
+        cx = rng.range(mx, W - mx); cy = rng.range(my, H - my);
         let bad = false; const md = (thick + hl * 1.5) * (1.0 - tol);
         for (const p of placed) {
           if (Math.hypot(cx - p.cx, cy - p.cy) < md) { bad = true; break; }
@@ -185,7 +188,7 @@
         }
         if (!bad) { ok = true; break; }
       }
-      if (!ok) { angle = rng.range(0, Math.PI * 2); cx = rng.range(maxSize / 3, W - maxSize / 3); cy = rng.range(maxSize / 3, H - maxSize / 3); }
+      if (!ok) { angle = rng.range(0, Math.PI * 2); cx = rng.range(mx, W - mx); cy = rng.range(my, H - my); }
       placed.push({ cx, cy, hl, t: thick });
       // Evitar pills del mismo tono que el fondo.
       const bgL = bgColors.map(c => E.luma(c)), cOk = c => bgL.every(bl => Math.abs(E.luma(c) - bl) > 0.12);

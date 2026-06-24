@@ -55,7 +55,8 @@
     <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
       <select id="pal"></select>
-      <span class="hintline">incluye activas e inactivas</span>
+      <div id="palBar" style="display:flex;height:16px;border-radius:2px;overflow:hidden;border:1px solid var(--border)"></div>
+      <span class="hintline">incluye activas e inactivas · la barra = paleta en uso</span>
     </div>
 
     <div class="group">
@@ -99,6 +100,8 @@
     <div class="group">
       <button id="save">↓ Save PNG (s)</button>
       <button class="ghost" id="sheet">▦ Contact sheet (g)</button>
+      <button id="launch" title="Activa esta obra en works.json (requiere sesión admin)">▲ Lanzar a producción</button>
+      <span class="hintline" id="launchMsg"></span>
     </div>
 
     <div class="group">
@@ -118,8 +121,8 @@
     <span class="hint" id="status">—</span>
   </main>
 
-<script src="../_engine.js?v=2"></script>
-<script src="./algo.js?v=2"></script>
+<script src="../_engine.js?v=3"></script>
+<script src="./algo.js?v=3"></script>
 <script>
 // Guardia: si el motor o el algoritmo no cargaron, dilo en pantalla (no fallo mudo).
 if (typeof HOKS === 'undefined' || !HOKS.PLLSG || !HOKS.loadAllPalettes) {
@@ -157,6 +160,7 @@ function renderSingle() {
   try {
     const res = WORK.render(sctx, W, H, seed >>> 0, { ...palOpts(), params: params() });
     $('status').textContent = `seed #${seed}`;
+    $('palBar').innerHTML = res.pal.colors.map(c => `<span style="flex:1;background:${c}"></span>`).join('');
     drawTraits(WORK.traits(res));
   } catch (e) {
     $('status').textContent = '⚠ ' + e.message;
@@ -233,6 +237,33 @@ document.addEventListener('keydown', e => {
   else if (e.key === 's' || e.key === 'S') $('save').click();
   else if (e.key === 'g' || e.key === 'G') setSheet(!sheetMode);
 });
+
+// ── LANZAR A PRODUCCIÓN ───────────────────────────────
+// Activa esta obra en works.json vía API de GitHub (requiere sesión admin + token).
+// El cableado de la página a algo.js es parte del porte (ya hecho para PLLSG).
+const WORK_SLUG = 'pllsg', REPO = 'Joxemari/hoks';
+$('launch').onclick = launchToProduction;
+async function launchToProduction() {
+  const msg = t => { $('launchMsg').textContent = t; };
+  const token = localStorage.getItem('hoks-gh-token');
+  const isAdmin = sessionStorage.getItem('hoks-admin-session') === '1' || localStorage.getItem('hoks-admin-session') === '1';
+  if (!isAdmin || !token) { msg('⚠ Requiere sesión admin con token — entra en /admin.html.'); return; }
+  msg('Leyendo works.json…');
+  try {
+    const rd = await fetch(`https://api.github.com/repos/${REPO}/contents/data/works.json`, { headers: { Authorization: 'Bearer ' + token } });
+    if (!rd.ok) { msg('⚠ No se pudo leer works.json (' + rd.status + ')'); return; }
+    const j = await rd.json();
+    const works = JSON.parse(decodeURIComponent(escape(atob(j.content))));
+    const w = works.find(x => x.slug === WORK_SLUG || x.id === WORK_SLUG);
+    if (!w) { msg('⚠ "' + WORK_SLUG + '" no está en works.json'); return; }
+    if (w.active === true) { msg('✓ Ya está en producción.'); return; }
+    w.active = true;
+    msg('Activando…');
+    const body = { message: `launch ${WORK_SLUG} to production`, content: btoa(unescape(encodeURIComponent(JSON.stringify(works, null, 2)))), sha: j.sha };
+    const wr = await fetch(`https://api.github.com/repos/${REPO}/contents/data/works.json`, { method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    msg(wr.ok ? '✓ Lanzado a producción — visible en la landing en ~30s.' : '⚠ Error al escribir (' + wr.status + ')');
+  } catch (e) { msg('⚠ ' + e.message); }
+}
 
 function showProbs() {
   const A = WORK.ARCHETYPES.map(a => `${a.name} · ${Math.round(a.prob*100)}% · ${a.pillMin}–${a.pillMax} pills`).join('<br>');
