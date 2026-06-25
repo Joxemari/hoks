@@ -16,6 +16,15 @@
   .row { display:flex; align-items:center; gap:6px; }
   input[type=range] { width: 100%; accent-color: var(--ink); cursor: pointer; }
   input[type=number], select { font-family: var(--f); font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 2px; width: 100%; }
+  .pal-dd { position: relative; }
+  .pal-trigger { display:flex; align-items:center; gap:7px; padding:6px 9px; background:var(--surface); border:1px solid var(--border); border-radius:2px; cursor:pointer; font-size:11px; }
+  .pal-trigger:hover { border-color:#d0d0d0; }
+  .pal-list { display:none; position:absolute; top:calc(100% + 3px); left:0; right:0; background:#fff; border:1px solid #d0d0d0; border-radius:2px; z-index:50; max-height:280px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+  .pal-list.open { display:block; }
+  .pal-opt { display:flex; align-items:center; gap:7px; padding:6px 9px; cursor:pointer; font-size:11px; }
+  .pal-opt:hover { background:var(--surface); }
+  .pal-dots { display:inline-flex; gap:2px; align-items:center; flex-shrink:0; }
+  .pal-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .val { font-size: 11px; font-weight: 700; min-width: 30px; text-align: right; color: var(--ink3); }
   button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
   button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
@@ -54,7 +63,14 @@
 
     <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
-      <select id="pal"></select>
+      <div class="pal-dd" id="palDD">
+        <div class="pal-trigger" id="palTrig">
+          <span class="pal-dots" id="palTrigDots"></span>
+          <span class="pal-name" id="palTrigName">Random (weighted)</span>
+          <span style="margin-left:auto;color:var(--ink3)">▾</span>
+        </div>
+        <div class="pal-list" id="palList"></div>
+      </div>
       <div id="palBar" style="display:flex;height:16px;border-radius:2px;overflow:hidden;border:1px solid var(--border)"></div>
       <span class="hintline">incluye activas e inactivas · la barra = paleta en uso</span>
     </div>
@@ -121,8 +137,8 @@
     <span class="hint" id="status">—</span>
   </main>
 
-<script src="../_engine.js?v=3"></script>
-<script src="./algo.js?v=3"></script>
+<script src="../_engine.js?v=4"></script>
+<script src="./algo.js?v=4"></script>
 <script>
 // Guardia: si el motor o el algoritmo no cargaron, dilo en pantalla (no fallo mudo).
 if (typeof HOKS === 'undefined' || !HOKS.PLLSG || !HOKS.loadAllPalettes) {
@@ -150,10 +166,11 @@ function params() {
     thickness: parseFloat($('thick').value),
   };
 }
+let palSel = 'auto';   // 'auto' o índice dentro de PALETTES
 function palOpts() {
-  const v = $('pal').value;
-  return v === 'auto' ? { palettes: PALETTES } : { palettes: PALETTES, locked: true, lockedIdx: parseInt(v, 10) };
+  return palSel === 'auto' ? { palettes: PALETTES } : { palettes: PALETTES, locked: true, lockedIdx: parseInt(palSel, 10) };
 }
+function dotsHTML(colors) { return colors.slice(0, 8).map(c => `<span class="dot" style="background:${c}"></span>`).join(''); }
 
 function renderSingle() {
   $('seed').value = seed;
@@ -205,18 +222,28 @@ function setSheet(on) {
 
 function refresh() { sheetMode ? renderSheet() : renderSingle(); }
 
-function populateSelect() {
+function populatePalList() {
   $('palCount').textContent = PALETTES.length;
-  $('pal').innerHTML = '<option value="auto">Random (weighted)</option>' +
-    PALETTES.map((pl, i) => `<option value="${i}">${pl.name}${pl.active === false ? ' · (inactive)' : ''}</option>`).join('');
+  const items = ['<div class="pal-opt" data-v="auto"><span class="pal-dots" style="color:var(--ink3)">∿</span><span class="pal-name">Random (weighted)</span></div>']
+    .concat(PALETTES.map((pl, i) => `<div class="pal-opt" data-v="${i}"><span class="pal-dots">${dotsHTML(pl.colors)}</span><span class="pal-name">${pl.name}${pl.active === false ? ' · (inactive)' : ''}</span></div>`));
+  $('palList').innerHTML = items.join('');
+  $('palList').querySelectorAll('.pal-opt').forEach(el => el.onclick = () => selectPal(el.dataset.v));
+  updatePalTrigger();
 }
+function updatePalTrigger() {
+  if (palSel === 'auto') { $('palTrigDots').innerHTML = ''; $('palTrigName').textContent = 'Random (weighted)'; }
+  else { const pl = PALETTES[parseInt(palSel, 10)]; if (pl) { $('palTrigDots').innerHTML = dotsHTML(pl.colors); $('palTrigName').textContent = pl.name + (pl.active === false ? ' · (inactive)' : ''); } }
+}
+function selectPal(v) { palSel = v; updatePalTrigger(); $('palList').classList.remove('open'); refresh(); }
 
 // ── Controls ──
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
 $('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
 $('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
-$('pal').onchange = refresh;
+$('palTrig').onclick = e => { e.stopPropagation(); $('palList').classList.toggle('open'); };
+$('palList').onclick = e => e.stopPropagation();
+document.addEventListener('click', () => $('palList').classList.remove('open'));
 $('arch').onchange = refresh;
 $('bg').onchange = refresh;
 $('count').oninput = () => { $('countV').textContent = $('count').value === '0' ? 'auto' : $('count').value; refresh(); };
@@ -273,10 +300,10 @@ function showProbs() {
 
 // ── Init: pinta YA con el fallback (nunca en blanco), luego trae TODAS las paletas ──
 showProbs();
-populateSelect();
+populatePalList();
 renderSingle();
 HOKS.loadAllPalettes().then(p => {
-  if (p && p.length) { PALETTES = p; populateSelect(); refresh(); }
+  if (p && p.length) { PALETTES = p; populatePalList(); refresh(); }
 }).catch(() => {});
 </script>
 </body>
