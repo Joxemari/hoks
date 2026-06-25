@@ -32,7 +32,17 @@
   // Distribución de acabados (común a todos los arquetipos).
   const FINISH_PROBS = { solid: 0.34, blnd: 0.34, translucent: 0.15, outline: 0.05, chess: 0.03, gradient: 0.05, ribbed: 0.04 };
 
-  function pickFinish(rng) { let v = rng.next(), acc = 0; for (const [s, w] of Object.entries(FINISH_PROBS)) { acc += w; if (v < acc) return s; } return 'solid'; }
+  function pickWeighted(rng, items, weights) {
+    const total = weights.reduce((a, b) => a + b, 0) || 1;
+    let v = rng.next(), acc = 0;
+    for (let i = 0; i < items.length; i++) { acc += weights[i] / total; if (v < acc) return items[i]; }
+    return items[items.length - 1];
+  }
+  // probs (opcional): pesos override del lab; si faltan, los de FINISH_PROBS. Se normalizan.
+  function pickFinish(rng, probs) {
+    const keys = Object.keys(FINISH_PROBS);
+    return pickWeighted(rng, keys, keys.map(k => (probs && probs[k] != null) ? probs[k] : FINISH_PROBS[k]));
+  }
   function pickBlendOp(colors) { return colors.reduce((s, c) => s + E.luma(c), 0) / colors.length < 0.45 ? 'screen' : 'multiply'; }
   function pillsOverlap(ax, ay, aL, at, bx, by, bL, bt, tol) {
     return Math.max(0, (at + bt) / 2 + Math.min(aL, bL) * 0.5 - Math.hypot(ax - bx, ay - by)) / ((at / 2 + bt / 2)) > tol;
@@ -162,8 +172,8 @@
 
     // Arquetipo + número de pills (los params pueden forzarlos).
     const arch = (params.archetype && params.archetype !== 'auto')
-      ? (ARCHETYPES.find(a => a.name === params.archetype) || rng.weighted(ARCHETYPES))
-      : rng.weighted(ARCHETYPES);
+      ? (ARCHETYPES.find(a => a.name === params.archetype) || ARCHETYPES[0])
+      : pickWeighted(rng, ARCHETYPES, ARCHETYPES.map(a => (params.archProbs && params.archProbs[a.name] != null) ? params.archProbs[a.name] : a.prob));
     const num = params.count ? params.count : rng.int(arch.pillMin, arch.pillMax);
     const maxSize = Math.min(W, H) * 0.85 / Math.sqrt(num);
     const thick = maxSize * rng.range(0.62, 0.78) * (params.thickness || 1);
@@ -194,7 +204,7 @@
       const bgL = bgColors.map(c => E.luma(c)), cOk = c => bgL.every(bl => Math.abs(E.luma(c) - bl) > 0.12);
       const pc = colors.filter(cOk).length ? colors.filter(cOk)
         : (colors.filter(c => !bgColors.includes(c)).length ? colors.filter(c => !bgColors.includes(c)) : colors);
-      pills.push({ cx, cy, hl, angle, col: rng.pickFrom(pc), style: pickFinish(rng), thick });
+      pills.push({ cx, cy, hl, angle, col: rng.pickFrom(pc), style: pickFinish(rng, params.finishProbs), thick });
     }
 
     const styleCount = {};
