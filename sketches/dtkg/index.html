@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dtkg · lab — hoks</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --ink:#111; --ink3:#bbb; --border:#e8e8e8; --surface:#f7f7f7; --f:'Courier New',Courier,monospace; }
+  body { font-family: var(--f); background: #fff; color: var(--ink); display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+  .panel { border-right: 1px solid var(--border); padding: 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; }
+  .lab-title { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+  .lab-title small { display:block; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; }
+  .group { display: flex; flex-direction: column; gap: 6px; }
+  .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); }
+  input[type=range] { width: 100%; accent-color: var(--ink); cursor: pointer; }
+  input[type=number], select { font-family: var(--f); font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 2px; width: 100%; }
+  .hintline { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
+  button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
+  button:hover { opacity: 0.78; }
+  .seed-box { display:flex; gap:4px; }
+  .seed-box button { width:34px; padding:6px 0; }
+  .seed-box input { text-align:center; }
+  .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 1.5rem; background: var(--surface); overflow: auto; }
+  #single { max-width: min(100%, calc(100vh - 120px)); max-height: calc(100vh - 120px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
+  .sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 980px; }
+  .sheet canvas { width: 100%; outline: 1px solid rgba(0,0,0,0.1); cursor: pointer; display:block; }
+  .sheet figcaption { padding: 3px 2px; font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
+  .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .traits { font-size: 10px; display:flex; flex-direction:column; gap:4px; }
+  .traits .t { display:flex; justify-content:space-between; gap:6px; }
+  .traits .k { color: var(--ink3); text-transform: uppercase; font-size: 9px; letter-spacing:0.06em; }
+  .traits .v { font-weight: 700; }
+  .dots { display:inline-flex; gap:2px; vertical-align:middle; margin-right:5px; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; border:0.5px solid rgba(0,0,0,0.1); }
+</style>
+</head>
+<body>
+  <aside class="panel">
+    <div class="lab-title">dtkg · lab<small>borobilak + mesh + grano</small></div>
+    <div class="group">
+      <span class="lbl">Seed</span>
+      <div class="seed-box">
+        <button class="ghost" id="prev">◀</button>
+        <input type="number" id="seed" value="0">
+        <button class="ghost" id="next">▶</button>
+      </div>
+      <button id="rnd">↻ New seed (space)</button>
+    </div>
+    <div class="group">
+      <span class="lbl">Palette · <span id="palCount">…</span></span>
+      <select id="pal"></select>
+      <span class="hintline">incluye activas e inactivas</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Grid · <span id="gridV">auto</span></span>
+      <input type="range" id="grid" min="0" max="7" step="1" value="0">
+      <span class="hintline">0 = aleatorio 1–7 (como producción)</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Threshold · <span id="thV">0.80</span></span>
+      <input type="range" id="th" min="0.1" max="1" step="0.05" value="0.8">
+      <span class="hintline">más alto = más círculos (producción: 0.80)</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
+      <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
+    </div>
+    <div class="group">
+      <button id="save">↓ Save PNG (s)</button>
+      <button class="ghost" id="sheet">▦ Contact sheet (g)</button>
+    </div>
+    <div class="group"><span class="lbl">Traits</span><div class="traits" id="traits"></div></div>
+  </aside>
+
+  <main class="stage">
+    <canvas id="single" width="600" height="600"></canvas>
+    <div class="sheet" id="sheetGrid" style="display:none"></div>
+    <span class="hint" id="status">—</span>
+  </main>
+
+<script src="../_engine.js"></script>
+<script src="./algo.js"></script>
+<script>
+const WORK = HOKS.DTKG;
+const W = 600, H = 600;             // resolución de producción (el PNG coincide)
+const SHEET_N = 12, SHEET_W = 300, SHEET_H = 300;
+
+const single = document.getElementById('single');
+const sctx = single.getContext('2d');
+let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
+let seed = (Math.random() * 0xFFFFFFFF) >>> 0;
+let sheetMode = false;
+const $ = id => document.getElementById(id);
+
+function params() {
+  return {
+    grainScale: parseFloat($('grain').value),
+    grid:       parseInt($('grid').value, 10) || 0,
+    threshold:  parseFloat($('th').value),
+  };
+}
+function palOpts() { const v = $('pal').value; return v === 'auto' ? { palettes: PALETTES } : { palettes: PALETTES, locked: true, lockedIdx: parseInt(v, 10) }; }
+
+function renderSingle() {
+  $('seed').value = seed;
+  try {
+    const res = WORK.render(sctx, W, H, seed >>> 0, { ...palOpts(), params: params() });
+    $('status').textContent = `seed #${seed}`;
+    drawTraits(WORK.traits(res));
+  } catch (e) { $('status').textContent = '⚠ ' + e.message; console.error(e); }
+}
+function drawTraits(t) {
+  $('traits').innerHTML = t.list.map(x => `
+    <div class="t"><span class="k">${x.key}</span>
+    <span class="v">${x.colors ? `<span class="dots">${x.colors.slice(0,6).map(c=>`<span class="dot" style="background:${c}"></span>`).join('')}</span>` : ''}${x.val}</span></div>`).join('') +
+    `<div class="t" style="margin-top:4px;border-top:1px solid var(--border);padding-top:5px;"><span class="k">Overall</span><span class="v">${t.overall}</span></div>`;
+}
+function renderSheet() {
+  const grid = $('sheetGrid'); grid.innerHTML = '';
+  const base = seed >>> 0;
+  for (let i = 0; i < SHEET_N; i++) {
+    const s = (base + i * 0x9E3779B1) >>> 0;
+    const c = document.createElement('canvas'); c.width = SHEET_W; c.height = SHEET_H;
+    try { WORK.render(c.getContext('2d'), SHEET_W, SHEET_H, s, { ...palOpts(), params: params() }); } catch (e) {}
+    const fig = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = '#' + s;
+    fig.appendChild(c); fig.appendChild(cap);
+    c.addEventListener('click', () => { seed = s; setSheet(false); });
+    grid.appendChild(fig);
+  }
+}
+function setSheet(on) {
+  sheetMode = on;
+  $('single').style.display = on ? 'none' : 'block';
+  $('sheetGrid').style.display = on ? 'grid' : 'none';
+  $('sheet').textContent = on ? '▦ Single view (g)' : '▦ Contact sheet (g)';
+  if (on) { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; } else renderSingle();
+}
+function refresh() { sheetMode ? renderSheet() : renderSingle(); }
+function populateSelect() {
+  $('palCount').textContent = PALETTES.length;
+  $('pal').innerHTML = '<option value="auto">Random (weighted)</option>' +
+    PALETTES.map((pl, i) => `<option value="${i}">${pl.name}${pl.active === false ? ' · (inactive)' : ''}</option>`).join('');
+}
+
+$('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
+$('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
+$('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
+$('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
+$('pal').onchange = refresh;
+$('grid').oninput = () => { $('gridV').textContent = $('grid').value === '0' ? 'auto' : $('grid').value + '×' + $('grid').value; refresh(); };
+$('th').oninput = () => { $('thV').textContent = parseFloat($('th').value).toFixed(2); refresh(); };
+$('grain').oninput = () => { $('grainV').textContent = parseFloat($('grain').value).toFixed(1); refresh(); };
+$('sheet').onclick = () => setSheet(!sheetMode);
+$('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `dtkg_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'Space') { e.preventDefault(); seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); }
+  else if (e.key === 'ArrowRight') { seed = (seed + 1) >>> 0; refresh(); }
+  else if (e.key === 'ArrowLeft') { seed = (seed - 1) >>> 0; refresh(); }
+  else if (e.key === 's' || e.key === 'S') $('save').click();
+  else if (e.key === 'g' || e.key === 'G') setSheet(!sheetMode);
+});
+
+// Init: pinta YA con fallback, luego trae TODAS las paletas.
+populateSelect();
+renderSingle();
+HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});
+</script>
+</body>
+</html>

@@ -9,8 +9,10 @@ Donostia / Stanford). Sistemas que producen imagen a partir de código y azar
 controlado: cada pieza nace de una *seed* y un RNG determinista.
 
 **HTML/JS vanilla. Sin framework, sin bundler, sin paso de build.** Lo que se
-commitea es exactamente lo que se publica. Todo el JS de cada obra vive *inline*
-dentro de su `.html` (no hay módulos ni dependencias instaladas). Tipografía
+commitea es exactamente lo que se publica. Las obras **graduadas** (pllsg,
+krrtkg, dtkg) tienen su algoritmo en `sketches/<obra>/algo.js` (fuente única,
+compartida entre laboratorio y producción); las páginas de las demás series aún
+llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 única en todo el sitio: `Courier New` monoespaciada; fondo blanco, tinta `#111`.
 
 ## Estructura
@@ -43,6 +45,14 @@ dentro de su `.html` (no hay módulos ni dependencias instaladas). Tipografía
   dropdown *Work* con las 7 series, About, Palettes), favicon SVG, footer
   (© hoks, contacto, Instagram si está en `site.json`) y badge ADMIN si hay
   sesión. No hay otro CSS/JS global: cada página trae su propio `<style>`.
+
+### Laboratorio (`sketches/`)
+
+Motor compartido (`_engine.js`: Rng, mesh gradient, grano, paletas) + una
+carpeta por obra graduada con `algo.js` (el algoritmo, fuente única) y un
+harness de desarrollo (scrub de seeds, hoja de contactos). **El flujo creativo
+vive en p5/OpenProcessing; el laboratorio es porte + QA y lo opera Claude.**
+Ver `sketches/README.md` para el flujo completo de graduación.
 
 ### Datos (`data/`)
 
