@@ -33,11 +33,11 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 - **`about.html`** — Texto leído de `data/site.json` (con *fallback* embebido).
 - **`palettes.html`** — Galería de paletas desde `data/palettes.json`; muestra
   activas/inactivas y su rareza/probabilidad.
-- **`editor.html`** — Editor de código. Se pega la función `draw` de
-  OpenProcessing y se guarda en el campo `drawCode` de `works.json`.
 - **`admin.html`** — Panel protegido por contraseña. Gestiona paletas, familias
   (`works.json`), contenido (`site.json`) y el token de GitHub. Escribe
-  commiteando directamente a `main` por la Contents API.
+  commiteando directamente a `main` por la Contents API. En cada familia
+  graduada muestra un enlace **Lab** (`sketches/<slug>/`), solo visible desde el
+  panel. El dropdown *Work* del nav lista solo las familias `active`.
 
 ### Compartido
 
@@ -62,8 +62,8 @@ no por ruta relativa. Esto permite que un cambio de datos aparezca sin esperar e
 redeploy de Pages.
 
 - **`works.json`** — Registro de familias: `id, name, slug, active, description,
-  page, canvas` y `drawCode` (el código de la obra como string). El flag `active`
-  decide qué series aparecen en la landing. Hoy activas: **krrtkg, dtkg, pllsg**
+  page, canvas`. El flag `active` decide qué series aparecen en la landing y en
+  el dropdown *Work* del nav. Hoy activas: **krrtkg, dtkg, pllsg**
   (las que llevan grano); pills/krrtk/dtk/bzrs están inactivas.
 - **`palettes.json`** — Paletas con `colors`, `active`, `tags`, `notes`. Mezcla
   sets de Roni Kaufman (color_pals) y series Itten (contraste complementario).
@@ -99,9 +99,8 @@ Actions, ni `_config.yml`, ni compilación: cada push a `main` redespliega
 Doble canal de "publicación":
 1. **Código/páginas** → GitHub Pages (rama `main`).
 2. **Datos JSON** → leídos en vivo desde `raw.githubusercontent.com/.../main/data/`.
-   admin.html y editor.html escribíen esos JSON commiteando a `main` por la
-   Contents API (token PAT en `localStorage`), así que se actualizan sin tocar el
-   código.
+   admin.html escribe esos JSON commiteando a `main` por la Contents API (token
+   PAT en `localStorage`), así que se actualizan sin tocar el código.
 
 ## Workflow
 
