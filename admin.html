@@ -428,6 +428,8 @@ async function saveWorks() {
 
 
 
+// Familias graduadas al laboratorio de fuente única (sketches/<slug>/).
+const GRADUATED = ['pllsg','krrtkg','dtkg'];
 function renderWorks() {
   const el = $('works-count');
   if (el) el.textContent = works.length;
@@ -447,7 +449,7 @@ function renderWorks() {
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;">
           <input type="checkbox" ${w.active?'checked':''} onchange="toggleWork(${i},this.checked)"> Active
         </label>
-        <a href="editor.html?family=${esc(w.slug)}" target="_blank" style="font-family:var(--f);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);text-decoration:none;background:var(--ink);color:var(--bg);border-radius:2px;padding:5px 10px;">&#9654; Edit Code</a>
+        ${GRADUATED.includes(w.slug)?`<a href="sketches/${esc(w.slug)}/" target="_blank" style="font-family:var(--f);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);text-decoration:none;border:1px solid var(--border-dark);border-radius:2px;padding:5px 10px;">&#9638; Lab</a>`:''}
         <a href="${esc(w.page||w.slug+'.html')}" target="_blank" style="font-family:var(--f);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);text-decoration:none;border:1px solid var(--border-dark);border-radius:2px;padding:5px 10px;">&#8599; Open</a>
         <button onclick="deleteWork(${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:14px;padding:0 4px;" title="Delete">&times;</button>
       </div>
@@ -479,36 +481,14 @@ async function saveWorkDesc(i) {
   await saveWorks();
   toast('Description saved');
 }
-async function saveWorkCode(i) {
-  works[i].drawCode = $('code-'+i).value;
-  await saveWorks();
-  toast('Code saved ✓');
-}
-function previewWork(i) {
-  const code = $('code-'+i).value.trim();
-  const wrap = $('preview-wrap-'+i);
-  const canvas = $('preview-canvas-'+i);
-  if (!code) { toast('No code to preview'); return; }
-  wrap.style.display = 'block';
-  try {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, 300, 300);
-    const palColors = (pals && pals.length) ? pals.find(p=>p.active!==false)?.colors || ['#4464a1','#ee726b','#fef9c6'] : ['#4464a1','#ee726b','#fef9c6'];
-    const seed = (Math.random()*0xFFFFFFFF)>>>0;
-    class Rng{constructor(s){this.s=(s|0)>>>0;}next(){this.s=((Math.imul(1664525,this.s)+1013904223)>>>0);return this.s/4294967296;}int(a,b){return Math.floor(a+this.next()*(b-a+1));}}
-    const fn = new Function('ctx','canvas','W','H','seed','colors','Rng', code);
-    fn(ctx, canvas, 300, 300, seed, palColors, Rng);
-    toast('Preview rendered');
-  } catch(e) { toast('Error: '+e.message); console.error(e); }
-}
 function openAddWorkModal() {
   const name = prompt('Family name (e.g. BZRSG):'); if (!name) return;
   const slug = prompt('Slug (e.g. bzrsg):'); if (!slug) return;
   const canvasSize = prompt('Canvas size:', '600x600');
-  works.push({id:slug, name:name.toUpperCase(), slug, active:false, description:'', page:slug+'.html', canvas:canvasSize||'600x600', created:Date.now(), drawCode:''});
+  works.push({id:slug, name:name.toUpperCase(), slug, active:false, description:'', page:slug+'.html', canvas:canvasSize||'600x600', created:Date.now()});
   saveWorks();
   renderWorks();
-  toast('Family added — paste draw code and activate when ready');
+  toast('Family added — graduate it in the Lab, then activate when ready');
 }
 
 // ── AUTH ──────────────────────────────────────────────

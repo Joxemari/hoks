@@ -87,13 +87,13 @@ nav.innerHTML = `
     <li class="nav-work${isWork?' active':''}">
       <span class="nav-work-label" id="nav-work-label">Work</span>
       <ul class="nav-work-dropdown" id="nav-work-dropdown">
-        <li><a href="pills.html"${path==='pills.html'?' class="active"':''}>PLLS</a></li>
-        <li><a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}>KRRTK</a></li>
-        <li><a href="dtk.html"${path==='dtk.html'?' class="active"':''}>DTK</a></li>
-        <li><a href="bzrs.html"${path==='bzrs.html'?' class="active"':''}>BZRS</a></li>
-        <li><a href="krrtkg.html"${path==='krrtkg.html'?' class="active"':''}>KRRTKG</a></li>
-        <li><a href="dtkg.html"${path==='dtkg.html'?' class="active"':''}>DTKG</a></li>
-        <li><a href="pllsg.html"${path==='pllsg.html'?' class="active"':''}>PLLSG</a></li>
+        <li data-slug="pills"><a href="pills.html"${path==='pills.html'?' class="active"':''}>PLLS</a></li>
+        <li data-slug="krrtk"><a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}>KRRTK</a></li>
+        <li data-slug="dtk"><a href="dtk.html"${path==='dtk.html'?' class="active"':''}>DTK</a></li>
+        <li data-slug="bzrs"><a href="bzrs.html"${path==='bzrs.html'?' class="active"':''}>BZRS</a></li>
+        <li data-slug="krrtkg"><a href="krrtkg.html"${path==='krrtkg.html'?' class="active"':''}>KRRTKG</a></li>
+        <li data-slug="dtkg"><a href="dtkg.html"${path==='dtkg.html'?' class="active"':''}>DTKG</a></li>
+        <li data-slug="pllsg"><a href="pllsg.html"${path==='pllsg.html'?' class="active"':''}>PLLSG</a></li>
       </ul>
     </li>
     <li><a href="about.html"${isAbout?' class="active"':''}>About</a></li>
@@ -114,6 +114,19 @@ if (workLabel && workDropdown) {
   workLabel.addEventListener('click', e => { e.stopPropagation(); workDropdown.classList.toggle('open'); });
   document.addEventListener('click', () => workDropdown.classList.remove('open'));
   workDropdown.addEventListener('click', e => e.stopPropagation());
+
+  // El dropdown lista solo las familias activas de data/works.json.
+  // Si el fetch falla, se dejan visibles todas (degradación segura).
+  fetch('https://raw.githubusercontent.com/Joxemari/hoks/main/data/works.json?t=' + Date.now())
+    .then(r => r.ok ? r.json() : null)
+    .then(works => {
+      if (!Array.isArray(works) || !works.length) return;
+      const activeSlugs = new Set(works.filter(w => w.active).map(w => w.slug));
+      workDropdown.querySelectorAll('li[data-slug]').forEach(li => {
+        if (!activeSlugs.has(li.dataset.slug)) li.style.display = 'none';
+      });
+    })
+    .catch(() => {});
 }
 
 document.querySelectorAll('main, #main-content, .about-wrap, .work-section').forEach(el => el.style.flex = '1');
