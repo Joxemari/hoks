@@ -23,6 +23,7 @@ body { background: #fff; color: #111; }
   font-size: clamp(0.9rem, 1.8vw, 1.1rem);
   font-weight: 400; line-height: 1.8; color: #111;
   margin-bottom: 3rem; letter-spacing: 0.01em;
+  white-space: pre-line;
   visibility: hidden;
 }
 .about-contact {
@@ -42,7 +43,7 @@ body { background: #fff; color: #111; }
   </div>
 </main>
 <script>
-const FALLBACK = 'Joxemari Gallastegi is a generative artist based in Donostia. He studied at Stanford University, where he presented his first solo exhibition. His work explores the intersection of code and visual form — algorithmic systems built on geometry, colour, and controlled randomness that make each piece unique by design.';
+const FALLBACK = 'hoks is the work of Joxemari Gallastegi, a generative artist based in Donostia. He studied at Stanford University, where he presented his first solo exhibition.\n\nThe work begins where a rule is written. Each series is a small system — a grammar of modules, geometry and controlled chance — and every piece is one sentence that grammar can utter: a seed, a deterministic sequence, an image. Same seed, same image. Nothing is retouched.\n\nWhat reaches the screen is not the subject of the work but its residue: the visible trace of a system thinking. The series matter more than the pieces; the rules matter more than the series.';
 
 fetch('https://raw.githubusercontent.com/Joxemari/hoks/main/data/site.json?t=' + Date.now())
   .then(r => r.ok ? r.json() : null)
