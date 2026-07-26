@@ -43,25 +43,43 @@ body { background: #fff; color: #111; }
   </div>
 </main>
 <script>
-const FALLBACK = 'hoks is the work of Joxemari Gallastegi, a generative artist based in Donostia. He studied at Stanford University, where he presented his first solo exhibition.\n\nThe work begins where a rule is written. Each series is a small system — a grammar of modules, geometry and controlled chance — and every piece is one sentence that grammar can utter: a seed, a deterministic sequence, an image. Same seed, same image. Nothing is retouched.\n\nThere is a virtue in modularity: a module explains nothing on its own. It asks for repetition, for contact, for a shared edge. The unit is kept deliberately poor so that the field can be rich — meaning does not live in the pieces but between them.\n\nWhat reaches the screen is not the subject of the work but its residue: the visible trace of a system thinking. The series matter more than the pieces; the rules matter more than the series.';
+// aboutText en site.json puede ser una cadena (legado, se trata como EN) o un
+// objeto {en,es,eu}. Si falta el idioma actual, se cae al texto poético de i18n.
+let siteData = null;
+
+function pickAbout(lang) {
+  const a = siteData && siteData.aboutText;
+  if (a && typeof a === 'object') {
+    return a[lang] || a.en || a.es || a.eu || (window.HOKSI18N && HOKSI18N.t('about.fallback'));
+  }
+  if (typeof a === 'string' && a.trim()) {
+    // Cadena legada: solo sirve para EN; el resto usa el texto poético traducido.
+    return lang === 'en' ? a : (window.HOKSI18N && HOKSI18N.t('about.fallback'));
+  }
+  return window.HOKSI18N ? HOKSI18N.t('about.fallback') : '';
+}
+
+function renderAbout() {
+  const lang = window.HOKSI18N ? HOKSI18N.lang : 'en';
+  const t = document.getElementById('about-text');
+  const c = document.getElementById('about-contact');
+  if (t) {
+    t.textContent = pickAbout(lang) || '';
+    t.style.visibility = 'visible';
+  }
+  if (c) {
+    const email = (siteData && siteData.footerEmail) || 'joxemgallastegi@gmail.com';
+    const label = window.HOKSI18N ? HOKSI18N.t('footer.contact') : 'Contact';
+    c.innerHTML = label + ': <a href="mailto:' + email + '">' + email + '</a>';
+  }
+}
 
 fetch('https://raw.githubusercontent.com/Joxemari/hoks/main/data/site.json?t=' + Date.now())
   .then(r => r.ok ? r.json() : null)
-  .then(d => {
-    const t = document.getElementById('about-text');
-    const c = document.getElementById('about-contact');
-    if (t) {
-      t.textContent = d?.aboutText || FALLBACK;
-      t.style.visibility = 'visible';
-    }
-    if (c && d?.footerEmail) {
-      c.innerHTML = 'Contact: <a href="mailto:' + d.footerEmail + '">' + d.footerEmail + '</a>';
-    }
-  })
-  .catch(() => {
-    const t = document.getElementById('about-text');
-    if (t) { t.textContent = FALLBACK; t.style.visibility = 'visible'; }
-  });
+  .then(d => { siteData = d; renderAbout(); })
+  .catch(() => { renderAbout(); });
+
+window.addEventListener('hoks:langchange', renderAbout);
 </script>
 </body>
 </html>

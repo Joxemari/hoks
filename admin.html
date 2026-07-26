@@ -334,7 +334,9 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
     <div class="tab-panel" id="tab-site">
       <div class="section-title" style="margin-bottom:1.5rem">Site Content</div>
       <div class="settings-form">
-        <div class="field"><label>About Text</label><textarea id="about-text-input" rows="5"></textarea></div>
+        <div class="field"><label>About Text (EN)</label><textarea id="about-text-input" rows="5"></textarea></div>
+        <div class="field"><label>About Text (ES)</label><textarea id="about-text-es" rows="5"></textarea></div>
+        <div class="field"><label>About Text (EU)</label><textarea id="about-text-eu" rows="5"></textarea></div>
         <div class="field"><label>Contact Email</label><input type="email" id="email-input"></div>
         <div class="field"><label>Instagram URL</label><input type="url" id="instagram-input"></div>
         <button class="btn" onclick="saveSiteContent()" style="width:fit-content">Save & Publish</button>
@@ -770,8 +772,17 @@ window.getActiveBatchInfo = function() {
 };
 
 // ── SITE ──────────────────────────────────────────────
-function loadSiteForm(){$('about-text-input').value=site.aboutText||'';$('email-input').value=site.footerEmail||'';$('instagram-input').value=site.footerInstagram||'';}
-async function saveSiteContent(){const data={aboutText:$('about-text-input').value.trim(),footerEmail:$('email-input').value.trim(),footerInstagram:$('instagram-input').value.trim()};const ok=await ghFetch('data/site.json',data,'update site content');if(ok)toast('Published ✓ — live in ~30s');}
+function loadSiteForm(){
+  // aboutText puede ser cadena (legado = EN) u objeto {en,es,eu}.
+  const a=site.aboutText;
+  if(a&&typeof a==='object'){$('about-text-input').value=a.en||'';$('about-text-es').value=a.es||'';$('about-text-eu').value=a.eu||'';}
+  else{$('about-text-input').value=a||'';$('about-text-es').value='';$('about-text-eu').value='';}
+  $('email-input').value=site.footerEmail||'';$('instagram-input').value=site.footerInstagram||'';
+}
+async function saveSiteContent(){
+  const data={aboutText:{en:$('about-text-input').value.trim(),es:$('about-text-es').value.trim(),eu:$('about-text-eu').value.trim()},footerEmail:$('email-input').value.trim(),footerInstagram:$('instagram-input').value.trim()};
+  const ok=await ghFetch('data/site.json',data,'update site content');if(ok)toast('Published ✓ — live in ~30s');
+}
 
 // ── SECURITY ──────────────────────────────────────────
 function changePassword(){const c=$('pwd-current').value,n=$('pwd-new').value,cf=$('pwd-confirm').value;if(c!==getStoredPwd()){toast('Incorrect current password');return;}if(!n){toast('New password empty');return;}if(n!==cf){toast('Passwords do not match');return;}localStorage.setItem(PWD_KEY,n);$('pwd-current').value='';$('pwd-new').value='';$('pwd-confirm').value='';toast('Password updated');}

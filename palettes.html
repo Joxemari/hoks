@@ -73,13 +73,13 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
 <script src="nav.js"></script>
 <div class="controls">
   <div class="controls-left">
-    <div class="search-wrap"><input type="text" id="search" placeholder="Search by name or tag…"></div>
+    <div class="search-wrap"><input type="text" id="search" data-i18n-ph="palettes.search" placeholder="Search by name or tag…"></div>
     <select class="sort-select" id="sort">
-      <option value="prob">By Rarity</option>
-      <option value="newest">Newest</option>
-      <option value="oldest">Oldest</option>
-      <option value="name">Name</option>
-      <option value="colors">Colors</option>
+      <option value="prob" data-i18n="sort.rarity">By Rarity</option>
+      <option value="newest" data-i18n="sort.newest">Newest</option>
+      <option value="oldest" data-i18n="sort.oldest">Oldest</option>
+      <option value="name" data-i18n="sort.name">Name</option>
+      <option value="colors" data-i18n="palettes.colors">Colors</option>
     </select>
     <span class="count" id="count"></span>
   </div>
@@ -99,12 +99,13 @@ function ageWeight(createdMs) {
   if (ageDays < 365) return 0.4;
   return 0.15;
 }
+const T = (k) => (window.HOKSI18N ? HOKSI18N.t(k) : k);
 function probRarity(prob) {
-  if (prob > 0.08)  return { label:'Common',    cls:'common' };
-  if (prob > 0.03)  return { label:'Uncommon',  cls:'uncommon' };
-  if (prob > 0.01)  return { label:'Rare',       cls:'rare' };
-  if (prob > 0.003) return { label:'Super Rare', cls:'superrare' };
-  return                   { label:'Legendary',  cls:'legendary' };
+  if (prob > 0.08)  return { label:T('rarity.common'),    cls:'common' };
+  if (prob > 0.03)  return { label:T('rarity.uncommon'),  cls:'uncommon' };
+  if (prob > 0.01)  return { label:T('rarity.rare'),       cls:'rare' };
+  if (prob > 0.003) return { label:T('rarity.superrare'), cls:'superrare' };
+  return                   { label:T('rarity.legendary'),  cls:'legendary' };
 }
 function formatDate(ms) {
   if (!ms || ms < 1000) return null;
@@ -128,7 +129,7 @@ fetch(RAW + 'palettes.json?t=' + Date.now())
     }));
     render();
   })
-  .catch(() => { document.getElementById('grid').innerHTML='<div class="empty-state"><p class="empty-big">Could not load palettes</p></div>'; });
+  .catch(() => { document.getElementById('grid').innerHTML='<div class="empty-state"><p class="empty-big">'+T('palettes.loadError')+'</p></div>'; });
 
 function render() {
   const q = document.getElementById('search').value.toLowerCase().trim();
@@ -140,9 +141,9 @@ function render() {
   if(srt==='name')    list.sort((a,b) => a.name.localeCompare(b.name));
   if(srt==='colors')  list.sort((a,b) => b.colors.length-a.colors.length);
   const active = list.filter(p => p.active !== false).length;
-  document.getElementById('count').textContent = `${list.length} palettes · ${active} active`;
+  document.getElementById('count').textContent = T('palettes.count').replace('%1', list.length).replace('%2', active);
   const grid = document.getElementById('grid');
-  if (!list.length) { grid.innerHTML='<div class="empty-state"><p class="empty-big">No results</p><p class="empty-sub">Try a different term</p></div>'; return; }
+  if (!list.length) { grid.innerHTML='<div class="empty-state"><p class="empty-big">'+T('palettes.noResults')+'</p><p class="empty-sub">'+T('palettes.tryDifferent')+'</p></div>'; return; }
   const isActive = p => p.active !== false;
   grid.innerHTML = list.map(p => {
     const active = isActive(p);
@@ -157,18 +158,18 @@ function render() {
       <div class="card-body">
         <div class="card-name-row">
           <div class="card-name">${esc(p.name)}</div>
-          ${active && rarity ? `<span class="prob-badge prob-${rarity.cls}">${rarity.label}</span>` : `<span class="inactive-tag">Inactive</span>`}
+          ${active && rarity ? `<span class="prob-badge prob-${rarity.cls}">${rarity.label}</span>` : `<span class="inactive-tag">${T('palettes.inactive')}</span>`}
         </div>
         <div class="card-meta">
           ${dateStr ? `<span class="card-date">${dateStr}</span>` : ''}
-          ${active && probPct ? `<span class="card-date" style="color:#888;">↑ ${probPct} chance</span>` : ''}
+          ${active && probPct ? `<span class="card-date" style="color:#888;">↑ ${probPct} ${T('palettes.chance')}</span>` : ''}
         </div>
         ${p.tags?.length ? `<div class="card-tags">${p.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
       </div>
       <div class="card-footer">
         <div class="hex-list">${p.colors.map(c=>`<span class="hex-chip" data-hex="${esc(c)}">${esc(c)}</span>`).join('')}</div>
         <div class="card-actions">
-          <button class="btn-icon" title="Copy all" data-copyall="${p.id}">⎘</button>
+          <button class="btn-icon" title="${T('palettes.copyAll')}" data-copyall="${p.id}">⎘</button>
         </div>
       </div>
     </div>`}).join('');
@@ -176,13 +177,14 @@ function render() {
 
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 async function copyText(t) {
-  try { await navigator.clipboard.writeText(t); toast('Copied: '+t); }
-  catch(e) { toast('Copy failed'); }
+  try { await navigator.clipboard.writeText(t); toast(T('palettes.copied')+t); }
+  catch(e) { toast(T('toast.copyFailed')); }
 }
 function copySwatch(hex,el) { copyText(hex); const tip=el.querySelector('.swatch-tip'); if(tip){tip.textContent='✓';setTimeout(()=>{tip.textContent=hex;},1200);} }
 
 document.getElementById('search').addEventListener('input',render);
 document.getElementById('sort').addEventListener('change',render);
+window.addEventListener('hoks:langchange', () => { if (pals.length) render(); });
 document.addEventListener('click',e=>{
   const swatch=e.target.closest('.swatch[data-hex]'); if(swatch){copySwatch(swatch.dataset.hex,swatch);return;}
   const chip=e.target.closest('.hex-chip[data-hex]'); if(chip){copyText(chip.dataset.hex);return;}
