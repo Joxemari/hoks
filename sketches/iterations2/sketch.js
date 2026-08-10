@@ -98,6 +98,7 @@ const DEF = {
   ends:         "rectos",    // redondos | rectos
   tinta:        "solido",    // solido | gradiente
   juntaSolape:  0.05,        // alargue en las juntas internas, × anchura
+  punzonLargo:  3.2,         // longitud del punzón en cada cruce, × anchura
   miterLimit:   2.2,         // por encima, el pico del halo raja la hebra vecina
 
   dots:         "bajo",      // no | bajo | encima
@@ -173,10 +174,10 @@ function generate(seed, cfg) {
 
   const { nodes, width } = intento;
   const points = nodes.map(n => n.p);
-  const { cuts, order, depth, crossings } = buildKnot(points);
+  const { cuts, order, depth, cruces, crossings } = buildKnot(points);
 
 
-  return { seed, family, vueltas, pedidas, points, cuts, order, depth, crossings, width, colores, cfg };
+  return { seed, family, vueltas, pedidas, points, cuts, order, depth, cruces, crossings, width, colores, cfg };
 }
 
 // ------------------------------------------------------------
@@ -553,7 +554,7 @@ function buildKnot(points) {
   }
 
   if (!X.length) {
-    return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], crossings: 0 };
+    return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], cruces: [], crossings: 0 };
   }
 
   const visits = [];
@@ -624,7 +625,21 @@ function buildKnot(points) {
   // recorrido, y alguno de esos cruces cederá.
   for (let i = 0; i < cuts.length; i++) if (!order.includes(i)) order.push(i);
 
-  return { cuts, order, depth, crossings: X.length };
+  // Para el dibujo hace falta, por cada cruce, DÓNDE está y qué hebra
+  // pasa por encima; el rango de su pieza da el orden de punzado.
+  // Lo único que hace falta para dibujar: por cada cruce, en qué punto
+  // del recorrido pasa la hebra de ABAJO. Ahí se interrumpe la cinta.
+  const cruces = [];
+  const vistos = {};
+  for (const v of visits) {
+    if (vistos[v.k] === undefined) { vistos[v.k] = v; continue; }
+    const otro = vistos[v.k];
+    const abajo = v.over ? otro : v;
+    const arriba = v.over ? v : otro;
+    cruces.push({ abajo: abajo.s, arriba: arriba.s });
+  }
+
+  return { cuts, order, depth, cruces, crossings: X.length };
 }
 
 // Busca el centro de un segmento dentro del intervalo entre dos
@@ -694,53 +709,60 @@ function renderComposition(ctx, ox, oy, S, comp) {
   let mapped = mapToSquare(comp.points, ox, oy, S, cfg);
   if (cfg.vibration) mapped = applyVibration(mapped, comp.seed, width, cfg);
 
-  const polys = comp.cuts.map(c => piecePolyline(mapped, c));
   const tinta = cfg.tinta === "gradiente" ? makeGradient(ctx, mapped, comp) : col.fg;
 
-  // Bajo la cinta: el contrapunto pertenece al campo y la cinta lo
-  // eclipsa al pasar. El disco entra así en el sistema de profundidad
-  // en vez de flotar encima de él.
   if (cfg.dots === "bajo") drawDots(ctx, mapped, width, comp, ox, oy, S);
 
-  // Dos piezas que se tocan sin solaparse dejan medio píxel sin cubrir
-  // por cada lado y el fondo se transparenta: esa es la línea fina que
-  // se ve entre secciones. Basta con solaparlas UN PÍXEL.
-  // Un solape generoso (probé con el 20% de la anchura) arrastra
-  // también el halo de la pieza vecina más allá del cruce: por debajo
-  // rellena la incisión y por encima le muerde un trozo a la banda que
-  // pasa por encima. La costura es un problema de píxel y se arregla
-  // con un píxel.
-  const solape = max(1, S * 0.0016);
-  const ultima = polys.length - 1;
-  const junta = max(solape, width * cfg.juntaSolape);
+  // ============================================================
+  // LA CINTA SE INTERRUMPE DONDE PASA POR DEBAJO
+  // No hay halo, ni piezas, ni orden de pintado. Donde una hebra pasa
+  // por debajo de otra, sencillamente NO SE DIBUJA: el hueco ES la
+  // separación. Así desaparecen de golpe todos los defectos que venían
+  // de coser piezas — costuras, cuñas en los codos, cortes a medias,
+  // vértices y remates sin junta — porque ya no hay ninguna junta.
+  // Es como se dibuja un nudo celta.
+  // ============================================================
+  const acum = arcosDe(mapped);
+  const largoTotal = acum[acum.length - 1];
 
-  // Pieza a pieza, en el orden que impone el nudo: halo y cuerpo
-  // seguidos. Agrupar por niveles borraba las incisiones entre piezas
-  // del mismo nivel que se cruzan entre sí.
-  //
-  // El halo va SIEMPRE con junta redonda, aunque el cuerpo vaya en
-  // pico: en inglete el pico del halo se dispara ~1.2 anchuras desde
-  // el vértice y alcanza a la hebra vecina, que está a 1.36.
-  for (const idx of comp.order) {
-    const pts = polys[idx];
-    if (!pts || pts.length < 2) continue;
-    // Halo y cuerpo se alargan LO MISMO en las juntas internas. Al
-    // cortar en el centro de un segmento las dos piezas quedan
-    // alineadas, así que ese alargue no deja marca — y le da al halo
-    // recorrido suficiente para rematar un cruce que caiga pegado a la
-    // junta, que es de donde salían los cortes a medias.
-    const ini = idx > 0 ? junta : 0;
-    const fin = idx < ultima ? junta : 0;
-    if (gap > 0) {
-      // El halo asoma un poco en las juntas internas: sin ese recorrido
-      // no llega a rematar los cruces que caen pegados al corte, y un
-      // corte a medias rompe la lectura del tejido. Medido: asomando,
-      // 5.6% de cortes incompletos; sin asomar, 30.6%.
-      strokePath(ctx, alargarExtremos(pts, idx > 0 ? ini : gap, idx < ultima ? fin : gap),
-                 width + gap * 2, col.bg, cfg, "round");
-    }
-    strokePath(ctx, alargarExtremos(pts, ini, fin), width, tinta, cfg);
+  // Cada cruce abre un hueco en la hebra de abajo, del ancho de la de
+  // arriba MEDIDO A LO LARGO de la de abajo: en un cruce oblicuo el
+  // hueco es más largo. Más la junta a cada lado.
+  const huecos = [];
+  for (const cruce of comp.cruces) {
+    const c = arcoDeParam(mapped, acum, cruce.abajo);
+    const sen = max(0.28, abs(sin(anguloCruce(mapped, cruce.abajo, cruce.arriba))));
+    const medio = (width / 2 + gap) / sen;
+    huecos.push([c - medio, c + medio]);
   }
+  huecos.sort((a, b) => a[0] - b[0]);
+
+  // huecos que se solapan se funden en uno
+  const fundidos = [];
+  for (const h of huecos) {
+    const ult = fundidos[fundidos.length - 1];
+    if (ult && h[0] <= ult[1]) ult[1] = max(ult[1], h[1]);
+    else fundidos.push(h.slice());
+  }
+
+  // Lo que queda entre hueco y hueco es cinta visible.
+  const tramos = [];
+  let desde = 0;
+  for (const [a, b] of fundidos) {
+    if (a > desde) tramos.push([desde, min(a, largoTotal)]);
+    desde = max(desde, b);
+  }
+  if (desde < largoTotal) tramos.push([desde, largoTotal]);
+
+  // El halo no está sólo para los cruces: sin él, dos hebras que corren
+  // paralelas SIN cruzarse se funden en una mancha. Ahora que los
+  // cruces son huecos de verdad y no pintura, se pueden pintar todos
+  // los halos primero y todos los cuerpos después: ningún halo puede
+  // borrar una separación, porque las separaciones ya no se pintan.
+  if (gap > 0)
+    for (const [a, b] of tramos) trazarTramo(ctx, mapped, acum, a, b, width + gap * 2, col.bg, cfg, "round");
+  for (const [a, b] of tramos) trazarTramo(ctx, mapped, acum, a, b, width, tinta, cfg);
+
 
   if (cfg.ends === "redondos") {
     const first = polys[0], last = polys[polys.length - 1];
@@ -846,6 +868,78 @@ function alargarExtremos(pts, ini, fin) {
     if (l > 0) out[n].add(d.normalize().mult(constrain(fin, -l * 0.85, l * 0.9)));
   }
   return out;
+}
+
+// Trozo del recorrido centrado en la posición s (en parámetro de
+// recorrido), de radio dado en píxeles y siguiendo el camino real:
+// si dentro cae un vértice, el trozo dobla con él.
+// Longitud acumulada en cada vértice: permite trabajar en distancia
+// real y no en índice de segmento.
+function arcosDe(mapped) {
+  const a = [0];
+  for (let i = 1; i < mapped.length; i++) a.push(a[i-1] + p5.Vector.dist(mapped[i-1], mapped[i]));
+  return a;
+}
+
+function arcoDeParam(mapped, acum, s) {
+  const i = constrain(floor(s), 0, mapped.length - 2);
+  return acum[i] + (s - i) * (acum[i+1] - acum[i]);
+}
+
+function puntoEnArco(mapped, acum, d) {
+  d = constrain(d, 0, acum[acum.length - 1]);
+  let i = 0;
+  while (i < acum.length - 2 && acum[i+1] < d) i++;
+  const tramo = max(acum[i+1] - acum[i], 1e-9);
+  return p5.Vector.lerp(mapped[i], mapped[i+1], (d - acum[i]) / tramo);
+}
+
+// Ángulo entre las dos hebras que se cruzan: en un cruce oblicuo el
+// hueco tiene que ser más largo para tapar el mismo ancho de cinta.
+function anguloCruce(mapped, sA, sB) {
+  const dir = (s) => {
+    const i = constrain(floor(s), 0, mapped.length - 2);
+    return p5.Vector.sub(mapped[i+1], mapped[i]).normalize();
+  };
+  return dir(sA).angleBetween(dir(sB));
+}
+
+// Un tramo de cinta entre dos distancias, con sus vértices intactos.
+function trazarTramo(ctx, mapped, acum, a, b, w, paint, cfg, junta) {
+  if (b - a < 1e-6) return;
+  const pts = [puntoEnArco(mapped, acum, a)];
+  for (let i = 0; i < acum.length; i++) if (acum[i] > a && acum[i] < b) pts.push(mapped[i].copy());
+  pts.push(puntoEnArco(mapped, acum, b));
+  if (pts.length >= 2) strokePath(ctx, pts, w, paint, cfg, junta);
+}
+
+function tramoDePath(mapped, s, radio) {
+  const punto = (t) => {
+    const i = constrain(floor(t), 0, mapped.length - 2);
+    return p5.Vector.lerp(mapped[i], mapped[i+1], constrain(t - i, 0, 1));
+  };
+  const centro = punto(s);
+
+  const lado = (paso) => {
+    const out = [];
+    let t = s, acum = 0, prev = centro;
+    while (acum < radio) {
+      const sig = paso > 0 ? min(floor(t) + 1, mapped.length - 1) : max(ceil(t) - 1, 0);
+      if (sig === t) break;
+      const p = punto(sig);
+      const d = p5.Vector.dist(prev, p);
+      if (acum + d >= radio) {
+        out.push(p5.Vector.lerp(prev, p, (radio - acum) / max(d, 1e-6)));
+        break;
+      }
+      acum += d; prev = p; t = sig;
+      out.push(p.copy());
+      if (sig === 0 || sig === mapped.length - 1) break;
+    }
+    return out;
+  };
+
+  return lado(-1).reverse().concat([centro], lado(1));
 }
 
 function strokePath(ctx, pts, w, paint, cfg, junta) {
