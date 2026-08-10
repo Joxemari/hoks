@@ -172,9 +172,9 @@ function generate(seed, cfg) {
 
   const { nodes, width } = intento;
   const points = nodes.map(n => n.p);
-  const { cuts, order, crossings } = buildKnot(points);
+  const { cuts, order, depth, crossings } = buildKnot(points);
 
-  return { seed, family, vueltas, pedidas, points, cuts, order, crossings, width, colores, cfg };
+  return { seed, family, vueltas, pedidas, points, cuts, order, depth, crossings, width, colores, cfg };
 }
 
 // ------------------------------------------------------------
@@ -551,7 +551,7 @@ function buildKnot(points) {
   }
 
   if (!X.length) {
-    return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], crossings: 0 };
+    return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], crossings: 0 };
   }
 
   const visits = [];
@@ -565,8 +565,15 @@ function buildKnot(points) {
     else v.over = !first[v.k];          // el cruce necesita un arriba y un abajo
   }
 
+  // Los cortes van SIEMPRE al interior de un segmento, nunca cerca de
+  // un vértice. En un codo las dos piezas no están alineadas, y el halo
+  // de una barre en su dirección una zona que el cuerpo de la otra
+  // ocupa y el suyo no: queda una cuña de fondo cruzando la banda, que
+  // se lee como una incisión donde no hay ningún cruce.
   const bounds = [0];
-  for (let m = 0; m < visits.length - 1; m++) bounds.push((visits[m].s + visits[m+1].s) / 2);
+  for (let m = 0; m < visits.length - 1; m++) {
+    bounds.push(corteEntre(visits[m].s, visits[m+1].s));
+  }
   bounds.push(last);
 
   // Una pieza puede contener VARIOS cruces si en todos ellos va a la
@@ -584,7 +591,18 @@ function buildKnot(points) {
 
   // primero todo lo que va debajo, después lo que va encima
   const order = cuts.map((_, i) => i).sort((a, b) => depth[a] - depth[b]);
-  return { cuts, order, crossings: X.length };
+  return { cuts, order, depth, crossings: X.length };
+}
+
+// Busca el centro de un segmento dentro del intervalo entre dos
+// cruces: ahí las dos piezas quedan alineadas y el halo es inofensivo.
+// Si no cabe ninguno, se conforma con el punto medio.
+function corteEntre(a, b) {
+  for (let k = floor(a); k <= floor(b); k++) {
+    const c = k + 0.5;
+    if (c > a && c < b) return c;
+  }
+  return (a + b) / 2;
 }
 
 function sToCut(s0, s1, last) {
@@ -650,23 +668,50 @@ function renderComposition(ctx, ox, oy, S, comp) {
 
   // Dos piezas que se tocan sin solaparse dejan medio píxel sin cubrir
   // por cada lado y el fondo se transparenta: esa es la línea fina que
-  // se ve entre secciones. Se solapan un poco y desaparece.
-  const solape = width * 0.20;
+  // se ve entre secciones. Basta con solaparlas UN PÍXEL.
+  // Un solape generoso (probé con el 20% de la anchura) arrastra
+  // también el halo de la pieza vecina más allá del cruce: por debajo
+  // rellena la incisión y por encima le muerde un trozo a la banda que
+  // pasa por encima. La costura es un problema de píxel y se arregla
+  // con un píxel.
+  const solape = max(1, S * 0.0016);
   const ultima = polys.length - 1;
+  const recorte = width * 0.15;   // más recorte se come incisiones legítimas
 
+  // POR GRUPOS DE PROFUNDIDAD: primero todos los halos del grupo,
+  // después todos los cuerpos. Pieza a pieza, el halo de una le comía
+  // un trozo a su vecina del mismo nivel y quedaba una incisión donde
+  // no había cruce. Pintando el grupo entero, esos mordiscos los
+  // repinta el cuerpo siguiente y sólo sobrevive la incisión contra el
+  // nivel de abajo — que es justo la que hay que ver.
+  //
+  // El halo va SIEMPRE con junta redonda, aunque el cuerpo vaya en
+  // pico: en inglete el pico del halo se dispara ~1.2 anchuras desde
+  // el vértice y alcanza a la hebra vecina, que está a 1.36.
+  const niveles = [];
   for (const idx of comp.order) {
-    const pts = polys[idx];
-    if (!pts || pts.length < 2) continue;
-    const ini = idx > 0 ? solape : 0;
-    const fin = idx < ultima ? solape : 0;
+    const d = comp.depth ? comp.depth[idx] : 0;
+    (niveles[d] || (niveles[d] = [])).push(idx);
+  }
 
-    if (gap > 0) {
-      // En el arranque y el remate de la cinta el halo sobresale: son
-      // los dos únicos cantos sin junta y si no se pegan a lo de debajo.
-      strokePath(ctx, alargarExtremos(pts, idx > 0 ? ini : gap, idx < ultima ? fin : gap),
-                 width + gap * 2, col.bg, cfg);
+  for (const grupo of niveles) {
+    if (!grupo) continue;
+    const trazos = [];
+    for (const idx of grupo) {
+      const pts = polys[idx];
+      if (!pts || pts.length < 2) continue;
+      // En una junta interna el halo NO separa de nada: al otro lado
+      // está la misma cinta. Se recorta hacia dentro para que no invada
+      // a la pieza vecina; el cuerpo sí se alarga, y el solape de los
+      // cuerpos es lo que mata la costura. En los dos extremos reales
+      // de la cinta el halo sí sobresale: ahí sí hay canto.
+      trazos.push({
+        halo:   alargarExtremos(pts, idx > 0 ? -recorte : gap, idx < ultima ? -recorte : gap),
+        cuerpo: alargarExtremos(pts, idx > 0 ? solape : 0,     idx < ultima ? solape : 0)
+      });
     }
-    strokePath(ctx, alargarExtremos(pts, ini, fin), width, tinta, cfg);
+    if (gap > 0) for (const t of trazos) strokePath(ctx, t.halo, width + gap * 2, col.bg, cfg, "round");
+    for (const t of trazos) strokePath(ctx, t.cuerpo, width, tinta, cfg);
   }
 
   if (cfg.ends === "redondos") {
@@ -755,30 +800,34 @@ function drawDots(ctx, mapped, width, comp, ox, oy, S) {
 
 function alargarExtremos(pts, ini, fin) {
   const out = pts.map(p => p.copy());
-  if (ini > 0) {
+  // El tope es proporcional al propio tramo SOLO si el tramo es más
+  // corto que el solape. Antes lo limitaba a un tercio del tramo, y
+  // cuando el corte caía cerca de un vértice ese tramo medía casi nada:
+  // el solape se quedaba en cero justo donde hacía falta, y la costura
+  // reaparecía. Un píxel no se come ningún cruce.
+  // Valor positivo alarga hacia fuera; negativo recorta hacia dentro.
+  if (ini !== 0) {
     const d = p5.Vector.sub(out[0], out[1]);
     const l = d.mag();
-    // nunca más de un tercio del tramo: si no, el solape se comería
-    // el cruce que la pieza tiene justo al lado
-    if (l > 0) out[0].add(d.normalize().mult(min(ini, l / 3)));
+    if (l > 0) out[0].add(d.normalize().mult(constrain(ini, -l * 0.85, l * 0.9)));
   }
-  if (fin > 0) {
+  if (fin !== 0) {
     const n = out.length - 1;
     const d = p5.Vector.sub(out[n], out[n-1]);
     const l = d.mag();
-    if (l > 0) out[n].add(d.normalize().mult(min(fin, l / 3)));
+    if (l > 0) out[n].add(d.normalize().mult(constrain(fin, -l * 0.85, l * 0.9)));
   }
   return out;
 }
 
-function strokePath(ctx, pts, w, paint, cfg) {
+function strokePath(ctx, pts, w, paint, cfg, junta) {
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(pts[0].x, pts[0].y);
   for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
   ctx.strokeStyle = paint;
   ctx.lineWidth = w;
-  ctx.lineJoin = cfg.corner === "curvas" ? "round" : "miter";
+  ctx.lineJoin = junta || (cfg.corner === "curvas" ? "round" : "miter");
   ctx.miterLimit = cfg.miterLimit;
   ctx.lineCap = "butt";
   ctx.stroke();
