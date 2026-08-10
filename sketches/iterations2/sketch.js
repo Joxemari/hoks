@@ -74,11 +74,15 @@ const DEF = {
   // La anchura NO es un valor absoluto: es una proporción de la
   // mediana de segmento. Así el material se mantiene coherente
   // aunque la familia tenga otra escala interna.
-  widthOfSeg:   0.50,
-  widthMin:     0.020,
-  widthMax:     0.072,
+  widthOfSeg:   0.64,
+  widthMin:     0.022,
+  grosorMinimo: 0.78,    // fracción del grosor pedido que un intento debe conservar
+  widthMax:     0.098,
 
-  gapRatio:     0.07,    // separación, × anchura de cinta — sutil, una junta
+  // La junta es una INCISIÓN, no una separación: línea finísima y
+  // constante, medida sobre el cuadro y no sobre la cinta, para que
+  // sea igual de fina en toda la obra pase lo que pase con la anchura.
+  gapAbs:       0.0042,  // × lado del cuadro
   minSegRatio:  1.10,    // segmento mínimo, × anchura
   minTurnDeg:   38,
   avoidRatio:   1.36,    // separación mínima entre hebras que NO se cruzan
@@ -98,7 +102,8 @@ const DEF = {
   dots:         "bajo",      // no | bajo | encima
   dotsMin:      3,
   dotsMax:      5,
-  dotR:         0.85,        // radio ÚNICO, × anchura de cinta
+  dotRMin:      0.55,        // radio, × anchura de cinta — tamaños distintos
+  dotRMax:      1.35,
   dotClear:     0.30,        // aire entre disco y cinta, × anchura
   dotGrid:      56,          // resolución del mapa de vacíos
   dotSpread:    5.2,         // separación entre discos, × radio — que ocupen vacíos distintos
@@ -143,14 +148,44 @@ function generate(seed, cfg) {
   noiseSeed(seed);
 
   const colores = pickRoles(cfg.palette || PALETA_BASE);
-
   const family = random(FAMILY_NAMES);
+  const pedidas = floor(random(cfg.vueltasMin, cfg.vueltasMax + 1));
+
+  // La junta es innegociable: es lo único que distingue un cruce de una
+  // costura. Si con las vueltas pedidas la cinta no encuentra sitio
+  // donde separarse de sí misma, el sistema QUITA UNA VUELTA y lo
+  // vuelve a intentar. Antes de dibujar mal, la obra se hace menos
+  // densa. Es la última cesión y la que garantiza que el halo siempre
+  // se aplique.
+  // OJO: no vale con comprobar que la junta quepa. Adelgazando la cinta
+  // la condición se cumple sola y la obra se convierte en un alambre.
+  // Un intento se acepta si la cinta CONSERVA el grosor que pedía.
+  let intento = null, vueltas = pedidas, mejor = -1;
+  for (let v = pedidas; v >= cfg.vueltasMin; v--) {
+    randomSeed(seed ^ 0xA17E);
+    noiseSeed(seed);
+    const t = tejer(family, v, cfg);
+    const conserva = t.conserva;
+    if (conserva > mejor) { mejor = conserva; intento = t; vueltas = v; }
+    if (conserva >= cfg.grosorMinimo) break;
+  }
+
+  const { nodes, width } = intento;
+  const points = nodes.map(n => n.p);
+  const { cuts, order, crossings } = buildKnot(points);
+
+  return { seed, family, vueltas, pedidas, points, cuts, order, crossings, width, colores, cfg };
+}
+
+// ------------------------------------------------------------
+// TEJER — un intento completo con un nº de vueltas dado
+// ------------------------------------------------------------
+function tejer(family, vueltas, cfg) {
   const spec = FAMILIES[family];
 
-  // VUELTAS: el esqueleto se recorre varias veces, cada pasada girada
-  // y encogida. La cinta vuelve a entrar en el marco y se cruza con
-  // lo que ya dejó escrito. De ahí sale la trama.
-  const vueltas = floor(random(cfg.vueltasMin, cfg.vueltasMax + 1));
+  // El esqueleto se recorre varias veces, cada pasada girada y
+  // encogida. La cinta vuelve a entrar en el marco y se cruza con lo
+  // que ya dejó escrito. De ahí sale la trama.
   const centro = createVector(0.5, 0.5);
   let anchors = [];
   for (let t = 0; t < vueltas; t++) {
@@ -172,16 +207,12 @@ function generate(seed, cfg) {
   if (random() < 0.5)  for (const p of anchors) p.x = 1 - p.x;
   if (random() < 0.35) for (const p of anchors) p.y = 1 - p.y;
 
-  // nodos: los anchors son intocables, los insertados son material blando
-  const targetCount = anchors.length + floor(random(2, 7));
-  let nodes = buildPath(anchors, targetCount, cfg);
+  // los anchors son intocables, los insertados son material blando
+  let nodes = buildPath(anchors, anchors.length + floor(random(2, 7)), cfg);
 
-  // la anchura sale del propio recorrido, antes de encajarlo en el marco
   // La extensión declarada vale para UNA pasada. Cada vuelta añade
-  // recorrido dentro del mismo marco, así que necesita más campo o
-  // la cinta no tiene sitio donde separarse de sí misma.
-  const extension = min(0.98, spec.extent + 0.12 * (vueltas - 1));
-  nodes = fitToExtent(nodes, extension, cfg);
+  // recorrido dentro del mismo marco y necesita más campo.
+  nodes = fitToExtent(nodes, min(0.98, spec.extent + 0.12 * (vueltas - 1)), cfg);
   let width = constrain(cfg.widthOfSeg * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
 
   // Las tres restricciones se estorban entre sí: abrir un pliegue
@@ -193,47 +224,43 @@ function generate(seed, cfg) {
     width = constrain(cfg.widthOfSeg * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
   }
 
-  // Encoger es lo último: cualquier reajuste posterior volvería a sacar
-  // la cinta del cuadro. Dos pasadas porque al encoger cambia la mediana
-  // de segmento y con ella la anchura, y con ella el propio margen.
+  // Encoger es lo último de cada fase: cualquier reajuste posterior
+  // volvería a sacar la cinta del cuadro. Y encoger vuelve a juntar
+  // las hebras, así que la evitación se repasa ya dentro del marco.
   for (let i = 0; i < 2; i++) {
     nodes = shrinkIntoFrame(nodes, width, cfg);
     width = constrain(cfg.widthOfSeg * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
   }
-
-  // Encoger vuelve a juntar las hebras: la separación es absoluta y el
-  // marco la comprime. Se repasa la evitacion DENTRO ya del marco final.
   for (let i = 0; i < 6; i++) {
     nodes = selfAvoid(nodes, width, cfg);
     nodes = relaxFolds(nodes, cfg);
     nodes = shrinkIntoFrame(nodes, width, cfg);
   }
 
-  // La separación es innegociable: es lo único que distingue un cruce
-  // de una costura. Si el solver no consiguió abrir hueco suficiente,
-  // no se dibuja mal — se adelgaza la cinta hasta que el halo quepa.
-  // El material cede ante el nudo, no al revés.
   // Los extremos SALEN de la trama. Una cinta que muere en mitad del
-  // nudo, cortada a hueso, es lo único que queda sin resolver a la
-  // vista: el principio y el final tienen que ser un acontecimiento.
+  // nudo, cortada a hueso, es lo único que queda sin resolver a la vista.
   nodes = sacarExtremos(nodes, width, cfg);
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 6; i++) {
     nodes = selfAvoid(nodes, width, cfg);
     nodes = relaxFolds(nodes, cfg);
     nodes = shrinkIntoFrame(nodes, width, cfg);
   }
   width = constrain(cfg.widthOfSeg * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
 
-  width = min(width, holguraReal(nodes) / (1 + 2 * cfg.gapRatio + 0.12));
-  // Un segmento más corto que la propia anchura deja de ser tramo y
-  // pasa a ser bulto: la cinta también cede ante eso.
-  width = min(width, minSeg(nodes) / 1.05);
-  width = constrain(width, cfg.widthMin, cfg.widthMax);
+  // La cinta cede: adelgaza hasta que la incisión quepa, y hasta que
+  // ningún tramo sea más corto que ella misma (si no, deja de ser
+  // tramo y pasa a ser bulto).
+  // La anchura que el tejido admite de verdad, sin suelo: si sale
+  // ridícula es que este nudo no aguanta esta cinta, y hay que
+  // enterarse ANTES de subirla por el mínimo — si no, el suelo la
+  // devuelve por encima del tramo más corto y reaparecen los bultos.
+  const deseada = width;
+  const admitida = min(deseada,
+                       holguraReal(nodes) - 2 * cfg.gapAbs - 0.002,
+                       segPercentil(nodes, 0.15) / 1.05);
+  width = constrain(admitida, cfg.widthMin, cfg.widthMax);
 
-  const points = nodes.map(n => n.p);
-  const { cuts, order, crossings } = buildKnot(points);
-
-  return { seed, family, vueltas, points, cuts, order, crossings, width, colores, cfg };
+  return { nodes, width, deseada, conserva: admitida / deseada };
 }
 
 // ------------------------------------------------------------
@@ -292,10 +319,14 @@ function fitToExtent(nodes, extent, cfg) {
   return nodes;
 }
 
-function minSeg(nodes) {
-  let m = Infinity;
-  for (let i = 0; i < nodes.length - 1; i++) m = min(m, p5.Vector.dist(nodes[i].p, nodes[i+1].p));
-  return m === Infinity ? 0.2 : m;
+// Percentil bajo, NO el mínimo: un único tramo corto produce un bulto
+// local, pero si manda sobre la anchura adelgaza la cinta entera.
+function segPercentil(nodes, q) {
+  const l = [];
+  for (let i = 0; i < nodes.length - 1; i++) l.push(p5.Vector.dist(nodes[i].p, nodes[i+1].p));
+  if (!l.length) return 0.2;
+  l.sort((a, b) => a - b);
+  return l[floor((l.length - 1) * q)];
 }
 
 function medianSeg(nodes) {
@@ -424,7 +455,7 @@ function selfAvoid(nodes, width, cfg) {
 // cuadro, y ahí es donde se veía cortada.
 // ------------------------------------------------------------
 function frameMargin(width, cfg) {
-  return width * (0.5 + cfg.gapRatio) + cfg.margen;
+  return width * 0.5 + cfg.gapAbs + cfg.margen;
 }
 
 // El conjunto se encoge y se recoloca; NUNCA se recorta punto a punto.
@@ -445,12 +476,14 @@ function shrinkIntoFrame(nodes, width, cfg) {
     n.p.y = cy + (n.p.y - cy) * s;
   }
 
-  // recolocar el bloque entero dentro del marco (traslación, no recorte)
+  // Centrar. Las restricciones empujan la mancha en la dirección que
+  // encuentran hueco, y acababa descolgada contra un borde con medio
+  // cuadro vacío enfrente. El encuadre es del cuadro, no del solver.
   minX = cx + (minX-cx)*s; maxX = cx + (maxX-cx)*s;
   minY = cy + (minY-cy)*s; maxY = cy + (maxY-cy)*s;
-  const dx = minX < m ? m - minX : (maxX > 1-m ? (1-m) - maxX : 0);
-  const dy = minY < m ? m - minY : (maxY > 1-m ? (1-m) - maxY : 0);
-  if (dx || dy) for (const n of nodes) { n.p.x += dx; n.p.y += dy; }
+  const dx = 0.5 - (minX + maxX) / 2;
+  const dy = 0.5 - (minY + maxY) / 2;
+  for (const n of nodes) { n.p.x += dx; n.p.y += dy; }
 
   return nodes;
 }
@@ -599,7 +632,7 @@ function renderComposition(ctx, ox, oy, S, comp) {
   const cfg = comp.cfg;
   const col = comp.colores;
   const width = comp.width * S * (1 - cfg.pad * 2);
-  const gap = cfg.gapRatio * width;
+  const gap = cfg.gapAbs * S * (1 - cfg.pad * 2);
 
   ctx.fillStyle = col.bg;
   ctx.fillRect(ox, oy, S, S);
@@ -673,8 +706,10 @@ function drawDots(ctx, mapped, width, comp, ox, oy, S) {
   const cfg = comp.cfg;
   randomSeed(comp.seed ^ 0xD075);
 
-  const r = cfg.dotR * width;                                  // todos iguales
-  const need = r + width * (0.5 + cfg.gapRatio + cfg.dotClear);
+  const radios = [];
+  for (let i = 0; i < cfg.dotsMax; i++) radios.push(width * random(cfg.dotRMin, cfg.dotRMax));
+  const r = max(...radios);   // el hueco se reserva para el mayor
+  const need = r + width * (0.5 + cfg.dotClear) + cfg.gapAbs * S;
   const borde = r + cfg.margen * S;
   const N = cfg.dotGrid;
 
@@ -713,7 +748,7 @@ function drawDots(ctx, mapped, width, comp, ox, oy, S) {
   const gama = comp.colores.dots;
   placed.forEach((p, i) => {
     ctx.fillStyle = gama[i % gama.length];
-    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TWO_PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x, p.y, radios[i % radios.length], 0, TWO_PI); ctx.fill();
   });
   return placed;
 }
@@ -918,7 +953,8 @@ function opciones() {
     ends:       ui.extremos.value(),
     tinta:      ui.gradiente.checked() ? "gradiente" : "solido",
     dots:       ui.dots.checked() ? "bajo" : "no",
-    dotR:       float(ui.dotR.value()),
+    dotRMin:    float(ui.dotR.value()) * 0.65,
+    dotRMax:    float(ui.dotR.value()) * 1.6,
     dotsMin:    int(ui.dotsN.value()),
     dotsMax:    int(ui.dotsN.value())
   };
