@@ -29,10 +29,15 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   autónoma: canvas 2D + RNG sembrado + selector/peso de paletas + sistema de
   *traits* y rareza en la barra lateral. Click en el canvas = nueva variación.
   Botones: Generate, Copy Card, Save, Download PNG. "Save" sube la imagen
-  (dataURL) al JSON de la familia vía API de GitHub (requiere sesión admin).
+  (dataURL) al JSON de la familia vía API de GitHub (requiere sesión admin) y
+  además apunta la paleta usada en `data/palette-usage.json` (ver `usage.js`).
 - **`about.html`** — Texto leído de `data/site.json` (con *fallback* embebido).
 - **`palettes.html`** — Galería de paletas desde `data/palettes.json`; muestra
-  activas/inactivas y su rareza/probabilidad.
+  activas/inactivas y su rareza/probabilidad. Arriba, una **rejilla de uso** al
+  estilo del grid de actividad de GitHub: una celda por paleta en orden de
+  catálogo (12 por fila), tono en 5 niveles según cuántas obras guardadas la
+  usan, celda con borde = paleta retirada. Click en una celda = filtrar por esa
+  paleta; cada tarjeta lleva su contador `×N` y hay orden *por uso*.
 - **`admin.html`** — Panel protegido por contraseña. Gestiona paletas, familias
   (`works.json`), contenido (`site.json`) y el token de GitHub. Escribe
   commiteando directamente a `main` por la Contents API. En cada familia
@@ -44,7 +49,12 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 - **`nav.js`** — Se incluye en todas las páginas. Inyecta `<nav>` (logo "hoks",
   dropdown *Work* con las 7 series, About, Palettes), favicon SVG, footer
   (© hoks, contacto, Instagram si está en `site.json`) y badge ADMIN si hay
-  sesión. No hay otro CSS/JS global: cada página trae su propio `<style>`.
+  sesión. Aloja también el i18n (`window.HOKSI18N`, diccionarios EU/ES/EN).
+- **`usage.js`** — Registro de uso de paletas (`data/palette-usage.json`).
+  `HOKSUSAGE.load()` / `.counts()` los lee (palettes.html) y `.record()` añade
+  una fila al Guardar en cada página de obra. Sin token de admin no escribe nada.
+
+No hay otro CSS/JS global: cada página trae su propio `<style>`.
 
 ### Laboratorio (`sketches/`)
 
@@ -70,6 +80,17 @@ redeploy de Pages.
 - **`site.json`** — `aboutText`, `footerEmail`, `footerInstagram`.
 - **`plls.json`, `krrtkg.json`, `dtkg.json`, `pllsg.json`, `gallery*.json`** —
   Obras guardadas como `{seed, dataUrl(base64), savedAt}`. Pueden pesar MB.
+  Ojo: **no guardan la paleta**, y no se puede re-derivar del seed (la elección
+  por peso depende de qué paletas estaban activas ese día). De ahí el índice
+  aparte.
+- **`palette-usage.json`** — Índice de uso: una fila por obra guardada con
+  `{family, seed, savedAt, paletteId, paletteName, source}`. Lo escribe la página
+  de obra al Guardar (`source:"save"`). Las filas `source:"backfill"` son las 26
+  obras que ya existían: se reconstruyeron re-renderizando cada seed con el
+  algoritmo de su época (rescatado de git) y comparando píxel a píxel contra el
+  PNG guardado — no por parecido de color, que en las familias con grano y mesh
+  gradient se equivoca. Es un índice **derivado**: si se borran obras de una
+  galería, sus filas quedan huérfanas y hay que quitarlas a mano.
 
 > ⚠️ Los `*.json` en la **raíz** (`bzrs.json`, `dtk.json`, `krrtk.json`, etc.)
 > están vacíos (`[]`) y son restos heredados. La fuente real es `data/`. No los

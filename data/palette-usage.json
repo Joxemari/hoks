@@ -1,0 +1,219 @@
+{
+  "note": "Que paleta usa cada obra guardada. Las filas source:\"backfill\" se reconstruyeron re-renderizando cada seed con el algoritmo de su epoca (rescatado de git) y comparando pixel a pixel: los JSON de obras nunca guardaron la paleta. Las nuevas las escribe la propia pagina al Guardar (source:\"save\"). Regenerable; no editar a mano.",
+  "generated": 1786386195719,
+  "works": [
+    {
+      "family": "pllsg",
+      "seed": 1855595773,
+      "savedAt": 1782662580012,
+      "paletteId": 2,
+      "paletteName": "Mondrian",
+      "source": "backfill"
+    },
+    {
+      "family": "krrtkg",
+      "seed": 790120654,
+      "savedAt": 1782333541870,
+      "paletteId": 14,
+      "paletteName": "Escape",
+      "source": "backfill"
+    },
+    {
+      "family": "pills",
+      "seed": 1240966757,
+      "savedAt": 1782333279289,
+      "paletteId": 28,
+      "paletteName": "Poet",
+      "source": "backfill"
+    },
+    {
+      "family": "pllsg",
+      "seed": 3023187577,
+      "savedAt": 1777559741771,
+      "paletteId": 8,
+      "paletteName": "Meta",
+      "source": "backfill"
+    },
+    {
+      "family": "pllsg",
+      "seed": 1573650814,
+      "savedAt": 1777559727159,
+      "paletteId": 7,
+      "paletteName": "Troll",
+      "source": "backfill"
+    },
+    {
+      "family": "pllsg",
+      "seed": 1573650814,
+      "savedAt": 1777559718704,
+      "paletteId": 7,
+      "paletteName": "Troll",
+      "source": "backfill"
+    },
+    {
+      "family": "pllsg",
+      "seed": 4106775176,
+      "savedAt": 1777550854445,
+      "paletteId": 14,
+      "paletteName": "Escape",
+      "source": "backfill"
+    },
+    {
+      "family": "krrtkg",
+      "seed": 960677736,
+      "savedAt": 1777445725461,
+      "paletteId": 7,
+      "paletteName": "Troll",
+      "source": "backfill"
+    },
+    {
+      "family": "krrtkg",
+      "seed": 3092910096,
+      "savedAt": 1777445719393,
+      "paletteId": 2,
+      "paletteName": "Mondrian",
+      "source": "backfill"
+    },
+    {
+      "family": "dtk",
+      "seed": 945289627,
+      "savedAt": 1777445303119,
+      "paletteId": 28,
+      "paletteName": "Poet",
+      "source": "backfill",
+      "renderedBy": "dtkg"
+    },
+    {
+      "family": "krrtkg",
+      "seed": 1102120048,
+      "savedAt": 1777445296104,
+      "paletteId": 28,
+      "paletteName": "Poet",
+      "source": "backfill"
+    },
+    {
+      "family": "bzrs",
+      "seed": 2860483093,
+      "savedAt": 1777445291265,
+      "paletteId": 14,
+      "paletteName": "Escape",
+      "source": "backfill"
+    },
+    {
+      "family": "pills",
+      "seed": 3532653870,
+      "savedAt": 1777445224167,
+      "paletteId": 8,
+      "paletteName": "Meta",
+      "source": "backfill"
+    },
+    {
+      "family": "pllsg",
+      "seed": 4197700272,
+      "savedAt": 1777412289735,
+      "paletteId": 35,
+      "paletteName": "Itten V — Purple & Yellow-Green",
+      "source": "backfill"
+    },
+    {
+      "family": "pllsg",
+      "seed": 1323721829,
+      "savedAt": 1777412218435,
+      "paletteId": 7,
+      "paletteName": "Troll",
+      "source": "backfill"
+    },
+    {
+      "family": "pllsg",
+      "seed": 2813743352,
+      "savedAt": 1777412212747,
+      "paletteId": 28,
+      "paletteName": "Poet",
+      "source": "backfill"
+    },
+    {
+      "family": "pllsg",
+      "seed": 2512723113,
+      "savedAt": 1777412197928,
+      "paletteId": 14,
+      "paletteName": "Escape",
+      "source": "backfill"
+    },
+    {
+      "family": "dtk",
+      "seed": 3154946851,
+      "savedAt": 1777386648510,
+      "paletteId": 29,
+      "paletteName": "Daily",
+      "source": "backfill",
+      "renderedBy": "dtkg"
+    },
+    {
+      "family": "pills",
+      "seed": 3748818332,
+      "savedAt": 1777386244918,
+      "paletteId": 33,
+      "paletteName": "Itten III — Red & Teal",
+      "source": "backfill",
+      "altPaletteId": 34,
+      "altPaletteName": "Itten IV — Red & Cyan"
+    },
+    {
+      "family": "krrtk",
+      "seed": 707369023,
+      "savedAt": 1777386226167,
+      "paletteId": 33,
+      "paletteName": "Itten III — Red & Teal",
+      "source": "backfill"
+    },
+    {
+      "family": "dtk",
+      "seed": 3560561492,
+      "savedAt": 1777386204962,
+      "paletteId": 28,
+      "paletteName": "Poet",
+      "source": "backfill"
+    },
+    {
+      "family": "bzrs",
+      "seed": 2398156059,
+      "savedAt": 1777386180069,
+      "paletteId": 14,
+      "paletteName": "Escape",
+      "source": "backfill"
+    },
+    {
+      "family": "krrtkg",
+      "seed": 2386026445,
+      "savedAt": 1777320971173,
+      "paletteId": 29,
+      "paletteName": "Daily",
+      "source": "backfill"
+    },
+    {
+      "family": "dtk",
+      "seed": 3889991612,
+      "savedAt": 1777319654058,
+      "paletteId": 35,
+      "paletteName": "Itten V — Purple & Yellow-Green",
+      "source": "backfill",
+      "renderedBy": "dtkg"
+    },
+    {
+      "family": "krrtk",
+      "seed": 3999381645,
+      "savedAt": 1777237868131,
+      "paletteId": 8,
+      "paletteName": "Meta",
+      "source": "backfill"
+    },
+    {
+      "family": "pills",
+      "seed": 558364210,
+      "savedAt": 1777237845128,
+      "paletteId": 14,
+      "paletteName": "Escape",
+      "source": "backfill"
+    }
+  ]
+}
