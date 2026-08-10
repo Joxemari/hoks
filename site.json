@@ -1,5 +1,9 @@
 {
-  "aboutText": "Joxemari Gallastegi is a generative artist based in Donostia. He studied at Stanford University, where he presented his first solo exhibition. His work explores the intersection of code and visual form — algorithmic systems built on geometry, colour, and controlled randomness that make each piece unique by design.",
+  "aboutText": {
+    "en": "Joxemari Gallastegi is a generative artist based in Donostia. He studied at Stanford University, where he presented his first solo exhibition. His work explores the intersection of code and visual form — algorithmic systems built on geometry, colour, and controlled randomness that make each piece unique by design.",
+    "es": "Joxemari Gallastegi es un artista generativo afincado en Donostia. Estudió en la Universidad de Stanford, donde presentó su primera exposición individual. Su trabajo explora la intersección entre el código y la forma visual: sistemas algorítmicos construidos sobre geometría, color y azar controlado que hacen que cada pieza sea única por diseño.",
+    "eu": "Joxemari Gallastegi Donostian bizi den artista sortzailea da. Stanfordeko Unibertsitatean ikasi zuen, eta han aurkeztu zuen bere lehen bakarkako erakusketa. Bere lanak kodearen eta forma bisualaren arteko gurutzagunea arakatzen du: geometrian, kolorean eta zori kontrolatuan oinarritutako sistema algoritmikoak, pieza bakoitza diseinuz bakarra egiten dutenak."
+  },
   "footerEmail": "joxemgallastegi@gmail.com",
   "footerInstagram": ""
 }
