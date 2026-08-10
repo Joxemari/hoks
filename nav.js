@@ -8,7 +8,10 @@ const FAVICON = `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,
 // Idioma por defecto: EN. Persistencia: localStorage 'hoks-lang'.
 // ─────────────────────────────────────────────────────────────────────────────
 const LANGS = ['eu', 'es', 'en'];
-const DEFAULT_LANG = 'en';
+const DEFAULT_LANG = 'eu';
+// La parte pública va SOLO en euskara por ahora. El motor y los diccionarios
+// ES/EN se conservan; para reactivar el conmutador público, pon esto a true.
+const SHOW_LANG_SWITCHER = false;
 
 const DICT = {
   en: {
@@ -138,7 +141,9 @@ function readLang() {
   try { l = localStorage.getItem('hoks-lang'); } catch (e) {}
   return LANGS.includes(l) ? l : DEFAULT_LANG;
 }
-let LANG = readLang();
+// Con el conmutador oculto se ignora cualquier valor guardado y se fija el
+// idioma por defecto (euskara), para que la web pública sea siempre euskara.
+let LANG = SHOW_LANG_SWITCHER ? readLang() : DEFAULT_LANG;
 
 function t(key) {
   const d = DICT[LANG] || DICT[DEFAULT_LANG];
@@ -146,6 +151,9 @@ function t(key) {
   const e = DICT[DEFAULT_LANG];
   return (e && key in e) ? e[key] : key;
 }
+// Fuerza inglés — para controles de operativa interna (admin) embebidos en
+// páginas públicas, que deben quedarse en inglés aunque la web sea euskara.
+function en(key) { const e = DICT.en; return (e && key in e) ? e[key] : key; }
 // trait key → translated label (fallback: original key)
 function tk(k) { return t('trait.' + k) === ('trait.' + k) ? k : t('trait.' + k); }
 // trait value → translate categorical tokens, pass everything else (numbers,
@@ -179,7 +187,7 @@ function setLang(l) {
   window.dispatchEvent(new CustomEvent('hoks:langchange', { detail: { lang: l } }));
 }
 
-window.HOKSI18N = { get lang() { return LANG; }, langs: LANGS, t, tk, tv, apply, setLang };
+window.HOKSI18N = { get lang() { return LANG; }, langs: LANGS, t, en, tk, tv, apply, setLang };
 document.documentElement.setAttribute('lang', LANG);
 
 const NAV_CSS = `
@@ -289,11 +297,11 @@ nav.innerHTML = `
     </li>
     <li><a href="about.html"${isAbout?' class="active"':''} data-i18n="nav.about">About</a></li>
     <li><a href="palettes.html"${isPalettes?' class="active"':''} data-i18n="nav.palettes">Palettes</a></li>
-    <li class="nav-lang" id="nav-lang">
+    ${SHOW_LANG_SWITCHER ? `<li class="nav-lang" id="nav-lang">
       <button type="button" data-lang="eu">EU</button>
       <button type="button" data-lang="es">ES</button>
       <button type="button" data-lang="en">EN</button>
-    </li>
+    </li>` : ''}
   </ul>`;
 document.body.insertBefore(nav, document.body.firstChild);
 

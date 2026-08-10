@@ -118,7 +118,7 @@ canvas { display: block; height: min(72vh, 600px); width: min(72vh, 600px); curs
       <button class="btn" onclick="generate()">↻ <span data-i18n="btn.generate">Generate</span></button>
       <button class="btn btn-outline" onclick="exportCard()">⎘ <span data-i18n="btn.copycard">Copy Card</span></button>
       <button class="btn btn-outline" onclick="saveToGallery()">+ <span data-i18n="btn.save">Save</span></button>
-      <button class="btn btn-outline" id="batchBtn" onclick="saveToBatch()" style="display:none">+ <span data-i18n="btn.savebatch">Save to Batch</span></button>
+      <button class="btn btn-outline" id="batchBtn" onclick="saveToBatch()" style="display:none">+ <span>Save to Batch</span></button>
       <button class="btn btn-outline" onclick="downloadHD()">↓ <span data-i18n="btn.download">Download PNG</span></button>
     </div>
 
@@ -378,7 +378,7 @@ function generate() { currentSeed=(Math.random()*0xFFFFFFFF)>>>0; currentTimesta
 // ── GALLERY ───────────────────────────────────────────
 function loadGallery(){fetch(RAW+'dtk.json?t='+Date.now()).then(r=>r.ok?r.json():[]).then(data=>{gallery=data;renderGallery();}).catch(()=>{gallery=[];renderGallery();});}
 async function saveGallery(){await ghPush('data/dtk.json',gallery);}
-async function saveToGallery(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/png');gallery.unshift({seed:currentSeed,dataUrl,savedAt:Date.now()});if(gallery.length>50)gallery=gallery.slice(0,50);toast(HOKSI18N.t('toast.saving'));await saveGallery();renderGallery();toast(HOKSI18N.t('toast.savedGallery'));}
+async function saveToGallery(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/png');gallery.unshift({seed:currentSeed,dataUrl,savedAt:Date.now()});if(gallery.length>50)gallery=gallery.slice(0,50);toast(HOKSI18N.en('toast.saving'));await saveGallery();renderGallery();toast(HOKSI18N.en('toast.savedGallery'));}
 function loadExactIteration(item){const canvas=document.getElementById('c');const ctx=canvas.getContext('2d');const img=new Image();img.onload=()=>{ctx.globalCompositeOperation='source-over';ctx.drawImage(img,0,0,canvas.width,canvas.height);};img.src=item.dataUrl;currentSeed=item.seed;currentTimestamp=item.savedAt?new Date(item.savedAt):new Date();document.getElementById('seedDisplay').textContent='#'+item.seed;const tsEl=document.getElementById('timestampDisplay');const ts=currentTimestamp;if(tsEl)tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});const tl=document.getElementById('traitList');if(tl)tl.innerHTML='<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">'+HOKSI18N.t('trait.savedMsg')+'</div>';const or=document.getElementById('overallRarity');if(or)or.innerHTML='';}
 function renderGallery(){const section=document.getElementById('gallerySection'),grid=document.getElementById('galleryGrid');if(!gallery.length){section.style.display='none';return;}section.style.display='block';grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-thumb" data-i="${i}"><img src="${item.dataUrl}" alt="dtk ${item.seed}"><div style="display:flex;align-items:center;justify-content:space-between;padding:2px 6px 4px;"><span class="gallery-thumb-seed">#${item.seed}</span></div></div>`).join('');grid.querySelectorAll('.gallery-thumb').forEach(el=>{el.addEventListener('click',()=>{const item=gallery[parseInt(el.dataset.i)];if(item)loadExactIteration(item);});});}
 
@@ -437,8 +437,8 @@ function exportCard(){
 }
 
 // ── BATCH ─────────────────────────────────────────────
-function checkBatchButton(){try{const active=JSON.parse(localStorage.getItem('hoks-active-batch')||'null');const btn=document.getElementById('batchBtn');if(btn){if(active&&active.work==='dtk'){btn.style.display='';btn.textContent=`+ ${HOKSI18N.t('btn.savebatch')} "${active.name}" (${active.items.length})`;}else btn.style.display='none';}}catch(e){}}
-function saveToBatch(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/jpeg',0.9);const key='hoks-active-batch';try{const active=JSON.parse(localStorage.getItem(key)||'null');if(!active||active.work!=='dtk'){toast(HOKSI18N.t('toast.noBatch').replace('%s','DTK'));return;}active.items.push({seed:currentSeed,dataUrl,savedAt:Date.now(),palette:active.palette||'random'});localStorage.setItem(key,JSON.stringify(active));checkBatchButton();toast(HOKSI18N.t('toast.addedBatch').replace('%1',active.name).replace('%2',active.items.length));}catch(e){toast('Error saving to batch');}}
+function checkBatchButton(){try{const active=JSON.parse(localStorage.getItem('hoks-active-batch')||'null');const btn=document.getElementById('batchBtn');if(btn){if(active&&active.work==='dtk'){btn.style.display='';btn.textContent=`+ ${HOKSI18N.en('btn.savebatch')} "${active.name}" (${active.items.length})`;}else btn.style.display='none';}}catch(e){}}
+function saveToBatch(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/jpeg',0.9);const key='hoks-active-batch';try{const active=JSON.parse(localStorage.getItem(key)||'null');if(!active||active.work!=='dtk'){toast(HOKSI18N.en('toast.noBatch').replace('%s','DTK'));return;}active.items.push({seed:currentSeed,dataUrl,savedAt:Date.now(),palette:active.palette||'random'});localStorage.setItem(key,JSON.stringify(active));checkBatchButton();toast(HOKSI18N.en('toast.addedBatch').replace('%1',active.name).replace('%2',active.items.length));}catch(e){toast('Error saving to batch');}}
 
 
 
@@ -486,7 +486,7 @@ document.addEventListener('click', e => {
 function togglePaletteLock() {
   _paletteLocked = !_paletteLocked;
   const btn=document.getElementById('palLockBtn'), wrap=document.getElementById('palSelectWrap');
-  if(btn){btn.textContent=_paletteLocked?HOKSI18N.t('lock.specific'):HOKSI18N.t('lock.random');btn.style.background=_paletteLocked?'var(--ink)':'var(--surface)';btn.style.color=_paletteLocked?'#fff':'var(--ink3)';btn.style.borderColor=_paletteLocked?'var(--ink)':'var(--border-dark)';}
+  if(btn){btn.textContent=_paletteLocked?HOKSI18N.en('lock.specific'):HOKSI18N.en('lock.random');btn.style.background=_paletteLocked?'var(--ink)':'var(--surface)';btn.style.color=_paletteLocked?'#fff':'var(--ink3)';btn.style.borderColor=_paletteLocked?'var(--ink)':'var(--border-dark)';}
   if(wrap) wrap.style.display=_paletteLocked?'flex':'none';
   if(_paletteLocked) buildPalDropdown();
 }
@@ -579,7 +579,7 @@ setInterval(checkBatchButton,3000);
 window.addEventListener('hoks:langchange',function(){
   try{
     var pb=document.getElementById('palLockBtn');
-    if(pb && typeof _paletteLocked!=='undefined') pb.textContent=HOKSI18N.t(_paletteLocked?'lock.specific':'lock.random');
+    if(pb && typeof _paletteLocked!=='undefined') pb.textContent=HOKSI18N.en(_paletteLocked?'lock.specific':'lock.random');
     var exact=(typeof _isExact!=='undefined')?_isExact:false;
     if(!exact && typeof draw==='function' && typeof currentSeed!=='undefined'){ draw(currentSeed); }
   }catch(e){}

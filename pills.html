@@ -135,7 +135,7 @@ canvas {
       <button class="btn" id="generateBtn" onclick="generate()">↻ <span data-i18n="btn.generate">Generate</span></button>
       <button class="btn btn-outline" onclick="exportCard()">⎘ <span data-i18n="btn.copycard">Copy Card</span></button>
       <button class="btn btn-outline" onclick="saveToGallery()">+ <span data-i18n="btn.save">Save</span></button>
-      <button class="btn btn-outline" id="batchBtn" onclick="saveToBatch()" style="display:none">+ <span data-i18n="btn.savebatch">Save to Batch</span></button>
+      <button class="btn btn-outline" id="batchBtn" onclick="saveToBatch()" style="display:none">+ <span>Save to Batch</span></button>
       <button class="btn btn-outline" onclick="downloadHD()">↓ <span data-i18n="btn.download">Download PNG</span></button>
     </div>
 
@@ -466,7 +466,7 @@ async function saveToGallery() {
   const dataUrl = src.toDataURL('image/jpeg', 0.9);
   gallery.unshift({seed:currentSeed, dataUrl, savedAt:Date.now()});
   if(gallery.length>50) gallery=gallery.slice(0,50);
-  toast(HOKSI18N.t('toast.saving')); await saveGallery(); renderGallery(); toast(HOKSI18N.t('toast.savedGallery'));
+  toast(HOKSI18N.en('toast.saving')); await saveGallery(); renderGallery(); toast(HOKSI18N.en('toast.savedGallery'));
 }
 function loadExactIteration(item) {
   const canvas = document.getElementById('c');
@@ -626,7 +626,7 @@ document.addEventListener('click', e => {
 function togglePaletteLock() {
   _paletteLocked = !_paletteLocked;
   const btn=document.getElementById('palLockBtn'), wrap=document.getElementById('palSelectWrap');
-  if(btn){btn.textContent=_paletteLocked?HOKSI18N.t('lock.specific'):HOKSI18N.t('lock.random');btn.style.background=_paletteLocked?'var(--ink)':'var(--surface)';btn.style.color=_paletteLocked?'#fff':'var(--ink3)';btn.style.borderColor=_paletteLocked?'var(--ink)':'var(--border-dark)';}
+  if(btn){btn.textContent=_paletteLocked?HOKSI18N.en('lock.specific'):HOKSI18N.en('lock.random');btn.style.background=_paletteLocked?'var(--ink)':'var(--surface)';btn.style.color=_paletteLocked?'#fff':'var(--ink3)';btn.style.borderColor=_paletteLocked?'var(--ink)':'var(--border-dark)';}
   if(wrap) wrap.style.display=_paletteLocked?'flex':'none';
   if(_paletteLocked) buildPalDropdown();
 }
@@ -713,7 +713,7 @@ function checkBatchButton() {
     if (btn) {
       if (active && active.work === 'pills') {
         btn.style.display = '';
-        btn.textContent = `+ ${HOKSI18N.t('btn.savebatch')} "${active.name}" (${active.items.length})`;
+        btn.textContent = `+ ${HOKSI18N.en('btn.savebatch')} "${active.name}" (${active.items.length})`;
       } else {
         btn.style.display = 'none';
       }
@@ -727,11 +727,11 @@ function saveToBatch() {
   const key = 'hoks-active-batch';
   try {
     const active = JSON.parse(localStorage.getItem(key)||'null');
-    if (!active || active.work !== 'pills') { toast(HOKSI18N.t('toast.noBatch').replace('%s','PLLS')); return; }
+    if (!active || active.work !== 'pills') { toast(HOKSI18N.en('toast.noBatch').replace('%s','PLLS')); return; }
     active.items.push({ seed: currentSeed, dataUrl, savedAt: Date.now() });
     localStorage.setItem(key, JSON.stringify(active));
     checkBatchButton();
-    toast(HOKSI18N.t('toast.addedBatch').replace('%1',active.name).replace('%2',active.items.length));
+    toast(HOKSI18N.en('toast.addedBatch').replace('%1',active.name).replace('%2',active.items.length));
   } catch(e) { toast('Error saving to batch'); }
 }
 
@@ -754,7 +754,7 @@ setInterval(checkBatchButton, 3000);
 window.addEventListener('hoks:langchange',function(){
   try{
     var pb=document.getElementById('palLockBtn');
-    if(pb && typeof _paletteLocked!=='undefined') pb.textContent=HOKSI18N.t(_paletteLocked?'lock.specific':'lock.random');
+    if(pb && typeof _paletteLocked!=='undefined') pb.textContent=HOKSI18N.en(_paletteLocked?'lock.specific':'lock.random');
     var exact=(typeof _isExact!=='undefined')?_isExact:false;
     if(!exact && typeof draw==='function' && typeof currentSeed!=='undefined'){ draw(currentSeed); }
   }catch(e){}
