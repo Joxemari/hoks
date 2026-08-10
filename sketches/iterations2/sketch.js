@@ -53,13 +53,24 @@ function pickRoles(colors) {
   const otros = porContraste.filter(c => c !== fg && c !== dot);
   const fg2 = otros.length ? otros[0] : mixHex(fg, bg, 0.42);
 
+  // Segundo tono de la cinta. No es un color de contraste: es un
+  // vecino en luminancia y distinto en tono — negro y azul marino,
+  // granate y azul. Cambia la profundidad sin encender la imagen.
+  const vecinos = porContraste.filter(c => c !== fg);
+  // A medio camino hacia ese vecino, no el vecino crudo: el color puro
+  // se lee como una segunda cinta, y lo que se busca es la misma cinta
+  // entrando en penumbra. Negro hacia azul da azul marino.
+  const tono2 = vecinos.length
+    ? mixHex(fg, vecinos.slice().sort((a, b) => abs(lum(a) - lum(fg)) - abs(lum(b) - lum(fg)))[0], 0.5)
+    : mixHex(fg, bg, 0.24);
+
   // Los discos NO comparten un solo color: son el contrapunto, y en
   // una paleta como Mondrian el negro sobre crema casi no se ve. Se
   // quedan con todo lo que no es fondo ni cinta, por contraste.
   let dots = porContraste.filter(c => c !== fg);
   if (!dots.length) dots = [mixHex(fg, oscuro ? '#ffffff' : '#000000', 0.55)];
 
-  return { bg, fg, fg2, dot, dots };
+  return { bg, fg, fg2, tono2, dot, dots };
 }
 
 const DEF = {
@@ -97,6 +108,9 @@ const DEF = {
   corner:       "rectas",    // curvas | rectas
   ends:         "rectos",    // redondos | rectos
   tinta:        "solido",    // solido | gradiente
+  dosTonos:     true,        // un tramo de la cinta en un segundo tono
+  tono2Min:     0.16,        // fracción de la cinta que cambia de tono
+  tono2Max:     0.30,
   miterLimit:   2.2,         // por encima, el pico del halo raja la hebra vecina
 
   dots:         "bajo",      // no | bajo | encima
@@ -174,7 +188,17 @@ function generate(seed, cfg) {
   const points = nodes.map(n => n.p);
   const { cuts, order, depth, crossings } = buildKnot(points);
 
-  return { seed, family, vueltas, pedidas, points, cuts, order, depth, crossings, width, colores, cfg };
+  // Un tramo CONTIGUO de la cinta va en el segundo tono. Contiguo y no
+  // salteado: la cinta es una sola y el cambio de tono tiene que leerse
+  // como un recorrido que entra en otra zona, no como piezas pintadas.
+  const segundo = new Array(cuts.length).fill(false);
+  if (cfg.dosTonos && cuts.length >= 4) {
+    const largo = max(1, round(cuts.length * random(cfg.tono2Min, cfg.tono2Max)));
+    const desde = floor(random(cuts.length - largo + 1));
+    for (let i = desde; i < desde + largo; i++) segundo[i] = true;
+  }
+
+  return { seed, family, vueltas, pedidas, points, cuts, order, depth, segundo, crossings, width, colores, cfg };
 }
 
 // ------------------------------------------------------------
@@ -707,11 +731,12 @@ function renderComposition(ctx, ox, oy, S, comp) {
       // de la cinta el halo sí sobresale: ahí sí hay canto.
       trazos.push({
         halo:   alargarExtremos(pts, idx > 0 ? -recorte : gap, idx < ultima ? -recorte : gap),
-        cuerpo: alargarExtremos(pts, idx > 0 ? solape : 0,     idx < ultima ? solape : 0)
+        cuerpo: alargarExtremos(pts, idx > 0 ? solape : 0,     idx < ultima ? solape : 0),
+        tinta:  (comp.segundo && comp.segundo[idx]) ? col.tono2 : tinta
       });
     }
     if (gap > 0) for (const t of trazos) strokePath(ctx, t.halo, width + gap * 2, col.bg, cfg, "round");
-    for (const t of trazos) strokePath(ctx, t.cuerpo, width, tinta, cfg);
+    for (const t of trazos) strokePath(ctx, t.cuerpo, width, t.tinta, cfg);
   }
 
   if (cfg.ends === "redondos") {
