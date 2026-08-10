@@ -83,6 +83,7 @@ const DEF = {
   minTurnDeg:   38,
   avoidRatio:   1.36,    // separación mínima entre hebras que NO se cruzan
 
+  salidaMax:    3.2,     // cuánto asoma cada extremo fuera del nudo, × anchura
   margen:       0.022,   // aire libre entre el BORDE de la cinta y el marco
   anchorJitter: 0.030,
   bendMax:      0.075,
@@ -212,6 +213,17 @@ function generate(seed, cfg) {
   // de una costura. Si el solver no consiguió abrir hueco suficiente,
   // no se dibuja mal — se adelgaza la cinta hasta que el halo quepa.
   // El material cede ante el nudo, no al revés.
+  // Los extremos SALEN de la trama. Una cinta que muere en mitad del
+  // nudo, cortada a hueso, es lo único que queda sin resolver a la
+  // vista: el principio y el final tienen que ser un acontecimiento.
+  nodes = sacarExtremos(nodes, width, cfg);
+  for (let i = 0; i < 4; i++) {
+    nodes = selfAvoid(nodes, width, cfg);
+    nodes = relaxFolds(nodes, cfg);
+    nodes = shrinkIntoFrame(nodes, width, cfg);
+  }
+  width = constrain(cfg.widthOfSeg * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
+
   width = min(width, holguraReal(nodes) / (1 + 2 * cfg.gapRatio + 0.12));
   // Un segmento más corto que la propia anchura deja de ser tramo y
   // pasa a ser bulto: la cinta también cede ante eso.
@@ -448,6 +460,28 @@ function shrinkIntoFrame(nodes, width, cfg) {
 // Cortar en un vértice hacía que el halo de la pieza siguiente
 // mordiese la esquina de la anterior -> cruce falso.
 // ------------------------------------------------------------
+// Prolonga los dos extremos siguiendo su propia dirección hasta salir
+// del cuerpo de la trama. Si un extremo apunta hacia dentro no se toca:
+// alargarlo lo haría atravesar toda la composición.
+function sacarExtremos(nodes, width, cfg) {
+  let cx = 0, cy = 0;
+  for (const n of nodes) { cx += n.p.x; cy += n.p.y; }
+  cx /= nodes.length; cy /= nodes.length;
+
+  const tope = cfg.salidaMax * width;
+  const extremos = [[0, 1], [nodes.length - 1, nodes.length - 2]];
+
+  for (const [fin, vecino] of extremos) {
+    const d = p5.Vector.sub(nodes[fin].p, nodes[vecino].p);
+    if (d.magSq() === 0) continue;
+    d.normalize();
+    const fuera = createVector(nodes[fin].p.x - cx, nodes[fin].p.y - cy);
+    if (fuera.magSq() === 0 || p5.Vector.dot(d, fuera.normalize()) <= 0.1) continue;
+    nodes[fin].p.add(p5.Vector.mult(d, tope));
+  }
+  return nodes;
+}
+
 // Distancia mínima real entre hebras que NO se cruzan. Los cruces se
 // excluyen: ahí el solape es la obra, no el defecto.
 function holguraReal(nodes) {
@@ -502,10 +536,17 @@ function buildKnot(points) {
   for (let m = 0; m < visits.length - 1; m++) bounds.push((visits[m].s + visits[m+1].s) / 2);
   bounds.push(last);
 
+  // Una pieza puede contener VARIOS cruces si en todos ellos va a la
+  // misma profundidad. Cortar en cada cruce multiplicaba las juntas
+  // sin necesidad, y cada junta es una costura visible.
   const cuts = [], depth = [];
-  for (let m = 0; m < visits.length; m++) {
-    cuts.push(sToCut(bounds[m], bounds[m+1], last));
+  let m = 0;
+  while (m < visits.length) {
+    let k = m;
+    while (k + 1 < visits.length && visits[k+1].over === visits[m].over) k++;
+    cuts.push(sToCut(bounds[m], bounds[k+1], last));
     depth.push(visits[m].over ? 1 : 0);
+    m = k + 1;
   }
 
   // primero todo lo que va debajo, después lo que va encima
@@ -574,18 +615,25 @@ function renderComposition(ctx, ox, oy, S, comp) {
   // en vez de flotar encima de él.
   if (cfg.dots === "bajo") drawDots(ctx, mapped, width, comp, ox, oy, S);
 
+  // Dos piezas que se tocan sin solaparse dejan medio píxel sin cubrir
+  // por cada lado y el fondo se transparenta: esa es la línea fina que
+  // se ve entre secciones. Se solapan un poco y desaparece.
+  const solape = width * 0.20;
+  const ultima = polys.length - 1;
+
   for (const idx of comp.order) {
     const pts = polys[idx];
     if (!pts || pts.length < 2) continue;
+    const ini = idx > 0 ? solape : 0;
+    const fin = idx < ultima ? solape : 0;
+
     if (gap > 0) {
-      // El halo sobresale en el arranque y en el remate de la cinta:
-      // si no, los dos extremos son los únicos cantos sin junta y se
-      // pegan a lo que tengan debajo.
-      const halo = alargarExtremos(pts, idx === 0 ? gap : 0,
-                                        idx === polys.length - 1 ? gap : 0);
-      strokePath(ctx, halo, width + gap * 2, col.bg, cfg);
+      // En el arranque y el remate de la cinta el halo sobresale: son
+      // los dos únicos cantos sin junta y si no se pegan a lo de debajo.
+      strokePath(ctx, alargarExtremos(pts, idx > 0 ? ini : gap, idx < ultima ? fin : gap),
+                 width + gap * 2, col.bg, cfg);
     }
-    strokePath(ctx, pts, width, tinta, cfg);
+    strokePath(ctx, alargarExtremos(pts, ini, fin), width, tinta, cfg);
   }
 
   if (cfg.ends === "redondos") {
@@ -674,12 +722,16 @@ function alargarExtremos(pts, ini, fin) {
   const out = pts.map(p => p.copy());
   if (ini > 0) {
     const d = p5.Vector.sub(out[0], out[1]);
-    if (d.magSq() > 0) out[0].add(d.normalize().mult(ini));
+    const l = d.mag();
+    // nunca más de un tercio del tramo: si no, el solape se comería
+    // el cruce que la pieza tiene justo al lado
+    if (l > 0) out[0].add(d.normalize().mult(min(ini, l / 3)));
   }
   if (fin > 0) {
     const n = out.length - 1;
     const d = p5.Vector.sub(out[n], out[n-1]);
-    if (d.magSq() > 0) out[n].add(d.normalize().mult(fin));
+    const l = d.mag();
+    if (l > 0) out[n].add(d.normalize().mult(min(fin, l / 3)));
   }
   return out;
 }
