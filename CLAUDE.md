@@ -10,7 +10,7 @@ controlado: cada pieza nace de una *seed* y un RNG determinista.
 
 **HTML/JS vanilla. Sin framework, sin bundler, sin paso de build.** Lo que se
 commitea es exactamente lo que se publica. Las obras **graduadas** (pllsg,
-krrtkg, dtkg) tienen su algoritmo en `sketches/<obra>/algo.js` (fuente única,
+krrtkg, dtkg, dtkrt) tienen su algoritmo en `sketches/<obra>/algo.js` (fuente única,
 compartida entre laboratorio y producción); las páginas de las demás series aún
 llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 única en todo el sitio: `Courier New` monoespaciada; fondo blanco, tinta `#111`.
@@ -25,7 +25,8 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   `data/works.json`. Reimplementa los algoritmos de dibujo de cada serie (versión
   reducida) para las celdas demo.
 - **Páginas de obra** (una por serie): `pills.html` (PLLS), `krrtk.html`,
-  `dtk.html`, `bzrs.html`, `krrtkg.html`, `dtkg.html`, `pllsg.html`. Cada una es
+  `dtk.html`, `bzrs.html`, `krrtkg.html`, `dtkg.html`, `pllsg.html`, `dtkrt.html`.
+  Cada una es
   autónoma: canvas 2D + RNG sembrado + selector/peso de paletas + sistema de
   *traits* y rareza en la barra lateral. Click en el canvas = nueva variación.
   Botones: Generate, Copy Card, Save, Download PNG. "Save" sube la imagen
@@ -42,7 +43,7 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 ### Compartido
 
 - **`nav.js`** — Se incluye en todas las páginas. Inyecta `<nav>` (logo "hoks",
-  dropdown *Work* con las 7 series, About, Palettes), favicon SVG, footer
+  dropdown *Work* con las 8 series, About, Palettes), favicon SVG, footer
   (© hoks, contacto, Instagram si está en `site.json`) y badge ADMIN si hay
   sesión. No hay otro CSS/JS global: cada página trae su propio `<style>`.
 
@@ -63,12 +64,14 @@ redeploy de Pages.
 
 - **`works.json`** — Registro de familias: `id, name, slug, active, description,
   page, canvas`. El flag `active` decide qué series aparecen en la landing y en
-  el dropdown *Work* del nav. Hoy activas: **krrtkg, dtkg, pllsg**
-  (las que llevan grano); pills/krrtk/dtk/bzrs están inactivas.
+  el dropdown *Work* del nav. Hoy activas: **pllsg y dtkrt**; el resto
+  (pills/krrtk/dtk/bzrs/krrtkg/dtkg) están inactivas. La landing reimplementa el
+  algoritmo de cada serie salvo DTKRT, que consume su `algo.js` real.
 - **`palettes.json`** — Paletas con `colors`, `active`, `tags`, `notes`. Mezcla
   sets de Roni Kaufman (color_pals) y series Itten (contraste complementario).
 - **`site.json`** — `aboutText`, `footerEmail`, `footerInstagram`.
-- **`plls.json`, `krrtkg.json`, `dtkg.json`, `pllsg.json`, `gallery*.json`** —
+- **`plls.json`, `krrtkg.json`, `dtkg.json`, `pllsg.json`, `dtkrt.json`,
+  `gallery*.json`** —
   Obras guardadas como `{seed, dataUrl(base64), savedAt}`. Pueden pesar MB.
 
 > ⚠️ Los `*.json` en la **raíz** (`bzrs.json`, `dtk.json`, `krrtk.json`, etc.)
@@ -86,7 +89,12 @@ redeploy de Pages.
   (cientos de curvas Bézier con degradado entre dos colores).
 - **Variantes "G"** (KRRTKG/DTKG/PLLSG): añaden **mesh gradient** de fondo
   (interpolación bilineal de 4 esquinas, `drawMeshGradient`) y **grano de film**
-  por soft-light (`bakeGrain`/`applyGrain`). Es la dirección actual del trabajo.
+  por soft-light (`bakeGrain`/`applyGrain`).
+- **DTKRT**: la misma malla de DTK leída dos veces — *presencia* (¿hay círculo?) y
+  *pertenencia* (región crecida celda a celda). Rompe con las "G" a propósito:
+  fondo **plano** (figura/fondo necesita un plano estable), margen para que el
+  suelo se vea, y tres roles de color fijos por luma (suelo/bloque/punto) en vez
+  de un color por forma. Conserva el grano. Es la dirección actual del trabajo.
 - **Traits/rareza**: cada draw calcula traits (paleta, arquetipo, cobertura…) y
   una rareza global (`common`→`legendary`) por probabilidad combinada.
 

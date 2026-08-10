@@ -38,6 +38,9 @@ const DICT = {
     'trait.Depth': 'Depth', 'trait.Finish': 'Finish', 'trait.Grid': 'Grid',
     'trait.Palette': 'Palette', 'trait.Texture': 'Texture', 'trait.Density': 'Density',
     'trait.Bg': 'Bg', 'trait.Pills': 'Pills', 'trait.Blend': 'Blend', 'trait.Curves': 'Curves',
+    'trait.Region': 'Region', 'trait.Ground': 'Ground', 'trait.Contrast': 'Contrast',
+    'val.Cluster': 'Cluster', 'val.Ell': 'Ell', 'val.Bar': 'Bar', 'val.Field': 'Field', 'val.Twin': 'Twin',
+    'val.Dark': 'Dark', 'val.Light': 'Light', 'val.High': 'High', 'val.Mid': 'Mid', 'val.Low': 'Low',
     'val.Sparse': 'Sparse', 'val.Balanced': 'Balanced', 'val.Dense': 'Dense',
     'val.Full': 'Full', 'val.Scattered': 'Scattered', 'val.Empty': 'Empty',
     'val.Solo': 'Solo', 'val.Small': 'Small', 'val.Medium': 'Medium', 'val.Large': 'Large',
@@ -78,6 +81,9 @@ const DICT = {
     'trait.Depth': 'Profundidad', 'trait.Finish': 'Acabado', 'trait.Grid': 'Rejilla',
     'trait.Palette': 'Paleta', 'trait.Texture': 'Textura', 'trait.Density': 'Densidad',
     'trait.Bg': 'Fondo', 'trait.Pills': 'Cápsulas', 'trait.Blend': 'Mezcla', 'trait.Curves': 'Curvas',
+    'trait.Region': 'Región', 'trait.Ground': 'Suelo', 'trait.Contrast': 'Contraste',
+    'val.Cluster': 'Racimo', 'val.Ell': 'Ele', 'val.Bar': 'Barra', 'val.Field': 'Campo', 'val.Twin': 'Doble',
+    'val.Dark': 'Oscuro', 'val.Light': 'Claro', 'val.High': 'Alto', 'val.Mid': 'Medio', 'val.Low': 'Bajo',
     'val.Sparse': 'Disperso', 'val.Balanced': 'Equilibrado', 'val.Dense': 'Denso',
     'val.Full': 'Lleno', 'val.Scattered': 'Esparcido', 'val.Empty': 'Vacío',
     'val.Solo': 'Solo', 'val.Small': 'Pequeño', 'val.Medium': 'Medio', 'val.Large': 'Grande',
@@ -118,6 +124,9 @@ const DICT = {
     'trait.Depth': 'Sakonera', 'trait.Finish': 'Akabera', 'trait.Grid': 'Sareta',
     'trait.Palette': 'Paleta', 'trait.Texture': 'Ehundura', 'trait.Density': 'Dentsitatea',
     'trait.Bg': 'Hondoa', 'trait.Pills': 'Kapsulak', 'trait.Blend': 'Nahasketa', 'trait.Curves': 'Kurbak',
+    'trait.Region': 'Eremua', 'trait.Ground': 'Zorua', 'trait.Contrast': 'Kontrastea',
+    'val.Cluster': 'Multzoa', 'val.Ell': 'Ele', 'val.Bar': 'Barra', 'val.Field': 'Zelaia', 'val.Twin': 'Bikoitza',
+    'val.Dark': 'Iluna', 'val.Light': 'Argia', 'val.High': 'Handia', 'val.Mid': 'Ertaina', 'val.Low': 'Txikia',
     'val.Sparse': 'Sakabanatua', 'val.Balanced': 'Orekatua', 'val.Dense': 'Trinkoa',
     'val.Full': 'Betea', 'val.Scattered': 'Barreiatua', 'val.Empty': 'Hutsik',
     'val.Solo': 'Bakarra', 'val.Small': 'Txikia', 'val.Medium': 'Ertaina', 'val.Large': 'Handia',
@@ -269,7 +278,7 @@ if (!document.querySelector('link[rel="icon"]')) {
 }
 
 const path = window.location.pathname.split('/').pop() || 'index.html';
-const isWork = ['index.html','','pills.html','krrtk.html','dtk.html','bzrs.html','krrtkg.html','dtkg.html','pllsg.html'].includes(path);
+const isWork = ['index.html','','pills.html','krrtk.html','dtk.html','bzrs.html','krrtkg.html','dtkg.html','pllsg.html','dtkrt.html'].includes(path);
 const isAbout = path === 'about.html';
 const isPalettes = path === 'palettes.html';
 
@@ -293,6 +302,7 @@ nav.innerHTML = `
         <li data-slug="krrtkg"><a href="krrtkg.html"${path==='krrtkg.html'?' class="active"':''}>KRRTKG</a></li>
         <li data-slug="dtkg"><a href="dtkg.html"${path==='dtkg.html'?' class="active"':''}>DTKG</a></li>
         <li data-slug="pllsg"><a href="pllsg.html"${path==='pllsg.html'?' class="active"':''}>PLLSG</a></li>
+        <li data-slug="dtkrt"><a href="dtkrt.html"${path==='dtkrt.html'?' class="active"':''}>DTKRT</a></li>
       </ul>
     </li>
     <li><a href="about.html"${isAbout?' class="active"':''} data-i18n="nav.about">About</a></li>

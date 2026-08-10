@@ -55,6 +55,10 @@ body { background: #fff; color: #111; height: 100vh; overflow: hidden; }
 </head>
 <body>
 <script src="nav.js"></script>
+<!-- DTKRT no se reimplementa aquí: las celdas demo usan el mismo algo.js que
+     producción y laboratorio. Las demás series siguen con su versión reducida. -->
+<script src="sketches/_engine.js?v=1"></script>
+<script src="sketches/dtkrt/algo.js?v=1"></script>
 <style>
   /* Override nav.js defaults — landing needs fixed full-bleed layout */
   body { min-height: unset !important; display: block !important; overflow: hidden !important; }
@@ -249,10 +253,16 @@ function drawPLLSG(canvas,seed){
   applyGrain(ctx,W,H,colors);
 }
 
-const DRAWFNS = {plls:drawPLLS,krrtk:drawKRRTK,dtk:drawDTK,bzrs:drawBZRS,krrtkg:drawKRRTKG,dtkg:drawDTKG,pllsg:drawPLLSG};
-const LABELS  = {plls:'PLLS',krrtk:'KRRTK',dtk:'DTK',bzrs:'BZRS',krrtkg:'KRRTKG',dtkg:'DTKG',pllsg:'PLLSG'};
-const CRES    = {plls:[566,400],krrtk:[320,320],dtk:[320,320],bzrs:[320,320],krrtkg:[320,320],dtkg:[320,320],pllsg:[566,400]};
-const SERIES  = ['plls','krrtk','dtk','bzrs','krrtkg','dtkg','pllsg'];
+// ── DRAW: DTKRT (fuente única — sketches/dtkrt/algo.js) ──────────────────────
+function drawDTKRT(canvas,seed){
+  HOKS.DTKRT.render(canvas.getContext('2d'),canvas.width,canvas.height,seed,
+    {palettes:PALETTES.filter(p=>p.active!==false)});
+}
+
+const DRAWFNS = {plls:drawPLLS,krrtk:drawKRRTK,dtk:drawDTK,bzrs:drawBZRS,krrtkg:drawKRRTKG,dtkg:drawDTKG,pllsg:drawPLLSG,dtkrt:drawDTKRT};
+const LABELS  = {plls:'PLLS',krrtk:'KRRTK',dtk:'DTK',bzrs:'BZRS',krrtkg:'KRRTKG',dtkg:'DTKG',pllsg:'PLLSG',dtkrt:'DTKRT'};
+const CRES    = {plls:[566,400],krrtk:[320,320],dtk:[320,320],bzrs:[320,320],krrtkg:[320,320],dtkg:[320,320],pllsg:[566,400],dtkrt:[320,320]};
+const SERIES  = ['plls','krrtk','dtk','bzrs','krrtkg','dtkg','pllsg','dtkrt'];
 
 // ── GRID ─────────────────────────────────────────────────────────────────────
 const GAP=5, COLS=9, ROWS=10;
@@ -396,7 +406,7 @@ function buildGrid(works) {
 // ── LOAD REAL WORKS ───────────────────────────────────────────────────────────
 const TOTAL = 90; // 9 cols × 10 rows
 const PER_SERIES = 13; // up to 13 saved works per series
-const SLUG_MAP = { pills:'plls', krrtk:'krrtk', dtk:'dtk', bzrs:'bzrs', krrtkg:'krrtkg', dtkg:'dtkg', pllsg:'pllsg' };
+const SLUG_MAP = { pills:'plls', krrtk:'krrtk', dtk:'dtk', bzrs:'bzrs', krrtkg:'krrtkg', dtkg:'dtkg', pllsg:'pllsg', dtkrt:'dtkrt' };
 
 async function load() {
   // 1. Read works.json — filter to active families only
