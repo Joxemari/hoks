@@ -1,0 +1,230 @@
+/* DTKRT — el retículo con regiones. Borobilak (círculos) + karratuak (bloques).
+ *
+ * FUENTE ÚNICA del algoritmo: este archivo lo consume TANTO el laboratorio
+ * (sketches/dtkrt/index.html) COMO la página de producción (dtkrt.html).
+ *
+ * Gramática: una sola malla n×n leída dos veces.
+ *   · presencia  — ¿hay círculo en esta celda?      (máscara booleana, como DTK)
+ *   · pertenencia — ¿esta celda es región?          (poliominó sobre la misma malla)
+ * El círculo es constante; lo que varía es el suelo bajo él. Figura y fondo
+ * comparten retículo: el bloque no decora, reencuadra.
+ *
+ * Divergencias deliberadas respecto a DTKG (y por qué):
+ *   · Fondo PLANO, sin mesh gradient — figura/fondo necesita un plano estable.
+ *   · Margen: la malla se retira del borde para que el suelo sea visible.
+ *   · Tres roles de color fijos (fondo / bloque / punto) elegidos por luma —
+ *     si cada círculo sacara su color, la capa de región no se leería.
+ *   · n ≥ 3: con menos celdas no hay región que leer.
+ *
+ * Canvas 2D puro. Depende de window.HOKS (_engine.js).
+ *
+ *   HOKS.DTKRT.render(ctx, W, H, seed, opts) → datos para traits
+ *   HOKS.DTKRT.traits(res)                   → { list:[…], overall }
+ */
+(function (global) {
+  'use strict';
+  const E = global.HOKS;
+
+  const THRESHOLD = 0.8;    // probabilidad de que un círculo exista
+  const MARGIN    = 0.11;   // retiro de la malla respecto al lienzo (fracción)
+  const GUTTER    = 1.1;    // paso de celda = diámetro × 1.1 (10% de aire)
+  const P_INVERT  = 0.25;   // 1 de cada 4: suelo claro, punto oscuro
+  const P_ACCENT  = 0.4;    // acento suelto de 1 celda
+  const P_TWIN    = 0.18;   // segunda región
+
+  // ── Roles de color ─────────────────────────────────────────────────────────
+  // Tres papeles de la paleta ordenada por luma: suelo, bloque, punto. El bloque
+  // vive entre los otros dos; si la paleta no tiene un tono intermedio con aire
+  // suficiente, se deriva mezclando (una paleta de 2 colores sigue funcionando).
+  function roles(rng, colors) {
+    const sorted = colors.slice().sort((a, b) => E.luma(a) - E.luma(b));
+    const k = sorted.length;
+    const dark  = sorted.slice(0, Math.max(1, Math.ceil(k / 3)));
+    const light = sorted.slice(Math.min(k - 1, Math.floor((k * 2) / 3)));
+
+    const inverted = rng.bool(P_INVERT);
+    const ground = rng.pickFrom(inverted ? light : dark);
+    const dot    = rng.pickFrom(inverted ? dark  : light);
+
+    // El bloque quiere ser un PIGMENTO de la paleta, no una mezcla: una mezcla
+    // lee como veladura sucia, un color propio lee como plano. Preferimos el
+    // tono intermedio con aire suficiente; si ninguno lo tiene, el que más aire
+    // deje; solo se deriva cuando no queda ningún color libre (paletas de dos).
+    // El aire con el PUNTO manda: el círculo se apoya en el bloque, y si ambos
+    // comparten luma el círculo desaparece. El aire con el suelo es secundario
+    // (si falta, la región se pierde). Sin candidato que cumpla las dos, se
+    // deriva mezclando: la mezcla garantiza el punto medio.
+    const lg = E.luma(ground), ld = E.luma(dot), mid = (lg + ld) / 2;
+    const fit = colors.filter(c => c !== ground && c !== dot
+      && Math.abs(E.luma(c) - ld) >= 0.18 && Math.abs(E.luma(c) - lg) >= 0.12);
+    let block = fit.length
+      ? fit.reduce((a, b) => (Math.abs(E.luma(a) - mid) <= Math.abs(E.luma(b) - mid) ? a : b))
+      : null;
+    const derived = !block;
+    if (derived) block = E.lerpColor(ground, dot, 0.34);
+
+    return { ground, block, dot, inverted, derived, contrast: Math.abs(ld - lg) };
+  }
+
+  // ── Región: poliominó por crecimiento ortogonal ────────────────────────────
+  // Semilla + expansión a vecinos: salen barras, eles, escaleras y campos, sin
+  // catálogo de formas. La forma es consecuencia de la regla, no un dibujo.
+  function grow(rng, n, target, avoid) {
+    const cells = new Set(), order = [];
+    const si = rng.int(0, n - 1), sj = rng.int(0, n - 1);
+    if (avoid && avoid.has(si + ',' + sj)) return cells;
+    cells.add(si + ',' + sj); order.push([si, sj]);
+    let guard = target * 12;
+    while (cells.size < target && guard-- > 0) {
+      const [ci, cj] = order[rng.int(0, order.length - 1)];
+      const d = rng.int(0, 3);
+      const ni = ci + (d === 0 ? 1 : d === 1 ? -1 : 0);
+      const nj = cj + (d === 2 ? 1 : d === 3 ? -1 : 0);
+      if (ni < 0 || nj < 0 || ni >= n || nj >= n) continue;
+      const key = ni + ',' + nj;
+      if (cells.has(key) || (avoid && avoid.has(key))) continue;
+      cells.add(key); order.push([ni, nj]);
+    }
+    return cells;
+  }
+
+  // Celdas pintadas con bordes redondeados al mismo entero: las contiguas
+  // comparten arista exacta y la región se lee como una sola masa, sin costuras.
+  function paintCells(ctx, cells, pitch) {
+    for (const key of cells) {
+      const [i, j] = key.split(',').map(Number);
+      const x0 = Math.round(i * pitch), x1 = Math.round((i + 1) * pitch);
+      const y0 = Math.round(j * pitch), y1 = Math.round((j + 1) * pitch);
+      ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    }
+  }
+
+  // ── Entrada principal ──────────────────────────────────────────────────────
+  // opts: { palettes, locked, lockedIdx, params:{ grainScale, grid, threshold } }
+  function render(ctx, W, H, seed, opts) {
+    opts = opts || {};
+    const params = opts.params || {};
+    const palettes = opts.palettes || E.normalizePalettes(E.DEFAULTS);
+    const grainScale = params.grainScale == null ? 1 : params.grainScale;
+    const threshold  = params.threshold  == null ? THRESHOLD : params.threshold;
+    const rng = new E.Rng(seed);
+
+    const pal = (opts.locked && palettes[opts.lockedIdx]) ? palettes[opts.lockedIdx] : rng.weighted(palettes);
+    const R = roles(rng, pal.colors);
+
+    // 1. Suelo plano.
+    ctx.fillStyle = R.ground;
+    ctx.fillRect(0, 0, W, H);
+
+    // 2. Malla n×n, retirada del borde.
+    const n = params.grid ? params.grid : rng.int(3, 7);
+    const m = Math.round(Math.min(W, H) * MARGIN);
+    const inner = Math.min(W, H) - m * 2;
+    const pitch = inner / n;
+    const size = pitch / GUTTER;
+    const offX = (W - inner) / 2, offY = (H - inner) / 2;
+
+    // 3. Máscara de presencia (n×n tiradas).
+    const composition = [];
+    for (let i = 0; i < n; i++) {
+      composition.push([]);
+      for (let j = 0; j < n; j++) composition[i].push(rng.next());
+    }
+
+    // 4. Capa de pertenencia.
+    const target = rng.int(2, Math.max(2, Math.round(n * n * 0.45)));
+    const region = grow(rng, n, target, null);
+    const twin = rng.bool(P_TWIN) ? grow(rng, n, rng.int(2, Math.max(2, Math.round(n * n * 0.2))), region) : new Set();
+    const accent = new Set();
+    if (rng.bool(P_ACCENT)) {
+      const ai = rng.int(0, n - 1), aj = rng.int(0, n - 1), key = ai + ',' + aj;
+      if (!region.has(key) && !twin.has(key)) accent.add(key);
+    }
+
+    ctx.save();
+    ctx.translate(offX, offY);
+    ctx.fillStyle = R.block;
+    paintCells(ctx, region, pitch);
+    paintCells(ctx, twin, pitch);
+    paintCells(ctx, accent, pitch);
+
+    // 5. Círculos — color constante: el punto no compite con la región.
+    ctx.fillStyle = R.dot;
+    let drawn = 0;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (composition[i][j] <= threshold) {
+          ctx.beginPath();
+          ctx.arc((i + 0.5) * pitch, (j + 0.5) * pitch, size / 2, 0, Math.PI * 2);
+          ctx.fill();
+          drawn++;
+        }
+      }
+    }
+    ctx.restore();
+
+    // 6. Grano.
+    E.applyGrain(ctx, W, H, E.bakeGrain(W, H, pal.colors, grainScale));
+
+    return { pal, n, drawn, region, twin, accent, roles: R };
+  }
+
+  // ── Traits ─────────────────────────────────────────────────────────────────
+  // Forma de la región deducida de sus celdas: caja contenedora vs. población.
+  function shapeOf(cells) {
+    if (!cells.size) return 'None';
+    let i0 = Infinity, i1 = -Infinity, j0 = Infinity, j1 = -Infinity;
+    for (const key of cells) {
+      const [i, j] = key.split(',').map(Number);
+      if (i < i0) i0 = i; if (i > i1) i1 = i;
+      if (j < j0) j0 = j; if (j > j1) j1 = j;
+    }
+    const w = i1 - i0 + 1, h = j1 - j0 + 1, c = cells.size;
+    if (c === 1) return 'Solo';
+    if (w === 1 || h === 1) return 'Bar';
+    if (c === w * h) return 'Field';
+    if (c === w + h - 1) return 'Ell';
+    return 'Cluster';
+  }
+
+  function traits(res) {
+    const total = res.n * res.n;
+    const coveragePct = Math.round((res.drawn / total) * 100);
+    const coverageLabel = coveragePct > 70 ? 'Full' : coveragePct > 40 ? 'Scattered' : coveragePct > 0 ? 'Sparse' : 'Empty';
+    const coverageR = coveragePct === 0 ? 'legendary' : coveragePct > 70 ? 'uncommon' : 'common';
+
+    const gridLabel = res.n <= 3 ? 'Small' : res.n <= 5 ? 'Medium' : 'Large';
+    const gridR = res.n === 7 ? 'uncommon' : res.n === 3 ? 'uncommon' : 'common';
+
+    const shape = shapeOf(res.region);
+    const cells = res.region.size + res.twin.size + res.accent.size;
+    const regionLabel = (res.twin.size ? 'Twin ' : '') + shape + ' · ' + cells + '/' + total;
+    const regionR = res.twin.size ? 'rare' : shape === 'Solo' ? 'rare' : (shape === 'Field' || shape === 'Bar') ? 'uncommon' : 'common';
+
+    const k = res.roles.contrast;
+    const contrastLabel = k > 0.6 ? 'High' : k > 0.3 ? 'Mid' : 'Low';
+    const contrastR = k > 0.6 ? 'common' : k > 0.3 ? 'common' : 'uncommon';
+
+    const groundLabel = res.roles.inverted ? 'Light' : 'Dark';
+    const groundR = res.roles.inverted ? 'uncommon' : 'common';
+
+    const prob = res.pal.prob != null ? res.pal.prob : 0.05;
+    const w = r => (r === 'rare' ? 0.3 : r === 'uncommon' ? 0.6 : 1);
+    const score = prob * w(gridR) * w(regionR) * w(groundR) * (coverageR === 'uncommon' ? 0.7 : 1);
+    const overall = score > 0.06 ? 'common' : score > 0.025 ? 'uncommon' : score > 0.008 ? 'rare' : score > 0.002 ? 'superrare' : 'legendary';
+
+    return {
+      list: [
+        { key: 'Palette',  val: res.pal.name, colors: res.pal.colors, rarity: E.palRarity(prob) },
+        { key: 'Grid',     val: res.n + '×' + res.n + ' · ' + gridLabel, rarity: gridR },
+        { key: 'Region',   val: regionLabel, rarity: regionR },
+        { key: 'Coverage', val: coverageLabel + ' · ' + coveragePct + '%', rarity: coverageR },
+        { key: 'Ground',   val: groundLabel, rarity: groundR },
+        { key: 'Contrast', val: contrastLabel, rarity: contrastR },
+      ],
+      overall,
+    };
+  }
+
+  (global.HOKS = global.HOKS || {}).DTKRT = { render, traits, THRESHOLD, MARGIN };
+})(typeof window !== 'undefined' ? window : globalThis);
