@@ -1026,8 +1026,8 @@ function construirUI() {
 
   ui.paleta = etiquetaSelect("paleta", PALETAS.map((p, i) => [i, p.name]), 12, y); y += fila;
 
-  [ui.vueltas, ui.vueltasV] = etiquetaSlider("vueltas", 2, 5, 3, 1, 12, y); y += fila;
-  [ui.anchura, ui.anchuraV] = etiquetaSlider("anchura", 0.25, 0.95, 0.50, 0.01, 12, y); y += fila;
+  [ui.vueltas, ui.vueltasV] = etiquetaSlider("vueltas", 2, 5, DEF.vueltasMax, 1, 12, y); y += fila;
+  [ui.anchura, ui.anchuraV] = etiquetaSlider("anchura", 0.25, 0.95, DEF.widthOfSeg, 0.01, 12, y); y += fila;
 
   ui.esquinas = etiquetaSelect("esquinas", [["rectas", "rectas"], ["curvas", "curvas"]], 12, y); y += fila;
   ui.extremos = etiquetaSelect("extremos", [["rectos", "rectos"], ["redondos", "redondos"]], 12, y); y += fila;
