@@ -35,7 +35,8 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
 .overall-row { margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
 .overall-label { font-size: 9px; color: var(--ink3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
 .canvas-area { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; gap: 0.8rem; background: var(--surface); min-height: calc(100vh - 52px); }
-canvas { display: block; height: min(72vh, 600px); width: min(72vh, 600px); cursor: pointer; outline: 1px solid rgba(0,0,0,0.12); }
+/* width:auto → el lienzo conserva SU proporción (cuadrado, vertical u horizontal). */
+canvas { display: block; height: min(72vh, 600px); width: auto; max-width: calc(100vw - 280px); cursor: pointer; outline: 1px solid rgba(0,0,0,0.12); }
 .canvas-hint { font-family: var(--f); font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; }
 .gallery-section { border-top: 1px solid var(--border); padding: 1.5rem 2rem; }
 .gallery-title { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); margin-bottom: 1rem; }
@@ -102,8 +103,9 @@ canvas { display: block; height: min(72vh, 600px); width: min(72vh, 600px); curs
     min-height: 50vh;
   }
   canvas {
-    height: min(60vw, 420px) !important;
-    width: min(60vw, 420px) !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100%;
   }
   .gallery-section { padding: 1rem; }
   .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
@@ -112,6 +114,8 @@ canvas { display: block; height: min(72vh, 600px); width: min(72vh, 600px); curs
 </head>
 <body>
 <script src="nav.js"></script>
+<!-- Motor compartido: formatos de lienzo y exportación a tamaño de impresión. -->
+<script src="sketches/_engine.js?v=1"></script>
 <div class="layout">
   <aside class="sidebar">
     <div class="sidebar-section">
@@ -121,6 +125,7 @@ canvas { display: block; height: min(72vh, 600px); width: min(72vh, 600px); curs
       <button class="btn btn-outline" id="batchBtn" onclick="saveToBatch()" style="display:none">+ <span>Save to Batch</span></button>
       <button class="btn btn-outline" onclick="downloadHD()">↓ <span data-i18n="btn.download">Download PNG</span></button>
     </div>
+    <div class="sidebar-section" id="formatMount"></div>
 
         <div class="sidebar-section" id="paletteSelectorSection" style="display:none">
       <div class="sidebar-label" data-i18n="label.palette">Palette</div>
@@ -158,7 +163,7 @@ canvas { display: block; height: min(72vh, 600px); width: min(72vh, 600px); curs
   </aside>
   <main>
     <div class="canvas-area">
-      <canvas id="c" width="600" height="600"></canvas>
+      <canvas id="c" width="760" height="760"></canvas>
       <div class="canvas-hint" data-i18n="hint.canvas">Click canvas to generate new variation</div>
     </div>
     <div class="gallery-section" id="gallerySection" style="display:none">
@@ -250,16 +255,38 @@ function loadPalettes(){
 }
 
 // ── DRAW — faithful BZRS port ──────────────────────────
+// ── FORMATO ───────────────────────────────────────────
+// Cuadrado · vertical · horizontal (1:√2, la proporción DIN). Las curvas llenan
+// el lienzo entero, así que el formato cambia de verdad la obra: la misma seed
+// da la misma imagen a cualquier resolución, pero otra composición por formato.
+var FMT=null;
+function applyFormat(){
+  const c=document.getElementById('c'),d=FMT?FMT.preview():HOKS.previewDims('square');
+  if(c.width!==d.W||c.height!==d.H){c.width=d.W;c.height=d.H;}
+}
+FMT=HOKS.mountFormat(document.getElementById('formatMount'),{
+  work:'bzrs', defaultFormat:'square',
+  onChange(){ applyFormat(); draw(currentSeed); }
+});
+applyFormat();
+
 function draw(seed){
   if(!palettes.length)return;
   const canvas=document.getElementById('c');
   const ctx=canvas.getContext('2d');
-  const W=canvas.width,H=canvas.height;
+  applyFormat();
+  const r=renderTo(ctx,canvas.width,canvas.height,seed);
+  updateTraits(r.pal,r.numCurves,r.colorOne,r.colorTwo);
+}
+
+function renderTo(ctx,W,H,seed){
   const rng=new Rng(seed);
 
   const pal=rng.weighted(palettes);
   const colors=pal.colors;
-  const margin=Math.round(W*0.0833); // ~50/600
+  // Margen contra el lado corto: en vertical y horizontal el aire es el mismo.
+  const S=Math.min(W,H);
+  const margin=Math.round(S*0.0833); // ~50/600
 
   // Background
   const bgColor=colors[rng.int(0,colors.length-1)];
@@ -276,7 +303,7 @@ function draw(seed){
   const colorTwo=colors[rng.int(0,colors.length-1)];
 
   ctx.save();
-  ctx.lineWidth = Math.max(0.5, W/600);
+  ctx.lineWidth = Math.max(0.5, S/600);   // grosor proporcional: igual a 300 dpi
   // Pre-compute all curve parameters for determinism
   const curveData = [];
   for(let i=0;i<numCurves;i++){
@@ -300,7 +327,10 @@ function draw(seed){
     ctx.stroke();
   }
   ctx.restore();
+  return { pal, numCurves, colorOne, colorTwo };
+}
 
+function updateTraits(pal,numCurves,colorOne,colorTwo){
   // Traits
   const palRarity=palRarityFromProb(pal.prob);
   const curveLabel=numCurves>1100?'Dense':numCurves>900?'Medium':'Sparse';
@@ -336,10 +366,23 @@ function generate(){currentSeed=(Math.random()*0xFFFFFFFF)>>>0;currentTimestamp=
 function loadGallery(){fetch(RAW+'bzrs.json?t='+Date.now()).then(r=>r.ok?r.json():[]).then(data=>{gallery=data;renderGallery();}).catch(()=>{gallery=[];renderGallery();});}
 async function saveGallery(){await ghPush('data/bzrs.json',gallery);}
 async function saveToGallery(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/png');gallery.unshift({seed:currentSeed,dataUrl,savedAt:Date.now()});if(gallery.length>50)gallery=gallery.slice(0,50);toast(HOKSI18N.en('toast.saving'));await saveGallery();renderGallery();toast(HOKSI18N.en('toast.savedGallery'));}
-function loadExactIteration(item){const canvas=document.getElementById('c');const ctx=canvas.getContext('2d');const img=new Image();img.onload=()=>{ctx.globalCompositeOperation='source-over';ctx.drawImage(img,0,0,canvas.width,canvas.height);};img.src=item.dataUrl;currentSeed=item.seed;currentTimestamp=item.savedAt?new Date(item.savedAt):new Date();animateSeed(item.seed);const tsEl=document.getElementById('timestampDisplay');const ts=currentTimestamp;if(tsEl)tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});const tl=document.getElementById('traitList');if(tl)tl.innerHTML='<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">'+HOKSI18N.t('trait.savedMsg')+'</div>';const or=document.getElementById('overallRarity');if(or)or.innerHTML='';}
+function loadExactIteration(item){const canvas=document.getElementById('c');const img=new Image();img.onload=()=>{canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const ctx=canvas.getContext('2d');ctx.globalCompositeOperation='source-over';ctx.drawImage(img,0,0,canvas.width,canvas.height);};img.src=item.dataUrl;currentSeed=item.seed;currentTimestamp=item.savedAt?new Date(item.savedAt):new Date();animateSeed(item.seed);const tsEl=document.getElementById('timestampDisplay');const ts=currentTimestamp;if(tsEl)tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});const tl=document.getElementById('traitList');if(tl)tl.innerHTML='<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">'+HOKSI18N.t('trait.savedMsg')+'</div>';const or=document.getElementById('overallRarity');if(or)or.innerHTML='';}
 function renderGallery(){const section=document.getElementById('gallerySection'),grid=document.getElementById('galleryGrid');if(!gallery.length){section.style.display='none';return;}section.style.display='block';grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-thumb" data-i="${i}"><img src="${item.dataUrl}" alt="bzrs ${item.seed}"><div style="display:flex;align-items:center;justify-content:space-between;padding:2px 6px 4px;"><span class="gallery-thumb-seed">#${item.seed}</span></div></div>`).join('');grid.querySelectorAll('.gallery-thumb').forEach(el=>{el.addEventListener('click',()=>{const item=gallery[parseInt(el.dataset.i)];if(item)loadExactIteration(item);});});}
 
-function downloadHD(){const src=document.getElementById('c');const hd=document.createElement('canvas');hd.width=src.width*12;hd.height=src.height*12;const ctx=hd.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.scale(12,12);ctx.drawImage(src,0,0);const a=document.createElement('a');a.download=`bzrs_${currentSeed}.png`;a.href=hd.toDataURL('image/png');a.click();toast(HOKSI18N.t('toast.pngPrintReady'));}
+// Se vuelve a renderizar fuera de pantalla al tamaño del pliego elegido (300 dpi):
+// no es un reescalado del lienzo de pantalla, es la misma obra a tamaño de papel.
+function downloadHD(){
+  if(!palettes.length)return;
+  toast(HOKSI18N.t('toast.rendering'));
+  setTimeout(()=>{
+    HOKS.exportPrint({
+      name:`bzrs_${currentSeed}_${FMT.format}_${FMT.sheet}`,
+      fmt:FMT.format, sheet:FMT.sheet,
+      render:(ctx,W,H)=>renderTo(ctx,W,H,currentSeed),
+    }).then(()=>toast(HOKSI18N.t('toast.pngPrintReady')))
+      .catch(()=>toast(HOKSI18N.t('toast.tooLarge')));
+  },60);
+}
 
 
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
