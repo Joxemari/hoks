@@ -98,7 +98,7 @@ const DEF = {
   ends:         "rectos",    // redondos | rectos
   tinta:        "solido",    // solido | gradiente
   juntaSolape:  0.05,        // alargue en las juntas internas, × anchura
-  punzonLargo:  3.2,         // longitud del punzón en cada cruce, × anchura
+  punzonExtra:  0.35,        // recorrido extra del punzón más allá del cruce, × anchura         // longitud del punzón en cada cruce, × anchura
   miterLimit:   2.2,         // por encima, el pico del halo raja la hebra vecina
 
   dots:         "bajo",      // no | bajo | encima
@@ -627,8 +627,10 @@ function buildKnot(points) {
 
   // Para el dibujo hace falta, por cada cruce, DÓNDE está y qué hebra
   // pasa por encima; el rango de su pieza da el orden de punzado.
-  // Lo único que hace falta para dibujar: por cada cruce, en qué punto
-  // del recorrido pasa la hebra de ABAJO. Ahí se interrumpe la cinta.
+  // Por cada cruce: dónde pasa la hebra de ARRIBA (ahí se punza) y el
+  // rango de su pieza, que da el orden en que se punza.
+  const rango = {};
+  order.forEach((p, i) => { rango[p] = i; });
   const cruces = [];
   const vistos = {};
   for (const v of visits) {
@@ -636,8 +638,9 @@ function buildKnot(points) {
     const otro = vistos[v.k];
     const abajo = v.over ? otro : v;
     const arriba = v.over ? v : otro;
-    cruces.push({ abajo: abajo.s, arriba: arriba.s });
+    cruces.push({ arriba: arriba.s, abajo: abajo.s, rango: rango[arriba.pieza] || 0 });
   }
+  cruces.sort((a, b) => a.rango - b.rango);
 
   return { cuts, order, depth, cruces, crossings: X.length };
 }
@@ -714,54 +717,28 @@ function renderComposition(ctx, ox, oy, S, comp) {
   if (cfg.dots === "bajo") drawDots(ctx, mapped, width, comp, ox, oy, S);
 
   // ============================================================
-  // LA CINTA SE INTERRUMPE DONDE PASA POR DEBAJO
-  // No hay halo, ni piezas, ni orden de pintado. Donde una hebra pasa
-  // por debajo de otra, sencillamente NO SE DIBUJA: el hueco ES la
-  // separación. Así desaparecen de golpe todos los defectos que venían
-  // de coser piezas — costuras, cuñas en los codos, cortes a medias,
-  // vértices y remates sin junta — porque ya no hay ninguna junta.
-  // Es como se dibuja un nudo celta.
+  // UN SOLO TRAZO, Y LOS CRUCES PUNZADOS ENCIMA
+  // La cinta se dibuja ENTERA y continua: así se lee como un trazo, y
+  // sus esquinas y sus dos remates salen bien porque nunca se rompió.
+  // Trocearla obligaba a coser piezas (costuras, cuñas, cortes a
+  // medias); vaciarla donde pasa por debajo la dejaba en trozos
+  // sueltos. Ni una cosa ni la otra: se traza entera, y donde una
+  // hebra pasa por encima se PUNZA un tramo corto sobre ella.
   // ============================================================
   const acum = arcosDe(mapped);
-  const largoTotal = acum[acum.length - 1];
+  strokePath(ctx, mapped, width, tinta, cfg);
 
-  // Cada cruce abre un hueco en la hebra de abajo, del ancho de la de
-  // arriba MEDIDO A LO LARGO de la de abajo: en un cruce oblicuo el
-  // hueco es más largo. Más la junta a cada lado.
-  const huecos = [];
+  // El punzón: primero la junta, luego el cuerpo. El cuerpo se alarga
+  // más que la junta para tapar sus dos puntas, que si no cortan la
+  // banda por su cuenta. Se punza en el orden que impone el nudo, de
+  // más abajo a más arriba.
   for (const cruce of comp.cruces) {
-    const c = arcoDeParam(mapped, acum, cruce.abajo);
-    const sen = max(0.28, abs(sin(anguloCruce(mapped, cruce.abajo, cruce.arriba))));
-    const medio = (width / 2 + gap) / sen;
-    huecos.push([c - medio, c + medio]);
+    const c = arcoDeParam(mapped, acum, cruce.arriba);
+    const sen = max(0.30, abs(sin(anguloCruce(mapped, cruce.arriba, cruce.abajo))));
+    const largo = (width / 2 + gap) / sen + width * cfg.punzonExtra;
+    if (gap > 0) trazarTramo(ctx, mapped, acum, c - largo, c + largo, width + gap * 2, col.bg, cfg, "round");
+    trazarTramo(ctx, mapped, acum, c - largo - gap * 2, c + largo + gap * 2, width, tinta, cfg);
   }
-  huecos.sort((a, b) => a[0] - b[0]);
-
-  // huecos que se solapan se funden en uno
-  const fundidos = [];
-  for (const h of huecos) {
-    const ult = fundidos[fundidos.length - 1];
-    if (ult && h[0] <= ult[1]) ult[1] = max(ult[1], h[1]);
-    else fundidos.push(h.slice());
-  }
-
-  // Lo que queda entre hueco y hueco es cinta visible.
-  const tramos = [];
-  let desde = 0;
-  for (const [a, b] of fundidos) {
-    if (a > desde) tramos.push([desde, min(a, largoTotal)]);
-    desde = max(desde, b);
-  }
-  if (desde < largoTotal) tramos.push([desde, largoTotal]);
-
-  // El halo no está sólo para los cruces: sin él, dos hebras que corren
-  // paralelas SIN cruzarse se funden en una mancha. Ahora que los
-  // cruces son huecos de verdad y no pintura, se pueden pintar todos
-  // los halos primero y todos los cuerpos después: ningún halo puede
-  // borrar una separación, porque las separaciones ya no se pintan.
-  if (gap > 0)
-    for (const [a, b] of tramos) trazarTramo(ctx, mapped, acum, a, b, width + gap * 2, col.bg, cfg, "round");
-  for (const [a, b] of tramos) trazarTramo(ctx, mapped, acum, a, b, width, tinta, cfg);
 
 
   if (cfg.ends === "redondos") {
