@@ -26,10 +26,11 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   reducida) para las celdas demo.
 - **Páginas de obra** (una por serie): `pills.html` (PLLS), `krrtk.html`,
   `dtk.html`, `bzrs.html`, `krrtkg.html`, `dtkg.html`, `pllsg.html`. Cada una es
-  autónoma: canvas 2D + RNG sembrado + selector/peso de paletas + sistema de
-  *traits* y rareza en la barra lateral. Click en el canvas = nueva variación.
-  Botones: Generate, Copy Card, Save, Download PNG. "Save" sube la imagen
-  (dataURL) al JSON de la familia vía API de GitHub (requiere sesión admin).
+  autónoma: canvas 2D + RNG sembrado + selector/peso de paletas + selector de
+  **formato/pliego** + sistema de *traits* y rareza en la barra lateral. Click en
+  el canvas = nueva variación. Botones: Generate, Copy Card, Save, Download PNG.
+  "Save" sube la imagen (dataURL) al JSON de la familia vía API de GitHub
+  (requiere sesión admin).
 - **`about.html`** — Texto leído de `data/site.json` (con *fallback* embebido).
 - **`palettes.html`** — Galería de paletas desde `data/palettes.json`; muestra
   activas/inactivas y su rareza/probabilidad.
@@ -89,6 +90,15 @@ redeploy de Pages.
   por soft-light (`bakeGrain`/`applyGrain`). Es la dirección actual del trabajo.
 - **Traits/rareza**: cada draw calcula traits (paleta, arquetipo, cobertura…) y
   una rareza global (`common`→`legendary`) por probabilidad combinada.
+- **Formato**: toda obra existe en tres proporciones — **cuadrado** (1:1),
+  **vertical** y **horizontal** (1:√2, la proporción DIN). No es un recorte: se
+  le pasan otras `W`/`H` al algoritmo y él recompone. El algoritmo no puede
+  suponer ni proporción ni resolución — todo se mide contra `W`, `H` o
+  `min(W,H)`, y las constantes en px se escalan por `HOKS.unit(W,H,REF)`.
+- **Impresión**: "Download PNG" **vuelve a renderizar** fuera de pantalla al
+  tamaño del pliego (A4 / **A3** / A2 / A1, 300 dpi); el lienzo de la página es
+  solo vista previa (lado corto 760 px). Mismo seed + mismo formato = la misma
+  imagen a cualquier tamaño, así que lo que se ve es lo que se imprime.
 
 ## Despliegue
 

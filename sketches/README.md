@@ -54,6 +54,34 @@ motor es la única excepción), sin DOM, sin p5. `opts.params` lleva los overrid
 del laboratorio (grain, threshold…); producción no los pasa, así que los
 defaults **son** el comportamiento publicado.
 
+Y una regla más, que es la que hace posibles los formatos y la impresión:
+**el algoritmo no da por hecho ni la proporción ni la resolución.** Toda medida
+sale de `W`, `H` o `min(W,H)`; las pocas constantes en píxeles se escalan por
+`E.unit(W, H, REF)`, donde `REF` es el lado corto de referencia de la obra. Con
+eso, la misma seed da la misma composición en cuadrado, vertical y horizontal, y
+la de pantalla es exactamente la que sale a 300 dpi sobre un A1 — no un
+reescalado, el mismo dibujo hecho más grande.
+
+## Formatos y tamaño de impresión
+
+El motor da la parte común (`HOKS.fmtDims`, `previewDims`, `printDims`,
+`mountFormat`, `exportPrint`):
+
+| formato      | proporción | en papel                                  |
+|--------------|-----------|-------------------------------------------|
+| `square`     | 1:1       | lado corto del pliego (A3 → 297×297 mm)   |
+| `vertical`   | 1:√2      | el pliego entero, de pie                  |
+| `horizontal` | √2:1      | el pliego entero, tumbado                 |
+
+Pliegos: A4, A3 (por defecto), A2, A1, siempre a 300 dpi. Un A3 horizontal son
+4961×3508 px; un A1 vertical, 7016×9933. El PNG de impresión **se vuelve a
+renderizar** fuera de pantalla a ese tamaño; el lienzo de la página es solo la
+vista previa (lado corto 760 px, que es también lo que se guarda en la galería).
+
+En el harness, el desplegable *Format* cambia la proporción de la vista única y
+de la hoja de contactos: mirar 12 seeds en vertical es la manera de saber si la
+obra aguanta ese formato antes de imprimirla.
+
 ## Usar el harness (paso 3)
 
 Con servidor local (para que el `fetch` de paletas no choque con `file://`):
@@ -77,7 +105,10 @@ Los sliders son de exploración: producción usa siempre los defaults.
 
 1. Copiar `_template/` a `sketches/<obra>/`; renombrar `HOKS.TEMPLATE` →
    `HOKS.<OBRA>` y portar el `draw` de p5 a canvas 2D dentro de `render()`.
-2. En el harness: `const WORK = HOKS.<OBRA>;` y la resolución de producción.
+   Al portar, cambiar todo lo que dependa del ancho por `min(W,H)` y todo px
+   absoluto por `px * E.unit(W, H, REF)`.
+2. En el harness: `const WORK = HOKS.<OBRA>;`, el `BASE` (lado corto) y el
+   `FORMAT` de partida de la obra.
 3. Verificar: `node --check`, y si reemplaza un motor existente, prueba de
    equivalencia (log de operaciones de canvas idéntico para N seeds).
 4. En la página de producción: cargar `_engine.js` + `algo.js` y delegar

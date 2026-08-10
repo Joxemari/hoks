@@ -123,6 +123,7 @@ canvas { display: block; height: min(72vh, 580px); width: auto; max-width: calc(
       <button class="btn btn-outline" id="batchBtn" onclick="saveToBatch()" style="display:none">+ <span>Save to Batch</span></button>
       <button class="btn btn-outline" onclick="downloadHD()">↓ <span data-i18n="btn.download">Download PNG</span></button>
     </div>
+    <div class="sidebar-section" id="formatMount"></div>
     <div class="sidebar-section" id="paletteSelectorSection" style="display:none">
       <div class="sidebar-label" data-i18n="label.palette">Palette</div>
 
@@ -170,7 +171,7 @@ canvas { display: block; height: min(72vh, 580px); width: auto; max-width: calc(
   </aside>
   <main>
     <div class="canvas-area">
-      <canvas id="c" width="1414" height="1000"></canvas>
+      <canvas id="c" width="1075" height="760"></canvas>
       <div class="canvas-hint" data-i18n="hint.canvas">Click canvas to generate new variation</div>
     </div>
     <div class="gallery-section" id="gallerySection" style="display:none">
@@ -327,17 +328,36 @@ function updatePalPreviewBar() {
   prev.innerHTML = palettes[_lockedPalIdx].colors.map(c => `<span style="flex:1;background:${c}"></span>`).join('');
 }
 
+// ── FORMATO ───────────────────────────────────────────
+// Cuadrado · vertical · horizontal (1:√2, la proporción DIN). El algoritmo
+// trabaja sobre W y H, así que la misma seed en el mismo formato da la misma
+// imagen a cualquier resolución: lo que se ve en pantalla es lo que se imprime.
+var FMT=null;
+function renderTo(ctx,W,H,seed){
+  // Fuente única: el algoritmo vive en sketches/pllsg/algo.js (el mismo que el laboratorio).
+  return HOKS.PLLSG.render(ctx,W,H,seed,{
+    palettes, locked:_paletteLocked, lockedIdx:_lockedPalIdx,
+    params:{ grainScale:GRAIN_SCALE }
+  });
+}
+function applyFormat(){
+  const c=document.getElementById('c'),d=FMT?FMT.preview():HOKS.previewDims('horizontal');
+  if(c.width!==d.W||c.height!==d.H){c.width=d.W;c.height=d.H;}
+}
+FMT=HOKS.mountFormat(document.getElementById('formatMount'),{
+  work:'pllsg', defaultFormat:'horizontal',
+  onChange(){ applyFormat(); draw(currentSeed); }
+});
+applyFormat();
+
 // ── DRAW ──────────────────────────────────────────────
 var _generating = false;
 function draw(seed) {
   if(!palettes.length||_generating)return;
   _generating=true;
   const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
-  // Fuente única: el algoritmo vive en sketches/pllsg/algo.js (el mismo que el laboratorio).
-  const res=HOKS.PLLSG.render(ctx,canvas.width,canvas.height,seed,{
-    palettes, locked:_paletteLocked, lockedIdx:_lockedPalIdx,
-    params:{ grainScale:GRAIN_SCALE }
-  });
+  applyFormat();
+  const res=renderTo(ctx,canvas.width,canvas.height,seed);
   _generating=false;
 
 // ── TRAITS ────────────────────────────────────────
@@ -365,14 +385,23 @@ function generate(){currentSeed=(Math.random()*0xFFFFFFFF)>>>0;currentTimestamp=
 function loadGallery(){fetch(RAW+'pllsg.json?t='+Date.now()).then(r=>r.ok?r.json():[]).then(data=>{gallery=data;renderGallery();}).catch(()=>{gallery=[];renderGallery();});}
 async function saveGallery(){await ghPush('data/pllsg.json',gallery);}
 async function saveToGallery(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/png');gallery.unshift({seed:currentSeed,dataUrl,savedAt:Date.now()});if(gallery.length>50)gallery=gallery.slice(0,50);toast(HOKSI18N.en('toast.saving'));await saveGallery();renderGallery();toast(HOKSI18N.en('toast.savedGallery'));}
-function loadExactIteration(item){const canvas=document.getElementById('c');const img=new Image();img.onload=()=>{const ctx=canvas.getContext('2d');ctx.globalCompositeOperation='source-over';ctx.drawImage(img,0,0,canvas.width,canvas.height);};img.src=item.dataUrl;currentSeed=item.seed;currentTimestamp=item.savedAt?new Date(item.savedAt):new Date();animateSeed(item.seed);const tsEl=document.getElementById('timestampDisplay');const ts=currentTimestamp;if(tsEl)tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});const tl=document.getElementById('traitList');if(tl)tl.innerHTML='<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">'+HOKSI18N.t('trait.savedMsg')+'</div>';const or=document.getElementById('overallRarity');if(or)or.innerHTML='';}
+function loadExactIteration(item){const canvas=document.getElementById('c');const img=new Image();img.onload=()=>{canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const ctx=canvas.getContext('2d');ctx.globalCompositeOperation='source-over';ctx.drawImage(img,0,0,canvas.width,canvas.height);};img.src=item.dataUrl;currentSeed=item.seed;currentTimestamp=item.savedAt?new Date(item.savedAt):new Date();animateSeed(item.seed);const tsEl=document.getElementById('timestampDisplay');const ts=currentTimestamp;if(tsEl)tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});const tl=document.getElementById('traitList');if(tl)tl.innerHTML='<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">'+HOKSI18N.t('trait.savedMsg')+'</div>';const or=document.getElementById('overallRarity');if(or)or.innerHTML='';}
 function renderGallery(){const section=document.getElementById('gallerySection'),grid=document.getElementById('galleryGrid');if(!gallery.length){section.style.display='none';return;}section.style.display='block';grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-thumb" data-i="${i}"><img src="${item.dataUrl}" alt="pllsg ${item.seed}"><div style="display:flex;align-items:center;justify-content:space-between;padding:2px 6px 4px;"><span class="gallery-thumb-seed">#${item.seed}</span></div></div>`).join('');grid.querySelectorAll('.gallery-thumb').forEach(el=>{el.addEventListener('click',()=>{const item=gallery[parseInt(el.dataset.i)];if(item)loadExactIteration(item);});});}
 
 // ── EXPORT ────────────────────────────────────────────
+// Se vuelve a renderizar fuera de pantalla al tamaño del pliego elegido (300 dpi):
+// no es un reescalado del lienzo de pantalla, es la misma obra a tamaño de papel.
 function downloadHD(){
-  const src=document.getElementById('c'),a=document.createElement('a');
-  a.download=`pllsg_${currentSeed}.png`;a.href=src.toDataURL('image/png');a.click();
-  toast(HOKSI18N.t('toast.pngDownloaded'));
+  if(!palettes.length)return;
+  toast(HOKSI18N.t('toast.rendering'));
+  setTimeout(()=>{
+    HOKS.exportPrint({
+      name:`pllsg_${currentSeed}_${FMT.format}_${FMT.sheet}`,
+      fmt:FMT.format, sheet:FMT.sheet,
+      render:(ctx,W,H)=>renderTo(ctx,W,H,currentSeed),
+    }).then(()=>toast(HOKSI18N.t('toast.pngPrintReady')))
+      .catch(()=>toast(HOKSI18N.t('toast.tooLarge')));
+  },60);
 }
 
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
