@@ -76,6 +76,9 @@ const DEF = {
   // aunque la familia tenga otra escala interna.
   widthOfSeg:   0.64,
   widthMin:     0.022,
+  cruceMinDeg:  40,          // ángulo mínimo de cruce: por debajo, la hebra de abajo queda en astilla
+  reintentos:   6,           // tejidos alternativos que se prueban con el mismo seed
+  densidad:     true,        // entre los que pasan, quedarse con el más entrelazado
   grosorMinimo: 0.78,    // fracción del grosor pedido que un intento debe conservar
   widthMax:     0.098,
 
@@ -99,7 +102,7 @@ const DEF = {
   tinta:        "solido",    // solido | gradiente
   juntaSolape:  0.05,        // alargue en las juntas internas, × anchura
   punzonExtra:  0.35,        // recorrido extra del punzón más allá del cruce, × anchura         // longitud del punzón en cada cruce, × anchura
-  miterLimit:   2.2,         // por encima, el pico del halo raja la hebra vecina
+  miterLimit:   1.0,         // el pico de inglete es tinta FUERA de la banda: no existe         // por encima, el pico del halo raja la hebra vecina
 
   dots:         "bajo",      // no | bajo | encima
   dotsMin:      3,
@@ -162,14 +165,32 @@ function generate(seed, cfg) {
   // OJO: no vale con comprobar que la junta quepa. Adelgazando la cinta
   // la condición se cumple sola y la obra se convierte en un alambre.
   // Un intento se acepta si la cinta CONSERVA el grosor que pedía.
-  let intento = null, vueltas = pedidas, mejor = -1;
-  for (let v = pedidas; v >= cfg.vueltasMin; v--) {
-    randomSeed(seed ^ 0xA17E);
-    noiseSeed(seed);
-    const t = tejer(family, v, cfg);
-    const conserva = t.conserva;
-    if (conserva > mejor) { mejor = conserva; intento = t; vueltas = v; }
-    if (conserva >= cfg.grosorMinimo) break;
+  // El mismo seed admite varios tejidos: se cambian los dados y se vuelve a
+  // tejer. Un cruce demasiado rasante NO se repara en sitio —probado: pelea
+  // con la auto-evitación y gana el último que se aplique, rompiendo o la
+  // holgura o el ángulo— sino que se descarta ese tejido y se prueba otro.
+  let intento = null, vueltas = pedidas;
+  const puntua = (t) => t.conserva >= cfg.grosorMinimo && t.ang.grados >= cfg.cruceMinDeg;
+
+  for (let k = 0; k <= cfg.reintentos; k++) {
+    for (let v = pedidas; v >= cfg.vueltasMin; v--) {
+      randomSeed(seed ^ 0xA17E ^ (k * 0x9E3779B1));
+      noiseSeed(seed ^ (k * 7));
+      const t = tejer(family, v, cfg);
+      t.ang = minAnguloCruce(t.nodes);
+
+      if (!intento) { intento = t; vueltas = v; continue; }
+      const pasa = puntua(t), pasaba = puntua(intento);
+      let gana;
+      if (pasa !== pasaba) gana = pasa;
+      // entre dos que pasan: el más entrelazado, si se quiere conservar trama
+      else if (pasa) gana = cfg.densidad && t.ang.cruces > intento.ang.cruces;
+      // entre dos que fallan: manda el ángulo, y SÓLO el ángulo — desempatar
+      // por trama aquí elige justo el tejido con más cruces rasantes
+      else gana = t.ang.grados > intento.ang.grados;
+      if (gana) { intento = t; vueltas = v; }
+    }
+    if (!cfg.densidad && puntua(intento)) break;
   }
 
   const { nodes, width } = intento;
@@ -518,6 +539,26 @@ function sacarExtremos(nodes, width, cfg) {
   return nodes;
 }
 
+// Ángulo del cruce más rasante del tejido. Un cruce muy oblicuo deja una
+// cola de solape larguísima y reduce la hebra de abajo a una astilla: la
+// incisión es legítima pero deja de leerse como cruce.
+function minAnguloCruce(nodes) {
+  let peor = 180, n = 0;
+  for (let i = 0; i < nodes.length - 1; i++) {
+    for (let j = i + 2; j < nodes.length - 1; j++) {
+      const a = nodes[i].p, b = nodes[i+1].p, c = nodes[j].p, d = nodes[j+1].p;
+      if (!segIntersect(a, b, c, d)) continue;
+      n++;
+      const u = p5.Vector.sub(b, a), v = p5.Vector.sub(d, c);
+      if (!u.magSq() || !v.magSq()) continue;
+      let g = degrees(abs(u.angleBetween(v)));
+      if (g > 90) g = 180 - g;
+      peor = min(peor, g);
+    }
+  }
+  return { grados: n ? peor : 180, cruces: n };
+}
+
 // Distancia mínima real entre hebras que NO se cruzan. Los cruces se
 // excluyen: ahí el solape es la obra, no el defecto.
 function holguraReal(nodes) {
@@ -638,9 +679,8 @@ function buildKnot(points) {
     const otro = vistos[v.k];
     const abajo = v.over ? otro : v;
     const arriba = v.over ? v : otro;
-    cruces.push({ arriba: arriba.s, abajo: abajo.s, rango: rango[arriba.pieza] || 0 });
+    cruces.push({ arriba: arriba.s, abajo: abajo.s });
   }
-  cruces.sort((a, b) => a.rango - b.rango);
 
   return { cuts, order, depth, cruces, crossings: X.length };
 }
@@ -717,34 +757,71 @@ function renderComposition(ctx, ox, oy, S, comp) {
   if (cfg.dots === "bajo") drawDots(ctx, mapped, width, comp, ox, oy, S);
 
   // ============================================================
-  // UN SOLO TRAZO, Y LOS CRUCES PUNZADOS ENCIMA
-  // La cinta se dibuja ENTERA y continua: así se lee como un trazo, y
-  // sus esquinas y sus dos remates salen bien porque nunca se rompió.
-  // Trocearla obligaba a coser piezas (costuras, cuñas, cortes a
-  // medias); vaciarla donde pasa por debajo la dejaba en trozos
-  // sueltos. Ni una cosa ni la otra: se traza entera, y donde una
-  // hebra pasa por encima se PUNZA un tramo corto sobre ella.
+  // SECCIONES QUE TERMINAN DEBAJO DE OTRA HEBRA
+  // La cinta se parte EXACTAMENTE en los cruces donde pasa por debajo.
+  // Cada sección se dibuja entera dos veces —junta y cuerpo, a lo largo
+  // de TODA su longitud— y sus dos remates quedan tapados por la hebra
+  // que le pasa por encima. Por eso la junta es continua y no se ve
+  // ninguna costura: no hay ningún corte a la vista.
+  //
+  // Los dos intentos anteriores fallaban por dónde se cortaba. Cortando
+  // en mitad de un tramo recto, las juntas quedaban al aire. Vaciando la
+  // cinta bajo el cruce, quedaban secciones sueltas. El corte va en el
+  // cruce mismo.
   // ============================================================
   const acum = arcosDe(mapped);
-  strokePath(ctx, mapped, width, tinta, cfg);
+  const total = acum[acum.length - 1];
 
-  // El punzón: primero la junta, luego el cuerpo. El cuerpo se alarga
-  // más que la junta para tapar sus dos puntas, que si no cortan la
-  // banda por su cuenta. Se punza en el orden que impone el nudo, de
-  // más abajo a más arriba.
-  for (const cruce of comp.cruces) {
-    const c = arcoDeParam(mapped, acum, cruce.arriba);
-    const sen = max(0.30, abs(sin(anguloCruce(mapped, cruce.arriba, cruce.abajo))));
-    const largo = (width / 2 + gap) / sen + width * cfg.punzonExtra;
-    if (gap > 0) trazarTramo(ctx, mapped, acum, c - largo, c + largo, width + gap * 2, col.bg, cfg, "round");
-    trazarTramo(ctx, mapped, acum, c - largo - gap * 2, c + largo + gap * 2, width, tinta, cfg);
+  const cortes = comp.cruces.map(c => arcoDeParam(mapped, acum, c.abajo))
+                            .filter(d => d > 1e-6 && d < total - 1e-6)
+                            .sort((a, b) => a - b);
+
+  const secciones = [];
+  let desde = 0;
+  for (const d of cortes) { if (d > desde) secciones.push([desde, d]); desde = d; }
+  secciones.push([desde, total]);
+
+  // Orden: una sección que termina bajo un cruce debe pintarse ANTES que
+  // la sección que pasa por encima de ese cruce.
+  const cual = (d) => {
+    for (let i = 0; i < secciones.length; i++)
+      if (d >= secciones[i][0] - 1e-6 && d <= secciones[i][1] + 1e-6) return i;
+    return 0;
+  };
+  const luego = secciones.map(() => []);
+  const grado = secciones.map(() => 0);
+  for (const c of comp.cruces) {
+    const arriba = cual(arcoDeParam(mapped, acum, c.arriba));
+    const abajoD = arcoDeParam(mapped, acum, c.abajo);
+    for (const i of [cual(abajoD - 1e-4), cual(abajoD + 1e-4)]) {
+      if (i !== arriba && !luego[i].includes(arriba)) { luego[i].push(arriba); grado[arriba]++; }
+    }
+  }
+  const orden = [], cola = [];
+  secciones.forEach((_, i) => { if (grado[i] === 0) cola.push(i); });
+  while (cola.length) {
+    const i = cola.shift(); orden.push(i);
+    for (const j of luego[i]) if (--grado[j] === 0) cola.push(j);
+  }
+  // un nudo puede contradecirse (A sobre B, B sobre C, C sobre A): lo que
+  // quede del ciclo va al final y algún cruce cede
+  secciones.forEach((_, i) => { if (!orden.includes(i)) orden.push(i); });
+
+  // Cada sección se alarga un pelo por sus dos remates para que el cabo
+  // quede bien dentro de la hebra que lo tapa, nunca justo en su borde.
+  const dentro = gap * 1.5;
+  for (const i of orden) {
+    const [a, b] = secciones[i];
+    const ini = max(0, a > 0 ? a - dentro : a);
+    const fin = min(total, b < total ? b + dentro : b);
+    if (gap > 0) trazarTramo(ctx, mapped, acum, ini, fin, width + gap * 2, col.bg, cfg, "round");
+    trazarTramo(ctx, mapped, acum, ini, fin, width, tinta, cfg);
   }
 
 
   if (cfg.ends === "redondos") {
-    const first = polys[0], last = polys[polys.length - 1];
     ctx.fillStyle = tinta;
-    for (const c of [first[0], last[last.length - 1]]) {
+    for (const c of [mapped[0], mapped[mapped.length - 1]]) {
       ctx.beginPath(); ctx.arc(c.x, c.y, width / 2, 0, TWO_PI); ctx.fill();
     }
   }
