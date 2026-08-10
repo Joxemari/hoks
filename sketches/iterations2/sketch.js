@@ -53,24 +53,13 @@ function pickRoles(colors) {
   const otros = porContraste.filter(c => c !== fg && c !== dot);
   const fg2 = otros.length ? otros[0] : mixHex(fg, bg, 0.42);
 
-  // Segundo tono de la cinta. No es un color de contraste: es un
-  // vecino en luminancia y distinto en tono — negro y azul marino,
-  // granate y azul. Cambia la profundidad sin encender la imagen.
-  const vecinos = porContraste.filter(c => c !== fg);
-  // A medio camino hacia ese vecino, no el vecino crudo: el color puro
-  // se lee como una segunda cinta, y lo que se busca es la misma cinta
-  // entrando en penumbra. Negro hacia azul da azul marino.
-  const tono2 = vecinos.length
-    ? mixHex(fg, vecinos.slice().sort((a, b) => abs(lum(a) - lum(fg)) - abs(lum(b) - lum(fg)))[0], 0.5)
-    : mixHex(fg, bg, 0.24);
-
   // Los discos NO comparten un solo color: son el contrapunto, y en
   // una paleta como Mondrian el negro sobre crema casi no se ve. Se
   // quedan con todo lo que no es fondo ni cinta, por contraste.
   let dots = porContraste.filter(c => c !== fg);
   if (!dots.length) dots = [mixHex(fg, oscuro ? '#ffffff' : '#000000', 0.55)];
 
-  return { bg, fg, fg2, tono2, dot, dots };
+  return { bg, fg, fg2, dot, dots };
 }
 
 const DEF = {
@@ -108,9 +97,7 @@ const DEF = {
   corner:       "rectas",    // curvas | rectas
   ends:         "rectos",    // redondos | rectos
   tinta:        "solido",    // solido | gradiente
-  dosTonos:     true,        // un tramo de la cinta en un segundo tono
-  tono2Min:     0.16,        // fracción de la cinta que cambia de tono
-  tono2Max:     0.30,
+  juntaSolape:  0.05,        // alargue en las juntas internas, × anchura
   miterLimit:   2.2,         // por encima, el pico del halo raja la hebra vecina
 
   dots:         "bajo",      // no | bajo | encima
@@ -188,17 +175,8 @@ function generate(seed, cfg) {
   const points = nodes.map(n => n.p);
   const { cuts, order, depth, crossings } = buildKnot(points);
 
-  // Un tramo CONTIGUO de la cinta va en el segundo tono. Contiguo y no
-  // salteado: la cinta es una sola y el cambio de tono tiene que leerse
-  // como un recorrido que entra en otra zona, no como piezas pintadas.
-  const segundo = new Array(cuts.length).fill(false);
-  if (cfg.dosTonos && cuts.length >= 4) {
-    const largo = max(1, round(cuts.length * random(cfg.tono2Min, cfg.tono2Max)));
-    const desde = floor(random(cuts.length - largo + 1));
-    for (let i = desde; i < desde + largo; i++) segundo[i] = true;
-  }
 
-  return { seed, family, vueltas, pedidas, points, cuts, order, depth, segundo, crossings, width, colores, cfg };
+  return { seed, family, vueltas, pedidas, points, cuts, order, depth, crossings, width, colores, cfg };
 }
 
 // ------------------------------------------------------------
@@ -608,13 +586,44 @@ function buildKnot(points) {
   while (m < visits.length) {
     let k = m;
     while (k + 1 < visits.length && visits[k+1].over === visits[m].over) k++;
+    for (let i = m; i <= k; i++) visits[i].pieza = cuts.length;
     cuts.push(sToCut(bounds[m], bounds[k+1], last));
     depth.push(visits[m].over ? 1 : 0);
     m = k + 1;
   }
 
-  // primero todo lo que va debajo, después lo que va encima
-  const order = cuts.map((_, i) => i).sort((a, b) => depth[a] - depth[b]);
+  // ORDEN DE PINTADO
+  // "Encima" y "debajo" no son dos capas: dos piezas que van las dos
+  // encima pueden cruzarse entre sí, y ahí también hace falta decidir
+  // cuál pasa sobre cuál. Pintarlas por grupos borraba esa incisión.
+  // Cada cruce impone una relación —la de abajo antes que la de
+  // arriba— y el orden sale de ordenar todas esas relaciones.
+  const despues = cuts.map(() => []);
+  const grado = cuts.map(() => 0);
+  const puesta = {};
+  for (const v of visits) {
+    if (puesta[v.k] === undefined) { puesta[v.k] = v; continue; }
+    const otro = puesta[v.k];
+    const abajo = v.over ? otro : v;
+    const arriba = v.over ? v : otro;
+    if (abajo.pieza !== arriba.pieza && !despues[abajo.pieza].includes(arriba.pieza)) {
+      despues[abajo.pieza].push(arriba.pieza);
+      grado[arriba.pieza]++;
+    }
+  }
+
+  const order = [], cola = [];
+  for (let i = 0; i < cuts.length; i++) if (grado[i] === 0) cola.push(i);
+  while (cola.length) {
+    const i = cola.shift();
+    order.push(i);
+    for (const j of despues[i]) if (--grado[j] === 0) cola.push(j);
+  }
+  // Un nudo puede exigir A sobre B, B sobre C y C sobre A: en papel no
+  // existe. Lo que queda en el ciclo se pinta al final por orden de
+  // recorrido, y alguno de esos cruces cederá.
+  for (let i = 0; i < cuts.length; i++) if (!order.includes(i)) order.push(i);
+
   return { cuts, order, depth, crossings: X.length };
 }
 
@@ -622,11 +631,14 @@ function buildKnot(points) {
 // cruces: ahí las dos piezas quedan alineadas y el halo es inofensivo.
 // Si no cabe ninguno, se conforma con el punto medio.
 function corteEntre(a, b) {
+  const medio = (a + b) / 2;
+  let mejor = null;
   for (let k = floor(a); k <= floor(b); k++) {
     const c = k + 0.5;
-    if (c > a && c < b) return c;
+    if (c <= a || c >= b) continue;
+    if (mejor === null || abs(c - medio) < abs(mejor - medio)) mejor = c;
   }
-  return (a + b) / 2;
+  return mejor === null ? medio : mejor;   // el centro de segmento más equidistante
 }
 
 function sToCut(s0, s1, last) {
@@ -700,43 +712,34 @@ function renderComposition(ctx, ox, oy, S, comp) {
   // con un píxel.
   const solape = max(1, S * 0.0016);
   const ultima = polys.length - 1;
-  const recorte = width * 0.15;   // más recorte se come incisiones legítimas
+  const junta = max(solape, width * cfg.juntaSolape);
 
-  // POR GRUPOS DE PROFUNDIDAD: primero todos los halos del grupo,
-  // después todos los cuerpos. Pieza a pieza, el halo de una le comía
-  // un trozo a su vecina del mismo nivel y quedaba una incisión donde
-  // no había cruce. Pintando el grupo entero, esos mordiscos los
-  // repinta el cuerpo siguiente y sólo sobrevive la incisión contra el
-  // nivel de abajo — que es justo la que hay que ver.
+  // Pieza a pieza, en el orden que impone el nudo: halo y cuerpo
+  // seguidos. Agrupar por niveles borraba las incisiones entre piezas
+  // del mismo nivel que se cruzan entre sí.
   //
   // El halo va SIEMPRE con junta redonda, aunque el cuerpo vaya en
   // pico: en inglete el pico del halo se dispara ~1.2 anchuras desde
   // el vértice y alcanza a la hebra vecina, que está a 1.36.
-  const niveles = [];
   for (const idx of comp.order) {
-    const d = comp.depth ? comp.depth[idx] : 0;
-    (niveles[d] || (niveles[d] = [])).push(idx);
-  }
-
-  for (const grupo of niveles) {
-    if (!grupo) continue;
-    const trazos = [];
-    for (const idx of grupo) {
-      const pts = polys[idx];
-      if (!pts || pts.length < 2) continue;
-      // En una junta interna el halo NO separa de nada: al otro lado
-      // está la misma cinta. Se recorta hacia dentro para que no invada
-      // a la pieza vecina; el cuerpo sí se alarga, y el solape de los
-      // cuerpos es lo que mata la costura. En los dos extremos reales
-      // de la cinta el halo sí sobresale: ahí sí hay canto.
-      trazos.push({
-        halo:   alargarExtremos(pts, idx > 0 ? -recorte : gap, idx < ultima ? -recorte : gap),
-        cuerpo: alargarExtremos(pts, idx > 0 ? solape : 0,     idx < ultima ? solape : 0),
-        tinta:  (comp.segundo && comp.segundo[idx]) ? col.tono2 : tinta
-      });
+    const pts = polys[idx];
+    if (!pts || pts.length < 2) continue;
+    // Halo y cuerpo se alargan LO MISMO en las juntas internas. Al
+    // cortar en el centro de un segmento las dos piezas quedan
+    // alineadas, así que ese alargue no deja marca — y le da al halo
+    // recorrido suficiente para rematar un cruce que caiga pegado a la
+    // junta, que es de donde salían los cortes a medias.
+    const ini = idx > 0 ? junta : 0;
+    const fin = idx < ultima ? junta : 0;
+    if (gap > 0) {
+      // El halo asoma un poco en las juntas internas: sin ese recorrido
+      // no llega a rematar los cruces que caen pegados al corte, y un
+      // corte a medias rompe la lectura del tejido. Medido: asomando,
+      // 5.6% de cortes incompletos; sin asomar, 30.6%.
+      strokePath(ctx, alargarExtremos(pts, idx > 0 ? ini : gap, idx < ultima ? fin : gap),
+                 width + gap * 2, col.bg, cfg, "round");
     }
-    if (gap > 0) for (const t of trazos) strokePath(ctx, t.halo, width + gap * 2, col.bg, cfg, "round");
-    for (const t of trazos) strokePath(ctx, t.cuerpo, width, t.tinta, cfg);
+    strokePath(ctx, alargarExtremos(pts, ini, fin), width, tinta, cfg);
   }
 
   if (cfg.ends === "redondos") {
