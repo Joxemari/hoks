@@ -117,6 +117,7 @@ const DEF = {
   gapAbs:       0.0042,  // × lado del cuadro
   minSegRatio:  1.10,    // segmento mínimo, × anchura
   minTurnDeg:   38,
+  holguraMin:   1.45,        // holgura exigida entre hebras vecinas, × anchura
   avoidRatio:   1.36,    // separación mínima entre hebras que NO se cruzan
 
   salidaMax:    3.2,     // cuánto asoma cada extremo fuera del nudo, × anchura
@@ -330,7 +331,7 @@ function tejer(family, vueltas, cfg) {
   // devuelve por encima del tramo más corto y reaparecen los bultos.
   const deseada = width;
   const admitida = min(deseada,
-                       holguraReal(nodes) - 2 * cfg.gapAbs - 0.002,
+                       holguraReal(nodes) / cfg.holguraMin,   // canal de verdad, no un pelo
                        segPercentil(nodes, 0.15) / 1.05);
   width = constrain(admitida, cfg.widthMin, cfg.widthMax);
 
