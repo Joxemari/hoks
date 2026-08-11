@@ -21,6 +21,7 @@
   const THRESHOLD  = 0.6;   // probabilidad de NO dibujar un cuadrado (rng.next() > threshold dibuja)
   const RECT_ALPHA = 0.61;  // 155/255 — cuadrados semitransparentes sobre el gradiente
   const REF        = 600;   // lado corto de referencia (calibra el grano)
+  const MARGIN     = 0.1667;// retiro del campo respecto al lienzo (fracción del lado corto)
 
   // ── Entrada principal ───────────────────────────────────────────────────────
   // opts: { palettes, locked, lockedIdx, params:{ grainScale, threshold, rectAlpha } }
@@ -37,12 +38,40 @@
     const pal = (opts.locked && palettes[opts.lockedIdx]) ? palettes[opts.lockedIdx] : rng.weighted(palettes);
     const colors = pal.colors;
 
-    // El campo de subdivisión es CUADRADO y se centra en el lienzo: en cuadrado
-    // ocupa toda la hoja; en vertical y horizontal se inscribe en el lado corto.
-    const S = Math.min(W, H);
-    const margin = Math.round(S * 0.1667);
-    const a = S - margin * 2;
-    const ox = (W - S) / 2, oy = (H - S) / 2;
+    // El campo de subdivisión es CUADRADO — la unidad de la serie es el cuadrado,
+    // y partirlo en cuatro solo tiene sentido si lo es. Para llenar un pliego DIN
+    // no se estira: se REPITE. Un campo en cuadrado; en vertical y horizontal,
+    // una rejilla de campos, más numerosos a lo largo.
+    //
+    // El margen ha de ser el mismo en los cuatro lados, y eso fija el tamaño de
+    // la unidad: con n campos en el lado corto y n+k en el largo, de S−2m=n·p y
+    // L−2m=(n+k)·p sale p=(L−S)/k. Se toma el par (n,k) cuyo margen cae más
+    // cerca del objetivo. La serialidad se hace explícita: el mismo sistema
+    // dicho más veces, que es de lo que iba la serie.
+    const S = Math.min(W, H), L = Math.max(W, H);
+    let a, cols, rows;                        // a = lado del campo; el margen es solo exterior
+    if (L - S < 1) {                          // cuadrado: un solo campo, como siempre
+      a = S - Math.round(S * MARGIN) * 2;
+      cols = rows = 1;
+    } else {
+      // n = campos en el lado corto. Por defecto UNO: es la lectura mínima —el
+      // pliego pide un campo más, no una retícula de campos— y la que conserva
+      // la escala de la unidad. El laboratorio puede subirlo para ver la serie
+      // dicha más veces (fieldsShort).
+      const n = Math.max(1, params.fieldsShort || 1);
+      let best = null;
+      for (let k = 1; k <= 6; k++) {
+        const p = (L - S) / k, m = (S - n * p) / 2;
+        if (m < S * 0.05) continue;           // sin aire el campo se come la hoja
+        const d = Math.abs(m - S * MARGIN);
+        if (!best || d < best.d) best = { p, m, k, d };
+      }
+      a = best.p;
+      cols = W >= H ? n + best.k : n;
+      rows = W >= H ? n : n + best.k;
+    }
+    // Los campos son contiguos; el margen queda repartido igual en los 4 lados.
+    const ox = (W - cols * a) / 2, oy = (H - rows * a) / 2;
 
     // 1. Mesh gradient de fondo (stream RNG independiente, como el original).
     // Fondo: mesh gradient (lo propio de la obra) o plano si el laboratorio pide
@@ -55,25 +84,34 @@
       E.drawMeshGradient(ctx, W, H, colors, rngBg);
     }
 
-    // 2. Construir cuadrados (algoritmo KRRTK fiel, splice incluido).
-    const squares = [{ x: margin, y: margin, size: a, color: colors[rng.int(0, colors.length - 1)] }];
-    let si = 0;
-    while (si < squares.length) {
-      const sq = squares[si];
-      if (sq.size > a / 4) {
-        const ns = sq.size / 2;
-        squares.push(
-          { x: sq.x,      y: sq.y,      size: ns, color: colors[rng.int(0, colors.length - 1)] },
-          { x: sq.x + ns, y: sq.y,      size: ns, color: colors[rng.int(0, colors.length - 1)] },
-          { x: sq.x,      y: sq.y + ns, size: ns, color: colors[rng.int(0, colors.length - 1)] },
-          { x: sq.x + ns, y: sq.y + ns, size: ns, color: colors[rng.int(0, colors.length - 1)] }
-        );
-        squares.splice(squares.length - 1, 1);   // descarta el 4º hijo — firma de la serie
+    // 2. Construir cuadrados (algoritmo KRRTK fiel, splice incluido). Cada campo
+    //    de la rejilla se subdivide por su cuenta: el sistema no sabe que hay
+    //    otros, y por eso ninguno repite al de al lado.
+    const squares = [], toDraw = [];
+    for (let cy = 0; cy < rows; cy++) {
+      for (let cx = 0; cx < cols; cx++) {
+        const field = [{ x: cx * a, y: cy * a, size: a, color: colors[rng.int(0, colors.length - 1)] }];
+        let si = 0;
+        while (si < field.length) {
+          const sq = field[si];
+          if (sq.size > a / 4) {
+            const ns = sq.size / 2;
+            field.push(
+              { x: sq.x,      y: sq.y,      size: ns, color: colors[rng.int(0, colors.length - 1)] },
+              { x: sq.x + ns, y: sq.y,      size: ns, color: colors[rng.int(0, colors.length - 1)] },
+              { x: sq.x,      y: sq.y + ns, size: ns, color: colors[rng.int(0, colors.length - 1)] },
+              { x: sq.x + ns, y: sq.y + ns, size: ns, color: colors[rng.int(0, colors.length - 1)] }
+            );
+            field.splice(field.length - 1, 1);   // descarta el 4º hijo — firma de la serie
+          }
+          si++;
+        }
+        for (const sq of field) squares.push(sq);
+        for (let i = 0; i < field.length; i++) toDraw.push(rng.next() > threshold);
       }
-      si++;
     }
-    const toDraw = squares.map(() => rng.next() > threshold);
     const drawCount = toDraw.filter(Boolean).length;
+    const a0 = a;   // lado del campo: la profundidad se mide contra él
 
     // 3. Dibujar cuadrados con alpha sobre el gradiente.
     for (let i = 0; i < squares.length; i++) {
@@ -88,8 +126,8 @@
     E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
 
     // Datos para traits.
-    const minSize = squares.reduce((m, sq) => Math.min(m, sq.size), a);
-    const depthLevel = Math.max(1, Math.round(Math.log2(a / Math.max(minSize, 1))));
+    const minSize = squares.reduce((m, sq) => Math.min(m, sq.size), a0);
+    const depthLevel = Math.max(1, Math.round(Math.log2(a0 / Math.max(minSize, 1))));
     const coveragePct = Math.round((drawCount / Math.max(1, squares.length)) * 100);
     return { pal, squares: squares.length, drawCount, depthLevel, coveragePct };
   }
