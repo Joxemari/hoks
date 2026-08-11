@@ -106,7 +106,7 @@ const DEF = {
   caboTope:     0.45,        // fracción de la distancia al cruce vecino que NO se rebasa        // cuánto se pasa del borde de la hebra que lo tapa        // cuánto se mete el cabo de cada sección bajo la hebra que lo tapa, x anchura
   cruceMinDeg:  40,          // ángulo mínimo de cruce: por debajo, la hebra de abajo queda en astilla
   cruceSepMin:  1.20,        // separación mínima entre cruces, × anchura
-  volteoMax:    0.34,        // volteos por cruce que se toleran: más, y deja de alternar
+  volteoMax:    0.34,        // volteos por cruce que se toleran
   reintentos:   10,           // tejidos alternativos que se prueban con el mismo seed
   densidad:     true,        // entre los que pasan, quedarse con el más entrelazado
   grosorMinimo: 0.78,    // fracción del grosor pedido que un intento debe conservar
@@ -869,7 +869,12 @@ function ordenar(last, cr, extra) {
   cr.forEach((c, k) => {
     const a1 = cual(c.arriba - 1e-5), a2 = cual(c.arriba + 1e-5);
     const b1 = cual(c.abajo - 1e-5), b2 = cual(c.abajo + 1e-5);
-    if (imposible < 0 && (a1 === b1 || a1 === b2) && (a2 === b1 || a2 === b2)) imposible = k;
+    // Basta con que UNA de las mitades choque. Si se exigen las dos, el
+    // caso parcial pasa desapercibido: su relación de orden se descarta
+    // igual (apunta a sí misma) y esa mitad puede pintarse después de la
+    // hebra de arriba. Resultado: el cruce sale invertido SÓLO POR UN
+    // LADO, que es exactamente lo que se veía.
+    if (imposible < 0 && (a1 === b1 || a1 === b2 || a2 === b1 || a2 === b2)) imposible = k;
   });
 
   cr.forEach((c, k) => {
