@@ -91,7 +91,6 @@ canvas { display: block; height: min(72vh, 580px); width: auto; max-width: calc(
       <button class="btn" onclick="generate()">↻ <span data-i18n="btn.generate">Generate</span></button>
       <button class="btn btn-outline" onclick="exportCard()">⎘ <span data-i18n="btn.copycard">Copy Card</span></button>
       <button class="btn btn-outline" onclick="saveToGallery()">+ <span data-i18n="btn.save">Save</span></button>
-      <button class="btn btn-outline" id="batchBtn" onclick="saveToBatch()" style="display:none">+ <span>Save to Batch</span></button>
       <button class="btn btn-outline" onclick="downloadHD()">↓ <span data-i18n="btn.download">Download PNG</span></button>
     </div>
     <div class="sidebar-section" id="paletteSelectorSection" style="display:none">
@@ -341,9 +340,8 @@ function exportCard(){
   card.toBlob(async blob=>{try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast(HOKSI18N.t('toast.cardCopied'));}catch(e){const a=document.createElement('a');a.download='pllsg_'+currentSeed+'.png';a.href=card.toDataURL('image/png');a.click();toast(HOKSI18N.t('toast.downloaded'));}});
 }
 
-// ── BATCH ─────────────────────────────────────────────
-function checkBatchButton(){try{const active=JSON.parse(localStorage.getItem('hoks-active-batch')||'null');const btn=document.getElementById('batchBtn');if(btn){if(active&&active.work==='pllsg'){btn.style.display='';btn.textContent=`+ ${HOKSI18N.en('btn.savebatch')} "${active.name}" (${active.items.length})`;}else btn.style.display='none';}}catch(e){}}
-function saveToBatch(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/jpeg',0.9);const key='hoks-active-batch';try{const active=JSON.parse(localStorage.getItem(key)||'null');if(!active||active.work!=='pllsg'){toast(HOKSI18N.en('toast.noBatch').replace('%s','PLLSG'));return;}active.items.push({seed:currentSeed,dataUrl,savedAt:Date.now()});localStorage.setItem(key,JSON.stringify(active));checkBatchButton();toast(HOKSI18N.en('toast.addedBatch').replace('%1',active.name).replace('%2',active.items.length));}catch(e){toast(HOKSI18N.t('toast.error'));}}
+
+
 
 // ── SCRAMBLE ANIMATION ────────────────────────────────
 function scrambleAndDraw(seed,drawFn){
@@ -374,8 +372,6 @@ document.getElementById('c').addEventListener('click',generate);
 loadPalettes();
 loadGallery();
 checkAdminSession();
-checkBatchButton();
-setInterval(checkBatchButton,3000);
 </script>
 
 <script>

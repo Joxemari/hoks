@@ -72,6 +72,10 @@
       <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
     </div>
     <div class="group">
+      <span class="lbl">Batch</span>
+      <div id="batchPanel"></div>
+    </div>
+    <div class="group">
       <button id="save">↓ Save PNG (s)</button>
       <button class="ghost" id="sheet">▦ Contact sheet (g)</button>
     </div>
@@ -86,6 +90,7 @@
 
 <script src="../../palette-picker.js"></script>
 <script src="../_lab.js"></script>
+<script src="../_batch.js"></script>
 <script src="../_engine.js"></script>
 <script src="./algo.js"></script>
 <script>
@@ -110,6 +115,17 @@ function params() {
 let palPicker = null;
 function palOpts() { return palPicker ? palPicker.opts() : { palettes: PALETTES }; }
 
+let batch = null;
+const SLUG = 'krrtkg';
+// La receta ES la pieza. El nombre de la paleta se resuelve con un render de 8px
+// (el stream del RNG no depende del tamaño) para poder detectar deriva después.
+function recipeFor(s) {
+  const c = document.createElement('canvas'); c.width = c.height = 8;
+  let palName = null;
+  try { const r = WORK.render(c.getContext('2d'), 8, 8, s >>> 0, { ...palOpts(), params: params() }); palName = r && r.pal && r.pal.name; } catch (e) {}
+  return { work: SLUG, seed: s >>> 0, params: params(), palSel: palPicker ? palPicker.selection : 'auto', palName };
+}
+
 function renderSingle() {
   $('seed').value = seed;
   try {
@@ -132,8 +148,14 @@ function renderSheet() {
     const c = document.createElement('canvas'); c.width = SHEET_W; c.height = SHEET_H;
     try { WORK.render(c.getContext('2d'), SHEET_W, SHEET_H, s, { ...palOpts(), params: params() }); } catch (e) {}
     const fig = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = '#' + s;
+    fig.style.position = 'relative';
     fig.appendChild(c); fig.appendChild(cap);
     c.addEventListener('click', () => { seed = s; setSheet(false); });
+    // El ojo decide mirando las doce: apartar una tiene que ser un gesto de aquí.
+    const plus = document.createElement('button');
+    plus.className = 'hb-add'; plus.textContent = '+'; plus.title = 'Añadir al lote (a)';
+    plus.onclick = ev => { ev.stopPropagation(); if (batch && batch.add(s)) { plus.classList.add('done'); plus.textContent = '✓'; } };
+    fig.appendChild(plus);
     grid.appendChild(fig);
   }
 }
@@ -168,11 +190,20 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft') { seed = (seed - 1) >>> 0; refresh(); }
   else if (e.key === 's' || e.key === 'S') $('save').click();
   else if (e.key === 'g' || e.key === 'G') setSheet(!sheetMode);
+  else if (e.key === 'a' || e.key === 'A') { if (batch) batch.add(seed); }
 });
 
 // Init: pinta YA con fallback, luego trae TODAS las paletas.
 HOKSLAB.mountWorkPicker($('workPicker'), 'krrtkg', () => seed);
 populateSelect();
+batch = HOKSBATCH.mount($('batchPanel'), {
+  work: SLUG,
+  getRecipe: recipeFor,
+  getPalettes: () => PALETTES,
+  toast: m => { $('status').textContent = m; },
+});
+// Un lote puede mezclar obras: para pintar su tira hacen falta todos los algos.
+HOKSLAB.loadAlgos(() => batch.refresh());
 renderSingle();
 HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});
 </script>

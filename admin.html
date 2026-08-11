@@ -287,55 +287,28 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
 
     <!-- BATCHES -->
     <div class="tab-panel" id="tab-batches">
-      <div class="batch-setup">
-        <div class="section-title" style="margin-bottom:4px">New Batch</div>
-        <div class="batch-row">
-          <div class="batch-field">
-            <label>Work</label>
-            <select id="batch-work">
-              <option value="pills">PLLS</option>
-              <option value="krrtk">KRRTK</option>
-              <option value="dtk">DTK</option>
-              <option value="bzrs">BZRS</option>
-              <option value="krrtkg">KRRTKG</option>
-              <option value="dtkg">DTKG</option>
-              <option value="pllsg">PLLSG</option>
-              <option value="dtkrt">DTKRT</option>
-            </select>
-          </div>
-          <div class="batch-field">
-            <label>Batch Name</label>
-            <input type="text" id="batch-name" placeholder="e.g. Spring 2026">
-          </div>
-          <div class="batch-field" style="max-width:90px">
-            <label>Target</label>
-            <input type="number" id="batch-target" value="30" min="1" max="200" placeholder="30">
-          </div>
-          <button class="btn" style="flex-shrink:0;align-self:flex-end" onclick="createBatch()">Create Batch</button>
-        </div>
-      </div>
-
-      <div id="active-batch-panel" style="display:none;margin-bottom:2rem;border:2px solid var(--ink);border-radius:3px;overflow:hidden;">
-        <div style="padding:12px 14px;background:var(--ink);display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:0.06em;" id="active-batch-title">—</span>
-            <span style="font-size:9px;color:#888;margin-left:10px;letter-spacing:0.06em;" id="active-batch-work"></span>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <span class="batch-status">Saved: <span id="active-batch-count">0</span> / <span id="active-batch-target">30</span></span>
-            <button class="btn" style="background:#fff;color:var(--ink);font-size:9px;padding:6px 12px;" onclick="closeBatch()">Close Batch</button>
-          </div>
-        </div>
-        <div style="padding:10px;">
-          <div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;margin-bottom:8px;">Go to <a id="active-batch-link" href="pills.html" target="_blank" style="color:var(--ink);text-decoration:underline;">PLLS</a> · generate iterations · save the ones you like · discard the rest · keep going until you hit the target.</div>
-          <div class="batch-thumbs" id="active-batch-thumbs"></div>
-        </div>
+      <div style="font-size:10px;color:var(--ink3);letter-spacing:0.04em;line-height:1.7;margin-bottom:1.4rem;">
+        Los lotes se crean y se llenan en el <b>laboratorio</b>, sobre la hoja de contactos:
+        ahí es donde se mira y donde se decide. Aquí solo se revisan, se cierran y se borran.
+        Un lote guarda <b>recetas</b> (obra + seed + parámetros), no imágenes: la pieza se
+        regenera a cualquier resolución cuando hace falta.
+        <a href="sketches/dtkrt/" target="_blank" style="color:var(--ink);">Abrir laboratorio →</a>
       </div>
 
       <div class="section-header">
-        <span class="section-title">Saved Batches (<span id="batch-count">0</span>)</span>
+        <span class="section-title">Lotes (<span id="batch-count">0</span>)</span>
       </div>
       <div class="batch-list" id="batch-list"></div>
+
+      <div style="margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--border)">
+        <div class="section-header">
+          <span class="section-title">Lotes antiguos · solo en este navegador (<span id="legacy-count">0</span>)</span>
+        </div>
+        <div style="font-size:9px;color:var(--ink3);letter-spacing:0.04em;margin-bottom:10px;">
+          Del sistema anterior, guardados como imágenes en localStorage. Solo lectura: descárgalos si te sirven.
+        </div>
+        <div class="batch-list" id="legacy-list"></div>
+      </div>
     </div>
 
     <!-- SITE -->
@@ -401,7 +374,7 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
 
 <script>
 const PWD_KEY='hoks-admin-pwd', SESSION_KEY='hoks-admin-session', TOKEN_KEY='hoks-gh-token';
-const BATCH_KEY='hoks-batches', ACTIVE_BATCH_KEY='hoks-active-batch';
+const BATCH_KEY='hoks-batches';   // solo lectura: lotes del sistema anterior
 const DEFAULT_PWD='hoks2026';
 const REPO='Joxemari/hoks';
 const RAW_BASE=`https://raw.githubusercontent.com/${REPO}/main/data/`;
@@ -530,7 +503,7 @@ async function loadAll(){
     ghRead('dtkrt.json').then(d=>d||[]),
     ghRead('site.json').then(d=>d||{}),
   ]);
-  loadWorks();renderPalettes();renderGallery();renderBatches();loadSiteForm();
+  loadWorks();renderPalettes();renderGallery();loadBatches();renderLegacyBatches();loadSiteForm();
 }
 
 // ── PALETTE PROB ──────────────────────────────────────
@@ -596,14 +569,14 @@ function renderGallery(){
   const grid=$('gallery-grid');
   if(!grid)return;
   if(!gallery.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-  else grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button title="Add to batch" onclick="addGalleryToBatch('pills',${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;" onmouseover="this.style.color='#111'" onmouseout="this.style.color=''">+B</button><button class="gallery-del" onclick="deleteGalleryItem(${i})">✕</button></div></div></div>`).join('');
+  else grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteGalleryItem(${i})">✕</button></div></div></div>`).join('');
 
   // KRRTK
   $('gal-krrtk-count').textContent=galleryKrrtk.length;
   const kgrid=$('gallery-krrtk-grid');
   if(kgrid){
     if(!galleryKrrtk.length){kgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else kgrid.innerHTML=galleryKrrtk.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button title="Add to batch" onclick="addGalleryToBatch('krrtk',${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;" onmouseover="this.style.color='#111'" onmouseout="this.style.color=''">+B</button><button class="gallery-del" onclick="deleteKrrtkItem(${i})">✕</button></div></div></div>`).join('');
+    else kgrid.innerHTML=galleryKrrtk.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteKrrtkItem(${i})">✕</button></div></div></div>`).join('');
   }
 
   // DTK
@@ -611,7 +584,7 @@ function renderGallery(){
   if(dgrid){
     $('gal-dtk-count').textContent=galleryDtk.length;
     if(!galleryDtk.length){dgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else dgrid.innerHTML=galleryDtk.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button title="Add to batch" onclick="addGalleryToBatch('dtk',${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;" onmouseover="this.style.color='#111'" onmouseout="this.style.color=''">+B</button><button class="gallery-del" onclick="deleteDtkItem(${i})">✕</button></div></div></div>`).join('');
+    else dgrid.innerHTML=galleryDtk.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteDtkItem(${i})">✕</button></div></div></div>`).join('');
   }
 
   // BZRS
@@ -619,7 +592,7 @@ function renderGallery(){
   if(bgrid){
     $('gal-bzrs-count').textContent=galleryBzrs.length;
     if(!galleryBzrs.length){bgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else bgrid.innerHTML=galleryBzrs.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button title="Add to batch" onclick="addGalleryToBatch('bzrs',${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;" onmouseover="this.style.color='#111'" onmouseout="this.style.color=''">+B</button><button class="gallery-del" onclick="deleteBzrsItem(${i})">✕</button></div></div></div>`).join('');
+    else bgrid.innerHTML=galleryBzrs.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteBzrsItem(${i})">✕</button></div></div></div>`).join('');
   }
 
   // KRRTKG
@@ -627,7 +600,7 @@ function renderGallery(){
   if(kggrid){
     $('gal-krrtkg-count').textContent=galleryKrrtkg.length;
     if(!galleryKrrtkg.length){kggrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else kggrid.innerHTML=galleryKrrtkg.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button title="Add to batch" onclick="addGalleryToBatch('krrtkg',${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;" onmouseover="this.style.color='#111'" onmouseout="this.style.color=''">+B</button><button class="gallery-del" onclick="deleteKrrtkgItem(${i})">✕</button></div></div></div>`).join('');
+    else kggrid.innerHTML=galleryKrrtkg.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteKrrtkgItem(${i})">✕</button></div></div></div>`).join('');
   }
 
   // DTKG
@@ -635,7 +608,7 @@ function renderGallery(){
   if(dtgrid){
     $('gal-dtkg-count').textContent=galleryDtkg.length;
     if(!galleryDtkg.length){dtgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else dtgrid.innerHTML=galleryDtkg.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button title="Add to batch" onclick="addGalleryToBatch('dtkg',${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;" onmouseover="this.style.color='#111'" onmouseout="this.style.color=''">+B</button><button class="gallery-del" onclick="deleteDtkgItem(${i})">✕</button></div></div></div>`).join('');
+    else dtgrid.innerHTML=galleryDtkg.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteDtkgItem(${i})">✕</button></div></div></div>`).join('');
   }
 
   // DTKRT
@@ -643,7 +616,7 @@ function renderGallery(){
   if(dkgrid){
     $('gal-dtkrt-count').textContent=galleryDtkrt.length;
     if(!galleryDtkrt.length){dkgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else dkgrid.innerHTML=galleryDtkrt.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button title="Add to batch" onclick="addGalleryToBatch('dtkrt',${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:11px;" onmouseover="this.style.color='#111'" onmouseout="this.style.color=''">+B</button><button class="gallery-del" onclick="deleteDtkrtItem(${i})">✕</button></div></div></div>`).join('');
+    else dkgrid.innerHTML=galleryDtkrt.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteDtkrtItem(${i})">✕</button></div></div></div>`).join('');
   }
 }
 
@@ -661,134 +634,92 @@ async function clearBzrsGallery(){if(!confirm('Clear all BZRS gallery?'))return;
 async function clearKrrtkgGallery(){if(!confirm('Clear all KRRTKG gallery?'))return;galleryKrrtkg=[];await ghFetch('data/krrtkg.json',[],'clear krrtkg gallery');renderGallery();toast('Cleared');}
 async function clearDtkgGallery(){if(!confirm('Clear all DTKG gallery?'))return;galleryDtkg=[];await ghFetch('data/dtkg.json',[],'clear dtkg gallery');renderGallery();toast('Cleared');}
 async function clearDtkrtGallery(){if(!confirm('Clear all DTKRT gallery?'))return;galleryDtkrt=[];await ghFetch('data/dtkrt.json',[],'clear dtkrt gallery');renderGallery();toast('Cleared');}
-async function addGalleryToBatch(work,idx){
-  const active=getActiveBatch();
-  if(!active){toast('No active batch');return;}
-  if(active.work!==work){toast('Active batch is for '+active.work.toUpperCase());return;}
-  const srcMap={pills:gallery,krrtk:galleryKrrtk,dtk:galleryDtk,bzrs:galleryBzrs,krrtkg:galleryKrrtkg,dtkg:galleryDtkg,dtkrt:galleryDtkrt};
-  const item=(srcMap[work]||[])[idx];
-  if(!item)return;
-  active.items.push({seed:item.seed,dataUrl:item.dataUrl,savedAt:item.savedAt||Date.now()});
-  setActiveBatch(active);
-  renderBatches();
-  toast('Added #'+item.seed+' to batch "'+active.name+'"');
-}
+
 
 
 // ── BATCHES ───────────────────────────────────────────
 function getBatches(){try{return JSON.parse(localStorage.getItem(BATCH_KEY)||'[]');}catch(e){return[];}}
-function saveBatches(b){localStorage.setItem(BATCH_KEY,JSON.stringify(b));}
-function getActiveBatch(){try{return JSON.parse(localStorage.getItem(ACTIVE_BATCH_KEY)||'null');}catch(e){return null;}}
-function setActiveBatch(b){if(b)localStorage.setItem(ACTIVE_BATCH_KEY,JSON.stringify(b));else localStorage.removeItem(ACTIVE_BATCH_KEY);}
 
-
-function addGalleryToBatch(work, idx) {
-  const active = getActiveBatch();
-  if (!active) { toast('No active batch — create one first'); return; }
-  if (active.work !== work) { toast(`Active batch is for ${active.work.toUpperCase()}, not ${work.toUpperCase()}`); return; }
-  const srcMap = {pills: gallery, krrtk: galleryKrrtk, dtk: galleryDtk, bzrs: galleryBzrs, krrtkg: galleryKrrtkg, dtkg: galleryDtkg, dtkrt: galleryDtkrt};
-  const item = (srcMap[work]||[])[idx];
-  if (!item) return;
-  active.items.push({seed: item.seed, dataUrl: item.dataUrl, savedAt: item.savedAt || Date.now()});
-  setActiveBatch(active);
-  renderBatches();
-  toast(`Added #${item.seed} to batch "${active.name}"`);
+// ── LOTES ─────────────────────────────────────────────
+// Viven en data/batches.json y se llenan desde el laboratorio. Aquí se revisan.
+let batches = [];
+function loadBatches(){ ghRead('batches.json').then(d => { batches = Array.isArray(d) ? d : []; renderBatches(); }); }
+async function saveBatchesRemote(msg){ await ghFetch('data/batches.json', batches, msg); renderBatches(); }
+async function toggleBatch(id){
+  const b = batches.find(x => x.id === id); if (!b) return;
+  b.status = b.status === 'closed' ? 'open' : 'closed';
+  await saveBatchesRemote((b.status === 'closed' ? 'close' : 'reopen') + ' batch ' + b.name);
+  toast(b.status === 'closed' ? 'Lote cerrado' : 'Lote reabierto');
 }
-
-function createBatch(){
-  const name=$('batch-name').value.trim();if(!name){toast('Add a batch name');return;}
-  const work=$('batch-work').value;
-  const target=parseInt($('batch-target').value)||30;
-  const active=getActiveBatch();
-  if(active){if(!confirm('You have an open batch. Close it and start a new one?'))return;closeBatch();}
-  const batch={id:Date.now(),name,work,target,items:[],created:Date.now()};
-  setActiveBatch(batch);
-  $('batch-name').value='';
-  renderBatches();
-  toast('Batch "'+name+'" started (target: '+target+') — go to '+work.toUpperCase()+' and save works');
+async function deleteBatch(id){
+  const b = batches.find(x => x.id === id); if (!b) return;
+  if(!confirm('¿Borrar el lote "' + b.name + '" (' + b.items.length + ' piezas)?')) return;
+  batches = batches.filter(x => x.id !== id);
+  await saveBatchesRemote('delete batch ' + b.name);
+  toast('Lote borrado');
 }
-
-function closeBatch(){
-  const active=getActiveBatch();
-  if(!active)return;
-  if(active.items.length===0){if(!confirm('This batch is empty. Discard it?'))return;setActiveBatch(null);renderBatches();return;}
-  const batches=getBatches();batches.unshift(active);saveBatches(batches);setActiveBatch(null);renderBatches();
-  toast('Batch "'+active.name+'" saved with '+active.items.length+' work'+( active.items.length===1?'':'s'));
-}
-
-function removeBatchItem(batchId,itemIdx){
-  const active=getActiveBatch();
-  if(active&&active.id===batchId){active.items.splice(itemIdx,1);setActiveBatch(active);renderBatches();return;}
-  const batches=getBatches();const b=batches.find(x=>x.id===batchId);if(!b)return;b.items.splice(itemIdx,1);saveBatches(batches);renderBatches();
-}
-
-function deleteBatch(id){
-  if(!confirm('Delete this batch?'))return;
-  const batches=getBatches().filter(b=>b.id!==id);saveBatches(batches);renderBatches();toast('Batch deleted');
-}
-
-function downloadBatch(id){
-  const batches=[...getBatches()];const active=getActiveBatch();if(active)batches.unshift(active);
-  const b=batches.find(x=>x.id===id);if(!b||!b.items.length){toast('No items in batch');return;}
-  b.items.forEach((item,i)=>{
-    const a=document.createElement('a');
-    a.href=item.dataUrl;
-    a.download=`${b.work}_${b.name.replace(/\s+/g,'_')}_${i+1}_${item.seed}.jpg`;
-    setTimeout(()=>a.click(),i*200);
-  });
-  toast('Downloading '+b.items.length+' files…');
-}
-
 function renderBatches(){
-  const active=getActiveBatch();
-  const panel=$('active-batch-panel');
-  if(active){
-    panel.style.display='block';
-    $('active-batch-title').textContent=active.name;
-    $('active-batch-work').textContent=active.work.toUpperCase()+' · '+active.items.length+' item'+( active.items.length===1?'':'s');
-    $('active-batch-count').textContent=active.items.length;
-    $('active-batch-target').textContent=active.target||30;
-    $('active-batch-link').href=(active.work==='pills'?'pills':active.work)+'.html';
-    $('active-batch-link').textContent=active.work.toUpperCase();
-    $('active-batch-thumbs').innerHTML=active.items.length
-      ?active.items.map((item,i)=>`<div class="batch-thumb"><img src="${item.dataUrl}"><div class="batch-thumb-label">#${item.seed}</div><button class="batch-thumb-del" onclick="removeBatchItem(${active.id},${i})">✕</button></div>`).join('')
-      :'<div style="font-size:9px;color:var(--ink3);padding:8px;letter-spacing:0.06em;">No items yet — go generate and save to batch</div>';
-  } else {
-    panel.style.display='none';
-  }
-  const batches=getBatches();
-  $('batch-count').textContent=batches.length;
-  const list=$('batch-list');
-  if(!batches.length){list.innerHTML='<div class="empty-state">No batches yet</div>';return;}
-  list.innerHTML=batches.map(b=>`
-    <div class="batch-card">
+  const el = $('batch-list'); if(!el) return;
+  $('batch-count').textContent = batches.length;
+  el.innerHTML = batches.length ? batches.map(b => {
+    const works = [...new Set((b.items||[]).map(i => i.work))];
+    const lab = 'sketches/' + (works[0] || 'dtkrt') + '/';
+    return `<div class="batch-card">
       <div class="batch-header">
         <div>
-          <div class="batch-title">${esc(b.name)}</div>
-          <div class="batch-meta">${b.work.toUpperCase()} · ${b.items.length} work${b.items.length===1?'':'s'} · ${fmtDate(b.created)}</div>
+          <span class="batch-title">${esc(b.name)}</span>
+          <span class="batch-meta" style="margin-left:10px;">${(b.items||[]).length} piezas · ${works.map(w=>w.toUpperCase()).join(' + ')||'vacío'} · ${fmtDate(b.created)}${b.status==='closed'?' · cerrado':''}</span>
         </div>
         <div class="batch-actions">
-          <button class="btn btn-outline" style="font-size:9px;padding:6px 10px;" onclick="downloadBatch(${b.id})">↓ Download All</button>
-          <button class="btn btn-danger" style="font-size:9px;padding:6px 10px;" onclick="deleteBatch(${b.id})">Delete</button>
+          <a class="btn btn-ghost" href="${lab}" target="_blank">Lab</a>
+          <button class="btn btn-ghost" onclick="toggleBatch(${b.id})">${b.status==='closed'?'Reabrir':'Cerrar'}</button>
+          <button class="btn btn-danger" onclick="deleteBatch(${b.id})">Borrar</button>
         </div>
       </div>
-      ${b.items.length?`<div class="batch-thumbs">${b.items.map((item,i)=>`<div class="batch-thumb"><img src="${item.dataUrl}"><div class="batch-thumb-label">#${item.seed}</div><button class="batch-thumb-del" onclick="removeBatchItem(${b.id},${i})">✕</button></div>`).join('')}</div>`:'<div style="padding:14px;font-size:9px;color:var(--ink3);letter-spacing:0.06em;">Empty batch</div>'}
-    </div>`).join('');
+      <div class="batch-meta" style="padding:8px 14px;display:flex;flex-wrap:wrap;gap:8px;">${(b.items||[]).map(i=>`<span>${i.work}#${i.seed}</span>`).join('') || 'vacío'}</div>
+    </div>`;
+  }).join('') : '<div class="empty-state">Sin lotes — se crean en el laboratorio</div>';
 }
+// Lo del sistema anterior: imágenes en localStorage. Solo lectura.
+function renderLegacyBatches(){
+  const el = $('legacy-list'); if(!el) return;
+  const old = getBatches();
+  $('legacy-count').textContent = old.length;
+  el.innerHTML = old.length ? old.map(b => `<div class="batch-card">
+      <div class="batch-header">
+        <div><span class="batch-title">${esc(b.name)}</span>
+        <span class="batch-meta" style="margin-left:10px;">${(b.items||[]).length} imágenes · ${String(b.work||'').toUpperCase()} · ${fmtDate(b.created)}</span></div>
+        <div class="batch-actions"><button class="btn btn-ghost" onclick="downloadLegacy(${b.id})">Descargar</button></div>
+      </div>
+    </div>`).join('') : '<div class="empty-state">Nada guardado en este navegador</div>';
+}
+function downloadLegacy(id){
+  const b = getBatches().find(x => x.id === id);
+  if(!b || !b.items.length){ toast('Lote vacío'); return; }
+  b.items.forEach((item,i) => setTimeout(() => {
+    const a=document.createElement('a'); a.href=item.dataUrl;
+    a.download=`${b.work}_${b.name.replace(/\s+/g,'_')}_${i+1}_${item.seed}.jpg`; a.click();
+  }, i*200));
+  toast('Descargando ' + b.items.length + ' archivos…');
+}
+function saveBatches(b){localStorage.setItem(BATCH_KEY,JSON.stringify(b));}
 
-// Expose for pills/krrtk pages to call
-window.addToBatch = function(work, item) {
-  const active = getActiveBatch();
-  if (!active) { return false; }
-  if (active.work !== work) { return false; }
-  active.items.push(item);
-  setActiveBatch(active);
-  return true;
-};
-window.getActiveBatchInfo = function() {
-  const b = getActiveBatch();
-  return b ? { name: b.name, work: b.work, count: b.items.length } : null;
-};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ── SITE ──────────────────────────────────────────────
 function loadSiteForm(){

@@ -78,6 +78,22 @@
     };
   }
 
+  // Un lote puede mezclar obras, así que para pintar sus miniaturas hacen falta
+  // todos los algoritmos, no solo el de este harness. Pesan unos KB cada uno.
+  // Se inyectan DESPUÉS de _engine.js (los algos lo necesitan cargado).
+  function loadAlgos(done) {
+    const missing = GRADUATED.filter(s => !(global.HOKS && global.HOKS[s.toUpperCase()]));
+    let left = missing.length;
+    if (!left) { if (done) done(); return; }
+    missing.forEach(slug => {
+      const el = document.createElement('script');
+      el.src = '../' + slug + '/algo.js';
+      el.async = false;
+      el.onload = el.onerror = () => { if (--left === 0 && done) done(); };
+      document.head.appendChild(el);
+    });
+  }
+
   // Seed inicial: ?seed= si viene del selector de obra, si no una al azar.
   function initialSeed() {
     const q = new URLSearchParams(location.search).get('seed');
@@ -85,5 +101,5 @@
     return Number.isFinite(n) ? (n >>> 0) : (Math.random() * 0xFFFFFFFF) >>> 0;
   }
 
-  global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, initialSeed };
+  global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, initialSeed, loadAlgos };
 })(typeof window !== 'undefined' ? window : globalThis);
