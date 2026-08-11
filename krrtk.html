@@ -107,7 +107,6 @@ canvas { display: block; height: min(72vh, 600px); width: min(72vh, 600px); curs
     <div class="sidebar-section">
       <button class="btn" onclick="generate()">↻ <span data-i18n="btn.generate">Generate</span></button>
       <button class="btn btn-outline" onclick="exportCard()">⎘ <span data-i18n="btn.copycard">Copy Card</span></button>
-      <button class="btn btn-outline" onclick="saveToGallery()">+ <span data-i18n="btn.save">Save</span></button>
       <button class="btn btn-outline" onclick="downloadHD()">↓ <span data-i18n="btn.download">Download PNG</span></button>
     </div>
 
@@ -152,8 +151,6 @@ canvas { display: block; height: min(72vh, 600px); width: min(72vh, 600px); curs
 <div class="toast" id="toast"></div>
 <script>
 const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
-const GH_TOKEN_KEY = 'hoks-gh-token';
-const REPO = 'Joxemari/hoks';
 
 // ── PALETTE PROB (identical to pills) ─────────────────
 function ageWeight(createdMs) {
@@ -243,14 +240,7 @@ class Rng {
   weighted(items){let v=this.next(),acc=0;for(const i of items){acc+=i.prob;if(v<acc)return i;}return items[items.length-1];}
 }
 
-async function ghPush(path,content){
-  const token=localStorage.getItem(GH_TOKEN_KEY);if(!token)return;
-  let sha;
-  try{const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{headers:{'Authorization':'Bearer '+token}});if(r.ok)sha=(await r.json()).sha;}catch(e){}
-  const body={message:`update ${path}`,content:btoa(unescape(encodeURIComponent(JSON.stringify(content,null,2))))};
-  if(sha)body.sha=sha;
-  await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body)});
-}
+
 
 function loadPalettes(){
   const _isExact=new URLSearchParams(window.location.search).get('i')!==null;
@@ -349,8 +339,8 @@ function updateTraits(pal, drawnCount, totalCount, depthLevel, seed) {
 function generate(){if(_generating)return;currentSeed=(Math.random()*0xFFFFFFFF)>>>0;currentTimestamp=new Date();scrambleAndDraw(currentSeed,()=>draw(currentSeed));}
 
 function loadGallery(){fetch(RAW+'krrtk.json?t='+Date.now()).then(r=>r.ok?r.json():[]).then(data=>{gallery=data;renderGallery();}).catch(()=>{gallery=[];renderGallery();});}
-async function saveGallery(){await ghPush('data/krrtk.json',gallery);}
-async function saveToGallery(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/png');gallery.unshift({seed:currentSeed,dataUrl,savedAt:Date.now()});if(gallery.length>50)gallery=gallery.slice(0,50);toast(HOKSI18N.en('toast.saving'));await saveGallery();renderGallery();toast(HOKSI18N.en('toast.savedGallery'));}
+
+
 function loadExactIteration(item){const canvas=document.getElementById('c');const ctx=canvas.getContext('2d');const img=new Image();img.onload=()=>{ctx.globalCompositeOperation='source-over';ctx.drawImage(img,0,0,canvas.width,canvas.height);};img.src=item.dataUrl;currentSeed=item.seed;currentTimestamp=item.savedAt?new Date(item.savedAt):new Date();document.getElementById('seedDisplay').textContent='#'+item.seed;const tsEl=document.getElementById('timestampDisplay');const ts=currentTimestamp;if(tsEl)tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});const tl=document.getElementById('traitList');if(tl)tl.innerHTML='<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">'+HOKSI18N.t('trait.savedMsg')+'</div>';const or=document.getElementById('overallRarity');if(or)or.innerHTML='';}
 function renderGallery(){const section=document.getElementById('gallerySection'),grid=document.getElementById('galleryGrid');if(!gallery.length){section.style.display='none';return;}section.style.display='block';grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-thumb" data-i="${i}"><img src="${item.dataUrl}" alt="krrtk ${item.seed}"><div style="display:flex;align-items:center;justify-content:space-between;padding:2px 6px 4px;"><span class="gallery-thumb-seed">#${item.seed}</span></div></div>`).join('');grid.querySelectorAll('.gallery-thumb').forEach(el=>{el.addEventListener('click',()=>{const item=gallery[parseInt(el.dataset.i)];if(item)loadExactIteration(item);});});}
 

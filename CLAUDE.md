@@ -24,13 +24,16 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   huecos con *demos* dibujadas en vivo. Filtra a las familias `active` según
   `data/works.json`. Reimplementa los algoritmos de dibujo de cada serie (versión
   reducida) para las celdas demo.
-- **Páginas de obra** (una por serie): `pills.html` (PLLS), `krrtk.html`,
-  `dtk.html`, `bzrs.html`, `krrtkg.html`, `dtkg.html`, `pllsg.html`, `dtkrt.html`.
-  Cada una es
-  autónoma: canvas 2D + RNG sembrado + selector/peso de paletas + sistema de
-  *traits* y rareza en la barra lateral. Click en el canvas = nueva variación.
-  Botones: Generate, Copy Card, Save, Download PNG. "Save" sube la imagen
-  (dataURL) al JSON de la familia vía API de GitHub (requiere sesión admin).
+- **Páginas de obra** — **archivo, no herramienta**. Las graduadas
+  (`pllsg.html`, `krrtkg.html`, `dtkg.html`, `dtkrt.html`) son cascarones de 20
+  líneas que cargan `work-page.js`: nombre, narrativa (`description` de
+  `works.json`), las piezas elegidas (`data/<obra>.json`, con lupa al clic) y un
+  **lienzo vivo mudo** que se regenera al clic — sin panel, sin traits, sin
+  rareza, sin guardar. La rareza es lenguaje de edición: describe la
+  improbabilidad de una tirada que nadie posee, así que vive en el laboratorio.
+  Las heredadas (`pills.html`, `krrtk.html`, `dtk.html`, `bzrs.html`) siguen con
+  su generador inline **congelado** — son inactivas y su algoritmo todavía no
+  está graduado; se les quitó Save porque publicar es cosa del lote.
 - **`about.html`** — Texto leído de `data/site.json` (con *fallback* embebido).
 - **`palettes.html`** — Galería de paletas desde `data/palettes.json`; muestra
   activas/inactivas y su rareza/probabilidad.
@@ -57,9 +60,15 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 
 ### Laboratorio (`sketches/`)
 
-Motor compartido (`_engine.js`: Rng, mesh gradient, grano, paletas) + una
-carpeta por obra graduada con `algo.js` (el algoritmo, fuente única) y un
-harness de desarrollo (scrub de seeds, hoja de contactos). **El flujo creativo
+**Aquí se genera y aquí se elige.** Motor compartido (`_engine.js`: Rng, mesh
+gradient, grano, paletas) + `_lab.js` (selector de obra y de paleta) +
+`_batch.js` (lotes) + una carpeta por obra graduada con `algo.js` (el
+algoritmo, fuente única) y un harness (scrub de seeds, hoja de contactos).
+
+El circuito completo: **lab → lote → publicar → galería**. Se mira la hoja de
+contactos, se aparta con `+` o `a`, y el lote —una lista de *recetas*, no de
+imágenes— se publica desde el propio laboratorio a `data/<obra>.json`, que es lo
+que enseña la web. **El flujo creativo
 vive en p5/OpenProcessing; el laboratorio es porte + QA y lo opera Claude.**
 Ver `sketches/README.md` para el flujo completo de graduación.
 

@@ -121,7 +121,6 @@ canvas {
     <div class="sidebar-section">
       <button class="btn" id="generateBtn" onclick="generate()">↻ <span data-i18n="btn.generate">Generate</span></button>
       <button class="btn btn-outline" onclick="exportCard()">⎘ <span data-i18n="btn.copycard">Copy Card</span></button>
-      <button class="btn btn-outline" onclick="saveToGallery()">+ <span data-i18n="btn.save">Save</span></button>
       <button class="btn btn-outline" onclick="downloadHD()">↓ <span data-i18n="btn.download">Download PNG</span></button>
     </div>
 
@@ -166,8 +165,6 @@ canvas {
 <div class="toast" id="toast"></div>
 <script>
 const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
-const GH_TOKEN_KEY = 'hoks-gh-token';
-const REPO = 'Joxemari/hoks';
 
 // ── PALETTE PROB (age-based scarcity) ─────────────────
 function ageWeight(createdMs) {
@@ -279,24 +276,7 @@ function overallRarity(archProb, palProb, rarestFinish) {
 }
 
 // ── GITHUB ────────────────────────────────────────────
-async function ghPush(path, content) {
-  const token = localStorage.getItem(GH_TOKEN_KEY);
-  if (!token) return;
-  let sha;
-  try {
-    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (r.ok) sha = (await r.json()).sha;
-  } catch(e) {}
-  const body = { message: `update ${path}`, content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))) };
-  if (sha) body.sha = sha;
-  await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
-    method: 'PUT',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-}
+
 
 // ── PALETTES ──────────────────────────────────────────
 function loadPalettes() {
@@ -436,14 +416,8 @@ function loadGallery() {
     .then(data => { gallery = data; renderGallery(); })
     .catch(() => { gallery = []; renderGallery(); });
 }
-async function saveGallery() { await ghPush('data/plls.json', gallery); }
-async function saveToGallery() {
-  const src = document.getElementById('c');
-  const dataUrl = src.toDataURL('image/jpeg', 0.9);
-  gallery.unshift({seed:currentSeed, dataUrl, savedAt:Date.now()});
-  if(gallery.length>50) gallery=gallery.slice(0,50);
-  toast(HOKSI18N.en('toast.saving')); await saveGallery(); renderGallery(); toast(HOKSI18N.en('toast.savedGallery'));
-}
+
+
 function loadExactIteration(item) {
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d');

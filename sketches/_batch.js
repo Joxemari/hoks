@@ -40,6 +40,7 @@
   background:#fff; color:var(--ink3,#bbb); cursor:pointer; }
 .hb-item .hb-x:hover { color:#c0392b; }
 .hb-item.drift canvas { outline:2px solid #c0392b; }
+.hb-item.pub canvas { outline:2px solid #111; }
 .hb-empty { font-size:9px; color:var(--ink3,#bbb); letter-spacing:0.06em; padding:14px 0; }
 .hb-note { font-size:9px; color:var(--ink3,#bbb); letter-spacing:0.04em; }
 /* el "+" que aparece sobre cada miniatura de la hoja de contactos */
@@ -67,21 +68,26 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     } catch (e) { return []; }
   }
 
-  async function push(batches) {
+  async function pushJson(path, payload) {
     const t = token();
     if (!t) throw new Error('sin token de GitHub — guárdalo en admin');
-    const path = 'data/batches.json';
     let sha;
     try {
       const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, { headers: { Authorization: 'Bearer ' + t } });
       if (r.ok) sha = (await r.json()).sha;
     } catch (e) {}
-    const body = { message: 'update ' + path, content: btoa(unescape(encodeURIComponent(JSON.stringify(batches, null, 2)))) };
+    const body = { message: 'update ' + path, content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))) };
     if (sha) body.sha = sha;
     const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
       method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error('GitHub ' + r.status);
+  }
+  const push = batches => pushJson('data/batches.json', batches);
+
+  async function pullJson(name) {
+    try { const r = await fetch(RAW + name + '?t=' + Date.now()); const d = r.ok ? await r.json() : []; return Array.isArray(d) ? d : []; }
+    catch (e) { return []; }
   }
 
   // ── Receta → imagen ────────────────────────────────────────────────────────
@@ -110,7 +116,8 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       `<div class="hb-strip" id="hb-strip"></div>` +
       `<div class="hb-row"><select id="hb-res">` +
       `<option value="600">600 px</option><option value="1800">1800 px</option><option value="7200">7200 px · impresión</option>` +
-      `</select><button class="hb-btn" id="hb-dl">↓ PNG</button></div>` +
+      `</select><button class="hb-btn" id="hb-dl">↓ PNG</button>` +
+      `<button class="hb-btn" id="hb-pub" title="Publicar a la galería">▲</button></div>` +
       `<span class="hb-note" id="hb-note"></span>`;
 
     const $ = id => host.querySelector('#' + id);
@@ -134,8 +141,8 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     }
     function renderStrip() {
       const b = openBatch(), strip = $('hb-strip');
-      if (!b) { strip.innerHTML = '<span class="hb-empty">sin lote abierto</span>'; $('hb-dl').disabled = true; return; }
-      $('hb-dl').disabled = !b.items.length;
+      if (!b) { strip.innerHTML = '<span class="hb-empty">sin lote abierto</span>'; $('hb-dl').disabled = $('hb-pub').disabled = true; return; }
+      $('hb-dl').disabled = $('hb-pub').disabled = !b.items.length;
       if (!b.items.length) { strip.innerHTML = '<span class="hb-empty">vacío · pulsa <b>a</b> o el + de la hoja de contactos</span>'; return; }
       strip.innerHTML = '';
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
@@ -147,8 +154,9 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
           wrap.classList.add('drift');
           wrap.title = `#${it.seed} · ${it.work.toUpperCase()} · deriva: era ${it.palName}, ahora ${res.pal.name}`;
         } else {
-          wrap.title = `#${it.seed} · ${it.work.toUpperCase()}`;
+          wrap.title = `#${it.seed} · ${it.work.toUpperCase()}` + (it.published ? ' · publicada' : '');
         }
+        if (it.published) wrap.classList.add('pub');
         c.onclick = () => { location.href = '../' + it.work + '/?seed=' + (it.seed >>> 0); };
         const x = document.createElement('span'); x.className = 'hb-x'; x.textContent = '×';
         x.onclick = e => { e.stopPropagation(); b.items.splice(i, 1); schedulePush(); render(); };
@@ -193,6 +201,36 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       }, i * 250));
     }
 
+    // Publicar: el lote es la curaduría, así que la galería pública se alimenta
+    // de aquí y no de un botón suelto en la página de obra. La imagen se fabrica
+    // ahora, desde la receta, a la resolución del sitio.
+    async function publish() {
+      const b = openBatch(); if (!b || !b.items.length) return;
+      const pending = b.items.filter(it => !it.published);
+      if (!pending.length) { toast('Todo el lote ya está publicado'); return; }
+      if (!confirm(`¿Publicar ${pending.length} pieza(s) a la galería?`)) return;
+      const palettes = opts.getPalettes ? opts.getPalettes() : [];
+      const byWork = {};
+      pending.forEach(it => { (byWork[it.work] = byWork[it.work] || []).push(it); });
+      for (const work of Object.keys(byWork)) {
+        note('publicando ' + work.toUpperCase() + '…');
+        const gallery = await pullJson(work + '.json');
+        for (const it of byWork[work]) {
+          const c = document.createElement('canvas'); c.width = 600; c.height = 600;
+          if (!renderRecipe(c.getContext('2d'), 600, 600, it, palettes)) continue;
+          gallery.unshift({ seed: it.seed, dataUrl: c.toDataURL('image/png'), savedAt: Date.now() });
+          it.published = true;
+        }
+        try { await pushJson('data/' + work + '.json', gallery); }
+        catch (e) { note('⚠ ' + work + ': ' + e.message); return; }
+      }
+      note('');
+      try { await push(batches); } catch (e) {}
+      render();
+      toast('Publicado');
+    }
+
+    $('hb-pub').onclick = publish;
     $('hb-sel').onchange = () => {
       const v = $('hb-sel').value;
       openId = v ? parseInt(v, 10) : null;
