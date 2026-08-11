@@ -23,10 +23,10 @@
   },
   {
     "id": "krrtkg",
-    "name": "KRRTKG",
+    "name": "KRRTK",
     "slug": "krrtkg",
-    "active": false,
-    "description": "The recursive squares of KRRTK set over weather: a mesh-gradient field beneath, film grain above. Structure meets atmosphere.",
+    "active": true,
+    "description": "Karratuak. A square deciding, again and again, whether to divide. Recursive subdivision against a threshold — structure as the only ornament. Atmosphere is a setting, not another work: the gradient beneath and the grain above can be lowered to nothing, and the rule is unchanged.",
     "page": "krrtkg.html",
     "canvas": "square · vertical · horizontal (DIN)",
     "created": 1745200000000,
