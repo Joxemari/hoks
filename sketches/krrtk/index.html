@@ -121,7 +121,8 @@
     </div>
     <div class="group">
       <button id="save">↓ Save PNG (s)</button>
-      <button class="ghost" id="sheet">▦ Contact sheet (g)</button>
+      <button class="ghost" id="sheet">▦ Hoja de contactos (g)</button>
+      <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
     </div>
     <div class="group"><span class="lbl">Traits</span><div class="traits" id="traits"></div></div>
   </aside>
@@ -231,14 +232,21 @@ function renderSheet() {
     grid.appendChild(fig);
   }
 }
-function setSheet(on) {
-  sheetMode = on;
-  $('single').style.display = on ? 'none' : 'block';
-  $('sheetGrid').style.display = on ? 'grid' : 'none';
-  $('sheet').textContent = on ? '▦ Single view (g)' : '▦ Contact sheet (g)';
-  if (on) { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; } else renderSingle();
+// Tres modos de mirar, en el mismo sitio: la pieza, doce variaciones de su
+// seed, y el lote entero — que es lo que de verdad se publica.
+let VIEW = 'single';                 // 'single' | 'sheet' | 'batch'
+function setView(v) {
+  VIEW = v; sheetMode = (v === 'sheet');
+  $('single').style.display = v === 'single' ? 'block' : 'none';
+  $('sheetGrid').style.display = v === 'single' ? 'none' : 'grid';
+  $('sheet').textContent = v === 'sheet' ? '▦ Vista única (g)' : '▦ Hoja de contactos (g)';
+  $('batchView').textContent = v === 'batch' ? '▦ Vista única (b)' : '▦ Ver el lote (b)';
+  if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; }
+  else if (v === 'batch') { $('status').textContent = batch ? batch.renderFull($('sheetGrid')) : '—'; }
+  else renderSingle();
 }
-function refresh() { sheetMode ? renderSheet() : renderSingle(); }
+function setSheet(on) { setView(on ? 'sheet' : 'single'); }
+function refresh() { if (VIEW === 'batch') { $('status').textContent = batch.renderFull($('sheetGrid')); } else sheetMode ? renderSheet() : renderSingle(); }
 function populateSelect() {
   $('palCount').textContent = PALETTES.length;
   if (palPicker) palPicker.setPalettes(PALETTES);
@@ -257,7 +265,8 @@ $('rot').onclick = () => { ROT = !ROT; $('rot').textContent = ROT ? '⟲ Ver tum
 $('field').onchange = refresh;
 $('bg').onchange = refresh;
 $('grain').onchange = refresh;
-$('sheet').onclick = () => setSheet(!sheetMode);
+$('sheet').onclick = () => setView(VIEW === 'sheet' ? 'single' : 'sheet');
+$('batchView').onclick = () => setView(VIEW === 'batch' ? 'single' : 'batch');
 $('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `${SLUG}_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
 
 document.addEventListener('keydown', e => {
@@ -267,7 +276,8 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft') { seed = (seed - 1) >>> 0; refresh(); }
   else if (e.key === 'r' || e.key === 'R') $('rot').click();
   else if (e.key === 's' || e.key === 'S') $('save').click();
-  else if (e.key === 'g' || e.key === 'G') setSheet(!sheetMode);
+  else if (e.key === 'g' || e.key === 'G') setView(VIEW === 'sheet' ? 'single' : 'sheet');
+  else if (e.key === 'b' || e.key === 'B') setView(VIEW === 'batch' ? 'single' : 'batch');
   else if (e.key === 'a' || e.key === 'A') { if (batch) batch.add(seed); }
 });
 
