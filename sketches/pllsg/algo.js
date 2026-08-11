@@ -20,6 +20,7 @@
   const OFF_WHITE = '#f5f0ea';
   const GRAIN_TILE = 14;     // tesela del acabado ajedrez, a resolución de referencia
   const PLACE_ATT  = 24;     // intentos de colocación antes de rendirse
+  const SPREAD     = 0.85 / Math.pow(2, 0.25);   // ver maxSize en render()
   const REF        = 1000;   // lado corto de referencia: las medidas en px se
                              // escalan por unit = min(W,H)/REF, así el dibujo es
                              // el mismo en pantalla y a resolución de impresión.
@@ -179,11 +180,23 @@
       ? (ARCHETYPES.find(a => a.name === params.archetype) || ARCHETYPES[0])
       : pickWeighted(rng, ARCHETYPES, ARCHETYPES.map(a => (params.archProbs && params.archProbs[a.name] != null) ? params.archProbs[a.name] : a.prob));
     const num = params.count ? params.count : rng.int(arch.pillMin, arch.pillMax);
-    const maxSize = Math.min(W, H) * 0.85 / Math.sqrt(num);
+    // La cápsula se mide contra la MEDIA GEOMÉTRICA del pliego, no contra el
+    // lado corto: la cobertura es entonces la misma en los tres formatos. Con
+    // el lado corto, el DIN salía un 41% más vacío que el cuadrado — el
+    // formato cambiaba la densidad de la obra, que no es lo que decide el
+    // arquetipo. SPREAD está calibrado (0.85/2^¼) para que el horizontal siga
+    // siendo exactamente el publicado.
+    const maxSize = Math.sqrt(W * H) * SPREAD / Math.sqrt(num);
     const thick = maxSize * rng.range(0.62, 0.78) * (params.thickness || 1);
     const tol = OL_TOL[arch.name] * Math.min(1.0, num / 8);
 
-    const bgColors = drawBg(ctx, W, H, colors, rng, params.bgMode);
+    // La opción transversal manda sobre el modo propio: 'gradient' deja que el
+    // RNG elija entre radial y diagonal, que es lo que la obra entiende por eso.
+    const bgT = E.bgMode(params);
+    const bgForce = bgT === 'solid' ? 'solid'
+      : bgT === 'gradient' ? (rng.bool(0.5) ? 'radial' : 'diagonal')
+      : params.bgMode;
+    const bgColors = drawBg(ctx, W, H, colors, rng, bgForce);
 
     // Margen = extensión máxima de la cápsula desde su centro (hl + radio del cap).
     // Así todas caben sin recortes → todas conservan la MISMA proporción.

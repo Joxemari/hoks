@@ -70,9 +70,9 @@
   // ── Región: poliominó por crecimiento ortogonal ────────────────────────────
   // Semilla + expansión a vecinos: salen barras, eles, escaleras y campos, sin
   // catálogo de formas. La forma es consecuencia de la regla, no un dibujo.
-  function grow(rng, n, target, avoid) {
+  function grow(rng, cols, rows, target, avoid) {
     const cells = new Set(), order = [];
-    const si = rng.int(0, n - 1), sj = rng.int(0, n - 1);
+    const si = rng.int(0, cols - 1), sj = rng.int(0, rows - 1);
     if (avoid && avoid.has(si + ',' + sj)) return cells;
     cells.add(si + ',' + sj); order.push([si, sj]);
     let guard = target * 12;
@@ -81,7 +81,7 @@
       const d = rng.int(0, 3);
       const ni = ci + (d === 0 ? 1 : d === 1 ? -1 : 0);
       const nj = cj + (d === 2 ? 1 : d === 3 ? -1 : 0);
-      if (ni < 0 || nj < 0 || ni >= n || nj >= n) continue;
+      if (ni < 0 || nj < 0 || ni >= cols || nj >= rows) continue;
       const key = ni + ',' + nj;
       if (cells.has(key) || (avoid && avoid.has(key))) continue;
       cells.add(key); order.push([ni, nj]);
@@ -113,47 +113,88 @@
     const pal = (opts.locked && palettes[opts.lockedIdx]) ? palettes[opts.lockedIdx] : rng.weighted(palettes);
     const R = roles(rng, pal.colors);
 
-    // 1. Suelo plano.
-    ctx.fillStyle = R.ground;
-    ctx.fillRect(0, 0, W, H);
+    // 1. Suelo. Plano por diseño —figura/fondo necesita un plano estable— salvo
+    //    que el laboratorio pida 'gradient'. Stream propio: la composición igual.
+    if (E.bgMode(params) === 'gradient') {
+      E.drawMeshGradient(ctx, W, H, pal.colors, new E.Rng(seed ^ 0xDEADBEEF));
+    } else {
+      ctx.fillStyle = R.ground;
+      ctx.fillRect(0, 0, W, H);
+    }
 
-    // 2. Malla n×n, retirada del borde.
+    // 2. Malla retirada del borde. La CELDA es siempre cuadrada: n celdas en el
+    //    lado corto, y el lado largo se lleva las que le caben. Así el formato
+    //    no añade aire, añade retículo: en vertical la misma seed no es la
+    //    misma obra estirada, es la obra pensada de pie.
+    //
+    //    El margen ha de ser el MISMO en los cuatro lados, y eso, con la celda
+    //    cuadrada, deja de ser gratis: si el retículo es n×(n+k), de S−2m=n·p y
+    //    L−2m=(n+k)·p sale p=(L−S)/k. El paso lo fija k, y el margen es
+    //    consecuencia — no un parámetro. Se toma la k cuyo margen cae más cerca
+    //    del objetivo; con la proporción DIN eso da 4×6, 5×8, 7×11…
     const n = params.grid ? params.grid : rng.int(3, 7);
-    const m = Math.round(Math.min(W, H) * MARGIN);
-    const inner = Math.min(W, H) - m * 2;
-    const pitch = inner / n;
+    const S = Math.min(W, H), L = Math.max(W, H);
+    let pitch, mg, nL;
+    if (L - S < 1) {                       // cuadrado: el margen sí es el objetivo
+      mg = Math.round(S * MARGIN);
+      pitch = (S - mg * 2) / n;
+      nL = n;
+    } else {
+      let best = null;
+      for (let k = 1; k <= 12; k++) {
+        const p = (L - S) / k, m = (S - n * p) / 2;
+        if (m < S * 0.04) continue;        // sin margen no hay suelo que leer
+        const d = Math.abs(m - S * MARGIN);
+        if (!best || d < best.d) best = { p, m, k, d };
+      }
+      pitch = best.p; mg = best.m; nL = n + best.k;
+    }
+    const cols = W >= H ? nL : n, rows = W >= H ? n : nL;
     const size = pitch / GUTTER;
-    const offX = (W - inner) / 2, offY = (H - inner) / 2;
+    const offX = (W - cols * pitch) / 2, offY = (H - rows * pitch) / 2;
 
-    // 3. Máscara de presencia (n×n tiradas).
+    // 3. Máscara de presencia (una tirada por celda).
     const composition = [];
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < cols; i++) {
       composition.push([]);
-      for (let j = 0; j < n; j++) composition[i].push(rng.next());
+      for (let j = 0; j < rows; j++) composition[i].push(rng.next());
     }
 
     // 4. Capa de pertenencia.
-    const target = rng.int(2, Math.max(2, Math.round(n * n * 0.45)));
-    const region = grow(rng, n, target, null);
-    const twin = rng.bool(P_TWIN) ? grow(rng, n, rng.int(2, Math.max(2, Math.round(n * n * 0.2))), region) : new Set();
+    const total = cols * rows;
+    const target = rng.int(2, Math.max(2, Math.round(total * 0.45)));
+    const region = grow(rng, cols, rows, target, null);
+    const twin = rng.bool(P_TWIN) ? grow(rng, cols, rows, rng.int(2, Math.max(2, Math.round(total * 0.2))), region) : new Set();
     const accent = new Set();
     if (rng.bool(P_ACCENT)) {
-      const ai = rng.int(0, n - 1), aj = rng.int(0, n - 1), key = ai + ',' + aj;
+      const ai = rng.int(0, cols - 1), aj = rng.int(0, rows - 1), key = ai + ',' + aj;
       if (!region.has(key) && !twin.has(key)) accent.add(key);
     }
 
     ctx.save();
     ctx.translate(offX, offY);
     ctx.fillStyle = R.block;
+    // El bloque llena su celda —así dos contiguas comparten arista y la región
+    // se lee como una masa— pero el círculo deja dentro de la suya el aire del
+    // GUTTER. Sin más, una región que toca el borde encoge el margen aparente
+    // justo ese aire, y el margen deja de leerse igual en los cuatro lados. Se
+    // recorta SOLO el contorno exterior del campo: dentro nada cambia, y la
+    // tinta —bloque o punto— arranca a la misma distancia del papel.
+    const air = (pitch - size) / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(air, air, cols * pitch - air * 2, rows * pitch - air * 2);
+    ctx.clip();
     paintCells(ctx, region, pitch);
     paintCells(ctx, twin, pitch);
     paintCells(ctx, accent, pitch);
+    ctx.restore();
 
     // 5. Círculos — color constante: el punto no compite con la región.
     ctx.fillStyle = R.dot;
     let drawn = 0;
-    for (let i = 0; i < n; i++) {
-      for (let j = 0; j < n; j++) {
+    for (let i = 0; i < cols; i++) {
+      for (let j = 0; j < rows; j++) {
         if (composition[i][j] <= threshold) {
           ctx.beginPath();
           ctx.arc((i + 0.5) * pitch, (j + 0.5) * pitch, size / 2, 0, Math.PI * 2);
@@ -167,7 +208,7 @@
     // 6. Grano — unit mantiene su tamaño al subir a resolución de impresión.
     E.grain(ctx, W, H, pal.colors, grainScale, E.unit(W, H, REF));
 
-    return { pal, n, drawn, region, twin, accent, roles: R };
+    return { pal, n, cols, rows, drawn, region, twin, accent, roles: R };
   }
 
   // ── Traits ─────────────────────────────────────────────────────────────────
@@ -189,11 +230,14 @@
   }
 
   function traits(res) {
-    const total = res.n * res.n;
+    const cols = res.cols || res.n, rows = res.rows || res.n;
+    const total = cols * rows;
     const coveragePct = Math.round((res.drawn / total) * 100);
     const coverageLabel = coveragePct > 70 ? 'Full' : coveragePct > 40 ? 'Scattered' : coveragePct > 0 ? 'Sparse' : 'Empty';
     const coverageR = coveragePct === 0 ? 'legendary' : coveragePct > 70 ? 'uncommon' : 'common';
 
+    // La rareza la fija n (celdas en el lado corto), que es la decisión; las
+    // celdas del lado largo son consecuencia del formato, no una tirada más.
     const gridLabel = res.n <= 3 ? 'Small' : res.n <= 5 ? 'Medium' : 'Large';
     const gridR = res.n === 7 ? 'uncommon' : res.n === 3 ? 'uncommon' : 'common';
 
@@ -217,7 +261,7 @@
     return {
       list: [
         { key: 'Palette',  val: res.pal.name, colors: res.pal.colors, rarity: E.palRarity(prob) },
-        { key: 'Grid',     val: res.n + '×' + res.n + ' · ' + gridLabel, rarity: gridR },
+        { key: 'Grid',     val: cols + '×' + rows + ' · ' + gridLabel, rarity: gridR },
         { key: 'Region',   val: regionLabel, rarity: regionR },
         { key: 'Coverage', val: coverageLabel + ' · ' + coveragePct + '%', rarity: coverageR },
         { key: 'Ground',   val: groundLabel, rarity: groundR },

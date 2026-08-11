@@ -139,6 +139,16 @@
     const d = (Date.now() - created) / 86400000;
     return d < 30 ? 4 : d < 90 ? 2 : d < 180 ? 1 : d < 365 ? 0.4 : 0.15;
   }
+  // ── Fondo: opción transversal del laboratorio ───────────────────────────────
+  // 'solid' o 'gradient' es una decisión que atraviesa TODAS las obras, no un
+  // parámetro de cada una: es justo lo que separaba a KRRTK de KRRTKG. Cada
+  // algoritmo la respeta a su manera; 'auto' = lo que la obra hace por defecto.
+  //   params.bg → 'auto' | 'solid' | 'gradient'
+  function bgMode(params, dflt) {
+    const v = params && params.bg;
+    return (v && v !== 'auto') ? v : (dflt || 'auto');
+  }
+
   function normalizePalettes(pals) {
     const w = pals.map(p => ageWeight(p.created)), t = w.reduce((a, b) => a + b, 0) || 1;
     return pals.map((p, i) => ({ ...p, prob: w[i] / t }));
@@ -311,7 +321,7 @@
 
   global.HOKS = {
     Rng, hexToRgb, luma, lerpColor, softLight,
-    drawMeshGradient, bakeGrain, applyGrain, grain,
+    drawMeshGradient, bakeGrain, applyGrain, grain, bgMode,
     ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
     FORMATS, SHEETS, SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,
     fmtDims, previewDims, printDims, unit, mountFormat, exportPrint,

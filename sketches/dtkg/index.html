@@ -44,15 +44,6 @@
       <div id="workPicker"></div>
     </div>
     <div class="group">
-      <span class="lbl">Seed</span>
-      <div class="seed-box">
-        <button class="ghost" id="prev">◀</button>
-        <input type="number" id="seed" value="0">
-        <button class="ghost" id="next">▶</button>
-      </div>
-      <button id="rnd">↻ New seed (space)</button>
-    </div>
-    <div class="group">
       <span class="lbl">Format</span>
       <select id="fmt">
         <option value="square">□ Square (1:1)</option>
@@ -62,9 +53,31 @@
       <span class="hintline">proporción DIN — misma seed, otra composición</span>
     </div>
     <div class="group">
+      <span class="lbl">Seed</span>
+      <div class="seed-box">
+        <button class="ghost" id="prev">◀</button>
+        <input type="number" id="seed" value="0">
+        <button class="ghost" id="next">▶</button>
+      </div>
+      <button id="rnd">↻ New seed (space)</button>
+    </div>
+    <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
       <div id="palPicker"></div>
       <span class="hintline">incluye activas e inactivas</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Background</span>
+      <select id="bg">
+        <option value="auto">Auto (lo propio de la obra)</option>
+        <option value="solid">Solid</option>
+        <option value="gradient">Gradient</option>
+      </select>
+      <span class="hintline">transversal: es lo que separaba a KRT de KRTG</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
+      <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
     </div>
     <div class="group">
       <span class="lbl">Grid · <span id="gridV">auto</span></span>
@@ -75,10 +88,6 @@
       <span class="lbl">Threshold · <span id="thV">0.80</span></span>
       <input type="range" id="th" min="0.1" max="1" step="0.05" value="0.8">
       <span class="hintline">más alto = más círculos (producción: 0.80)</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
-      <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
     </div>
     <div class="group">
       <span class="lbl">Batch</span>
@@ -124,6 +133,7 @@ const $ = id => document.getElementById(id);
 
 function params() {
   return {
+    bg:         $('bg').value,
     grainScale: parseFloat($('grain').value),
     grid:       parseInt($('grid').value, 10) || 0,
     threshold:  parseFloat($('th').value),
@@ -198,6 +208,7 @@ $('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('grid').oninput = () => { $('gridV').textContent = $('grid').value === '0' ? 'auto' : $('grid').value + '×' + $('grid').value; refresh(); };
 $('th').oninput = () => { $('thV').textContent = parseFloat($('th').value).toFixed(2); refresh(); };
+$('bg').onchange = refresh;
 $('grain').oninput = () => { $('grainV').textContent = parseFloat($('grain').value).toFixed(1); refresh(); };
 $('sheet').onclick = () => setSheet(!sheetMode);
 $('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `dtkg_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
@@ -218,7 +229,7 @@ $('fmt').value = FORMAT;
 $('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
 HOKSLAB.mountWorkPicker($('workPicker'), 'dtkg', () => seed);
 batch = HOKSBATCH.mount($('batchPanel'), {
-  work: SLUG, getRecipe: recipeFor, getPalettes: () => PALETTES,
+  work: SLUG, getRecipe: recipeFor, getPalettes: () => PALETTES, getSeed: () => seed,
   toast: m => { $('status').textContent = m; },
 });
 // Un lote puede mezclar obras: para pintar su tira hacen falta todos los algos.

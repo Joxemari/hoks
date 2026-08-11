@@ -25,17 +25,26 @@
 
     function fill(works) {
       sel.innerHTML = works.map(w =>
-        `<option value="${w.slug}"${w.slug === currentSlug ? ' selected' : ''}>` +
-        `${w.name}${w.active === false ? ' · (inactiva)' : ''}</option>`).join('');
+        `<option value="${w.slug}"${w.slug === currentSlug ? ' selected' : ''}>${w.name}</option>`).join('');
     }
     // Sin red (file://, sin conexión) el laboratorio tiene que seguir abriendo.
-    fill(GRADUATED.map(s => ({ slug: s, name: s.toUpperCase(), active: true })));
+    fill(GRADUATED.map(s => ({ slug: s, name: s.toUpperCase() })));
 
     fetch(RAW + 'works.json?t=' + Date.now())
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!Array.isArray(data)) return;
-        const works = data.filter(w => GRADUATED.includes(w.slug));
+        // Solo las ACTIVAS: el laboratorio es la mesa de trabajo, no el archivo.
+        // Una familia retirada no debe estorbar la lista — se sigue pudiendo
+        // abrir por URL (../<slug>/) mientras tenga su algo.js.
+        const works = data.filter(w => GRADUATED.includes(w.slug) && w.active !== false);
+        // La obra abierta se queda en la lista aunque esté retirada: si no, el
+        // selector mostraría otra cosa distinta de lo que hay en pantalla.
+        if (!works.some(w => w.slug === currentSlug)) {
+          const me = data.find(w => w.slug === currentSlug);
+          works.unshift(me ? { ...me, name: me.name + ' · (retirada)' }
+                           : { slug: currentSlug, name: currentSlug.toUpperCase() });
+        }
         if (works.length) fill(works);
       })
       .catch(() => {});

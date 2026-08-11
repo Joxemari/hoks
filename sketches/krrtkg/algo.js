@@ -45,8 +45,15 @@
     const ox = (W - S) / 2, oy = (H - S) / 2;
 
     // 1. Mesh gradient de fondo (stream RNG independiente, como el original).
+    // Fondo: mesh gradient (lo propio de la obra) o plano si el laboratorio pide
+    // 'solid'. Se sortea en su propio stream, así la composición no se entera.
     const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
-    E.drawMeshGradient(ctx, W, H, colors, rngBg);
+    if (E.bgMode(params) === 'solid') {
+      ctx.fillStyle = colors[rngBg.int(0, colors.length - 1)];
+      ctx.fillRect(0, 0, W, H);
+    } else {
+      E.drawMeshGradient(ctx, W, H, colors, rngBg);
+    }
 
     // 2. Construir cuadrados (algoritmo KRRTK fiel, splice incluido).
     const squares = [{ x: margin, y: margin, size: a, color: colors[rng.int(0, colors.length - 1)] }];
