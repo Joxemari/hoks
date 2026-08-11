@@ -129,6 +129,7 @@ canvas {
 </head>
 <body>
 <script src="nav.js"></script>
+<script src="usage.js"></script>
 <div class="layout">
   <aside class="sidebar">
     <div class="sidebar-section">
@@ -275,7 +276,7 @@ const OVERLAP_TOL   = { Solo:0.15, Scattered:0.35, Dense:0.60 };
 const PLACEMENT_ATT = 20;
 
 let palettes = [], currentSeed = rand32(), gallery = [];
-let lastTraits = [], lastOverall = '', currentTimestamp = new Date();
+let lastTraits = [], lastOverall = '', lastPal = null, currentTimestamp = new Date();
 let _generating = false;
 
 function rand32() { return Math.random() * 0xFFFFFFFF >>> 0; }
@@ -358,7 +359,7 @@ function draw(s) {
   const rng = new Rng(s);
 
   const arch = rng.weighted(ARCHETYPES);
-  const pal  = getActivePalette(rng);
+  const pal  = getActivePalette(rng); lastPal = pal;
   const colors = pal.colors;
   const sizePct = rng.range(arch.sizeMin, arch.sizeMax);
   const maxSize = Math.min(W,H) * sizePct;
@@ -464,9 +465,12 @@ async function saveGallery() { await ghPush('data/plls.json', gallery); }
 async function saveToGallery() {
   const src = document.getElementById('c');
   const dataUrl = src.toDataURL('image/jpeg', 0.9);
-  gallery.unshift({seed:currentSeed, dataUrl, savedAt:Date.now()});
+  const ts = Date.now();
+  gallery.unshift({seed:currentSeed, dataUrl, savedAt:ts});
   if(gallery.length>50) gallery=gallery.slice(0,50);
-  toast(HOKSI18N.en('toast.saving')); await saveGallery(); renderGallery(); toast(HOKSI18N.en('toast.savedGallery'));
+  toast(HOKSI18N.en('toast.saving')); await saveGallery();
+  await HOKSUSAGE.record('pills', currentSeed, ts, lastPal);
+  renderGallery(); toast(HOKSI18N.en('toast.savedGallery'));
 }
 function loadExactIteration(item) {
   const canvas = document.getElementById('c');
@@ -474,7 +478,7 @@ function loadExactIteration(item) {
   const img = new Image();
   img.onload = () => { ctx.globalCompositeOperation='source-over'; ctx.drawImage(img,0,0,canvas.width,canvas.height); };
   img.src = item.dataUrl;
-  currentSeed = item.seed;
+  currentSeed = item.seed; lastPal = null;
   currentTimestamp = item.savedAt ? new Date(item.savedAt) : new Date();
   document.getElementById('seedDisplay').textContent = '#'+item.seed;
   const tsEl = document.getElementById('timestampDisplay');
