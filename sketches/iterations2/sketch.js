@@ -171,7 +171,7 @@ const DEF = {
   placeJitter:  0.35,    // desplazamiento en el marco, × margen libre
 
   pad:          0.07,
-  corner:       "rectas",    // rectas | curvas — MANDO ÚNICO de la esquina
+  corner:       "rectas",    // rectas | curvas | muycurvas — MANDO ÚNICO
   ends:         "rectos",    // redondos | rectos
   tinta:        "solido",    // solido | gradiente
   juntaSolape:  0.05,        // alargue en las juntas internas, × anchura
@@ -182,9 +182,14 @@ const DEF = {
   // RECORRIDO y el otro sólo cambia el lineJoin del CONTORNO, así que
   // "rectas" con curvatura 0,4 daba una esquina redonda por fuera y
   // viva por dentro, que no es ninguna de las dos cosas.
-  //   rectas → recorrido en ángulo vivo y junta a inglete (la cinta
-  //            doblada, que es la referencia de la que salió la obra)
-  //   curvas → cada vértice redondeado a fondo y junta redonda
+  //   rectas    → ángulo vivo y junta a inglete (la cinta doblada, que es
+  //               la referencia de la que salió la obra)
+  //   curvas    → cada vértice redondeado hasta la mitad del tramo más
+  //               corto, que es el máximo antes de que dos redondeos
+  //               vecinos choquen, y junta redonda
+  //   muycurvas → sin rectas: la curva pasa por los puntos medios de cada
+  //               tramo con los vértices de control. Cambio de mecanismo,
+  //               no un número más alto
   curva:        0,           // derivado; no lo pongas a mano
   miterLimit:   1.0,         // el pico de inglete es tinta FUERA de la banda: no existe         // por encima, el pico del halo raja la hebra vecina
 
@@ -234,7 +239,7 @@ const FAMILY_NAMES = Object.keys(FAMILIES);
 // ------------------------------------------------------------
 function generate(seed, cfg) {
   cfg = Object.assign({}, DEF, cfg || {});
-  cfg.curva = cfg.corner === "curvas" ? 1 : 0;
+  cfg.curva = cfg.corner === "muycurvas" ? 2 : cfg.corner === "curvas" ? 1 : 0;
 
   randomSeed(seed);
   noiseSeed(seed);
@@ -1262,6 +1267,7 @@ function renderComposition(ctx, ox, oy, S, comp) {
   // ============================================================
   const acum = arcosDe(mapped);
   const total = acum[acum.length - 1];
+  _densa = curvaDensa(mapped, acum, cfg);
 
   const secciones = comp.plano.secciones.map(([a, b]) =>
     [arcoDeParam(mapped, acum, a), arcoDeParam(mapped, acum, b)]);
@@ -1332,6 +1338,7 @@ function renderComposition(ctx, ox, oy, S, comp) {
 
   if (cfg.dots === "encima") drawDots(ctx, mapped, width, comp, ox, oy, S);
 
+  _densa = null;
   return { mapped, width };
 }
 
@@ -1465,6 +1472,22 @@ function anguloCruce(mapped, sA, sB) {
 // Un tramo de cinta entre dos distancias, con sus vértices intactos.
 function trazarTramo(ctx, mapped, acum, a, b, w, paint, cfg, junta) {
   if (b - a < 1e-6) return;
+  if (_densa) {
+    // recorte de la curva global: ya viene aplanada, así que se traza a
+    // rectas y strokePath no vuelve a curvar nada
+    const { pts: P, arco: A } = _densa;
+    const en = (d) => {
+      let i = 0;
+      while (i < A.length - 2 && A[i+1] < d) i++;
+      const t = (d - A[i]) / max(A[i+1] - A[i], 1e-9);
+      return p5.Vector.lerp(P[i], P[i+1], constrain(t, 0, 1));
+    };
+    const trozo = [en(a)];
+    for (let i = 0; i < A.length; i++) if (A[i] > a && A[i] < b) trozo.push(P[i].copy());
+    trozo.push(en(b));
+    if (trozo.length >= 2) strokePath(ctx, trozo, w, paint, Object.assign({}, cfg, { curva: 0 }), junta);
+    return;
+  }
   const pts = [puntoEnArco(mapped, acum, a)];
   for (let i = 0; i < acum.length; i++) if (acum[i] > a && acum[i] < b) pts.push(mapped[i].copy());
   pts.push(puntoEnArco(mapped, acum, b));
@@ -1500,6 +1523,62 @@ function tramoDePath(mapped, s, radio) {
   return lado(-1).reverse().concat([centro], lado(1));
 }
 
+// LA CURVA, UNA SOLA VEZ
+// Cortando el recorrido en secciones y re-curvando cada trozo por
+// separado, las dos curvas NO COINCIDEN en la costura: el eje curvo se
+// aparta del polígono hasta un cuarto del tramo, y cada sección se lo
+// aparta a su manera porque sus puntos de control son otros. En el
+// dibujo eso sale como una cuña de tinta donde debería ir la incisión.
+//
+// Así que la curva se calcula entera una vez, se aplana, y cada sección
+// se recorta DE ELLA. Todas las piezas caen sobre el mismo eje y las
+// costuras casan.
+let _densa = null;   // { pts, arco } — arco en la escala del polígono
+
+function curvaDensa(mapped, acum, cfg) {
+  const k = cfg.curva || 0;
+  if (k <= 0.001 || mapped.length < 3) return null;
+  const N = 16;
+  const pts = [mapped[0].copy()], arco = [0];
+  const mitad = (a, b) => createVector((a.x+b.x)/2, (a.y+b.y)/2);
+  const q = (p0, p1, p2, t) => createVector(
+    (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x,
+    (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y);
+
+  if (k >= 2) {
+    let prev = mapped[0], arcPrev = 0;
+    for (let i = 1; i < mapped.length - 1; i++) {
+      const m = mitad(mapped[i], mapped[i+1]);
+      const arcFin = (acum[i] + acum[i+1]) / 2;      // el punto medio del tramo i
+      for (let t = 1; t <= N; t++) {
+        pts.push(q(prev, mapped[i], m, t/N));
+        arco.push(arcPrev + (arcFin - arcPrev) * t/N);
+      }
+      prev = m; arcPrev = arcFin;
+    }
+    pts.push(mapped[mapped.length-1].copy());
+    arco.push(acum[acum.length-1]);
+  } else {
+    for (let i = 1; i < mapped.length - 1; i++) {
+      const a = mapped[i-1], v = mapped[i], b = mapped[i+1];
+      const la = p5.Vector.dist(a, v), lb = p5.Vector.dist(v, b);
+      const r = k * 0.5 * min(la, lb);
+      const ent = p5.Vector.lerp(v, a, r / max(la, 1e-6));
+      const sal = p5.Vector.lerp(v, b, r / max(lb, 1e-6));
+      pts.push(ent); arco.push(acum[i] - r);
+      for (let t = 1; t <= N; t++) {
+        pts.push(q(ent, v, sal, t/N));
+        arco.push(acum[i] - r + 2*r * t/N);
+      }
+    }
+    pts.push(mapped[mapped.length-1].copy());
+    arco.push(acum[acum.length-1]);
+  }
+  // monotonía, por si un tramo cortísimo desordena la escala
+  for (let i = 1; i < arco.length; i++) if (arco[i] < arco[i-1]) arco[i] = arco[i-1];
+  return { pts, arco };
+}
+
 function strokePath(ctx, pts, w, paint, cfg, junta) {
   ctx.save();
   ctx.beginPath();
@@ -1512,6 +1591,19 @@ function strokePath(ctx, pts, w, paint, cfg, junta) {
   const k = cfg.curva || 0;
   if (k <= 0.001 || pts.length < 3) {
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  } else if (k >= 2) {
+    // MUY CURVAS. Redondear más no se puede: en 'curvas' cada vértice ya
+    // se come la mitad del tramo más corto, y pasado eso dos redondeos
+    // vecinos chocan. Para ir más allá hay que cambiar de mecanismo — el
+    // recorrido deja de tener rectas: la curva pasa por los PUNTOS MEDIOS
+    // de cada tramo y usa los vértices como control. Continua y sin
+    // esquinas, ni vivas ni redondeadas.
+    const mitad = (a, b) => ({ x: (a.x+b.x)/2, y: (a.y+b.y)/2 });
+    for (let i = 1; i < pts.length - 1; i++) {
+      const m = mitad(pts[i], pts[i+1]);
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, m.x, m.y);
+    }
+    ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
   } else {
     for (let i = 1; i < pts.length - 1; i++) {
       const a = pts[i-1], v = pts[i], b = pts[i+1];
@@ -1525,7 +1617,7 @@ function strokePath(ctx, pts, w, paint, cfg, junta) {
   }
   ctx.strokeStyle = paint;
   ctx.lineWidth = w;
-  ctx.lineJoin = junta || (cfg.corner === "curvas" ? "round" : "miter");
+  ctx.lineJoin = junta || (cfg.corner === "rectas" ? "miter" : "round");
   ctx.miterLimit = cfg.miterLimit;
   ctx.lineCap = "butt";
   ctx.stroke();
@@ -2125,7 +2217,8 @@ function construirUI() {
   ui.trazo = etiquetaSelect("trazo",
     [["estandar", "estándar"], ["fino", "fino"], ["gordo", "gordo"]], 12, y); y += fila;
 
-  ui.esquinas = etiquetaSelect("esquinas", [["rectas", "rectas"], ["curvas", "curvas"]], 12, y); y += fila;
+  ui.esquinas = etiquetaSelect("esquinas",
+    [["rectas", "rectas"], ["curvas", "curvas"], ["muycurvas", "muy curvas"]], 12, y); y += fila;
   ui.extremos = etiquetaSelect("extremos", [["rectos", "rectos"], ["redondos", "redondos"]], 12, y); y += fila;
 
   ui.dots = etiquetaCheck("discos", true, 12, y); y += fila - 8;

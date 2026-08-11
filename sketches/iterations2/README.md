@@ -32,6 +32,30 @@ con un juego embebido de respaldo. Las paletas de hoks son listas planas sin
 roles, así que el reparto se decide por luminancia: fondo en un extremo, cinta
 con el mayor contraste contra él, discos con el resto.
 
+## Las tres esquinas
+
+Un solo mando con tres valores, y el tercero **no es un número más alto**: es
+otro mecanismo.
+
+- **rectas** — ángulo vivo y junta a inglete. La cinta doblada, que es la
+  referencia de la que salió la obra.
+- **curvas** — cada vértice redondeado hasta la mitad del tramo más corto, que
+  es el máximo antes de que dos redondeos vecinos choquen. Quedan tramos rectos
+  entre esquina y esquina.
+- **muy curvas** — sin una sola recta: la curva pasa por los puntos medios de
+  cada tramo usando los vértices como control.
+
+**La curva se calcula entera una vez y cada sección se recorta de ella.**
+Curvando cada trozo por separado las dos curvas no coinciden en la costura —el
+eje curvo se aparta del polígono hasta un cuarto del tramo, y cada sección se
+aparta a su manera porque sus puntos de control son otros— y en el dibujo eso
+salía como una cuña de tinta donde debía ir la incisión. Con la curva global,
+todas las piezas caen sobre el mismo eje.
+
+Comprobado además que curvar no inventa ni destruye cruces: aplanando el eje
+tal y como se dibuja, los tres modos tienen exactamente los cruces que conoce
+el nudo, en las 40 obras probadas.
+
 ## Restricciones materiales
 
 Una cinta no se pliega más corto que su anchura, no gira sobre sí misma y no se
@@ -133,7 +157,9 @@ abajo, cuánto se acerca al fondo el píxel más claro a cada lado del cruce.
 | trazo fino | 60 | 145 | 0 | 0 |
 | trazo estándar | 60 | 146 | 0 | 0 |
 | trazo gordo | 60 | 146 | 0 | 0 |
-| esquinas curvas | 40 | 99 | 0 | 0 |
+| esquinas rectas | 60 | 146 | 0 | 0 |
+| esquinas curvas | 60 | 146 | 0 | 0 |
+| esquinas muy curvas | 60 | 146 | 0 | 0 |
 
 Cero en las cuatro bandas de ángulo en todas ellas, y 0/200 obras sin tejido
 dibujable. 1,20 s por obra.
