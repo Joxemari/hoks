@@ -8,7 +8,7 @@
  * Se guarda en data/batches.json, commiteado con el token de admin: un lote
  * sobrevive al navegador y se puede retomar meses después.
  *
- *   HOKSBATCH.mount(host, { work, getRecipe, getPalettes, toast })
+ *   HOKSBATCH.mount(host, { work, getRecipe, getPalettes, getSeed, toast })
  *     .add(seed)   → mete esa seed del harness actual en el lote abierto
  *
  * Depende de _lab.js (para cargar los algos de todas las obras graduadas) y de
@@ -32,6 +32,9 @@
   color:var(--ink,#111); border-radius:2px; padding:6px 8px; cursor:pointer; }
 .hb-btn:hover { background:var(--surface,#f7f7f7); }
 .hb-btn[disabled] { opacity:0.4; cursor:default; }
+.hb-take { width:100%; padding:8px; background:var(--ink,#111); color:#fff; border-color:var(--ink,#111); }
+.hb-take:hover { background:var(--ink,#111); opacity:0.78; }
+.hb-take[disabled] { background:transparent; color:var(--ink3,#bbb); border-color:var(--border,#e8e8e8); opacity:1; }
 .hb-strip { display:flex; gap:4px; overflow-x:auto; min-height:46px; padding:2px 0; }
 .hb-item { position:relative; flex-shrink:0; }
 .hb-item canvas { display:block; height:46px; width:auto; outline:1px solid rgba(0,0,0,0.12); cursor:pointer; }
@@ -118,6 +121,11 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     host.innerHTML =
       `<div class="hb-row"><select id="hb-sel"></select>` +
       `<button class="hb-btn" id="hb-new" title="Lote nuevo">+</button></div>` +
+      // En vista única no había forma de meter la pieza en el lote salvo la
+      // tecla `a`: el + solo existía sobre las miniaturas de la hoja de
+      // contactos, y encima al pasar el ratón. El botón es la acción principal
+      // del panel, así que va en el panel.
+      `<button class="hb-btn hb-take" id="hb-add">+ Añadir esta pieza <span style="opacity:.5">(a)</span></button>` +
       `<div class="hb-strip" id="hb-strip"></div>` +
       `<div class="hb-row"><select id="hb-res">` +
       global.HOKS.SHEET_IDS.map(id => `<option value="${id}"${id === global.HOKS.DEFAULT_SHEET ? ' selected' : ''}>${id} · 300 dpi</option>`).join('') +
@@ -146,6 +154,8 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     }
     function renderStrip() {
       const b = openBatch(), strip = $('hb-strip');
+      $('hb-add').disabled = !b;
+      $('hb-add').title = b ? 'Añade la pieza en pantalla al lote «' + b.name + '»' : 'Elige o crea un lote primero';
       if (!b) { strip.innerHTML = '<span class="hb-empty">sin lote abierto</span>'; $('hb-dl').disabled = $('hb-pub').disabled = true; return; }
       $('hb-dl').disabled = $('hb-pub').disabled = !b.items.length;
       if (!b.items.length) { strip.innerHTML = '<span class="hb-empty">vacío · pulsa <b>a</b> o el + de la hoja de contactos</span>'; return; }
@@ -250,6 +260,11 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     };
     $('hb-new').onclick = create;
     $('hb-dl').onclick = download;
+    $('hb-add').onclick = () => {
+      if (!opts.getSeed) { toast('El harness no expone la seed actual'); return; }
+      if (add(opts.getSeed())) { $('hb-add').textContent = '✓ En el lote';
+        setTimeout(() => { $('hb-add').innerHTML = '+ Añadir esta pieza <span style="opacity:.5">(a)</span>'; }, 1100); }
+    };
 
     // Avisa si te vas con cambios sin commitear.
     window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });

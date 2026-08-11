@@ -35,8 +35,15 @@
     const colors = pal.colors;
 
     // 1. Mesh gradient de fondo (stream RNG independiente, como el original).
+    // Fondo: mesh gradient (lo propio de la obra) o plano si el laboratorio pide
+    // 'solid'. Se sortea en su propio stream, así la composición no se entera.
     const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
-    E.drawMeshGradient(ctx, W, H, colors, rngBg);
+    if (E.bgMode(params) === 'solid') {
+      ctx.fillStyle = colors[rngBg.int(0, colors.length - 1)];
+      ctx.fillRect(0, 0, W, H);
+    } else {
+      E.drawMeshGradient(ctx, W, H, colors, rngBg);
+    }
 
     // 2. Rejilla — n de 1 a 7. Celda = size*1.1 (10% de aire). La rejilla es
     //    CUADRADA y se centra en el lienzo: en cuadrado ocupa todo el ancho;

@@ -54,6 +54,15 @@
       <div id="workPicker"></div>
     </div>
     <div class="group">
+      <span class="lbl">Format</span>
+      <select id="fmt">
+        <option value="square">□ Square (1:1)</option>
+        <option value="vertical">▯ Vertical (1:√2)</option>
+        <option value="horizontal">▭ Horizontal (√2:1)</option>
+      </select>
+      <span class="hintline">proporción DIN — misma seed, otra composición</span>
+    </div>
+    <div class="group">
       <span class="lbl">Seed</span>
       <div class="seed-box">
         <button class="ghost" id="prev" title="seed − 1 (←)">◀</button>
@@ -64,19 +73,24 @@
     </div>
 
     <div class="group">
-      <span class="lbl">Format</span>
-      <select id="fmt">
-        <option value="square">□ Square (1:1)</option>
-        <option value="vertical">▯ Vertical (1:√2)</option>
-        <option value="horizontal">▭ Horizontal (√2:1)</option>
-      </select>
-      <span class="hintline">proporción DIN — misma seed, otra composición</span>
-    </div>
-    <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
       <div id="palPicker"></div>
       <div id="palBar" style="display:flex;height:16px;border-radius:2px;overflow:hidden;border:1px solid var(--border)"></div>
       <span class="hintline">incluye activas e inactivas · la barra = paleta en uso</span>
+    </div>
+
+    <div class="group">
+      <span class="lbl">Background</span>
+      <select id="bg">
+        <option value="auto">Auto (lo propio de la obra)</option>
+        <option value="solid">Solid</option>
+        <option value="gradient">Gradient</option>
+      </select>
+    </div>
+
+    <div class="group">
+      <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
+      <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
     </div>
 
     <div class="group">
@@ -91,16 +105,6 @@
     </div>
 
     <div class="group">
-      <span class="lbl">Background</span>
-      <select id="bg">
-        <option value="auto">Auto (por pesos)</option>
-        <option value="solid">Solid</option>
-        <option value="radial">Radial</option>
-        <option value="diagonal">Diagonal</option>
-      </select>
-    </div>
-
-    <div class="group">
       <span class="lbl">Pill count · <span id="countV">auto</span></span>
       <input type="range" id="count" min="0" max="30" step="1" value="0">
       <span class="hintline">0 = el del arquetipo</span>
@@ -109,11 +113,6 @@
     <div class="group">
       <span class="lbl">Grosor cápsula (×) · <span id="thickV">1.0</span></span>
       <input type="range" id="thick" min="0.5" max="1.5" step="0.05" value="1">
-    </div>
-
-    <div class="group">
-      <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
-      <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
     </div>
 
     <div class="group">
@@ -203,7 +202,7 @@ function params() {
   return {
     grainScale: parseFloat($('grain').value),
     archetype: $('arch').value,
-    bgMode: $('bg').value,
+    bg: $('bg').value,
     count: parseInt($('count').value, 10) || 0,
     thickness: parseFloat($('thick').value),
     archProbs: { ...archProbs },
@@ -318,7 +317,7 @@ function copyWeights() {
 
 // ── RECETA ──
 function currentRecipe() {
-  return { work: 'pllsg', seed: seed >>> 0, palSel, archetype: $('arch').value, bgMode: $('bg').value, count: parseInt($('count').value, 10) || 0, thickness: parseFloat($('thick').value), grainScale: parseFloat($('grain').value), archProbs: { ...archProbs }, finishProbs: { ...finishProbs } };
+  return { work: 'pllsg', seed: seed >>> 0, palSel, archetype: $('arch').value, bg: $('bg').value, count: parseInt($('count').value, 10) || 0, thickness: parseFloat($('thick').value), grainScale: parseFloat($('grain').value), archProbs: { ...archProbs }, finishProbs: { ...finishProbs } };
 }
 function applyRecipe(r) {
   if (!r) return;
@@ -401,7 +400,7 @@ $('fmt').value = FORMAT;
 $('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
 HOKSLAB.mountWorkPicker($('workPicker'), 'pllsg', () => seed);
 batch = HOKSBATCH.mount($('batchPanel'), {
-  work: SLUG, getRecipe: recipeFor, getPalettes: () => PALETTES,
+  work: SLUG, getRecipe: recipeFor, getPalettes: () => PALETTES, getSeed: () => seed,
   toast: m => { $('status').textContent = m; },
 });
 // Un lote puede mezclar obras: para pintar su tira hacen falta todos los algos.

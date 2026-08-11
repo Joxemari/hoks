@@ -190,7 +190,13 @@
     const thick = maxSize * rng.range(0.62, 0.78) * (params.thickness || 1);
     const tol = OL_TOL[arch.name] * Math.min(1.0, num / 8);
 
-    const bgColors = drawBg(ctx, W, H, colors, rng, params.bgMode);
+    // La opción transversal manda sobre el modo propio: 'gradient' deja que el
+    // RNG elija entre radial y diagonal, que es lo que la obra entiende por eso.
+    const bgT = E.bgMode(params);
+    const bgForce = bgT === 'solid' ? 'solid'
+      : bgT === 'gradient' ? (rng.bool(0.5) ? 'radial' : 'diagonal')
+      : params.bgMode;
+    const bgColors = drawBg(ctx, W, H, colors, rng, bgForce);
 
     // Margen = extensión máxima de la cápsula desde su centro (hl + radio del cap).
     // Así todas caben sin recortes → todas conservan la MISMA proporción.

@@ -113,9 +113,14 @@
     const pal = (opts.locked && palettes[opts.lockedIdx]) ? palettes[opts.lockedIdx] : rng.weighted(palettes);
     const R = roles(rng, pal.colors);
 
-    // 1. Suelo plano.
-    ctx.fillStyle = R.ground;
-    ctx.fillRect(0, 0, W, H);
+    // 1. Suelo. Plano por diseño —figura/fondo necesita un plano estable— salvo
+    //    que el laboratorio pida 'gradient'. Stream propio: la composición igual.
+    if (E.bgMode(params) === 'gradient') {
+      E.drawMeshGradient(ctx, W, H, pal.colors, new E.Rng(seed ^ 0xDEADBEEF));
+    } else {
+      ctx.fillStyle = R.ground;
+      ctx.fillRect(0, 0, W, H);
+    }
 
     // 2. Malla retirada del borde. La CELDA es siempre cuadrada: n celdas en el
     //    lado corto, y el lado largo se lleva las que le caben. Así el formato
