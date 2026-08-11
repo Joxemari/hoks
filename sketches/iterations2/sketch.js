@@ -82,6 +82,10 @@ function pickRoles(colors) {
   return { bg, fg, fg2, dot, dots };
 }
 
+// Tres grosores fijos en vez de un slider continuo: el estándar
+// calibrado a las referencias, uno fino y uno gordo.
+const ANCHOS = { fino: 0.42, estandar: 0.64, gordo: 0.88 };
+
 const DEF = {
   vertexMin: 9,
   vertexMax: 15,
@@ -94,9 +98,11 @@ const DEF = {
   // La anchura NO es un valor absoluto: es una proporción de la
   // mediana de segmento. Así el material se mantiene coherente
   // aunque la familia tenga otra escala interna.
-  widthOfSeg:   0.64,
+  trazo:        "estandar",  // fino | estandar | gordo
+  widthOfSeg:   null,        // si se fija, manda sobre trazo
   widthMin:     0.022,
-  cabo:         0.20,        // cuánto se mete el cabo de cada sección bajo la hebra que lo tapa, x anchura
+  cabo:         0.20,        // cabo mínimo
+  caboMargen:   1.20,        // cuánto se pasa del borde de la hebra que lo tapa        // cuánto se mete el cabo de cada sección bajo la hebra que lo tapa, x anchura
   cruceMinDeg:  40,          // ángulo mínimo de cruce: por debajo, la hebra de abajo queda en astilla
   reintentos:   6,           // tejidos alternativos que se prueban con el mismo seed
   densidad:     true,        // entre los que pasan, quedarse con el más entrelazado
@@ -237,6 +243,7 @@ function generate(seed, cfg) {
 // ------------------------------------------------------------
 function tejer(family, vueltas, cfg) {
   const spec = FAMILIES[family];
+  const anchura = cfg.widthOfSeg || ANCHOS[cfg.trazo] || ANCHOS.estandar;
 
   // El esqueleto se recorre varias veces, cada pasada girada y
   // encogida. La cinta vuelve a entrar en el marco y se cruza con lo
@@ -268,7 +275,7 @@ function tejer(family, vueltas, cfg) {
   // La extensión declarada vale para UNA pasada. Cada vuelta añade
   // recorrido dentro del mismo marco y necesita más campo.
   nodes = fitToExtent(nodes, min(0.98, spec.extent + 0.12 * (vueltas - 1)), cfg);
-  let width = constrain(cfg.widthOfSeg * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
+  let width = constrain(anchura * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
 
   // Las tres restricciones se estorban entre sí: abrir un pliegue
   // acorta segmentos, separar hebras cierra giros. Se iteran juntas.
@@ -276,7 +283,7 @@ function tejer(family, vueltas, cfg) {
     nodes = enforceMaterial(nodes, width, cfg);
     nodes = relaxFolds(nodes, cfg);
     nodes = selfAvoid(nodes, width, cfg);
-    width = constrain(cfg.widthOfSeg * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
+    width = constrain(anchura * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
   }
 
   // Encoger es lo último de cada fase: cualquier reajuste posterior
@@ -284,7 +291,7 @@ function tejer(family, vueltas, cfg) {
   // las hebras, así que la evitación se repasa ya dentro del marco.
   for (let i = 0; i < 2; i++) {
     nodes = shrinkIntoFrame(nodes, width, cfg);
-    width = constrain(cfg.widthOfSeg * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
+    width = constrain(anchura * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
   }
   for (let i = 0; i < 6; i++) {
     nodes = selfAvoid(nodes, width, cfg);
@@ -300,7 +307,7 @@ function tejer(family, vueltas, cfg) {
     nodes = relaxFolds(nodes, cfg);
     nodes = shrinkIntoFrame(nodes, width, cfg);
   }
-  width = constrain(cfg.widthOfSeg * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
+  width = constrain(anchura * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
 
   // La cinta cede: adelgaza hasta que la incisión quepa, y hasta que
   // ningún tramo sea más corto que ella misma (si no, deja de ser
@@ -758,33 +765,36 @@ function planoDeSecciones(last, cruces) {
   // hace un grabador cuando un nudo no se puede tumbar en el papel.
   const cr = cruces.map(c => ({ arriba: c.arriba, abajo: c.abajo }));
   const veces = cr.map(() => 0);
+  // Un cruce que no se arregla al voltearlo se reportaría eternamente y
+  // agotaría el tope sin converger. Tras dos intentos se acepta como
+  // está y se pasa al siguiente problema.
+  // Cuando la cinta se cruza consigo misma DENTRO de una sección, no hay
+  // orden que lo salve: hay que partir también por el punto de arriba.
+  // Ese cabo no queda al aire — lo tapa su propia otra mitad, que es
+  // justo la que le pasa por encima.
+  const extra = new Set();
   let plan = null, volteados = 0;
 
-  for (let i = 0; i < 200; i++) {
-    plan = ordenar(last, cr);
+  for (let i = 0; i < 120; i++) {
+    plan = ordenar(last, cr, extra);
+    if (plan.imposible >= 0) { extra.add(cr[plan.imposible].arriba); continue; }
     if (plan.culpable < 0) break;
 
-    // Voltear siempre el mismo cruce puede entrar en bucle: si ya se ha
-    // volteado dos veces, se prueba con el siguiente menos tocado.
-    let k = plan.culpable;
-    if (veces[k] >= 2) {
-      let alt = -1;
-      for (let j = 0; j < cr.length; j++) if (alt < 0 || veces[j] < veces[alt]) alt = j;
-      if (alt >= 0) k = alt;
-    }
+    const k = plan.culpable;
     const c = cr[k];
     const t = c.arriba; c.arriba = c.abajo; c.abajo = t;
     veces[k]++; volteados++;
   }
 
-  return { secciones: plan.secciones, orden: plan.orden, ciclos: plan.culpable >= 0 ? 1 : 0,
+  return { secciones: plan.secciones, orden: plan.orden,
+           ciclos: plan.culpable >= 0 ? 1 : 0, partidos: extra.size,
            volteados, cruces: cr };
 }
 
 // Parte la cinta en los cruces donde pasa por debajo y ordena las
 // secciones. Devuelve el índice del cruce que cierra un ciclo, o -1.
-function ordenar(last, cr) {
-  const cortes = cr.map(c => c.abajo)
+function ordenar(last, cr, extra) {
+  const cortes = cr.map(c => c.abajo).concat(Array.from(extra || []))
                    .filter(s => s > 1e-6 && s < last - 1e-6)
                    .sort((a, b) => a - b);
 
@@ -802,13 +812,27 @@ function ordenar(last, cr) {
   const aristas = [];
   const luego = secciones.map(() => []);
   const grado = secciones.map(() => 0);
+  // Si la hebra de arriba cae en la MISMA sección que una de las dos
+  // mitades de abajo, la cinta se cruza consigo misma dentro de una
+  // sección: se pinta de una vez y ahí no hay forma de que una parte
+  // tape a la otra. Se funden sin incisión. Ese cruce hay que voltearlo.
+  let imposible = -1;
   cr.forEach((c, k) => {
-    const arriba = cual(c.arriba);
-    for (const i of [cual(c.abajo - 1e-5), cual(c.abajo + 1e-5)]) {
-      if (i === arriba) continue;
-      if (luego[i].includes(arriba)) continue;
-      luego[i].push(arriba); grado[arriba]++;
-      aristas.push({ de: i, a: arriba, k });
+    if (extra && extra.has(c.arriba)) return;      // ya partido por ahí
+    const a = cual(c.arriba);
+    if (a === cual(c.abajo - 1e-5) || a === cual(c.abajo + 1e-5)) if (imposible < 0) imposible = k;
+  });
+
+  cr.forEach((c, k) => {
+    const arribas = [cual(c.arriba - 1e-5), cual(c.arriba + 1e-5)];
+    const abajos = [cual(c.abajo - 1e-5), cual(c.abajo + 1e-5)];
+    for (const arriba of arribas) {
+      for (const i of abajos) {
+        if (i === arriba) continue;
+        if (luego[i].includes(arriba)) continue;
+        luego[i].push(arriba); grado[arriba]++;
+        aristas.push({ de: i, a: arriba, k });
+      }
     }
   });
 
@@ -843,7 +867,9 @@ function ordenar(last, cr) {
     secciones.forEach((_, i) => { if (!dentro.has(i)) orden.push(i); });
   }
 
-  return { secciones, orden, culpable };
+  // Los cruces imposibles se atienden ANTES que los ciclos: un ciclo
+  // sólo desordena, esto directamente no se puede dibujar.
+  return { secciones, orden, culpable, imposible };
 }
 
 function sToCut(s0, s1, last) {
@@ -923,13 +949,30 @@ function renderComposition(ctx, ox, oy, S, comp) {
     [arcoDeParam(mapped, acum, a), arcoDeParam(mapped, acum, b)]);
   const orden = comp.plano.orden;
 
-  // Cada sección se alarga un pelo por sus dos remates para que el cabo
-  // quede bien dentro de la hebra que lo tapa, nunca justo en su borde.
-  const dentro = width * cfg.cabo;
+  // El cabo de cada sección tiene que llegar MÁS ALLÁ del borde de la
+  // hebra que lo tapa. Ese borde, medido a lo largo de la hebra de
+  // abajo, es (W/2)/sen del ángulo del cruce: en uno oblicuo de 21
+  // grados son 1.4 anchuras, no 0.2. Con un cabo fijo el trozo se queda
+  // corto y la incisión no asoma por ese lado. Cada remate se alarga
+  // según SU cruce.
+  const direccion = (s) => {
+    const i = constrain(floor(s), 0, mapped.length - 2);
+    return p5.Vector.sub(mapped[i+1], mapped[i]).normalize();
+  };
+  const caboEn = (d) => {
+    let largo = width * cfg.cabo;
+    for (const c of comp.cruces) {
+      if (abs(arcoDeParam(mapped, acum, c.abajo) - d) > 1e-6) continue;
+      const sen = max(abs(sin(direccion(c.abajo).angleBetween(direccion(c.arriba)))), 0.18);
+      largo = max(largo, (width / 2) / sen * cfg.caboMargen);
+    }
+    return largo;
+  };
+
   for (const i of orden) {
     const [a, b] = secciones[i];
-    const ini = max(0, a > 0 ? a - dentro : a);
-    const fin = min(total, b < total ? b + dentro : b);
+    const ini = max(0, a > 0 ? a - caboEn(a) : a);
+    const fin = min(total, b < total ? b + caboEn(b) : b);
     if (gap > 0) trazarTramo(ctx, mapped, acum, ini, fin, width + gap * 2, col.bg, cfg, "round");
     trazarTramo(ctx, mapped, acum, ini, fin, width, tinta, cfg);
   }
@@ -1299,7 +1342,7 @@ function opciones() {
     paletas:    PALETAS,
     vueltasMin: int(ui.vueltas.value()),
     vueltasMax: int(ui.vueltas.value()),
-    widthOfSeg: float(ui.anchura.value()),
+    trazo:      ui.trazo.value(),
     corner:     ui.esquinas.value(),
     ends:       ui.extremos.value(),
     tinta:      ui.gradiente.checked() ? "gradiente" : "solido",
@@ -1352,7 +1395,6 @@ function pintarHoja() {
 }
 
 function actualizarInfo() {
-  ui.anchuraV.html(nf(float(ui.anchura.value()), 1, 2));
   ui.dotRV.html(nf(float(ui.dotR.value()), 1, 2));
   ui.vueltasV.html(ui.vueltas.value());
   ui.dotsNV.html(ui.dotsN.value());
@@ -1379,7 +1421,8 @@ function construirUI() {
     [["auto", "Random (weighted)"]].concat(PALETAS.map((p, i) => [i, p.name])), 12, y); y += fila;
 
   [ui.vueltas, ui.vueltasV] = etiquetaSlider("vueltas", 2, 5, DEF.vueltasMax, 1, 12, y); y += fila;
-  [ui.anchura, ui.anchuraV] = etiquetaSlider("anchura", 0.25, 0.95, DEF.widthOfSeg, 0.01, 12, y); y += fila;
+  ui.trazo = etiquetaSelect("trazo",
+    [["estandar", "estándar"], ["fino", "fino"], ["gordo", "gordo"]], 12, y); y += fila;
 
   ui.esquinas = etiquetaSelect("esquinas", [["rectas", "rectas"], ["curvas", "curvas"]], 12, y); y += fila;
   ui.extremos = etiquetaSelect("extremos", [["rectos", "rectos"], ["redondos", "redondos"]], 12, y); y += fila;
@@ -1399,8 +1442,8 @@ function construirUI() {
   estiloTexto(ui.info);
   ui.info.style("line-height", "17px");
 
-  [ui.paleta, ui.esquinas, ui.extremos].forEach(e => e.changed(redibujar));
-  [ui.vueltas, ui.anchura, ui.dotsN, ui.dotR].forEach(e => e.input(redibujar));
+  [ui.paleta, ui.esquinas, ui.extremos, ui.trazo].forEach(e => e.changed(redibujar));
+  [ui.vueltas, ui.dotsN, ui.dotR].forEach(e => e.input(redibujar));
   [ui.dots, ui.gradiente].forEach(e => e.changed(redibujar));
 }
 
