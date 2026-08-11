@@ -83,7 +83,7 @@ Dos reglas que hacen que esto sirva de algo:
   «perfecta» de hace tres iteraciones miente: la obra ya no sale igual. La
   versión es `rN.xxxxx` — `N` a mano cuando cambia el código, la huella sola
   cuando cambian los parámetros. Los mandos del laboratorio (vueltas, trazo,
-  curvatura, esquinas, extremos) **no** cuentan como versión: son rasgos de la
+  esquinas, extremos) **no** cuentan como versión: son rasgos de la
   obra, y se guardan como tales.
 
 Los veredictos viven en `localStorage` y salen en JSON con `e`. El corte de cada
@@ -128,24 +128,10 @@ color, y los tres mintieron:
 El sesgo monótono con el ángulo era la pista: en un cruce rasante la zona de
 solape es un rombo largo y un sondeo por rectas se pierde dentro.
 
-Estado sobre 60 obras · 154 cruces, con la sonda sub-píxel:
-
-| | |
-|---|---|
-| cruces sanos | 145 |
-| **a medias** | **6 (3,9 %)** |
-| **sin corte** | **3 (1,9 %)** |
-| cruce invertido entero | 0 de 102 |
-| remate soldado a otra hebra | 0 de 40 obras |
-| incisión injustificada | 7 px por obra |
-
-El detector anterior de cortes daba **1,3 % a medias y 0 % sin corte**, y las
-dos cifras eran falsas: cantaba un defecto donde la incisión estaba entera
-(seed 559686731 — fondo puro de lado a lado a resolución de píxel) y se comía
-nueve que sí lo eran. Muestreaba tres alturas con un umbral duro; la incisión
-mide 3,3 px sobre 900 y los píxeles mezclados la despistaban en las dos
-direcciones. La sonda actual mide, en cada punto **a lo ancho** de la hebra de
-abajo, cuánto se acerca al fondo el píxel más claro a cada lado del cruce.
+El primer detector daba **1,3 % a medias y 0 % sin corte**, y las dos cifras
+eran falsas: cantaba un defecto donde la incisión estaba entera (seed
+559686731 — fondo puro de lado a lado a resolución de píxel) y se comía nueve
+que sí lo eran.
 
 ### Estado
 
