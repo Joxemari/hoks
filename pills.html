@@ -363,7 +363,10 @@ function applyFormat() {
 }
 FMT = HOKS.mountFormat(document.getElementById('formatMount'), {
   work: 'plls', defaultFormat: 'horizontal',
-  onChange() { applyFormat(); draw(currentSeed); }
+  // El formato es la PRIMERA decisión, no un ajuste posterior: elegirlo fija
+  // el campo de trabajo y la obra se genera ya dentro de él. Por eso no se
+  // readapta la pieza actual — se tira una seed nueva en el formato nuevo.
+  onChange() { applyFormat(); generate(); }
 });
 applyFormat();
 
@@ -491,7 +494,7 @@ async function saveToGallery() {
   const src = document.getElementById('c');
   const dataUrl = src.toDataURL('image/jpeg', 0.9);
   const ts = Date.now();
-  gallery.unshift({seed:currentSeed, dataUrl, savedAt:ts});
+  gallery.unshift({seed:currentSeed, format:FMT.format, dataUrl, savedAt:ts});
   if(gallery.length>50) gallery=gallery.slice(0,50);
   toast(HOKSI18N.en('toast.saving')); await saveGallery();
   await HOKSUSAGE.record('pills', currentSeed, ts, lastPal);
@@ -766,7 +769,7 @@ function saveToBatch() {
   try {
     const active = JSON.parse(localStorage.getItem(key)||'null');
     if (!active || active.work !== 'pills') { toast(HOKSI18N.en('toast.noBatch').replace('%s','PLLS')); return; }
-    active.items.push({ seed: currentSeed, dataUrl, savedAt: Date.now() });
+    active.items.push({ seed: currentSeed, format: FMT.format, dataUrl, savedAt: Date.now() });
     localStorage.setItem(key, JSON.stringify(active));
     checkBatchButton();
     toast(HOKSI18N.en('toast.addedBatch').replace('%1',active.name).replace('%2',active.items.length));

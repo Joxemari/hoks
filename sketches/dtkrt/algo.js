@@ -118,14 +118,32 @@
     ctx.fillRect(0, 0, W, H);
 
     // 2. Malla retirada del borde. La CELDA es siempre cuadrada: n celdas en el
-    //    lado corto fijan el paso, y el lado largo se lleva las que le caben.
-    //    Así el formato no añade aire, añade retículo: en vertical la misma
-    //    seed no es la misma obra estirada, es la obra pensada de pie.
+    //    lado corto, y el lado largo se lleva las que le caben. Así el formato
+    //    no añade aire, añade retículo: en vertical la misma seed no es la
+    //    misma obra estirada, es la obra pensada de pie.
+    //
+    //    El margen ha de ser el MISMO en los cuatro lados, y eso, con la celda
+    //    cuadrada, deja de ser gratis: si el retículo es n×(n+k), de S−2m=n·p y
+    //    L−2m=(n+k)·p sale p=(L−S)/k. El paso lo fija k, y el margen es
+    //    consecuencia — no un parámetro. Se toma la k cuyo margen cae más cerca
+    //    del objetivo; con la proporción DIN eso da 4×6, 5×8, 7×11…
     const n = params.grid ? params.grid : rng.int(3, 7);
     const S = Math.min(W, H), L = Math.max(W, H);
-    const mg = Math.round(S * MARGIN);
-    const pitch = (S - mg * 2) / n;
-    const nL = Math.max(n, Math.round((L - mg * 2) / pitch));   // celdas a lo largo
+    let pitch, mg, nL;
+    if (L - S < 1) {                       // cuadrado: el margen sí es el objetivo
+      mg = Math.round(S * MARGIN);
+      pitch = (S - mg * 2) / n;
+      nL = n;
+    } else {
+      let best = null;
+      for (let k = 1; k <= 12; k++) {
+        const p = (L - S) / k, m = (S - n * p) / 2;
+        if (m < S * 0.04) continue;        // sin margen no hay suelo que leer
+        const d = Math.abs(m - S * MARGIN);
+        if (!best || d < best.d) best = { p, m, k, d };
+      }
+      pitch = best.p; mg = best.m; nL = n + best.k;
+    }
     const cols = W >= H ? nL : n, rows = W >= H ? n : nL;
     const size = pitch / GUTTER;
     const offX = (W - cols * pitch) / 2, offY = (H - rows * pitch) / 2;
@@ -151,9 +169,21 @@
     ctx.save();
     ctx.translate(offX, offY);
     ctx.fillStyle = R.block;
+    // El bloque llena su celda —así dos contiguas comparten arista y la región
+    // se lee como una masa— pero el círculo deja dentro de la suya el aire del
+    // GUTTER. Sin más, una región que toca el borde encoge el margen aparente
+    // justo ese aire, y el margen deja de leerse igual en los cuatro lados. Se
+    // recorta SOLO el contorno exterior del campo: dentro nada cambia, y la
+    // tinta —bloque o punto— arranca a la misma distancia del papel.
+    const air = (pitch - size) / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(air, air, cols * pitch - air * 2, rows * pitch - air * 2);
+    ctx.clip();
     paintCells(ctx, region, pitch);
     paintCells(ctx, twin, pitch);
     paintCells(ctx, accent, pitch);
+    ctx.restore();
 
     // 5. Círculos — color constante: el punto no compite con la región.
     ctx.fillStyle = R.dot;
