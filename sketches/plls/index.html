@@ -63,10 +63,11 @@
       <span class="lbl">Format</span>
       <select id="fmt">
         <option value="square">□ Square (1:1)</option>
-        <option value="vertical">▯ Vertical (1:√2)</option>
         <option value="horizontal">▭ Horizontal (√2:1)</option>
       </select>
-      <span class="hintline">proporción DIN — misma seed, otra composición</span>
+      <button class="ghost" id="rot">⟲ Ver de pie (r)</button>
+      <span class="hintline">vertical y horizontal son la misma obra girada:
+        se genera en horizontal y el giro es de la vista, no del archivo</span>
     </div>
     <div class="group">
       <span class="lbl">Field</span>
@@ -103,8 +104,12 @@
     </div>
 
     <div class="group">
-      <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
-      <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
+      <span class="lbl">Grain</span>
+      <select id="grain">
+        <option value="1">Con grano</option>
+        <option value="0">Sin grano</option>
+      </select>
+      <span class="hintline">o lo hay o no lo hay: media dosis de grano no es una decisión</span>
     </div>
 
     <div class="group">
@@ -148,7 +153,8 @@
     </div>
     <div class="group">
       <button id="save">↓ Save PNG (s)</button>
-      <button class="ghost" id="sheet">▦ Contact sheet (g)</button>
+      <button class="ghost" id="sheet">▦ Hoja de contactos (g)</button>
+      <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
       <button id="launch" title="Activa esta obra en works.json (requiere sesión admin)">▲ Lanzar a producción</button>
       <span class="hintline" id="launchMsg"></span>
     </div>
@@ -192,11 +198,12 @@ const WORK_SLUG = 'plls', REPO = 'Joxemari/hoks';
 const BASE = 1000, SHEET_BASE = 250;   // lado corto: hoja y hoja de contactos
 const SHEET_N = 12;
 let FORMAT = 'horizontal';
+let ROT = false;              // girar la VISTA, no la obra
 let W, H, SHEET_W, SHEET_H;
 function applyFormat() {
   const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
   const t = HOKS.fmtDims(FORMAT, SHEET_BASE); SHEET_W = t.W; SHEET_H = t.H;
-  single.width = W; single.height = H;
+  single.width = ROT ? H : W; single.height = ROT ? W : H;
 }
 
 const single = document.getElementById('single');
@@ -243,10 +250,23 @@ function recipeFor(s) {
            palSel: palPicker ? palPicker.selection : 'auto', palName };
 }
 
+// ── Giro de la VISTA ────────────────────────────────────────────────────────
+// Vertical y horizontal son la misma obra girada, así que no se genera en
+// vertical: se genera en horizontal y, para juzgarla de pie, se gira lo que se
+// mira. La obra y el archivo de impresión siguen siendo horizontales.
+function paint(ctx, cw, ch, s, o) {
+  if (!ROT) return WORK.render(ctx, cw, ch, s, o);
+  const off = document.createElement('canvas'); off.width = ch; off.height = cw;
+  const res = WORK.render(off.getContext('2d'), ch, cw, s, o);
+  ctx.save(); ctx.translate(cw / 2, ch / 2); ctx.rotate(Math.PI / 2);
+  ctx.drawImage(off, -off.width / 2, -off.height / 2); ctx.restore();
+  return res;
+}
+
 function renderSingle() {
   $('seed').value = seed;
   try {
-    const res = WORK.render(sctx, W, H, seed >>> 0, { ...palOpts(), params: params() });
+    const res = paint(sctx, single.width, single.height, seed >>> 0, { ...palOpts(), params: params() });
     $('status').textContent = `seed #${seed}`;
     $('palBar').innerHTML = res.pal.colors.map(c => `<span style="flex:1;background:${c}"></span>`).join('');
     drawTraits(WORK.traits(res));
@@ -264,8 +284,9 @@ function renderSheet() {
   const base = seed >>> 0;
   for (let i = 0; i < SHEET_N; i++) {
     const s = (base + i * 0x9E3779B1) >>> 0;
-    const c = document.createElement('canvas'); c.width = SHEET_W; c.height = SHEET_H;
-    try { WORK.render(c.getContext('2d'), SHEET_W, SHEET_H, s, { ...palOpts(), params: params() }); } catch (e) {}
+    const c = document.createElement('canvas');
+    c.width = ROT ? SHEET_H : SHEET_W; c.height = ROT ? SHEET_W : SHEET_H;
+    try { paint(c.getContext('2d'), c.width, c.height, s, { ...palOpts(), params: params() }); } catch (e) {}
     const fig = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = '#' + s;
     fig.style.position = 'relative';
     fig.appendChild(c); fig.appendChild(cap);
@@ -278,14 +299,21 @@ function renderSheet() {
     grid.appendChild(fig);
   }
 }
-function setSheet(on) {
-  sheetMode = on;
-  $('single').style.display = on ? 'none' : 'block';
-  $('sheetGrid').style.display = on ? 'grid' : 'none';
-  $('sheet').textContent = on ? '▦ Single view (g)' : '▦ Contact sheet (g)';
-  if (on) { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; } else renderSingle();
+// Tres modos de mirar, en el mismo sitio: la pieza, doce variaciones de su
+// seed, y el lote entero — que es lo que de verdad se publica.
+let VIEW = 'single';                 // 'single' | 'sheet' | 'batch'
+function setView(v) {
+  VIEW = v; sheetMode = (v === 'sheet');
+  $('single').style.display = v === 'single' ? 'block' : 'none';
+  $('sheetGrid').style.display = v === 'single' ? 'none' : 'grid';
+  $('sheet').textContent = v === 'sheet' ? '▦ Vista única (g)' : '▦ Hoja de contactos (g)';
+  $('batchView').textContent = v === 'batch' ? '▦ Vista única (b)' : '▦ Ver el lote (b)';
+  if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; }
+  else if (v === 'batch') { $('status').textContent = batch ? batch.renderFull($('sheetGrid')) : '—'; }
+  else renderSingle();
 }
-function refresh() { sheetMode ? renderSheet() : renderSingle(); }
+function setSheet(on) { setView(on ? 'sheet' : 'single'); }
+function refresh() { if (VIEW === 'batch') { $('status').textContent = batch.renderFull($('sheetGrid')); } else sheetMode ? renderSheet() : renderSingle(); }
 
 // ── PALETTE DROPDOWN — componente compartido (palette-picker.js) ──
 function populatePalList() {
@@ -343,7 +371,7 @@ function applyRecipe(r) {
   $('bg').value = r.bgMode || 'auto';
   $('count').value = r.count || 0; $('countV').textContent = (r.count ? r.count : 'auto');
   $('thick').value = r.thickness || 1; $('thickV').textContent = (r.thickness || 1).toFixed(2);
-  $('grain').value = r.grainScale != null ? r.grainScale : 1; $('grainV').textContent = (r.grainScale != null ? r.grainScale : 1).toFixed(1);
+  $('grain').value = (r.grainScale === 0) ? '0' : '1';
   if (r.archProbs) archProbs = { ...r.archProbs };
   if (r.finishProbs) finishProbs = { ...r.finishProbs };
   buildWeightSliders(); updatePalTrigger();
@@ -363,16 +391,18 @@ $('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
 $('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('arch').onchange = refresh;
+$('rot').onclick = () => { ROT = !ROT; $('rot').textContent = ROT ? '⟲ Ver tumbado (r)' : '⟲ Ver de pie (r)'; applyFormat(); refresh(); };
 $('field').onchange = refresh;
 $('bg').onchange = refresh;
 $('count').oninput = () => { $('countV').textContent = $('count').value === '0' ? 'auto' : $('count').value; refresh(); };
 $('thick').oninput = () => { $('thickV').textContent = parseFloat($('thick').value).toFixed(2); refresh(); };
-$('grain').oninput = () => { $('grainV').textContent = parseFloat($('grain').value).toFixed(1); refresh(); };
+$('grain').onchange = refresh;
 $('resetW').onclick = resetWeights;
 $('copyW').onclick = copyWeights;
 $('copyR').onclick = copyRecipe;
 $('pasteR').onclick = pasteRecipe;
-$('sheet').onclick = () => setSheet(!sheetMode);
+$('sheet').onclick = () => setView(VIEW === 'sheet' ? 'single' : 'sheet');
+$('batchView').onclick = () => setView(VIEW === 'batch' ? 'single' : 'batch');
 $('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `${SLUG}_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
 
 document.addEventListener('keydown', e => {
@@ -380,8 +410,10 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); }
   else if (e.key === 'ArrowRight') { seed = (seed + 1) >>> 0; refresh(); }
   else if (e.key === 'ArrowLeft') { seed = (seed - 1) >>> 0; refresh(); }
+  else if (e.key === 'r' || e.key === 'R') $('rot').click();
   else if (e.key === 's' || e.key === 'S') $('save').click();
-  else if (e.key === 'g' || e.key === 'G') setSheet(!sheetMode);
+  else if (e.key === 'g' || e.key === 'G') setView(VIEW === 'sheet' ? 'single' : 'sheet');
+  else if (e.key === 'b' || e.key === 'B') setView(VIEW === 'batch' ? 'single' : 'batch');
   else if (e.key === 'a' || e.key === 'A') { if (batch) batch.add(seed); }
   else if (e.key === 'c' || e.key === 'C') copyRecipe();
 });

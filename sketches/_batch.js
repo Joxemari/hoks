@@ -9,7 +9,8 @@
  * sobrevive al navegador y se puede retomar meses después.
  *
  *   HOKSBATCH.mount(host, { work, getRecipe, getPalettes, getSeed, toast })
- *     .add(seed)   → mete esa seed del harness actual en el lote abierto
+ *     .add(seed)        → mete esa seed del harness actual en el lote abierto
+ *     .renderFull(host) → pinta el lote entero (la vista de decidir)
  *
  * Depende de _lab.js (para cargar los algos de todas las obras graduadas) y de
  * los algoritmos ya cargados en window.HOKS.
@@ -261,6 +262,40 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       toast('Publicado');
     }
 
+
+    // ── Vista completa ───────────────────────────────────────────────────────
+    // La tira del panel dice QUÉ hay; para decidir qué se queda hace falta ver
+    // el lote entero y del tamaño en que se mira una obra. Se pinta en el mismo
+    // contenedor que la hoja de contactos: es el otro modo de mirar del lab.
+    function renderFull(host) {
+      const b = openBatch();
+      host.innerHTML = '';
+      if (!b) { host.innerHTML = '<span class="hb-empty">sin lote abierto</span>'; return 'sin lote'; }
+      if (!b.items.length) { host.innerHTML = '<span class="hb-empty">lote vacío</span>'; return b.name + ' · vacío'; }
+      const palettes = opts.getPalettes ? opts.getPalettes() : [];
+      b.items.forEach((it, i) => {
+        const fig = document.createElement('figure');
+        const d = dimsFor(it, 300);
+        const c = document.createElement('canvas'); c.width = d.W; c.height = d.H;
+        const res = renderRecipe(c.getContext('2d'), d.W, d.H, it, palettes);
+        const drift = res && it.palName && res.pal && res.pal.name !== it.palName;
+        const cap = document.createElement('figcaption');
+        cap.textContent = `${it.work.toUpperCase()} #${it.seed}` +
+          (it.published ? ' · publicada' : '') + (drift ? ' · ⚠ deriva' : '');
+        if (drift) cap.style.color = '#c0392b';
+        c.style.cursor = 'pointer';
+        c.title = 'Abrir esta receta en su laboratorio';
+        c.onclick = () => { location.href = '../' + it.work + '/?seed=' + (it.seed >>> 0); };
+        const x = document.createElement('button');
+        x.className = 'hb-btn'; x.textContent = '× quitar';
+        x.style.cssText = 'margin-top:4px;padding:3px 6px;font-size:9px';
+        x.onclick = () => { b.items.splice(i, 1); schedulePush(); render(); renderFull(host); };
+        fig.appendChild(c); fig.appendChild(cap); fig.appendChild(x);
+        host.appendChild(fig);
+      });
+      return `${b.name} · ${b.items.length} pieza(s) · el pliego y la descarga, en el panel`;
+    }
+
     $('hb-pub').onclick = publish;
     $('hb-sel').onchange = () => {
       const v = $('hb-sel').value;
@@ -282,7 +317,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     render();
     pull().then(d => { batches = d; render(); });
 
-    return { add, refresh: render, get open() { return openBatch(); } };
+    return { add, refresh: render, renderFull, get open() { return openBatch(); } };
   }
 
   global.HOKSBATCH = { mount, renderRecipe };

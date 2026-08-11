@@ -21,7 +21,7 @@
   const THRESHOLD  = 0.6;   // probabilidad de NO dibujar un cuadrado (rng.next() > threshold dibuja)
   const RECT_ALPHA = 0.61;  // 155/255 — cuadrados semitransparentes sobre el gradiente
   const REF        = 600;   // lado corto de referencia (calibra el grano)
-  const MARGIN     = 0.1667;// retiro del campo respecto al lienzo (fracción del lado corto)
+  const P_WIDE     = 0.5;   // en DIN: un campo con mucho aire vs dos ceñidos
 
   // ── Entrada principal ───────────────────────────────────────────────────────
   // opts: { palettes, locked, lockedIdx, params:{ grainScale, threshold, rectAlpha } }
@@ -54,16 +54,18 @@
     // obliga a un 29%, el doble que sus hermanas. Así KRRTK, DTK y DTKRT se
     // retiran del papel lo mismo y leen como una sola serie.
     // El laboratorio lo fuerza con fieldsShort cuando interesa mirar otra cosa.
-    const S0 = Math.min(W, H), target = S0 * E.FIELD_MARGIN;
-    let G = null;
-    if (params.fieldsShort) {
-      G = E.fieldGrid(W, H, Math.max(1, params.fieldsShort), params);
-    } else {
-      for (let n = 1; n <= 3; n++) {
-        const g = E.fieldGrid(W, H, n, params);
-        if (!G || Math.abs(g.margin - target) < Math.abs(G.margin - target)) G = g;
-      }
-    }
+    // Dos lecturas del mismo pliego, y las dos son la obra: UN campo grande con
+    // mucho aire alrededor, o DOS campos más pequeños ceñidos al papel. Con la
+    // unidad cuadrada el margen no se elige, se deduce —29% con uno, 8,6% con
+    // dos—, así que elegir cuántos campos ES elegir cuánto aire. Lo decide la
+    // tirada, como el resto de la obra; el laboratorio lo fuerza con fieldsShort.
+    // Se sortea siempre, aunque en cuadrado no se use: así el stream no depende
+    // del formato más de lo imprescindible.
+    const wide = rng.bool(P_WIDE);
+    const squareSheet = Math.abs(W - H) < 1 || E.fieldMode(params) === 'square';
+    const n = params.fieldsShort ? Math.max(1, params.fieldsShort)
+            : squareSheet ? 1 : (wide ? 1 : 2);
+    const G = E.fieldGrid(W, H, n, params);
     const { pitch: a, cols, rows, ox, oy } = G;
 
     // 1. Mesh gradient de fondo (stream RNG independiente, como el original).
@@ -122,7 +124,8 @@
     const minSize = squares.reduce((m, sq) => Math.min(m, sq.size), a0);
     const depthLevel = Math.max(1, Math.round(Math.log2(a0 / Math.max(minSize, 1))));
     const coveragePct = Math.round((drawCount / Math.max(1, squares.length)) * 100);
-    return { pal, squares: squares.length, drawCount, depthLevel, coveragePct };
+    return { pal, squares: squares.length, drawCount, depthLevel, coveragePct,
+             fields: cols * rows, air: cols * rows > 1 ? 'Tight' : 'Wide' };
   }
 
   // Traits + rareza global a partir de un resultado de render().
@@ -140,6 +143,7 @@
       list: [
         { key: 'Palette',  val: res.pal.name, colors: res.pal.colors, rarity: palR },
         { key: 'Depth',    val: res.depthLevel + ' levels', rarity: depthR },
+        { key: 'Air',      val: (res.air || 'Wide') + (res.fields > 1 ? ' · ' + res.fields + ' fields' : ''), rarity: 'common' },
         { key: 'Coverage', val: coverageLabel + ' · ' + res.coveragePct + '%', rarity: coverageR },
         { key: 'Texture',  val: 'Grain + Gradient', rarity: 'rare' },
       ],
