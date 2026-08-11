@@ -38,11 +38,17 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   Publicar lo nuevo, en cambio, es cosa del lote.
 - **`about.html`** — Texto leído de `data/site.json` (con *fallback* embebido).
 - **`palettes.html`** — Galería de paletas desde `data/palettes.json`; muestra
-  activas/inactivas y su rareza/probabilidad. Arriba, una **rejilla de uso** al
-  estilo del grid de actividad de GitHub: una celda por paleta en orden de
-  catálogo (12 por fila), tono en 5 niveles según cuántas obras guardadas la
-  usan, celda con borde = paleta retirada. Click en una celda = filtrar por esa
-  paleta; cada tarjeta lleva su contador `×N` y hay orden *por uso*.
+  activas/inactivas y su rareza/probabilidad. **Solo con sesión admin** aparece
+  arriba una **rejilla de uso** al estilo del grid de actividad de GitHub: una
+  celda por paleta en orden de catálogo (12 por fila), tono en 5 niveles según
+  cuántas obras guardadas la usan, celda con borde = paleta retirada. Click en
+  una celda = filtrar por esa paleta; con sesión admin cada tarjeta lleva además
+  su contador `×N`, hay orden *por uso* y un botón **Copy data** que copia el
+  volcado en TSV (paleta, colores, prob, obras, cuota, familias) para trabajar la
+  narrativa de escasez fuera de la web. Sin sesión no se pinta ni se llega a
+  pedir `palette-usage.json`: el uso es dato interno, y por eso ese bloque va en
+  inglés y fuera de i18n, como el resto de la operativa. Enlace desde el panel:
+  pestaña *Palettes* → **Usage grid**.
 - **`admin.html`** — Panel protegido por contraseña. Gestiona paletas, familias
   (`works.json`), contenido (`site.json`) y el token de GitHub. Escribe
   commiteando directamente a `main` por la Contents API. En cada familia
@@ -65,8 +71,10 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 - **`work-page.js`** — La página de obra graduada, una sola vez: narrativa,
   piezas elegidas y lienzo vivo mudo.
 - **`usage.js`** — Registro de uso de paletas (`data/palette-usage.json`).
-  `HOKSUSAGE.load()` / `.counts()` los lee (palettes.html) y `.record()` añade
-  una fila al Guardar en las páginas heredadas. Sin token de admin no escribe.
+  `HOKSUSAGE.load()` / `.counts()` los lee (palettes.html, solo con sesión
+  admin); `.recordMany()` añade filas al **publicar un lote** desde el
+  laboratorio (un commit por publicación, no uno por pieza) y `.record()` añade
+  una al Guardar en las páginas heredadas. Sin token de admin no escribe.
 
 No hay otro CSS/JS global: cada página trae su propio `<style>`.
 
@@ -80,7 +88,10 @@ algoritmo, fuente única) y un harness (scrub de seeds, hoja de contactos).
 El circuito completo: **lab → lote → publicar → galería**. Se mira la hoja de
 contactos, se aparta con `+` o `a`, y el lote —una lista de *recetas*, no de
 imágenes— se publica desde el propio laboratorio a `data/<obra>.json`, que es lo
-que enseña la web. **El flujo creativo
+que enseña la web. Publicar es también lo único que crea obra guardada, así que
+es ahí donde `_batch.js` apunta la paleta de cada pieza en
+`data/palette-usage.json` — con la paleta que ha salido en ese render, no la que
+tuviera la receta: si hubo deriva, manda el píxel publicado. **El flujo creativo
 vive en p5/OpenProcessing; el laboratorio es porte + QA y lo opera Claude.**
 Ver `sketches/README.md` para el flujo completo de graduación.
 

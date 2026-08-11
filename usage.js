@@ -44,10 +44,13 @@ function counts(data) {
 const b64enc = s => btoa(unescape(encodeURIComponent(s)));
 const b64dec = s => decodeURIComponent(escape(atob(String(s).replace(/\s/g, ''))));
 
-// Añade la obra recién guardada al índice. Sin token de admin no hace nada.
-async function record(family, seed, savedAt, pal) {
+// Añade varias obras al índice de una vez: un solo commit por publicación de
+// lote, no uno por pieza. Sin token de admin no hace nada.
+// rows: [{ family, seed, savedAt, paletteId, paletteName }]
+async function recordMany(rows) {
   const token = localStorage.getItem(GH_TOKEN_KEY);
-  if (!token || !pal) return;
+  rows = (rows || []).filter(r => r && r.paletteId != null);
+  if (!token || !rows.length) return;
   const url = 'https://api.github.com/repos/' + REPO + '/contents/' + PATH;
   const auth = { 'Authorization': 'Bearer ' + token };
   let sha, data = empty();
@@ -59,13 +62,15 @@ async function record(family, seed, savedAt, pal) {
       try { const p = JSON.parse(b64dec(j.content)); if (p && Array.isArray(p.works)) data = p; } catch (e) {}
     }
   } catch (e) { return; }   // sin poder leer el índice, no lo sobrescribimos
-  data.works.unshift({
-    family, seed: Number(seed), savedAt: savedAt || Date.now(),
-    paletteId: pal.id, paletteName: pal.name, source: 'save',
-  });
+  data.works.unshift(...rows.map(r => ({
+    family: r.family, seed: Number(r.seed), savedAt: r.savedAt || Date.now(),
+    paletteId: r.paletteId, paletteName: r.paletteName, source: 'save',
+  })));
   data.generated = Date.now();
-  const body = { message: 'palette usage: ' + family + ' #' + seed + ' → ' + pal.name,
-                 content: b64enc(JSON.stringify(data, null, 2)) };
+  const msg = rows.length === 1
+    ? 'palette usage: ' + rows[0].family + ' #' + rows[0].seed + ' → ' + rows[0].paletteName
+    : 'palette usage: +' + rows.length + ' obras';
+  const body = { message: msg, content: b64enc(JSON.stringify(data, null, 2)) };
   if (sha) body.sha = sha;
   try {
     await fetch(url, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, auth),
@@ -73,5 +78,11 @@ async function record(family, seed, savedAt, pal) {
   } catch (e) {}
 }
 
-global.HOKSUSAGE = { load, counts, record };
+// Una sola obra (páginas de obra heredadas, que aún guardan de una en una).
+function record(family, seed, savedAt, pal) {
+  if (!pal) return Promise.resolve();
+  return recordMany([{ family, seed, savedAt, paletteId: pal.id, paletteName: pal.name }]);
+}
+
+global.HOKSUSAGE = { load, counts, record, recordMany };
 })(window);
