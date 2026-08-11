@@ -76,6 +76,7 @@ const DEF = {
   // aunque la familia tenga otra escala interna.
   widthOfSeg:   0.64,
   widthMin:     0.022,
+  cabo:         0.20,        // cuánto se mete el cabo de cada sección bajo la hebra que lo tapa, x anchura
   cruceMinDeg:  40,          // ángulo mínimo de cruce: por debajo, la hebra de abajo queda en astilla
   reintentos:   6,           // tejidos alternativos que se prueban con el mismo seed
   densidad:     true,        // entre los que pasan, quedarse con el más entrelazado
@@ -809,7 +810,7 @@ function renderComposition(ctx, ox, oy, S, comp) {
 
   // Cada sección se alarga un pelo por sus dos remates para que el cabo
   // quede bien dentro de la hebra que lo tapa, nunca justo en su borde.
-  const dentro = gap * 1.5;
+  const dentro = width * cfg.cabo;
   for (const i of orden) {
     const [a, b] = secciones[i];
     const ini = max(0, a > 0 ? a - dentro : a);
