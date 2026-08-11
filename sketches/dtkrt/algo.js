@@ -32,7 +32,7 @@
   const P_ACCENT  = 0.4;    // acento suelto de 1 celda
   const P_TWIN    = 0.18;   // segunda región
   const REF       = 600;    // lado corto de referencia (calibra el grano)
-  const BG_GRADIENT = 0;    // % de gradiente en 'auto': el suelo plano es su diseño
+  const BG_GRADIENT = 30;   // % de degradado cuando el fondo va en 'auto' (el resto, plano)
 
   // ── Roles de color ─────────────────────────────────────────────────────────
   // Tres papeles de la paleta ordenada por luma: suelo, bloque, punto. El bloque

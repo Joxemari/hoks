@@ -21,7 +21,7 @@
   const THRESHOLD  = 0.6;   // probabilidad de NO dibujar un cuadrado (rng.next() > threshold dibuja)
   const RECT_ALPHA = 0.61;  // 155/255 — cuadrados semitransparentes sobre el gradiente
   const REF        = 600;   // lado corto de referencia (calibra el grano)
-  const BG_GRADIENT = 100;  // % de gradiente cuando el fondo va en 'auto'
+  const BG_GRADIENT = 30;   // % de degradado cuando el fondo va en 'auto' (el resto, plano)
   const P_WIDE     = 0.5;   // en DIN: un campo con mucho aire vs dos ceñidos
 
   // ── Entrada principal ───────────────────────────────────────────────────────

@@ -18,7 +18,7 @@
 
   const THRESHOLD = 0.8;   // probabilidad de que un círculo exista (composition <= threshold dibuja)
   const REF = 600;          // lado corto de referencia (calibra el grano)
-  const BG_GRADIENT = 100;  // % de gradiente cuando el fondo va en 'auto'
+  const BG_GRADIENT = 30;   // % de degradado cuando el fondo va en 'auto' (el resto, plano)
 
   // ── Entrada principal ───────────────────────────────────────────────────────
   // opts: { palettes, locked, lockedIdx, params:{ grainScale, grid, threshold } }

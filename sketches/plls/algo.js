@@ -21,7 +21,7 @@
   const GRAIN_TILE = 14;     // tesela del acabado ajedrez, a resolución de referencia
   const PLACE_ATT  = 24;     // intentos de colocación antes de rendirse
   const SPREAD     = 0.85 / Math.pow(2, 0.25);   // ver maxSize en render()
-  const BG_GRADIENT = 30;    // % de fondo con degradado en 'auto' (15 radial + 15 diagonal)
+  const BG_GRADIENT = 30;   // % de degradado cuando el fondo va en 'auto' (el resto, plano)
   const REF        = 1000;   // lado corto de referencia: las medidas en px se
                              // escalan por unit = min(W,H)/REF, así el dibujo es
                              // el mismo en pantalla y a resolución de impresión.
@@ -136,24 +136,18 @@
     ctx.restore();
   }
 
-  // Fondo: sólido, radial o diagonal (devuelve los 2 colores usados).
-  // forceMode (opcional): 'solid' | 'radial' | 'diagonal' para fijarlo desde el lab.
+  // Fondo: plano o degradado (devuelve los 2 colores usados).
+  // forceMode (opcional): 'solid' | 'diagonal' para fijarlo desde el lab.
   // pGrad: % de fondo con degradado cuando va en 'auto'. El resto es plano, así
-  // que los dos suman 100 sin poder no hacerlo. El degradado se reparte a partes
-  // iguales entre radial y diagonal, que es lo que la obra entiende por él.
+  // que los dos suman 100 sin poder no hacerlo.
   function drawBg(ctx, W, H, colors, rng, forceMode, pGrad) {
     const g = (pGrad == null ? BG_GRADIENT : pGrad) / 100;
     const mode = (forceMode && forceMode !== 'auto') ? forceMode
-      : rng.weighted([{ prob: g / 2, v: 'radial' }, { prob: g / 2, v: 'diagonal' }, { prob: 1 - g, v: 'solid' }]).v;
+      : rng.weighted([{ prob: g, v: 'diagonal' }, { prob: 1 - g, v: 'solid' }]).v;
     const c1 = rng.pickFrom(colors), rest = colors.filter(x => x !== c1), c2 = rng.pickFrom(rest.length ? rest : colors);
     const [r1, g1, b1] = E.hexToRgb(c1), [r2, g2, b2] = E.hexToRgb(c2);
     ctx.save(); ctx.globalCompositeOperation = 'source-over';
-    if (mode === 'radial') {
-      const cx = W * rng.range(0.3, 0.7), cy = H * rng.range(0.3, 0.7), rad = Math.hypot(W, H) * rng.range(0.55, 0.80);
-      const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
-      gr.addColorStop(0, `rgb(${r1},${g1},${b1})`); gr.addColorStop(1, `rgb(${r2},${g2},${b2})`);
-      ctx.fillStyle = gr;
-    } else if (mode === 'diagonal') {
+    if (mode === 'diagonal') {
       const flip = rng.bool(0.5), gr = ctx.createLinearGradient(flip ? W : 0, 0, flip ? 0 : W, H);
       gr.addColorStop(0, `rgb(${r1},${g1},${b1})`);
       gr.addColorStop(0.5, `rgb(${Math.round((r1 + r2) / 2)},${Math.round((g1 + g2) / 2)},${Math.round((b1 + b2) / 2)})`);
@@ -201,11 +195,10 @@
     const thick = maxSize * rng.range(0.62, 0.78) * (params.thickness || 1);
     const tol = OL_TOL[arch.name] * Math.min(1.0, num / 8);
 
-    // La opción transversal manda sobre el modo propio: 'gradient' deja que el
-    // RNG elija entre radial y diagonal, que es lo que la obra entiende por eso.
+    // La opción transversal manda sobre el modo propio de la obra.
     const bgT = E.bgMode(params);
     const bgForce = bgT === 'solid' ? 'solid'
-      : bgT === 'gradient' ? (rng.bool(0.5) ? 'radial' : 'diagonal')
+      : bgT === 'gradient' ? 'diagonal'
       : params.bgMode;
     const pGrad = (params.bgProbs && params.bgProbs.gradient != null) ? params.bgProbs.gradient : BG_GRADIENT;
     const bgColors = drawBg(ctx, W, H, colors, rng, bgForce, pGrad);

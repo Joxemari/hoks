@@ -22,9 +22,7 @@
   button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
   button.sm { padding: 6px; font-size: 9px; }
   button:hover { opacity: 0.78; }
-  .seed-box { display:flex; gap:4px; }
-  .seed-box button { width:34px; padding:6px 0; }
-  .seed-box input { text-align:center; }
+  #seed { text-align:center; letter-spacing:0.06em; }
   .wrow { display:flex; align-items:center; gap:6px; }
   .wlbl { font-size: 9px; width: 64px; flex-shrink:0; text-transform: capitalize; }
   .wrow input[type=range] { flex:1; }
@@ -79,12 +77,9 @@
     </div>
     <div class="group">
       <span class="lbl">Seed</span>
-      <div class="seed-box">
-        <button class="ghost" id="prev" title="seed − 1 (←)">◀</button>
-        <input type="number" id="seed" value="0">
-        <button class="ghost" id="next" title="seed + 1 (→)">▶</button>
-      </div>
-      <button id="rnd">↻ New seed (space)</button>
+      <input type="text" id="seed" value="0" inputmode="numeric" spellcheck="false">
+      <button id="rnd">↻ Nueva seed (espacio)</button>
+      <span class="hintline">se puede teclear una seed para volver a ella · ← → recorren vecinas</span>
     </div>
 
     <div class="group">
@@ -400,8 +395,6 @@ function pasteRecipe() { const s = prompt('Pega una receta (JSON):'); if (!s) re
 
 // ── CONTROLS ──
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
-$('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
-$('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('arch').onchange = refresh;
 $('rot').onclick = () => { ROT = !ROT; $('rot').textContent = ROT ? '⟲ Ver tumbado (r)' : '⟲ Ver de pie (r)'; applyFormat(); refresh(); };

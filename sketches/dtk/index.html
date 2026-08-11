@@ -19,9 +19,7 @@
   button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
   button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
   button:hover { opacity: 0.78; }
-  .seed-box { display:flex; gap:4px; }
-  .seed-box button { width:34px; padding:6px 0; }
-  .seed-box input { text-align:center; }
+  #seed { text-align:center; letter-spacing:0.06em; }
   /* justify-content:center centra, pero si el contenido NO cabe reparte el
      desbordamiento a los dos lados y la parte de arriba queda fuera de alcance:
      el scroll no llega. `safe center` centra solo mientras quepa y, cuando no,
@@ -69,12 +67,9 @@
     </div>
     <div class="group">
       <span class="lbl">Seed</span>
-      <div class="seed-box">
-        <button class="ghost" id="prev">◀</button>
-        <input type="number" id="seed" value="0">
-        <button class="ghost" id="next">▶</button>
-      </div>
-      <button id="rnd">↻ New seed (space)</button>
+      <input type="text" id="seed" value="0" inputmode="numeric" spellcheck="false">
+      <button id="rnd">↻ Nueva seed (espacio)</button>
+      <span class="hintline">se puede teclear una seed para volver a ella · ← → recorren vecinas</span>
     </div>
     <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
@@ -259,8 +254,6 @@ function populateSelect() {
 }
 
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
-$('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
-$('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('grid').oninput = () => { $('gridV').textContent = $('grid').value === '0' ? 'auto' : $('grid').value + '×' + $('grid').value; refresh(); };
 $('th').oninput = () => { $('thV').textContent = parseFloat($('th').value).toFixed(2); refresh(); };
