@@ -63,10 +63,11 @@
       <span class="lbl">Format</span>
       <select id="fmt">
         <option value="square">□ Square (1:1)</option>
-        <option value="vertical">▯ Vertical (1:√2)</option>
         <option value="horizontal">▭ Horizontal (√2:1)</option>
       </select>
-      <span class="hintline">proporción DIN — misma seed, otra composición</span>
+      <button class="ghost" id="rot">⟲ Ver de pie (r)</button>
+      <span class="hintline">vertical y horizontal son la misma obra girada:
+        se genera en horizontal y el giro es de la vista, no del archivo</span>
     </div>
     <div class="group">
       <span class="lbl">Field</span>
@@ -192,11 +193,12 @@ const WORK_SLUG = 'plls', REPO = 'Joxemari/hoks';
 const BASE = 1000, SHEET_BASE = 250;   // lado corto: hoja y hoja de contactos
 const SHEET_N = 12;
 let FORMAT = 'horizontal';
+let ROT = false;              // girar la VISTA, no la obra
 let W, H, SHEET_W, SHEET_H;
 function applyFormat() {
   const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
   const t = HOKS.fmtDims(FORMAT, SHEET_BASE); SHEET_W = t.W; SHEET_H = t.H;
-  single.width = W; single.height = H;
+  single.width = ROT ? H : W; single.height = ROT ? W : H;
 }
 
 const single = document.getElementById('single');
@@ -243,10 +245,23 @@ function recipeFor(s) {
            palSel: palPicker ? palPicker.selection : 'auto', palName };
 }
 
+// ── Giro de la VISTA ────────────────────────────────────────────────────────
+// Vertical y horizontal son la misma obra girada, así que no se genera en
+// vertical: se genera en horizontal y, para juzgarla de pie, se gira lo que se
+// mira. La obra y el archivo de impresión siguen siendo horizontales.
+function paint(ctx, cw, ch, s, o) {
+  if (!ROT) return WORK.render(ctx, cw, ch, s, o);
+  const off = document.createElement('canvas'); off.width = ch; off.height = cw;
+  const res = WORK.render(off.getContext('2d'), ch, cw, s, o);
+  ctx.save(); ctx.translate(cw / 2, ch / 2); ctx.rotate(Math.PI / 2);
+  ctx.drawImage(off, -off.width / 2, -off.height / 2); ctx.restore();
+  return res;
+}
+
 function renderSingle() {
   $('seed').value = seed;
   try {
-    const res = WORK.render(sctx, W, H, seed >>> 0, { ...palOpts(), params: params() });
+    const res = paint(sctx, single.width, single.height, seed >>> 0, { ...palOpts(), params: params() });
     $('status').textContent = `seed #${seed}`;
     $('palBar').innerHTML = res.pal.colors.map(c => `<span style="flex:1;background:${c}"></span>`).join('');
     drawTraits(WORK.traits(res));
@@ -264,8 +279,9 @@ function renderSheet() {
   const base = seed >>> 0;
   for (let i = 0; i < SHEET_N; i++) {
     const s = (base + i * 0x9E3779B1) >>> 0;
-    const c = document.createElement('canvas'); c.width = SHEET_W; c.height = SHEET_H;
-    try { WORK.render(c.getContext('2d'), SHEET_W, SHEET_H, s, { ...palOpts(), params: params() }); } catch (e) {}
+    const c = document.createElement('canvas');
+    c.width = ROT ? SHEET_H : SHEET_W; c.height = ROT ? SHEET_W : SHEET_H;
+    try { paint(c.getContext('2d'), c.width, c.height, s, { ...palOpts(), params: params() }); } catch (e) {}
     const fig = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = '#' + s;
     fig.style.position = 'relative';
     fig.appendChild(c); fig.appendChild(cap);
@@ -363,6 +379,7 @@ $('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
 $('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('arch').onchange = refresh;
+$('rot').onclick = () => { ROT = !ROT; $('rot').textContent = ROT ? '⟲ Ver tumbado (r)' : '⟲ Ver de pie (r)'; applyFormat(); refresh(); };
 $('field').onchange = refresh;
 $('bg').onchange = refresh;
 $('count').oninput = () => { $('countV').textContent = $('count').value === '0' ? 'auto' : $('count').value; refresh(); };
@@ -380,6 +397,7 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); }
   else if (e.key === 'ArrowRight') { seed = (seed + 1) >>> 0; refresh(); }
   else if (e.key === 'ArrowLeft') { seed = (seed - 1) >>> 0; refresh(); }
+  else if (e.key === 'r' || e.key === 'R') $('rot').click();
   else if (e.key === 's' || e.key === 'S') $('save').click();
   else if (e.key === 'g' || e.key === 'G') setSheet(!sheetMode);
   else if (e.key === 'a' || e.key === 'A') { if (batch) batch.add(seed); }

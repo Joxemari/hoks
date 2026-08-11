@@ -236,7 +236,13 @@
   // W y H, así que la misma seed en el mismo formato da la misma imagen a
   // cualquier resolución — lo que ves en pantalla es lo que se imprime.
   const SQRT2 = Math.SQRT2;
-  const FORMATS = ['square', 'vertical', 'horizontal'];
+  // Vertical y horizontal son la MISMA obra girada: mismo paso, mismo margen,
+  // filas y columnas intercambiadas. Tener los dos no ampliaba el catálogo, solo
+  // repartía las seeds entre dos orientaciones del mismo pliego. Se genera en
+  // horizontal y se decide en la pared; el laboratorio gira la vista para poder
+  // juzgarlo de pie. fmtDims sigue entendiendo 'vertical' porque hay recetas
+  // guardadas que lo dicen.
+  const FORMATS = ['square', 'horizontal'];
   const SHEETS = {            // lado corto × lado largo, en mm
     A4: [210, 297], A3: [297, 420], A2: [420, 594], A1: [594, 841],
   };
