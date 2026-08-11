@@ -29,6 +29,26 @@ function mixHex(a, b, t) {
   return '#' + pa.map((v,i) => floor(v + (pb[i]-v)*t).toString(16).padStart(2,'0')).join('');
 }
 
+// Peso por edad, igual que el motor de hoks: lo reciente pesa más.
+function ageWeight(created) {
+  if (!created || created < 1e12) return 4;
+  const d = (Date.now() - created) / 86400000;
+  return d < 30 ? 4 : d < 90 ? 2 : d < 180 ? 1 : d < 365 ? 0.4 : 0.15;
+}
+
+// Elección ponderada entre las paletas ACTIVAS, con el RNG sembrado: la
+// paleta forma parte de la obra, así que tiene que salir del seed y no
+// del momento en que se pulsa el botón.
+function elegirPaleta(paletas) {
+  const act = paletas.filter(p => p.active !== false && p.colors && p.colors.length >= 2);
+  if (!act.length) return null;
+  const w = act.map(p => ageWeight(p.created));
+  const total = w.reduce((a, b) => a + b, 0);
+  let r = random(total);
+  for (let i = 0; i < act.length; i++) { r -= w[i]; if (r <= 0) return act[i].colors; }
+  return act[act.length - 1].colors;
+}
+
 function pickRoles(colors) {
   const cols = colors.slice().sort((a, b) => lum(a) - lum(b));
   if (cols.length < 2) return { bg: cols[0] || BG, fg: FG, fg2: FG2, dot: DOT };
@@ -105,6 +125,7 @@ const DEF = {
   punzonExtra:  0.35,        // recorrido extra del punzón más allá del cruce, × anchura         // longitud del punzón en cada cruce, × anchura
   miterLimit:   1.0,         // el pico de inglete es tinta FUERA de la banda: no existe         // por encima, el pico del halo raja la hebra vecina
 
+  paletas:      null,        // lista completa; si no se fija una, se elige por peso
   dots:         "bajo",      // no | bajo | encima
   dotsMin:      3,
   dotsMax:      5,
@@ -153,7 +174,7 @@ function generate(seed, cfg) {
   randomSeed(seed);
   noiseSeed(seed);
 
-  const colores = pickRoles(cfg.palette || PALETA_BASE);
+  const colores = pickRoles(cfg.palette || (cfg.paletas && elegirPaleta(cfg.paletas)) || PALETA_BASE);
   const family = random(FAMILY_NAMES);
   const pedidas = floor(random(cfg.vueltasMin, cfg.vueltasMax + 1));
 
@@ -1249,14 +1270,23 @@ function setup() {
 // Las paletas vivas de hoks; si la red falla, se queda con las de arriba.
 function cargarPaletas() {
   loadJSON(PALETAS_URL + "?t=" + floor(millis()), (data) => {
+    // Se listan TODAS, activas e inactivas: el laboratorio deja probar
+    // cualquiera. La elección ponderada sólo usa las activas.
     const arr = (Array.isArray(data) ? data : data.palettes || [])
-      .filter(p => p.active !== false && p.colors && p.colors.length >= 2);
+      .filter(p => p.colors && p.colors.length >= 2);
     if (!arr.length) return;
-    PALETAS = [PALETAS[0]].concat(arr.map(p => ({ name: p.name, colors: p.colors })));
+    PALETAS = [PALETAS[0]].concat(arr.map(p =>
+      ({ name: p.name, colors: p.colors, active: p.active, created: p.created })));
     const sel = ui.paleta.elt;
     const antes = sel.value;
     sel.innerHTML = "";
-    PALETAS.forEach((p, i) => { const o = document.createElement("option"); o.value = i; o.text = p.name; sel.add(o); });
+    const auto = document.createElement("option");
+    auto.value = "auto"; auto.text = "Random (weighted)"; sel.add(auto);
+    PALETAS.forEach((p, i) => {
+      const o = document.createElement("option");
+      o.value = i; o.text = p.name + (p.active === false ? " · (inactive)" : "");
+      sel.add(o);
+    });
     sel.value = antes;
     redibujar();
   }, () => {});
@@ -1265,7 +1295,8 @@ function cargarPaletas() {
 // ------------------------------------------------------------
 function opciones() {
   return {
-    palette:    PALETAS[int(ui.paleta.value())].colors,
+    palette:    ui.paleta.value() === 'auto' ? null : PALETAS[int(ui.paleta.value())].colors,
+    paletas:    PALETAS,
     vueltasMin: int(ui.vueltas.value()),
     vueltasMax: int(ui.vueltas.value()),
     widthOfSeg: float(ui.anchura.value()),
@@ -1344,7 +1375,8 @@ function construirUI() {
   let y = 14;
   const fila = 40;
 
-  ui.paleta = etiquetaSelect("paleta", PALETAS.map((p, i) => [i, p.name]), 12, y); y += fila;
+  ui.paleta = etiquetaSelect("paleta",
+    [["auto", "Random (weighted)"]].concat(PALETAS.map((p, i) => [i, p.name])), 12, y); y += fila;
 
   [ui.vueltas, ui.vueltasV] = etiquetaSlider("vueltas", 2, 5, DEF.vueltasMax, 1, 12, y); y += fila;
   [ui.anchura, ui.anchuraV] = etiquetaSlider("anchura", 0.25, 0.95, DEF.widthOfSeg, 0.01, 12, y); y += fila;
