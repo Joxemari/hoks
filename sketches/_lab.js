@@ -12,7 +12,7 @@
   // Obras graduadas: las que tienen sketches/<slug>/algo.js y por tanto pueden
   // abrirse en el laboratorio. admin.html mantiene su propia copia (es un panel
   // autónomo, no carga scripts externos): al graduar una obra, tocar las dos.
-  const GRADUATED = ['pllsg', 'krrtkg', 'dtkg', 'dtkrt'];
+  const GRADUATED = ['plls', 'krrtk', 'dtk', 'dtkrt'];
   const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
 
   // ── Selector de obra ───────────────────────────────────────────────────────

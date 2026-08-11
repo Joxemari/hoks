@@ -268,17 +268,17 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
       </div>
       <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
         <div class="section-header">
-          <span class="section-title">KRRTKG Gallery (<span id="gal-krrtkg-count">0</span>)</span>
+          <span class="section-title">KRRTK Gallery (<span id="gal-krrtk-count">0</span>)</span>
           <button class="btn btn-danger" onclick="clearKrrtkgGallery()">Clear All</button>
         </div>
-        <div class="gallery-grid" id="gallery-krrtkg-grid"></div>
+        <div class="gallery-grid" id="gallery-krrtk-grid"></div>
       </div>
       <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
         <div class="section-header">
-          <span class="section-title">DTKG Gallery (<span id="gal-dtkg-count">0</span>)</span>
+          <span class="section-title">DTK Gallery (<span id="gal-dtk-count">0</span>)</span>
           <button class="btn btn-danger" onclick="clearDtkgGallery()">Clear All</button>
         </div>
-        <div class="gallery-grid" id="gallery-dtkg-grid"></div>
+        <div class="gallery-grid" id="gallery-dtk-grid"></div>
       </div>
       <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
         <div class="section-header">
@@ -416,7 +416,7 @@ async function saveWorks() {
 
 
 // Familias graduadas al laboratorio de fuente única (sketches/<slug>/).
-const GRADUATED = ['pllsg','krrtkg','dtkg','dtkrt'];
+const GRADUATED = ['plls','krrtk','dtk','dtkrt'];
 function renderWorks() {
   const el = $('works-count');
   if (el) el.textContent = works.length;
@@ -502,8 +502,8 @@ async function loadAll(){
     ghRead('krrtk.json').then(d=>d||[]),
     ghRead('dtk.json').then(d=>d||[]),
     ghRead('bzrs.json').then(d=>d||[]),
-    ghRead('krrtkg.json').then(d=>d||[]),
-    ghRead('dtkg.json').then(d=>d||[]),
+    ghRead('krrtk.json').then(d=>d||[]),
+    ghRead('dtk.json').then(d=>d||[]),
     ghRead('dtkrt.json').then(d=>d||[]),
     ghRead('site.json').then(d=>d||{}),
   ]);
@@ -599,18 +599,18 @@ function renderGallery(){
     else bgrid.innerHTML=galleryBzrs.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteBzrsItem(${i})">✕</button></div></div></div>`).join('');
   }
 
-  // KRRTKG
-  const kggrid=$('gallery-krrtkg-grid');
+  // KRRTK
+  const kggrid=$('gallery-krrtk-grid');
   if(kggrid){
-    $('gal-krrtkg-count').textContent=galleryKrrtkg.length;
+    $('gal-krrtk-count').textContent=galleryKrrtkg.length;
     if(!galleryKrrtkg.length){kggrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
     else kggrid.innerHTML=galleryKrrtkg.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteKrrtkgItem(${i})">✕</button></div></div></div>`).join('');
   }
 
-  // DTKG
-  const dtgrid=$('gallery-dtkg-grid');
+  // DTK
+  const dtgrid=$('gallery-dtk-grid');
   if(dtgrid){
-    $('gal-dtkg-count').textContent=galleryDtkg.length;
+    $('gal-dtk-count').textContent=galleryDtkg.length;
     if(!galleryDtkg.length){dtgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
     else dtgrid.innerHTML=galleryDtkg.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteDtkgItem(${i})">✕</button></div></div></div>`).join('');
   }
@@ -628,15 +628,15 @@ async function deleteGalleryItem(i){if(!confirm('Delete?'))return;gallery.splice
 async function deleteKrrtkItem(i){if(!confirm('Delete?'))return;galleryKrrtk.splice(i,1);await ghFetch('data/krrtk.json',galleryKrrtk,'delete krrtk item');renderGallery();toast('Deleted');}
 async function deleteDtkItem(i){if(!confirm('Delete?'))return;galleryDtk.splice(i,1);await ghFetch('data/dtk.json',galleryDtk,'delete dtk item');renderGallery();toast('Deleted');}
 async function deleteBzrsItem(i){if(!confirm('Delete?'))return;galleryBzrs.splice(i,1);await ghFetch('data/bzrs.json',galleryBzrs,'delete bzrs item');renderGallery();toast('Deleted');}
-async function deleteKrrtkgItem(i){if(!confirm('Delete?'))return;galleryKrrtkg.splice(i,1);await ghFetch('data/krrtkg.json',galleryKrrtkg,'delete krrtkg item');renderGallery();toast('Deleted');}
-async function deleteDtkgItem(i){if(!confirm('Delete?'))return;galleryDtkg.splice(i,1);await ghFetch('data/dtkg.json',galleryDtkg,'delete dtkg item');renderGallery();toast('Deleted');}
+async function deleteKrrtkgItem(i){if(!confirm('Delete?'))return;galleryKrrtkg.splice(i,1);await ghFetch('data/krrtk.json',galleryKrrtkg,'delete krrtk item');renderGallery();toast('Deleted');}
+async function deleteDtkgItem(i){if(!confirm('Delete?'))return;galleryDtkg.splice(i,1);await ghFetch('data/dtk.json',galleryDtkg,'delete dtk item');renderGallery();toast('Deleted');}
 async function deleteDtkrtItem(i){if(!confirm('Delete?'))return;galleryDtkrt.splice(i,1);await ghFetch('data/dtkrt.json',galleryDtkrt,'delete dtkrt item');renderGallery();toast('Deleted');}
 async function clearAllGallery(){if(!confirm('Clear all PLLS gallery?'))return;gallery=[];await ghFetch('data/plls.json',[],'clear plls gallery');renderGallery();toast('Cleared');}
 async function clearKrrtkGallery(){if(!confirm('Clear all KRRTK gallery?'))return;galleryKrrtk=[];await ghFetch('data/krrtk.json',[],'clear krrtk gallery');renderGallery();toast('Cleared');}
 async function clearDtkGallery(){if(!confirm('Clear all DTK gallery?'))return;galleryDtk=[];await ghFetch('data/dtk.json',[],'clear dtk gallery');renderGallery();toast('Cleared');}
 async function clearBzrsGallery(){if(!confirm('Clear all BZRS gallery?'))return;galleryBzrs=[];await ghFetch('data/bzrs.json',[],'clear bzrs gallery');renderGallery();toast('Cleared');}
-async function clearKrrtkgGallery(){if(!confirm('Clear all KRRTKG gallery?'))return;galleryKrrtkg=[];await ghFetch('data/krrtkg.json',[],'clear krrtkg gallery');renderGallery();toast('Cleared');}
-async function clearDtkgGallery(){if(!confirm('Clear all DTKG gallery?'))return;galleryDtkg=[];await ghFetch('data/dtkg.json',[],'clear dtkg gallery');renderGallery();toast('Cleared');}
+async function clearKrrtkgGallery(){if(!confirm('Clear all KRRTK gallery?'))return;galleryKrrtkg=[];await ghFetch('data/krrtk.json',[],'clear krrtk gallery');renderGallery();toast('Cleared');}
+async function clearDtkgGallery(){if(!confirm('Clear all DTK gallery?'))return;galleryDtkg=[];await ghFetch('data/dtk.json',[],'clear dtk gallery');renderGallery();toast('Cleared');}
 async function clearDtkrtGallery(){if(!confirm('Clear all DTKRT gallery?'))return;galleryDtkrt=[];await ghFetch('data/dtkrt.json',[],'clear dtkrt gallery');renderGallery();toast('Cleared');}
 
 

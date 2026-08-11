@@ -3,7 +3,7 @@
   "generated": 1786386195719,
   "works": [
     {
-      "family": "pllsg",
+      "family": "plls",
       "seed": 1855595773,
       "savedAt": 1782662580012,
       "paletteId": 2,
@@ -11,7 +11,7 @@
       "source": "backfill"
     },
     {
-      "family": "krrtkg",
+      "family": "krrtk",
       "seed": 790120654,
       "savedAt": 1782333541870,
       "paletteId": 14,
@@ -27,7 +27,7 @@
       "source": "backfill"
     },
     {
-      "family": "pllsg",
+      "family": "plls",
       "seed": 3023187577,
       "savedAt": 1777559741771,
       "paletteId": 8,
@@ -35,7 +35,7 @@
       "source": "backfill"
     },
     {
-      "family": "pllsg",
+      "family": "plls",
       "seed": 1573650814,
       "savedAt": 1777559727159,
       "paletteId": 7,
@@ -43,7 +43,7 @@
       "source": "backfill"
     },
     {
-      "family": "pllsg",
+      "family": "plls",
       "seed": 1573650814,
       "savedAt": 1777559718704,
       "paletteId": 7,
@@ -51,7 +51,7 @@
       "source": "backfill"
     },
     {
-      "family": "pllsg",
+      "family": "plls",
       "seed": 4106775176,
       "savedAt": 1777550854445,
       "paletteId": 14,
@@ -59,7 +59,7 @@
       "source": "backfill"
     },
     {
-      "family": "krrtkg",
+      "family": "krrtk",
       "seed": 960677736,
       "savedAt": 1777445725461,
       "paletteId": 7,
@@ -67,7 +67,7 @@
       "source": "backfill"
     },
     {
-      "family": "krrtkg",
+      "family": "krrtk",
       "seed": 3092910096,
       "savedAt": 1777445719393,
       "paletteId": 2,
@@ -84,7 +84,7 @@
       "renderedBy": "dtkg"
     },
     {
-      "family": "krrtkg",
+      "family": "krrtk",
       "seed": 1102120048,
       "savedAt": 1777445296104,
       "paletteId": 28,
@@ -108,7 +108,7 @@
       "source": "backfill"
     },
     {
-      "family": "pllsg",
+      "family": "plls",
       "seed": 4197700272,
       "savedAt": 1777412289735,
       "paletteId": 35,
@@ -116,7 +116,7 @@
       "source": "backfill"
     },
     {
-      "family": "pllsg",
+      "family": "plls",
       "seed": 1323721829,
       "savedAt": 1777412218435,
       "paletteId": 7,
@@ -124,7 +124,7 @@
       "source": "backfill"
     },
     {
-      "family": "pllsg",
+      "family": "plls",
       "seed": 2813743352,
       "savedAt": 1777412212747,
       "paletteId": 28,
@@ -132,7 +132,7 @@
       "source": "backfill"
     },
     {
-      "family": "pllsg",
+      "family": "plls",
       "seed": 2512723113,
       "savedAt": 1777412197928,
       "paletteId": 14,
@@ -183,7 +183,7 @@
       "source": "backfill"
     },
     {
-      "family": "krrtkg",
+      "family": "krrtk",
       "seed": 2386026445,
       "savedAt": 1777320971173,
       "paletteId": 29,

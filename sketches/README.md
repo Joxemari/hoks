@@ -24,7 +24,7 @@ Tú tocas los pasos 1 y 3. El 2 y el 4 son mecánicos: delégalos.
 
 ## Por qué existe
 
-Un bug histórico de PLLSG (acabados invisibles) vivió meses porque el algoritmo
+Un bug histórico de PLLS (acabados invisibles) vivió meses porque el algoritmo
 estaba copiado 8 veces inline. Con fuente única, un arreglo en `algo.js` llega a
 la vez al laboratorio y a producción. Ese es todo el trabajo de esta carpeta:
 **que la obra exista una sola vez.**
@@ -42,9 +42,9 @@ sketches/
                       contactos. Un lote es una lista de RECETAS
                       (obra + seed + params), no de imágenes.
   _template/        ← esqueleto para graduar una obra nueva
-  pllsg/            ← graduada (algo.js + harness)
-  krrtkg/           ← graduada (porte fiel, verificado op-a-op)
-  dtkg/             ← graduada (porte fiel, verificado op-a-op)
+  plls/            ← graduada (algo.js + harness)
+  krrtk/           ← graduada (porte fiel, verificado op-a-op)
+  dtk/             ← graduada (porte fiel, verificado op-a-op)
   dtkrt/            ← EN PRUEBAS: familia nueva, aún sin página de producción
 ```
 
@@ -77,6 +77,11 @@ reescalado, el mismo dibujo hecho más grande.
 
 El motor da la parte común (`HOKS.fmtDims`, `previewDims`, `printDims`,
 `mountFormat`, `exportPrint`):
+
+El **campo** es otra decisión, no la misma: `params.field` = `sheet` (llena el
+pliego) o `square` (se compone cuadrado y se centra en él). Y el **fondo**
+(`params.bg`: `auto | solid | gradient`) más el grano son ajustes transversales
+— son lo que antes justificaba una familia "G" aparte, y por eso ya no hay G.
 
 | formato      | proporción | en papel                                  |
 |--------------|-----------|-------------------------------------------|

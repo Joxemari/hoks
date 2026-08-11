@@ -141,12 +141,57 @@
   }
   // ── Fondo: opción transversal del laboratorio ───────────────────────────────
   // 'solid' o 'gradient' es una decisión que atraviesa TODAS las obras, no un
-  // parámetro de cada una: es justo lo que separaba a KRRTK de KRRTKG. Cada
+  // parámetro de cada una: es lo que antes justificaba una familia "G" aparte. Cada
   // algoritmo la respeta a su manera; 'auto' = lo que la obra hace por defecto.
   //   params.bg → 'auto' | 'solid' | 'gradient'
   function bgMode(params, dflt) {
     const v = params && params.bg;
     return (v && v !== 'auto') ? v : (dflt || 'auto');
+  }
+
+  // ── Campo: cuadrado inscrito o nativo del pliego ────────────────────────────
+  // El pliego y el campo son dos decisiones distintas. Un campo CUADRADO puede
+  // ir sobre cualquiera de los tres pliegos —un cuadrado centrado en un DIN es
+  // una imagen, no un accidente— pero también tiene que poder existir la obra
+  // compuesta de verdad en vertical u horizontal. Por eso no se deduce del
+  // formato: se elige.
+  //   params.field → 'sheet' (llena el pliego, por defecto) | 'square'
+  function fieldMode(params, dflt) {
+    const v = params && params.field;
+    return (v === 'square' || v === 'sheet') ? v : (dflt || 'sheet');
+  }
+
+  // ── Retículo: el margen es del SISTEMA, no de cada obra ─────────────────────
+  // Cada familia llevaba su propio margen —KRRTK 16,7%, DTKRT 11%, DTK ninguno—
+  // y eso no es una serie, son decisiones sueltas. Un solo número y una sola
+  // regla para todas las que se apoyan en retículo.
+  //
+  // La celda es cuadrada y el margen, igual en los cuatro lados: eso deja de ser
+  // gratis en un pliego DIN. Con n celdas en el lado corto y n+k en el largo, de
+  // S−2m=n·p y L−2m=(n+k)·p sale p=(L−S)/k — el paso lo fija k y el margen es
+  // consecuencia. Se toma la k cuyo margen cae más cerca del objetivo.
+  const FIELD_MARGIN = 0.11;
+  function fieldGrid(W, H, n, opts) {
+    opts = opts || {};
+    const margin = opts.margin == null ? FIELD_MARGIN : opts.margin;
+    const S = Math.min(W, H), L = Math.max(W, H);
+    let pitch, mg, nL;
+    if (L - S < 1 || fieldMode(opts) === 'square') {   // campo cuadrado: el margen ES el objetivo
+      mg = Math.round(S * margin);
+      pitch = (S - mg * 2) / n;
+      nL = n;
+    } else {
+      let best = null;
+      for (let k = 1; k <= 12; k++) {
+        const p = (L - S) / k, m = (S - n * p) / 2;
+        if (m < S * 0.04) continue;                    // sin margen no hay hoja, hay mancha
+        const d = Math.abs(m - S * margin);
+        if (!best || d < best.d) best = { p, m, k, d };
+      }
+      pitch = best.p; mg = best.m; nL = n + best.k;
+    }
+    const cols = W >= H ? nL : n, rows = W >= H ? n : nL;
+    return { pitch, cols, rows, margin: mg, ox: (W - cols * pitch) / 2, oy: (H - rows * pitch) / 2 };
   }
 
   function normalizePalettes(pals) {
@@ -249,7 +294,7 @@
   const ICO = { square: [15, 15], vertical: [12, 17], horizontal: [17, 12] };
 
   // Control de formato + pliego de impresión para la barra lateral de una obra.
-  //   mountFormat(el, { work:'pllsg', onChange(fmt){…} }) → { format, sheet, … }
+  //   mountFormat(el, { work:'plls', onChange(fmt){…} }) → { format, sheet, … }
   function mountFormat(el, opts) {
     opts = opts || {};
     const work = opts.work || 'hoks';
@@ -321,7 +366,7 @@
 
   global.HOKS = {
     Rng, hexToRgb, luma, lerpColor, softLight,
-    drawMeshGradient, bakeGrain, applyGrain, grain, bgMode,
+    drawMeshGradient, bakeGrain, applyGrain, grain, bgMode, fieldMode, fieldGrid, FIELD_MARGIN,
     ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
     FORMATS, SHEETS, SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,
     fmtDims, previewDims, printDims, unit, mountFormat, exportPrint,

@@ -9,7 +9,7 @@
  * El círculo es constante; lo que varía es el suelo bajo él. Figura y fondo
  * comparten retículo: el bloque no decora, reencuadra.
  *
- * Divergencias deliberadas respecto a DTKG (y por qué):
+ * Divergencias deliberadas respecto a DTK (y por qué):
  *   · Fondo PLANO, sin mesh gradient — figura/fondo necesita un plano estable.
  *   · Margen: la malla se retira del borde para que el suelo sea visible.
  *   · Tres roles de color fijos (fondo / bloque / punto) elegidos por luma —
@@ -132,26 +132,12 @@
     //    L−2m=(n+k)·p sale p=(L−S)/k. El paso lo fija k, y el margen es
     //    consecuencia — no un parámetro. Se toma la k cuyo margen cae más cerca
     //    del objetivo; con la proporción DIN eso da 4×6, 5×8, 7×11…
+    //    Con el campo en 'square' no crece: se compone cuadrado y se centra en
+    //    el pliego, que es otra imagen — la obra cuadrada puesta sobre un DIN.
     const n = params.grid ? params.grid : rng.int(3, 7);
-    const S = Math.min(W, H), L = Math.max(W, H);
-    let pitch, mg, nL;
-    if (L - S < 1) {                       // cuadrado: el margen sí es el objetivo
-      mg = Math.round(S * MARGIN);
-      pitch = (S - mg * 2) / n;
-      nL = n;
-    } else {
-      let best = null;
-      for (let k = 1; k <= 12; k++) {
-        const p = (L - S) / k, m = (S - n * p) / 2;
-        if (m < S * 0.04) continue;        // sin margen no hay suelo que leer
-        const d = Math.abs(m - S * MARGIN);
-        if (!best || d < best.d) best = { p, m, k, d };
-      }
-      pitch = best.p; mg = best.m; nL = n + best.k;
-    }
-    const cols = W >= H ? nL : n, rows = W >= H ? n : nL;
-    const size = pitch / GUTTER;
-    const offX = (W - cols * pitch) / 2, offY = (H - rows * pitch) / 2;
+    const G = E.fieldGrid(W, H, n, params);          // retículo del sistema
+    const { pitch, cols, rows, ox: offX, oy: offY } = G;
+    const size = pitch / GUTTER;                     // diámetro: la celda menos su aire
 
     // 3. Máscara de presencia (una tirada por celda).
     const composition = [];

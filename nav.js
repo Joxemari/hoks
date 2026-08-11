@@ -290,7 +290,7 @@ if (!document.querySelector('link[rel="icon"]')) {
 }
 
 const path = window.location.pathname.split('/').pop() || 'index.html';
-const isWork = ['index.html','','pills.html','krrtk.html','dtk.html','bzrs.html','krrtkg.html','dtkg.html','pllsg.html','dtkrt.html'].includes(path);
+const isWork = ['index.html','','plls.html','krrtk.html','dtk.html','bzrs.html','dtkrt.html'].includes(path);
 const isAbout = path === 'about.html';
 const isPalettes = path === 'palettes.html';
 
@@ -307,13 +307,10 @@ nav.innerHTML = `
     <li class="nav-work${isWork?' active':''}">
       <span class="nav-work-label" id="nav-work-label" data-i18n="nav.work">Work</span>
       <ul class="nav-work-dropdown" id="nav-work-dropdown">
-        <li data-slug="pills"><a href="pills.html"${path==='pills.html'?' class="active"':''}>PLLS</a></li>
+        <li data-slug="plls"><a href="plls.html"${path==='plls.html'?' class="active"':''}>PLLS</a></li>
         <li data-slug="krrtk"><a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}>KRRTK</a></li>
         <li data-slug="dtk"><a href="dtk.html"${path==='dtk.html'?' class="active"':''}>DTK</a></li>
         <li data-slug="bzrs"><a href="bzrs.html"${path==='bzrs.html'?' class="active"':''}>BZRS</a></li>
-        <li data-slug="krrtkg"><a href="krrtkg.html"${path==='krrtkg.html'?' class="active"':''}>KRRTKG</a></li>
-        <li data-slug="dtkg"><a href="dtkg.html"${path==='dtkg.html'?' class="active"':''}>DTKG</a></li>
-        <li data-slug="pllsg"><a href="pllsg.html"${path==='pllsg.html'?' class="active"':''}>PLLSG</a></li>
         <li data-slug="dtkrt"><a href="dtkrt.html"${path==='dtkrt.html'?' class="active"':''}>DTKRT</a></li>
       </ul>
     </li>
