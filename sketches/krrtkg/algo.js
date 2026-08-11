@@ -49,8 +49,9 @@
     // cerca del objetivo. La serialidad se hace explícita: el mismo sistema
     // dicho más veces, que es de lo que iba la serie.
     const S = Math.min(W, H), L = Math.max(W, H);
+    const square = E.fieldMode(params) === 'square';   // un campo, centrado en el pliego
     let a, cols, rows;                        // a = lado del campo; el margen es solo exterior
-    if (L - S < 1) {                          // cuadrado: un solo campo, como siempre
+    if (L - S < 1 || square) {                // un solo campo, como siempre
       a = S - Math.round(S * MARGIN) * 2;
       cols = rows = 1;
     } else {

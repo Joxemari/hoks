@@ -69,6 +69,14 @@
       <span class="hintline">proporción DIN — misma seed, otra composición</span>
     </div>
     <div class="group">
+      <span class="lbl">Field</span>
+      <select id="field">
+        <option value="sheet">▣ Llena el pliego</option>
+        <option value="square">□ Campo cuadrado</option>
+      </select>
+      <span class="hintline">el pliego y el campo son dos decisiones: un cuadrado puede ir sobre un DIN</span>
+    </div>
+    <div class="group">
       <span class="lbl">Seed</span>
       <div class="seed-box">
         <button class="ghost" id="prev" title="seed − 1 (←)">◀</button>
@@ -207,6 +215,7 @@ Object.entries(WORK.FINISH_PROBS).forEach(([k, v]) => finishProbs[k] = Math.roun
 
 function params() {
   return {
+    field:      $('field').value,
     grainScale: parseFloat($('grain').value),
     archetype: $('arch').value,
     bg: $('bg').value,
@@ -354,6 +363,7 @@ $('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
 $('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('arch').onchange = refresh;
+$('field').onchange = refresh;
 $('bg').onchange = refresh;
 $('count').oninput = () => { $('countV').textContent = $('count').value === '0' ? 'auto' : $('count').value; refresh(); };
 $('thick').oninput = () => { $('thickV').textContent = parseFloat($('thick').value).toFixed(2); refresh(); };

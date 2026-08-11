@@ -59,6 +59,14 @@
       <span class="hintline">proporción DIN — misma seed, otra composición</span>
     </div>
     <div class="group">
+      <span class="lbl">Field</span>
+      <select id="field">
+        <option value="sheet">▣ Llena el pliego</option>
+        <option value="square">□ Campo cuadrado</option>
+      </select>
+      <span class="hintline">el pliego y el campo son dos decisiones: un cuadrado puede ir sobre un DIN</span>
+    </div>
+    <div class="group">
       <span class="lbl">Seed</span>
       <div class="seed-box">
         <button class="ghost" id="prev">◀</button>
@@ -144,6 +152,7 @@ const $ = id => document.getElementById(id);
 
 function params() {
   return {
+    field:      $('field').value,
     bg:         $('bg').value,
     grainScale: parseFloat($('grain').value),
     threshold:  parseFloat($('th').value),
@@ -221,6 +230,7 @@ $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; 
 $('th').oninput = () => { $('thV').textContent = parseFloat($('th').value).toFixed(2); refresh(); };
 $('al').oninput = () => { $('alV').textContent = parseFloat($('al').value).toFixed(2); refresh(); };
 $('fs').oninput = () => { $('fsV').textContent = $('fs').value; refresh(); };
+$('field').onchange = refresh;
 $('bg').onchange = refresh;
 $('grain').oninput = () => { $('grainV').textContent = parseFloat($('grain').value).toFixed(1); refresh(); };
 $('sheet').onclick = () => setSheet(!sheetMode);

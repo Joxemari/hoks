@@ -56,7 +56,9 @@
     // floor, no round: la celda va a hueso en el lado corto, así que en el largo
     // hay que quedarse con las que CABEN — redondear hacia arriba desbordaría y
     // recortaría los círculos del borde.
-    const nL = Math.max(n, Math.floor(L / pitch + 1e-9));
+    const nL = E.fieldMode(params) === 'square'
+      ? n                                     // campo cuadrado, centrado en el pliego
+      : Math.max(n, Math.floor(L / pitch + 1e-9));
     const cols = W >= H ? nL : n, rows = W >= H ? n : nL;
     const offsetX = (W - cols * pitch) / 2;
     const offsetY = (H - rows * pitch) / 2;

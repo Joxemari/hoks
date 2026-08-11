@@ -186,7 +186,13 @@
     // formato cambiaba la densidad de la obra, que no es lo que decide el
     // arquetipo. SPREAD está calibrado (0.85/2^¼) para que el horizontal siga
     // siendo exactamente el publicado.
-    const maxSize = Math.sqrt(W * H) * SPREAD / Math.sqrt(num);
+    // El CAMPO puede ser el pliego entero o un cuadrado centrado en él: son dos
+    // imágenes distintas y las dos tienen que poder existir. Las cápsulas se
+    // componen contra FW/FH; el fondo y el grano siguen siendo de toda la hoja.
+    const Sm = Math.min(W, H), square = E.fieldMode(params) === 'square';
+    const FW = square ? Sm : W, FH = square ? Sm : H;
+    const fx0 = (W - FW) / 2, fy0 = (H - FH) / 2;
+    const maxSize = Math.sqrt(FW * FH) * SPREAD / Math.sqrt(num);
     const thick = maxSize * rng.range(0.62, 0.78) * (params.thickness || 1);
     const tol = OL_TOL[arch.name] * Math.min(1.0, num / 8);
 
@@ -200,14 +206,14 @@
 
     // Margen = extensión máxima de la cápsula desde su centro (hl + radio del cap).
     // Así todas caben sin recortes → todas conservan la MISMA proporción.
-    const reach = maxSize / 4 + thick / 2, mx = Math.min(reach, W / 2), my = Math.min(reach, H / 2);
+    const reach = maxSize / 4 + thick / 2, mx = Math.min(reach, FW / 2), my = Math.min(reach, FH / 2);
     const pills = [], placed = [];
     for (let i = 0; i < num; i++) {
       const hl = maxSize / 4;
       let cx, cy, angle, ok = false;
       for (let att = 0; att < PLACE_ATT; att++) {
         angle = rng.range(0, Math.PI * 2);
-        cx = rng.range(mx, W - mx); cy = rng.range(my, H - my);
+        cx = rng.range(mx, FW - mx); cy = rng.range(my, FH - my);
         let bad = false; const md = (thick + hl * 1.5) * (1.0 - tol);
         for (const p of placed) {
           if (Math.hypot(cx - p.cx, cy - p.cy) < md) { bad = true; break; }
@@ -215,7 +221,7 @@
         }
         if (!bad) { ok = true; break; }
       }
-      if (!ok) { angle = rng.range(0, Math.PI * 2); cx = rng.range(mx, W - mx); cy = rng.range(my, H - my); }
+      if (!ok) { angle = rng.range(0, Math.PI * 2); cx = rng.range(mx, FW - mx); cy = rng.range(my, FH - my); }
       placed.push({ cx, cy, hl, t: thick });
       // Evitar pills del mismo tono que el fondo.
       const bgL = bgColors.map(c => E.luma(c)), cOk = c => bgL.every(bl => Math.abs(E.luma(c) - bl) > 0.12);
@@ -225,11 +231,14 @@
     }
 
     const styleCount = {};
+    ctx.save();
+    ctx.translate(fx0, fy0);          // el campo, centrado en el pliego
     for (const p of pills) {
       styleCount[p.style] = (styleCount[p.style] || 0) + 1;
       const dx = Math.cos(p.angle) * p.hl, dy = Math.sin(p.angle) * p.hl;
       drawPill(ctx, p.cx - dx, p.cy - dy, p.cx + dx, p.cy + dy, p.thick, p.col, p.style, rng, colors, blndOp, u);
     }
+    ctx.restore();
     E.grain(ctx, W, H, colors, grainScale, u);
 
     return { pal, arch, num, styleCount, bgColors };

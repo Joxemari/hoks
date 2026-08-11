@@ -132,10 +132,13 @@
     //    L−2m=(n+k)·p sale p=(L−S)/k. El paso lo fija k, y el margen es
     //    consecuencia — no un parámetro. Se toma la k cuyo margen cae más cerca
     //    del objetivo; con la proporción DIN eso da 4×6, 5×8, 7×11…
+    //    Con el campo en 'square' no crece: se compone cuadrado y se centra en
+    //    el pliego, que es otra imagen — la obra cuadrada puesta sobre un DIN.
     const n = params.grid ? params.grid : rng.int(3, 7);
     const S = Math.min(W, H), L = Math.max(W, H);
+    const square = E.fieldMode(params) === 'square';
     let pitch, mg, nL;
-    if (L - S < 1) {                       // cuadrado: el margen sí es el objetivo
+    if (L - S < 1 || square) {             // campo cuadrado: el margen es el objetivo
       mg = Math.round(S * MARGIN);
       pitch = (S - mg * 2) / n;
       nL = n;

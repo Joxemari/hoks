@@ -149,6 +149,18 @@
     return (v && v !== 'auto') ? v : (dflt || 'auto');
   }
 
+  // ── Campo: cuadrado inscrito o nativo del pliego ────────────────────────────
+  // El pliego y el campo son dos decisiones distintas. Un campo CUADRADO puede
+  // ir sobre cualquiera de los tres pliegos —un cuadrado centrado en un DIN es
+  // una imagen, no un accidente— pero también tiene que poder existir la obra
+  // compuesta de verdad en vertical u horizontal. Por eso no se deduce del
+  // formato: se elige.
+  //   params.field → 'sheet' (llena el pliego, por defecto) | 'square'
+  function fieldMode(params, dflt) {
+    const v = params && params.field;
+    return (v === 'square' || v === 'sheet') ? v : (dflt || 'sheet');
+  }
+
   function normalizePalettes(pals) {
     const w = pals.map(p => ageWeight(p.created)), t = w.reduce((a, b) => a + b, 0) || 1;
     return pals.map((p, i) => ({ ...p, prob: w[i] / t }));
@@ -321,7 +333,7 @@
 
   global.HOKS = {
     Rng, hexToRgb, luma, lerpColor, softLight,
-    drawMeshGradient, bakeGrain, applyGrain, grain, bgMode,
+    drawMeshGradient, bakeGrain, applyGrain, grain, bgMode, fieldMode,
     ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
     FORMATS, SHEETS, SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,
     fmtDims, previewDims, printDims, unit, mountFormat, exportPrint,
