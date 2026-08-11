@@ -171,7 +171,12 @@ function generate(seed, cfg) {
   // con la auto-evitación y gana el último que se aplique, rompiendo o la
   // holgura o el ángulo— sino que se descarta ese tejido y se prueba otro.
   let intento = null, vueltas = pedidas;
-  const puntua = (t) => t.conserva >= cfg.grosorMinimo && t.ang.grados >= cfg.cruceMinDeg;
+  // Un tejido vale si conserva el grosor, no tiene cruces rasantes Y
+  // ADEMÁS SE PUEDE PINTAR: sin ciclos, no hay ninguna sección obligada
+  // a ir encima y debajo a la vez.
+  const puntua = (t) => t.conserva >= cfg.grosorMinimo
+                     && t.ang.grados >= cfg.cruceMinDeg
+                     && t.ciclos === 0;
 
   for (let k = 0; k <= cfg.reintentos; k++) {
     for (let v = pedidas; v >= cfg.vueltasMin; v--) {
@@ -179,6 +184,8 @@ function generate(seed, cfg) {
       noiseSeed(seed ^ (k * 7));
       const t = tejer(family, v, cfg);
       t.ang = minAnguloCruce(t.nodes);
+      t.nudo = buildKnot(t.nodes.map(n => n.p));
+      t.ciclos = t.nudo.plano.ciclos;
 
       if (!intento) { intento = t; vueltas = v; continue; }
       const pasa = puntua(t), pasaba = puntua(intento);
@@ -188,7 +195,9 @@ function generate(seed, cfg) {
       else if (pasa) gana = cfg.densidad && t.ang.cruces > intento.ang.cruces;
       // entre dos que fallan: manda el ángulo, y SÓLO el ángulo — desempatar
       // por trama aquí elige justo el tejido con más cruces rasantes
-      else gana = t.ang.grados > intento.ang.grados;
+      else gana = t.ciclos !== intento.ciclos
+                ? t.ciclos < intento.ciclos
+                : t.ang.grados > intento.ang.grados;
       if (gana) { intento = t; vueltas = v; }
     }
     if (!cfg.densidad && puntua(intento)) break;
@@ -196,10 +205,10 @@ function generate(seed, cfg) {
 
   const { nodes, width } = intento;
   const points = nodes.map(n => n.p);
-  const { cuts, order, depth, cruces, crossings } = buildKnot(points);
+  const { cuts, order, depth, cruces, plano, crossings } = intento.nudo;
 
 
-  return { seed, family, vueltas, pedidas, points, cuts, order, depth, cruces, crossings, width, colores, cfg };
+  return { seed, family, vueltas, pedidas, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
 }
 
 // ------------------------------------------------------------
@@ -596,7 +605,7 @@ function buildKnot(points) {
   }
 
   if (!X.length) {
-    return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], cruces: [], crossings: 0 };
+    return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], cruces: [], plano: { secciones: [[0, last]], orden: [0], ciclos: 0 }, crossings: 0 };
   }
 
   const visits = [];
@@ -683,7 +692,11 @@ function buildKnot(points) {
     cruces.push({ arriba: arriba.s, abajo: abajo.s });
   }
 
-  return { cuts, order, depth, cruces, crossings: X.length };
+  // El plan de secciones se calcula aquí, no al dibujar, para poder
+  // comprobar ANTES si este nudo se puede pintar en plano.
+  const plano = planoDeSecciones(last, cruces);
+
+  return { cuts, order, depth, cruces: plano.cruces, plano, crossings: X.length };
 }
 
 // Busca el centro de un segmento dentro del intervalo entre dos
@@ -698,6 +711,118 @@ function corteEntre(a, b) {
     if (mejor === null || abs(c - medio) < abs(mejor - medio)) mejor = c;
   }
   return mejor === null ? medio : mejor;   // el centro de segmento más equidistante
+}
+
+// ------------------------------------------------------------
+// PLAN DE SECCIONES
+// La cinta se parte en cada cruce donde pasa por DEBAJO. Cada sección
+// se pintará entera, junta y cuerpo, y sus dos cabos quedarán tapados
+// por la hebra que le pasa por encima.
+//
+// El orden importa: una sección que termina bajo un cruce tiene que
+// pintarse ANTES que la que pasa por encima de ese cruce. Si esas
+// relaciones se contradicen —A sobre B, B sobre C, C sobre A— el nudo
+// NO SE PUEDE PINTAR en plano: alguna sección acabaría encima cuando le
+// tocaba debajo, y ahí aparece un halo donde no debe y falta donde sí.
+// Se cuenta cuántas quedan fuera del orden; generate() descarta ese
+// tejido y prueba otro.
+// ------------------------------------------------------------
+function planoDeSecciones(last, cruces) {
+  // Con alternancia estricta casi ningún nudo de esta complejidad se
+  // puede pintar en plano: aparecen ciclos (A sobre B, B sobre C, C
+  // sobre A). Antes eso dejaba secciones fuera del orden y alguna
+  // acababa encima cuando le tocaba debajo — halo donde no debe y falta
+  // donde sí. Ahora el nudo SE HACE pintable: se voltea el cruce que
+  // cierra cada ciclo, uno a uno, hasta que no queda ninguno. Es lo que
+  // hace un grabador cuando un nudo no se puede tumbar en el papel.
+  const cr = cruces.map(c => ({ arriba: c.arriba, abajo: c.abajo }));
+  const veces = cr.map(() => 0);
+  let plan = null, volteados = 0;
+
+  for (let i = 0; i < 200; i++) {
+    plan = ordenar(last, cr);
+    if (plan.culpable < 0) break;
+
+    // Voltear siempre el mismo cruce puede entrar en bucle: si ya se ha
+    // volteado dos veces, se prueba con el siguiente menos tocado.
+    let k = plan.culpable;
+    if (veces[k] >= 2) {
+      let alt = -1;
+      for (let j = 0; j < cr.length; j++) if (alt < 0 || veces[j] < veces[alt]) alt = j;
+      if (alt >= 0) k = alt;
+    }
+    const c = cr[k];
+    const t = c.arriba; c.arriba = c.abajo; c.abajo = t;
+    veces[k]++; volteados++;
+  }
+
+  return { secciones: plan.secciones, orden: plan.orden, ciclos: plan.culpable >= 0 ? 1 : 0,
+           volteados, cruces: cr };
+}
+
+// Parte la cinta en los cruces donde pasa por debajo y ordena las
+// secciones. Devuelve el índice del cruce que cierra un ciclo, o -1.
+function ordenar(last, cr) {
+  const cortes = cr.map(c => c.abajo)
+                   .filter(s => s > 1e-6 && s < last - 1e-6)
+                   .sort((a, b) => a - b);
+
+  const secciones = [];
+  let desde = 0;
+  for (const c of cortes) { if (c > desde + 1e-9) secciones.push([desde, c]); desde = c; }
+  secciones.push([desde, last]);
+
+  const cual = (s) => {
+    for (let i = 0; i < secciones.length; i++)
+      if (s >= secciones[i][0] - 1e-9 && s <= secciones[i][1] + 1e-9) return i;
+    return secciones.length - 1;
+  };
+
+  const aristas = [];
+  const luego = secciones.map(() => []);
+  const grado = secciones.map(() => 0);
+  cr.forEach((c, k) => {
+    const arriba = cual(c.arriba);
+    for (const i of [cual(c.abajo - 1e-5), cual(c.abajo + 1e-5)]) {
+      if (i === arriba) continue;
+      if (luego[i].includes(arriba)) continue;
+      luego[i].push(arriba); grado[arriba]++;
+      aristas.push({ de: i, a: arriba, k });
+    }
+  });
+
+  const orden = [], cola = [];
+  secciones.forEach((_, i) => { if (grado[i] === 0) cola.push(i); });
+  while (cola.length) {
+    const i = cola.shift(); orden.push(i);
+    for (const j of luego[i]) if (--grado[j] === 0) cola.push(j);
+  }
+
+  // Si algo no entró en el orden hay ciclo. Para romperlo hace falta la
+  // ARISTA DE RETORNO concreta, no una cualquiera de las atrapadas: se
+  // busca con un recorrido en profundidad, y su cruce es el que se
+  // voltea. Volteando una arista al azar el ciclo puede seguir intacto.
+  let culpable = -1;
+  if (orden.length < secciones.length) {
+    const estado = secciones.map(() => 0);   // 0 sin ver, 1 en curso, 2 cerrado
+    const salida = (i) => {
+      estado[i] = 1;
+      for (const e of aristas) {
+        if (e.de !== i) continue;
+        if (estado[e.a] === 1) return e.k;             // arista de retorno
+        if (estado[e.a] === 0) { const r = salida(e.a); if (r >= 0) return r; }
+      }
+      estado[i] = 2;
+      return -1;
+    };
+    for (let i = 0; i < secciones.length && culpable < 0; i++)
+      if (estado[i] === 0) culpable = salida(i);
+
+    const dentro = new Set(orden);
+    secciones.forEach((_, i) => { if (!dentro.has(i)) orden.push(i); });
+  }
+
+  return { secciones, orden, culpable };
 }
 
 function sToCut(s0, s1, last) {
@@ -773,40 +898,9 @@ function renderComposition(ctx, ox, oy, S, comp) {
   const acum = arcosDe(mapped);
   const total = acum[acum.length - 1];
 
-  const cortes = comp.cruces.map(c => arcoDeParam(mapped, acum, c.abajo))
-                            .filter(d => d > 1e-6 && d < total - 1e-6)
-                            .sort((a, b) => a - b);
-
-  const secciones = [];
-  let desde = 0;
-  for (const d of cortes) { if (d > desde) secciones.push([desde, d]); desde = d; }
-  secciones.push([desde, total]);
-
-  // Orden: una sección que termina bajo un cruce debe pintarse ANTES que
-  // la sección que pasa por encima de ese cruce.
-  const cual = (d) => {
-    for (let i = 0; i < secciones.length; i++)
-      if (d >= secciones[i][0] - 1e-6 && d <= secciones[i][1] + 1e-6) return i;
-    return 0;
-  };
-  const luego = secciones.map(() => []);
-  const grado = secciones.map(() => 0);
-  for (const c of comp.cruces) {
-    const arriba = cual(arcoDeParam(mapped, acum, c.arriba));
-    const abajoD = arcoDeParam(mapped, acum, c.abajo);
-    for (const i of [cual(abajoD - 1e-4), cual(abajoD + 1e-4)]) {
-      if (i !== arriba && !luego[i].includes(arriba)) { luego[i].push(arriba); grado[arriba]++; }
-    }
-  }
-  const orden = [], cola = [];
-  secciones.forEach((_, i) => { if (grado[i] === 0) cola.push(i); });
-  while (cola.length) {
-    const i = cola.shift(); orden.push(i);
-    for (const j of luego[i]) if (--grado[j] === 0) cola.push(j);
-  }
-  // un nudo puede contradecirse (A sobre B, B sobre C, C sobre A): lo que
-  // quede del ciclo va al final y algún cruce cede
-  secciones.forEach((_, i) => { if (!orden.includes(i)) orden.push(i); });
+  const secciones = comp.plano.secciones.map(([a, b]) =>
+    [arcoDeParam(mapped, acum, a), arcoDeParam(mapped, acum, b)]);
+  const orden = comp.plano.orden;
 
   // Cada sección se alarga un pelo por sus dos remates para que el cabo
   // quede bien dentro de la hebra que lo tapa, nunca justo en su borde.
