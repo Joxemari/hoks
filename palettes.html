@@ -32,6 +32,26 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
 .search-wrap input::placeholder { color: var(--ink3); text-transform: uppercase; letter-spacing: 0.08em; }
 .sort-select { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 10px; font-family: var(--f); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); cursor: pointer; outline: none; }
 .count { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); white-space: nowrap; }
+/* Rejilla de uso: una celda por paleta, tono según cuántas obras guardadas la usan. */
+/* width:100% porque nav.js pone el body en flex column: si no, encoge al contenido. */
+.usage { width: 100%; max-width: 1100px; margin: 0 auto; padding: 1.2rem 2rem 1.3rem; border-bottom: 1px solid var(--border); }
+.usage-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 13px; }
+.usage-title { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); }
+.usage-sub { font-size: 9px; color: var(--ink3); letter-spacing: 0.06em; }
+.usage-grid { display: grid; grid-template-columns: repeat(12, 13px); gap: 3px; width: max-content; }
+.ucell { width: 13px; height: 13px; border-radius: 2px; cursor: pointer; outline: 1px solid transparent; outline-offset: 1px; transition: outline-color 0.12s; }
+.ucell:hover { outline-color: var(--ink); }
+.u0 { background: #ededed; }
+.u1 { background: #d4d4d4; }
+.u2 { background: #a6a6a6; }
+.u3 { background: #5c5c5c; }
+.u4 { background: var(--ink); }
+.ucell.off { box-shadow: inset 0 0 0 1px var(--border-dark); }   /* paleta retirada */
+.ucell.off.u0 { background: var(--bg); }
+.usage-legend { display: flex; align-items: center; gap: 4px; margin-top: 13px; font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
+.usage-legend i { width: 9px; height: 9px; border-radius: 2px; }
+.usage-empty { font-size: 10px; color: var(--ink3); letter-spacing: 0.06em; text-transform: uppercase; }
+.usage-chip { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink); border: 1px solid var(--border-dark); border-radius: 20px; padding: 1px 6px; flex-shrink: 0; }
 .grid { max-width: 1100px; margin: 2rem auto 0; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .palette-card { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.15s; }
 .palette-card:hover { border-color: var(--border-dark); }
@@ -71,6 +91,7 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
 </head>
 <body>
 <script src="nav.js"></script>
+<script src="usage.js"></script>
 <div class="controls">
   <div class="controls-left">
     <div class="search-wrap"><input type="text" id="search" data-i18n-ph="palettes.search" placeholder="Search by name or tag…"></div>
@@ -80,10 +101,23 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
       <option value="oldest" data-i18n="sort.oldest">Oldest</option>
       <option value="name" data-i18n="sort.name">Name</option>
       <option value="colors" data-i18n="palettes.colors">Colors</option>
+      <option value="usage" data-i18n="sort.usage">By Usage</option>
     </select>
     <span class="count" id="count"></span>
   </div>
   <div class="controls-right"></div>
+</div>
+<div class="usage" id="usage">
+  <div class="usage-head">
+    <span class="usage-title" data-i18n="usage.title">Usage</span>
+    <span class="usage-sub" id="usageSub"></span>
+  </div>
+  <div class="usage-grid" id="usageGrid"></div>
+  <div class="usage-legend" id="usageLegend">
+    <span data-i18n="usage.less">less</span>
+    <i class="u0"></i><i class="u1"></i><i class="u2"></i><i class="u3"></i><i class="u4"></i>
+    <span data-i18n="usage.more">more</span>
+  </div>
 </div>
 <div class="grid" id="grid"></div>
 <div class="toast" id="toast"></div>
@@ -112,11 +146,14 @@ function formatDate(ms) {
   return new Date(ms).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
 }
 
-let pals = [];
+let pals = [], usage = { works: [] }, usageCounts = {};
 
-fetch(RAW + 'palettes.json?t=' + Date.now())
-  .then(r => r.ok ? r.json() : [])
-  .then(data => {
+Promise.all([
+  fetch(RAW + 'palettes.json?t=' + Date.now()).then(r => r.ok ? r.json() : []),
+  HOKSUSAGE.load(),
+])
+  .then(([data, u]) => {
+    usage = u; usageCounts = HOKSUSAGE.counts(u);
     // Compute probs on ALL palettes (active + inactive) for display
     const weights = data.map(p => ageWeight(p.created));
     const totalActive = data
@@ -131,7 +168,38 @@ fetch(RAW + 'palettes.json?t=' + Date.now())
   })
   .catch(() => { document.getElementById('grid').innerHTML='<div class="empty-state"><p class="empty-big">'+T('palettes.loadError')+'</p></div>'; });
 
+const uses = p => usageCounts[p.id] || 0;
+function usesLabel(p) {
+  const n = uses(p);
+  if (!n)     return T('usage.unused').replace('%1', p.name);
+  if (n === 1) return T('usage.tip1').replace('%1', p.name);
+  return T('usage.tip').replace('%1', p.name).replace('%2', n);
+}
+
+// Rejilla tipo registro: catálogo completo en orden de creación, tono por uso.
+function renderUsage() {
+  const total = (usage.works || []).length;
+  const used = Object.keys(usageCounts).length;
+  document.getElementById('usageSub').textContent =
+    T('usage.sub').replace('%1', total).replace('%2', used);
+  const box = document.getElementById('usageGrid'), legend = document.getElementById('usageLegend');
+  if (!total) {
+    box.innerHTML = '<span class="usage-empty">'+T('usage.none')+'</span>';
+    legend.style.display = 'none';
+    return;
+  }
+  legend.style.display = '';
+  const list = pals.slice().sort((a,b) => (a.id||0)-(b.id||0));
+  const max = list.reduce((m,p) => Math.max(m, uses(p)), 0);
+  box.innerHTML = list.map(p => {
+    const n = uses(p);
+    const lvl = !n ? 0 : Math.min(4, Math.ceil(n / max * 4));
+    return `<span class="ucell u${lvl}${p.active===false?' off':''}" data-pal="${esc(p.name)}" title="${esc(usesLabel(p))}"></span>`;
+  }).join('');
+}
+
 function render() {
+  renderUsage();
   const q = document.getElementById('search').value.toLowerCase().trim();
   const srt = document.getElementById('sort').value;
   let list = pals.filter(p => !q || p.name.toLowerCase().includes(q) || (p.tags||[]).some(t=>t.toLowerCase().includes(q)));
@@ -140,6 +208,7 @@ function render() {
   if(srt==='oldest')  list.sort((a,b) => (a.created||0)-(b.created||0));
   if(srt==='name')    list.sort((a,b) => a.name.localeCompare(b.name));
   if(srt==='colors')  list.sort((a,b) => b.colors.length-a.colors.length);
+  if(srt==='usage')   list.sort((a,b) => uses(b)-uses(a));
   const active = list.filter(p => p.active !== false).length;
   document.getElementById('count').textContent = T('palettes.count').replace('%1', list.length).replace('%2', active);
   const grid = document.getElementById('grid');
@@ -163,6 +232,7 @@ function render() {
         <div class="card-meta">
           ${dateStr ? `<span class="card-date">${dateStr}</span>` : ''}
           ${active && probPct ? `<span class="card-date" style="color:#888;">↑ ${probPct} ${T('palettes.chance')}</span>` : ''}
+          ${uses(p) ? `<span class="usage-chip" title="${esc(usesLabel(p))}">×${uses(p)}</span>` : ''}
         </div>
         ${p.tags?.length ? `<div class="card-tags">${p.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
       </div>
@@ -186,6 +256,8 @@ document.getElementById('search').addEventListener('input',render);
 document.getElementById('sort').addEventListener('change',render);
 window.addEventListener('hoks:langchange', () => { if (pals.length) render(); });
 document.addEventListener('click',e=>{
+  const cell=e.target.closest('.ucell[data-pal]');
+  if(cell){const s=document.getElementById('search');s.value=cell.dataset.pal;render();document.getElementById('grid').scrollIntoView({behavior:'smooth',block:'start'});return;}
   const swatch=e.target.closest('.swatch[data-hex]'); if(swatch){copySwatch(swatch.dataset.hex,swatch);return;}
   const chip=e.target.closest('.hex-chip[data-hex]'); if(chip){copyText(chip.dataset.hex);return;}
   const ca=e.target.closest('[data-copyall]'); if(ca){const p=pals.find(x=>x.id==ca.dataset.copyall);if(p)copyText(p.colors.join(', '));return;}

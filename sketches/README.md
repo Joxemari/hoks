@@ -39,7 +39,12 @@ sketches/
   pllsg/            ← graduada (algo.js + harness)
   krrtkg/           ← graduada (porte fiel, verificado op-a-op)
   dtkg/             ← graduada (porte fiel, verificado op-a-op)
+  dtkrt/            ← EN PRUEBAS: familia nueva, aún sin página de producción
 ```
+
+`dtkrt/` es el único caso hasta ahora de obra que **nace aquí** en vez de portarse
+desde p5: propuesta de sistema para mirar en hoja de contactos antes de decidir si
+merece página. No está en `data/works.json` ni publicada.
 
 Cada obra expone el mismo contrato:
 

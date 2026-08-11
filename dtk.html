@@ -116,6 +116,7 @@ canvas { display: block; height: min(72vh, 600px); width: auto; max-width: calc(
 <script src="nav.js"></script>
 <!-- Motor compartido: formatos de lienzo y exportación a tamaño de impresión. -->
 <script src="sketches/_engine.js?v=1"></script>
+<script src="usage.js"></script>
 <div class="layout">
   <aside class="sidebar">
     <div class="sidebar-section">
@@ -254,7 +255,7 @@ const RL = { common:'Common', uncommon:'Uncommon', rare:'Rare', superrare:'Super
 const RC = { common:'common', uncommon:'uncommon', rare:'rare', superrare:'superrare', legendary:'legendary' };
 
 let palettes = [], currentSeed = (Math.random()*0xFFFFFFFF)>>>0;
-let currentTimestamp = new Date(), gallery = [], lastTraits = [], lastOverall = '';
+let currentTimestamp = new Date(), gallery = [], lastTraits = [], lastOverall = '', lastPal = null;
 
 // ── RNG ───────────────────────────────────────────────
 class Rng {
@@ -317,7 +318,7 @@ function draw(seed) {
 function renderTo(ctx, W, H, seed) {
   const rng = new Rng(seed);
 
-  const pal = getActivePalette(rng);
+  const pal = getActivePalette(rng); lastPal = pal;
   const colors = pal.colors;
 
   // Background
@@ -409,8 +410,8 @@ function generate() { currentSeed=(Math.random()*0xFFFFFFFF)>>>0; currentTimesta
 // ── GALLERY ───────────────────────────────────────────
 function loadGallery(){fetch(RAW+'dtk.json?t='+Date.now()).then(r=>r.ok?r.json():[]).then(data=>{gallery=data;renderGallery();}).catch(()=>{gallery=[];renderGallery();});}
 async function saveGallery(){await ghPush('data/dtk.json',gallery);}
-async function saveToGallery(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/png');gallery.unshift({seed:currentSeed,dataUrl,savedAt:Date.now()});if(gallery.length>50)gallery=gallery.slice(0,50);toast(HOKSI18N.en('toast.saving'));await saveGallery();renderGallery();toast(HOKSI18N.en('toast.savedGallery'));}
-function loadExactIteration(item){const canvas=document.getElementById('c');const img=new Image();img.onload=()=>{canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const ctx=canvas.getContext('2d');ctx.globalCompositeOperation='source-over';ctx.drawImage(img,0,0,canvas.width,canvas.height);};img.src=item.dataUrl;currentSeed=item.seed;currentTimestamp=item.savedAt?new Date(item.savedAt):new Date();document.getElementById('seedDisplay').textContent='#'+item.seed;const tsEl=document.getElementById('timestampDisplay');const ts=currentTimestamp;if(tsEl)tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});const tl=document.getElementById('traitList');if(tl)tl.innerHTML='<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">'+HOKSI18N.t('trait.savedMsg')+'</div>';const or=document.getElementById('overallRarity');if(or)or.innerHTML='';}
+async function saveToGallery(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/png');const ts=Date.now();gallery.unshift({seed:currentSeed,dataUrl,savedAt:ts});if(gallery.length>50)gallery=gallery.slice(0,50);toast(HOKSI18N.en('toast.saving'));await saveGallery();await HOKSUSAGE.record('dtk',currentSeed,ts,lastPal);renderGallery();toast(HOKSI18N.en('toast.savedGallery'));}
+function loadExactIteration(item){const canvas=document.getElementById('c');const img=new Image();img.onload=()=>{canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const ctx=canvas.getContext('2d');ctx.globalCompositeOperation='source-over';ctx.drawImage(img,0,0,canvas.width,canvas.height);};img.src=item.dataUrl;currentSeed=item.seed; lastPal = null;currentTimestamp=item.savedAt?new Date(item.savedAt):new Date();document.getElementById('seedDisplay').textContent='#'+item.seed;const tsEl=document.getElementById('timestampDisplay');const ts=currentTimestamp;if(tsEl)tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});const tl=document.getElementById('traitList');if(tl)tl.innerHTML='<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">'+HOKSI18N.t('trait.savedMsg')+'</div>';const or=document.getElementById('overallRarity');if(or)or.innerHTML='';}
 function renderGallery(){const section=document.getElementById('gallerySection'),grid=document.getElementById('galleryGrid');if(!gallery.length){section.style.display='none';return;}section.style.display='block';grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-thumb" data-i="${i}"><img src="${item.dataUrl}" alt="dtk ${item.seed}"><div style="display:flex;align-items:center;justify-content:space-between;padding:2px 6px 4px;"><span class="gallery-thumb-seed">#${item.seed}</span></div></div>`).join('');grid.querySelectorAll('.gallery-thumb').forEach(el=>{el.addEventListener('click',()=>{const item=gallery[parseInt(el.dataset.i)];if(item)loadExactIteration(item);});});}
 
 // ── EXPORT ────────────────────────────────────────────
