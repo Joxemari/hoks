@@ -102,9 +102,11 @@ const DEF = {
   widthOfSeg:   null,        // si se fija, manda sobre trazo
   widthMin:     0.022,
   cabo:         0.20,        // cabo mínimo
-  caboMargen:   1.20,        // cuánto se pasa del borde de la hebra que lo tapa        // cuánto se mete el cabo de cada sección bajo la hebra que lo tapa, x anchura
+  caboMargen:   1.20,        // cuánto se pasa del borde de la hebra que lo tapa
+  caboTope:     0.45,        // fracción de la distancia al cruce vecino que NO se rebasa        // cuánto se pasa del borde de la hebra que lo tapa        // cuánto se mete el cabo de cada sección bajo la hebra que lo tapa, x anchura
   cruceMinDeg:  40,          // ángulo mínimo de cruce: por debajo, la hebra de abajo queda en astilla
-  reintentos:   6,           // tejidos alternativos que se prueban con el mismo seed
+  volteoMax:    0.34,        // volteos por cruce que se toleran: más, y deja de alternar
+  reintentos:   10,           // tejidos alternativos que se prueban con el mismo seed
   densidad:     true,        // entre los que pasan, quedarse con el más entrelazado
   grosorMinimo: 0.78,    // fracción del grosor pedido que un intento debe conservar
   widthMax:     0.098,
@@ -129,6 +131,7 @@ const DEF = {
   tinta:        "solido",    // solido | gradiente
   juntaSolape:  0.05,        // alargue en las juntas internas, × anchura
   punzonExtra:  0.35,        // recorrido extra del punzón más allá del cruce, × anchura         // longitud del punzón en cada cruce, × anchura
+  curva:        0,           // 0 esquina viva ... 1 curva plena
   miterLimit:   1.0,         // el pico de inglete es tinta FUERA de la banda: no existe         // por encima, el pico del halo raja la hebra vecina
 
   paletas:      null,        // lista completa; si no se fija una, se elige por peso
@@ -203,7 +206,8 @@ function generate(seed, cfg) {
   // a ir encima y debajo a la vez.
   const puntua = (t) => t.conserva >= cfg.grosorMinimo
                      && t.ang.grados >= cfg.cruceMinDeg
-                     && t.ciclos === 0;
+                     && t.ciclos === 0
+                     && t.volteos <= cfg.volteoMax;
 
   for (let k = 0; k <= cfg.reintentos; k++) {
     for (let v = pedidas; v >= cfg.vueltasMin; v--) {
@@ -213,17 +217,25 @@ function generate(seed, cfg) {
       t.ang = minAnguloCruce(t.nodes);
       t.nudo = buildKnot(t.nodes.map(n => n.p));
       t.ciclos = t.nudo.plano.ciclos;
+      // Cada volteo rompe la alternancia del tejido. Un nudo que se
+      // deja pintar con pocos volteos se lee como tejido; uno que
+      // necesita diez ya no alterna y el ojo no lo sigue.
+      t.volteos = t.nudo.plano.volteados / max(t.nudo.cruces.length, 1);
 
       if (!intento) { intento = t; vueltas = v; continue; }
       const pasa = puntua(t), pasaba = puntua(intento);
       let gana;
       if (pasa !== pasaba) gana = pasa;
       // entre dos que pasan: el más entrelazado, si se quiere conservar trama
-      else if (pasa) gana = cfg.densidad && t.ang.cruces > intento.ang.cruces;
+      // entre dos que pasan: menos volteos manda sobre más trama, porque
+      // la trama no se lee si el tejido no alterna
+      else if (pasa) gana = abs(t.volteos - intento.volteos) > 0.05
+                          ? t.volteos < intento.volteos
+                          : (cfg.densidad && t.ang.cruces > intento.ang.cruces);
       // entre dos que fallan: manda el ángulo, y SÓLO el ángulo — desempatar
       // por trama aquí elige justo el tejido con más cruces rasantes
-      else gana = t.ciclos !== intento.ciclos
-                ? t.ciclos < intento.ciclos
+      else gana = t.ciclos !== intento.ciclos ? t.ciclos < intento.ciclos
+                : abs(t.volteos - intento.volteos) > 0.05 ? t.volteos < intento.volteos
                 : t.ang.grados > intento.ang.grados;
       if (gana) { intento = t; vueltas = v; }
     }
@@ -777,7 +789,21 @@ function planoDeSecciones(last, cruces) {
 
   for (let i = 0; i < 120; i++) {
     plan = ordenar(last, cr, extra);
-    if (plan.imposible >= 0) { extra.add(cr[plan.imposible].arriba); continue; }
+    if (plan.imposible >= 0) {
+      // El corte va ENTRE el punto de abajo y el de arriba, no en uno de
+      // ellos: partiendo por 'arriba' la sección que queda entre ambos
+      // sigue siendo a la vez la de arriba y la de abajo, y la relación
+      // apunta a sí misma. Partiendo en medio, dejan de ser la misma.
+      const c = cr[plan.imposible];
+      // Y al CENTRO DE UN SEGMENTO: si el corte cae sobre un vértice las
+      // dos secciones se encuentran en codo, no alineadas, y el remate
+      // del halo cruza la banda. En el centro de un tramo recto es
+      // invisible.
+      const medio = corteEntre(min(c.arriba, c.abajo), max(c.arriba, c.abajo));
+      if (extra.has(medio)) break;
+      extra.add(medio);
+      continue;
+    }
     if (plan.culpable < 0) break;
 
     const k = plan.culpable;
@@ -788,7 +814,7 @@ function planoDeSecciones(last, cruces) {
 
   return { secciones: plan.secciones, orden: plan.orden,
            ciclos: plan.culpable >= 0 ? 1 : 0, partidos: extra.size,
-           volteados, cruces: cr };
+           juntas: Array.from(extra), volteados, cruces: cr };
 }
 
 // Parte la cinta en los cruces donde pasa por debajo y ordena las
@@ -818,9 +844,9 @@ function ordenar(last, cr, extra) {
   // tape a la otra. Se funden sin incisión. Ese cruce hay que voltearlo.
   let imposible = -1;
   cr.forEach((c, k) => {
-    if (extra && extra.has(c.arriba)) return;      // ya partido por ahí
-    const a = cual(c.arriba);
-    if (a === cual(c.abajo - 1e-5) || a === cual(c.abajo + 1e-5)) if (imposible < 0) imposible = k;
+    const a1 = cual(c.arriba - 1e-5), a2 = cual(c.arriba + 1e-5);
+    const b1 = cual(c.abajo - 1e-5), b2 = cual(c.abajo + 1e-5);
+    if (imposible < 0 && (a1 === b1 || a1 === b2) && (a2 === b1 || a2 === b2)) imposible = k;
   });
 
   cr.forEach((c, k) => {
@@ -959,6 +985,17 @@ function renderComposition(ctx, ox, oy, S, comp) {
     const i = constrain(floor(s), 0, mapped.length - 2);
     return p5.Vector.sub(mapped[i+1], mapped[i]).normalize();
   };
+  // Todos los puntos del recorrido donde ocurre algo: por ahí no puede
+  // pasar un cabo. Si una sección se alarga hasta el cruce siguiente,
+  // su cuerpo lo arrolla y borra la incisión de ese cruce — que es
+  // justo lo que se veía como una costura de un píxel en vez de un
+  // corte.
+  const hitos = [];
+  for (const c of comp.cruces) {
+    hitos.push(arcoDeParam(mapped, acum, c.abajo));
+    hitos.push(arcoDeParam(mapped, acum, c.arriba));
+  }
+
   const caboEn = (d) => {
     let largo = width * cfg.cabo;
     for (const c of comp.cruces) {
@@ -966,15 +1003,31 @@ function renderComposition(ctx, ox, oy, S, comp) {
       const sen = max(abs(sin(direccion(c.abajo).angleBetween(direccion(c.arriba)))), 0.18);
       largo = max(largo, (width / 2) / sen * cfg.caboMargen);
     }
-    return largo;
+    let tope = Infinity;
+    for (const h of hitos) { const v = abs(h - d); if (v > 1e-6) tope = min(tope, v); }
+    return largo;   // el tope por cruce vecino se probó y empeora: 6.6% -> 13% a medias
   };
+
+  // Las juntas que el propio sistema tuvo que abrir (para poder ordenar
+  // un cruce que caía dentro de una sola sección) NO están debajo de
+  // ninguna hebra: ahí el halo no separa de nada y su remate se vería
+  // como una incisión falsa. En esas el halo se queda en el corte y sólo
+  // se solapan los cuerpos.
+  const juntas = (comp.plano.juntas || []).map(j => arcoDeParam(mapped, acum, j));
+  const esJunta = (d) => juntas.some(j => abs(j - d) < 1e-6);
+  const pizca = max(1, width * 0.03);
 
   for (const i of orden) {
     const [a, b] = secciones[i];
-    const ini = max(0, a > 0 ? a - caboEn(a) : a);
-    const fin = min(total, b < total ? b + caboEn(b) : b);
-    if (gap > 0) trazarTramo(ctx, mapped, acum, ini, fin, width + gap * 2, col.bg, cfg, "round");
-    trazarTramo(ctx, mapped, acum, ini, fin, width, tinta, cfg);
+    const aJ = a > 0 && esJunta(a), bJ = b < total && esJunta(b);
+
+    const iniC = max(0, a > 0 ? a - (aJ ? pizca : caboEn(a)) : a);
+    const finC = min(total, b < total ? b + (bJ ? pizca : caboEn(b)) : b);
+    const iniH = max(0, a > 0 && !aJ ? a - caboEn(a) : a);
+    const finH = min(total, b < total && !bJ ? b + caboEn(b) : b);
+
+    if (gap > 0) trazarTramo(ctx, mapped, acum, iniH, finH, width + gap * 2, col.bg, cfg, "round");
+    trazarTramo(ctx, mapped, acum, iniC, finC, width, tinta, cfg);
   }
 
 
@@ -1159,7 +1212,25 @@ function strokePath(ctx, pts, w, paint, cfg, junta) {
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(pts[0].x, pts[0].y);
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+
+  // CURVATURA. Con 0 la esquina es viva; subiendo, cada vértice se
+  // redondea con una cuadrática cuyo punto de control ES el vértice.
+  // No son dos obras distintas: una bézier con el control sobre la
+  // recta es una recta, así que el mando recorre lo mismo.
+  const k = cfg.curva || 0;
+  if (k <= 0.001 || pts.length < 3) {
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  } else {
+    for (let i = 1; i < pts.length - 1; i++) {
+      const a = pts[i-1], v = pts[i], b = pts[i+1];
+      const r = k * 0.5 * min(p5.Vector.dist(a, v), p5.Vector.dist(v, b));
+      const ent = p5.Vector.lerp(v, a, r / max(p5.Vector.dist(a, v), 1e-6));
+      const sal = p5.Vector.lerp(v, b, r / max(p5.Vector.dist(v, b), 1e-6));
+      ctx.lineTo(ent.x, ent.y);
+      ctx.quadraticCurveTo(v.x, v.y, sal.x, sal.y);
+    }
+    ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  }
   ctx.strokeStyle = paint;
   ctx.lineWidth = w;
   ctx.lineJoin = junta || (cfg.corner === "curvas" ? "round" : "miter");
@@ -1343,6 +1414,7 @@ function opciones() {
     vueltasMin: int(ui.vueltas.value()),
     vueltasMax: int(ui.vueltas.value()),
     trazo:      ui.trazo.value(),
+    curva:      float(ui.curva.value()),
     corner:     ui.esquinas.value(),
     ends:       ui.extremos.value(),
     tinta:      ui.gradiente.checked() ? "gradiente" : "solido",
@@ -1396,6 +1468,7 @@ function pintarHoja() {
 
 function actualizarInfo() {
   ui.dotRV.html(nf(float(ui.dotR.value()), 1, 2));
+  ui.curvaV.html(nf(float(ui.curva.value()), 1, 2));
   ui.vueltasV.html(ui.vueltas.value());
   ui.dotsNV.html(ui.dotsN.value());
 
@@ -1424,6 +1497,8 @@ function construirUI() {
   ui.trazo = etiquetaSelect("trazo",
     [["estandar", "estándar"], ["fino", "fino"], ["gordo", "gordo"]], 12, y); y += fila;
 
+  [ui.curva, ui.curvaV] = etiquetaSlider("curvatura", 0, 1, 0, 0.05, 12, y); y += fila;
+
   ui.esquinas = etiquetaSelect("esquinas", [["rectas", "rectas"], ["curvas", "curvas"]], 12, y); y += fila;
   ui.extremos = etiquetaSelect("extremos", [["rectos", "rectos"], ["redondos", "redondos"]], 12, y); y += fila;
 
@@ -1443,7 +1518,7 @@ function construirUI() {
   ui.info.style("line-height", "17px");
 
   [ui.paleta, ui.esquinas, ui.extremos, ui.trazo].forEach(e => e.changed(redibujar));
-  [ui.vueltas, ui.dotsN, ui.dotR].forEach(e => e.input(redibujar));
+  [ui.vueltas, ui.dotsN, ui.dotR, ui.curva].forEach(e => e.input(redibujar));
   [ui.dots, ui.gradiente].forEach(e => e.changed(redibujar));
 }
 
