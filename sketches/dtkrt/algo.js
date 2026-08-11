@@ -9,7 +9,7 @@
  * El círculo es constante; lo que varía es el suelo bajo él. Figura y fondo
  * comparten retículo: el bloque no decora, reencuadra.
  *
- * Divergencias deliberadas respecto a DTKG (y por qué):
+ * Divergencias deliberadas respecto a DTK (y por qué):
  *   · Fondo PLANO, sin mesh gradient — figura/fondo necesita un plano estable.
  *   · Margen: la malla se retira del borde para que el suelo sea visible.
  *   · Tres roles de color fijos (fondo / bloque / punto) elegidos por luma —

@@ -141,7 +141,7 @@
   }
   // ── Fondo: opción transversal del laboratorio ───────────────────────────────
   // 'solid' o 'gradient' es una decisión que atraviesa TODAS las obras, no un
-  // parámetro de cada una: es justo lo que separaba a KRRTK de KRRTKG. Cada
+  // parámetro de cada una: es lo que antes justificaba una familia "G" aparte. Cada
   // algoritmo la respeta a su manera; 'auto' = lo que la obra hace por defecto.
   //   params.bg → 'auto' | 'solid' | 'gradient'
   function bgMode(params, dflt) {
@@ -261,7 +261,7 @@
   const ICO = { square: [15, 15], vertical: [12, 17], horizontal: [17, 12] };
 
   // Control de formato + pliego de impresión para la barra lateral de una obra.
-  //   mountFormat(el, { work:'pllsg', onChange(fmt){…} }) → { format, sheet, … }
+  //   mountFormat(el, { work:'plls', onChange(fmt){…} }) → { format, sheet, … }
   function mountFormat(el, opts) {
     opts = opts || {};
     const work = opts.work || 'hoks';

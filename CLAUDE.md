@@ -9,8 +9,8 @@ Donostia / Stanford). Sistemas que producen imagen a partir de código y azar
 controlado: cada pieza nace de una *seed* y un RNG determinista.
 
 **HTML/JS vanilla. Sin framework, sin bundler, sin paso de build.** Lo que se
-commitea es exactamente lo que se publica. Las obras **graduadas** (pllsg,
-krrtkg, dtkg, dtkrt) tienen su algoritmo en `sketches/<obra>/algo.js` (fuente única,
+commitea es exactamente lo que se publica. Las obras **graduadas** (plls,
+krrtk, dtk, dtkrt) tienen su algoritmo en `sketches/<obra>/algo.js` (fuente única,
 compartida entre laboratorio y producción); las páginas de las demás series aún
 llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 única en todo el sitio: `Courier New` monoespaciada; fondo blanco, tinta `#111`.
@@ -25,13 +25,13 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   `data/works.json`. Reimplementa los algoritmos de dibujo de cada serie (versión
   reducida) para las celdas demo.
 - **Páginas de obra** — **archivo, no herramienta**. Las graduadas
-  (`pllsg.html`, `krrtkg.html`, `dtkg.html`, `dtkrt.html`) son cascarones de 20
+  (`plls.html`, `krrtk.html`, `dtk.html`, `dtkrt.html`) son cascarones de 20
   líneas que cargan `work-page.js`: nombre, narrativa (`description` de
   `works.json`), las piezas elegidas (`data/<obra>.json`, con lupa al clic) y un
   **lienzo vivo mudo** que se regenera al clic — sin panel, sin traits, sin
   rareza, sin guardar. La rareza es lenguaje de edición: describe la
   improbabilidad de una tirada que nadie posee, así que vive en el laboratorio.
-  Las heredadas (`pills.html`, `krrtk.html`, `dtk.html`, `bzrs.html`) siguen con
+  Las heredadas (`bzrs.html`) siguen con
   su generador inline **congelado**: son inactivas y su algoritmo aún no está
   graduado, así que ahí sí quedan Generate, formato/pliego, Save (que además
   apunta la paleta en `data/palette-usage.json`, ver `usage.js`) y Download.
@@ -104,13 +104,13 @@ redeploy de Pages.
 
 - **`works.json`** — Registro de familias: `id, name, slug, active, description,
   page, canvas`. El flag `active` decide qué series aparecen en la landing y en
-  el dropdown *Work* del nav. Hoy activas: **pllsg y dtkrt**; el resto
-  (pills/krrtk/dtk/bzrs/krrtkg/dtkg) están inactivas. La landing reimplementa el
+  el dropdown *Work* del nav. Hoy activas: **plls y dtkrt**; el resto
+  (pills/krrtk/dtk/bzrs/krrtk/dtk) están inactivas. La landing reimplementa el
   algoritmo de cada serie salvo DTKRT, que consume su `algo.js` real.
 - **`palettes.json`** — Paletas con `colors`, `active`, `tags`, `notes`. Mezcla
   sets de Roni Kaufman (color_pals) y series Itten (contraste complementario).
 - **`site.json`** — `aboutText`, `footerEmail`, `footerInstagram`.
-- **`plls.json`, `krrtkg.json`, `dtkg.json`, `pllsg.json`, `dtkrt.json`,
+- **`plls.json`, `krrtk.json`, `dtk.json`, `plls.json`, `dtkrt.json`,
   `gallery*.json`** —
   Obras guardadas como `{seed, dataUrl(base64), savedAt}`. Pueden pesar MB.
   Ojo: **no guardan la paleta**, y no se puede re-derivar del seed (la elección
@@ -138,7 +138,7 @@ redeploy de Pages.
 - **Familias base**: PLLS (cápsulas/pills con arquetipos de densidad y *finishes*),
   KRRTK (subdivisión recursiva de cuadrados), DTK (rejilla de círculos), BZRS
   (cientos de curvas Bézier con degradado entre dos colores).
-- **Variantes "G"** (KRRTKG/DTKG/PLLSG): añaden **mesh gradient** de fondo
+- **Variantes "G"** (KRRTK/DTK/PLLS): añaden **mesh gradient** de fondo
   (interpolación bilineal de 4 esquinas, `drawMeshGradient`) y **grano de film**
   por soft-light (`bakeGrain`/`applyGrain`).
 - **DTKRT**: la misma malla de DTK leída dos veces — *presencia* (¿hay círculo?) y
@@ -148,6 +148,16 @@ redeploy de Pages.
   de un color por forma. Conserva el grano. Es la dirección actual del trabajo.
 - **Traits/rareza**: cada draw calcula traits (paleta, arquetipo, cobertura…) y
   una rareza global (`common`→`legendary`) por probabilidad combinada.
+- **Familias, sin variantes "G"**: la familia es la **matriz** (PLLS, KRRTK, DTK,
+  BZRS, DTKRT). Lo que antes era una serie aparte —el mesh gradient de fondo y el
+  grano de film— es hoy un **ajuste del laboratorio**: `params.bg`
+  (`auto | solid | gradient`) y el slider de grano. Las galerías de las G se
+  fundieron en su matriz y las URLs viejas (`krrtkg.html`, `dtkg.html`,
+  `pllsg.html`, `pills.html`) quedan como redirecciones: estuvieron publicadas.
+- **Pliego y campo son dos decisiones**: el pliego da la proporción del papel y
+  `params.field` (`sheet | square`) dice si la obra lo llena o se compone
+  cuadrada y se centra en él. Un cuadrado sobre un DIN es una imagen buscada, no
+  un resto de no haber adaptado el algoritmo.
 - **Formato**: toda obra existe en tres proporciones — **cuadrado** (1:1),
   **vertical** y **horizontal** (1:√2, la proporción DIN). No es un recorte: se
   le pasan otras `W`/`H` al algoritmo y él recompone. El algoritmo no puede

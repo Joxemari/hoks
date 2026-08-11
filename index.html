@@ -118,24 +118,6 @@ function lerpColor(c1,c2,t){const[r1,g1,b1]=hexToRgb(c1),[r2,g2,b2]=hexToRgb(c2)
 function softLight(a,b){return a<0.5?2*a*b+a*a*(1-2*b):Math.sqrt(a)*(2*b-1)+2*a*(1-b);}
 
 // ── FALLBACK DRAW ALGORITHMS ──────────────────────────────────────────────────
-function drawKRRTK(canvas,seed){
-  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,rng=new Rng(seed);
-  const pal=getActivePalette(rng),colors=pal.colors,margin=Math.round(W*0.1667),a=W-margin*2;
-  ctx.fillStyle=colors[rng.int(0,colors.length-1)];ctx.fillRect(0,0,W,H);
-  let sq=[{x:margin,y:margin,size:a,color:colors[rng.int(0,colors.length-1)]}],si=0;
-  while(si<sq.length){const s=sq[si];if(s.size>a/4){const n=s.size/2;sq.push({x:s.x,y:s.y,size:n,color:colors[rng.int(0,colors.length-1)]},{x:s.x+n,y:s.y,size:n,color:colors[rng.int(0,colors.length-1)]},{x:s.x,y:s.y+n,size:n,color:colors[rng.int(0,colors.length-1)]},{x:s.x+n,y:s.y+n,size:n,color:colors[rng.int(0,colors.length-1)]});sq.splice(sq.length-1,1);}si++;}
-  sq.forEach(s=>{if(rng.next()>0.6){ctx.fillStyle=s.color;ctx.fillRect(s.x,s.y,s.size,s.size);}});
-}
-function drawDTK(canvas,seed){
-  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,rng=new Rng(seed);
-  const pal=getActivePalette(rng),colors=pal.colors;
-  ctx.fillStyle=colors[rng.int(0,colors.length-1)];ctx.fillRect(0,0,W,H);
-  const n=rng.int(1,7),size=W/(n*1.1),gW=n*size*1.1,ox=(W-gW)/2,oy=(H-gW)/2;
-  const comp=[];for(let i=0;i<n;i++){comp.push([]);for(let j=0;j<n;j++)comp[i].push(rng.next());}
-  ctx.save();ctx.translate(ox,oy);
-  for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(comp[i][j]<=0.8){ctx.fillStyle=colors[rng.int(0,colors.length-1)];ctx.beginPath();ctx.arc((i+.5)*size*1.1,(j+.5)*size*1.1,size/2,0,Math.PI*2);ctx.fill();}
-  ctx.restore();
-}
 function drawBZRS(canvas,seed){
   const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,rng=new Rng(seed);
   const pal=getActivePalette(rng),colors=pal.colors,m=Math.round(W*0.0833);
@@ -206,23 +188,6 @@ function drawPill(ctx,x1,y1,x2,y2,t,color,style,rng,colors){
   else if(style==='gradient'){ctx.globalCompositeOperation='source-over';const a=Math.atan2(y2-y1,x2-x1),px=-Math.sin(a),py=Math.cos(a),h=t/2;const grad=ctx.createLinearGradient((x1+x2)/2+px*h,(y1+y2)/2+py*h,(x1+x2)/2-px*h,(y1+y2)/2-py*h);const[r2,g2,b2]=hexToRgb(rng.pickFrom(colors));grad.addColorStop(0,`rgb(${r},${g},${b})`);grad.addColorStop(1,`rgb(${r2},${g2},${b2})`);pillPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=grad;ctx.fill();}
   ctx.restore();
 }
-function drawPLLS(canvas,seed){
-  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,rng=new Rng(seed);
-  const arch=rng.weighted(ARCHETYPES),pal=getActivePalette(rng),colors=pal.colors;
-  const sizePct=rng.range(arch.sizeMin,arch.sizeMax),maxSize=Math.min(W,H)*sizePct,thickness=maxSize*.7,numShapes=rng.int(arch.pillMin,arch.pillMax),tol=OVERLAP_TOL[arch.name];
-  const pills=[],placed=[];
-  for(let i=0;i<numShapes;i++){
-    const hl=maxSize/4,mg=thickness/2;let cx,cy,angle,ok=false;
-    for(let att=0;att<20;att++){angle=rng.range(0,Math.PI*2);const dx=Math.cos(angle)*hl,dy=Math.sin(angle)*hl;cx=rng.range(mg+Math.abs(dx),W-mg-Math.abs(dx));cy=rng.range(mg+Math.abs(dy),H-mg-Math.abs(dy));let bad=false;for(const p of placed)if(pillsOverlap(cx,cy,hl,thickness,p.cx,p.cy,p.hl,p.t,tol)){bad=true;break;}if(!bad){ok=true;break;}}
-    if(!ok){angle=rng.range(0,Math.PI*2);const dx=Math.cos(angle)*hl,dy=Math.sin(angle)*hl;cx=rng.range(mg+Math.abs(dx),W-mg-Math.abs(dx));cy=rng.range(mg+Math.abs(dy),H-mg-Math.abs(dy));}
-    placed.push({cx,cy,hl,t:thickness});
-    pills.push({cx,cy,hl,angle,color:rng.pickFrom(colors),style:pickFinish(rng,arch.name),thickness});
-  }
-  ctx.globalCompositeOperation='source-over';ctx.fillStyle=OFF_WHITE;ctx.fillRect(0,0,W,H);
-  if(rng.bool(.6)){ctx.fillStyle=rng.pickFrom(colors);ctx.fillRect(0,0,W,H);}
-  ctx.globalCompositeOperation='source-over';
-  for(const pill of pills){const x1=pill.cx-Math.cos(pill.angle)*pill.hl,y1=pill.cy-Math.sin(pill.angle)*pill.hl,x2=pill.cx+Math.cos(pill.angle)*pill.hl,y2=pill.cy+Math.sin(pill.angle)*pill.hl;drawPill(ctx,x1,y1,x2,y2,pill.thickness,pill.color,pill.style,rng,colors);}
-}
 
 // ── DRAW: PLLSG (pills on mesh gradient + grain) ─────────────────────────────
 const PILL_ALPHA_G = 0.72;
@@ -259,10 +224,11 @@ function drawDTKRT(canvas,seed){
     {palettes:PALETTES.filter(p=>p.active!==false)});
 }
 
-const DRAWFNS = {plls:drawPLLS,krrtk:drawKRRTK,dtk:drawDTK,bzrs:drawBZRS,krrtkg:drawKRRTKG,dtkg:drawDTKG,pllsg:drawPLLSG,dtkrt:drawDTKRT};
-const LABELS  = {plls:'PLLS',krrtk:'KRRTK',dtk:'DTK',bzrs:'BZRS',krrtkg:'KRRTKG',dtkg:'DTKG',pllsg:'PLLSG',dtkrt:'DTKRT'};
-const CRES    = {plls:[566,400],krrtk:[320,320],dtk:[320,320],bzrs:[320,320],krrtkg:[320,320],dtkg:[320,320],pllsg:[566,400],dtkrt:[320,320]};
-const SERIES  = ['plls','krrtk','dtk','bzrs','krrtkg','dtkg','pllsg','dtkrt'];
+// La demo de cada familia es su look publicado, que es el que traía la G.
+const DRAWFNS = {plls:drawPLLSG,krrtk:drawKRRTKG,dtk:drawDTKG,bzrs:drawBZRS,dtkrt:drawDTKRT};
+const LABELS  = {plls:'PLLS',krrtk:'KRRTK',dtk:'DTK',bzrs:'BZRS',dtkrt:'DTKRT'};
+const CRES    = {plls:[566,400],krrtk:[320,320],dtk:[320,320],bzrs:[320,320],dtkrt:[320,320]};
+const SERIES  = ['plls','krrtk','dtk','bzrs','dtkrt'];
 
 // ── GRID ─────────────────────────────────────────────────────────────────────
 const GAP=5, COLS=9, ROWS=10;
