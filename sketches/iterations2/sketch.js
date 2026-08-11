@@ -11,6 +11,43 @@ const DOT = "#F2EFE6";   // contrapunto: plano, neutro, ajeno a la cinta
 const PALETA_BASE = [BG, FG, FG2, DOT];
 
 // ------------------------------------------------------------
+// VERSIÓN DEL ALGORITMO
+// Un veredicto sin versión no vale nada: una obra que se juzgó perfecta
+// vuelve a salir mal tres iteraciones después y no se sabe si cambió el
+// criterio o cambió el código. Cada veredicto se guarda con la versión
+// que lo produjo.
+//
+// ALGO_REV se sube A MANO cuando cambia el CÓDIGO. La huella de abajo
+// sólo ve los PARÁMETROS: si retoco un umbral se mueve sola, pero no
+// puede enterarse de que he reescrito una función. Esa parte depende de
+// que yo la suba, y conviene desconfiar.
+// ------------------------------------------------------------
+const ALGO_REV = 9;
+
+// Sólo lo que NO toca el laboratorio. Vueltas, trazo, curvatura,
+// esquinas y extremos son mandos: cambiarlos no hace otra versión del
+// algoritmo, hace otra obra — y ya se guardan como rasgos, que es donde
+// sirven para buscar el patrón. Si contaran aquí, mover un slider
+// invalidaría todos los veredictos anteriores y el aviso de versión
+// saltaría siempre, hasta dejar de significar nada.
+const PARAMS_QUE_CUENTAN = [
+  "vueltaGiro","vueltaEscala","widthMin","widthMax",
+  "cabo","caboMargen","cruceMinDeg","cruceSepMin","volteoMax","reintentos","densidad",
+  "grosorMinimo","gapAbs","holguraMin","avoidRatio","minSegRatio","minTurnDeg",
+  "salidaMax","margen","pad","miterLimit","anchorJitter"
+];
+
+function algoVersion(cfg) {
+  const base = cfg || DEF;
+  let h = 2166136261;
+  for (const k of PARAMS_QUE_CUENTAN) {
+    const s = k + "=" + base[k];
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  }
+  return "r" + ALGO_REV + "." + (h >>> 0).toString(36).slice(0, 5);
+}
+
+// ------------------------------------------------------------
 // ROLES DE COLOR
 // Las paletas de hoks no declaran fondo ni tinta: son listas planas.
 // El reparto se decide por luminancia — fondo en un extremo, cinta
@@ -39,14 +76,17 @@ function ageWeight(created) {
 // Elección ponderada entre las paletas ACTIVAS, con el RNG sembrado: la
 // paleta forma parte de la obra, así que tiene que salir del seed y no
 // del momento en que se pulsa el botón.
+// Devuelve la paleta ENTERA, no sólo los colores: el nombre es un rasgo
+// de la obra y el triaje lo necesita para poder decir "descartas las
+// Mondrian". Perdiéndolo aquí, ese patrón no se puede ni buscar.
 function elegirPaleta(paletas) {
   const act = paletas.filter(p => p.active !== false && p.colors && p.colors.length >= 2);
   if (!act.length) return null;
   const w = act.map(p => ageWeight(p.created));
   const total = w.reduce((a, b) => a + b, 0);
   let r = random(total);
-  for (let i = 0; i < act.length; i++) { r -= w[i]; if (r <= 0) return act[i].colors; }
-  return act[act.length - 1].colors;
+  for (let i = 0; i < act.length; i++) { r -= w[i]; if (r <= 0) return act[i]; }
+  return act[act.length - 1];
 }
 
 function pickRoles(colors) {
@@ -185,7 +225,10 @@ function generate(seed, cfg) {
   randomSeed(seed);
   noiseSeed(seed);
 
-  const colores = pickRoles(cfg.palette || (cfg.paletas && elegirPaleta(cfg.paletas)) || PALETA_BASE);
+  const pal = cfg.palette ? { colors: cfg.palette, name: cfg.paletteName || "(fija)" }
+            : (cfg.paletas && elegirPaleta(cfg.paletas)) || { colors: PALETA_BASE, name: "base" };
+  const colores = pickRoles(pal.colors);
+  colores.nombre = pal.name;
   const family = random(FAMILY_NAMES);
   const pedidas = floor(random(cfg.vueltasMin, cfg.vueltasMax + 1));
 
@@ -497,11 +540,26 @@ function selfAvoid(nodes, width, cfg) {
   const dMin = cfg.avoidRatio * width;
   const n = nodes.length;
 
+  // Descarte barato antes de medir. Dos segmentos cuyos CENTROS distan
+  // más que dMin más sus dos medias longitudes no pueden estar a menos
+  // de dMin: es una cota, no una aproximación, así que el resultado es
+  // idéntico — sólo se deja de calcular lo que ya se sabe que no toca.
+  // Sin esto, cada pasada medía los ~300 pares enteros, con cuatro
+  // proyecciones y varios vectores nuevos cada uno, y una composición
+  // tardaba diez segundos en salir.
+  //
+  // Los centros se recalculan por par y no se cachean por pasada: los
+  // puntos se mueven DENTRO de la pasada, y una caché de la pasada
+  // anterior podría descartar un par que ya se ha acercado.
   for (let pass = 0; pass < 160; pass++) {
     let moved = false;
     for (let i = 0; i < n - 1; i++) {
       for (let j = i + 2; j < n - 1; j++) {
         const a = nodes[i].p, b = nodes[i+1].p, c = nodes[j].p, d = nodes[j+1].p;
+        const mdx = (a.x + b.x - c.x - d.x) / 2, mdy = (a.y + b.y - c.y - d.y) / 2;
+        const alcance = dMin
+          + (Math.hypot(b.x - a.x, b.y - a.y) + Math.hypot(d.x - c.x, d.y - c.y)) / 2;
+        if (mdx*mdx + mdy*mdy > alcance*alcance) continue;
         if (segIntersect(a, b, c, d)) continue;          // cruce legítimo
         const gap = segDist(a, b, c, d);
         if (gap >= dMin || gap < 1e-9) continue;
@@ -513,16 +571,16 @@ function selfAvoid(nodes, width, cfg) {
         // casi coinciden, la dirección sale nula y el par se saltaba
         // — justo el caso que hay que resolver.
         const par = parMasProximo(a, b, c, d);
-        let dir = p5.Vector.sub(par[0], par[1]);
-        if (dir.magSq() < 1e-12) {
-          const t = p5.Vector.sub(b, a);                 // respaldo: la normal
-          dir = createVector(-t.y, t.x);
-          if (dir.magSq() < 1e-12) continue;
+        let dx = par[0].x - par[1].x, dy = par[0].y - par[1].y;
+        if (dx*dx + dy*dy < 1e-12) {
+          dx = -(b.y - a.y); dy = b.x - a.x;             // respaldo: la normal
+          if (dx*dx + dy*dy < 1e-12) continue;
         }
-        dir.normalize().mult(push);
+        const inv = 1 / Math.sqrt(dx*dx + dy*dy);        // normalize().mult(push)
+        dx = dx * inv * push; dy = dy * inv * push;
 
-        a.add(dir); b.add(dir);
-        c.sub(dir); d.sub(dir);
+        a.x += dx; a.y += dy; b.x += dx; b.y += dy;
+        c.x -= dx; c.y -= dy; d.x -= dx; d.y -= dy;
         moved = true;
       }
     }
@@ -1370,40 +1428,272 @@ function segIntersect(p1, p2, p3, p4) {
   return t > 0 && t < 1 && u > 0 && u < 1;
 }
 
+// Aritmética a pelo, sin p5.Vector ni dist()/constrain() de p5. No es
+// un cambio de criterio: es LA MISMA cuenta en el mismo orden —
+// dist(x1,y1,x2,y2) de p5 es Math.hypot(x2-x1,y2-y1) y su constrain es
+// Math.max(Math.min(n,alto),bajo)— pero sin construir un array de
+// argumentos ni un vector nuevo en cada llamada. Esta función se llama
+// veinticinco millones de veces por composición: ahí se iba el tiempo.
 function pointSegDist(p, a, b) {
-  const ab = p5.Vector.sub(b, a);
-  const l2 = ab.magSq();
-  if (l2 === 0) return p5.Vector.dist(p, a);
-  const t = constrain(((p.x-a.x)*ab.x + (p.y-a.y)*ab.y) / l2, 0, 1);
-  return dist(p.x, p.y, a.x + ab.x*t, a.y + ab.y*t);
+  const abx = b.x - a.x, aby = b.y - a.y;
+  const l2 = abx*abx + aby*aby;
+  if (l2 === 0) return Math.sqrt((p.x-a.x)*(p.x-a.x) + (p.y-a.y)*(p.y-a.y));
+  const t = Math.max(Math.min(((p.x-a.x)*abx + (p.y-a.y)*aby) / l2, 1), 0);
+  return Math.hypot(a.x + abx*t - p.x, a.y + aby*t - p.y);
 }
 
 // Pareja de puntos más próxima entre dos segmentos (aproximada por
 // proyección de los cuatro extremos: sobra para relajar).
+// Los cuatro candidatos se guardan en objetos reutilizados: el bucle de
+// auto-evitación entra aquí más de un millón de veces por composición y
+// cada vector nuevo se paga.
+const _pmp = [
+  [{x:0,y:0},{x:0,y:0}], [{x:0,y:0},{x:0,y:0}],
+  [{x:0,y:0},{x:0,y:0}], [{x:0,y:0},{x:0,y:0}]
+];
+
 function parMasProximo(a, b, c, d) {
-  const cand = [
-    [a, proyecta(a, c, d)], [b, proyecta(b, c, d)],
-    [proyecta(c, a, b), c], [proyecta(d, a, b), d]
-  ];
-  let best = cand[0], bd = Infinity;
-  for (const par of cand) {
-    const v = p5.Vector.dist(par[0], par[1]);
+  _pmp[0][0].x = a.x; _pmp[0][0].y = a.y; proyectaEn(_pmp[0][1], a, c, d);
+  _pmp[1][0].x = b.x; _pmp[1][0].y = b.y; proyectaEn(_pmp[1][1], b, c, d);
+  proyectaEn(_pmp[2][0], c, a, b); _pmp[2][1].x = c.x; _pmp[2][1].y = c.y;
+  proyectaEn(_pmp[3][0], d, a, b); _pmp[3][1].x = d.x; _pmp[3][1].y = d.y;
+
+  let best = _pmp[0], bd = Infinity;
+  for (const par of _pmp) {
+    const dx = par[1].x - par[0].x, dy = par[1].y - par[0].y;
+    const v = Math.sqrt(dx*dx + dy*dy);   // p5.Vector.dist = sqrt(magSq)
     if (v < bd) { bd = v; best = par; }
   }
   return best;
 }
 
+// Escribe en 'fuera' en vez de devolver un vector nuevo, por lo mismo.
+function proyectaEn(fuera, p, a, b) {
+  const abx = b.x - a.x, aby = b.y - a.y;
+  const l2 = abx*abx + aby*aby;
+  if (l2 === 0) { fuera.x = a.x; fuera.y = a.y; return fuera; }
+  const t = Math.max(Math.min(((p.x-a.x)*abx + (p.y-a.y)*aby) / l2, 1), 0);
+  fuera.x = a.x + abx*t; fuera.y = a.y + aby*t;
+  return fuera;
+}
+
 function proyecta(p, a, b) {
-  const ab = p5.Vector.sub(b, a);
-  const l2 = ab.magSq();
-  if (l2 === 0) return a.copy();
-  const t = constrain(((p.x-a.x)*ab.x + (p.y-a.y)*ab.y) / l2, 0, 1);
-  return createVector(a.x + ab.x*t, a.y + ab.y*t);
+  const v = proyectaEn({ x: 0, y: 0 }, p, a, b);
+  return createVector(v.x, v.y);
 }
 
 function segDist(a, b, c, d) {
   return min(min(pointSegDist(a,c,d), pointSegDist(b,c,d)),
              min(pointSegDist(c,a,b), pointSegDist(d,a,b)));
+}
+
+// ============================================================
+// TRIAJE POR LOTES
+// No se filtra mientras se genera. Se genera un lote entero, se
+// descarta a mano y el sistema saca el patrón del descarte.
+//
+// La regla que hace que esto sirva de algo: cada veredicto se guarda
+// con TODOS los rasgos medidos Y con la versión del algoritmo. Sin la
+// versión, un "perfecta" de hace tres iteraciones miente.
+// ============================================================
+
+const TRIAJE_KEY = "iterations2.veredictos.v1";
+
+// Cada obra del lote se deriva del seed del lote: un lote es
+// reproducible con un solo número.
+function seedsDeLote(loteSeed, n) {
+  const s = [];
+  for (let i = 0; i < n; i++) s.push((loteSeed + i * 0x9E3779B1) >>> 0);
+  return s;
+}
+
+// Los rasgos que se guardan con el veredicto. Todo lo que el sistema
+// sabe de la obra, medido, no interpretado. Si un patrón existe, tiene
+// que poder salir de aquí.
+function rasgosDe(comp, med) {
+  const p = comp.plano || {};
+  return {
+    familia:   comp.family,
+    paleta:    comp.colores.nombre || "?",
+    vueltas:   comp.vueltas,
+    pedidas:   comp.pedidas,
+    trazo:     comp.cfg.trazo,
+    curva:     comp.cfg.curva,
+    esquinas:  comp.cfg.corner,
+    vertices:  comp.points.length,
+    cruces:    comp.crossings,
+    secciones: (p.secciones || []).length,
+    volteados: p.volteados || 0,
+    juntas:    (p.juntas || []).length,
+    sep:       +comp.sep.toFixed(3),
+    anchura:   +comp.width.toFixed(4),
+    gapW:      +med.gapW.toFixed(3),
+    segW:      +med.segW.toFixed(3),
+    giro:      +med.turn.toFixed(1),
+    ocupacion: +med.fill.toFixed(3),
+    discos:    comp.cfg.dots === "no" ? 0 : comp.cfg.dotsMax
+  };
+}
+
+const RASGOS_NUM = ["vueltas","vertices","cruces","secciones","volteados","juntas",
+                    "sep","anchura","gapW","segW","giro","ocupacion","curva","discos"];
+const RASGOS_CAT = ["familia","paleta","trazo","esquinas"];
+
+// ------------------------------------------------------------
+// ALMACÉN
+// ------------------------------------------------------------
+function veredictosLeer() {
+  try { return JSON.parse(localStorage.getItem(TRIAJE_KEY)) || []; }
+  catch (e) { return []; }
+}
+
+function veredictosGuardar(arr) {
+  try { localStorage.setItem(TRIAJE_KEY, JSON.stringify(arr)); } catch (e) {}
+}
+
+// Un seed sólo puede tener un veredicto POR VERSIÓN: si cambia el
+// algoritmo la obra es otra y merece que la vuelvas a juzgar.
+function veredictoPoner(seed, fallo, rasgos, version) {
+  const arr = veredictosLeer();
+  const i = arr.findIndex(v => v.seed === seed && v.version === version);
+  const rec = { seed, fallo, version, rasgos };
+  if (i >= 0) arr[i] = rec; else arr.push(rec);
+  veredictosGuardar(arr);
+  return arr;
+}
+
+// ------------------------------------------------------------
+// EL PATRÓN
+// Por cada rasgo se busca el corte que mejor separa lo descartado de lo
+// aprobado. No se afina nada: se enseña, y decides tú si el patrón es
+// tuyo o es ruido.
+// ------------------------------------------------------------
+// Cuánto se ordena el lote al partirlo por aquí. Se mide con Gini y no
+// con "diferencia de porcentaje × apoyo": ese premiaba los cortes
+// EQUILIBRADOS por encima de los LIMPIOS, y con la regla de prueba
+// "fuera si cruces<=3" sacaba el corte en 2.5 (14/14 y 5/10) en vez del
+// de 3.5, que separa perfecto. El corte que buscas es el que no deja
+// mezcla, no el que reparte el lote en dos mitades.
+function gini(n, malas) {
+  if (!n) return 0;
+  const p = malas / n;
+  return 2 * p * (1 - p);
+}
+
+function ganancia(nb, mb, na, ma) {
+  const n = nb + na;
+  const padre = gini(n, mb + ma);
+  return padre - (nb / n) * gini(nb, mb) - (na / n) * gini(na, ma);
+}
+
+function patronDeDescartes(regs) {
+  const usa = regs.filter(v => v.fallo === "si" || v.fallo === "no");
+  const malas = usa.filter(v => v.fallo === "si").length;
+  const base = usa.length ? malas / usa.length : 0;
+  const hallazgos = [];
+
+  // El apoyo mínimo de cada lado. Con menos, cualquier cosa "separa".
+  const MIN = 3;
+
+  for (const r of RASGOS_NUM) {
+    const vals = usa.map(v => v.rasgos[r]).filter(x => typeof x === "number" && isFinite(x));
+    if (vals.length < usa.length || new Set(vals).size < 2) continue;
+    const cortes = Array.from(new Set(vals)).sort((a, b) => a - b);
+    let mejor = null;
+    for (let i = 0; i < cortes.length - 1; i++) {
+      const t = (cortes[i] + cortes[i+1]) / 2;
+      const bajo = usa.filter(v => v.rasgos[r] <= t);
+      const alto = usa.filter(v => v.rasgos[r] > t);
+      if (bajo.length < MIN || alto.length < MIN) continue;
+      const mb = bajo.filter(v => v.fallo === "si").length;
+      const ma = alto.filter(v => v.fallo === "si").length;
+      const pb = mb / bajo.length, pa = ma / alto.length;
+      const fuerza = ganancia(bajo.length, mb, alto.length, ma);
+      if (!mejor || fuerza > mejor.fuerza)
+        mejor = { rasgo: r, corte: t, fuerza, salto: abs(pb - pa),
+                  bajo: { n: bajo.length, malas: bajo.filter(v => v.fallo === "si").length },
+                  alto: { n: alto.length, malas: alto.filter(v => v.fallo === "si").length },
+                  lado: pb > pa ? "bajo" : "alto" };
+    }
+    if (mejor) hallazgos.push(mejor);
+  }
+
+  for (const r of RASGOS_CAT) {
+    const grupos = {};
+    for (const v of usa) {
+      const k = String(v.rasgos[r]);
+      (grupos[k] = grupos[k] || []).push(v);
+    }
+    if (Object.keys(grupos).length < 2) continue;
+    for (const [k, g] of Object.entries(grupos)) {
+      if (g.length < MIN) continue;
+      const resto = usa.filter(v => String(v.rasgos[r]) !== k);
+      if (resto.length < MIN) continue;
+      const mg = g.filter(v => v.fallo === "si").length;
+      const mr = resto.filter(v => v.fallo === "si").length;
+      const pg = mg / g.length, pr = mr / resto.length;
+      hallazgos.push({ rasgo: r, valor: k,
+                       fuerza: ganancia(g.length, mg, resto.length, mr),
+                       salto: abs(pg - pr),
+                       grupo: { n: g.length, malas: g.filter(v => v.fallo === "si").length },
+                       resto: { n: resto.length, malas: resto.filter(v => v.fallo === "si").length },
+                       lado: pg > pr ? "este" : "otros" });
+    }
+  }
+
+  hallazgos.sort((a, b) => b.fuerza - a.fuerza);
+  return { n: usa.length, malas, base, hallazgos,
+           versiones: cuentaVersiones(regs), dudas: regs.filter(v => v.fallo === "duda").length };
+}
+
+function cuentaVersiones(regs) {
+  const c = {};
+  for (const v of regs) c[v.version] = (c[v.version] || 0) + 1;
+  return c;
+}
+
+// El informe en palabras. Un patrón sostenido por dos descartes no es un
+// patrón: se dice, no se disimula.
+function patronEnTexto(p, versionActual) {
+  const L = [];
+  L.push(`${p.n} veredictos · ${p.malas} descartadas (${(100*p.base).toFixed(0)}%)` +
+         (p.dudas ? ` · ${p.dudas} en duda (no cuentan)` : ""));
+
+  const vs = Object.entries(p.versiones).sort((a, b) => b[1] - a[1]);
+  const otras = vs.filter(([v]) => v !== versionActual).reduce((a, x) => a + x[1], 0);
+  if (otras) L.push(`OJO: ${otras} de otras versiones del algoritmo. Esas obras ya no salen igual.`);
+
+  if (p.malas < 3) { L.push("Aún no hay descartes suficientes para hablar de patrón."); return L; }
+
+  L.push("");
+  const top = p.hallazgos.filter(h => h.salto >= 0.25).slice(0, 4);
+  if (!top.length) { L.push("Ningún rasgo medido separa lo que descartas. El motivo no está en lo que mido."); return L; }
+
+  for (const h of top) {
+    if (h.valor !== undefined) {
+      const g = h.lado === "este" ? h.grupo : h.resto;
+      const o = h.lado === "este" ? h.resto : h.grupo;
+      L.push(`${h.rasgo} = ${h.valor}: descartas ${h.grupo.malas}/${h.grupo.n}, ` +
+             `frente a ${h.resto.malas}/${h.resto.n} en el resto.`);
+    } else {
+      const c = h.corte < 10 ? h.corte.toFixed(2) : h.corte.toFixed(0);
+      L.push(`${h.rasgo}: por debajo de ${c} descartas ${h.bajo.malas}/${h.bajo.n}; ` +
+             `por encima ${h.alto.malas}/${h.alto.n}.`);
+    }
+    // El aviso va por CUÁNTAS OBRAS sostienen cada lado, no por cuántos
+    // descartes. Un corte que separa 19/19 contra 0/5 no es débil por
+    // tener cero descartes arriba: eso es la señal más limpia que hay.
+    // Es débil si uno de los lados lo forman cuatro obras.
+    const lados = h.valor !== undefined
+      ? min(h.grupo.n, h.resto.n)
+      : min(h.bajo.n, h.alto.n);
+    if (lados < 5) L[L.length-1] += `  (sólo ${lados} obras en un lado — puede ser ruido)`;
+  }
+
+  const nada = RASGOS_NUM.concat(RASGOS_CAT)
+    .filter(r => !p.hallazgos.some(h => h.rasgo === r && h.salto >= 0.25));
+  if (nada.length) { L.push(""); L.push("Sin señal: " + nada.join(", ") + "."); }
+  return L;
 }
 
 // ============================================================
@@ -1424,6 +1714,11 @@ let comp = null;
 let metrics = null;
 let hoja = false;              // hoja de contactos
 const HOJA_N = 12, HOJA_COLS = 4;
+
+// --- triaje por lotes ---
+let modo = "libre";            // libre | triaje | patron
+let lote = null;               // { seed, seeds, i }
+const LOTE_N = 24;
 
 let PALETAS = [
   { name: "Iterations",  colors: ["#24358F", "#32C3CB"] },
@@ -1507,8 +1802,90 @@ function nuevaComposicion() {
 }
 
 function redibujar() {
+  if (modo === "patron") { pintarPatron(); return; }
+  if (modo === "triaje") { pintarTriaje(); actualizarInfo(); return; }
   hoja ? pintarHoja() : pintarUna();
   actualizarInfo();
+}
+
+// ------------------------------------------------------------
+// TRIAJE: una obra a la vez, tres teclas, y el patrón al final.
+// Se juzga a ciegas de los números — la ficha se ve DESPUÉS de votar,
+// porque leer "sep 1.2" antes de mirar contamina el veredicto.
+// ------------------------------------------------------------
+function loteNuevo() {
+  const s = floor(Math.random() * 1000000000);
+  lote = { seed: s, seeds: seedsDeLote(s, LOTE_N), i: 0 };
+  modo = "triaje";
+  redibujar();
+}
+
+function votar(fallo) {
+  if (modo !== "triaje" || !lote) return;
+  const s = lote.seeds[lote.i];
+  const c = generate(s, opciones());
+  const r = renderComposition(art.drawingContext, 0, 0, ART, c);
+  const m = measure(r.mapped, r.width, ART);
+  veredictoPoner(s, fallo, rasgosDe(c, m), algoVersion(c.cfg));
+  if (lote.i < LOTE_N - 1) { lote.i++; redibujar(); }
+  else { modo = "patron"; redibujar(); }
+}
+
+function pintarTriaje() {
+  seed = lote.seeds[lote.i];
+  comp = generate(seed, opciones());
+  const r = renderComposition(art.drawingContext, 0, 0, ART, comp);
+  metrics = measure(r.mapped, r.width, ART);
+
+  background(17);
+  const lado = min(CANVAS_H - 76, CANVAS_W - PANEL_W - 40);
+  const x0 = PANEL_W + (CANVAS_W - PANEL_W - lado) / 2;
+  image(art, x0, 20, lado, lado);
+
+  // barra de progreso: un tramo por obra, coloreado según su veredicto
+  const dichos = veredictosLeer();
+  const v = algoVersion(comp.cfg);
+  const w = lado / LOTE_N;
+  for (let i = 0; i < LOTE_N; i++) {
+    const rec = dichos.find(d => d.seed === lote.seeds[i] && d.version === v);
+    noStroke();
+    fill(!rec ? color(60) : rec.fallo === "si" ? color(200, 60, 60)
+         : rec.fallo === "no" ? color(80, 190, 110) : color(200, 180, 70));
+    rect(x0 + i * w + 1, 30 + lado, w - 2, 10);
+    if (i === lote.i) { fill(255); rect(x0 + i * w + 1, 44 + lado, w - 2, 3); }
+  }
+  fill(230); noStroke(); textAlign(LEFT, TOP); textSize(12);
+  text(`obra ${lote.i + 1}/${LOTE_N}  ·  lote #${lote.seed}  ·  seed ${seed}  ·  ${v}` +
+       `      [a] va  ·  [x] fuera  ·  [d] duda  ·  [←] atrás  ·  [p] patrón`,
+       x0, 54 + lado);
+}
+
+// El informe. Lo único que hace es enseñar cómo se reparten los rasgos
+// entre lo que dejas y lo que tiras. No propone corregir nada.
+function pintarPatron() {
+  background(17);
+  const regs = veredictosLeer();
+  const v = algoVersion(Object.assign({}, DEF, opciones()));
+  const p = patronDeDescartes(regs);
+  const L = patronEnTexto(p, v);
+
+  fill(240); noStroke(); textAlign(LEFT, TOP);
+  textSize(20); text("EL PATRÓN DEL DESCARTE", PANEL_W + 30, 26);
+  textSize(13);
+  let y = 68;
+  for (const linea of L) { text(linea, PANEL_W + 30, y, CANVAS_W - PANEL_W - 60); y += linea ? 26 : 12; }
+  y += 16;
+  fill(150); textSize(12);
+  text("[t] volver al triaje   ·   [n] lote nuevo   ·   [e] exportar veredictos JSON   ·   [ESC] libre",
+       PANEL_W + 30, y);
+  ui.info.html("patrón · " + p.n + " veredictos");
+}
+
+function exportarVeredictos() {
+  const regs = veredictosLeer();
+  if (!regs.length) return;
+  saveJSON({ version_actual: algoVersion(Object.assign({}, DEF, opciones())),
+             veredictos: regs }, "iterations2_veredictos.json");
 }
 
 function pintarUna() {
@@ -1548,6 +1925,25 @@ function actualizarInfo() {
   ui.dotsNV.html(ui.dotsN.value());
 
   if (hoja) { ui.info.html("hoja de contactos · " + HOJA_N + " desde #" + seed); return; }
+
+  // En triaje la ficha se calla hasta que has votado: leer "sep 1.2"
+  // antes de mirar la obra decide el veredicto por ti, y entonces el
+  // patrón que sale no es tuyo, es el de los números.
+  if (modo === "triaje") {
+    const rec = veredictosLeer().find(d => d.seed === seed && d.version === algoVersion(comp.cfg));
+    if (!rec) { ui.info.html("obra " + (lote.i + 1) + " de " + LOTE_N +
+      "<br><br>mira la obra.<br>la ficha sale<br>después de votar."); return; }
+    ui.info.html(
+      "<b>" + (rec.fallo === "si" ? "FUERA" : rec.fallo === "no" ? "VA" : "DUDA") + "</b><br>" +
+      "familia " + rec.rasgos.familia + "<br>" +
+      "paleta " + rec.rasgos.paleta + "<br>" +
+      "cruces " + rec.rasgos.cruces + " · sep " + nf(rec.rasgos.sep, 1, 2) + "<br>" +
+      "secciones " + rec.rasgos.secciones + " · volteos " + rec.rasgos.volteados + "<br>" +
+      "gap " + nf(rec.rasgos.gapW, 1, 2) + " · giro " + nf(rec.rasgos.giro, 1, 0) + "°"
+    );
+    return;
+  }
+
   ui.info.html(
     "seed " + seed + "<br>" +
     "familia " + comp.family + "<br>" +
@@ -1585,7 +1981,9 @@ function construirUI() {
 
   ui.bNueva = boton("nueva composición", 12, y, nuevaComposicion); y += 30;
   ui.bHoja  = boton("hoja de contactos (g)", 12, y, () => { hoja = !hoja; redibujar(); }); y += 30;
-  ui.bSave  = boton("guardar PNG (s)", 12, y, guardar); y += 38;
+  ui.bSave  = boton("guardar PNG (s)", 12, y, guardar); y += 30;
+  ui.bLote  = boton("triaje: lote de " + LOTE_N + " (n)", 12, y, loteNuevo); y += 30;
+  ui.bPat   = boton("ver el patrón (p)", 12, y, () => { modo = "patron"; redibujar(); }); y += 38;
 
   ui.info = createP("");
   ui.info.position(12, y);
@@ -1604,11 +2002,30 @@ function guardar() {
 
 function keyPressed() {
   if (document.activeElement && /INPUT|SELECT/.test(document.activeElement.tagName)) return;
-  if (key === " ") nuevaComposicion();
+  const k = (key || "").toLowerCase();
+
+  if (k === "e") { exportarVeredictos(); return; }
+  if (k === "p") { modo = "patron"; redibujar(); return; }
+  if (k === "n") { loteNuevo(); return; }
+  if (keyCode === ESCAPE) { modo = "libre"; redibujar(); return; }
+
+  if (modo === "triaje") {
+    if (k === "a") votar("no");                       // se queda
+    else if (k === "x") votar("si");                  // fuera
+    else if (k === "d") votar("duda");
+    else if (keyCode === LEFT_ARROW && lote.i > 0) { lote.i--; redibujar(); }
+    else if (keyCode === RIGHT_ARROW && lote.i < LOTE_N - 1) { lote.i++; redibujar(); }
+    else if (k === "s") guardar();
+    return;
+  }
+  if (modo === "patron") { if (k === "t") { modo = "triaje"; redibujar(); } return; }
+
+  if (k === "t") { lote ? (modo = "triaje", redibujar()) : loteNuevo(); }
+  else if (key === " ") nuevaComposicion();
   else if (keyCode === RIGHT_ARROW) { seed++; redibujar(); }
   else if (keyCode === LEFT_ARROW)  { seed--; redibujar(); }
-  else if (key === "g" || key === "G") { hoja = !hoja; redibujar(); }
-  else if (key === "s" || key === "S") guardar();
+  else if (k === "g") { hoja = !hoja; redibujar(); }
+  else if (k === "s") guardar();
 }
 
 // --- fabriquitas de UI ---------------------------------------
