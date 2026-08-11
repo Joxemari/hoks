@@ -147,7 +147,49 @@ un suelo de una vuelta como último recurso:
 Más trama cuesta correctez, y ahora se sabe cuánto. **Revertido**: la
 instrucción era cero defectos.
 
-Dos trampas encontradas por el camino, por si se vuelve a intentar:
+### Una puerta que contradice al autor
+
+Comprobando qué incumplen las cinco obras que el autor aprobó:
+
+| seed | familia | cruces | veredicto de las puertas |
+|---|---|---|---|
+| 7 | returning | 3 | **incumple `volteos` = 1,00** |
+| 101 | cross | 3 | pasa todo |
+| 2024 | returning | 3 | **incumple `volteos` = 1,00** |
+| 55501 | cross | 5 | pasa todo |
+| 880123 | compact | 2 | **incumple `volteos` = 0,50** |
+
+`volteoMax` está en 0,34. **Tres de las cinco obras aprobadas lo incumplen.**
+El umbral salió de una hipótesis —que un nudo con muchos volteos deja de
+alternar y el ojo no lo sigue— y el ojo del autor la contradice. Era además la
+puerta más dura de las ocho: de 22 candidatos la pasaban entre 0 y 4, y por eso
+subir los reintentos no movía la tasa (96 % con 10, 88 % con 60). El pozo no
+era pequeño; había un cuello.
+
+Abrirla a 1,0 sube la trama de 2,5 a 2,7 cruces por obra y **no** arregla los
+seeds sin tejido limpio (fallan por otras puertas). No se ha cambiado: mueve
+tres de las cinco obras aprobadas, y eso lo decide el autor.
+
+**Aquí se agota lo que puedo hacer midiendo contra mis propios criterios.** Tres
+de las ocho puertas son hipótesis mías sin contrastar, y la que sí se ha
+contrastado ha salido equivocada. Lo que hace falta ahora son veredictos —el
+triaje por lotes existe para esto: recoge el juicio del autor con todos los
+rasgos medidos y saca qué medida predice de verdad el descarte.
+
+### Otras dos hipótesis probadas y descartadas
+
+- **Dar variedad al pozo de candidatos.** El giro entre pasadas es `0,62·2π`
+  fijo con un temblor de ±0,25 rad, así que los 22 candidatos son el mismo
+  tejido con ruido. Sorteando el giro de verdad (±0,18·2π) y la escala: **95 %
+  → 89 % de obras limpias**, y sin más trama. El 0,62 no es una limitación,
+  está bien elegido.
+- **Cambiar de familia como último recurso.** Las familias no dan igual de sí:
+  en los cuatro seeds que fallan, `compact` siempre produce un nudo limpio de 3
+  cruces y `cross` ninguno. Rescatarlos cambiando de familia da **80/80
+  limpias**, pero triplica el coste (1,2 → 3,8 s por obra) y mueve tres de las
+  cinco obras aprobadas, porque esas tampoco pasan las puertas.
+
+### Dos trampas, por si se vuelve a intentar
 
 - Un tejido de una vuelta **sin cruces cumple todas las demás puertas al
   vacío** —sin cruces no hay separación, ni volteos, ni ciclos, ni remates que
