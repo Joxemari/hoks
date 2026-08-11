@@ -35,6 +35,12 @@ la vez al laboratorio y a producción. Ese es todo el trabajo de esta carpeta:
 sketches/
   _engine.js        ← motor compartido: Rng, color, mesh gradient, grano, paletas.
                       Una sola fuente: arréglalo aquí una vez.
+  _lab.js           ← piezas comunes del harness: selector de obra (salta de
+                      familia conservando la seed) y selector de paleta sobre
+                      ../../palette-picker.js. Lista GRADUATED de obras.
+  _batch.js         ← lotes: la selección se hace aquí, sobre la hoja de
+                      contactos. Un lote es una lista de RECETAS
+                      (obra + seed + params), no de imágenes.
   _template/        ← esqueleto para graduar una obra nueva
   pllsg/            ← graduada (algo.js + harness)
   krrtkg/           ← graduada (porte fiel, verificado op-a-op)
@@ -102,7 +108,27 @@ También publicados: `https://joxemari.github.io/hoks/sketches/<obra>/`.
 | `Espacio` | nueva seed aleatoria                     |
 | `←` / `→` | seed − 1 / seed + 1                      |
 | `g`       | hoja de contactos ↔ vista única         |
+| `a`       | añadir la pieza actual al lote abierto   |
 | `s`       | guardar PNG                              |
+
+## Lotes (paso 3, la parte que importa)
+
+Mirar doce y quedarte con dos **es** el trabajo, así que apartar una pieza es un
+gesto de aquí: el `+` sobre cualquier miniatura de la hoja de contactos, o `a`
+en vista única. Va al lote abierto, que eliges en el panel.
+
+Un lote guarda **recetas** —`{obra, seed, params, palSel}`—, no imágenes. Como
+el algoritmo es determinista la receta *es* la pieza: pesa bytes, se reabre tal
+cual estaba (clic en la miniatura del lote) y se exporta a cualquier resolución,
+incluida la de impresión. Los píxeles se fabrican al exportar.
+
+Un lote puede **mezclar obras**: es una idea (una serie, una expo), no una
+carpeta de familia. Vive en `data/batches.json`, commiteado con el token de
+admin, así que sobrevive al navegador.
+
+Si una paleta guardada como *aleatoria* deja de resolverse igual —porque la
+lista de paletas cambió—, la miniatura sale **marcada en rojo**: la receta ya no
+reproduce lo que viste. Es deriva, no un error.
 
 Los sliders son de exploración: producción usa siempre los defaults.
 
