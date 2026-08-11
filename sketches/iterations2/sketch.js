@@ -32,7 +32,7 @@ const ALGO_REV = 9;
 // saltaría siempre, hasta dejar de significar nada.
 const PARAMS_QUE_CUENTAN = [
   "vueltaGiro","vueltaEscala","widthMin","widthMax",
-  "cabo","caboMargen","cruceMinDeg","cruceSepMin","volteoMax","reintentos","densidad",
+  "cabo","caboMargen","cruceMinDeg","cruceSepMin","remateMin","segMinRatio","volteoMax","reintentos","densidad",
   "grosorMinimo","gapAbs","holguraMin","avoidRatio","minSegRatio","minTurnDeg",
   "salidaMax","margen","pad","miterLimit","anchorJitter"
 ];
@@ -146,6 +146,8 @@ const DEF = {
   caboTope:     0.45,        // fracción de la distancia al cruce vecino que NO se rebasa        // cuánto se pasa del borde de la hebra que lo tapa        // cuánto se mete el cabo de cada sección bajo la hebra que lo tapa, x anchura
   cruceMinDeg:  40,          // ángulo mínimo de cruce: por debajo, la hebra de abajo queda en astilla
   cruceSepMin:  1.20,        // separación mínima entre cruces, × anchura
+  remateMin:    1.0,         // holgura mínima del arranque y el final frente a la huella de un cruce
+  segMinRatio:  0.85,        // tramo más corto admisible, × anchura (por debajo la cinta se pliega)
   volteoMax:    0.34,        // volteos por cruce que se toleran
   reintentos:   10,           // tejidos alternativos que se prueban con el mismo seed
   densidad:     true,        // entre los que pasan, quedarse con el más entrelazado
@@ -249,10 +251,23 @@ function generate(seed, cfg) {
   // Un tejido vale si conserva el grosor, no tiene cruces rasantes Y
   // ADEMÁS SE PUEDE PINTAR: sin ciclos, no hay ninguna sección obligada
   // a ir encima y debajo a la vez.
+  // Cuántas de las condiciones incumple. Un tejido vale si son cero.
+  const puertasQueFalla = (t) =>
+      (t.conserva  >= cfg.grosorMinimo ? 0 : 1)
+    + (t.ang.grados >= cfg.cruceMinDeg ? 0 : 1)
+    + (t.ciclos === 0                  ? 0 : 1)
+    + (t.atasco === 0                  ? 0 : 1)
+    + (t.remate  >= cfg.remateMin      ? 0 : 1)
+    + (t.seg     >= cfg.segMinRatio    ? 0 : 1)
+    + (t.volteos <= cfg.volteoMax      ? 0 : 1)
+    + (t.sep     >= cfg.cruceSepMin    ? 0 : 1);
+
   const puntua = (t) => t.conserva >= cfg.grosorMinimo
                      && t.ang.grados >= cfg.cruceMinDeg
                      && t.ciclos === 0
                      && t.atasco === 0
+                     && t.remate >= cfg.remateMin
+                     && t.seg >= cfg.segMinRatio
                      && t.volteos <= cfg.volteoMax
                      && t.sep >= cfg.cruceSepMin;
 
@@ -267,11 +282,21 @@ function generate(seed, cfg) {
       // Sin sitio donde partir: el tejido no se puede dibujar sin que
       // un cruce cambie de profundidad a media huella.
       t.atasco = t.nudo.plano.atasco || 0;
+      // Holgura del peor remate en unidades de huella. Por debajo de 1 la
+      // cinta se acaba antes de que el halo termine de cortar.
+      t.remate = t.nudo.remate;
       // Cada volteo rompe la alternancia del tejido. Un nudo que se
       // deja pintar con pocos volteos se lee como tejido; uno que
       // necesita diez ya no alterna y el ojo no lo sigue.
       t.volteos = t.nudo.plano.volteados / max(t.nudo.cruces.length, 1);
       t.sep = sepCruces(t.nodes) / max(t.width, 1e-9);
+      // Tramo más corto en anchuras. enforceMaterial APUNTA a minSegRatio,
+      // pero los anchors no se pueden mover: cuando dos caen encima, la
+      // reparación no llega y nadie lo cazaba. Un tramo de 0,2 anchuras es
+      // un pliegue — la cinta dobla sobre sí misma y el codo sale como un
+      // pico o una muesca. Ahora se mide y se descarta el tejido.
+      t.seg = minSegDe(t.nodes) / max(t.width, 1e-9);
+      t.puertas = puertasQueFalla(t);
 
       if (!intento) { intento = t; vueltas = v; continue; }
       const pasa = puntua(t), pasaba = puntua(intento);
@@ -285,8 +310,16 @@ function generate(seed, cfg) {
                           : (cfg.densidad && t.ang.cruces > intento.ang.cruces);
       // entre dos que fallan: manda el ángulo, y SÓLO el ángulo — desempatar
       // por trama aquí elige justo el tejido con más cruces rasantes
-      else gana = t.atasco !== intento.atasco ? t.atasco < intento.atasco
-                : t.ciclos !== intento.ciclos ? t.ciclos < intento.ciclos
+      // Entre dos que fallan manda CUÁNTAS puertas incumple cada uno, no
+      // por cuánto. Encadenar magnitudes no funciona: son de unidades
+      // distintas y no se pueden comparar entre sí. Al ordenarlas en
+      // cascada, una diferencia trivial de 'seg' —1,0 contra 1,7
+      // anchuras, las dos perfectamente sanas— aplastaba una diferencia
+      // catastrófica de 'sep' (0,4 contra 3,4) y el sistema elegía el
+      // tejido agolpado. Contando puertas eso no puede pasar.
+      // El desempate final es 'sep', que es la única de estas medidas
+      // que ha coincidido con el criterio del autor.
+      else gana = t.puertas !== intento.puertas ? t.puertas < intento.puertas
                 : abs(t.sep - intento.sep) > 0.08 ? t.sep > intento.sep
                 : abs(t.volteos - intento.volteos) > 0.05 ? t.volteos < intento.volteos
                 : t.ang.grados > intento.ang.grados;
@@ -300,7 +333,7 @@ function generate(seed, cfg) {
   const { cuts, order, depth, cruces, plano, crossings } = intento.nudo;
 
 
-  return { seed, family, vueltas, pedidas, sep: intento.sep, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
+  return { seed, family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
 }
 
 // ------------------------------------------------------------
@@ -551,8 +584,23 @@ function selfAvoid(nodes, width, cfg) {
   // Los centros se recalculan por par y no se cachean por pasada: los
   // puntos se mueven DENTRO de la pasada, y una caché de la pasada
   // anterior podría descartar un par que ya se ha acercado.
+  // Se para cuando el mayor empujón de la pasada ya no significa nada.
+  // Antes se paraba sólo si NINGÚN par se había movido, y eso no llega
+  // a pasar nunca: el empuje decae geométricamente pero se queda en el
+  // suelo del coma flotante (1e-16 de dMin) sin tocar el cero. Cada
+  // llamada gastaba sus 160 pasadas, y a partir de la segunda ya
+  // entraba convergida.
+  //
+  // El umbral es 1e-12 y no 1e-9 porque a 1e-9 una de las cinco obras de
+  // referencia cambiaba el antialiasing: la geometría era la misma
+  // —familia, cruces, secciones, anchura y vértices idénticos— pero
+  // shrinkIntoFrame escala según los extremos, y mover un extremo una
+  // diezmillonésima de píxel corre el encuadre entero lo justo para
+  // voltear un borde. A 1e-12 las cinco salen idénticas al bit.
+  const quieto = dMin * 1e-12;
+
   for (let pass = 0; pass < 160; pass++) {
-    let moved = false;
+    let mayor = 0;
     for (let i = 0; i < n - 1; i++) {
       for (let j = i + 2; j < n - 1; j++) {
         const a = nodes[i].p, b = nodes[i+1].p, c = nodes[j].p, d = nodes[j+1].p;
@@ -565,6 +613,7 @@ function selfAvoid(nodes, width, cfg) {
         if (gap >= dMin || gap < 1e-9) continue;
 
         const push = (dMin - gap) * 0.18;
+        if (push > mayor) mayor = push;
 
         // Empujar según los puntos MÁS PRÓXIMOS, no según los puntos
         // medios: cuando una hebra se posa encima de otra los medios
@@ -581,10 +630,9 @@ function selfAvoid(nodes, width, cfg) {
 
         a.x += dx; a.y += dy; b.x += dx; b.y += dy;
         c.x -= dx; c.y -= dy; d.x -= dx; d.y -= dy;
-        moved = true;
       }
     }
-    if (!moved) break;
+    if (mayor <= quieto) break;
   }
 
   return nodes;   // el ajuste al marco es una sola vez, al final de generate()
@@ -681,6 +729,14 @@ function minAnguloCruce(nodes) {
 // dejan entre ellos una sección más corta que la propia cinta: sus dos
 // remates se pisan, la geometría degenera y salen astillas. No es un
 // problema de orden —esos cruces se ordenan bien— sino de tejido.
+// Tramo más corto del recorrido, en las unidades de los puntos.
+function minSegDe(nodes) {
+  let d = Infinity;
+  for (let i = 0; i < nodes.length - 1; i++)
+    d = min(d, p5.Vector.dist(nodes[i].p, nodes[i+1].p));
+  return d === Infinity ? 0 : d;
+}
+
 function sepCruces(nodes) {
   const P = [];
   for (let i = 0; i < nodes.length - 1; i++) {
@@ -731,7 +787,7 @@ function buildKnot(points, width) {
   }
 
   if (!X.length) {
-    return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], cruces: [], plano: { secciones: [[0, last]], orden: [0], ciclos: 0, atasco: 0, juntas: [], volteados: 0 }, crossings: 0 };
+    return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], cruces: [], plano: { secciones: [[0, last]], orden: [0], ciclos: 0, atasco: 0, juntas: [], volteados: 0 }, crossings: 0, remate: Infinity };
   }
 
   const visits = [];
@@ -822,7 +878,11 @@ function buildKnot(points, width) {
   // comprobar ANTES si este nudo se puede pintar en plano.
   const plano = planoDeSecciones(last, cruces, points, width);
 
-  return { cuts, order, depth, cruces: plano.cruces, plano, crossings: X.length };
+  // Con los cruces ya volteados por el plano: el ángulo, y con él la
+  // huella, dependen de qué hebra ha quedado arriba.
+  const remate = holguraDeRemates(points, plano.cruces, width);
+
+  return { cuts, order, depth, cruces: plano.cruces, plano, crossings: X.length, remate };
 }
 
 // Busca el centro de un segmento dentro del intervalo entre dos
@@ -866,7 +926,7 @@ function corteEntre(a, b, veto) {
 // debajo al otro: el halo aparece a medias por un lado y sobra por el
 // otro, y el cruce deja de leerse. Es el defecto que se veía como
 // "halos que se contradicen".
-function huellasDeCruces(points, cruces, width) {
+function zonasDeCruces(points, cruces, width) {
   const acum = arcosDe(points);
   const dir = (s) => {
     const i = constrain(floor(s), 0, points.length - 2);
@@ -879,10 +939,36 @@ function huellasDeCruces(points, cruces, width) {
     zonas.push({ d: arcoDeParam(points, acum, c.arriba), r });
     zonas.push({ d: arcoDeParam(points, acum, c.abajo),  r });
   }
+  return { acum, zonas, total: acum[acum.length - 1] };
+}
+
+function huellasDeCruces(points, cruces, width) {
+  const { acum, zonas } = zonasDeCruces(points, cruces, width);
   return (s) => {
     const d = arcoDeParam(points, acum, s);
     return zonas.some(z => abs(d - z.d) < z.r);
   };
+}
+
+// LOS DOS EXTREMOS DE LA CINTA SON TAMBIÉN UN BORDE DE HUELLA.
+// Un cruce pegado al final del recorrido no se puede dibujar: la hebra
+// de arriba necesita seguir media anchura más allá para que su halo
+// termine de cortar, y ahí la cinta ya se ha acabado. La incisión sale a
+// medias y el remate queda soldado a la hebra vecina — que es el defecto
+// que se ve como "al remate le falta el halo".
+//
+// Devuelve la holgura del peor extremo en unidades de huella: 1 es
+// justo, por debajo de 1 no cabe. Es la misma regla que veta las juntas
+// dentro de una huella, aplicada al principio y al final del recorrido.
+function holguraDeRemates(points, cruces, width) {
+  const { acum, zonas, total } = zonasDeCruces(points, cruces, width);
+  if (!zonas.length) return Infinity;
+  let peor = Infinity;
+  for (const z of zonas) {
+    peor = min(peor, z.d / z.r);              // contra el arranque
+    peor = min(peor, (total - z.d) / z.r);    // contra el final
+  }
+  return peor;
 }
 
 function planoDeSecciones(last, cruces, points, width) {
