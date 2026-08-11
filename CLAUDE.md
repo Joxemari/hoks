@@ -45,7 +45,15 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 - **`nav.js`** — Se incluye en todas las páginas. Inyecta `<nav>` (logo "hoks",
   dropdown *Work* con las 8 series, About, Palettes), favicon SVG, footer
   (© hoks, contacto, Instagram si está en `site.json`) y badge ADMIN si hay
-  sesión. No hay otro CSS/JS global: cada página trae su propio `<style>`.
+  sesión. Aparte de esto y del picker de abajo no hay más CSS/JS global: cada
+  página trae su propio `<style>`.
+- **`palette-picker.js`** — Selector de paleta, **componente único** de toda la
+  web y del laboratorio (`HOKSPAL.mount(host, {palettes, index, onChange})`).
+  Cada opción muestra la paleta entera en una franja de color —elegir paleta es
+  elegir color, no nombre— y se navega con teclado (↑↓, Home/End, tecleo para
+  buscar, Esc). Trae su propio CSS inyectado; las páginas solo ponen un
+  `<div id="palPicker">`. Antes esto estaba copiado en 8 páginas con 3 variantes
+  distintas: si tocas el desplegable, tócalo aquí.
 
 ### Laboratorio (`sketches/`)
 

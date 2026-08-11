@@ -16,15 +16,6 @@
   .row { display:flex; align-items:center; gap:6px; }
   input[type=range] { width: 100%; accent-color: var(--ink); cursor: pointer; }
   input[type=number], select { font-family: var(--f); font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 2px; width: 100%; }
-  .pal-dd { position: relative; }
-  .pal-trigger { display:flex; align-items:center; gap:7px; padding:6px 9px; background:var(--surface); border:1px solid var(--border); border-radius:2px; cursor:pointer; font-size:11px; }
-  .pal-trigger:hover { border-color:#d0d0d0; }
-  .pal-list { display:none; position:absolute; top:calc(100% + 3px); left:0; right:0; background:#fff; border:1px solid #d0d0d0; border-radius:2px; z-index:50; max-height:280px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
-  .pal-list.open { display:block; }
-  .pal-opt { display:flex; align-items:center; gap:7px; padding:6px 9px; cursor:pointer; font-size:11px; }
-  .pal-opt:hover { background:var(--surface); }
-  .pal-dots { display:inline-flex; gap:2px; align-items:center; flex-shrink:0; }
-  .pal-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .val { font-size: 11px; font-weight: 700; min-width: 30px; text-align: right; color: var(--ink3); }
   .hintline { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
   button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
@@ -63,6 +54,10 @@
     <div class="lab-title">PLLSG · lab<small>seed · params · pesos · favoritos</small></div>
 
     <div class="group">
+      <span class="lbl">Work</span>
+      <div id="workPicker"></div>
+    </div>
+    <div class="group">
       <span class="lbl">Seed</span>
       <div class="seed-box">
         <button class="ghost" id="prev" title="seed − 1 (←)">◀</button>
@@ -74,14 +69,7 @@
 
     <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
-      <div class="pal-dd" id="palDD">
-        <div class="pal-trigger" id="palTrig">
-          <span class="pal-dots" id="palTrigDots"></span>
-          <span class="pal-name" id="palTrigName">Random (weighted)</span>
-          <span style="margin-left:auto;color:var(--ink3)">▾</span>
-        </div>
-        <div class="pal-list" id="palList"></div>
-      </div>
+      <div id="palPicker"></div>
       <div id="palBar" style="display:flex;height:16px;border-radius:2px;overflow:hidden;border:1px solid var(--border)"></div>
       <span class="hintline">incluye activas e inactivas · la barra = paleta en uso</span>
     </div>
@@ -166,6 +154,8 @@
   </main>
   <div class="toast" id="toast"></div>
 
+<script src="../../palette-picker.js"></script>
+<script src="../_lab.js"></script>
 <script src="../_engine.js?v=5"></script>
 <script src="./algo.js?v=5"></script>
 <script>
@@ -185,7 +175,7 @@ const sctx = single.getContext('2d');
 const $ = id => document.getElementById(id);
 
 let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
-let seed = (Math.random() * 0xFFFFFFFF) >>> 0;
+let seed = HOKSLAB.initialSeed();
 let palSel = 'auto';
 let sheetMode = false;
 let archProbs = {}, finishProbs = {};
@@ -206,10 +196,8 @@ function params() {
     finishProbs: { ...finishProbs },
   };
 }
-function palOpts() {
-  return palSel === 'auto' ? { palettes: PALETTES } : { palettes: PALETTES, locked: true, lockedIdx: parseInt(palSel, 10) };
-}
-function dotsHTML(colors) { return colors.slice(0, 8).map(c => `<span class="dot" style="background:${c}"></span>`).join(''); }
+let palPicker = null;
+function palOpts() { return palPicker ? palPicker.opts() : { palettes: PALETTES }; }
 function flash(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 1800); }
 
 // ── RENDER ──
@@ -251,20 +239,18 @@ function setSheet(on) {
 }
 function refresh() { sheetMode ? renderSheet() : renderSingle(); }
 
-// ── PALETTE DROPDOWN ──
+// ── PALETTE DROPDOWN — componente compartido (palette-picker.js) ──
 function populatePalList() {
   $('palCount').textContent = PALETTES.length;
-  const items = ['<div class="pal-opt" data-v="auto"><span class="pal-dots" style="color:var(--ink3)">∿</span><span class="pal-name">Random (weighted)</span></div>']
-    .concat(PALETTES.map((pl, i) => `<div class="pal-opt" data-v="${i}"><span class="pal-dots">${dotsHTML(pl.colors)}</span><span class="pal-name">${pl.name}${pl.active === false ? ' · (inactive)' : ''}</span></div>`));
-  $('palList').innerHTML = items.join('');
-  $('palList').querySelectorAll('.pal-opt').forEach(el => el.onclick = () => selectPal(el.dataset.v));
-  updatePalTrigger();
+  if (palPicker) { palPicker.setPalettes(PALETTES); return; }
+  palPicker = HOKSLAB.mountPalettePicker($('palPicker'), {
+    palettes: PALETTES,
+    onChange: () => { palSel = palPicker.selection; refresh(); },
+  });
+  palPicker.select(palSel);
 }
-function updatePalTrigger() {
-  if (palSel === 'auto') { $('palTrigDots').innerHTML = ''; $('palTrigName').textContent = 'Random (weighted)'; }
-  else { const pl = PALETTES[parseInt(palSel, 10)]; if (pl) { $('palTrigDots').innerHTML = dotsHTML(pl.colors); $('palTrigName').textContent = pl.name + (pl.active === false ? ' · (inactive)' : ''); } }
-}
-function selectPal(v) { palSel = v; updatePalTrigger(); $('palList').classList.remove('open'); refresh(); }
+// Una receta guardada trae su propia paleta: hay que moverla también en el picker.
+function updatePalTrigger() { if (palPicker) palPicker.select(palSel); }
 
 // ── PESOS EDITABLES ──
 function buildWeightSliders() {
@@ -343,9 +329,6 @@ $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh();
 $('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
 $('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
-$('palTrig').onclick = e => { e.stopPropagation(); $('palList').classList.toggle('open'); };
-$('palList').onclick = e => e.stopPropagation();
-document.addEventListener('click', () => $('palList').classList.remove('open'));
 $('arch').onchange = refresh;
 $('bg').onchange = refresh;
 $('count').oninput = () => { $('countV').textContent = $('count').value === '0' ? 'auto' : $('count').value; refresh(); };
@@ -394,6 +377,7 @@ async function launchToProduction() {
 }
 
 // ── INIT: pinta YA con el fallback (nunca en blanco), luego trae TODAS las paletas ──
+HOKSLAB.mountWorkPicker($('workPicker'), 'pllsg', () => seed);
 buildWeightSliders();
 populatePalList();
 renderFavs();

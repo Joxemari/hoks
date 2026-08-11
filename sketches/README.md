@@ -35,6 +35,9 @@ la vez al laboratorio y a producción. Ese es todo el trabajo de esta carpeta:
 sketches/
   _engine.js        ← motor compartido: Rng, color, mesh gradient, grano, paletas.
                       Una sola fuente: arréglalo aquí una vez.
+  _lab.js           ← piezas comunes del harness: selector de obra (salta de
+                      familia conservando la seed) y selector de paleta sobre
+                      ../../palette-picker.js. Lista GRADUATED de obras.
   _template/        ← esqueleto para graduar una obra nueva
   pllsg/            ← graduada (algo.js + harness)
   krrtkg/           ← graduada (porte fiel, verificado op-a-op)

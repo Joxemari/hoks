@@ -40,6 +40,10 @@
   <aside class="panel">
     <div class="lab-title">dtkg · lab<small>borobilak + mesh + grano</small></div>
     <div class="group">
+      <span class="lbl">Work</span>
+      <div id="workPicker"></div>
+    </div>
+    <div class="group">
       <span class="lbl">Seed</span>
       <div class="seed-box">
         <button class="ghost" id="prev">◀</button>
@@ -50,7 +54,7 @@
     </div>
     <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
-      <select id="pal"></select>
+      <div id="palPicker"></div>
       <span class="hintline">incluye activas e inactivas</span>
     </div>
     <div class="group">
@@ -80,6 +84,8 @@
     <span class="hint" id="status">—</span>
   </main>
 
+<script src="../../palette-picker.js"></script>
+<script src="../_lab.js"></script>
 <script src="../_engine.js"></script>
 <script src="./algo.js"></script>
 <script>
@@ -90,7 +96,7 @@ const SHEET_N = 12, SHEET_W = 300, SHEET_H = 300;
 const single = document.getElementById('single');
 const sctx = single.getContext('2d');
 let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
-let seed = (Math.random() * 0xFFFFFFFF) >>> 0;
+let seed = HOKSLAB.initialSeed();
 let sheetMode = false;
 const $ = id => document.getElementById(id);
 
@@ -101,7 +107,8 @@ function params() {
     threshold:  parseFloat($('th').value),
   };
 }
-function palOpts() { const v = $('pal').value; return v === 'auto' ? { palettes: PALETTES } : { palettes: PALETTES, locked: true, lockedIdx: parseInt(v, 10) }; }
+let palPicker = null;
+function palOpts() { return palPicker ? palPicker.opts() : { palettes: PALETTES }; }
 
 function renderSingle() {
   $('seed').value = seed;
@@ -140,15 +147,14 @@ function setSheet(on) {
 function refresh() { sheetMode ? renderSheet() : renderSingle(); }
 function populateSelect() {
   $('palCount').textContent = PALETTES.length;
-  $('pal').innerHTML = '<option value="auto">Random (weighted)</option>' +
-    PALETTES.map((pl, i) => `<option value="${i}">${pl.name}${pl.active === false ? ' · (inactive)' : ''}</option>`).join('');
+  if (palPicker) palPicker.setPalettes(PALETTES);
+  else palPicker = HOKSLAB.mountPalettePicker($('palPicker'), { palettes: PALETTES, onChange: refresh });
 }
 
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
 $('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
 $('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
-$('pal').onchange = refresh;
 $('grid').oninput = () => { $('gridV').textContent = $('grid').value === '0' ? 'auto' : $('grid').value + '×' + $('grid').value; refresh(); };
 $('th').oninput = () => { $('thV').textContent = parseFloat($('th').value).toFixed(2); refresh(); };
 $('grain').oninput = () => { $('grainV').textContent = parseFloat($('grain').value).toFixed(1); refresh(); };
@@ -165,6 +171,7 @@ document.addEventListener('keydown', e => {
 });
 
 // Init: pinta YA con fallback, luego trae TODAS las paletas.
+HOKSLAB.mountWorkPicker($('workPicker'), 'dtkg', () => seed);
 populateSelect();
 renderSingle();
 HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});
