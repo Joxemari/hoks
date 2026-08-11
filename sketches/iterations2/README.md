@@ -72,13 +72,39 @@ Cada composición reporta `cruces`, `gap`, `seg`, `giro`, y el triaje guarda
 además familia, paleta, secciones, volteos, juntas, separación entre cruces,
 anchura y ocupación. Ninguna filtra nada.
 
-Último lote de 40 (90 cruces): cruces mudos 0, sin corte 0, a medias 1 (1,1 %),
-incisión injustificada 7 px de media por obra. Cruces por obra 3–6 — flojo
-frente a los 6–25 de antes de exigir separación entre cruces.
+**Ningún detector cuenta hasta que dispara con código roto a propósito.** Dos
+controles: invertir el orden de pintado entero (todos los cruces deben salir
+mal) y dejarlo intacto (ninguno). Un detector que sólo sabe decir cero no
+distingue "no hay defectos" de "no miro donde toca".
 
-**Lo que las métricas no ven: un cruce invertido.** Comprueban que haya corte,
-no que esté en la hebra correcta. Los cuatro invertidos que se han corregido
-los encontró el autor mirando, no el instrumental.
+Estado sobre 60 obras · 154 cruces, con la sonda sub-píxel:
+
+| | |
+|---|---|
+| cruces sanos | 145 |
+| **a medias** | **6 (3,9 %)** |
+| **sin corte** | **3 (1,9 %)** |
+| cruce invertido entero | 0 de 102 |
+| remate soldado a otra hebra | 0 de 40 obras |
+| incisión injustificada | 7 px por obra |
+
+El detector anterior de cortes daba **1,3 % a medias y 0 % sin corte**, y las
+dos cifras eran falsas: cantaba un defecto donde la incisión estaba entera
+(seed 559686731 — fondo puro de lado a lado a resolución de píxel) y se comía
+nueve que sí lo eran. Muestreaba tres alturas con un umbral duro; la incisión
+mide 3,3 px sobre 900 y los píxeles mezclados la despistaban en las dos
+direcciones. La sonda actual mide, en cada punto **a lo ancho** de la hebra de
+abajo, cuánto se acerca al fondo el píxel más claro a cada lado del cruce.
+
+De los nueve cruces defectuosos, al menos dos están en obras que **pasan las
+ocho puertas del tejido** (`sep` 3,07 y 3,08). No es que se elija mal el
+tejido —comprobado: `generate()` devuelve justo uno de los candidatos que
+pasan todo— así que la causa está en el dibujo, no en la selección.
+
+**El cruce invertido ya se mide**, y está validado: con el orden de pintado
+invertido dispara en 52 de 54 cruces. Lo que sigue sin validar es su
+sensibilidad al caso de **medio lado** — el control para eso no llegó a
+reproducir el fallo.
 
 ## Pendiente
 
