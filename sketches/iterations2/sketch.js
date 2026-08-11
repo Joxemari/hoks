@@ -209,6 +209,7 @@ function generate(seed, cfg) {
   const puntua = (t) => t.conserva >= cfg.grosorMinimo
                      && t.ang.grados >= cfg.cruceMinDeg
                      && t.ciclos === 0
+                     && t.atasco === 0
                      && t.volteos <= cfg.volteoMax
                      && t.sep >= cfg.cruceSepMin;
 
@@ -218,8 +219,11 @@ function generate(seed, cfg) {
       noiseSeed(seed ^ (k * 7));
       const t = tejer(family, v, cfg);
       t.ang = minAnguloCruce(t.nodes);
-      t.nudo = buildKnot(t.nodes.map(n => n.p));
+      t.nudo = buildKnot(t.nodes.map(n => n.p), t.width);
       t.ciclos = t.nudo.plano.ciclos;
+      // Sin sitio donde partir: el tejido no se puede dibujar sin que
+      // un cruce cambie de profundidad a media huella.
+      t.atasco = t.nudo.plano.atasco || 0;
       // Cada volteo rompe la alternancia del tejido. Un nudo que se
       // deja pintar con pocos volteos se lee como tejido; uno que
       // necesita diez ya no alterna y el ojo no lo sigue.
@@ -238,7 +242,8 @@ function generate(seed, cfg) {
                           : (cfg.densidad && t.ang.cruces > intento.ang.cruces);
       // entre dos que fallan: manda el ángulo, y SÓLO el ángulo — desempatar
       // por trama aquí elige justo el tejido con más cruces rasantes
-      else gana = t.ciclos !== intento.ciclos ? t.ciclos < intento.ciclos
+      else gana = t.atasco !== intento.atasco ? t.atasco < intento.atasco
+                : t.ciclos !== intento.ciclos ? t.ciclos < intento.ciclos
                 : abs(t.sep - intento.sep) > 0.08 ? t.sep > intento.sep
                 : abs(t.volteos - intento.volteos) > 0.05 ? t.volteos < intento.volteos
                 : t.ang.grados > intento.ang.grados;
@@ -656,7 +661,7 @@ function holguraReal(nodes) {
 // camino entre cruces, de modo que cada trozo contiene exactamente
 // un cruce y por tanto una sola profundidad.
 // ------------------------------------------------------------
-function buildKnot(points) {
+function buildKnot(points, width) {
   const last = points.length - 1;
 
   const X = [];
@@ -668,7 +673,7 @@ function buildKnot(points) {
   }
 
   if (!X.length) {
-    return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], cruces: [], plano: { secciones: [[0, last]], orden: [0], ciclos: 0 }, crossings: 0 };
+    return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], cruces: [], plano: { secciones: [[0, last]], orden: [0], ciclos: 0, atasco: 0, juntas: [], volteados: 0 }, crossings: 0 };
   }
 
   const visits = [];
@@ -757,7 +762,7 @@ function buildKnot(points) {
 
   // El plan de secciones se calcula aquí, no al dibujar, para poder
   // comprobar ANTES si este nudo se puede pintar en plano.
-  const plano = planoDeSecciones(last, cruces);
+  const plano = planoDeSecciones(last, cruces, points, width);
 
   return { cuts, order, depth, cruces: plano.cruces, plano, crossings: X.length };
 }
@@ -765,15 +770,21 @@ function buildKnot(points) {
 // Busca el centro de un segmento dentro del intervalo entre dos
 // cruces: ahí las dos piezas quedan alineadas y el halo es inofensivo.
 // Si no cabe ninguno, se conforma con el punto medio.
-function corteEntre(a, b) {
+//
+// `veto(s)` marca las posiciones prohibidas. Cuando se pasa y ninguna
+// posición vale, devuelve null: no hay dónde partir y quien llama tiene
+// que descartar el tejido, no partir de todos modos.
+function corteEntre(a, b, veto) {
   const medio = (a + b) / 2;
   let mejor = null;
   for (let k = floor(a); k <= floor(b); k++) {
     const c = k + 0.5;
     if (c <= a || c >= b) continue;
+    if (veto && veto(c)) continue;
     if (mejor === null || abs(c - medio) < abs(mejor - medio)) mejor = c;
   }
-  return mejor === null ? medio : mejor;   // el centro de segmento más equidistante
+  if (mejor !== null) return mejor;        // el centro de segmento más equidistante
+  return veto ? null : medio;
 }
 
 // ------------------------------------------------------------
@@ -790,7 +801,33 @@ function corteEntre(a, b) {
 // Se cuenta cuántas quedan fuera del orden; generate() descarta ese
 // tejido y prueba otro.
 // ------------------------------------------------------------
-function planoDeSecciones(last, cruces) {
+// La HUELLA de un cruce es el trozo de recorrido que la hebra de
+// arriba tapa, medido a lo largo de la de abajo: (W/2)/sen del ángulo.
+// Dentro de esa huella la cinta NO PUEDE cambiar de profundidad. Si una
+// junta cae ahí, la hebra va por encima a un lado del corte y por
+// debajo al otro: el halo aparece a medias por un lado y sobra por el
+// otro, y el cruce deja de leerse. Es el defecto que se veía como
+// "halos que se contradicen".
+function huellasDeCruces(points, cruces, width) {
+  const acum = arcosDe(points);
+  const dir = (s) => {
+    const i = constrain(floor(s), 0, points.length - 2);
+    return p5.Vector.sub(points[i+1], points[i]).normalize();
+  };
+  const zonas = [];
+  for (const c of cruces) {
+    const sen = max(abs(sin(dir(c.abajo).angleBetween(dir(c.arriba)))), 0.18);
+    const r = (width / 2) / sen * 1.20;
+    zonas.push({ d: arcoDeParam(points, acum, c.arriba), r });
+    zonas.push({ d: arcoDeParam(points, acum, c.abajo),  r });
+  }
+  return (s) => {
+    const d = arcoDeParam(points, acum, s);
+    return zonas.some(z => abs(d - z.d) < z.r);
+  };
+}
+
+function planoDeSecciones(last, cruces, points, width) {
   // Con alternancia estricta casi ningún nudo de esta complejidad se
   // puede pintar en plano: aparecen ciclos (A sobre B, B sobre C, C
   // sobre A). Antes eso dejaba secciones fuera del orden y alguna
@@ -808,11 +845,14 @@ function planoDeSecciones(last, cruces) {
   // Ese cabo no queda al aire — lo tapa su propia otra mitad, que es
   // justo la que le pasa por encima.
   const extra = new Set();
-  let plan = null, volteados = 0;
+  let plan = null, volteados = 0, atasco = 0;
 
   for (let i = 0; i < 120; i++) {
     plan = ordenar(last, cr, extra);
     if (plan.imposible >= 0) {
+      // La huella se recalcula en cada vuelta: cada volteo cambia qué
+      // hebra va arriba y con ella el ángulo que define la zona vetada.
+      const veto = points ? huellasDeCruces(points, cr, width) : null;
       // El corte va ENTRE el punto de abajo y el de arriba, no en uno de
       // ellos: partiendo por 'arriba' la sección que queda entre ambos
       // sigue siendo a la vez la de arriba y la de abajo, y la relación
@@ -822,7 +862,13 @@ function planoDeSecciones(last, cruces) {
       // dos secciones se encuentran en codo, no alineadas, y el remate
       // del halo cruza la banda. En el centro de un tramo recto es
       // invisible.
-      const medio = corteEntre(min(c.arriba, c.abajo), max(c.arriba, c.abajo));
+      const medio = corteEntre(min(c.arriba, c.abajo), max(c.arriba, c.abajo), veto);
+      // No hay ni un centro de segmento libre entre las dos mitades: la
+      // cinta se cruza consigo misma en un gancho demasiado corto para
+      // partirla en ningún sitio. No se remienda — se descarta el tejido
+      // y se prueba otro, que es lo que ya se hace con los cruces
+      // rasantes y con los ciclos.
+      if (medio === null) { atasco = 1; break; }
       if (extra.has(medio)) break;
       extra.add(medio);
       continue;
@@ -837,6 +883,7 @@ function planoDeSecciones(last, cruces) {
 
   return { secciones: plan.secciones, orden: plan.orden,
            ciclos: plan.culpable >= 0 ? 1 : 0, partidos: extra.size,
+           atasco: atasco || (plan.imposible >= 0 ? 1 : 0),
            juntas: Array.from(extra), volteados, cruces: cr };
 }
 
