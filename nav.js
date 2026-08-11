@@ -9,9 +9,9 @@ const FAVICON = `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,
 // ─────────────────────────────────────────────────────────────────────────────
 const LANGS = ['eu', 'es', 'en'];
 const DEFAULT_LANG = 'eu';
-// La parte pública va SOLO en euskara por ahora. El motor y los diccionarios
-// ES/EN se conservan; para reactivar el conmutador público, pon esto a true.
-const SHOW_LANG_SWITCHER = false;
+// La parte pública es bilingüe euskara / inglés (conmutador en el nav).
+// El diccionario ES se conserva para reactivarlo en el futuro si hiciera falta.
+const SHOW_LANG_SWITCHER = true;
 
 const DICT = {
   en: {
@@ -339,7 +339,6 @@ nav.innerHTML = `
     <li><a href="palettes.html"${isPalettes?' class="active"':''} data-i18n="nav.palettes">Palettes</a></li>
     ${SHOW_LANG_SWITCHER ? `<li class="nav-lang" id="nav-lang">
       <button type="button" data-lang="eu">EU</button>
-      <button type="button" data-lang="es">ES</button>
       <button type="button" data-lang="en">EN</button>
     </li>` : ''}
   </ul>`;

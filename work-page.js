@@ -78,11 +78,13 @@
 
     // ── Lienzo vivo: un clic, otra pieza. Ni panel ni traits ni guardar. ──
     let canvas = null;
+    let hintSpan = null;
     if (ALGO) {
       const live = el('div', 'wk-live');
       canvas = el('canvas'); canvas.width = 600; canvas.height = 600;
       live.appendChild(canvas);
-      live.appendChild(el('span', 'wk-hint', esc(t('hint.canvas', 'Click canvas to generate new variation'))));
+      hintSpan = el('span', 'wk-hint', esc(t('hint.canvas', 'Click canvas to generate new variation')));
+      live.appendChild(hintSpan);
       root.appendChild(live);
     }
 
@@ -101,16 +103,26 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape') lb.classList.remove('open'); });
 
     // ── Narrativa desde works.json ──
+    let currentWork = null;
     fetch(RAW + 'works.json?t=' + Date.now())
       .then(r => r.ok ? r.json() : [])
       .then(list => {
         const w = (list || []).find(x => x.slug === slug);
         if (!w) return;
+        currentWork = w;
         if (w.name) name.textContent = w.name;
         text.textContent = pickText(w.description);
         document.title = (w.name || slug.toUpperCase()) + ' — hoks';
       })
       .catch(() => {});
+
+    // ── Cambio de idioma: reescribir las etiquetas dependientes del idioma ──
+    // (el nav se re-traduce solo; estas se construyen en JS y hay que refrescarlas)
+    global.addEventListener('hoks:langchange', () => {
+      if (hintSpan) hintSpan.textContent = t('hint.canvas', 'Click canvas to generate new variation');
+      sec.textContent = t('label.saved', 'Saved');
+      if (currentWork) text.textContent = pickText(currentWork.description);
+    });
 
     // ── Piezas elegidas ──
     let pieces = [];
