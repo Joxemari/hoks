@@ -32,7 +32,7 @@ const ALGO_REV = 9;
 // saltaría siempre, hasta dejar de significar nada.
 const PARAMS_QUE_CUENTAN = [
   "vueltaGiro","vueltaEscala","widthMin","widthMax",
-  "cabo","caboMargen","cruceMinDeg","cruceSepMin","remateMin","segMinRatio","volteoMax","reintentos","densidad",
+  "cabo","caboMargen","cruceMinDeg","cruceSepMin","remateMin","segMinRatio","crucesRescate","volteoMax","reintentos","densidad",
   "grosorMinimo","gapAbs","holguraMin","avoidRatio","minSegRatio","minTurnDeg",
   "salidaMax","margen","pad","miterLimit","anchorJitter"
 ];
@@ -146,6 +146,7 @@ const DEF = {
   caboTope:     0.45,        // fracción de la distancia al cruce vecino que NO se rebasa        // cuánto se pasa del borde de la hebra que lo tapa        // cuánto se mete el cabo de cada sección bajo la hebra que lo tapa, x anchura
   cruceMinDeg:  40,          // ángulo mínimo de cruce: por debajo, la hebra de abajo queda en astilla
   cruceSepMin:  1.20,        // separación mínima entre cruces, × anchura
+  crucesRescate: 3,          // cruces mínimos para aceptar un rescate de familia
   remateMin:    1.0,         // holgura mínima del arranque y el final frente a la huella de un cruce
   segMinRatio:  0.85,        // tramo más corto admisible, × anchura (por debajo la cinta se pliega)
   volteoMax:    0.34,        // volteos por cruce que se toleran
@@ -273,14 +274,28 @@ function generate(seed, cfg) {
     + (t.volteos <= cfg.volteoMax      ? 0 : 1)
     + (t.sep     >= cfg.cruceSepMin    ? 0 : 1);
 
-  const puntua = (t) => t.conserva >= cfg.grosorMinimo
-                     && t.ang.grados >= cfg.cruceMinDeg
-                     && t.ciclos === 0
-                     && t.atasco === 0
-                     && t.remate >= cfg.remateMin
-                     && t.seg >= cfg.segMinRatio
-                     && t.volteos <= cfg.volteoMax
-                     && t.sep >= cfg.cruceSepMin;
+  // Las ocho condiciones NO son de la misma naturaleza y mezclarlas salía
+  // caro. Unas dicen si la obra SE PUEDE DIBUJAR BIEN: un cruce rasante
+  // deja astilla, dos cruces pegados no dejan sitio a la incisión, un
+  // ciclo obliga a una sección a ir encima y debajo a la vez. Ésas no se
+  // negocian.
+  //
+  // Otras son HIPÓTESIS MÍAS sobre qué se ve bien, y una de ellas ya ha
+  // salido equivocada: volteoMax nació de suponer que un nudo con muchos
+  // volteos deja de alternar y el ojo no lo sigue, y de las cinco obras
+  // que el autor aprobó TRES lo incumplen (volteos 1,00, 1,00 y 0,50).
+  // Se conservan como preferencia, no como veto.
+  const correcto = (t) => t.ang.grados >= cfg.cruceMinDeg
+                       && t.ciclos === 0
+                       && t.atasco === 0
+                       && t.remate >= cfg.remateMin
+                       && t.seg >= cfg.segMinRatio
+                       && t.sep >= cfg.cruceSepMin;
+
+  const preferible = (t) => t.conserva >= cfg.grosorMinimo
+                         && t.volteos <= cfg.volteoMax;
+
+  const puntua = (t) => correcto(t) && preferible(t);
 
   for (let k = 0; k <= cfg.reintentos; k++) {
     for (let v = pedidas; v >= cfg.vueltasMin; v--) {
@@ -310,9 +325,13 @@ function generate(seed, cfg) {
       t.puertas = puertasQueFalla(t);
 
       if (!intento) { intento = t; vueltas = v; continue; }
-      const pasa = puntua(t), pasaba = puntua(intento);
+      // Correcto manda sobre preferible: entre un tejido dibujable que no
+      // me gusta y uno que me gusta pero sale roto, gana el dibujable.
+      const ok = correcto(t), okAntes = correcto(intento);
+      const pasa = ok && preferible(t), pasaba = okAntes && preferible(intento);
       let gana;
-      if (pasa !== pasaba) gana = pasa;
+      if (ok !== okAntes) gana = ok;
+      else if (pasa !== pasaba) gana = pasa;
       // entre dos que pasan: el más entrelazado, si se quiere conservar trama
       // entre dos que pasan: menos volteos manda sobre más trama, porque
       // la trama no se lee si el tejido no alterna
@@ -339,12 +358,55 @@ function generate(seed, cfg) {
     if (!cfg.densidad && puntua(intento)) break;
   }
 
+  // ÚLTIMO RECURSO: CAMBIAR DE FAMILIA
+  // Si para este seed no hay NINGÚN tejido DIBUJABLE con su familia, se
+  // prueban las demás. No dan igual de sí: en los cuatro seeds que
+  // fallaban, 'compact' siempre producía un nudo limpio de 3 cruces y
+  // 'cross' ninguno.
+  //
+  // Se dispara sólo con 'correcto', no con 'puntua'. Disparándolo con las
+  // ocho puertas entraban también las obras que sólo incumplen volteos —
+  // tres de las cinco que el autor aprobó— y se las llevaba por delante.
+  //
+  // Y se exige un nudo DE VERDAD (>= crucesRescate): sin eso el rescate se
+  // llena de tejidos de un solo cruce, que pasan todas las puertas al
+  // vacío porque con un cruce no hay separación entre cruces que medir.
+  let familiaFinal = family;
+  if (!correcto(intento)) {
+    let rescate = null;
+    for (const F of FAMILY_NAMES) {
+      if (F === family) continue;
+      for (let k = 0; k <= cfg.reintentos; k++) {
+        for (let v = pedidas; v >= cfg.vueltasMin; v--) {
+          randomSeed(seed ^ 0xA17E ^ (k * 0x9E3779B1));
+          noiseSeed(seed ^ (k * 7));
+          const t = tejer(F, v, cfg);
+          t.ang = minAnguloCruce(t.nodes);
+          t.nudo = buildKnot(t.nodes.map(n => n.p), t.width);
+          t.ciclos = t.nudo.plano.ciclos;
+          t.atasco = t.nudo.plano.atasco || 0;
+          t.remate = t.nudo.remate;
+          t.volteos = t.nudo.plano.volteados / max(t.nudo.cruces.length, 1);
+          t.sep = sepCruces(t.nodes) / max(t.width, 1e-9);
+          t.seg = minSegDe(t.nodes) / max(t.width, 1e-9);
+          if (!correcto(t) || t.nudo.crossings < cfg.crucesRescate) continue;
+          const mejorQue = !rescate
+            || (preferible(t) && !preferible(rescate.t))
+            || (preferible(t) === preferible(rescate.t)
+                && t.nudo.crossings > rescate.t.nudo.crossings);
+          if (mejorQue) rescate = { t, v, F };
+        }
+      }
+    }
+    if (rescate) { intento = rescate.t; vueltas = rescate.v; familiaFinal = rescate.F; }
+  }
+
   const { nodes, width } = intento;
   const points = nodes.map(n => n.p);
   const { cuts, order, depth, cruces, plano, crossings } = intento.nudo;
 
 
-  return { seed, family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
+  return { seed, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
 }
 
 // ------------------------------------------------------------

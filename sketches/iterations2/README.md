@@ -123,16 +123,44 @@ mide 3,3 px sobre 900 y los píxeles mezclados la despistaban en las dos
 direcciones. La sonda actual mide, en cada punto **a lo ancho** de la hebra de
 abajo, cuánto se acerca al fondo el píxel más claro a cada lado del cruce.
 
-### Dónde está todo lo que queda mal
+### Estado
 
-Sobre 80 obras y 199 cruces: **196 sanos, 3 defectuosos (1,5 %)** — y los tres
-en obras para las que **ningún** tejido pasa las ocho puertas (4 de 80, un
-5 %). Ahí se dibuja el menos malo y sale agolpado.
+Sobre 80 obras y 189 cruces: **189 sanos. Cero a medias, cero sin corte**, en
+todas las bandas de ángulo. 80/80 obras con tejido dibujable. 1,20 s por obra.
 
-Eso cierra el diagnóstico: **el dibujo no tiene un fallo propio.** No es un
-fallo de selección tampoco — enumerando los candidatos de cada seed,
-`generate()` devuelve justo uno de los que pasan cuando existe alguno. Todo lo
-que sobrevive viene del caso "para este seed no hay tejido limpio".
+Antes de este arreglo eran 3 defectuosos de 199, todos en las 4 obras (de 80)
+para las que ningún tejido pasaba. El dibujo nunca tuvo un fallo propio: todo
+lo que sobrevivía venía de "para este seed no hay tejido limpio".
+
+## Dos clases de condición, y por qué importa
+
+Las ocho condiciones del tejido no eran de la misma naturaleza, y mezclarlas
+salía caro. Ahora están separadas:
+
+- **`correcto`** — si la obra SE PUEDE DIBUJAR BIEN: ángulo de cruce,
+  separación entre cruces, tramo mínimo, holgura de los remates, ciclos,
+  atascos. No se negocian.
+- **`preferible`** — hipótesis sobre qué se ve bien: `volteoMax`,
+  `grosorMinimo`. Se conservan como preferencia, **no como veto**.
+
+Entre un tejido dibujable que no cumple una preferencia y uno que la cumple
+pero sale roto, gana el dibujable.
+
+### El rescate por cambio de familia
+
+Si para un seed no hay **ningún** tejido dibujable con su familia, se prueban
+las demás. Las familias no dan igual de sí: en los cuatro seeds que fallaban,
+`compact` siempre producía un nudo limpio de 3 cruces y `cross` ninguno.
+
+Se dispara con `correcto`, nunca con `preferible`. Disparándolo con las ocho
+condiciones entraban también las obras que sólo incumplen `volteos` —tres de
+las cinco que el autor aprobó— y se las llevaba por delante. Con la separación,
+**las cinco salen idénticas al bit** y el rescate sólo toca el ~8 % que lo
+necesita (2 de 24), así que no cuesta tiempo medio.
+
+Exige un nudo de verdad (≥3 cruces): sin eso el rescate se llena de tejidos de
+un solo cruce, que cumplen todo al vacío porque con un cruce no hay separación
+entre cruces que medir.
 
 ### La disyuntiva, medida
 
