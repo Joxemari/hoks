@@ -79,6 +79,20 @@ canvas {
 .gallery-thumb-seed { font-size: 9px; font-family: var(--f); color: var(--ink3); padding: 4px 6px; background: var(--bg); letter-spacing: 0.04em; text-transform: uppercase; }
 .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 9px 18px; border-radius: 2px; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 100; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* custom palette dropdown */
+.pal-dropdown { position:relative; width:100%; }
+.pal-trigger { display:flex; align-items:center; justify-content:space-between; padding:7px 10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r); cursor:pointer; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink); transition:border-color 0.15s; }
+.pal-trigger:hover { border-color:var(--border-dark); }
+.pal-trigger-left { display:flex; align-items:center; gap:7px; }
+.pal-trigger-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; border:0.5px solid rgba(0,0,0,0.1); }
+.pal-trigger-arrow { color:var(--ink3); font-size:9px; }
+.pal-list { display:none; position:absolute; top:calc(100% + 3px); left:0; right:0; background:var(--bg); border:1px solid var(--border-dark); border-radius:var(--r); z-index:50; max-height:220px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+.pal-list.open { display:block; }
+.pal-option { display:flex; align-items:center; gap:7px; padding:7px 10px; cursor:pointer; transition:background 0.1s; }
+.pal-option:hover { background:var(--surface); }
+.pal-option.selected { background:var(--surface); }
+.pal-option-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; border:0.5px solid rgba(0,0,0,0.1); }
+.pal-option-name { font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink); }
 
 /* ── MOBILE ── */
 @media (max-width: 680px) {
@@ -115,20 +129,34 @@ canvas {
 </head>
 <body>
 <script src="nav.js"></script>
-<script src="palette-picker.js"></script>
+<!-- Motor compartido: formatos de lienzo y exportación a tamaño de impresión. -->
+<script src="sketches/_engine.js?v=1"></script>
+<script src="usage.js"></script>
 <div class="layout">
   <aside class="sidebar">
     <div class="sidebar-section">
       <button class="btn" id="generateBtn" onclick="generate()">↻ <span data-i18n="btn.generate">Generate</span></button>
       <button class="btn btn-outline" onclick="exportCard()">⎘ <span data-i18n="btn.copycard">Copy Card</span></button>
+      <button class="btn btn-outline" onclick="saveToGallery()">+ <span data-i18n="btn.save">Save</span></button>
       <button class="btn btn-outline" onclick="downloadHD()">↓ <span data-i18n="btn.download">Download PNG</span></button>
     </div>
+    <div class="sidebar-section" id="formatMount"></div>
 
         <div class="sidebar-section" id="paletteSelectorSection" style="display:none">
       <div class="sidebar-label" data-i18n="label.palette">Palette</div>
       <button onclick="togglePaletteLock()" id="palLockBtn" style="font-family:var(--f);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;border:1px solid var(--border-dark);border-radius:20px;padding:3px 10px;cursor:pointer;background:var(--surface);color:var(--ink3);width:fit-content;transition:all 0.15s;">RANDOM</button>
       <div id="palSelectWrap" style="display:none;flex-direction:column;gap:4px;">
-        <div id="palPicker"></div>
+        <div class="pal-dropdown" id="palDropdown">
+          <div class="pal-trigger" id="palTrigger" onclick="togglePalList()">
+            <div class="pal-trigger-left">
+              <div style="display:flex;gap:2px;" id="palTriggerDots"></div>
+              <span style="font-size:10px;letter-spacing:0.06em;text-transform:uppercase;" id="palTriggerName">—</span>
+            </div>
+            <span class="pal-trigger-arrow">▾</span>
+          </div>
+          <div class="pal-list" id="palList"></div>
+        </div>
+        <div id="palSelectorPreview" style="height:10px;border-radius:2px;overflow:hidden;border:1px solid var(--border);display:flex;"></div>
       </div>
     </div>
     <div class="sidebar-section">
@@ -150,7 +178,7 @@ canvas {
   </aside>
   <main>
     <div class="canvas-area">
-      <canvas id="c" width="1414" height="1000"></canvas>
+      <canvas id="c" width="1075" height="760"></canvas>
       <div class="reveal-overlay" id="revealOverlay">
         <div class="reveal-counter" id="revealCounter" style="display:none"></div>
       </div>
@@ -165,6 +193,8 @@ canvas {
 <div class="toast" id="toast"></div>
 <script>
 const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
+const GH_TOKEN_KEY = 'hoks-gh-token';
+const REPO = 'Joxemari/hoks';
 
 // ── PALETTE PROB (age-based scarcity) ─────────────────
 function ageWeight(createdMs) {
@@ -248,7 +278,7 @@ const OVERLAP_TOL   = { Solo:0.15, Scattered:0.35, Dense:0.60 };
 const PLACEMENT_ATT = 20;
 
 let palettes = [], currentSeed = rand32(), gallery = [];
-let lastTraits = [], lastOverall = '', currentTimestamp = new Date();
+let lastTraits = [], lastOverall = '', lastPal = null, currentTimestamp = new Date();
 let _generating = false;
 
 function rand32() { return Math.random() * 0xFFFFFFFF >>> 0; }
@@ -276,7 +306,24 @@ function overallRarity(archProb, palProb, rarestFinish) {
 }
 
 // ── GITHUB ────────────────────────────────────────────
-
+async function ghPush(path, content) {
+  const token = localStorage.getItem(GH_TOKEN_KEY);
+  if (!token) return;
+  let sha;
+  try {
+    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (r.ok) sha = (await r.json()).sha;
+  } catch(e) {}
+  const body = { message: `update ${path}`, content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))) };
+  if (sha) body.sha = sha;
+  await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+    method: 'PUT',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
 
 // ── PALETTES ──────────────────────────────────────────
 function loadPalettes() {
@@ -298,23 +345,46 @@ function loadPalettes() {
 
 // ── DRAWING ───────────────────────────────────────────
 function pillClipPath(ctx,x1,y1,x2,y2,t){const r=t/2,a=Math.atan2(y2-y1,x2-x1);ctx.beginPath();ctx.arc(x1,y1,r,a+Math.PI/2,a+Math.PI*1.5);ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2);ctx.closePath();}
-function drawGrain(ctx,x1,y1,x2,y2,t,color,rng){const[r,g,b]=hexToRgb(color);const alt=rng.bool(0.5)?'#0a0a0a':'#eff7f5';const angle=Math.atan2(y2-y1,x2-x1);const cx=(x1+x2)/2,cy=(y1+y2)/2;const halfLen=Math.hypot(x2-x1,y2-y1)/2+t/2,hw=t/2;const C=[[cx+Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen+Math.cos(angle)*hw],[cx+Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen-Math.cos(angle)*hw],[cx-Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen+Math.cos(angle)*hw],[cx-Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen-Math.cos(angle)*hw]];const xs=C.map(c=>c[0]),ys=C.map(c=>c[1]);const minX=Math.floor(Math.min(...xs)/GRAIN_TILE)*GRAIN_TILE,maxX=Math.ceil(Math.max(...xs)/GRAIN_TILE)*GRAIN_TILE;const minY=Math.floor(Math.min(...ys)/GRAIN_TILE)*GRAIN_TILE,maxY=Math.ceil(Math.max(...ys)/GRAIN_TILE)*GRAIN_TILE;ctx.save();pillClipPath(ctx,x1,y1,x2,y2,t);ctx.clip();for(let tx=minX;tx<maxX;tx+=GRAIN_TILE)for(let ty=minY;ty<maxY;ty+=GRAIN_TILE){const col=Math.round(tx/GRAIN_TILE),row=Math.round(ty/GRAIN_TILE);ctx.fillStyle=(col+row)%2===0?`rgb(${r},${g},${b})`:alt;ctx.fillRect(tx,ty,GRAIN_TILE,GRAIN_TILE);}ctx.restore();}
-function drawPill(ctx,x1,y1,x2,y2,t,color,style,rng,colors){const[r,g,b]=hexToRgb(color);ctx.save();if(style==='solid'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=`rgb(${r},${g},${b})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='multiply'){ctx.globalCompositeOperation='multiply';ctx.strokeStyle=`rgb(${r},${g},${b})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='translucent'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=`rgba(${r},${g},${b},${rng.range(0.22,0.55)})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='outline'){const bw=Math.max(5,t*0.06),oc=rng.bool(0.5)?'#0a0a0a':'#eff7f5';ctx.globalCompositeOperation='source-over';pillClipPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fill();pillClipPath(ctx,x1,y1,x2,y2,t);ctx.strokeStyle=oc;ctx.lineWidth=bw;ctx.stroke();}else if(style==='grain'){drawGrain(ctx,x1,y1,x2,y2,t,color,rng);}else if(style==='gradient'){ctx.globalCompositeOperation='source-over';const a=Math.atan2(y2-y1,x2-x1),px=-Math.sin(a),py=Math.cos(a),h=t/2;const grad=ctx.createLinearGradient((x1+x2)/2+px*h,(y1+y2)/2+py*h,(x1+x2)/2-px*h,(y1+y2)/2-py*h);const[r2,g2,b2]=hexToRgb(rng.pickFrom(colors));grad.addColorStop(0,`rgb(${r},${g},${b})`);grad.addColorStop(1,`rgb(${r2},${g2},${b2})`);pillClipPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=grad;ctx.fill();}ctx.restore();}
+function drawGrain(ctx,x1,y1,x2,y2,t,color,rng,tile){const GRAIN_TILE=tile;const[r,g,b]=hexToRgb(color);const alt=rng.bool(0.5)?'#0a0a0a':'#eff7f5';const angle=Math.atan2(y2-y1,x2-x1);const cx=(x1+x2)/2,cy=(y1+y2)/2;const halfLen=Math.hypot(x2-x1,y2-y1)/2+t/2,hw=t/2;const C=[[cx+Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen+Math.cos(angle)*hw],[cx+Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen-Math.cos(angle)*hw],[cx-Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen+Math.cos(angle)*hw],[cx-Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen-Math.cos(angle)*hw]];const xs=C.map(c=>c[0]),ys=C.map(c=>c[1]);const minX=Math.floor(Math.min(...xs)/GRAIN_TILE)*GRAIN_TILE,maxX=Math.ceil(Math.max(...xs)/GRAIN_TILE)*GRAIN_TILE;const minY=Math.floor(Math.min(...ys)/GRAIN_TILE)*GRAIN_TILE,maxY=Math.ceil(Math.max(...ys)/GRAIN_TILE)*GRAIN_TILE;ctx.save();pillClipPath(ctx,x1,y1,x2,y2,t);ctx.clip();for(let tx=minX;tx<maxX;tx+=GRAIN_TILE)for(let ty=minY;ty<maxY;ty+=GRAIN_TILE){const col=Math.round(tx/GRAIN_TILE),row=Math.round(ty/GRAIN_TILE);ctx.fillStyle=(col+row)%2===0?`rgb(${r},${g},${b})`:alt;ctx.fillRect(tx,ty,GRAIN_TILE,GRAIN_TILE);}ctx.restore();}
+function drawPill(ctx,x1,y1,x2,y2,t,color,style,rng,colors,u){const[r,g,b]=hexToRgb(color);ctx.save();if(style==='solid'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=`rgb(${r},${g},${b})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='multiply'){ctx.globalCompositeOperation='multiply';ctx.strokeStyle=`rgb(${r},${g},${b})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='translucent'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=`rgba(${r},${g},${b},${rng.range(0.22,0.55)})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='outline'){const bw=Math.max(5*u,t*0.06),oc=rng.bool(0.5)?'#0a0a0a':'#eff7f5';ctx.globalCompositeOperation='source-over';pillClipPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fill();pillClipPath(ctx,x1,y1,x2,y2,t);ctx.strokeStyle=oc;ctx.lineWidth=bw;ctx.stroke();}else if(style==='grain'){drawGrain(ctx,x1,y1,x2,y2,t,color,rng,GRAIN_TILE*u);}else if(style==='gradient'){ctx.globalCompositeOperation='source-over';const a=Math.atan2(y2-y1,x2-x1),px=-Math.sin(a),py=Math.cos(a),h=t/2;const grad=ctx.createLinearGradient((x1+x2)/2+px*h,(y1+y2)/2+py*h,(x1+x2)/2-px*h,(y1+y2)/2-py*h);const[r2,g2,b2]=hexToRgb(rng.pickFrom(colors));grad.addColorStop(0,`rgb(${r},${g},${b})`);grad.addColorStop(1,`rgb(${r2},${g2},${b2})`);pillClipPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=grad;ctx.fill();}ctx.restore();}
 function pickFinish(rng,archName){const probs=FINISH_PROBS[archName];let v=rng.next(),acc=0;for(const[s,p]of Object.entries(probs)){acc+=p;if(v<acc)return s;}return'solid';}
 function pillsOverlapTooMuch(ax,ay,aHL,at,bx,by,bHL,bt,tol){const dist=Math.hypot(ax-bx,ay-by),reach=(at+bt)/2+Math.min(aHL,bHL)*0.5;return Math.max(0,reach-dist)/((at/2+bt/2))>tol;}
 
 // ── PROGRESSIVE DRAW ──────────────────────────────────
+// ── FORMATO ───────────────────────────────────────────
+// Cuadrado · vertical · horizontal (1:√2, la proporción DIN). Las cápsulas se
+// colocan contra W y H, así que la misma seed en el mismo formato da la misma
+// imagen a cualquier resolución: lo que se ve en pantalla es lo que se imprime.
+var FMT = null;
+function applyFormat() {
+  const c = document.getElementById('c'), d = FMT ? FMT.preview() : HOKS.previewDims('horizontal');
+  if (c.width !== d.W || c.height !== d.H) { c.width = d.W; c.height = d.H; }
+}
+FMT = HOKS.mountFormat(document.getElementById('formatMount'), {
+  work: 'plls', defaultFormat: 'horizontal',
+  onChange() { applyFormat(); draw(currentSeed); }
+});
+applyFormat();
+
 function draw(s) {
   if (!palettes.length || _generating) return;
   _generating = true;
-
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+  applyFormat();
+  const r = renderTo(ctx, canvas.width, canvas.height, s);
+  _generating = false;
+  updateTraits(r.arch, r.pal, r.styleCount, r.bgTrait, r.numShapes, s);
+}
+
+function renderTo(ctx, W, H, s) {
   const rng = new Rng(s);
+  // Escala de las medidas en px absolutos (tesela del ajedrez, filo del
+  // contorno): REF = lado corto de referencia de la obra.
+  const u = HOKS.unit(W, H, 1000);
 
   const arch = rng.weighted(ARCHETYPES);
-  const pal  = getActivePalette(rng);
+  const pal  = getActivePalette(rng); lastPal = pal;
   const colors = pal.colors;
   const sizePct = rng.range(arch.sizeMin, arch.sizeMax);
   const maxSize = Math.min(W,H) * sizePct;
@@ -364,10 +434,9 @@ function draw(s) {
     const y1 = pill.cy - Math.sin(pill.angle)*pill.hl;
     const x2 = pill.cx + Math.cos(pill.angle)*pill.hl;
     const y2 = pill.cy + Math.sin(pill.angle)*pill.hl;
-    drawPill(ctx, x1, y1, x2, y2, pill.thickness, pill.color, pill.style, rng, colors);
+    drawPill(ctx, x1, y1, x2, y2, pill.thickness, pill.color, pill.style, rng, colors, u);
   }
-  _generating = false;
-  updateTraits(arch, pal, styleCount, bgTrait, numShapes, s);
+  return { arch, pal, styleCount, bgTrait, numShapes };
 }
 
 function updateTraits(arch, pal, styleCount, bgTrait, numShapes, s) {
@@ -416,15 +485,28 @@ function loadGallery() {
     .then(data => { gallery = data; renderGallery(); })
     .catch(() => { gallery = []; renderGallery(); });
 }
-
-
+async function saveGallery() { await ghPush('data/plls.json', gallery); }
+async function saveToGallery() {
+  const src = document.getElementById('c');
+  const dataUrl = src.toDataURL('image/jpeg', 0.9);
+  const ts = Date.now();
+  gallery.unshift({seed:currentSeed, dataUrl, savedAt:ts});
+  if(gallery.length>50) gallery=gallery.slice(0,50);
+  toast(HOKSI18N.en('toast.saving')); await saveGallery();
+  await HOKSUSAGE.record('pills', currentSeed, ts, lastPal);
+  renderGallery(); toast(HOKSI18N.en('toast.savedGallery'));
+}
 function loadExactIteration(item) {
   const canvas = document.getElementById('c');
-  const ctx = canvas.getContext('2d');
   const img = new Image();
-  img.onload = () => { ctx.globalCompositeOperation='source-over'; ctx.drawImage(img,0,0,canvas.width,canvas.height); };
+  img.onload = () => {
+    // La pieza guardada manda: el lienzo toma SU tamaño para no deformarla.
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.globalCompositeOperation='source-over'; ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  };
   img.src = item.dataUrl;
-  currentSeed = item.seed;
+  currentSeed = item.seed; lastPal = null;
   currentTimestamp = item.savedAt ? new Date(item.savedAt) : new Date();
   document.getElementById('seedDisplay').textContent = '#'+item.seed;
   const tsEl = document.getElementById('timestampDisplay');
@@ -454,14 +536,19 @@ function renderGallery() {
 }
 
 // ── DOWNLOAD / EXPORT ─────────────────────────────────
+// Se vuelve a renderizar fuera de pantalla al tamaño del pliego elegido (300 dpi):
+// no es un reescalado del lienzo de pantalla, es la misma obra a tamaño de papel.
 function downloadHD() {
-  const src=document.getElementById('c');
-  const hd=document.createElement('canvas');
-  hd.width=src.width*5;hd.height=src.height*5;
-  const ctx=hd.getContext('2d');ctx.scale(5,5);ctx.drawImage(src,0,0);
-  const a=document.createElement('a');
-  a.download=`pills_${currentSeed}.png`;a.href=hd.toDataURL('image/png');a.click();
-  toast(HOKSI18N.t('toast.pngDownloaded'));
+  if(!palettes.length)return;
+  toast(HOKSI18N.t('toast.rendering'));
+  setTimeout(()=>{
+    HOKS.exportPrint({
+      name:`plls_${currentSeed}_${FMT.format}_${FMT.sheet}`,
+      fmt:FMT.format, sheet:FMT.sheet,
+      render:(ctx,W,H)=>renderTo(ctx,W,H,currentSeed),
+    }).then(()=>toast(HOKSI18N.t('toast.pngPrintReady')))
+      .catch(()=>toast(HOKSI18N.t('toast.tooLarge')));
+  },60);
 }
 
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
@@ -549,24 +636,48 @@ function checkAdminSession() {
   }
 }
 
-// El desplegable es el componente compartido palette-picker.js: cada opción
-// muestra la paleta entera, y se navega con teclado. Aquí solo queda el estado.
-let _palPicker = null;
-function buildPalDropdown() {
-  const host = document.getElementById('palPicker');
-  if (!host || !palettes.length) return;
-  if (_palPicker) { _palPicker.setPalettes(palettes, _lockedPalIdx); return; }
-  _palPicker = HOKSPAL.mount(host, {
-    palettes, index: _lockedPalIdx, label: 'Palette',
-    onChange: i => { _lockedPalIdx = i; },
-  });
+function dotsHtml(colors, max=6) {
+  return colors.slice(0,max).map(c => `<span class="pal-option-dot" style="background:${c}"></span>`).join('');
 }
+function buildPalDropdown() {
+  const list = document.getElementById('palList');
+  if (!list || !palettes.length) return;
+  list.innerHTML = palettes.map((p,i) => `
+    <div class="pal-option${i===_lockedPalIdx?' selected':''}" onclick="selectPal(${i})">
+      <div style="display:flex;gap:2px;">${dotsHtml(p.colors)}</div>
+      <span class="pal-option-name">${p.name}</span>
+    </div>`).join('');
+  updatePalTrigger();
+}
+function selectPal(idx) {
+  _lockedPalIdx = idx;
+  document.querySelectorAll('.pal-option').forEach((el,i) => el.classList.toggle('selected', i===idx));
+  document.getElementById('palList').classList.remove('open');
+  updatePalTrigger(); updatePalPreviewBar();
+}
+function togglePalList() { document.getElementById('palList').classList.toggle('open'); }
+document.addEventListener('click', e => {
+  const dd = document.getElementById('palDropdown');
+  if (dd && !dd.contains(e.target)) document.getElementById('palList')?.classList.remove('open');
+});
 function togglePaletteLock() {
   _paletteLocked = !_paletteLocked;
-  const btn = document.getElementById('palLockBtn'), wrap = document.getElementById('palSelectWrap');
-  if (btn) { btn.textContent = HOKSI18N.en(_paletteLocked ? 'lock.specific' : 'lock.random'); btn.style.background = _paletteLocked ? 'var(--ink)' : 'var(--surface)'; btn.style.color = _paletteLocked ? '#fff' : 'var(--ink3)'; btn.style.borderColor = _paletteLocked ? 'var(--ink)' : 'var(--border-dark)'; }
-  if (wrap) wrap.style.display = _paletteLocked ? 'flex' : 'none';
-  if (_paletteLocked) buildPalDropdown();
+  const btn=document.getElementById('palLockBtn'), wrap=document.getElementById('palSelectWrap');
+  if(btn){btn.textContent=_paletteLocked?HOKSI18N.en('lock.specific'):HOKSI18N.en('lock.random');btn.style.background=_paletteLocked?'var(--ink)':'var(--surface)';btn.style.color=_paletteLocked?'#fff':'var(--ink3)';btn.style.borderColor=_paletteLocked?'var(--ink)':'var(--border-dark)';}
+  if(wrap) wrap.style.display=_paletteLocked?'flex':'none';
+  if(_paletteLocked) buildPalDropdown();
+}
+function onManualPalChange() {}
+function updatePalTrigger() {
+  const pal=palettes[_lockedPalIdx]; if(!pal) return;
+  const d=document.getElementById('palTriggerDots'), n=document.getElementById('palTriggerName');
+  if(d) d.innerHTML=pal.colors.slice(0,6).map(c=>`<span class="pal-trigger-dot" style="background:${c}"></span>`).join('');
+  if(n) n.textContent=pal.name;
+}
+function updatePalPreviewBar() {
+  const prev=document.getElementById('palSelectorPreview');
+  if(!prev||!palettes[_lockedPalIdx]) return;
+  prev.innerHTML=palettes[_lockedPalIdx].colors.map(c=>`<span style="flex:1;background:${c}"></span>`).join('');
 }
 
 function getActivePalette(rng) {

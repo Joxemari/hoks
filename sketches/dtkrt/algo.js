@@ -31,6 +31,7 @@
   const P_INVERT  = 0.25;   // 1 de cada 4: suelo claro, punto oscuro
   const P_ACCENT  = 0.4;    // acento suelto de 1 celda
   const P_TWIN    = 0.18;   // segunda región
+  const REF       = 600;    // lado corto de referencia (calibra el grano)
 
   // ── Roles de color ─────────────────────────────────────────────────────────
   // Tres papeles de la paleta ordenada por luma: suelo, bloque, punto. El bloque
@@ -163,8 +164,8 @@
     }
     ctx.restore();
 
-    // 6. Grano.
-    E.applyGrain(ctx, W, H, E.bakeGrain(W, H, pal.colors, grainScale));
+    // 6. Grano — unit mantiene su tamaño al subir a resolución de impresión.
+    E.grain(ctx, W, H, pal.colors, grainScale, E.unit(W, H, REF));
 
     return { pal, n, drawn, region, twin, accent, roles: R };
   }

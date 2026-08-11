@@ -34,7 +34,7 @@
 .hb-btn[disabled] { opacity:0.4; cursor:default; }
 .hb-strip { display:flex; gap:4px; overflow-x:auto; min-height:46px; padding:2px 0; }
 .hb-item { position:relative; flex-shrink:0; }
-.hb-item canvas { display:block; width:46px; height:46px; outline:1px solid rgba(0,0,0,0.12); cursor:pointer; }
+.hb-item canvas { display:block; height:46px; width:auto; outline:1px solid rgba(0,0,0,0.12); cursor:pointer; }
 .hb-item .hb-x { position:absolute; top:-5px; right:-5px; width:14px; height:14px; line-height:12px;
   text-align:center; font-size:10px; border-radius:50%; border:1px solid var(--border-dark,#d0d0d0);
   background:#fff; color:var(--ink3,#bbb); cursor:pointer; }
@@ -94,6 +94,11 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
   // Una paleta "auto" la elige el RNG entre las que había al capturar. Si la
   // lista cambia, la pieza cambia: por eso se guarda el nombre resuelto y se
   // marca la deriva en vez de fingir que la receta sigue valiendo.
+  // La proporción es parte de la receta: la misma seed en vertical no es un
+  // recorte de la cuadrada, es otra composición. Todo render parte de aquí.
+  function dimsFor(r, shortSide) {
+    return global.HOKS.fmtDims(r.format || 'square', shortSide);
+  }
   function renderRecipe(ctx, w, h, r, palettes) {
     const W = global.HOKS && global.HOKS[String(r.work || '').toUpperCase()];
     if (!W) return null;
@@ -115,7 +120,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       `<button class="hb-btn" id="hb-new" title="Lote nuevo">+</button></div>` +
       `<div class="hb-strip" id="hb-strip"></div>` +
       `<div class="hb-row"><select id="hb-res">` +
-      `<option value="600">600 px</option><option value="1800">1800 px</option><option value="7200">7200 px · impresión</option>` +
+      global.HOKS.SHEET_IDS.map(id => `<option value="${id}"${id === global.HOKS.DEFAULT_SHEET ? ' selected' : ''}>${id} · 300 dpi</option>`).join('') +
       `</select><button class="hb-btn" id="hb-dl">↓ PNG</button>` +
       `<button class="hb-btn" id="hb-pub" title="Publicar a la galería">▲</button></div>` +
       `<span class="hb-note" id="hb-note"></span>`;
@@ -148,8 +153,9 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
       b.items.forEach((it, i) => {
         const wrap = document.createElement('div'); wrap.className = 'hb-item';
-        const c = document.createElement('canvas'); c.width = 92; c.height = 92;
-        const res = renderRecipe(c.getContext('2d'), 92, 92, it, palettes);
+        const c = document.createElement('canvas');
+        const d = dimsFor(it, 64); c.width = d.W; c.height = d.H;
+        const res = renderRecipe(c.getContext('2d'), d.W, d.H, it, palettes);
         if (res && it.palName && res.pal && res.pal.name !== it.palName) {
           wrap.classList.add('drift');
           wrap.title = `#${it.seed} · ${it.work.toUpperCase()} · deriva: era ${it.palName}, ahora ${res.pal.name}`;
@@ -188,17 +194,21 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     // y no cuando guardaste. Es la ventaja de haber guardado reglas y no píxeles.
     function download() {
       const b = openBatch(); if (!b || !b.items.length) return;
-      const size = parseInt($('hb-res').value, 10);
+      const sheet = $('hb-res').value;
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
-      note(`generando ${b.items.length} PNG a ${size}px…`);
+      note(`generando ${b.items.length} PNG a ${sheet} · 300 dpi…`);
+      // exportPrint re-renderiza a tamaño de papel (no reescala) y avisa si el
+      // navegador no puede con ese lienzo.
       b.items.forEach((it, i) => setTimeout(() => {
-        const c = document.createElement('canvas'); c.width = size; c.height = size;
-        if (!renderRecipe(c.getContext('2d'), size, size, it, palettes)) return;
-        const a = document.createElement('a');
-        a.download = `${b.name.replace(/\s+/g, '_')}_${i + 1}_${it.work}_${it.seed}.png`;
-        a.href = c.toDataURL('image/png'); a.click();
+        try {
+          global.HOKS.exportPrint({
+            name: `${b.name.replace(/\s+/g, '_')}_${i + 1}_${it.work}_${it.seed}`,
+            fmt: it.format || 'square', sheet,
+            render: (ctx, W, H) => renderRecipe(ctx, W, H, it, palettes),
+          });
+        } catch (e) { note('⚠ ' + e.message); }
         if (i === b.items.length - 1) note('');
-      }, i * 250));
+      }, i * 400));
     }
 
     // Publicar: el lote es la curaduría, así que la galería pública se alimenta
@@ -216,8 +226,9 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
         note('publicando ' + work.toUpperCase() + '…');
         const gallery = await pullJson(work + '.json');
         for (const it of byWork[work]) {
-          const c = document.createElement('canvas'); c.width = 600; c.height = 600;
-          if (!renderRecipe(c.getContext('2d'), 600, 600, it, palettes)) continue;
+          const c = document.createElement('canvas');
+          const d = dimsFor(it, global.HOKS.PREVIEW_SHORT); c.width = d.W; c.height = d.H;
+          if (!renderRecipe(c.getContext('2d'), d.W, d.H, it, palettes)) continue;
           gallery.unshift({ seed: it.seed, dataUrl: c.toDataURL('image/png'), savedAt: Date.now() });
           it.published = true;
         }

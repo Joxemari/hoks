@@ -33,7 +33,8 @@
   #single { max-width: min(100%, calc((100vh - 160px) * 1.414)); max-height: calc(100vh - 160px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
   .sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 980px; }
   .sheet canvas { width: 100%; outline: 1px solid rgba(0,0,0,0.1); cursor: pointer; display:block; }
-  .sheet figcaption { padding: 3px 2px; font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }  .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .sheet figcaption { padding: 3px 2px; font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
+  .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; }
   .traits { font-size: 10px; display:flex; flex-direction:column; gap:4px; }
   .traits .t { display:flex; justify-content:space-between; gap:6px; }
   .traits .k { color: var(--ink3); text-transform: uppercase; font-size: 9px; letter-spacing:0.06em; }
@@ -62,6 +63,15 @@
       <button id="rnd">↻ New seed (space)</button>
     </div>
 
+    <div class="group">
+      <span class="lbl">Format</span>
+      <select id="fmt">
+        <option value="square">□ Square (1:1)</option>
+        <option value="vertical">▯ Vertical (1:√2)</option>
+        <option value="horizontal">▭ Horizontal (√2:1)</option>
+      </select>
+      <span class="hintline">proporción DIN — misma seed, otra composición</span>
+    </div>
     <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
       <div id="palPicker"></div>
@@ -165,8 +175,15 @@ if (typeof HOKS === 'undefined' || !HOKS.PLLSG || !HOKS.loadAllPalettes) {
 }
 const WORK = HOKS.PLLSG;            // ← para clonar a otra obra, cambia solo esto
 const WORK_SLUG = 'pllsg', REPO = 'Joxemari/hoks';
-const W = 1414, H = 1000;           // resolución de producción (el PNG coincide)
-const SHEET_N = 12, SHEET_W = 354, SHEET_H = 250;
+const BASE = 1000, SHEET_BASE = 250;   // lado corto: hoja y hoja de contactos
+const SHEET_N = 12;
+let FORMAT = 'horizontal';
+let W, H, SHEET_W, SHEET_H;
+function applyFormat() {
+  const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
+  const t = HOKS.fmtDims(FORMAT, SHEET_BASE); SHEET_W = t.W; SHEET_H = t.H;
+  single.width = W; single.height = H;
+}
 
 const single = document.getElementById('single');
 const sctx = single.getContext('2d');
@@ -200,13 +217,15 @@ function flash(msg) { const t = $('toast'); t.textContent = msg; t.classList.add
 // ── RENDER ──
 let batch = null;
 const SLUG = 'pllsg';
-// La receta ES la pieza. El nombre de la paleta se resuelve con un render de 8px
-// (el stream del RNG no depende del tamaño) para poder detectar deriva después.
+// La receta ES la pieza: seed + params + paleta + FORMATO (la proporción cambia
+// la composición, no solo el recorte). El nombre de la paleta se resuelve con un
+// render de 8px —el stream del RNG no depende del tamaño— para detectar deriva.
 function recipeFor(s) {
   const c = document.createElement('canvas'); c.width = c.height = 8;
   let palName = null;
   try { const r = WORK.render(c.getContext('2d'), 8, 8, s >>> 0, { ...palOpts(), params: params() }); palName = r && r.pal && r.pal.name; } catch (e) {}
-  return { work: SLUG, seed: s >>> 0, params: params(), palSel: palPicker ? palPicker.selection : 'auto', palName };
+  return { work: SLUG, seed: s >>> 0, format: FORMAT, base: BASE, params: params(),
+           palSel: palPicker ? palPicker.selection : 'auto', palName };
 }
 
 function renderSingle() {
@@ -376,17 +395,18 @@ async function launchToProduction() {
 }
 
 // ── INIT: pinta YA con el fallback (nunca en blanco), luego trae TODAS las paletas ──
-HOKSLAB.mountWorkPicker($('workPicker'), 'pllsg', () => seed);
 buildWeightSliders();
 populatePalList();
+$('fmt').value = FORMAT;
+$('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
+HOKSLAB.mountWorkPicker($('workPicker'), 'pllsg', () => seed);
 batch = HOKSBATCH.mount($('batchPanel'), {
-  work: SLUG,
-  getRecipe: recipeFor,
-  getPalettes: () => PALETTES,
+  work: SLUG, getRecipe: recipeFor, getPalettes: () => PALETTES,
   toast: m => { $('status').textContent = m; },
 });
 // Un lote puede mezclar obras: para pintar su tira hacen falta todos los algos.
 HOKSLAB.loadAlgos(() => batch.refresh());
+applyFormat();
 renderSingle();
 HOKS.loadAllPalettes().then(p => {
   if (p && p.length) { PALETTES = p; populatePalList();  refresh(); }

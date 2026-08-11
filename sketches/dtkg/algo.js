@@ -17,6 +17,7 @@
   const E = global.HOKS;
 
   const THRESHOLD = 0.8;   // probabilidad de que un círculo exista (composition <= threshold dibuja)
+  const REF = 600;         // lado corto de referencia (calibra el grano)
 
   // ── Entrada principal ───────────────────────────────────────────────────────
   // opts: { palettes, locked, lockedIdx, params:{ grainScale, grid, threshold } }
@@ -37,9 +38,12 @@
     const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
     E.drawMeshGradient(ctx, W, H, colors, rngBg);
 
-    // 2. Rejilla — n de 1 a 7. Celda = size*1.1 (10% de aire), rejilla centrada.
+    // 2. Rejilla — n de 1 a 7. Celda = size*1.1 (10% de aire). La rejilla es
+    //    CUADRADA y se centra en el lienzo: en cuadrado ocupa todo el ancho;
+    //    en vertical y horizontal se inscribe en el lado corto.
+    const S = Math.min(W, H);
     const n = params.grid ? params.grid : rng.int(1, 7);
-    const size = W / (n * 1.1);
+    const size = S / (n * 1.1);
     const gridW = n * size * 1.1;
     const offsetX = (W - gridW) / 2;
     const offsetY = (H - gridW) / 2;
@@ -71,7 +75,8 @@
     ctx.restore();
 
     // 4. Grano (los defaults del engine a escala 1 son los números del original).
-    E.applyGrain(ctx, W, H, E.bakeGrain(W, H, colors, grainScale));
+    //    unit mantiene el tamaño del grano al subir a resolución de impresión.
+    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
 
     return { pal, n, drawn };
   }

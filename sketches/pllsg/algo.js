@@ -18,8 +18,11 @@
   const E = global.HOKS;
 
   const OFF_WHITE = '#f5f0ea';
-  const GRAIN_TILE = 14;     // tamaño de tesela del acabado ajedrez
+  const GRAIN_TILE = 14;     // tesela del acabado ajedrez, a resolución de referencia
   const PLACE_ATT  = 24;     // intentos de colocación antes de rendirse
+  const REF        = 1000;   // lado corto de referencia: las medidas en px se
+                             // escalan por unit = min(W,H)/REF, así el dibujo es
+                             // el mismo en pantalla y a resolución de impresión.
 
   // Arquetipos de densidad: cuántas pills y cuánto pueden solaparse.
   const ARCHETYPES = [
@@ -56,7 +59,7 @@
   }
 
   // Acabado "ajedrez": teselas alternas recortadas a la silueta de la pill.
-  function drawChessPill(ctx, x1, y1, x2, y2, t, col, rng) {
+  function drawChessPill(ctx, x1, y1, x2, y2, t, col, rng, tile) {
     const [r, g, b] = E.hexToRgb(col), alt = rng.bool(0.5) ? '#0a0a0a' : '#f5f0ea';
     const ang = Math.atan2(y2 - y1, x2 - x1), cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
     const hL = Math.hypot(x2 - x1, y2 - y1) / 2 + t / 2, hw = t / 2;
@@ -67,13 +70,13 @@
       [cx - Math.cos(ang) * hL + Math.sin(ang) * hw, cy - Math.sin(ang) * hL - Math.cos(ang) * hw],
     ];
     const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-    const x0 = Math.floor(Math.min(...xs) / GRAIN_TILE) * GRAIN_TILE, x1e = Math.ceil(Math.max(...xs) / GRAIN_TILE) * GRAIN_TILE;
-    const y0 = Math.floor(Math.min(...ys) / GRAIN_TILE) * GRAIN_TILE, y1e = Math.ceil(Math.max(...ys) / GRAIN_TILE) * GRAIN_TILE;
+    const x0 = Math.floor(Math.min(...xs) / tile) * tile, x1e = Math.ceil(Math.max(...xs) / tile) * tile;
+    const y0 = Math.floor(Math.min(...ys) / tile) * tile, y1e = Math.ceil(Math.max(...ys) / tile) * tile;
     ctx.save(); pillPath(ctx, x1, y1, x2, y2, t); ctx.clip();
-    for (let tx = x0; tx < x1e; tx += GRAIN_TILE) for (let ty = y0; ty < y1e; ty += GRAIN_TILE) {
-      const ev = (Math.round(tx / GRAIN_TILE) + Math.round(ty / GRAIN_TILE)) % 2 === 0;
+    for (let tx = x0; tx < x1e; tx += tile) for (let ty = y0; ty < y1e; ty += tile) {
+      const ev = (Math.round(tx / tile) + Math.round(ty / tile)) % 2 === 0;
       ctx.fillStyle = ev ? `rgb(${r},${g},${b})` : alt;
-      ctx.fillRect(tx, ty, GRAIN_TILE, GRAIN_TILE);
+      ctx.fillRect(tx, ty, tile, tile);
     }
     ctx.restore();
   }
@@ -94,7 +97,7 @@
     ctx.restore();
   }
 
-  function drawPill(ctx, x1, y1, x2, y2, t, col, style, rng, colors, blndOp) {
+  function drawPill(ctx, x1, y1, x2, y2, t, col, style, rng, colors, blndOp, u) {
     // Sin clamping de extremos: la colocación ya garantiza que la cápsula cabe.
     // (Clampar movía los extremos → cambiaba la longitud → proporciones distintas.)
     const [r, g, b] = E.hexToRgb(col);
@@ -112,12 +115,12 @@
       ctx.strokeStyle = `rgba(${r},${g},${b},${rng.range(0.30, 0.65)})`; ctx.lineWidth = t; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
     } else if (style === 'outline') {
-      const bw = Math.max(6, t * 0.07), oc = E.luma(col) > 0.5 ? '#0a0a0a' : '#f5f0ea';
+      const bw = Math.max(6 * u, t * 0.07), oc = E.luma(col) > 0.5 ? '#0a0a0a' : '#f5f0ea';
       ctx.globalCompositeOperation = 'source-over';
       pillPath(ctx, x1, y1, x2, y2, t); ctx.fillStyle = `rgb(${r},${g},${b})`; ctx.fill();
       pillPath(ctx, x1, y1, x2, y2, t); ctx.strokeStyle = oc; ctx.lineWidth = bw; ctx.stroke();
     } else if (style === 'chess') {
-      drawChessPill(ctx, x1, y1, x2, y2, t, col, rng);
+      drawChessPill(ctx, x1, y1, x2, y2, t, col, rng, GRAIN_TILE * u);
     } else if (style === 'gradient') {
       ctx.globalCompositeOperation = 'source-over';
       const a = Math.atan2(y2 - y1, x2 - x1), px = -Math.sin(a), py = Math.cos(a), h = t / 2;
@@ -164,6 +167,7 @@
     const params = opts.params || {};
     const palettes = opts.palettes || E.normalizePalettes(E.DEFAULTS);
     const grainScale = params.grainScale == null ? 1 : params.grainScale;
+    const u = E.unit(W, H, REF);   // escala de las medidas en px absolutos
     const rng = new E.Rng(seed);
 
     // Paleta: fijada manualmente o elegida por peso.
@@ -211,9 +215,9 @@
     for (const p of pills) {
       styleCount[p.style] = (styleCount[p.style] || 0) + 1;
       const dx = Math.cos(p.angle) * p.hl, dy = Math.sin(p.angle) * p.hl;
-      drawPill(ctx, p.cx - dx, p.cy - dy, p.cx + dx, p.cy + dy, p.thick, p.col, p.style, rng, colors, blndOp);
+      drawPill(ctx, p.cx - dx, p.cy - dy, p.cx + dx, p.cy + dy, p.thick, p.col, p.style, rng, colors, blndOp, u);
     }
-    E.applyGrain(ctx, W, H, E.bakeGrain(W, H, colors, grainScale));
+    E.grain(ctx, W, H, colors, grainScale, u);
 
     return { pal, arch, num, styleCount, bgColors };
   }

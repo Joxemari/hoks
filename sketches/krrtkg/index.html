@@ -53,6 +53,15 @@
       <button id="rnd">↻ New seed (space)</button>
     </div>
     <div class="group">
+      <span class="lbl">Format</span>
+      <select id="fmt">
+        <option value="square">□ Square (1:1)</option>
+        <option value="vertical">▯ Vertical (1:√2)</option>
+        <option value="horizontal">▭ Horizontal (√2:1)</option>
+      </select>
+      <span class="hintline">proporción DIN — misma seed, otra composición</span>
+    </div>
+    <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
       <div id="palPicker"></div>
       <span class="hintline">incluye activas e inactivas</span>
@@ -95,8 +104,15 @@
 <script src="./algo.js"></script>
 <script>
 const WORK = HOKS.KRRTKG;
-const W = 600, H = 600;             // resolución de producción (el PNG coincide)
-const SHEET_N = 12, SHEET_W = 300, SHEET_H = 300;
+const BASE = 600, SHEET_BASE = 300;   // lado corto: hoja y hoja de contactos
+const SHEET_N = 12;
+let FORMAT = 'square';
+let W, H, SHEET_W, SHEET_H;
+function applyFormat() {
+  const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
+  const t = HOKS.fmtDims(FORMAT, SHEET_BASE); SHEET_W = t.W; SHEET_H = t.H;
+  single.width = W; single.height = H;
+}
 
 const single = document.getElementById('single');
 const sctx = single.getContext('2d');
@@ -117,13 +133,15 @@ function palOpts() { return palPicker ? palPicker.opts() : { palettes: PALETTES 
 
 let batch = null;
 const SLUG = 'krrtkg';
-// La receta ES la pieza. El nombre de la paleta se resuelve con un render de 8px
-// (el stream del RNG no depende del tamaño) para poder detectar deriva después.
+// La receta ES la pieza: seed + params + paleta + FORMATO (la proporción cambia
+// la composición, no solo el recorte). El nombre de la paleta se resuelve con un
+// render de 8px —el stream del RNG no depende del tamaño— para detectar deriva.
 function recipeFor(s) {
   const c = document.createElement('canvas'); c.width = c.height = 8;
   let palName = null;
   try { const r = WORK.render(c.getContext('2d'), 8, 8, s >>> 0, { ...palOpts(), params: params() }); palName = r && r.pal && r.pal.name; } catch (e) {}
-  return { work: SLUG, seed: s >>> 0, params: params(), palSel: palPicker ? palPicker.selection : 'auto', palName };
+  return { work: SLUG, seed: s >>> 0, format: FORMAT, base: BASE, params: params(),
+           palSel: palPicker ? palPicker.selection : 'auto', palName };
 }
 
 function renderSingle() {
@@ -194,16 +212,17 @@ document.addEventListener('keydown', e => {
 });
 
 // Init: pinta YA con fallback, luego trae TODAS las paletas.
-HOKSLAB.mountWorkPicker($('workPicker'), 'krrtkg', () => seed);
 populateSelect();
+$('fmt').value = FORMAT;
+$('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
+HOKSLAB.mountWorkPicker($('workPicker'), 'krrtkg', () => seed);
 batch = HOKSBATCH.mount($('batchPanel'), {
-  work: SLUG,
-  getRecipe: recipeFor,
-  getPalettes: () => PALETTES,
+  work: SLUG, getRecipe: recipeFor, getPalettes: () => PALETTES,
   toast: m => { $('status').textContent = m; },
 });
 // Un lote puede mezclar obras: para pintar su tira hacen falta todos los algos.
 HOKSLAB.loadAlgos(() => batch.refresh());
+applyFormat();
 renderSingle();
 HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});
 </script>

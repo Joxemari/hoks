@@ -32,11 +32,17 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   rareza, sin guardar. La rareza es lenguaje de edición: describe la
   improbabilidad de una tirada que nadie posee, así que vive en el laboratorio.
   Las heredadas (`pills.html`, `krrtk.html`, `dtk.html`, `bzrs.html`) siguen con
-  su generador inline **congelado** — son inactivas y su algoritmo todavía no
-  está graduado; se les quitó Save porque publicar es cosa del lote.
+  su generador inline **congelado**: son inactivas y su algoritmo aún no está
+  graduado, así que ahí sí quedan Generate, formato/pliego, Save (que además
+  apunta la paleta en `data/palette-usage.json`, ver `usage.js`) y Download.
+  Publicar lo nuevo, en cambio, es cosa del lote.
 - **`about.html`** — Texto leído de `data/site.json` (con *fallback* embebido).
 - **`palettes.html`** — Galería de paletas desde `data/palettes.json`; muestra
-  activas/inactivas y su rareza/probabilidad.
+  activas/inactivas y su rareza/probabilidad. Arriba, una **rejilla de uso** al
+  estilo del grid de actividad de GitHub: una celda por paleta en orden de
+  catálogo (12 por fila), tono en 5 niveles según cuántas obras guardadas la
+  usan, celda con borde = paleta retirada. Click en una celda = filtrar por esa
+  paleta; cada tarjeta lleva su contador `×N` y hay orden *por uso*.
 - **`admin.html`** — Panel protegido por contraseña. Gestiona paletas, familias
   (`works.json`), contenido (`site.json`) y el token de GitHub. Escribe
   commiteando directamente a `main` por la Contents API. En cada familia
@@ -48,8 +54,7 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 - **`nav.js`** — Se incluye en todas las páginas. Inyecta `<nav>` (logo "hoks",
   dropdown *Work* con las 8 series, About, Palettes), favicon SVG, footer
   (© hoks, contacto, Instagram si está en `site.json`) y badge ADMIN si hay
-  sesión. Aparte de esto y del picker de abajo no hay más CSS/JS global: cada
-  página trae su propio `<style>`.
+  sesión. Aloja también el i18n (`window.HOKSI18N`, diccionarios EU/ES/EN).
 - **`palette-picker.js`** — Selector de paleta, **componente único** de toda la
   web y del laboratorio (`HOKSPAL.mount(host, {palettes, index, onChange})`).
   Cada opción muestra la paleta entera en una franja de color —elegir paleta es
@@ -57,6 +62,13 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   buscar, Esc). Trae su propio CSS inyectado; las páginas solo ponen un
   `<div id="palPicker">`. Antes esto estaba copiado en 8 páginas con 3 variantes
   distintas: si tocas el desplegable, tócalo aquí.
+- **`work-page.js`** — La página de obra graduada, una sola vez: narrativa,
+  piezas elegidas y lienzo vivo mudo.
+- **`usage.js`** — Registro de uso de paletas (`data/palette-usage.json`).
+  `HOKSUSAGE.load()` / `.counts()` los lee (palettes.html) y `.record()` añade
+  una fila al Guardar en las páginas heredadas. Sin token de admin no escribe.
+
+No hay otro CSS/JS global: cada página trae su propio `<style>`.
 
 ### Laboratorio (`sketches/`)
 
@@ -90,6 +102,17 @@ redeploy de Pages.
 - **`plls.json`, `krrtkg.json`, `dtkg.json`, `pllsg.json`, `dtkrt.json`,
   `gallery*.json`** —
   Obras guardadas como `{seed, dataUrl(base64), savedAt}`. Pueden pesar MB.
+  Ojo: **no guardan la paleta**, y no se puede re-derivar del seed (la elección
+  por peso depende de qué paletas estaban activas ese día). De ahí el índice
+  aparte.
+- **`palette-usage.json`** — Índice de uso: una fila por obra guardada con
+  `{family, seed, savedAt, paletteId, paletteName, source}`. Lo escribe la página
+  de obra al Guardar (`source:"save"`). Las filas `source:"backfill"` son las 26
+  obras que ya existían: se reconstruyeron re-renderizando cada seed con el
+  algoritmo de su época (rescatado de git) y comparando píxel a píxel contra el
+  PNG guardado — no por parecido de color, que en las familias con grano y mesh
+  gradient se equivoca. Es un índice **derivado**: si se borran obras de una
+  galería, sus filas quedan huérfanas y hay que quitarlas a mano.
 
 > ⚠️ Los `*.json` en la **raíz** (`bzrs.json`, `dtk.json`, `krrtk.json`, etc.)
 > están vacíos (`[]`) y son restos heredados. La fuente real es `data/`. No los
@@ -114,6 +137,15 @@ redeploy de Pages.
   de un color por forma. Conserva el grano. Es la dirección actual del trabajo.
 - **Traits/rareza**: cada draw calcula traits (paleta, arquetipo, cobertura…) y
   una rareza global (`common`→`legendary`) por probabilidad combinada.
+- **Formato**: toda obra existe en tres proporciones — **cuadrado** (1:1),
+  **vertical** y **horizontal** (1:√2, la proporción DIN). No es un recorte: se
+  le pasan otras `W`/`H` al algoritmo y él recompone. El algoritmo no puede
+  suponer ni proporción ni resolución — todo se mide contra `W`, `H` o
+  `min(W,H)`, y las constantes en px se escalan por `HOKS.unit(W,H,REF)`.
+- **Impresión**: "Download PNG" **vuelve a renderizar** fuera de pantalla al
+  tamaño del pliego (A4 / **A3** / A2 / A1, 300 dpi); el lienzo de la página es
+  solo vista previa (lado corto 760 px). Mismo seed + mismo formato = la misma
+  imagen a cualquier tamaño, así que lo que se ve es lo que se imprime.
 
 ## Despliegue
 
