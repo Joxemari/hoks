@@ -90,7 +90,7 @@ const DEF = {
   vertexMin: 9,
   vertexMax: 15,
 
-  vueltasMin: 3,       // nº de pasadas del esqueleto sobre el marco
+  vueltasMin: 2,       // el retejido puede bajar una vuelta si el nudo no cabe       // nº de pasadas del esqueleto sobre el marco
   vueltasMax: 3,       // más pasadas = más cruces = más trama
   vueltaGiro: 0.62,    // rotación entre pasadas, × TWO_PI
   vueltaEscala: 0.86,
@@ -105,6 +105,7 @@ const DEF = {
   caboMargen:   1.20,        // cuánto se pasa del borde de la hebra que lo tapa
   caboTope:     0.45,        // fracción de la distancia al cruce vecino que NO se rebasa        // cuánto se pasa del borde de la hebra que lo tapa        // cuánto se mete el cabo de cada sección bajo la hebra que lo tapa, x anchura
   cruceMinDeg:  40,          // ángulo mínimo de cruce: por debajo, la hebra de abajo queda en astilla
+  cruceSepMin:  1.20,        // separación mínima entre cruces, × anchura
   volteoMax:    0.34,        // volteos por cruce que se toleran: más, y deja de alternar
   reintentos:   10,           // tejidos alternativos que se prueban con el mismo seed
   densidad:     true,        // entre los que pasan, quedarse con el más entrelazado
@@ -208,7 +209,8 @@ function generate(seed, cfg) {
   const puntua = (t) => t.conserva >= cfg.grosorMinimo
                      && t.ang.grados >= cfg.cruceMinDeg
                      && t.ciclos === 0
-                     && t.volteos <= cfg.volteoMax;
+                     && t.volteos <= cfg.volteoMax
+                     && t.sep >= cfg.cruceSepMin;
 
   for (let k = 0; k <= cfg.reintentos; k++) {
     for (let v = pedidas; v >= cfg.vueltasMin; v--) {
@@ -222,6 +224,7 @@ function generate(seed, cfg) {
       // deja pintar con pocos volteos se lee como tejido; uno que
       // necesita diez ya no alterna y el ojo no lo sigue.
       t.volteos = t.nudo.plano.volteados / max(t.nudo.cruces.length, 1);
+      t.sep = sepCruces(t.nodes) / max(t.width, 1e-9);
 
       if (!intento) { intento = t; vueltas = v; continue; }
       const pasa = puntua(t), pasaba = puntua(intento);
@@ -236,6 +239,7 @@ function generate(seed, cfg) {
       // entre dos que fallan: manda el ángulo, y SÓLO el ángulo — desempatar
       // por trama aquí elige justo el tejido con más cruces rasantes
       else gana = t.ciclos !== intento.ciclos ? t.ciclos < intento.ciclos
+                : abs(t.sep - intento.sep) > 0.08 ? t.sep > intento.sep
                 : abs(t.volteos - intento.volteos) > 0.05 ? t.volteos < intento.volteos
                 : t.ang.grados > intento.ang.grados;
       if (gana) { intento = t; vueltas = v; }
@@ -248,7 +252,7 @@ function generate(seed, cfg) {
   const { cuts, order, depth, cruces, plano, crossings } = intento.nudo;
 
 
-  return { seed, family, vueltas, pedidas, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
+  return { seed, family, vueltas, pedidas, sep: intento.sep, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
 }
 
 // ------------------------------------------------------------
@@ -608,6 +612,24 @@ function minAnguloCruce(nodes) {
     }
   }
   return { grados: n ? peor : 180, cruces: n };
+}
+
+// Separación mínima ENTRE CRUCES. Dos cruces más juntos que la anchura
+// dejan entre ellos una sección más corta que la propia cinta: sus dos
+// remates se pisan, la geometría degenera y salen astillas. No es un
+// problema de orden —esos cruces se ordenan bien— sino de tejido.
+function sepCruces(nodes) {
+  const P = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    for (let j = i + 2; j < nodes.length - 1; j++) {
+      const q = segParams(nodes[i].p, nodes[i+1].p, nodes[j].p, nodes[j+1].p);
+      if (q) P.push(p5.Vector.lerp(nodes[i].p, nodes[i+1].p, q.t));
+    }
+  }
+  let m = Infinity;
+  for (let a = 0; a < P.length; a++)
+    for (let b = a + 1; b < P.length; b++) m = min(m, p5.Vector.dist(P[a], P[b]));
+  return m === Infinity ? 99 : m;
 }
 
 // Distancia mínima real entre hebras que NO se cruzan. Los cruces se
