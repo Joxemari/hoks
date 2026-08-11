@@ -96,10 +96,43 @@ mide 3,3 px sobre 900 y los píxeles mezclados la despistaban en las dos
 direcciones. La sonda actual mide, en cada punto **a lo ancho** de la hebra de
 abajo, cuánto se acerca al fondo el píxel más claro a cada lado del cruce.
 
-De los nueve cruces defectuosos, al menos dos están en obras que **pasan las
-ocho puertas del tejido** (`sep` 3,07 y 3,08). No es que se elija mal el
-tejido —comprobado: `generate()` devuelve justo uno de los candidatos que
-pasan todo— así que la causa está en el dibujo, no en la selección.
+**Ese 3,9 % / 1,9 % tampoco es de fiar.** El detector marca mal en proporción
+directa a lo rasante que sea el cruce:
+
+| ángulo | cruces | marcados |
+|---|---|---|
+| 38–45° | 5 | 2 (40 %) |
+| 45–55° | 14 | 3 (21 %) |
+| 55–70° | 46 | 2 (4 %) |
+| 70–90° | 84 | 0 |
+
+Monótono perfecto: firma de artefacto de medida, no de defecto. Dos de los
+nueve se han mirado a ojo (seeds 250815244 y 617742974, ambos en obras que
+pasan las ocho puertas) y **los dos tienen la incisión entera a los dos
+lados**. En un cruce rasante la zona de solape es un rombo largo y el sondeo
+por rectas se pierde.
+
+Medir esto con rayos y umbral de color no da más de sí. Lo que hace falta es
+comparar el render contra la geometría esperada del halo, no caminar líneas.
+
+### El fallo que sí es real
+
+Seeds para los que **ningún** tejido pasa las ocho puertas: 2 de 60. Ahí se
+dibuja el menos malo y sale agolpado. No es un fallo de selección —enumerando
+los 22 candidatos, `generate()` devuelve justo uno de los que pasan cuando
+existe— sino que para esos seeds no existe ninguno.
+
+Se probó dejar bajar a **una vuelta** como último recurso: rescata los 2, pero
+**se revirtió**. Un tejido de una vuelta con cero cruces cumple todas las demás
+puertas *al vacío* —sin cruces no hay separación, ni volteos, ni ciclos, ni
+remates que medir— y se convierte en el óptimo degenerado: 28 obras de 60 se
+derrumbaron a una vuelta. Añadir una puerta de cruces mínimos lo empeoró (43
+de 60), porque el desempate cuenta cuántas puertas incumple cada tejido y el
+degenerado incumple **una** mientras que un nudo de verdad incumple dos.
+
+La lección: las puertas son todas condiciones *sobre los cruces*, así que un
+tejido sin cruces las gana todas. Arreglarlo pide rediseñar la puntuación, no
+un parche.
 
 **El cruce invertido ya se mide**, y está validado: con el orden de pintado
 invertido dispara en 52 de 54 cruces. Lo que sigue sin validar es su

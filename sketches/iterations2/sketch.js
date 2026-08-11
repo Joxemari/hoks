@@ -1584,6 +1584,7 @@ function segDist(a, b, c, d) {
              min(pointSegDist(c,a,b), pointSegDist(d,a,b)));
 }
 
+
 // ============================================================
 // TRIAJE POR LOTES
 // No se filtra mientras se genera. Se genera un lote entero, se
