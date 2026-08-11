@@ -1016,7 +1016,7 @@ function renderComposition(ctx, ox, oy, S, comp) {
   // se solapan los cuerpos.
   const juntas = (comp.plano.juntas || []).map(j => arcoDeParam(mapped, acum, j));
   const esJunta = (d) => juntas.some(j => abs(j - d) < 1e-6);
-  const pizca = max(1, width * 0.03);
+  const pizca = max(1, width * 0.15);
 
   for (const i of orden) {
     const [a, b] = secciones[i];
