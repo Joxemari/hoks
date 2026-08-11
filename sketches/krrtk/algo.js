@@ -21,6 +21,7 @@
   const THRESHOLD  = 0.6;   // probabilidad de NO dibujar un cuadrado (rng.next() > threshold dibuja)
   const RECT_ALPHA = 0.61;  // 155/255 — cuadrados semitransparentes sobre el gradiente
   const REF        = 600;   // lado corto de referencia (calibra el grano)
+  const BG_GRADIENT = 30;   // % de degradado cuando el fondo va en 'auto' (el resto, plano)
   const P_WIDE     = 0.5;   // en DIN: un campo con mucho aire vs dos ceñidos
 
   // ── Entrada principal ───────────────────────────────────────────────────────
@@ -72,7 +73,7 @@
     // Fondo: mesh gradient (lo propio de la obra) o plano si el laboratorio pide
     // 'solid'. Se sortea en su propio stream, así la composición no se entera.
     const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
-    if (E.bgMode(params) === 'solid') {
+    if (E.pickBg(seed, params, BG_GRADIENT) === 'solid') {
       ctx.fillStyle = colors[rngBg.int(0, colors.length - 1)];
       ctx.fillRect(0, 0, W, H);
     } else {
@@ -151,5 +152,5 @@
     };
   }
 
-  (global.HOKS = global.HOKS || {}).KRRTK = { render, traits, THRESHOLD, RECT_ALPHA };
+  (global.HOKS = global.HOKS || {}).KRRTK = { render, traits, THRESHOLD, RECT_ALPHA, BG_GRADIENT };
 })(typeof window !== 'undefined' ? window : globalThis);

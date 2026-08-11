@@ -19,9 +19,7 @@
   button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
   button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
   button:hover { opacity: 0.78; }
-  .seed-box { display:flex; gap:4px; }
-  .seed-box button { width:34px; padding:6px 0; }
-  .seed-box input { text-align:center; }
+  #seed { text-align:center; letter-spacing:0.06em; }
   /* justify-content:center centra, pero si el contenido NO cabe reparte el
      desbordamiento a los dos lados y la parte de arriba queda fuera de alcance:
      el scroll no llega. `safe center` centra solo mientras quepa y, cuando no,
@@ -69,12 +67,9 @@
     </div>
     <div class="group">
       <span class="lbl">Seed</span>
-      <div class="seed-box">
-        <button class="ghost" id="prev">◀</button>
-        <input type="number" id="seed" value="0">
-        <button class="ghost" id="next">▶</button>
-      </div>
-      <button id="rnd">↻ New seed (space)</button>
+      <input type="text" id="seed" value="0" inputmode="numeric" spellcheck="false">
+      <button id="rnd">↻ Nueva seed (espacio)</button>
+      <span class="hintline">se puede teclear una seed para volver a ella · ← → recorren vecinas</span>
     </div>
     <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
@@ -89,6 +84,12 @@
         <option value="gradient">Gradient</option>
       </select>
       <span class="hintline">transversal: es lo que separaba a KRT de KRTG</span>
+      <div id="bgAuto">
+        <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
+          · plano <span id="bgPS">—</span></span>
+        <input type="range" id="bgP" min="0" max="100" step="5" value="50">
+        <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre</span>
+      </div>
     </div>
     <div class="group">
       <span class="lbl">Grain</span>
@@ -156,6 +157,7 @@ function params() {
   return {
     field:      $('field').value,
     bg:         $('bg').value,
+    bgProbs: { gradient: parseInt($('bgP').value, 10) },
     grainScale: parseFloat($('grain').value),
     grid:       parseInt($('grid').value, 10) || 0,
     threshold:  parseFloat($('th').value),
@@ -228,13 +230,19 @@ function renderSheet() {
 // seed, y el lote entero — que es lo que de verdad se publica.
 let VIEW = 'single';                 // 'single' | 'sheet' | 'batch'
 function setView(v) {
+  // Sin lote no hay nada que enseñar, y cambiar de vista solo escondería la
+  // pieza para dejar un hueco gris. Se queda donde está y lo dice.
+  if (v === 'batch' && !(batch && batch.open)) {
+    $('status').textContent = 'No hay lote abierto — elige uno o crea otro con + en el panel';
+    return;
+  }
   VIEW = v; sheetMode = (v === 'sheet');
   $('single').style.display = v === 'single' ? 'block' : 'none';
   $('sheetGrid').style.display = v === 'single' ? 'none' : 'grid';
   $('sheet').textContent = v === 'sheet' ? '▦ Vista única (g)' : '▦ Hoja de contactos (g)';
   $('batchView').textContent = v === 'batch' ? '▦ Vista única (b)' : '▦ Ver el lote (b)';
   if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; }
-  else if (v === 'batch') { $('status').textContent = batch ? batch.renderFull($('sheetGrid')) : '—'; }
+  else if (v === 'batch') { $('sheetGrid').innerHTML = ''; $('status').textContent = batch.renderFull($('sheetGrid')); }
   else renderSingle();
 }
 function setSheet(on) { setView(on ? 'sheet' : 'single'); }
@@ -246,14 +254,23 @@ function populateSelect() {
 }
 
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
-$('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
-$('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('grid').oninput = () => { $('gridV').textContent = $('grid').value === '0' ? 'auto' : $('grid').value + '×' + $('grid').value; refresh(); };
 $('th').oninput = () => { $('thV').textContent = parseFloat($('th').value).toFixed(2); refresh(); };
 $('rot').onclick = () => { ROT = !ROT; $('rot').textContent = ROT ? '⟲ Ver tumbado (r)' : '⟲ Ver de pie (r)'; applyFormat(); refresh(); };
 $('field').onchange = refresh;
-$('bg').onchange = refresh;
+$('bg').onchange = () => { syncBgAuto(); refresh(); };
+// El % de degradado solo manda cuando el fondo va en 'auto': si lo fuerzas a
+// plano o a degradado, el peso sobra y se esconde en vez de mentir.
+function syncBgAuto() {
+  const auto = $('bg').value === 'auto', p = parseInt($('bgP').value, 10);
+  $('bgAuto').style.display = auto ? '' : 'none';
+  $('bgPV').textContent = p + '%'; $('bgPS').textContent = (100 - p) + '%';
+}
+$('bgP').value = (WORK.BG_GRADIENT != null ? WORK.BG_GRADIENT : 50);
+$('bgP').oninput = () => { syncBgAuto(); refresh(); };
+syncBgAuto();
+
 $('grain').onchange = refresh;
 $('sheet').onclick = () => setView(VIEW === 'sheet' ? 'single' : 'sheet');
 $('batchView').onclick = () => setView(VIEW === 'batch' ? 'single' : 'batch');

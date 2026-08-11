@@ -149,6 +149,35 @@
     return (v && v !== 'auto') ? v : (dflt || 'auto');
   }
 
+  // En 'auto' el fondo es una TIRADA, no una constante: cada obra trae su
+  // tendencia (KRRTK gradiente, DTKRT plano, PLLS a medias) y el laboratorio la
+  // mueve. Un solo porcentaje —el del gradiente— porque solo hay dos salidas y
+  // así el otro es 100−p: no pueden dejar de sumar 100.
+  //   params.bgProbs = { gradient: 0..100 }
+  // Stream propio: elegir el fondo no puede mover la composición, ni siquiera
+  // en las obras donde el sorteo antes no existía.
+  const BG_STREAM = 0x5EEDB6;
+  // Un LCG sembrado y leído UNA vez no sirve para esto: dos seeds contiguas dan
+  // primeras tiradas que difieren en 0,0004, así que un lote entero de seeds
+  // seguidas cae del mismo lado del umbral y el peso no se cumple. Hace falta
+  // avalancha antes de mirar (murmur3 finalizer): así seeds vecinas dan valores
+  // sin relación.
+  function hash01(x) {
+    x = (x ^ 0x9E3779B9) >>> 0;
+    x = Math.imul(x ^ (x >>> 16), 0x85EBCA6B) >>> 0;
+    x = Math.imul(x ^ (x >>> 13), 0xC2B2AE35) >>> 0;
+    return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+  }
+  function pickBg(seed, params, dfltGradientPct) {
+    const v = params && params.bg;
+    if (v === 'solid' || v === 'gradient') return v;
+    const p = (params && params.bgProbs && params.bgProbs.gradient != null)
+      ? params.bgProbs.gradient : (dfltGradientPct == null ? 50 : dfltGradientPct);
+    if (p >= 100) return 'gradient';
+    if (p <= 0) return 'solid';
+    return hash01((seed ^ BG_STREAM) >>> 0) < p / 100 ? 'gradient' : 'solid';
+  }
+
   // ── Campo: cuadrado inscrito o nativo del pliego ────────────────────────────
   // El pliego y el campo son dos decisiones distintas. Un campo CUADRADO puede
   // ir sobre cualquiera de los tres pliegos —un cuadrado centrado en un DIN es
@@ -372,7 +401,7 @@
 
   global.HOKS = {
     Rng, hexToRgb, luma, lerpColor, softLight,
-    drawMeshGradient, bakeGrain, applyGrain, grain, bgMode, fieldMode, fieldGrid, FIELD_MARGIN,
+    drawMeshGradient, bakeGrain, applyGrain, grain, bgMode, pickBg, hash01, fieldMode, fieldGrid, FIELD_MARGIN,
     ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
     FORMATS, SHEETS, SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,
     fmtDims, previewDims, printDims, unit, mountFormat, exportPrint,

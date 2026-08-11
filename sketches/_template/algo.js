@@ -21,6 +21,7 @@
   const E = global.HOKS;
 
   const REF = 1000;   // lado corto de referencia: calibra el grano y las medidas en px
+  const BG_GRADIENT = 30;   // % de degradado cuando el fondo va en 'auto' (el resto, plano)
 
   // opts: { palettes, locked, lockedIdx, params:{ grainScale, count } }
   function render(ctx, W, H, seed, opts) {
@@ -63,5 +64,5 @@
     };
   }
 
-  (global.HOKS = global.HOKS || {}).TEMPLATE = { render, traits };
+  (global.HOKS = global.HOKS || {}).TEMPLATE = { render, traits, BG_GRADIENT };
 })(typeof window !== 'undefined' ? window : globalThis);
