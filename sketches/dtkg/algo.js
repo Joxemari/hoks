@@ -45,32 +45,38 @@
       E.drawMeshGradient(ctx, W, H, colors, rngBg);
     }
 
-    // 2. Rejilla — n de 1 a 7. Celda = size*1.1 (10% de aire). La rejilla es
-    //    CUADRADA y se centra en el lienzo: en cuadrado ocupa todo el ancho;
-    //    en vertical y horizontal se inscribe en el lado corto.
-    const S = Math.min(W, H);
+    // 2. Rejilla — n de 1 a 7. Celda = size*1.1 (10% de aire). La CELDA es
+    //    siempre cuadrada: n fija las celdas del lado corto —donde la rejilla
+    //    va a hueso, como siempre— y el lado largo se lleva las que le caben.
+    //    El formato no añade aire: añade retículo.
+    const S = Math.min(W, H), L = Math.max(W, H);
     const n = params.grid ? params.grid : rng.int(1, 7);
     const size = S / (n * 1.1);
-    const gridW = n * size * 1.1;
-    const offsetX = (W - gridW) / 2;
-    const offsetY = (H - gridW) / 2;
+    const pitch = size * 1.1;
+    // floor, no round: la celda va a hueso en el lado corto, así que en el largo
+    // hay que quedarse con las que CABEN — redondear hacia arriba desbordaría y
+    // recortaría los círculos del borde.
+    const nL = Math.max(n, Math.floor(L / pitch + 1e-9));
+    const cols = W >= H ? nL : n, rows = W >= H ? n : nL;
+    const offsetX = (W - cols * pitch) / 2;
+    const offsetY = (H - rows * pitch) / 2;
 
-    // Matriz de composición (consume n×n tiradas, como el original).
+    // Matriz de composición (una tirada por celda, como el original).
     const composition = [];
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < cols; i++) {
       composition.push([]);
-      for (let j = 0; j < n; j++) composition[i].push(rng.next());
+      for (let j = 0; j < rows; j++) composition[i].push(rng.next());
     }
 
     // 3. Círculos.
     ctx.save();
     ctx.translate(offsetX, offsetY);
     let drawn = 0;
-    for (let i = 0; i < n; i++) {
-      for (let j = 0; j < n; j++) {
+    for (let i = 0; i < cols; i++) {
+      for (let j = 0; j < rows; j++) {
         if (composition[i][j] <= threshold) {
-          const x = (i + 0.5) * size * 1.1;
-          const y = (j + 0.5) * size * 1.1;
+          const x = (i + 0.5) * pitch;
+          const y = (j + 0.5) * pitch;
           ctx.fillStyle = colors[rng.int(0, colors.length - 1)];
           ctx.beginPath();
           ctx.arc(x, y, size / 2, 0, Math.PI * 2);
@@ -85,12 +91,13 @@
     //    unit mantiene el tamaño del grano al subir a resolución de impresión.
     E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
 
-    return { pal, n, drawn };
+    return { pal, n, cols, rows, drawn };
   }
 
   // Traits + rareza global a partir de un resultado de render().
   function traits(res) {
-    const total = res.n * res.n;
+    const cols = res.cols || res.n, rows = res.rows || res.n;
+    const total = cols * rows;
     const coveragePct = Math.round((res.drawn / total) * 100);
     const coverageLabel = coveragePct > 70 ? 'Full' : coveragePct > 40 ? 'Scattered' : coveragePct > 0 ? 'Sparse' : 'Empty';
     const coverageR = coveragePct === 0 ? 'legendary' : coveragePct > 70 ? 'uncommon' : 'common';
@@ -106,7 +113,7 @@
     return {
       list: [
         { key: 'Palette',  val: res.pal.name, colors: res.pal.colors, rarity: palR },
-        { key: 'Grid',     val: res.n + '×' + res.n + ' · ' + gridLabel, rarity: gridR },
+        { key: 'Grid',     val: cols + '×' + rows + ' · ' + gridLabel, rarity: gridR },
         { key: 'Coverage', val: coverageLabel + ' · ' + coveragePct + '%', rarity: coverageR },
       ],
       overall,

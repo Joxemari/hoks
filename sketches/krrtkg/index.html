@@ -38,7 +38,7 @@
 </head>
 <body>
   <aside class="panel">
-    <div class="lab-title">krrtkg · lab<small>subdivisión + mesh + grano</small></div>
+    <div class="lab-title">hoks · lab<small>aquí se genera y aquí se elige</small></div>
     <div class="group">
       <span class="lbl">Work</span>
       <div id="workPicker"></div>
@@ -78,6 +78,11 @@
     <div class="group">
       <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
       <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
+    </div>
+    <div class="group">
+      <span class="lbl">Campos · lado corto · <span id="fsV">1</span></span>
+      <input type="range" id="fs" min="1" max="3" step="1" value="1">
+      <span class="hintline">solo en vertical/horizontal: la unidad es el cuadrado, el pliego lleva más</span>
     </div>
     <div class="group">
       <span class="lbl">Threshold · <span id="thV">0.60</span></span>
@@ -137,6 +142,7 @@ function params() {
     grainScale: parseFloat($('grain').value),
     threshold:  parseFloat($('th').value),
     rectAlpha:  parseFloat($('al').value),
+    fieldsShort: parseInt($('fs').value, 10) || 1,
   };
 }
 let palPicker = null;
@@ -208,6 +214,7 @@ $('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('th').oninput = () => { $('thV').textContent = parseFloat($('th').value).toFixed(2); refresh(); };
 $('al').oninput = () => { $('alV').textContent = parseFloat($('al').value).toFixed(2); refresh(); };
+$('fs').oninput = () => { $('fsV').textContent = $('fs').value; refresh(); };
 $('bg').onchange = refresh;
 $('grain').oninput = () => { $('grainV').textContent = parseFloat($('grain').value).toFixed(1); refresh(); };
 $('sheet').onclick = () => setSheet(!sheetMode);
