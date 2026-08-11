@@ -42,6 +42,10 @@
   <aside class="panel">
     <div class="lab-title">dtkrt · lab<small>borobilak + karratuak</small></div>
     <div class="group">
+      <span class="lbl">Work</span>
+      <div id="workPicker"></div>
+    </div>
+    <div class="group">
       <span class="lbl">Seed</span>
       <div class="seed-box">
         <button class="ghost" id="prev">◀</button>
@@ -61,7 +65,7 @@
     </div>
     <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
-      <select id="pal"></select>
+      <div id="palPicker"></div>
       <span class="hintline">incluye activas e inactivas</span>
     </div>
     <div class="group">
@@ -84,6 +88,10 @@
       <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
     </div>
     <div class="group">
+      <span class="lbl">Batch</span>
+      <div id="batchPanel"></div>
+    </div>
+    <div class="group">
       <button id="save">↓ Save PNG (s)</button>
       <button class="ghost" id="sheet">▦ Contact sheet (g)</button>
     </div>
@@ -96,6 +104,9 @@
     <span class="hint" id="status">—</span>
   </main>
 
+<script src="../../palette-picker.js"></script>
+<script src="../_lab.js"></script>
+<script src="../_batch.js"></script>
 <script src="../_engine.js"></script>
 <script src="./algo.js"></script>
 <script>
@@ -113,7 +124,7 @@ function applyFormat() {
 const single = document.getElementById('single');
 const sctx = single.getContext('2d');
 let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
-let seed = (Math.random() * 0xFFFFFFFF) >>> 0;
+let seed = HOKSLAB.initialSeed();
 let sheetMode = false;
 const $ = id => document.getElementById(id);
 
@@ -124,7 +135,21 @@ function params() {
     threshold:  parseFloat($('th').value),
   };
 }
-function palOpts() { const v = $('pal').value; return v === 'auto' ? { palettes: PALETTES } : { palettes: PALETTES, locked: true, lockedIdx: parseInt(v, 10) }; }
+let palPicker = null;
+function palOpts() { return palPicker ? palPicker.opts() : { palettes: PALETTES }; }
+
+let batch = null;
+const SLUG = 'dtkrt';
+// La receta ES la pieza: seed + params + paleta + FORMATO (la proporción cambia
+// la composición, no solo el recorte). El nombre de la paleta se resuelve con un
+// render de 8px —el stream del RNG no depende del tamaño— para detectar deriva.
+function recipeFor(s) {
+  const c = document.createElement('canvas'); c.width = c.height = 8;
+  let palName = null;
+  try { const r = WORK.render(c.getContext('2d'), 8, 8, s >>> 0, { ...palOpts(), params: params() }); palName = r && r.pal && r.pal.name; } catch (e) {}
+  return { work: SLUG, seed: s >>> 0, format: FORMAT, base: BASE, params: params(),
+           palSel: palPicker ? palPicker.selection : 'auto', palName };
+}
 
 function renderSingle() {
   $('seed').value = seed;
@@ -156,8 +181,14 @@ function renderSheet() {
     const c = document.createElement('canvas'); c.width = SHEET_W; c.height = SHEET_H;
     try { WORK.render(c.getContext('2d'), SHEET_W, SHEET_H, s, { ...palOpts(), params: params() }); } catch (e) {}
     const fig = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = '#' + s;
+    fig.style.position = 'relative';
     fig.appendChild(c); fig.appendChild(cap);
     c.addEventListener('click', () => { seed = s; setSheet(false); });
+    // El ojo decide mirando las doce: apartar una tiene que ser un gesto de aquí.
+    const plus = document.createElement('button');
+    plus.className = 'hb-add'; plus.textContent = '+'; plus.title = 'Añadir al lote (a)';
+    plus.onclick = ev => { ev.stopPropagation(); if (batch && batch.add(s)) { plus.classList.add('done'); plus.textContent = '✓'; } };
+    fig.appendChild(plus);
     grid.appendChild(fig);
   }
 }
@@ -171,15 +202,14 @@ function setSheet(on) {
 function refresh() { sheetMode ? renderSheet() : renderSingle(); }
 function populateSelect() {
   $('palCount').textContent = PALETTES.length;
-  $('pal').innerHTML = '<option value="auto">Random (weighted)</option>' +
-    PALETTES.map((pl, i) => `<option value="${i}">${pl.name}${pl.active === false ? ' · (inactive)' : ''}</option>`).join('');
+  if (palPicker) palPicker.setPalettes(PALETTES);
+  else palPicker = HOKSLAB.mountPalettePicker($('palPicker'), { palettes: PALETTES, onChange: refresh });
 }
 
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
 $('prev').onclick = () => { seed = (seed - 1) >>> 0; refresh(); };
 $('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
-$('pal').onchange = refresh;
 $('grid').oninput = () => { $('gridV').textContent = $('grid').value === '0' ? 'auto' : $('grid').value + '×' + $('grid').value; refresh(); };
 $('th').oninput = () => { $('thV').textContent = parseFloat($('th').value).toFixed(2); refresh(); };
 $('grain').oninput = () => { $('grainV').textContent = parseFloat($('grain').value).toFixed(1); refresh(); };
@@ -193,12 +223,20 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft') { seed = (seed - 1) >>> 0; refresh(); }
   else if (e.key === 's' || e.key === 'S') $('save').click();
   else if (e.key === 'g' || e.key === 'G') setSheet(!sheetMode);
+  else if (e.key === 'a' || e.key === 'A') { if (batch) batch.add(seed); }
 });
 
 // Init: pinta YA con fallback, luego trae TODAS las paletas.
 populateSelect();
 $('fmt').value = FORMAT;
 $('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
+HOKSLAB.mountWorkPicker($('workPicker'), 'dtkrt', () => seed);
+batch = HOKSBATCH.mount($('batchPanel'), {
+  work: SLUG, getRecipe: recipeFor, getPalettes: () => PALETTES,
+  toast: m => { $('status').textContent = m; },
+});
+// Un lote puede mezclar obras: para pintar su tira hacen falta todos los algos.
+HOKSLAB.loadAlgos(() => batch.refresh());
 applyFormat();
 renderSingle();
 HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});

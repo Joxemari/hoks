@@ -123,7 +123,6 @@ canvas { display: block; height: min(72vh, 600px); width: auto; max-width: calc(
       <button class="btn" onclick="generate()">↻ <span data-i18n="btn.generate">Generate</span></button>
       <button class="btn btn-outline" onclick="exportCard()">⎘ <span data-i18n="btn.copycard">Copy Card</span></button>
       <button class="btn btn-outline" onclick="saveToGallery()">+ <span data-i18n="btn.save">Save</span></button>
-      <button class="btn btn-outline" id="batchBtn" onclick="saveToBatch()" style="display:none">+ <span>Save to Batch</span></button>
       <button class="btn btn-outline" onclick="downloadHD()">↓ <span data-i18n="btn.download">Download PNG</span></button>
     </div>
     <div class="sidebar-section" id="formatMount"></div>
@@ -267,10 +266,7 @@ function applyFormat(){
 }
 FMT=HOKS.mountFormat(document.getElementById('formatMount'),{
   work:'bzrs', defaultFormat:'square',
-  // El formato es la PRIMERA decisión, no un ajuste posterior: elegirlo fija
-  // el campo de trabajo y la obra se genera ya dentro de él. Por eso no se
-  // readapta la pieza actual — se tira una seed nueva en el formato nuevo.
-  onChange(){ applyFormat(); generate(); }
+  onChange(){ applyFormat(); draw(currentSeed); }
 });
 applyFormat();
 
@@ -369,7 +365,7 @@ function generate(){currentSeed=(Math.random()*0xFFFFFFFF)>>>0;currentTimestamp=
 
 function loadGallery(){fetch(RAW+'bzrs.json?t='+Date.now()).then(r=>r.ok?r.json():[]).then(data=>{gallery=data;renderGallery();}).catch(()=>{gallery=[];renderGallery();});}
 async function saveGallery(){await ghPush('data/bzrs.json',gallery);}
-async function saveToGallery(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/png');const ts=Date.now();gallery.unshift({seed:currentSeed,format:FMT.format,dataUrl,savedAt:ts});if(gallery.length>50)gallery=gallery.slice(0,50);toast(HOKSI18N.en('toast.saving'));await saveGallery();await HOKSUSAGE.record('bzrs',currentSeed,ts,lastPal);renderGallery();toast(HOKSI18N.en('toast.savedGallery'));}
+async function saveToGallery(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/png');const ts=Date.now();gallery.unshift({seed:currentSeed,dataUrl,savedAt:ts});if(gallery.length>50)gallery=gallery.slice(0,50);toast(HOKSI18N.en('toast.saving'));await saveGallery();await HOKSUSAGE.record('bzrs',currentSeed,ts,lastPal);renderGallery();toast(HOKSI18N.en('toast.savedGallery'));}
 function loadExactIteration(item){const canvas=document.getElementById('c');const img=new Image();img.onload=()=>{canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const ctx=canvas.getContext('2d');ctx.globalCompositeOperation='source-over';ctx.drawImage(img,0,0,canvas.width,canvas.height);};img.src=item.dataUrl;currentSeed=item.seed; lastPal = null;currentTimestamp=item.savedAt?new Date(item.savedAt):new Date();animateSeed(item.seed);const tsEl=document.getElementById('timestampDisplay');const ts=currentTimestamp;if(tsEl)tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' · '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});const tl=document.getElementById('traitList');if(tl)tl.innerHTML='<div style="font-size:9px;color:var(--ink3);letter-spacing:0.06em;">'+HOKSI18N.t('trait.savedMsg')+'</div>';const or=document.getElementById('overallRarity');if(or)or.innerHTML='';}
 function renderGallery(){const section=document.getElementById('gallerySection'),grid=document.getElementById('galleryGrid');if(!gallery.length){section.style.display='none';return;}section.style.display='block';grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-thumb" data-i="${i}"><img src="${item.dataUrl}" alt="bzrs ${item.seed}"><div style="display:flex;align-items:center;justify-content:space-between;padding:2px 6px 4px;"><span class="gallery-thumb-seed">#${item.seed}</span></div></div>`).join('');grid.querySelectorAll('.gallery-thumb').forEach(el=>{el.addEventListener('click',()=>{const item=gallery[parseInt(el.dataset.i)];if(item)loadExactIteration(item);});});}
 
@@ -440,8 +436,8 @@ function exportCard(){
   card.toBlob(async blob=>{try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast(HOKSI18N.t('toast.cardCopied'));}catch(e){const a=document.createElement('a');a.download='bzrs_'+currentSeed+'.png';a.href=card.toDataURL('image/png');a.click();toast(HOKSI18N.t('toast.downloaded'));}});
 }
 
-function checkBatchButton(){try{const active=JSON.parse(localStorage.getItem('hoks-active-batch')||'null');const btn=document.getElementById('batchBtn');if(btn){if(active&&active.work==='bzrs'){btn.style.display='';btn.textContent=`+ ${HOKSI18N.en('btn.savebatch')} "${active.name}" (${active.items.length})`;}else btn.style.display='none';}}catch(e){}}
-function saveToBatch(){const src=document.getElementById('c');const dataUrl=src.toDataURL('image/jpeg',0.9);const key='hoks-active-batch';try{const active=JSON.parse(localStorage.getItem(key)||'null');if(!active||active.work!=='bzrs'){toast(HOKSI18N.en('toast.noBatch').replace('%s','BZRS'));return;}active.items.push({seed:currentSeed,format:FMT.format,dataUrl,savedAt:Date.now(),palette:active.palette||'random'});localStorage.setItem(key,JSON.stringify(active));checkBatchButton();toast(HOKSI18N.en('toast.addedBatch').replace('%1',active.name).replace('%2',active.items.length));}catch(e){toast(HOKSI18N.t('toast.error'));}}
+
+
 
 
 
@@ -572,8 +568,6 @@ document.getElementById('c').addEventListener('click',generate);
 loadPalettes();
 loadGallery();
 checkAdminSession();
-checkBatchButton();
-setInterval(checkBatchButton,3000);
 </script>
 
 <script>

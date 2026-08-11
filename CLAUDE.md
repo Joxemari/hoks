@@ -10,7 +10,7 @@ controlado: cada pieza nace de una *seed* y un RNG determinista.
 
 **HTML/JS vanilla. Sin framework, sin bundler, sin paso de build.** Lo que se
 commitea es exactamente lo que se publica. Las obras **graduadas** (pllsg,
-krrtkg, dtkg) tienen su algoritmo en `sketches/<obra>/algo.js` (fuente única,
+krrtkg, dtkg, dtkrt) tienen su algoritmo en `sketches/<obra>/algo.js` (fuente única,
 compartida entre laboratorio y producción); las páginas de las demás series aún
 llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 única en todo el sitio: `Courier New` monoespaciada; fondo blanco, tinta `#111`.
@@ -24,14 +24,18 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   huecos con *demos* dibujadas en vivo. Filtra a las familias `active` según
   `data/works.json`. Reimplementa los algoritmos de dibujo de cada serie (versión
   reducida) para las celdas demo.
-- **Páginas de obra** (una por serie): `pills.html` (PLLS), `krrtk.html`,
-  `dtk.html`, `bzrs.html`, `krrtkg.html`, `dtkg.html`, `pllsg.html`. Cada una es
-  autónoma: canvas 2D + RNG sembrado + selector/peso de paletas + selector de
-  **formato/pliego** + sistema de *traits* y rareza en la barra lateral. Click en
-  el canvas = nueva variación. Botones: Generate, Copy Card, Save, Download PNG.
-  "Save" sube la imagen (dataURL) al JSON de la familia vía API de GitHub
-  (requiere sesión admin) y además apunta la paleta usada en
-  `data/palette-usage.json` (ver `usage.js`).
+- **Páginas de obra** — **archivo, no herramienta**. Las graduadas
+  (`pllsg.html`, `krrtkg.html`, `dtkg.html`, `dtkrt.html`) son cascarones de 20
+  líneas que cargan `work-page.js`: nombre, narrativa (`description` de
+  `works.json`), las piezas elegidas (`data/<obra>.json`, con lupa al clic) y un
+  **lienzo vivo mudo** que se regenera al clic — sin panel, sin traits, sin
+  rareza, sin guardar. La rareza es lenguaje de edición: describe la
+  improbabilidad de una tirada que nadie posee, así que vive en el laboratorio.
+  Las heredadas (`pills.html`, `krrtk.html`, `dtk.html`, `bzrs.html`) siguen con
+  su generador inline **congelado**: son inactivas y su algoritmo aún no está
+  graduado, así que ahí sí quedan Generate, formato/pliego, Save (que además
+  apunta la paleta en `data/palette-usage.json`, ver `usage.js`) y Download.
+  Publicar lo nuevo, en cambio, es cosa del lote.
 - **`about.html`** — Texto leído de `data/site.json` (con *fallback* embebido).
 - **`palettes.html`** — Galería de paletas desde `data/palettes.json`; muestra
   activas/inactivas y su rareza/probabilidad. Arriba, una **rejilla de uso** al
@@ -48,20 +52,35 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 ### Compartido
 
 - **`nav.js`** — Se incluye en todas las páginas. Inyecta `<nav>` (logo "hoks",
-  dropdown *Work* con las 7 series, About, Palettes), favicon SVG, footer
+  dropdown *Work* con las 8 series, About, Palettes), favicon SVG, footer
   (© hoks, contacto, Instagram si está en `site.json`) y badge ADMIN si hay
   sesión. Aloja también el i18n (`window.HOKSI18N`, diccionarios EU/ES/EN).
+- **`palette-picker.js`** — Selector de paleta, **componente único** de toda la
+  web y del laboratorio (`HOKSPAL.mount(host, {palettes, index, onChange})`).
+  Cada opción muestra la paleta entera en una franja de color —elegir paleta es
+  elegir color, no nombre— y se navega con teclado (↑↓, Home/End, tecleo para
+  buscar, Esc). Trae su propio CSS inyectado; las páginas solo ponen un
+  `<div id="palPicker">`. Antes esto estaba copiado en 8 páginas con 3 variantes
+  distintas: si tocas el desplegable, tócalo aquí.
+- **`work-page.js`** — La página de obra graduada, una sola vez: narrativa,
+  piezas elegidas y lienzo vivo mudo.
 - **`usage.js`** — Registro de uso de paletas (`data/palette-usage.json`).
   `HOKSUSAGE.load()` / `.counts()` los lee (palettes.html) y `.record()` añade
-  una fila al Guardar en cada página de obra. Sin token de admin no escribe nada.
+  una fila al Guardar en las páginas heredadas. Sin token de admin no escribe.
 
 No hay otro CSS/JS global: cada página trae su propio `<style>`.
 
 ### Laboratorio (`sketches/`)
 
-Motor compartido (`_engine.js`: Rng, mesh gradient, grano, paletas) + una
-carpeta por obra graduada con `algo.js` (el algoritmo, fuente única) y un
-harness de desarrollo (scrub de seeds, hoja de contactos). **El flujo creativo
+**Aquí se genera y aquí se elige.** Motor compartido (`_engine.js`: Rng, mesh
+gradient, grano, paletas) + `_lab.js` (selector de obra y de paleta) +
+`_batch.js` (lotes) + una carpeta por obra graduada con `algo.js` (el
+algoritmo, fuente única) y un harness (scrub de seeds, hoja de contactos).
+
+El circuito completo: **lab → lote → publicar → galería**. Se mira la hoja de
+contactos, se aparta con `+` o `a`, y el lote —una lista de *recetas*, no de
+imágenes— se publica desde el propio laboratorio a `data/<obra>.json`, que es lo
+que enseña la web. **El flujo creativo
 vive en p5/OpenProcessing; el laboratorio es porte + QA y lo opera Claude.**
 Ver `sketches/README.md` para el flujo completo de graduación.
 
@@ -74,12 +93,14 @@ redeploy de Pages.
 
 - **`works.json`** — Registro de familias: `id, name, slug, active, description,
   page, canvas`. El flag `active` decide qué series aparecen en la landing y en
-  el dropdown *Work* del nav. Hoy activas: **krrtkg, dtkg, pllsg**
-  (las que llevan grano); pills/krrtk/dtk/bzrs están inactivas.
+  el dropdown *Work* del nav. Hoy activas: **pllsg y dtkrt**; el resto
+  (pills/krrtk/dtk/bzrs/krrtkg/dtkg) están inactivas. La landing reimplementa el
+  algoritmo de cada serie salvo DTKRT, que consume su `algo.js` real.
 - **`palettes.json`** — Paletas con `colors`, `active`, `tags`, `notes`. Mezcla
   sets de Roni Kaufman (color_pals) y series Itten (contraste complementario).
 - **`site.json`** — `aboutText`, `footerEmail`, `footerInstagram`.
-- **`plls.json`, `krrtkg.json`, `dtkg.json`, `pllsg.json`, `gallery*.json`** —
+- **`plls.json`, `krrtkg.json`, `dtkg.json`, `pllsg.json`, `dtkrt.json`,
+  `gallery*.json`** —
   Obras guardadas como `{seed, dataUrl(base64), savedAt}`. Pueden pesar MB.
   Ojo: **no guardan la paleta**, y no se puede re-derivar del seed (la elección
   por peso depende de qué paletas estaban activas ese día). De ahí el índice
@@ -108,7 +129,12 @@ redeploy de Pages.
   (cientos de curvas Bézier con degradado entre dos colores).
 - **Variantes "G"** (KRRTKG/DTKG/PLLSG): añaden **mesh gradient** de fondo
   (interpolación bilineal de 4 esquinas, `drawMeshGradient`) y **grano de film**
-  por soft-light (`bakeGrain`/`applyGrain`). Es la dirección actual del trabajo.
+  por soft-light (`bakeGrain`/`applyGrain`).
+- **DTKRT**: la misma malla de DTK leída dos veces — *presencia* (¿hay círculo?) y
+  *pertenencia* (región crecida celda a celda). Rompe con las "G" a propósito:
+  fondo **plano** (figura/fondo necesita un plano estable), margen para que el
+  suelo se vea, y tres roles de color fijos por luma (suelo/bloque/punto) en vez
+  de un color por forma. Conserva el grano. Es la dirección actual del trabajo.
 - **Traits/rareza**: cada draw calcula traits (paleta, arquetipo, cobertura…) y
   una rareza global (`common`→`legendary`) por probabilidad combinada.
 - **Formato**: toda obra existe en tres proporciones — **cuadrado** (1:1),
