@@ -72,10 +72,37 @@ Cada composición reporta `cruces`, `gap`, `seg`, `giro`, y el triaje guarda
 además familia, paleta, secciones, volteos, juntas, separación entre cruces,
 anchura y ocupación. Ninguna filtra nada.
 
-**Ningún detector cuenta hasta que dispara con código roto a propósito.** Dos
-controles: invertir el orden de pintado entero (todos los cruces deben salir
-mal) y dejarlo intacto (ninguno). Un detector que sólo sabe decir cero no
-distingue "no hay defectos" de "no miro donde toca".
+**Ningún detector cuenta hasta que dispara con código roto a propósito.** Tres
+controles: invertir el orden de pintado entero (todos los cruces mal), repintar
+una sola mitad de abajo encima (inversión de medio lado) y dejarlo intacto
+(ninguno mal). Un detector que sólo sabe decir cero no distingue "no hay
+defectos" de "no miro donde toca".
+
+### Cómo se mide el halo
+
+Comparando el render contra **la máscara que la geometría exige**, no caminando
+rectas:
+
+```
+anillo(hebra de arriba, entre W/2 y W/2+gap)  ∩  cuerpo(hebra de abajo)
+```
+
+y midiendo qué fracción de esa máscara es fondo de verdad, **por separado a
+cada lado del eje de la hebra de arriba** — que es lo que distingue una
+inversión de medio lado de una entera. Es la misma cuenta a 40° que a 90°,
+porque la máscara ya se alarga sola con el ángulo.
+
+Los tres intentos anteriores caminaban rayos y decidían con un umbral de
+color, y los tres mintieron:
+
+| detector | a medias | sin corte | sesgo de ángulo | control |
+|---|---|---|---|---|
+| tres alturas, umbral duro | 1,3 % | 0 % | — | ninguno |
+| sonda sub-píxel | 3,9 % | 1,9 % | 40 % a 38-45° → 0 % a 70-90° | 96 % |
+| **máscara geométrica** | **1,0 %** | **0,5 %** | ninguno | **100 %** |
+
+El sesgo monótono con el ángulo era la pista: en un cruce rasante la zona de
+solape es un rombo largo y un sondeo por rectas se pierde dentro.
 
 Estado sobre 60 obras · 154 cruces, con la sonda sub-píxel:
 
@@ -96,43 +123,41 @@ mide 3,3 px sobre 900 y los píxeles mezclados la despistaban en las dos
 direcciones. La sonda actual mide, en cada punto **a lo ancho** de la hebra de
 abajo, cuánto se acerca al fondo el píxel más claro a cada lado del cruce.
 
-**Ese 3,9 % / 1,9 % tampoco es de fiar.** El detector marca mal en proporción
-directa a lo rasante que sea el cruce:
+### Dónde está todo lo que queda mal
 
-| ángulo | cruces | marcados |
-|---|---|---|
-| 38–45° | 5 | 2 (40 %) |
-| 45–55° | 14 | 3 (21 %) |
-| 55–70° | 46 | 2 (4 %) |
-| 70–90° | 84 | 0 |
+Sobre 80 obras y 199 cruces: **196 sanos, 3 defectuosos (1,5 %)** — y los tres
+en obras para las que **ningún** tejido pasa las ocho puertas (4 de 80, un
+5 %). Ahí se dibuja el menos malo y sale agolpado.
 
-Monótono perfecto: firma de artefacto de medida, no de defecto. Dos de los
-nueve se han mirado a ojo (seeds 250815244 y 617742974, ambos en obras que
-pasan las ocho puertas) y **los dos tienen la incisión entera a los dos
-lados**. En un cruce rasante la zona de solape es un rombo largo y el sondeo
-por rectas se pierde.
+Eso cierra el diagnóstico: **el dibujo no tiene un fallo propio.** No es un
+fallo de selección tampoco — enumerando los candidatos de cada seed,
+`generate()` devuelve justo uno de los que pasan cuando existe alguno. Todo lo
+que sobrevive viene del caso "para este seed no hay tejido limpio".
 
-Medir esto con rayos y umbral de color no da más de sí. Lo que hace falta es
-comparar el render contra la geometría esperada del halo, no caminar líneas.
+### La disyuntiva, medida
 
-### El fallo que sí es real
+Se probó forzar más trama con una puerta de cruces mínimos (`crucesMin 3`) más
+un suelo de una vuelta como último recurso:
 
-Seeds para los que **ningún** tejido pasa las ocho puertas: 2 de 60. Ahí se
-dibuja el menos malo y sale agolpado. No es un fallo de selección —enumerando
-los 22 candidatos, `generate()` devuelve justo uno de los que pasan cuando
-existe— sino que para esos seeds no existe ninguno.
+| | cruces/obra | cruces defectuosos | obras sin tejido limpio |
+|---|---|---|---|
+| como está | 2,5 | **1,5 %** | 5 % |
+| con `crucesMin 3` | 3,8 | 3,3 % | 10 % |
 
-Se probó dejar bajar a **una vuelta** como último recurso: rescata los 2, pero
-**se revirtió**. Un tejido de una vuelta con cero cruces cumple todas las demás
-puertas *al vacío* —sin cruces no hay separación, ni volteos, ni ciclos, ni
-remates que medir— y se convierte en el óptimo degenerado: 28 obras de 60 se
-derrumbaron a una vuelta. Añadir una puerta de cruces mínimos lo empeoró (43
-de 60), porque el desempate cuenta cuántas puertas incumple cada tejido y el
-degenerado incumple **una** mientras que un nudo de verdad incumple dos.
+Más trama cuesta correctez, y ahora se sabe cuánto. **Revertido**: la
+instrucción era cero defectos.
 
-La lección: las puertas son todas condiciones *sobre los cruces*, así que un
-tejido sin cruces las gana todas. Arreglarlo pide rediseñar la puntuación, no
-un parche.
+Dos trampas encontradas por el camino, por si se vuelve a intentar:
+
+- Un tejido de una vuelta **sin cruces cumple todas las demás puertas al
+  vacío** —sin cruces no hay separación, ni volteos, ni ciclos, ni remates que
+  medir— y se vuelve el óptimo degenerado: 28 obras de 60 se derrumbaron a una
+  vuelta. Hace falta la puerta de cruces mínimos para que las otras siete
+  signifiquen algo.
+- El desempate entre tejidos que fallan **no puede contar puertas a peso
+  igual**: el degenerado incumple una (no ser un nudo) y un nudo de verdad
+  incumple dos, así que gana el degenerado (43 de 60). Hay que ponderar por
+  severidad, y "no es un nudo" pesa más que todo lo demás.
 
 **El cruce invertido ya se mide**, y está validado: con el orden de pintado
 invertido dispara en 52 de 54 cruces. Lo que sigue sin validar es su
