@@ -48,31 +48,23 @@
     // L−2m=(n+k)·p sale p=(L−S)/k. Se toma el par (n,k) cuyo margen cae más
     // cerca del objetivo. La serialidad se hace explícita: el mismo sistema
     // dicho más veces, que es de lo que iba la serie.
-    const S = Math.min(W, H), L = Math.max(W, H);
-    const square = E.fieldMode(params) === 'square';   // un campo, centrado en el pliego
-    let a, cols, rows;                        // a = lado del campo; el margen es solo exterior
-    if (L - S < 1 || square) {                // un solo campo, como siempre
-      a = S - Math.round(S * MARGIN) * 2;
-      cols = rows = 1;
+    // n = campos en el lado corto. No se fija a mano: se elige el que deja el
+    // margen más cerca del del sistema, porque con la unidad cuadrada el margen
+    // no es un parámetro sino una consecuencia — y con UN campo el pliego DIN
+    // obliga a un 29%, el doble que sus hermanas. Así KRRTK, DTK y DTKRT se
+    // retiran del papel lo mismo y leen como una sola serie.
+    // El laboratorio lo fuerza con fieldsShort cuando interesa mirar otra cosa.
+    const S0 = Math.min(W, H), target = S0 * E.FIELD_MARGIN;
+    let G = null;
+    if (params.fieldsShort) {
+      G = E.fieldGrid(W, H, Math.max(1, params.fieldsShort), params);
     } else {
-      // n = campos en el lado corto. Por defecto UNO: es la lectura mínima —el
-      // pliego pide un campo más, no una retícula de campos— y la que conserva
-      // la escala de la unidad. El laboratorio puede subirlo para ver la serie
-      // dicha más veces (fieldsShort).
-      const n = Math.max(1, params.fieldsShort || 1);
-      let best = null;
-      for (let k = 1; k <= 6; k++) {
-        const p = (L - S) / k, m = (S - n * p) / 2;
-        if (m < S * 0.05) continue;           // sin aire el campo se come la hoja
-        const d = Math.abs(m - S * MARGIN);
-        if (!best || d < best.d) best = { p, m, k, d };
+      for (let n = 1; n <= 3; n++) {
+        const g = E.fieldGrid(W, H, n, params);
+        if (!G || Math.abs(g.margin - target) < Math.abs(G.margin - target)) G = g;
       }
-      a = best.p;
-      cols = W >= H ? n + best.k : n;
-      rows = W >= H ? n : n + best.k;
     }
-    // Los campos son contiguos; el margen queda repartido igual en los 4 lados.
-    const ox = (W - cols * a) / 2, oy = (H - rows * a) / 2;
+    const { pitch: a, cols, rows, ox, oy } = G;
 
     // 1. Mesh gradient de fondo (stream RNG independiente, como el original).
     // Fondo: mesh gradient (lo propio de la obra) o plano si el laboratorio pide

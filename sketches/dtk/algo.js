@@ -45,23 +45,13 @@
       E.drawMeshGradient(ctx, W, H, colors, rngBg);
     }
 
-    // 2. Rejilla — n de 1 a 7. Celda = size*1.1 (10% de aire). La CELDA es
-    //    siempre cuadrada: n fija las celdas del lado corto —donde la rejilla
-    //    va a hueso, como siempre— y el lado largo se lleva las que le caben.
-    //    El formato no añade aire: añade retículo.
-    const S = Math.min(W, H), L = Math.max(W, H);
+    // 2. Rejilla — n de 1 a 7, celda cuadrada, con el aire del sistema alrededor.
+    //    Antes iba a hueso contra el borde: era la única de la casa sin margen,
+    //    y con las demás retiradas del papel no leía como la misma serie.
     const n = params.grid ? params.grid : rng.int(1, 7);
-    const size = S / (n * 1.1);
-    const pitch = size * 1.1;
-    // floor, no round: la celda va a hueso en el lado corto, así que en el largo
-    // hay que quedarse con las que CABEN — redondear hacia arriba desbordaría y
-    // recortaría los círculos del borde.
-    const nL = E.fieldMode(params) === 'square'
-      ? n                                     // campo cuadrado, centrado en el pliego
-      : Math.max(n, Math.floor(L / pitch + 1e-9));
-    const cols = W >= H ? nL : n, rows = W >= H ? n : nL;
-    const offsetX = (W - cols * pitch) / 2;
-    const offsetY = (H - rows * pitch) / 2;
+    const G = E.fieldGrid(W, H, n, params);
+    const { pitch, cols, rows, ox: offsetX, oy: offsetY } = G;
+    const size = pitch / 1.1;                        // 10% de aire entre círculos
 
     // Matriz de composición (una tirada por celda, como el original).
     const composition = [];
