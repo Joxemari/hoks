@@ -93,8 +93,12 @@
       <span class="hintline">transversal: es lo que separaba a KRT de KRTG</span>
     </div>
     <div class="group">
-      <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
-      <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
+      <span class="lbl">Grain</span>
+      <select id="grain">
+        <option value="1">Con grano</option>
+        <option value="0">Sin grano</option>
+      </select>
+      <span class="hintline">o lo hay o no lo hay: media dosis de grano no es una decisión</span>
     </div>
     <div class="group">
       <span class="lbl">Count · <span id="countV">auto</span></span>
@@ -231,7 +235,7 @@ $('count').oninput = () => { $('countV').textContent = $('count').value === '0' 
 $('rot').onclick = () => { ROT = !ROT; $('rot').textContent = ROT ? '⟲ Ver tumbado (r)' : '⟲ Ver de pie (r)'; applyFormat(); refresh(); };
 $('field').onchange = refresh;
 $('bg').onchange = refresh;
-$('grain').oninput = () => { $('grainV').textContent = parseFloat($('grain').value).toFixed(1); refresh(); };
+$('grain').onchange = refresh;
 $('sheet').onclick = () => setSheet(!sheetMode);
 $('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `template_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
 

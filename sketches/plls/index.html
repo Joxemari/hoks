@@ -104,8 +104,12 @@
     </div>
 
     <div class="group">
-      <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
-      <input type="range" id="grain" min="0" max="2" step="0.1" value="1">
+      <span class="lbl">Grain</span>
+      <select id="grain">
+        <option value="1">Con grano</option>
+        <option value="0">Sin grano</option>
+      </select>
+      <span class="hintline">o lo hay o no lo hay: media dosis de grano no es una decisión</span>
     </div>
 
     <div class="group">
@@ -359,7 +363,7 @@ function applyRecipe(r) {
   $('bg').value = r.bgMode || 'auto';
   $('count').value = r.count || 0; $('countV').textContent = (r.count ? r.count : 'auto');
   $('thick').value = r.thickness || 1; $('thickV').textContent = (r.thickness || 1).toFixed(2);
-  $('grain').value = r.grainScale != null ? r.grainScale : 1; $('grainV').textContent = (r.grainScale != null ? r.grainScale : 1).toFixed(1);
+  $('grain').value = (r.grainScale === 0) ? '0' : '1';
   if (r.archProbs) archProbs = { ...r.archProbs };
   if (r.finishProbs) finishProbs = { ...r.finishProbs };
   buildWeightSliders(); updatePalTrigger();
@@ -384,7 +388,7 @@ $('field').onchange = refresh;
 $('bg').onchange = refresh;
 $('count').oninput = () => { $('countV').textContent = $('count').value === '0' ? 'auto' : $('count').value; refresh(); };
 $('thick').oninput = () => { $('thickV').textContent = parseFloat($('thick').value).toFixed(2); refresh(); };
-$('grain').oninput = () => { $('grainV').textContent = parseFloat($('grain').value).toFixed(1); refresh(); };
+$('grain').onchange = refresh;
 $('resetW').onclick = resetWeights;
 $('copyW').onclick = copyWeights;
 $('copyR').onclick = copyRecipe;
