@@ -225,15 +225,25 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       for (const work of Object.keys(byWork)) {
         note('publicando ' + work.toUpperCase() + '…');
         const gallery = await pullJson(work + '.json');
+        const usage = [];
         for (const it of byWork[work]) {
           const c = document.createElement('canvas');
           const d = dimsFor(it, global.HOKS.PREVIEW_SHORT); c.width = d.W; c.height = d.H;
-          if (!renderRecipe(c.getContext('2d'), d.W, d.H, it, palettes)) continue;
-          gallery.unshift({ seed: it.seed, dataUrl: c.toDataURL('image/png'), savedAt: Date.now() });
+          const res = renderRecipe(c.getContext('2d'), d.W, d.H, it, palettes);
+          if (!res) continue;
+          const savedAt = Date.now();
+          gallery.unshift({ seed: it.seed, dataUrl: c.toDataURL('image/png'), savedAt });
+          // La paleta que va al índice es la que ha salido en ESTE render, no la
+          // que tuviera la receta: si hubo deriva, manda el píxel publicado.
+          if (res.pal) usage.push({ family: work, seed: it.seed >>> 0, savedAt,
+                                    paletteId: res.pal.id, paletteName: res.pal.name });
           it.published = true;
         }
         try { await pushJson('data/' + work + '.json', gallery); }
         catch (e) { note('⚠ ' + work + ': ' + e.message); return; }
+        // El índice de uso (data/palette-usage.json) solo tiene sentido si se
+        // alimenta aquí: publicar es lo único que crea obra guardada.
+        if (global.HOKSUSAGE) await global.HOKSUSAGE.recordMany(usage);
       }
       note('');
       try { await push(batches); } catch (e) {}

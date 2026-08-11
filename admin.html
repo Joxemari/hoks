@@ -229,7 +229,11 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
     <div class="tab-panel" id="tab-palettes">
       <div class="section-header">
         <span class="section-title">Palettes (<span id="pal-count">0</span>)</span>
-        <button class="btn" onclick="openPalModal()">+ New Palette</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <!-- La rejilla de uso solo se ve con sesión admin. -->
+          <a class="btn btn-outline" href="palettes.html" target="_blank" style="text-decoration:none;">Usage grid</a>
+          <button class="btn" onclick="openPalModal()">+ New Palette</button>
+        </div>
       </div>
       <div class="palette-list" id="palette-list"></div>
     </div>

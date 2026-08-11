@@ -51,6 +51,8 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
 .usage-legend { display: flex; align-items: center; gap: 4px; margin-top: 13px; font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); }
 .usage-legend i { width: 9px; height: 9px; border-radius: 2px; }
 .usage-empty { font-size: 10px; color: var(--ink3); letter-spacing: 0.06em; text-transform: uppercase; }
+.usage-copy { font-family: var(--f); font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); background: none; border: 1px solid var(--border); border-radius: 2px; padding: 2px 7px; cursor: pointer; margin-left: auto; transition: color 0.12s, border-color 0.12s; }
+.usage-copy:hover { color: var(--ink); border-color: var(--border-dark); }
 .usage-chip { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink); border: 1px solid var(--border-dark); border-radius: 20px; padding: 1px 6px; flex-shrink: 0; }
 .grid { max-width: 1100px; margin: 2rem auto 0; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .palette-card { background: var(--bg); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.15s; }
@@ -101,22 +103,24 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
       <option value="oldest" data-i18n="sort.oldest">Oldest</option>
       <option value="name" data-i18n="sort.name">Name</option>
       <option value="colors" data-i18n="palettes.colors">Colors</option>
-      <option value="usage" data-i18n="sort.usage">By Usage</option>
+      <option value="usage" id="sortUsage" hidden>By Usage</option>
     </select>
     <span class="count" id="count"></span>
   </div>
   <div class="controls-right"></div>
 </div>
-<div class="usage" id="usage">
+<!-- Solo con sesión admin: el uso es dato interno, no relato público. -->
+<div class="usage" id="usage" hidden>
   <div class="usage-head">
-    <span class="usage-title" data-i18n="usage.title">Usage</span>
+    <span class="usage-title">Usage</span>
     <span class="usage-sub" id="usageSub"></span>
+    <button class="usage-copy" id="usageCopy">Copy data</button>
   </div>
   <div class="usage-grid" id="usageGrid"></div>
   <div class="usage-legend" id="usageLegend">
-    <span data-i18n="usage.less">less</span>
+    <span>less</span>
     <i class="u0"></i><i class="u1"></i><i class="u2"></i><i class="u3"></i><i class="u4"></i>
-    <span data-i18n="usage.more">more</span>
+    <span>more</span>
   </div>
 </div>
 <div class="grid" id="grid"></div>
@@ -148,12 +152,22 @@ function formatDate(ms) {
 
 let pals = [], usage = { works: [] }, usageCounts = {};
 
+// El uso solo se consulta desde dentro (admin / laboratorio). Para el público la
+// página sigue siendo el catálogo de paletas y nada más: cuánto se ha usado cada
+// una es material de trabajo, no relato.
+const _isAdminSession = sessionStorage.getItem('hoks-admin-session') === '1' ||
+                        localStorage.getItem('hoks-admin-session')   === '1';
+
 Promise.all([
   fetch(RAW + 'palettes.json?t=' + Date.now()).then(r => r.ok ? r.json() : []),
-  HOKSUSAGE.load(),
+  _isAdminSession ? HOKSUSAGE.load() : Promise.resolve({ works: [] }),
 ])
   .then(([data, u]) => {
     usage = u; usageCounts = HOKSUSAGE.counts(u);
+    if (_isAdminSession) {
+      document.getElementById('usage').hidden = false;
+      document.getElementById('sortUsage').hidden = false;
+    }
     // Compute probs on ALL palettes (active + inactive) for display
     const weights = data.map(p => ageWeight(p.created));
     const totalActive = data
@@ -171,20 +185,21 @@ Promise.all([
 const uses = p => usageCounts[p.id] || 0;
 function usesLabel(p) {
   const n = uses(p);
-  if (!n)     return T('usage.unused').replace('%1', p.name);
-  if (n === 1) return T('usage.tip1').replace('%1', p.name);
-  return T('usage.tip').replace('%1', p.name).replace('%2', n);
+  if (!n)      return p.name + ' · unused';
+  if (n === 1) return p.name + ' · 1 work';
+  return p.name + ' · ' + n + ' works';
 }
 
 // Rejilla tipo registro: catálogo completo en orden de creación, tono por uso.
 function renderUsage() {
+  if (!_isAdminSession) return;
   const total = (usage.works || []).length;
   const used = Object.keys(usageCounts).length;
   document.getElementById('usageSub').textContent =
-    T('usage.sub').replace('%1', total).replace('%2', used);
+    total + ' saved works · ' + used + ' palettes used';
   const box = document.getElementById('usageGrid'), legend = document.getElementById('usageLegend');
   if (!total) {
-    box.innerHTML = '<span class="usage-empty">'+T('usage.none')+'</span>';
+    box.innerHTML = '<span class="usage-empty">No saved works yet</span>';
     legend.style.display = 'none';
     return;
   }
@@ -196,6 +211,28 @@ function renderUsage() {
     const lvl = !n ? 0 : Math.min(4, Math.ceil(n / max * 4));
     return `<span class="ucell u${lvl}${p.active===false?' off':''}" data-pal="${esc(p.name)}" title="${esc(usesLabel(p))}"></span>`;
   }).join('');
+}
+
+// Volcado para trabajar fuera de la web (hoja de cálculo, notas, textos de
+// escasez): una fila por paleta en orden de catálogo, con obras y cuota.
+function usageTsv() {
+  const total = (usage.works || []).length;
+  const byPal = {};
+  for (const w of (usage.works || [])) {
+    if (w.paletteId == null) continue;
+    (byPal[w.paletteId] = byPal[w.paletteId] || {})[w.family] =
+      ((byPal[w.paletteId] || {})[w.family] || 0) + 1;
+  }
+  const pct = n => total ? (n / total * 100).toFixed(1) + '%' : '0%';
+  const rows = [['id','paleta','activa','colores','prob','obras','cuota','familias'].join('\t')];
+  for (const p of pals.slice().sort((a,b) => (a.id||0)-(b.id||0))) {
+    const n = uses(p), fam = byPal[p.id] || {};
+    rows.push([p.id, p.name, p.active === false ? 0 : 1, p.colors.join(' '),
+               (p.prob * 100).toFixed(2) + '%', n, pct(n),
+               Object.keys(fam).sort().map(k => k + '×' + fam[k]).join(' ')].join('\t'));
+  }
+  rows.push(['', 'TOTAL', '', '', '', total, pct(total), ''].join('\t'));
+  return rows.join('\n');
 }
 
 function render() {
@@ -255,6 +292,11 @@ function copySwatch(hex,el) { copyText(hex); const tip=el.querySelector('.swatch
 document.getElementById('search').addEventListener('input',render);
 document.getElementById('sort').addEventListener('change',render);
 window.addEventListener('hoks:langchange', () => { if (pals.length) render(); });
+const usageCopyBtn = document.getElementById('usageCopy');
+if (usageCopyBtn) usageCopyBtn.addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(usageTsv()); toast('Usage data copied'); }
+  catch (e) { toast(T('toast.copyFailed')); }
+});
 document.addEventListener('click',e=>{
   const cell=e.target.closest('.ucell[data-pal]');
   if(cell){const s=document.getElementById('search');s.value=cell.dataset.pal;render();document.getElementById('grid').scrollIntoView({behavior:'smooth',block:'start'});return;}
