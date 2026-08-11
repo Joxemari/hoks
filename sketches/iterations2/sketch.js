@@ -170,12 +170,21 @@ const DEF = {
   placeJitter:  0.35,    // desplazamiento en el marco, × margen libre
 
   pad:          0.07,
-  corner:       "rectas",    // curvas | rectas
+  corner:       "rectas",    // rectas | curvas — MANDO ÚNICO de la esquina
   ends:         "rectos",    // redondos | rectos
   tinta:        "solido",    // solido | gradiente
   juntaSolape:  0.05,        // alargue en las juntas internas, × anchura
   punzonExtra:  0.35,        // recorrido extra del punzón más allá del cruce, × anchura         // longitud del punzón en cada cruce, × anchura
-  curva:        0,           // 0 esquina viva ... 1 curva plena
+  // 'curva' ya NO es un mando aparte: se deriva de 'corner'. Tener un
+  // selector recta/curva Y un deslizador de curvatura era pedir dos
+  // veces la misma decisión, y encima se pisaban — uno dobla el
+  // RECORRIDO y el otro sólo cambia el lineJoin del CONTORNO, así que
+  // "rectas" con curvatura 0,4 daba una esquina redonda por fuera y
+  // viva por dentro, que no es ninguna de las dos cosas.
+  //   rectas → recorrido en ángulo vivo y junta a inglete (la cinta
+  //            doblada, que es la referencia de la que salió la obra)
+  //   curvas → cada vértice redondeado a fondo y junta redonda
+  curva:        0,           // derivado; no lo pongas a mano
   miterLimit:   1.0,         // el pico de inglete es tinta FUERA de la banda: no existe         // por encima, el pico del halo raja la hebra vecina
 
   paletas:      null,        // lista completa; si no se fija una, se elige por peso
@@ -224,6 +233,8 @@ const FAMILY_NAMES = Object.keys(FAMILIES);
 // ------------------------------------------------------------
 function generate(seed, cfg) {
   cfg = Object.assign({}, DEF, cfg || {});
+  cfg.curva = cfg.corner === "curvas" ? 1 : 0;
+
   randomSeed(seed);
   noiseSeed(seed);
 
@@ -1604,7 +1615,6 @@ function rasgosDe(comp, med) {
     vueltas:   comp.vueltas,
     pedidas:   comp.pedidas,
     trazo:     comp.cfg.trazo,
-    curva:     comp.cfg.curva,
     esquinas:  comp.cfg.corner,
     vertices:  comp.points.length,
     cruces:    comp.crossings,
@@ -1622,7 +1632,7 @@ function rasgosDe(comp, med) {
 }
 
 const RASGOS_NUM = ["vueltas","vertices","cruces","secciones","volteados","juntas",
-                    "sep","anchura","gapW","segW","giro","ocupacion","curva","discos"];
+                    "sep","anchura","gapW","segW","giro","ocupacion","discos"];
 const RASGOS_CAT = ["familia","paleta","trazo","esquinas"];
 
 // ------------------------------------------------------------
@@ -1870,7 +1880,6 @@ function opciones() {
     vueltasMin: int(ui.vueltas.value()),
     vueltasMax: int(ui.vueltas.value()),
     trazo:      ui.trazo.value(),
-    curva:      float(ui.curva.value()),
     corner:     ui.esquinas.value(),
     ends:       ui.extremos.value(),
     tinta:      ui.gradiente.checked() ? "gradiente" : "solido",
@@ -2006,7 +2015,6 @@ function pintarHoja() {
 
 function actualizarInfo() {
   ui.dotRV.html(nf(float(ui.dotR.value()), 1, 2));
-  ui.curvaV.html(nf(float(ui.curva.value()), 1, 2));
   ui.vueltasV.html(ui.vueltas.value());
   ui.dotsNV.html(ui.dotsN.value());
 
@@ -2054,8 +2062,6 @@ function construirUI() {
   ui.trazo = etiquetaSelect("trazo",
     [["estandar", "estándar"], ["fino", "fino"], ["gordo", "gordo"]], 12, y); y += fila;
 
-  [ui.curva, ui.curvaV] = etiquetaSlider("curvatura", 0, 1, 0, 0.05, 12, y); y += fila;
-
   ui.esquinas = etiquetaSelect("esquinas", [["rectas", "rectas"], ["curvas", "curvas"]], 12, y); y += fila;
   ui.extremos = etiquetaSelect("extremos", [["rectos", "rectos"], ["redondos", "redondos"]], 12, y); y += fila;
 
@@ -2077,7 +2083,7 @@ function construirUI() {
   ui.info.style("line-height", "17px");
 
   [ui.paleta, ui.esquinas, ui.extremos, ui.trazo].forEach(e => e.changed(redibujar));
-  [ui.vueltas, ui.dotsN, ui.dotR, ui.curva].forEach(e => e.input(redibujar));
+  [ui.vueltas, ui.dotsN, ui.dotR].forEach(e => e.input(redibujar));
   [ui.dots, ui.gradiente].forEach(e => e.changed(redibujar));
 }
 
