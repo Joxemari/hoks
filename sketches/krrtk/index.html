@@ -236,13 +236,19 @@ function renderSheet() {
 // seed, y el lote entero — que es lo que de verdad se publica.
 let VIEW = 'single';                 // 'single' | 'sheet' | 'batch'
 function setView(v) {
+  // Sin lote no hay nada que enseñar, y cambiar de vista solo escondería la
+  // pieza para dejar un hueco gris. Se queda donde está y lo dice.
+  if (v === 'batch' && !(batch && batch.open)) {
+    $('status').textContent = 'No hay lote abierto — elige uno o crea otro con + en el panel';
+    return;
+  }
   VIEW = v; sheetMode = (v === 'sheet');
   $('single').style.display = v === 'single' ? 'block' : 'none';
   $('sheetGrid').style.display = v === 'single' ? 'none' : 'grid';
   $('sheet').textContent = v === 'sheet' ? '▦ Vista única (g)' : '▦ Hoja de contactos (g)';
   $('batchView').textContent = v === 'batch' ? '▦ Vista única (b)' : '▦ Ver el lote (b)';
   if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; }
-  else if (v === 'batch') { $('status').textContent = batch ? batch.renderFull($('sheetGrid')) : '—'; }
+  else if (v === 'batch') { $('sheetGrid').innerHTML = ''; $('status').textContent = batch.renderFull($('sheetGrid')); }
   else renderSingle();
 }
 function setSheet(on) { setView(on ? 'sheet' : 'single'); }
