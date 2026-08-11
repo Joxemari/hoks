@@ -17,7 +17,8 @@
   const E = global.HOKS;
 
   const THRESHOLD = 0.8;   // probabilidad de que un círculo exista (composition <= threshold dibuja)
-  const REF = 600;         // lado corto de referencia (calibra el grano)
+  const REF = 600;          // lado corto de referencia (calibra el grano)
+  const BG_GRADIENT = 100;  // % de gradiente cuando el fondo va en 'auto'
 
   // ── Entrada principal ───────────────────────────────────────────────────────
   // opts: { palettes, locked, lockedIdx, params:{ grainScale, grid, threshold } }
@@ -38,7 +39,7 @@
     // Fondo: mesh gradient (lo propio de la obra) o plano si el laboratorio pide
     // 'solid'. Se sortea en su propio stream, así la composición no se entera.
     const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
-    if (E.bgMode(params) === 'solid') {
+    if (E.pickBg(seed, params, BG_GRADIENT) === 'solid') {
       ctx.fillStyle = colors[rngBg.int(0, colors.length - 1)];
       ctx.fillRect(0, 0, W, H);
     } else {
@@ -112,5 +113,5 @@
     };
   }
 
-  (global.HOKS = global.HOKS || {}).DTK = { render, traits, THRESHOLD };
+  (global.HOKS = global.HOKS || {}).DTK = { render, traits, THRESHOLD, BG_GRADIENT };
 })(typeof window !== 'undefined' ? window : globalThis);

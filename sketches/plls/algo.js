@@ -21,6 +21,7 @@
   const GRAIN_TILE = 14;     // tesela del acabado ajedrez, a resolución de referencia
   const PLACE_ATT  = 24;     // intentos de colocación antes de rendirse
   const SPREAD     = 0.85 / Math.pow(2, 0.25);   // ver maxSize en render()
+  const BG_GRADIENT = 30;    // % de fondo con degradado en 'auto' (15 radial + 15 diagonal)
   const REF        = 1000;   // lado corto de referencia: las medidas en px se
                              // escalan por unit = min(W,H)/REF, así el dibujo es
                              // el mismo en pantalla y a resolución de impresión.
@@ -137,9 +138,13 @@
 
   // Fondo: sólido, radial o diagonal (devuelve los 2 colores usados).
   // forceMode (opcional): 'solid' | 'radial' | 'diagonal' para fijarlo desde el lab.
-  function drawBg(ctx, W, H, colors, rng, forceMode) {
+  // pGrad: % de fondo con degradado cuando va en 'auto'. El resto es plano, así
+  // que los dos suman 100 sin poder no hacerlo. El degradado se reparte a partes
+  // iguales entre radial y diagonal, que es lo que la obra entiende por él.
+  function drawBg(ctx, W, H, colors, rng, forceMode, pGrad) {
+    const g = (pGrad == null ? BG_GRADIENT : pGrad) / 100;
     const mode = (forceMode && forceMode !== 'auto') ? forceMode
-      : rng.weighted([{ prob: 0.15, v: 'radial' }, { prob: 0.15, v: 'diagonal' }, { prob: 0.70, v: 'solid' }]).v;
+      : rng.weighted([{ prob: g / 2, v: 'radial' }, { prob: g / 2, v: 'diagonal' }, { prob: 1 - g, v: 'solid' }]).v;
     const c1 = rng.pickFrom(colors), rest = colors.filter(x => x !== c1), c2 = rng.pickFrom(rest.length ? rest : colors);
     const [r1, g1, b1] = E.hexToRgb(c1), [r2, g2, b2] = E.hexToRgb(c2);
     ctx.save(); ctx.globalCompositeOperation = 'source-over';
@@ -202,7 +207,8 @@
     const bgForce = bgT === 'solid' ? 'solid'
       : bgT === 'gradient' ? (rng.bool(0.5) ? 'radial' : 'diagonal')
       : params.bgMode;
-    const bgColors = drawBg(ctx, W, H, colors, rng, bgForce);
+    const pGrad = (params.bgProbs && params.bgProbs.gradient != null) ? params.bgProbs.gradient : BG_GRADIENT;
+    const bgColors = drawBg(ctx, W, H, colors, rng, bgForce, pGrad);
 
     // Margen = extensión máxima de la cápsula desde su centro (hl + radio del cap).
     // Así todas caben sin recortes → todas conservan la MISMA proporción.
@@ -268,5 +274,5 @@
     };
   }
 
-  (global.HOKS = global.HOKS || {}).PLLS = { render, traits, ARCHETYPES, FINISH_PROBS };
+  (global.HOKS = global.HOKS || {}).PLLS = { render, traits, ARCHETYPES, FINISH_PROBS, BG_GRADIENT };
 })(typeof window !== 'undefined' ? window : globalThis);

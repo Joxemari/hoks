@@ -101,6 +101,12 @@
         <option value="solid">Solid</option>
         <option value="gradient">Gradient</option>
       </select>
+      <div id="bgAuto">
+        <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
+          · plano <span id="bgPS">—</span></span>
+        <input type="range" id="bgP" min="0" max="100" step="5" value="30">
+        <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre</span>
+      </div>
     </div>
 
     <div class="group">
@@ -226,6 +232,7 @@ function params() {
     grainScale: parseFloat($('grain').value),
     archetype: $('arch').value,
     bg: $('bg').value,
+    bgProbs: { gradient: parseInt($('bgP').value, 10) },
     count: parseInt($('count').value, 10) || 0,
     thickness: parseFloat($('thick').value),
     archProbs: { ...archProbs },
@@ -399,7 +406,18 @@ $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; 
 $('arch').onchange = refresh;
 $('rot').onclick = () => { ROT = !ROT; $('rot').textContent = ROT ? '⟲ Ver tumbado (r)' : '⟲ Ver de pie (r)'; applyFormat(); refresh(); };
 $('field').onchange = refresh;
-$('bg').onchange = refresh;
+$('bg').onchange = () => { syncBgAuto(); refresh(); };
+// El % de degradado solo manda cuando el fondo va en 'auto': si lo fuerzas a
+// plano o a degradado, el peso sobra y se esconde en vez de mentir.
+function syncBgAuto() {
+  const auto = $('bg').value === 'auto', p = parseInt($('bgP').value, 10);
+  $('bgAuto').style.display = auto ? '' : 'none';
+  $('bgPV').textContent = p + '%'; $('bgPS').textContent = (100 - p) + '%';
+}
+$('bgP').value = (WORK.BG_GRADIENT != null ? WORK.BG_GRADIENT : 50);
+$('bgP').oninput = () => { syncBgAuto(); refresh(); };
+syncBgAuto();
+
 $('count').oninput = () => { $('countV').textContent = $('count').value === '0' ? 'auto' : $('count').value; refresh(); };
 $('thick').oninput = () => { $('thickV').textContent = parseFloat($('thick').value).toFixed(2); refresh(); };
 $('grain').onchange = refresh;

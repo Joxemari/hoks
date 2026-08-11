@@ -32,6 +32,7 @@
   const P_ACCENT  = 0.4;    // acento suelto de 1 celda
   const P_TWIN    = 0.18;   // segunda región
   const REF       = 600;    // lado corto de referencia (calibra el grano)
+  const BG_GRADIENT = 0;    // % de gradiente en 'auto': el suelo plano es su diseño
 
   // ── Roles de color ─────────────────────────────────────────────────────────
   // Tres papeles de la paleta ordenada por luma: suelo, bloque, punto. El bloque
@@ -115,7 +116,7 @@
 
     // 1. Suelo. Plano por diseño —figura/fondo necesita un plano estable— salvo
     //    que el laboratorio pida 'gradient'. Stream propio: la composición igual.
-    if (E.bgMode(params) === 'gradient') {
+    if (E.pickBg(seed, params, BG_GRADIENT) === 'gradient') {
       E.drawMeshGradient(ctx, W, H, pal.colors, new E.Rng(seed ^ 0xDEADBEEF));
     } else {
       ctx.fillStyle = R.ground;
@@ -257,5 +258,5 @@
     };
   }
 
-  (global.HOKS = global.HOKS || {}).DTKRT = { render, traits, THRESHOLD, MARGIN };
+  (global.HOKS = global.HOKS || {}).DTKRT = { render, traits, THRESHOLD, MARGIN, BG_GRADIENT };
 })(typeof window !== 'undefined' ? window : globalThis);
