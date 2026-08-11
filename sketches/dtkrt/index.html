@@ -51,6 +51,15 @@
       <button id="rnd">↻ New seed (space)</button>
     </div>
     <div class="group">
+      <span class="lbl">Format</span>
+      <select id="fmt">
+        <option value="square">□ Square (1:1)</option>
+        <option value="vertical">▯ Vertical (1:√2)</option>
+        <option value="horizontal">▭ Horizontal (√2:1)</option>
+      </select>
+      <span class="hintline">proporción DIN — misma seed, otra composición</span>
+    </div>
+    <div class="group">
       <span class="lbl">Palette · <span id="palCount">…</span></span>
       <select id="pal"></select>
       <span class="hintline">incluye activas e inactivas</span>
@@ -91,8 +100,15 @@
 <script src="./algo.js"></script>
 <script>
 const WORK = HOKS.DTKRT;
-const W = 600, H = 600;             // resolución de producción (el PNG coincide)
-const SHEET_N = 12, SHEET_W = 300, SHEET_H = 300;
+const BASE = 600, SHEET_BASE = 300;   // lado corto: hoja y hoja de contactos
+const SHEET_N = 12;
+let FORMAT = 'square';
+let W, H, SHEET_W, SHEET_H;
+function applyFormat() {
+  const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
+  const t = HOKS.fmtDims(FORMAT, SHEET_BASE); SHEET_W = t.W; SHEET_H = t.H;
+  single.width = W; single.height = H;
+}
 
 const single = document.getElementById('single');
 const sctx = single.getContext('2d');
@@ -181,6 +197,9 @@ document.addEventListener('keydown', e => {
 
 // Init: pinta YA con fallback, luego trae TODAS las paletas.
 populateSelect();
+$('fmt').value = FORMAT;
+$('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
+applyFormat();
 renderSingle();
 HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});
 </script>

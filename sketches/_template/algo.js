@@ -6,6 +6,11 @@
  *      imagen. Usa SIEMPRE el RNG sembrado (new HOKS.Rng(seed)), nunca Math.random()
  *      para nada que deba reproducirse (el grano del motor es la única excepción).
  *   3. Devuelve los datos que la barra lateral necesita para los traits.
+ *   4. NADA de píxeles absolutos ni de dar por hecho el formato: toda medida se
+ *      expresa en función de W, H o min(W,H), y las constantes en px se escalan
+ *      por E.unit(W, H, REF). Así la obra existe en los tres formatos
+ *      (cuadrado · vertical · horizontal) y a cualquier resolución: la misma
+ *      seed da la misma imagen en pantalla y a 300 dpi sobre un A1.
  *
  * Depende de window.HOKS (_engine.js). Para clonar a una obra real:
  *   - renombra el namespace de abajo (HOKS.TEMPLATE → HOKS.MIOBRA)
@@ -15,28 +20,34 @@
   'use strict';
   const E = global.HOKS;
 
+  const REF = 1000;   // lado corto de referencia: calibra el grano y las medidas en px
+
   // opts: { palettes, locked, lockedIdx, params:{ grainScale, count } }
   function render(ctx, W, H, seed, opts) {
     opts = opts || {};
     const params = opts.params || {};
     const palettes = opts.palettes || E.normalizePalettes(E.DEFAULTS);
     const grainScale = params.grainScale == null ? 1 : params.grainScale;
+    const u = E.unit(W, H, REF);   // escala de las medidas en px absolutos
     const rng = new E.Rng(seed);
 
     const pal = (opts.locked && palettes[opts.lockedIdx]) ? palettes[opts.lockedIdx] : rng.weighted(palettes);
     const colors = pal.colors;
 
     // —— Ejemplo trivial: fondo + círculos sembrados. Sustitúyelo por tu obra. ——
+    // Fíjate en S = min(W,H): los radios se miden contra el lado corto, así el
+    // dibujo no se deforma al cambiar de formato.
+    const S = Math.min(W, H);
     ctx.fillStyle = rng.pickFrom(colors);
     ctx.fillRect(0, 0, W, H);
     const n = params.count || rng.int(8, 40);
     for (let i = 0; i < n; i++) {
       ctx.fillStyle = rng.pickFrom(colors);
       ctx.beginPath();
-      ctx.arc(rng.range(0, W), rng.range(0, H), rng.range(W * 0.02, W * 0.12), 0, Math.PI * 2);
+      ctx.arc(rng.range(0, W), rng.range(0, H), rng.range(S * 0.02, S * 0.12), 0, Math.PI * 2);
       ctx.fill();
     }
-    E.applyGrain(ctx, W, H, E.bakeGrain(W, H, colors, grainScale));
+    E.grain(ctx, W, H, colors, grainScale, u);
     // ————————————————————————————————————————————————————————————————————————
 
     return { pal, count: n };

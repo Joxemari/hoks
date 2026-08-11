@@ -20,6 +20,7 @@
 
   const THRESHOLD  = 0.6;   // probabilidad de NO dibujar un cuadrado (rng.next() > threshold dibuja)
   const RECT_ALPHA = 0.61;  // 155/255 — cuadrados semitransparentes sobre el gradiente
+  const REF        = 600;   // lado corto de referencia (calibra el grano)
 
   // ── Entrada principal ───────────────────────────────────────────────────────
   // opts: { palettes, locked, lockedIdx, params:{ grainScale, threshold, rectAlpha } }
@@ -36,8 +37,12 @@
     const pal = (opts.locked && palettes[opts.lockedIdx]) ? palettes[opts.lockedIdx] : rng.weighted(palettes);
     const colors = pal.colors;
 
-    const margin = Math.round(W * 0.1667);
-    const a = W - margin * 2;
+    // El campo de subdivisión es CUADRADO y se centra en el lienzo: en cuadrado
+    // ocupa toda la hoja; en vertical y horizontal se inscribe en el lado corto.
+    const S = Math.min(W, H);
+    const margin = Math.round(S * 0.1667);
+    const a = S - margin * 2;
+    const ox = (W - S) / 2, oy = (H - S) / 2;
 
     // 1. Mesh gradient de fondo (stream RNG independiente, como el original).
     const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
@@ -68,11 +73,12 @@
       if (!toDraw[i]) continue;
       const [r, g, b] = E.hexToRgb(squares[i].color);
       ctx.fillStyle = `rgba(${r},${g},${b},${rectAlpha})`;
-      ctx.fillRect(squares[i].x, squares[i].y, squares[i].size, squares[i].size);
+      ctx.fillRect(ox + squares[i].x, oy + squares[i].y, squares[i].size, squares[i].size);
     }
 
     // 4. Grano (los defaults del engine a escala 1 son los números del original).
-    E.applyGrain(ctx, W, H, E.bakeGrain(W, H, colors, grainScale));
+    //    unit mantiene el tamaño del grano al subir a resolución de impresión.
+    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
 
     // Datos para traits.
     const minSize = squares.reduce((m, sq) => Math.min(m, sq.size), a);

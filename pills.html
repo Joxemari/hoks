@@ -129,6 +129,8 @@ canvas {
 </head>
 <body>
 <script src="nav.js"></script>
+<!-- Motor compartido: formatos de lienzo y exportación a tamaño de impresión. -->
+<script src="sketches/_engine.js?v=1"></script>
 <script src="usage.js"></script>
 <div class="layout">
   <aside class="sidebar">
@@ -139,6 +141,7 @@ canvas {
       <button class="btn btn-outline" id="batchBtn" onclick="saveToBatch()" style="display:none">+ <span>Save to Batch</span></button>
       <button class="btn btn-outline" onclick="downloadHD()">↓ <span data-i18n="btn.download">Download PNG</span></button>
     </div>
+    <div class="sidebar-section" id="formatMount"></div>
 
         <div class="sidebar-section" id="paletteSelectorSection" style="display:none">
       <div class="sidebar-label" data-i18n="label.palette">Palette</div>
@@ -176,7 +179,7 @@ canvas {
   </aside>
   <main>
     <div class="canvas-area">
-      <canvas id="c" width="1414" height="1000"></canvas>
+      <canvas id="c" width="1075" height="760"></canvas>
       <div class="reveal-overlay" id="revealOverlay">
         <div class="reveal-counter" id="revealCounter" style="display:none"></div>
       </div>
@@ -343,20 +346,43 @@ function loadPalettes() {
 
 // ── DRAWING ───────────────────────────────────────────
 function pillClipPath(ctx,x1,y1,x2,y2,t){const r=t/2,a=Math.atan2(y2-y1,x2-x1);ctx.beginPath();ctx.arc(x1,y1,r,a+Math.PI/2,a+Math.PI*1.5);ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2);ctx.closePath();}
-function drawGrain(ctx,x1,y1,x2,y2,t,color,rng){const[r,g,b]=hexToRgb(color);const alt=rng.bool(0.5)?'#0a0a0a':'#eff7f5';const angle=Math.atan2(y2-y1,x2-x1);const cx=(x1+x2)/2,cy=(y1+y2)/2;const halfLen=Math.hypot(x2-x1,y2-y1)/2+t/2,hw=t/2;const C=[[cx+Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen+Math.cos(angle)*hw],[cx+Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen-Math.cos(angle)*hw],[cx-Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen+Math.cos(angle)*hw],[cx-Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen-Math.cos(angle)*hw]];const xs=C.map(c=>c[0]),ys=C.map(c=>c[1]);const minX=Math.floor(Math.min(...xs)/GRAIN_TILE)*GRAIN_TILE,maxX=Math.ceil(Math.max(...xs)/GRAIN_TILE)*GRAIN_TILE;const minY=Math.floor(Math.min(...ys)/GRAIN_TILE)*GRAIN_TILE,maxY=Math.ceil(Math.max(...ys)/GRAIN_TILE)*GRAIN_TILE;ctx.save();pillClipPath(ctx,x1,y1,x2,y2,t);ctx.clip();for(let tx=minX;tx<maxX;tx+=GRAIN_TILE)for(let ty=minY;ty<maxY;ty+=GRAIN_TILE){const col=Math.round(tx/GRAIN_TILE),row=Math.round(ty/GRAIN_TILE);ctx.fillStyle=(col+row)%2===0?`rgb(${r},${g},${b})`:alt;ctx.fillRect(tx,ty,GRAIN_TILE,GRAIN_TILE);}ctx.restore();}
-function drawPill(ctx,x1,y1,x2,y2,t,color,style,rng,colors){const[r,g,b]=hexToRgb(color);ctx.save();if(style==='solid'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=`rgb(${r},${g},${b})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='multiply'){ctx.globalCompositeOperation='multiply';ctx.strokeStyle=`rgb(${r},${g},${b})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='translucent'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=`rgba(${r},${g},${b},${rng.range(0.22,0.55)})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='outline'){const bw=Math.max(5,t*0.06),oc=rng.bool(0.5)?'#0a0a0a':'#eff7f5';ctx.globalCompositeOperation='source-over';pillClipPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fill();pillClipPath(ctx,x1,y1,x2,y2,t);ctx.strokeStyle=oc;ctx.lineWidth=bw;ctx.stroke();}else if(style==='grain'){drawGrain(ctx,x1,y1,x2,y2,t,color,rng);}else if(style==='gradient'){ctx.globalCompositeOperation='source-over';const a=Math.atan2(y2-y1,x2-x1),px=-Math.sin(a),py=Math.cos(a),h=t/2;const grad=ctx.createLinearGradient((x1+x2)/2+px*h,(y1+y2)/2+py*h,(x1+x2)/2-px*h,(y1+y2)/2-py*h);const[r2,g2,b2]=hexToRgb(rng.pickFrom(colors));grad.addColorStop(0,`rgb(${r},${g},${b})`);grad.addColorStop(1,`rgb(${r2},${g2},${b2})`);pillClipPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=grad;ctx.fill();}ctx.restore();}
+function drawGrain(ctx,x1,y1,x2,y2,t,color,rng,tile){const GRAIN_TILE=tile;const[r,g,b]=hexToRgb(color);const alt=rng.bool(0.5)?'#0a0a0a':'#eff7f5';const angle=Math.atan2(y2-y1,x2-x1);const cx=(x1+x2)/2,cy=(y1+y2)/2;const halfLen=Math.hypot(x2-x1,y2-y1)/2+t/2,hw=t/2;const C=[[cx+Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen+Math.cos(angle)*hw],[cx+Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy+Math.sin(angle)*halfLen-Math.cos(angle)*hw],[cx-Math.cos(angle)*halfLen-Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen+Math.cos(angle)*hw],[cx-Math.cos(angle)*halfLen+Math.sin(angle)*hw,cy-Math.sin(angle)*halfLen-Math.cos(angle)*hw]];const xs=C.map(c=>c[0]),ys=C.map(c=>c[1]);const minX=Math.floor(Math.min(...xs)/GRAIN_TILE)*GRAIN_TILE,maxX=Math.ceil(Math.max(...xs)/GRAIN_TILE)*GRAIN_TILE;const minY=Math.floor(Math.min(...ys)/GRAIN_TILE)*GRAIN_TILE,maxY=Math.ceil(Math.max(...ys)/GRAIN_TILE)*GRAIN_TILE;ctx.save();pillClipPath(ctx,x1,y1,x2,y2,t);ctx.clip();for(let tx=minX;tx<maxX;tx+=GRAIN_TILE)for(let ty=minY;ty<maxY;ty+=GRAIN_TILE){const col=Math.round(tx/GRAIN_TILE),row=Math.round(ty/GRAIN_TILE);ctx.fillStyle=(col+row)%2===0?`rgb(${r},${g},${b})`:alt;ctx.fillRect(tx,ty,GRAIN_TILE,GRAIN_TILE);}ctx.restore();}
+function drawPill(ctx,x1,y1,x2,y2,t,color,style,rng,colors,u){const[r,g,b]=hexToRgb(color);ctx.save();if(style==='solid'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=`rgb(${r},${g},${b})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='multiply'){ctx.globalCompositeOperation='multiply';ctx.strokeStyle=`rgb(${r},${g},${b})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='translucent'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=`rgba(${r},${g},${b},${rng.range(0.22,0.55)})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}else if(style==='outline'){const bw=Math.max(5*u,t*0.06),oc=rng.bool(0.5)?'#0a0a0a':'#eff7f5';ctx.globalCompositeOperation='source-over';pillClipPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fill();pillClipPath(ctx,x1,y1,x2,y2,t);ctx.strokeStyle=oc;ctx.lineWidth=bw;ctx.stroke();}else if(style==='grain'){drawGrain(ctx,x1,y1,x2,y2,t,color,rng,GRAIN_TILE*u);}else if(style==='gradient'){ctx.globalCompositeOperation='source-over';const a=Math.atan2(y2-y1,x2-x1),px=-Math.sin(a),py=Math.cos(a),h=t/2;const grad=ctx.createLinearGradient((x1+x2)/2+px*h,(y1+y2)/2+py*h,(x1+x2)/2-px*h,(y1+y2)/2-py*h);const[r2,g2,b2]=hexToRgb(rng.pickFrom(colors));grad.addColorStop(0,`rgb(${r},${g},${b})`);grad.addColorStop(1,`rgb(${r2},${g2},${b2})`);pillClipPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=grad;ctx.fill();}ctx.restore();}
 function pickFinish(rng,archName){const probs=FINISH_PROBS[archName];let v=rng.next(),acc=0;for(const[s,p]of Object.entries(probs)){acc+=p;if(v<acc)return s;}return'solid';}
 function pillsOverlapTooMuch(ax,ay,aHL,at,bx,by,bHL,bt,tol){const dist=Math.hypot(ax-bx,ay-by),reach=(at+bt)/2+Math.min(aHL,bHL)*0.5;return Math.max(0,reach-dist)/((at/2+bt/2))>tol;}
 
 // ── PROGRESSIVE DRAW ──────────────────────────────────
+// ── FORMATO ───────────────────────────────────────────
+// Cuadrado · vertical · horizontal (1:√2, la proporción DIN). Las cápsulas se
+// colocan contra W y H, así que la misma seed en el mismo formato da la misma
+// imagen a cualquier resolución: lo que se ve en pantalla es lo que se imprime.
+var FMT = null;
+function applyFormat() {
+  const c = document.getElementById('c'), d = FMT ? FMT.preview() : HOKS.previewDims('horizontal');
+  if (c.width !== d.W || c.height !== d.H) { c.width = d.W; c.height = d.H; }
+}
+FMT = HOKS.mountFormat(document.getElementById('formatMount'), {
+  work: 'plls', defaultFormat: 'horizontal',
+  onChange() { applyFormat(); draw(currentSeed); }
+});
+applyFormat();
+
 function draw(s) {
   if (!palettes.length || _generating) return;
   _generating = true;
-
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+  applyFormat();
+  const r = renderTo(ctx, canvas.width, canvas.height, s);
+  _generating = false;
+  updateTraits(r.arch, r.pal, r.styleCount, r.bgTrait, r.numShapes, s);
+}
+
+function renderTo(ctx, W, H, s) {
   const rng = new Rng(s);
+  // Escala de las medidas en px absolutos (tesela del ajedrez, filo del
+  // contorno): REF = lado corto de referencia de la obra.
+  const u = HOKS.unit(W, H, 1000);
 
   const arch = rng.weighted(ARCHETYPES);
   const pal  = getActivePalette(rng); lastPal = pal;
@@ -409,10 +435,9 @@ function draw(s) {
     const y1 = pill.cy - Math.sin(pill.angle)*pill.hl;
     const x2 = pill.cx + Math.cos(pill.angle)*pill.hl;
     const y2 = pill.cy + Math.sin(pill.angle)*pill.hl;
-    drawPill(ctx, x1, y1, x2, y2, pill.thickness, pill.color, pill.style, rng, colors);
+    drawPill(ctx, x1, y1, x2, y2, pill.thickness, pill.color, pill.style, rng, colors, u);
   }
-  _generating = false;
-  updateTraits(arch, pal, styleCount, bgTrait, numShapes, s);
+  return { arch, pal, styleCount, bgTrait, numShapes };
 }
 
 function updateTraits(arch, pal, styleCount, bgTrait, numShapes, s) {
@@ -474,9 +499,13 @@ async function saveToGallery() {
 }
 function loadExactIteration(item) {
   const canvas = document.getElementById('c');
-  const ctx = canvas.getContext('2d');
   const img = new Image();
-  img.onload = () => { ctx.globalCompositeOperation='source-over'; ctx.drawImage(img,0,0,canvas.width,canvas.height); };
+  img.onload = () => {
+    // La pieza guardada manda: el lienzo toma SU tamaño para no deformarla.
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.globalCompositeOperation='source-over'; ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  };
   img.src = item.dataUrl;
   currentSeed = item.seed; lastPal = null;
   currentTimestamp = item.savedAt ? new Date(item.savedAt) : new Date();
@@ -508,14 +537,19 @@ function renderGallery() {
 }
 
 // ── DOWNLOAD / EXPORT ─────────────────────────────────
+// Se vuelve a renderizar fuera de pantalla al tamaño del pliego elegido (300 dpi):
+// no es un reescalado del lienzo de pantalla, es la misma obra a tamaño de papel.
 function downloadHD() {
-  const src=document.getElementById('c');
-  const hd=document.createElement('canvas');
-  hd.width=src.width*5;hd.height=src.height*5;
-  const ctx=hd.getContext('2d');ctx.scale(5,5);ctx.drawImage(src,0,0);
-  const a=document.createElement('a');
-  a.download=`pills_${currentSeed}.png`;a.href=hd.toDataURL('image/png');a.click();
-  toast(HOKSI18N.t('toast.pngDownloaded'));
+  if(!palettes.length)return;
+  toast(HOKSI18N.t('toast.rendering'));
+  setTimeout(()=>{
+    HOKS.exportPrint({
+      name:`plls_${currentSeed}_${FMT.format}_${FMT.sheet}`,
+      fmt:FMT.format, sheet:FMT.sheet,
+      render:(ctx,W,H)=>renderTo(ctx,W,H,currentSeed),
+    }).then(()=>toast(HOKSI18N.t('toast.pngPrintReady')))
+      .catch(()=>toast(HOKSI18N.t('toast.tooLarge')));
+  },60);
 }
 
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
