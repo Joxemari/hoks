@@ -35,10 +35,23 @@
   'use strict';
   const E = global.HOKS;
 
-  const N_MIN = 2, N_MAX = 14;        // slots que subdividen el ancho
+  // Rango de slots — anclado al FORMATO, no al ancho en píxeles. n subdivide
+  // el ancho, así que en un lienzo más apaisado hacen falta más slots para
+  // conservar el mismo grado de solape. El rango se define sobre la proporción
+  // √2 (un DIN A3 apaisado) y se escala desde ahí: la misma seed da el mismo
+  // carácter en cualquier proporción, y las miniaturas de la hoja de contactos
+  // coinciden con la pieza de producción.
+  const N_MIN_A3 = 2, N_MAX_A3 = 14;
+  function slotRange(W, H) {
+    const k = (W / H) / Math.SQRT2;   // 1 = un A3 · 2 = dos A3 uno al lado del otro
+    return [Math.max(2, Math.round(N_MIN_A3 * k)), Math.max(3, Math.round(N_MAX_A3 * k))];
+  }
+
   const THRESHOLD = 0.68;             // Scatter: probabilidad de que un slot exista
   const D_MIN = 0.45, D_MAX = 0.92;   // diámetro como fracción de la altura
-  const RING_LW = 0.0055;             // grosor de contorno como fracción del ancho
+  const RING_LW = 0.0078;             // grosor de contorno como fracción de la ALTURA
+                                      // (la altura fija el tamaño del círculo; el
+                                      //  ancho ya no, porque la proporción varía)
   const A_MIN = 0.40, A_MAX = 0.85;   // alpha cuando la tinta no es opaca
   const P_OPAQUE = 0.45;              // probabilidad de tinta opaca
   const P_MULTIPLY = 0.35;            // probabilidad de fundido multiply
@@ -89,7 +102,8 @@
     //    laboratorio los pise después: así mover un slider no descoloca el
     //    resto. Los colores van antes que las ausencias por el mismo motivo —
     //    cambiar de ritmo no debe recolorear la fila.
-    const nRnd      = rng.int(N_MIN, N_MAX);
+    const [nMin, nMax] = slotRange(W, H);
+    const nRnd      = rng.int(nMin, nMax);
     const dRnd      = rng.range(D_MIN, D_MAX);
     const mRnd      = rng.weighted(MODES).name;
     const rhyRnd    = rng.weighted(RHYTHMS).name;
@@ -146,7 +160,7 @@
       ctx.fillStyle = cols[0];
       ctx.fill('evenodd');
     } else if (mode === 'Ring') {
-      ctx.lineWidth = Math.max(1, W * RING_LW);
+      ctx.lineWidth = Math.max(1, H * RING_LW);
       for (let i = 0; i < n; i++) {
         if (!present[i]) continue;
         ctx.strokeStyle = cols[i];
@@ -170,7 +184,7 @@
     // 6. Grano.
     E.applyGrain(ctx, W, H, E.bakeGrain(W, H, colors, grainScale));
 
-    return { pal, n, drawn, ratio, mode, dScale, rhythm, runMax, alpha, blend, present };
+    return { pal, n, nMin, nMax, drawn, ratio, mode, dScale, rhythm, runMax, alpha, blend, present };
   }
 
   // Traits + rareza global a partir de un resultado de render().
@@ -178,8 +192,12 @@
     const prob = res.pal.prob != null ? res.pal.prob : 0.05;
     const palR = E.palRarity(prob);
 
-    const slotsLabel = res.n <= 3 ? 'Few' : res.n <= 8 ? 'Medium' : 'Many';
-    const slotsR = res.n <= 2 ? 'rare' : res.n >= 13 ? 'uncommon' : 'common';
+    // Posición dentro del rango del formato, no valor absoluto: así "Few" y
+    // "Many" significan lo mismo en un A3 que en dos.
+    const span = Math.max(1, (res.nMax || 14) - (res.nMin || 2));
+    const frac = (res.n - (res.nMin || 2)) / span;
+    const slotsLabel = frac <= 0.15 ? 'Few' : frac <= 0.6 ? 'Medium' : 'Many';
+    const slotsR = frac <= 0.02 ? 'rare' : frac >= 0.9 ? 'uncommon' : 'common';
 
     const rt = res.ratio;
     const overlapLabel = rt < 0.98 ? 'Apart' : rt < 1.6 ? 'Grazing' : rt < 3 ? 'Overlap' : rt < 5 ? 'Dense' : 'Fused';
@@ -216,5 +234,5 @@
     };
   }
 
-  (global.HOKS = global.HOKS || {}).LRRG = { render, traits, N_MIN, N_MAX, THRESHOLD, MODES, RHYTHMS };
+  (global.HOKS = global.HOKS || {}).LRRG = { render, traits, slotRange, THRESHOLD, MODES, RHYTHMS };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -23,8 +23,8 @@
   .seed-box button { width:34px; padding:6px 0; }
   .seed-box input { text-align:center; }
   .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 1.5rem; background: var(--surface); overflow: auto; }
-  #single { max-width: min(100%, calc((100vh - 120px) * 1.414)); max-height: calc(100vh - 120px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
-  .sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 1100px; }
+  #single { max-width: 100%; max-height: calc(100vh - 150px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
+  .sheet { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; max-width: 1180px; }
   .sheet canvas { width: 100%; outline: 1px solid rgba(0,0,0,0.1); cursor: pointer; display:block; }
   .sheet figcaption { padding: 3px 2px; font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
   .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; }
@@ -38,7 +38,7 @@
 </head>
 <body>
   <aside class="panel">
-    <div class="lab-title">lrrg · lab<small>fila de círculos, paso constante</small></div>
+    <div class="lab-title">lrrg · lab<small>fila de círculos, paso constante · 2828×1000 (2×A3)</small></div>
     <div class="group">
       <span class="lbl">Seed</span>
       <div class="seed-box">
@@ -55,8 +55,8 @@
     </div>
     <div class="group">
       <span class="lbl">Slots (n) · <span id="slotsV">auto</span></span>
-      <input type="range" id="slots" min="0" max="24" step="1" value="0">
-      <span class="hintline">0 = aleatorio · el paso es W/n</span>
+      <input type="range" id="slots" min="0" max="40" step="1" value="0">
+      <span class="hintline">0 = aleatorio · el paso es W/n · rango del formato: <span id="nRange">…</span></span>
     </div>
     <div class="group">
       <span class="lbl">Diameter (×H) · <span id="diaV">auto</span></span>
@@ -116,7 +116,7 @@
   </aside>
 
   <main class="stage">
-    <canvas id="single" width="1414" height="1000"></canvas>
+    <canvas id="single" width="2828" height="1000"></canvas>
     <div class="sheet" id="sheetGrid" style="display:none"></div>
     <span class="hint" id="status">—</span>
   </main>
@@ -125,8 +125,8 @@
 <script src="./algo.js"></script>
 <script>
 const WORK = HOKS.LRRG;
-const W = 1414, H = 1000;                        // resolución de producción
-const SHEET_N = 12, SHEET_W = 354, SHEET_H = 250; // mismo aspecto que el lienzo
+const W = 2828, H = 1000;                        // dos DIN A3 apaisados, lado a lado (2√2 : 1)
+const SHEET_N = 12, SHEET_W = 707, SHEET_H = 250; // un cuarto EXACTO del lienzo (2828/4 x 1000/4)
 
 const single = document.getElementById('single');
 const sctx = single.getContext('2d');
@@ -155,6 +155,7 @@ function renderSingle() {
   try {
     const res = WORK.render(sctx, W, H, seed >>> 0, { ...palOpts(), params: params() });
     $('status').textContent = `seed #${seed} · ${res.n} slots · pitch ${(W / res.n).toFixed(0)}px · ×${res.ratio.toFixed(2)}`;
+    $('nRange').textContent = res.nMin + '–' + res.nMax;
     drawTraits(WORK.traits(res));
   } catch (e) { $('status').textContent = '⚠ ' + e.message; console.error(e); }
 }
