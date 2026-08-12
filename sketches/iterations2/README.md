@@ -336,13 +336,14 @@ que sí lo eran.
 199/200 obras con tejido dibujable. **0,23 s por obra** (10,2 s al empezar).
 Y 182 de 200 son del tipo que declaran: 44/45, 94/107, 40/44, 4/4.
 
-Otras tres clases, con su control cada una:
+Otras clases, con su control cada una:
 
 | clase | resultado | control |
 |---|---|---|
 | remate soldado a otra hebra | 0 de 60 obras | 15 % antes del arreglo |
 | tinta pegada al borde | 0 de 60 obras · holgura 25 px (pedida 20) | con `margen 0`: holgura 0 px y aparece |
 | disco con el centro bajo la cinta | 0 de 125 discos | colocándolos al azar: 35,9 % |
+| disco que invade la cinta o su aire | 0 de 40 obras, en tres configuraciones | sin el término de aire: 34/40 y 29/40 |
 
 **Determinismo verificado**: 7 seeds dan la misma imagen al píxel repitiendo la
 llamada, pidiéndolos en otro orden, tras recargar la página y en otra pestaña.
@@ -463,3 +464,43 @@ reproducir el fallo.
 - Sin traits ni rareza — hace falta para que sea una obra de hoks y no un sketch.
 - Sin grano. Las tres series activas lo llevan; hay que decidir si entra en esa
   familia visual o se declara aparte.
+
+## Los discos y los ojos del nudo
+
+Hasta ahora la única regla de un disco era **no caer bajo la cinta**: buscaba el
+vacío más profundo del fondo, con tope para que no se fuera a una esquina. Eso
+los deja siempre *fuera* del tejido — un contrapunto plano y ajeno, que es lo
+que eran.
+
+Ahora una parte de ellos busca los **ojos del nudo**: los vacíos **cerrados por
+la propia cinta**. Se encuentran inundando la rejilla desde el borde del cuadro
+y quedándose con lo que el agua no alcanza.
+
+Lo que ata el disco al nudo no es dónde cae, es **de qué tamaño es**: al disco
+de un ojo lo dimensiona el ojo, no el azar. Sin eso el sistema no habría podido
+usarlos nunca — medido sobre 30 obras por tipo, los ojos miden de mediana 1,07 a
+1,3 anchuras de radio y el disco más pequeño de la gama pide 1,35, así que con
+el tamaño sorteado **ninguno cabía dentro del tejido**.
+
+| tipo | ojos por obra | obras con algún ojo |
+|---|---|---|
+| suelto | 0,6 | 17/30 |
+| anudado | 2,8 | 30/30 |
+| trama | 4,2 | 30/30 |
+| dos | 3,3 | 30/30 |
+
+Dos límites, los dos por lo mismo — que no aparezca una clase de objeto que no
+existe en el resto de la obra:
+
+- **Un ojo merece disco sólo si cabe uno de los que la obra iba a dibujar de
+  todos modos** (`dotRMin`). Con un mínimo propio y más bajo salían motas de
+  medio radio que no se leen como disco sino como suciedad.
+- **Como mucho dos discos van a un ojo** (`dotOjosMax`). Llenar el cuadro de
+  discos pequeños sería otra obra.
+
+Resultado: **10 de 40 obras** en `trama`, 6 de 40 en `anudado`, 4 de 40 en `dos`
+apaisado. Es raro a propósito.
+
+La rejilla sube de 56 a 96. Con 56 la celda mide 16 px en un cuadro de 900 y un
+ojo son cuatro celdas: el fondo del ojo se estimaba con un 25 % de error. Pintar
+pasa de 4 a 20 ms por obra, contra los 250–1200 ms que cuesta tejer.

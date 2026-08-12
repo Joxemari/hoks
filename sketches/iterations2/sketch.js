@@ -248,9 +248,14 @@ const DEF = {
   dotRMin:      0.55,        // radio, × anchura de cinta — tamaños distintos
   dotRMax:      1.35,
   dotClear:     0.30,        // aire entre disco y cinta, × anchura
-  dotGrid:      56,          // resolución del mapa de vacíos
+  // Sube de 56 a 96. Con 56, la celda mide 16 px en un cuadro de 900 y
+  // un ojo del nudo son cuatro celdas: el fondo del ojo se estimaba con
+  // un 25% de error y el disco salía o pasado o corto.
+  dotGrid:      96,          // resolución del mapa de vacíos
   dotSpread:    5.2,         // separación entre discos, × radio — que ocupen vacíos distintos
   dotTope:      2.4,         // a partir de aquí un hueco ya es "bastante grande", × anchura
+  dotOjos:      true,        // buscar los vacíos CERRADOS por la cinta
+  dotOjosMax:   2,           // cuántos discos como mucho van a un ojo
   weave:        false,
   vibration:    false,
   vibrationFactor: 0.22
@@ -281,6 +286,11 @@ const FAMILIES = {
   }
 };
 const FAMILY_NAMES = Object.keys(FAMILIES);
+
+// Las cuatro vecinas de una celda. Constante de módulo: dentro del
+// relleno por inundación esto se recorre decenas de miles de veces y
+// crearla en cada vuelta era basura pura.
+const VECINAS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 // ------------------------------------------------------------
 // EL SALTO
@@ -1680,21 +1690,90 @@ function drawDots(ctx, mapped, width, comp, ox, oy, S, H) {
   const radios = [];
   for (let i = 0; i < cfg.dotsMax; i++) radios.push(width * random(cfg.dotRMin, cfg.dotRMax));
   const r = max(...radios);   // el hueco se reserva para el mayor
-  const need = r + width * (0.5 + cfg.dotClear) + cfg.gapAbs * ALTO;
+  // Aire entre el borde de la cinta y el borde del disco.
+  const aire = width * (0.5 + cfg.dotClear) + cfg.gapAbs * ALTO;
+  const need = r + aire;
   const borde = r + cfg.margen * ALTO;
   const N = cfg.dotGrid;
 
-  // mapa de vacíos: distancia de cada celda del campo a la cinta
-  const huecos = [];
+  // Distancia de cada celda del campo a la cinta. Se calcula una vez y
+  // sirve para las dos cosas: los vacíos abiertos y los ojos del nudo.
+  const D = new Float32Array(N * N);
+  const P = new Array(N * N);
   for (let gy = 0; gy < N; gy++) {
     for (let gx = 0; gx < N; gx++) {
       const p = createVector(ox + (gx + 0.5) * S / N, oy + (gy + 0.5) * ALTO / N);
-      if (p.x < ox + borde || p.x > ox + S - borde) continue;
-      if (p.y < oy + borde || p.y > oy + ALTO - borde) continue;
       let d = Infinity;
       for (let i = 0; i < mapped.length - 1; i++) d = min(d, pointSegDist(p, mapped[i], mapped[i+1]));
-      if (d >= need) huecos.push({ p, d });
+      D[gy * N + gx] = d; P[gy * N + gx] = p;
     }
+  }
+
+  // ------------------------------------------------------------
+  // LOS OJOS DEL NUDO
+  // Un vacío CERRADO POR LA PROPIA CINTA no es lo mismo que un hueco
+  // del fondo: pertenece al tejido. Se encuentran inundando desde el
+  // borde del cuadro y quedándose con lo que el agua no alcanza.
+  //
+  // Y el disco lo dimensiona EL OJO, no el azar. Ésa es la diferencia:
+  // medido, los ojos miden de mediana 1,07 a 1,3 anchuras de radio y el
+  // disco más pequeño de la gama pide 1,35, así que con el tamaño
+  // sorteado NINGUNO cabía dentro del tejido. Un disco que llena un ojo
+  // pertenece al nudo; uno suelto en el fondo es decoración.
+  // ------------------------------------------------------------
+  const ojos = [];
+  if (cfg.dotOjos !== false && cfg.dotOjosMax > 0) {
+    const bajo = (k) => D[k] < width / 2;
+    const fuera = new Uint8Array(N * N);
+    const pila = [];
+    for (let i = 0; i < N; i++)
+      for (const k of [i, (N - 1) * N + i, i * N, i * N + N - 1])
+        if (!bajo(k) && !fuera[k]) { fuera[k] = 1; pila.push(k); }
+    while (pila.length) {
+      const k = pila.pop(), x = k % N, y = (k - x) / N;
+      for (const v of VECINAS) {
+        const nx = x + v[0], ny = y + v[1];
+        if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
+        const j = ny * N + nx;
+        if (bajo(j) || fuera[j]) continue;
+        fuera[j] = 1; pila.push(j);
+      }
+    }
+    const visto = new Uint8Array(N * N);
+    for (let k = 0; k < N * N; k++) {
+      if (bajo(k) || fuera[k] || visto[k]) continue;
+      const q = [k]; visto[k] = 1; let mejor = k;
+      while (q.length) {
+        const t = q.pop();
+        if (D[t] > D[mejor]) mejor = t;
+        const x = t % N, y = (t - x) / N;
+        for (const v of VECINAS) {
+          const nx = x + v[0], ny = y + v[1];
+          if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
+          const j = ny * N + nx;
+          if (bajo(j) || fuera[j] || visto[j]) continue;
+          visto[j] = 1; q.push(j);
+        }
+      }
+      // Un ojo merece disco sólo si cabe uno de los que la obra iba a
+      // dibujar de todos modos. Con un mínimo propio y más bajo salían
+      // motas de medio radio que no se leen como disco sino como
+      // suciedad, y aparecía una clase de tamaño que no existe en el
+      // resto de la obra.
+      const rad = D[mejor] - aire;
+      if (rad >= width * cfg.dotRMin)
+        ojos.push({ p: P[mejor], r: min(rad, width * cfg.dotRMax) });
+    }
+    ojos.sort((a, b) => b.r - a.r);
+  }
+
+  // mapa de vacíos abiertos: los de siempre
+  const huecos = [];
+  for (let k = 0; k < N * N; k++) {
+    const p = P[k];
+    if (p.x < ox + borde || p.x > ox + S - borde) continue;
+    if (p.y < oy + borde || p.y > oy + ALTO - borde) continue;
+    if (D[k] >= need) huecos.push({ p, d: D[k] });
   }
   // El hueco más profundo está SIEMPRE en la esquina del marco, y ahí
   // el disco parece una pegatina. Se le pone tope a la profundidad: en
@@ -1709,17 +1788,30 @@ function drawDots(ctx, mapped, width, comp, ox, oy, S, H) {
 
   const count = floor(random(cfg.dotsMin, cfg.dotsMax + 1));
   const placed = [];
+  // La separación se mide entre BORDES y no con un radio único: ahora
+  // los discos no miden todos lo mismo.
+  const cabe = (p, rad) => placed.every(q =>
+    p5.Vector.dist(p, q.p) > (rad + q.r) * 0.5 * cfg.dotSpread);
+
+  // Los ojos primero, pero no todos: llenar el cuadro de discos pequeños
+  // sería otra obra. Los demás discos siguen buscando vacío abierto.
+  let enOjo = 0;
+  for (const o of ojos) {
+    if (placed.length >= count || enOjo >= cfg.dotOjosMax) break;
+    if (!cabe(o.p, o.r)) continue;
+    placed.push({ p: o.p, r: o.r, ojo: true }); enOjo++;
+  }
   for (const h of huecos) {
     if (placed.length >= count) break;
-    let ok = true;
-    for (const q of placed) if (p5.Vector.dist(h.p, q) < r * cfg.dotSpread) ok = false;
-    if (ok) placed.push(h.p);
+    const rad = radios[placed.length % radios.length];
+    if (!cabe(h.p, rad)) continue;
+    placed.push({ p: h.p, r: rad, ojo: false });
   }
 
   const gama = comp.colores.dots;
-  placed.forEach((p, i) => {
+  placed.forEach((d, i) => {
     ctx.fillStyle = gama[i % gama.length];
-    ctx.beginPath(); ctx.arc(p.x, p.y, radios[i % radios.length], 0, TWO_PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(d.p.x, d.p.y, d.r, 0, TWO_PI); ctx.fill();
   });
   return placed;
 }
