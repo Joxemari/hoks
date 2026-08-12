@@ -163,7 +163,25 @@ apaisado**. Con una sola escala, cero.
 En el laboratorio: cuadrado, apaisado 3:2 y panorámico 2:1. El buffer de export
 sigue el formato, así que el PNG sale apaisado y no recortado de un cuadrado.
 
-### Las familias no se leen
+### Con dos cintas, dos familias
+
+Cada pasada del esqueleto ES una cinta, así que dos cintas de la misma
+familia son la misma forma girada 0,62 de vuelta y encogida: se leen como el
+eco de una sola, no como dos tejidos que se encuentran. La segunda cinta saca
+sus anchors de **otra familia**, y la extensión la manda la más extendida de
+las dos —encajar dos cintas en la extensión de la más recogida las apelotona
+en el centro.
+
+Esto no contradice lo de abajo. Las familias no se distinguen **una a una**,
+comparadas contra una media recordada. Aquí las dos están en la misma imagen,
+una al lado de la otra, y la comparación es directa: sale una cinta larga y
+una anudada, o dos densidades distintas.
+
+El corte entre las dos va por la **frontera de pasada**, no por la mitad de la
+lista de anchors: dos familias no tienen el mismo número de anchors, y partir
+por la mitad le daría a una cinta un trozo de la otra.
+
+### Las familias no se leen (una a una)
 
 Las cinco (`diagonal`, `compact`, `open`, `returning`, `cross`) siguen ahí como
 variación interna, pero **no son una categoría**. Medido sobre 60 obras: mismo

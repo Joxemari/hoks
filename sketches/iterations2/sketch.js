@@ -540,7 +540,7 @@ function generate(seed, cfg) {
   const { cuts, order, depth, cruces, plano, crossings } = intento.nudo;
 
 
-  return { seed, tipo, salto: intento.salto, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, conserva: intento.conserva, volteos: intento.volteos, width, colores, cfg };
+  return { seed, tipo, salto: intento.salto, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, family2: intento.family2, conserva: intento.conserva, volteos: intento.volteos, width, colores, cfg };
 }
 
 // ------------------------------------------------------------
@@ -554,11 +554,33 @@ function tejer(family, vueltas, cfg) {
   // encogida. La cinta vuelve a entrar en el marco y se cruza con lo
   // que ya dejó escrito. De ahí sale la trama.
   const centro = createVector(0.5, 0.5);
+
+  // Con dos cintas, cada pasada ES una cinta. Y dos cintas de la misma
+  // familia son la misma forma girada 0,62 de vuelta y encogida: se leen
+  // como el eco de una sola, no como dos tejidos que se encuentran. La
+  // segunda saca sus anchors de OTRA familia.
+  //
+  // Medido, las familias no se distinguen una a una —mismo aspecto de
+  // mancha, mismo centro, misma dispersión—, y por eso no son una
+  // categoría. Pero aquí no se comparan contra una media recordada: las
+  // dos están EN LA MISMA IMAGEN, una al lado de la otra, y ahí la
+  // comparación sí es directa.
+  const dosCintas = cfg.dosCintas && vueltas >= 2;
+  const specs = [];
+  for (let t = 0; t < vueltas; t++) specs.push(spec);
+  let family2 = null;
+  if (dosCintas) {
+    const otras = FAMILY_NAMES.filter(f => f !== family);
+    family2 = otras[floor(random(otras.length))];
+    specs[1] = FAMILIES[family2];
+  }
+
   let anchors = [];
+  const cortes = [];
   for (let t = 0; t < vueltas; t++) {
     const ang = t * cfg.vueltaGiro * TWO_PI + random(-0.25, 0.25);
     const esc = pow(cfg.vueltaEscala, t);
-    let pass = spec.anchors.map(a => {
+    let pass = specs[t].anchors.map(a => {
       const p = createVector(a[0] - centro.x, a[1] - centro.y).mult(esc);
       return createVector(
         centro.x + p.x * cos(ang) - p.y * sin(ang),
@@ -567,6 +589,7 @@ function tejer(family, vueltas, cfg) {
     });
     if (t % 2 === 1) pass.reverse();   // enlace natural entre pasadas
     anchors = anchors.concat(pass);
+    cortes.push(anchors.length);        // dónde acaba cada pasada
   }
 
   // El campo es A veces más ancho, así que la disposición se reparte por
@@ -590,13 +613,16 @@ function tejer(family, vueltas, cfg) {
 
   // los anchors son intocables, los insertados son material blando
   let nodes;
-  if (cfg.dosCintas && vueltas >= 2) {
+  if (dosCintas) {
     // DOS CINTAS: cada pasada es una cinta suya, no un tramo más del
     // mismo recorrido. Se construyen por separado —si no, buildPath
     // insertaría puntos ENTRE ellas y las uniría— y se concatenan con el
     // salto en medio.
-    const mitad = floor(anchors.length / vueltas);
-    const a1 = anchors.slice(0, mitad), a2 = anchors.slice(mitad);
+    // El corte va por la FRONTERA DE PASADA, no por la mitad de la
+    // lista: dos familias distintas no tienen el mismo número de
+    // anchors, y partir por la mitad le daría a una cinta un trozo de
+    // la otra.
+    const a1 = anchors.slice(0, cortes[0]), a2 = anchors.slice(cortes[0]);
     const n1 = buildPath(a1, a1.length + floor(random(1, 4)), cfg);
     const n2 = buildPath(a2, a2.length + floor(random(1, 4)), cfg);
     nodes = n1.concat(n2);
@@ -608,7 +634,10 @@ function tejer(family, vueltas, cfg) {
 
   // La extensión declarada vale para UNA pasada. Cada vuelta añade
   // recorrido dentro del mismo marco y necesita más campo.
-  nodes = fitToExtent(nodes, min(0.98, spec.extent + 0.12 * (vueltas - 1)), cfg);
+  // Con dos familias manda la más extendida: encajar dos cintas en la
+  // extensión de la más recogida las apelotona en el centro.
+  const extension = dosCintas ? max(spec.extent, FAMILIES[family2].extent) : spec.extent;
+  nodes = fitToExtent(nodes, min(0.98, extension + 0.12 * (vueltas - 1)), cfg);
   let width = constrain(anchura * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
 
   // Las tres restricciones se estorban entre sí: abrir un pliegue
@@ -656,7 +685,7 @@ function tejer(family, vueltas, cfg) {
                        segPercentil(nodes, 0.15) / 1.05);
   width = constrain(admitida, cfg.widthMin, cfg.widthMax);
 
-  return { nodes, width, deseada, conserva: admitida / deseada };
+  return { nodes, width, deseada, family2, conserva: admitida / deseada };
 }
 
 // ------------------------------------------------------------
