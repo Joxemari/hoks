@@ -1,13 +1,17 @@
 /* LRRG — lerroa. Iteración en un solo eje: una fila de círculos sobre mesh
  * gradient, con grano.
  *
- * La gramática, en tres reglas:
- *   1. El ancho se subdivide en n slots. El paso entre centros (pitch = W/n) es
- *      SIEMPRE el mismo dentro de una pieza. La retícula es perfecta.
- *   2. El diámetro no depende del paso. Por eso n es quien decide el solape:
+ * La gramática, en cuatro reglas:
+ *   1. Ningún círculo pisa el borde del cuadro. El aire lateral iguala al
+ *      vertical, lo que confina los centros al segmento [H/2, W − H/2]: un
+ *      cuadrado de lado H que recorre el lienzo. El recorrido mide W − H, sea
+ *      cual sea el diámetro.
+ *   2. Ese recorrido se subdivide en n−1 pasos. El paso entre centros
+ *      (pitch = (W − H)/(n − 1)) es SIEMPRE el mismo dentro de una pieza.
+ *   3. El diámetro no depende del paso. Por eso n es quien decide el solape:
  *      con n bajo los círculos se rozan; con n alto cada uno se come a varios
  *      vecinos.
- *   3. Algunos slots no se dibujan. La irregularidad no está en las posiciones
+ *   4. Algunos slots no se dibujan. La irregularidad no está en las posiciones
  *      — está en las ausencias.
  *
  * Cómo se reparten esas ausencias (trait Rhythm):
@@ -35,20 +39,22 @@
   'use strict';
   const E = global.HOKS;
 
-  // Rango de slots — anclado al FORMATO, no al ancho en píxeles. n subdivide
-  // el ancho, así que en un lienzo más apaisado hacen falta más slots para
-  // conservar el mismo grado de solape. El rango se define sobre la proporción
-  // √2 (un DIN A3 apaisado) y se escala desde ahí: la misma seed da el mismo
-  // carácter en cualquier proporción, y las miniaturas de la hoja de contactos
-  // coinciden con la pieza de producción.
-  const N_MIN_A3 = 2, N_MAX_A3 = 14;
+  // Rango de slots — anclado al FORMATO, no al ancho en píxeles. Los centros
+  // viven en un segmento de longitud W − H (ver abajo), así que el solape vale
+  // dScale·(n−1)/(W/H − 1). Para que el MISMO grado de solape esté disponible en
+  // cualquier proporción, (n−1) tiene que escalar con (W/H − 1). Calibrado para
+  // que el solape recorra ×1 (tangentes) a ×8 (fundidos) en cualquier formato.
+  const K_MIN = 1.64, K_MAX = 14.2;
   function slotRange(W, H) {
-    const k = (W / H) / Math.SQRT2;   // 1 = un A3 · 2 = dos A3 uno al lado del otro
-    return [Math.max(2, Math.round(N_MIN_A3 * k)), Math.max(3, Math.round(N_MAX_A3 * k))];
+    const a = W / H - 1;              // 0.414 = un A3 · 1.828 = dos A3
+    return [1 + Math.max(1, Math.round(K_MIN * a)), 1 + Math.max(2, Math.round(K_MAX * a))];
   }
 
   const THRESHOLD = 0.68;             // Scatter: probabilidad de que un slot exista
-  const D_MIN = 0.45, D_MAX = 0.92;   // diámetro como fracción de la altura
+  // Diámetro como fracción de la altura. Centrado en 0.57, la proporción
+  // elegida: banda con aire generoso arriba y abajo, no un friso que llena
+  // el alto. Nunca > 1: el círculo no puede salirse del cuadro.
+  const D_MIN = 0.46, D_MAX = 0.68;
   const RING_LW = 0.0078;             // grosor de contorno como fracción de la ALTURA
                                       // (la altura fija el tamaño del círculo; el
                                       //  ancho ya no, porque la proporción varía)
@@ -120,10 +126,17 @@
     const alpha  = params.alpha    ? params.alpha    : (opaqueRnd ? 1 : aRnd);
     const blend  = params.blend    ? params.blend    : (mulRnd ? 'multiply' : 'source-over');
 
-    const pitch = W / n;              // distancia entre centros — constante
-    const r = (H * dScale) / 2;
+    // Geometría. Ningún círculo pisa el borde: el aire lateral es el mismo que
+    // el vertical, (H − D)/2, y eso confina los centros al segmento
+    // [H/2, W − H/2] — longitud W − H, independiente del diámetro. El círculo
+    // queda inscrito en un cuadrado de lado H que recorre el cuadro; n subdivide
+    // ese recorrido en n−1 pasos iguales.
+    const r = (H * Math.min(1, dScale)) / 2;
     const cy = H / 2;
-    const ratio = (r * 2) / pitch;    // >1 = hay solape
+    const span = W - H;
+    const solo = n < 2 || span <= 0;              // un único círculo: al centro
+    const pitch = solo ? 0 : span / (n - 1);      // distancia entre centros — constante
+    const ratio = solo ? 0 : (r * 2) / pitch;     // >1 = hay solape
 
     // 3. Color por slot (se tira siempre, exista o no el círculo).
     const cols = [];
@@ -140,7 +153,8 @@
     }
 
     // 5. Dibujo.
-    const cx = i => (i + 0.5) * pitch;   // los extremos pueden sangrar fuera del lienzo
+    // Extremos con el mismo aire que arriba y abajo, (H − D)/2 — no tangentes.
+    const cx = i => (solo ? W / 2 : H / 2 + i * pitch);
     let drawn = 0;
     for (let i = 0; i < n; i++) if (present[i]) drawn++;
 
@@ -184,7 +198,8 @@
     // 6. Grano.
     E.applyGrain(ctx, W, H, E.bakeGrain(W, H, colors, grainScale));
 
-    return { pal, n, nMin, nMax, drawn, ratio, mode, dScale, rhythm, runMax, alpha, blend, present };
+    return { pal, n, nMin, nMax, drawn, ratio, mode, dScale: Math.min(1, dScale),
+             rhythm, runMax, alpha, blend, present };
   }
 
   // Traits + rareza global a partir de un resultado de render().
