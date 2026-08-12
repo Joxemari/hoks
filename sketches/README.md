@@ -39,7 +39,14 @@ sketches/
   pllsg/            ← graduada (algo.js + harness)
   krrtkg/           ← graduada (porte fiel, verificado op-a-op)
   dtkg/             ← graduada (porte fiel, verificado op-a-op)
+  lrrg/             ← PROTOTIPO — sin página de producción, fuera de works.json
 ```
+
+Un **prototipo** vive aquí igual que una obra graduada (mismo contrato, mismo
+harness) pero no existe todavía para la web: ni página en la raíz, ni entrada en
+`works.json`, ni galería. Solo se llega por `sketches/<slug>/`. Se queda así
+hasta que la hoja de contactos convence; entonces se hacen los pasos 4 (página
+de producción) y el alta en `works.json`.
 
 Cada obra expone el mismo contrato:
 
