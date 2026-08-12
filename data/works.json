@@ -64,10 +64,6 @@
     "description": "Hundreds of Bézier curves, each one a gradient between two colours of the palette. A single gesture repeated until it becomes fabric.",
     "page": "bzrs.html",
     "canvas": "square · vertical · horizontal (DIN)",
-    "formats": [
-      "square",
-      "horizontal"
-    ],
     "created": 1745500000000,
     "drawCode": "if(!palettes.length)return;\n  const canvas=document.getElementById('c');\n  const ctx=canvas.getContext('2d');\n  const W=canvas.width,H=canvas.height;\n  const rng=new Rng(seed);\n\n  const pal=rng.weighted(palettes);\n  const colors=pal.colors;\n  const margin=Math.round(W*0.0833); // ~50/600\n\n  // Background\n  const bgColor=colors[rng.int(0,colors.length-1)];\n  ctx.fillStyle=bgColor; ctx.fillRect(0,0,W,H);\n\n  // Number of curves: 750-1250 (faithful: random(750,1250))\n  const numCurves=rng.int(750,1250);\n  const startX=margin;\n  const endX=W-margin;\n  const curveDist=(H-2*margin)/numCurves;\n\n  // Two gradient colors\n  const colorOne=colors[rng.int(0,colors.length-1)];\n  const colorTwo=colors[rng.int(0,colors.length-1)];\n\n  ctx.save();\n  ctx.lineWidth = Math.max(0.5, W/600);\n  // Pre-compute all curve parameters for determinism\n  const curveData = [];\n  for(let i=0;i<numCurves;i++){\n    curveData.push({\n      startY: margin+i*curveDist,\n      endY: rng.range(margin,H-margin),\n      cp1x: rng.range(startX-margin,startX),\n      cp1y: 0, cp2x: 0, cp2y: 0, t: i/numCurves\n    });\n    curveData[i].cp1y = curveData[i].startY + rng.range(-margin,margin);\n    curveData[i].cp2x = rng.range(endX,endX+margin);\n    curveData[i].cp2y = curveData[i].endY + rng.range(-margin,margin);\n  }\n  // Draw all curves synchronously (computed above for RNG determinism)\n  for(let i=0;i<numCurves;i++){\n    const cd = curveData[i];\n    ctx.strokeStyle = lerpColor(colorOne,colorTwo,cd.t);\n    ctx.beginPath();\n    ctx.moveTo(startX,cd.startY);\n    ctx.bezierCurveTo(cd.cp1x,cd.cp1y,cd.cp2x,cd.cp2y,endX,cd.endY);\n    ctx.stroke();\n  }\n  ctx.restore();\n\n  // Traits\n  const palRarity=palRarityFromProb(pal.prob);\n  const curveLabel=numCurves>1100?'Dense':numCurves>900?'Medium':'Sparse';\n  const curveRarity=numCurves>1100?'uncommon':numCurves<800?'rare':'common';\n  const sameColor=colorOne===colorTwo?'Monochrome':'Gradient';\n  const colorRarity=colorOne===colorTwo?'rare':'common';\n  const score=pal.prob*(curveRarity==='rare'?0.3:curveRarity==='uncommon'?0.7:1)*(colorRarity==='rare'?0.4:1);\n  const overall=score>0.06?'common':score>0.025?'uncommon':score>0.008?'rare':score>0.002?'superrare':'legendary';\n\n  const traits=[\n    {key:'Palette', val:pal.name, colors:pal.colors, rarity:palRarity},\n    {key:'Curves',  val:numCurves+' Â· '+curveLabel, rarity:curveRarity},\n    {key:'Blend',   val:sameColor, rarity:colorRarity},\n  ];\n  lastTraits=traits; lastOverall=overall;\n\n  document.getElementById('traitList').innerHTML=traits.map(t=>`\n    <div class=\"trait-row\">\n      <span class=\"trait-key\">${t.key}</span>\n      <span class=\"trait-right\">\n        ${t.colors?`<span style=\"display:flex;gap:2px;align-items:center;\">${t.colors.slice(0,6).map(c=>`<span style=\"width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0;border:0.5px solid rgba(0,0,0,0.1);\"></span>`).join('')}</span>`:''}\n        <span class=\"trait-val\">${t.val}</span>\n        <span class=\"badge ${RC[t.rarity]}\">${RL[t.rarity]}</span>\n      </span>\n    </div>`).join('');\n  document.getElementById('overallRarity').innerHTML=`<span class=\"badge ${RC[overall]}\">${RL[overall]}</span>`;\n  const ts=currentTimestamp,tsEl=document.getElementById('timestampDisplay');\n  if(tsEl)tsEl.textContent=ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' Â· '+ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});"
   },
@@ -90,16 +86,20 @@
     }
   },
   {
-    "id": "lrrg",
-    "name": "LRRG",
-    "slug": "lrrg",
-    "active": false,
+    "id": "eclps",
+    "name": "ECLPS",
+    "slug": "eclps",
+    "active": true,
     "description": "A single row of circles on one axis. The step between centres never changes; what changes is which of them are drawn. The grid stays perfect — the irregularity is all absence.",
-    "page": "",
+    "page": "eclps.html",
     "canvas": "double · dos pliegos apaisados (2√2:1)",
     "formats": [
       "double"
     ],
-    "created": 1786500000000
+    "created": 1786500000000,
+    "cartela": {
+      "es": "El paso entre centros no cambia nunca. Lo que cambia es cuál de los círculos se calla.\nLa retícula no se rompe: el ritmo está hecho de ausencias.",
+      "en": "The step between centres never changes. What changes is which circle falls silent.\nThe lattice never breaks: the rhythm is made of absences."
+    }
   }
 ]

@@ -312,6 +312,7 @@ nav.innerHTML = `
         <li data-slug="dtk"><a href="dtk.html"${path==='dtk.html'?' class="active"':''}>DTK</a></li>
         <li data-slug="bzrs"><a href="bzrs.html"${path==='bzrs.html'?' class="active"':''}>BZRS</a></li>
         <li data-slug="dtkrt"><a href="dtkrt.html"${path==='dtkrt.html'?' class="active"':''}>DTKRT</a></li>
+        <li data-slug="eclps"><a href="eclps.html"${path==='eclps.html'?' class="active"':''}>ECLPS</a></li>
       </ul>
     </li>
     <li><a href="about.html"${isAbout?' class="active"':''} data-i18n="nav.about">About</a></li>

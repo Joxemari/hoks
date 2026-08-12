@@ -273,7 +273,7 @@
   // guardadas que lo dicen.
   // Dos listas distintas, y la diferencia importa: ALL_FORMATS es el CATÁLOGO
   // —todo lo que el motor sabe medir— y FORMATS es lo que una obra ofrece si no
-  // dice otra cosa. Una familia puede existir en una sola proporción: LRRG es
+  // dice otra cosa. Una familia puede existir en una sola proporción: ECLPS es
   // una fila, y en cuadrado no es la misma obra más corta, es otra. Lo que cada
   // una habilita se declara en su algo.js (FORMATS) y lo puede cambiar el panel
   // por works.json, sin tocar código.

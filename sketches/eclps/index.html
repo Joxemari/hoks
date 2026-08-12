@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>lrrg · lab — hoks</title>
+<title>eclps · lab — hoks</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root { --ink:#111; --ink3:#bbb; --border:#e8e8e8; --surface:#f7f7f7; --f:'Courier New',Courier,monospace; }
@@ -174,7 +174,7 @@
 <script src="../_engine.js"></script>
 <script src="./algo.js"></script>
 <script>
-const WORK = HOKS.LRRG;
+const WORK = HOKS.ECLPS;
 const BASE = 1000, SHEET_BASE = 300;   // lado corto: hoja y hoja de contactos
 const SHEET_N = 12;
 // La obra es una fila: nace en horizontal. En cuadrado existe igual, pero el
@@ -218,7 +218,7 @@ let palPicker = null;
 function palOpts() { return palPicker ? palPicker.opts() : { palettes: PALETTES }; }
 
 let batch = null;
-const SLUG = 'lrrg';
+const SLUG = 'eclps';
 // La receta ES la pieza: seed + params + paleta + FORMATO (la proporción cambia
 // la composición, no solo el recorte). El nombre de la paleta se resuelve con un
 // render de 8px —el stream del RNG no depende del tamaño— para detectar deriva.
@@ -342,7 +342,7 @@ $('cartela').onclick = () => {
 };
 $('sheet').onclick = () => setView(VIEW === 'sheet' ? 'single' : 'sheet');
 $('batchView').onclick = () => setView(VIEW === 'batch' ? 'single' : 'batch');
-$('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `lrrg_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
+$('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `eclps_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
 
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
