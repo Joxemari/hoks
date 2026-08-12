@@ -64,7 +64,7 @@ el nudo, en las 40 obras probadas.
 
 ## El tipo
 
-Tres tipos, y son **lo primero que se lee** en la obra:
+Cuatro tipos, y son **lo primero que se lee** en la obra:
 
 | tipo | prob. | pasadas | trazo | cruces | qué se ve |
 |---|---|---|---|---|---|
@@ -82,8 +82,8 @@ cinta fina desde el principio.**
 
 Y luego **se comprueba sobre el resultado**: entre los tejidos dibujables, gana
 el que cae en la banda de cruces de su tipo. Declarar sin comprobar es lo que
-falló con las familias. Medido sobre 100 obras: **92 son del tipo que
-declaran** (17/18, 56/60, 19/22).
+falló con las familias. Medido sobre 200 obras: **182 son del tipo que
+declaran** (44/45, 94/107, 40/44, 4/4 sobre 200).
 
 El orden del desempate importa y está pagado en errores:
 
