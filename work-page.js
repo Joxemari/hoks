@@ -95,6 +95,7 @@
     const foot = document.querySelector('footer');
     if (foot) document.body.insertBefore(root, foot); else document.body.appendChild(root);
 
+
     const lb = el('div', 'wk-lb');
     const lbImg = el('img'); const lbCap = el('span', 'wk-lb-cap');
     lb.appendChild(lbImg); lb.appendChild(lbCap);

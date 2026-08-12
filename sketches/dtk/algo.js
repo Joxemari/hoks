@@ -55,11 +55,17 @@
     const size = pitch / 1.1;                        // 10% de aire entre círculos
 
     // Matriz de composición (una tirada por celda, como el original).
-    const composition = [];
-    for (let i = 0; i < cols; i++) {
-      composition.push([]);
-      for (let j = 0; j < rows; j++) composition[i].push(rng.next());
+    // ⟨esaldia:eu⟩ Zenbaki bat gelaxka bakoitzeko, eta atalase bat. Ez dago beste erabakirik.
+    // ⟨esaldia:eu⟩ Sareta ez da marrazten: irakurri egiten da.
+    // ⟨esaldia:en⟩ One number per cell, and a threshold. There is no other decision.
+    // ⟨esaldia:en⟩ The grid is not drawn: it is read.
+    // ⟨gramatika⟩
+    const chance = [];
+    for (let col = 0; col < cols; col++) {
+      chance.push([]);
+      for (let row = 0; row < rows; row++) chance[col].push(rng.next());
     }
+    // ⟨/gramatika⟩
 
     // 3. Círculos.
     ctx.save();
@@ -67,7 +73,7 @@
     let drawn = 0;
     for (let i = 0; i < cols; i++) {
       for (let j = 0; j < rows; j++) {
-        if (composition[i][j] <= threshold) {
+        if (chance[i][j] <= threshold) {
           const x = (i + 0.5) * pitch;
           const y = (j + 0.5) * pitch;
           ctx.fillStyle = colors[rng.int(0, colors.length - 1)];

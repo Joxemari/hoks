@@ -71,24 +71,31 @@
   // ── Región: poliominó por crecimiento ortogonal ────────────────────────────
   // Semilla + expansión a vecinos: salen barras, eles, escaleras y campos, sin
   // catálogo de formas. La forma es consecuencia de la regla, no un dibujo.
-  function grow(rng, cols, rows, target, avoid) {
-    const cells = new Set(), order = [];
-    const si = rng.int(0, cols - 1), sj = rng.int(0, rows - 1);
-    if (avoid && avoid.has(si + ',' + sj)) return cells;
-    cells.add(si + ',' + sj); order.push([si, sj]);
-    let guard = target * 12;
-    while (cells.size < target && guard-- > 0) {
-      const [ci, cj] = order[rng.int(0, order.length - 1)];
-      const d = rng.int(0, 3);
-      const ni = ci + (d === 0 ? 1 : d === 1 ? -1 : 0);
-      const nj = cj + (d === 2 ? 1 : d === 3 ? -1 : 0);
-      if (ni < 0 || nj < 0 || ni >= cols || nj >= rows) continue;
-      const key = ni + ',' + nj;
-      if (cells.has(key) || (avoid && avoid.has(key))) continue;
-      cells.add(key); order.push([ni, nj]);
+  // ⟨esaldia:eu⟩ Hazi bat, eta ondokoetara hedatzea. Ez dago forma-katalogorik.
+  // ⟨esaldia:eu⟩ Barrak, eleak eta eskailerak arauaren ondorio dira, ez marrazki bat.
+  // ⟨esaldia:en⟩ A seed cell, then spread to its neighbours. There is no catalogue of shapes.
+  // ⟨esaldia:en⟩ Bars, ells and staircases are consequences of the rule, not a drawing.
+  // ⟨gramatika⟩
+  function growRegion(rng, cols, rows, howMany, occupied) {
+    const region = new Set(), reached = [];
+    const seedCol = rng.int(0, cols - 1), seedRow = rng.int(0, rows - 1);
+    if (occupied && occupied.has(seedCol + ',' + seedRow)) return region;
+    region.add(seedCol + ',' + seedRow); reached.push([seedCol, seedRow]);
+    let patience = howMany * 12;
+    while (region.size < howMany && patience-- > 0) {
+      const [fromCol, fromRow] = reached[rng.int(0, reached.length - 1)];
+      const towards = rng.int(0, 3);
+      const col = fromCol + (towards === 0 ? 1 : towards === 1 ? -1 : 0);
+      const row = fromRow + (towards === 2 ? 1 : towards === 3 ? -1 : 0);
+      const outsideTheLattice = col < 0 || row < 0 || col >= cols || row >= rows;
+      if (outsideTheLattice) continue;
+      const cell = col + ',' + row;
+      if (region.has(cell) || (occupied && occupied.has(cell))) continue;
+      region.add(cell); reached.push([col, row]);
     }
-    return cells;
+    return region;
   }
+  // ⟨/gramatika⟩
 
   // Celdas pintadas con bordes redondeados al mismo entero: las contiguas
   // comparten arista exacta y la región se lee como una sola masa, sin costuras.
@@ -150,8 +157,8 @@
     // 4. Capa de pertenencia.
     const total = cols * rows;
     const target = rng.int(2, Math.max(2, Math.round(total * 0.45)));
-    const region = grow(rng, cols, rows, target, null);
-    const twin = rng.bool(P_TWIN) ? grow(rng, cols, rows, rng.int(2, Math.max(2, Math.round(total * 0.2))), region) : new Set();
+    const region = growRegion(rng, cols, rows, target, null);
+    const twin = rng.bool(P_TWIN) ? growRegion(rng, cols, rows, rng.int(2, Math.max(2, Math.round(total * 0.2))), region) : new Set();
     const accent = new Set();
     if (rng.bool(P_ACCENT)) {
       const ai = rng.int(0, cols - 1), aj = rng.int(0, rows - 1), key = ai + ',' + aj;

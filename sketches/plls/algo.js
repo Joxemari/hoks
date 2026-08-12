@@ -52,13 +52,17 @@
   function pillsOverlap(ax, ay, aL, at, bx, by, bL, bt, tol) {
     return Math.max(0, (at + bt) / 2 + Math.min(aL, bL) * 0.5 - Math.hypot(ax - bx, ay - by)) / ((at / 2 + bt / 2)) > tol;
   }
-  function pillPath(ctx, x1, y1, x2, y2, t) {
-    const r = t / 2, a = Math.atan2(y2 - y1, x2 - x1);
+  // ⟨esaldia:eu⟩ Kapsula bat ez da forma: bi punturen arteko distantzia bat da, lodiera batekin.
+  // ⟨esaldia:en⟩ A capsule is not a shape: it is a distance between two points, given a thickness.
+  // ⟨gramatika⟩
+  function capsuleOutline(ctx, fromX, fromY, toX, toY, thickness) {
+    const radius = thickness / 2, along = Math.atan2(toY - fromY, toX - fromX);
     ctx.beginPath();
-    ctx.arc(x1, y1, r, a + Math.PI / 2, a + Math.PI * 1.5);
-    ctx.arc(x2, y2, r, a - Math.PI / 2, a + Math.PI / 2);
+    ctx.arc(fromX, fromY, radius, along + Math.PI / 2, along + Math.PI * 1.5);
+    ctx.arc(toX,   toY,   radius, along - Math.PI / 2, along + Math.PI / 2);
     ctx.closePath();
   }
+  // ⟨/gramatika⟩
 
   // Acabado "ajedrez": teselas alternas recortadas a la silueta de la pill.
   function drawChessPill(ctx, x1, y1, x2, y2, t, col, rng, tile) {
@@ -74,7 +78,7 @@
     const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
     const x0 = Math.floor(Math.min(...xs) / tile) * tile, x1e = Math.ceil(Math.max(...xs) / tile) * tile;
     const y0 = Math.floor(Math.min(...ys) / tile) * tile, y1e = Math.ceil(Math.max(...ys) / tile) * tile;
-    ctx.save(); pillPath(ctx, x1, y1, x2, y2, t); ctx.clip();
+    ctx.save(); capsuleOutline(ctx, x1, y1, x2, y2, t); ctx.clip();
     for (let tx = x0; tx < x1e; tx += tile) for (let ty = y0; ty < y1e; ty += tile) {
       const ev = (Math.round(tx / tile) + Math.round(ty / tile)) % 2 === 0;
       ctx.fillStyle = ev ? `rgb(${r},${g},${b})` : alt;
@@ -86,7 +90,7 @@
   // Acabado "estriado": esferas solapadas que dan volumen tubular.
   function drawRibbedPill(ctx, x1, y1, x2, y2, t, col) {
     const [r, g, b] = E.hexToRgb(col), outerR = t / 2, innerR = outerR * 0.55;
-    ctx.save(); pillPath(ctx, x1, y1, x2, y2, t); ctx.clip();
+    ctx.save(); capsuleOutline(ctx, x1, y1, x2, y2, t); ctx.clip();
     const steps = Math.ceil(Math.hypot(x2 - x1, y2 - y1) / (outerR * 0.45)) + 2;
     for (let i = 0; i <= steps; i++) {
       const fx = x1 + (x2 - x1) * (i / steps), fy = y1 + (y2 - y1) * (i / steps);
@@ -119,8 +123,8 @@
     } else if (style === 'outline') {
       const bw = Math.max(6 * u, t * 0.07), oc = E.luma(col) > 0.5 ? '#0a0a0a' : '#f5f0ea';
       ctx.globalCompositeOperation = 'source-over';
-      pillPath(ctx, x1, y1, x2, y2, t); ctx.fillStyle = `rgb(${r},${g},${b})`; ctx.fill();
-      pillPath(ctx, x1, y1, x2, y2, t); ctx.strokeStyle = oc; ctx.lineWidth = bw; ctx.stroke();
+      capsuleOutline(ctx, x1, y1, x2, y2, t); ctx.fillStyle = `rgb(${r},${g},${b})`; ctx.fill();
+      capsuleOutline(ctx, x1, y1, x2, y2, t); ctx.strokeStyle = oc; ctx.lineWidth = bw; ctx.stroke();
     } else if (style === 'chess') {
       drawChessPill(ctx, x1, y1, x2, y2, t, col, rng, GRAIN_TILE * u);
     } else if (style === 'gradient') {
@@ -129,7 +133,7 @@
       const [r2, g2, b2] = E.hexToRgb(rng.pickFrom(colors));
       const gr = ctx.createLinearGradient((x1 + x2) / 2 + px * h, (y1 + y2) / 2 + py * h, (x1 + x2) / 2 - px * h, (y1 + y2) / 2 - py * h);
       gr.addColorStop(0, `rgb(${r},${g},${b})`); gr.addColorStop(1, `rgb(${r2},${g2},${b2})`);
-      pillPath(ctx, x1, y1, x2, y2, t); ctx.fillStyle = gr; ctx.fill();
+      capsuleOutline(ctx, x1, y1, x2, y2, t); ctx.fillStyle = gr; ctx.fill();
     } else if (style === 'ribbed') {
       drawRibbedPill(ctx, x1, y1, x2, y2, t, col);
     }
@@ -206,28 +210,35 @@
     // Margen = extensión máxima de la cápsula desde su centro (hl + radio del cap).
     // Así todas caben sin recortes → todas conservan la MISMA proporción.
     const reach = maxSize / 4 + thick / 2, mx = Math.min(reach, FW / 2), my = Math.min(reach, FH / 2);
+    // ⟨esaldia:eu⟩ Kolokatzea ez da apaingarria: elkarren gainean zenbat egon daitezkeen erabakitzen du arauak.
+    // ⟨esaldia:en⟩ Placement is not arrangement: the rule decides how much they may overlap.
+    // ⟨gramatika⟩
     const pills = [], placed = [];
     for (let i = 0; i < num; i++) {
-      const hl = maxSize / 4;
-      let cx, cy, angle, ok = false;
-      for (let att = 0; att < PLACE_ATT; att++) {
+      const halfLength = maxSize / 4;
+      let cx, cy, angle, roomFound = false;
+      for (let attempt = 0; attempt < PLACE_ATT; attempt++) {
         angle = rng.range(0, Math.PI * 2);
         cx = rng.range(mx, FW - mx); cy = rng.range(my, FH - my);
-        let bad = false; const md = (thick + hl * 1.5) * (1.0 - tol);
-        for (const p of placed) {
-          if (Math.hypot(cx - p.cx, cy - p.cy) < md) { bad = true; break; }
-          if (pillsOverlap(cx, cy, hl, thick, p.cx, p.cy, p.hl, p.t, tol)) { bad = true; break; }
+        let tooClose = false;
+        const keepApart = (thick + halfLength * 1.5) * (1.0 - tol);
+        for (const other of placed) {
+          if (Math.hypot(cx - other.cx, cy - other.cy) < keepApart) { tooClose = true; break; }
+          if (pillsOverlap(cx, cy, halfLength, thick, other.cx, other.cy, other.hl, other.t, tol)) { tooClose = true; break; }
         }
-        if (!bad) { ok = true; break; }
+        if (!tooClose) { roomFound = true; break; }
       }
-      if (!ok) { angle = rng.range(0, Math.PI * 2); cx = rng.range(mx, FW - mx); cy = rng.range(my, FH - my); }
-      placed.push({ cx, cy, hl, t: thick });
+      // Sin sitio tras PLACE_ATT intentos, se coloca igual: el sistema cede antes
+      // que dejar de hablar.
+      if (!roomFound) { angle = rng.range(0, Math.PI * 2); cx = rng.range(mx, FW - mx); cy = rng.range(my, FH - my); }
+      placed.push({ cx, cy, hl: halfLength, t: thick });
       // Evitar pills del mismo tono que el fondo.
       const bgL = bgColors.map(c => E.luma(c)), cOk = c => bgL.every(bl => Math.abs(E.luma(c) - bl) > 0.12);
       const pc = colors.filter(cOk).length ? colors.filter(cOk)
         : (colors.filter(c => !bgColors.includes(c)).length ? colors.filter(c => !bgColors.includes(c)) : colors);
-      pills.push({ cx, cy, hl, angle, col: rng.pickFrom(pc), style: pickFinish(rng, params.finishProbs), thick });
+      pills.push({ cx, cy, hl: halfLength, angle, col: rng.pickFrom(pc), style: pickFinish(rng, params.finishProbs), thick });
     }
+    // ⟨/gramatika⟩
 
     const styleCount = {};
     ctx.save();
