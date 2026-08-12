@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dtkrt · lab — hoks</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --ink:#111; --ink3:#bbb; --border:#e8e8e8; --surface:#f7f7f7; --f:'Courier New',Courier,monospace; }
+  body { font-family: var(--f); background: #fff; color: var(--ink); display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+  .panel { border-right: 1px solid var(--border); padding: 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; }
+  .lab-title { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+  .lab-title small { display:block; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; }
+  .group { display: flex; flex-direction: column; gap: 6px; }
+  .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); }
+  input[type=range] { width: 100%; accent-color: var(--ink); cursor: pointer; }
+  input[type=number], select { font-family: var(--f); font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 2px; width: 100%; }
+  .hintline { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
+  button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
+  button:hover { opacity: 0.78; }
+  #seed { text-align:center; letter-spacing:0.06em; }
+  /* justify-content:center centra, pero si el contenido NO cabe reparte el
+     desbordamiento a los dos lados y la parte de arriba queda fuera de alcance:
+     el scroll no llega. `safe center` centra solo mientras quepa y, cuando no,
+     se comporta como flex-start. Se deja el center suelto de reserva para
+     navegadores que no entiendan la palabra clave. Se nota con la hoja de
+     contactos en vertical, que es más alta que la pantalla. */
+  .stage { display: flex; flex-direction: column; align-items: safe center; justify-content: center; justify-content: safe center; gap: 10px; padding: 1.5rem; background: var(--surface); overflow: auto; }
+  #single { max-width: min(100%, calc(100vh - 120px)); max-height: calc(100vh - 120px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
+  .sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 980px; }
+  .sheet canvas { width: 100%; outline: 1px solid rgba(0,0,0,0.1); cursor: pointer; display:block; }
+  .sheet figcaption { padding: 3px 2px; font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
+  .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .traits { font-size: 10px; display:flex; flex-direction:column; gap:4px; }
+  .traits .t { display:flex; justify-content:space-between; gap:6px; }
+  .traits .k { color: var(--ink3); text-transform: uppercase; font-size: 9px; letter-spacing:0.06em; }
+  .traits .v { font-weight: 700; }
+  .dots { display:inline-flex; gap:2px; vertical-align:middle; margin-right:5px; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; border:0.5px solid rgba(0,0,0,0.1); }
+  .swatches { display:flex; gap:4px; }
+  .sw { flex:1; height:16px; border-radius:2px; border:1px solid rgba(0,0,0,0.08); }
+</style>
+</head>
+<body>
+  <aside class="panel">
+    <div class="lab-title">hoks · lab<small>aquí se genera y aquí se elige</small></div>
+    <div class="group">
+      <span class="lbl">Work</span>
+      <div id="workPicker"></div>
+    </div>
+    <div class="group">
+      <span class="lbl">Format</span>
+      <select id="fmt">
+        <option value="square">□ Square (1:1)</option>
+        <option value="horizontal">▭ Horizontal (√2:1)</option>
+      </select>
+      <button class="ghost" id="rot">⟲ Ver de pie (r)</button>
+      <span class="hintline">vertical y horizontal son la misma obra girada:
+        se genera en horizontal y el giro es de la vista, no del archivo</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Field</span>
+      <select id="field">
+        <option value="sheet">▣ Llena el pliego</option>
+        <option value="square">□ Campo cuadrado</option>
+      </select>
+      <span class="hintline">el pliego y el campo son dos decisiones: un cuadrado puede ir sobre un DIN</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Seed</span>
+      <input type="text" id="seed" value="0" inputmode="numeric" spellcheck="false">
+      <button id="rnd">↻ Nueva seed (espacio)</button>
+      <span class="hintline">se puede teclear una seed para volver a ella · ← → recorren vecinas</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Palette · <span id="palCount">…</span></span>
+      <div id="palPicker"></div>
+      <span class="hintline">incluye activas e inactivas</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Background</span>
+      <select id="bg">
+        <option value="auto">Auto (lo propio de la obra)</option>
+        <option value="solid">Solid</option>
+        <option value="gradient">Gradient</option>
+      </select>
+      <span class="hintline">transversal: es lo que separaba a KRT de KRTG</span>
+      <div id="bgAuto">
+        <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
+          · plano <span id="bgPS">—</span></span>
+        <input type="range" id="bgP" min="0" max="100" step="5" value="50">
+        <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre</span>
+      </div>
+    </div>
+    <div class="group">
+      <span class="lbl">Grain</span>
+      <select id="grain">
+        <option value="1">Con grano</option>
+        <option value="0">Sin grano</option>
+      </select>
+      <span class="hintline">o lo hay o no lo hay: media dosis de grano no es una decisión</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Roles · suelo / bloque / punto</span>
+      <div class="swatches"><div class="sw" id="swG"></div><div class="sw" id="swB"></div><div class="sw" id="swD"></div></div>
+      <span class="hintline" id="rolesNote">—</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Grid · <span id="gridV">auto</span></span>
+      <input type="range" id="grid" min="0" max="7" step="1" value="0">
+      <span class="hintline">0 = aleatorio 3–7 (como producción)</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Threshold · <span id="thV">0.80</span></span>
+      <input type="range" id="th" min="0.1" max="1" step="0.05" value="0.8">
+      <span class="hintline">más alto = más círculos (producción: 0.80)</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Batch</span>
+      <div id="batchPanel"></div>
+    </div>
+    <div class="group">
+      <button id="save">↓ Save PNG (s)</button>
+      <button class="ghost" id="cartela">↓ Cartela A5 (c)</button>
+      <button class="ghost" id="sheet">▦ Hoja de contactos (g)</button>
+      <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
+      <!-- El muro es una VISTA, no un parámetro: se va a su página y no engorda
+           el panel con mandos que no cambian la obra, solo cómo se mira. -->
+      <div id="wallLink"></div>
+    </div>
+    <div class="group"><span class="lbl">Traits</span><div class="traits" id="traits"></div></div>
+  </aside>
+
+  <main class="stage">
+    <canvas id="single" width="600" height="600"></canvas>
+    <div class="sheet" id="sheetGrid" style="display:none"></div>
+    <span class="hint" id="status">—</span>
+  </main>
+
+<script src="../../palette-picker.js"></script>
+<script src="../../usage.js"></script>
+<script src="../_lab.js"></script>
+<script src="../_batch.js"></script>
+<script src="../_cartela.js"></script>
+<script src="../_engine.js"></script>
+<script src="./algo.js"></script>
+<script>
+const WORK = HOKS.DTKRT;
+const BASE = 600, SHEET_BASE = 300;   // lado corto: hoja y hoja de contactos
+const SHEET_N = 12;
+let FORMAT = 'square';
+let ROT = false;              // girar la VISTA, no la obra
+let lastPalName = '', lastPalColors = [];   // la paleta del último render, para la cartela
+let W, H, SHEET_W, SHEET_H;
+function applyFormat() {
+  ROT = HOKSLAB.formatControls(FORMAT, ROT);   // girar y campo, solo en horizontal
+  const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
+  const t = HOKS.fmtDims(FORMAT, SHEET_BASE); SHEET_W = t.W; SHEET_H = t.H;
+  single.width = ROT ? H : W; single.height = ROT ? W : H;
+}
+
+const single = document.getElementById('single');
+const sctx = single.getContext('2d');
+let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
+let seed = HOKSLAB.initialSeed();
+let sheetMode = false;
+const $ = id => document.getElementById(id);
+
+function params() {
+  return {
+    field:      $('field').value,
+    bg:         $('bg').value,
+    bgProbs: { gradient: parseInt($('bgP').value, 10) },
+    grainScale: parseFloat($('grain').value),
+    grid:       parseInt($('grid').value, 10) || 0,
+    threshold:  parseFloat($('th').value),
+  };
+}
+let palPicker = null;
+function palOpts() { return palPicker ? palPicker.opts() : { palettes: PALETTES }; }
+
+let batch = null;
+const SLUG = 'dtkrt';
+// La receta ES la pieza: seed + params + paleta + FORMATO (la proporción cambia
+// la composición, no solo el recorte). El nombre de la paleta se resuelve con un
+// render de 8px —el stream del RNG no depende del tamaño— para detectar deriva.
+function recipeFor(s) {
+  const c = document.createElement('canvas'); c.width = c.height = 8;
+  let palName = null;
+  try { const r = WORK.render(c.getContext('2d'), 8, 8, s >>> 0, { ...palOpts(), params: params() }); palName = r && r.pal && r.pal.name; } catch (e) {}
+  return { work: SLUG, seed: s >>> 0, format: FORMAT, base: BASE, params: params(),
+           palSel: palPicker ? palPicker.selection : 'auto', palName };
+}
+
+// ── Giro de la VISTA ────────────────────────────────────────────────────────
+// Vertical y horizontal son la misma obra girada, así que no se genera en
+// vertical: se genera en horizontal y, para juzgarla de pie, se gira lo que se
+// mira. La obra y el archivo de impresión siguen siendo horizontales.
+function paint(ctx, cw, ch, s, o) {
+  if (!ROT) return WORK.render(ctx, cw, ch, s, o);
+  const off = document.createElement('canvas'); off.width = ch; off.height = cw;
+  const res = WORK.render(off.getContext('2d'), ch, cw, s, o);
+  ctx.save(); ctx.translate(cw / 2, ch / 2); ctx.rotate(Math.PI / 2);
+  ctx.drawImage(off, -off.width / 2, -off.height / 2); ctx.restore();
+  return res;
+}
+
+function renderSingle() {
+  $('seed').value = seed;
+  try {
+    const res = paint(sctx, single.width, single.height, seed >>> 0, { ...palOpts(), params: params() });
+    // La cartela necesita la paleta que SALIÓ, no la que pidiera la receta.
+    lastPalName = res && res.pal ? res.pal.name : '';
+    lastPalColors = res && res.pal ? res.pal.colors : [];
+    $('status').textContent = `seed #${seed}`;
+    drawTraits(WORK.traits(res));
+    drawRoles(res.roles);
+  } catch (e) { $('status').textContent = '⚠ ' + e.message; console.error(e); }
+}
+// Los tres papeles a la vista: si el bloque es derivado (mezcla), conviene saberlo.
+function drawRoles(r) {
+  $('swG').style.background = r.ground;
+  $('swB').style.background = r.block;
+  $('swD').style.background = r.dot;
+  $('rolesNote').textContent = (r.derived ? 'bloque derivado (mezcla)' : 'bloque de paleta') + ' · Δluma ' + r.contrast.toFixed(2);
+}
+function drawTraits(t) {
+  $('traits').innerHTML = t.list.map(x => `
+    <div class="t"><span class="k">${x.key}</span>
+    <span class="v">${x.colors ? `<span class="dots">${x.colors.slice(0,6).map(c=>`<span class="dot" style="background:${c}"></span>`).join('')}</span>` : ''}${x.val}</span></div>`).join('') +
+    `<div class="t" style="margin-top:4px;border-top:1px solid var(--border);padding-top:5px;"><span class="k">Overall</span><span class="v">${t.overall}</span></div>`;
+}
+function renderSheet() {
+  const grid = $('sheetGrid'); grid.innerHTML = '';
+  const base = seed >>> 0;
+  for (let i = 0; i < SHEET_N; i++) {
+    const s = (base + i * 0x9E3779B1) >>> 0;
+    const c = document.createElement('canvas');
+    c.width = ROT ? SHEET_H : SHEET_W; c.height = ROT ? SHEET_W : SHEET_H;
+    try { paint(c.getContext('2d'), c.width, c.height, s, { ...palOpts(), params: params() }); } catch (e) {}
+    const fig = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = '#' + s;
+    fig.style.position = 'relative';
+    fig.appendChild(c); fig.appendChild(cap);
+    c.addEventListener('click', () => { seed = s; setSheet(false); });
+    // Apartar es un gesto de aquí, y el gesto lo pone el panel de lotes: el "+"
+    // para la mano rápida, el botón derecho para elegir a qué lote va.
+    if (batch) batch.attach(fig, s);
+    grid.appendChild(fig);
+  }
+}
+// Tres modos de mirar, en el mismo sitio: la pieza, doce variaciones de su
+// seed, y el lote entero — que es lo que de verdad se publica.
+let VIEW = 'single';                 // 'single' | 'sheet' | 'batch'
+function setView(v) {
+  // Sin lote no hay nada que enseñar, y cambiar de vista solo escondería la
+  // pieza para dejar un hueco gris. Se queda donde está y lo dice.
+  if (v === 'batch' && !(batch && batch.open)) {
+    $('status').textContent = 'No hay lote abierto — elige uno o crea otro con + en el panel';
+    return;
+  }
+  VIEW = v; sheetMode = (v === 'sheet');
+  $('single').style.display = v === 'single' ? 'block' : 'none';
+  $('sheetGrid').style.display = v === 'single' ? 'none' : 'grid';
+  $('sheet').textContent = v === 'sheet' ? '▦ Vista única (g)' : '▦ Hoja de contactos (g)';
+  $('batchView').textContent = v === 'batch' ? '▦ Vista única (b)' : '▦ Ver el lote (b)';
+  if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; }
+  else if (v === 'batch') { $('sheetGrid').innerHTML = ''; $('status').textContent = batch.renderFull($('sheetGrid')); }
+  else renderSingle();
+}
+function setSheet(on) { setView(on ? 'sheet' : 'single'); }
+function refresh() { if (VIEW === 'batch') { $('status').textContent = batch.renderFull($('sheetGrid')); } else sheetMode ? renderSheet() : renderSingle(); }
+function populateSelect() {
+  $('palCount').textContent = PALETTES.length;
+  if (palPicker) palPicker.setPalettes(PALETTES);
+  else palPicker = HOKSLAB.mountPalettePicker($('palPicker'), { palettes: PALETTES, onChange: refresh });
+}
+
+$('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
+$('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
+$('grid').oninput = () => { $('gridV').textContent = $('grid').value === '0' ? 'auto' : $('grid').value + '×' + $('grid').value; refresh(); };
+$('th').oninput = () => { $('thV').textContent = parseFloat($('th').value).toFixed(2); refresh(); };
+$('rot').onclick = () => { ROT = !ROT; applyFormat(); refresh(); };   // la etiqueta la pone formatControls
+$('field').onchange = refresh;
+$('bg').onchange = () => { syncBgAuto(); refresh(); };
+// El % de degradado solo manda cuando el fondo va en 'auto': si lo fuerzas a
+// plano o a degradado, el peso sobra y se esconde en vez de mentir.
+function syncBgAuto() {
+  const auto = $('bg').value === 'auto', p = parseInt($('bgP').value, 10);
+  $('bgAuto').style.display = auto ? '' : 'none';
+  $('bgPV').textContent = p + '%'; $('bgPS').textContent = (100 - p) + '%';
+}
+$('bgP').value = (WORK.BG_GRADIENT != null ? WORK.BG_GRADIENT : 50);
+$('bgP').oninput = () => { syncBgAuto(); refresh(); };
+syncBgAuto();
+
+$('grain').onchange = refresh;
+$('cartela').onclick = () => {
+  if (VIEW !== 'single') setView('single');
+  // La cartela sale de la MISMA receta que la pieza: si no coincidiera con lo
+  // que cuelga en la pared, no serviría para nada. El pliego lo dice el panel
+  // del lote, que es donde se elige el papel.
+  $('status').textContent = 'cartela A5…';
+  HOKSCARTELA.download({
+    work: SLUG, seed: seed >>> 0, format: FORMAT, field: $('field').value,
+    sheet: (batch && batch.sheet) ? batch.sheet() : HOKS.DEFAULT_SHEET,
+    palette: lastPalName || '—', palColors: lastPalColors, thumb: single,
+    year: new Date().getFullYear(),
+  }).then(() => { $('status').textContent = 'cartela A5 · 148×210 mm · 300 dpi'; })
+    .catch(e => { $('status').textContent = '⚠ ' + e.message; });
+};
+$('sheet').onclick = () => setView(VIEW === 'sheet' ? 'single' : 'sheet');
+$('batchView').onclick = () => setView(VIEW === 'batch' ? 'single' : 'batch');
+$('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `dtkrt_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'Space') { e.preventDefault(); seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); }
+  else if (e.key === 'ArrowRight') { seed = (seed + 1) >>> 0; refresh(); }
+  else if (e.key === 'ArrowLeft') { seed = (seed - 1) >>> 0; refresh(); }
+  else if (e.key === 'c' || e.key === 'C') $('cartela').click();
+  else if (e.key === 'r' || e.key === 'R') $('rot').click();
+  else if (e.key === 's' || e.key === 'S') $('save').click();
+  else if (e.key === 'g' || e.key === 'G') setView(VIEW === 'sheet' ? 'single' : 'sheet');
+  else if (e.key === 'b' || e.key === 'B') setView(VIEW === 'batch' ? 'single' : 'batch');
+  else if (e.key === 'a' || e.key === 'A') { if (batch) batch.add(seed); }
+});
+
+// Init: pinta YA con fallback, luego trae TODAS las paletas.
+populateSelect();
+$('fmt').value = FORMAT;
+$('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
+// El muro recibe la receta por URL. Se pasa sin resolver el nombre de la paleta
+// (que exige un render de 8px): al muro le basta con volver a pintarla.
+HOKSLAB.mountWallLink($('wallLink'), () => ({
+  work: SLUG, seed: seed >>> 0, format: FORMAT, params: params(),
+  palSel: palPicker ? palPicker.selection : 'auto',
+}));
+HOKSLAB.mountWorkPicker($('workPicker'), 'dtkrt', () => seed);
+batch = HOKSBATCH.mount($('batchPanel'), {
+  work: SLUG, getRecipe: recipeFor, getPalettes: () => PALETTES, getSeed: () => seed,
+  toast: m => { $('status').textContent = m; },
+});
+// Un lote puede mezclar obras: para pintar su tira hacen falta todos los algos.
+HOKSLAB.loadAlgos(() => batch.refresh());
+applyFormat();
+renderSingle();
+HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});
+</script>
+</body>
+</html>

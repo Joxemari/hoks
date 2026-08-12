@@ -1,0 +1,164 @@
+/* KRRTK — subdivisión recursiva de cuadrados sobre mesh gradient, con grano.
+ *
+ * FUENTE ÚNICA del algoritmo: este archivo lo consumen TANTO el laboratorio
+ * (sketches/krrtk/index.html) COMO la página de producción (krrtk.html).
+ * Si arreglas algo aquí, se arregla en todas partes.
+ *
+ * Porte FIEL del motor que vivía inline en krrtk.html — mismo orden de
+ * consumo del RNG, mismos números → mismo seed produce la misma imagen.
+ * Nota: la subdivisión descarta el 4º hijo de cada división (el splice del
+ * original). No es un bug a arreglar: es la firma visual de la serie.
+ *
+ * Canvas 2D puro. Depende de window.HOKS (_engine.js).
+ *
+ *   HOKS.KRRTK.render(ctx, W, H, seed, opts) → { pal, squares, drawCount, depthLevel, coveragePct }
+ *   HOKS.KRRTK.traits(res)                   → { list:[…], overall }
+ */
+(function (global) {
+  'use strict';
+  const E = global.HOKS;
+
+  const THRESHOLD  = 0.6;   // probabilidad de NO dibujar un cuadrado (rng.next() > threshold dibuja)
+  const RECT_ALPHA = 0.61;  // 155/255 — cuadrados semitransparentes sobre el gradiente
+  const REF        = 600;   // lado corto de referencia (calibra el grano)
+  const BG_GRADIENT = 30;   // % de degradado cuando el fondo va en 'auto' (el resto, plano)
+  const P_WIDE     = 0.5;   // en DIN: un campo con mucho aire vs dos ceñidos
+
+  // ── Entrada principal ───────────────────────────────────────────────────────
+  // opts: { palettes, locked, lockedIdx, params:{ grainScale, threshold, rectAlpha } }
+  function render(ctx, W, H, seed, opts) {
+    opts = opts || {};
+    const params = opts.params || {};
+    const palettes = opts.palettes || E.normalizePalettes(E.DEFAULTS);
+    const grainScale = params.grainScale == null ? 1 : params.grainScale;
+    const threshold  = params.threshold  == null ? THRESHOLD  : params.threshold;
+    const rectAlpha  = params.rectAlpha  == null ? RECT_ALPHA : params.rectAlpha;
+    const rng = new E.Rng(seed);
+
+    // Paleta: fijada manualmente o elegida por peso (consume 1 tirada del rng).
+    const pal = (opts.locked && palettes[opts.lockedIdx]) ? palettes[opts.lockedIdx] : rng.weighted(palettes);
+    const colors = pal.colors;
+
+    // El campo de subdivisión es CUADRADO — la unidad de la serie es el cuadrado,
+    // y partirlo en cuatro solo tiene sentido si lo es. Para llenar un pliego DIN
+    // no se estira: se REPITE. Un campo en cuadrado; en vertical y horizontal,
+    // una rejilla de campos, más numerosos a lo largo.
+    //
+    // El margen ha de ser el mismo en los cuatro lados, y eso fija el tamaño de
+    // la unidad: con n campos en el lado corto y n+k en el largo, de S−2m=n·p y
+    // L−2m=(n+k)·p sale p=(L−S)/k. Se toma el par (n,k) cuyo margen cae más
+    // cerca del objetivo. La serialidad se hace explícita: el mismo sistema
+    // dicho más veces, que es de lo que iba la serie.
+    // n = campos en el lado corto. No se fija a mano: se elige el que deja el
+    // margen más cerca del del sistema, porque con la unidad cuadrada el margen
+    // no es un parámetro sino una consecuencia — y con UN campo el pliego DIN
+    // obliga a un 29%, el doble que sus hermanas. Así KRRTK, DTK y DTKRT se
+    // retiran del papel lo mismo y leen como una sola serie.
+    // El laboratorio lo fuerza con fieldsShort cuando interesa mirar otra cosa.
+    // Dos lecturas del mismo pliego, y las dos son la obra: UN campo grande con
+    // mucho aire alrededor, o DOS campos más pequeños ceñidos al papel. Con la
+    // unidad cuadrada el margen no se elige, se deduce —29% con uno, 8,6% con
+    // dos—, así que elegir cuántos campos ES elegir cuánto aire. Lo decide la
+    // tirada, como el resto de la obra; el laboratorio lo fuerza con fieldsShort.
+    // Se sortea siempre, aunque en cuadrado no se use: así el stream no depende
+    // del formato más de lo imprescindible.
+    const wide = rng.bool(P_WIDE);
+    const squareSheet = Math.abs(W - H) < 1 || E.fieldMode(params) === 'square';
+    const n = params.fieldsShort ? Math.max(1, params.fieldsShort)
+            : squareSheet ? 1 : (wide ? 1 : 2);
+    const G = E.fieldGrid(W, H, n, params);
+    const { pitch: side, cols, rows, ox, oy } = G;
+
+    // 1. Mesh gradient de fondo (stream RNG independiente, como el original).
+    // Fondo: mesh gradient (lo propio de la obra) o plano si el laboratorio pide
+    // 'solid'. Se sortea en su propio stream, así la composición no se entera.
+    const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
+    if (E.pickBg(seed, params, BG_GRADIENT) === 'solid') {
+      ctx.fillStyle = colors[rngBg.int(0, colors.length - 1)];
+      ctx.fillRect(0, 0, W, H);
+    } else {
+      E.drawMeshGradient(ctx, W, H, colors, rngBg);
+    }
+
+    // 2. Construir cuadrados (algoritmo KRRTK fiel, splice incluido). Cada campo
+    //    de la rejilla se subdivide por su cuenta: el sistema no sabe que hay
+    //    otros, y por eso ninguno repite al de al lado.
+    const squares = [], toDraw = [];
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+  // ⟨esaldia:eu⟩ Karratu bat, behin eta berriz, zatitu ala ez erabakitzen.
+  // ⟨esaldia:eu⟩ Lauetan zatitzen da, eta laugarrena beti botatzen: hutsune hori da serieak esaten duena.
+  // ⟨esaldia:en⟩ A square deciding, again and again, whether to divide.
+  // ⟨esaldia:en⟩ It splits in four and always discards the fourth: that missing quarter is what the series says.
+        // ⟨gramatika⟩
+        const anyColour = () => colors[rng.int(0, colors.length - 1)];
+        const field = [{ x: col * side, y: row * side, size: side, color: anyColour() }];
+        let pending = 0;
+        while (pending < field.length) {
+          const square = field[pending];
+          const bigEnoughToDivide = square.size > side / 4;
+          if (bigEnoughToDivide) {
+            const half = square.size / 2;
+            field.push(
+              { x: square.x,        y: square.y,        size: half, color: anyColour() },
+              { x: square.x + half, y: square.y,        size: half, color: anyColour() },
+              { x: square.x,        y: square.y + half, size: half, color: anyColour() },
+              { x: square.x + half, y: square.y + half, size: half, color: anyColour() }
+            );
+            field.pop();                       // discard the fourth child
+          }
+          pending++;
+        }
+        // ⟨/gramatika⟩
+        for (const sq of field) squares.push(sq);
+        for (let i = 0; i < field.length; i++) toDraw.push(rng.next() > threshold);
+      }
+    }
+    const drawCount = toDraw.filter(Boolean).length;
+    const a0 = side;   // lado del campo: la profundidad se mide contra él
+
+    // 3. Dibujar cuadrados con alpha sobre el gradiente.
+    for (let i = 0; i < squares.length; i++) {
+      if (!toDraw[i]) continue;
+      const [r, g, b] = E.hexToRgb(squares[i].color);
+      ctx.fillStyle = `rgba(${r},${g},${b},${rectAlpha})`;
+      ctx.fillRect(ox + squares[i].x, oy + squares[i].y, squares[i].size, squares[i].size);
+    }
+
+    // 4. Grano (los defaults del engine a escala 1 son los números del original).
+    //    unit mantiene el tamaño del grano al subir a resolución de impresión.
+    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
+
+    // Datos para traits.
+    const minSize = squares.reduce((m, sq) => Math.min(m, sq.size), a0);
+    const depthLevel = Math.max(1, Math.round(Math.log2(a0 / Math.max(minSize, 1))));
+    const coveragePct = Math.round((drawCount / Math.max(1, squares.length)) * 100);
+    return { pal, squares: squares.length, drawCount, depthLevel, coveragePct,
+             fields: cols * rows, air: cols * rows > 1 ? 'Tight' : 'Wide' };
+  }
+
+  // Traits + rareza global a partir de un resultado de render().
+  function traits(res) {
+    const prob = res.pal.prob != null ? res.pal.prob : 0.05;
+    const palR = E.palRarity(prob);
+    const coverageLabel = res.coveragePct > 65 ? 'Dense' : res.coveragePct > 35 ? 'Balanced' : 'Sparse';
+    const coverageR = res.coveragePct > 65 ? 'uncommon' : res.coveragePct < 20 ? 'rare' : 'common';
+    const depthR = res.depthLevel >= 4 ? 'rare' : res.depthLevel >= 3 ? 'uncommon' : 'common';
+    const score = prob
+      * (depthR === 'rare' ? 0.3 : depthR === 'uncommon' ? 0.7 : 1)
+      * (coverageR === 'rare' ? 0.3 : coverageR === 'uncommon' ? 0.7 : 1);
+    const overall = score > 0.06 ? 'common' : score > 0.025 ? 'uncommon' : score > 0.008 ? 'rare' : score > 0.002 ? 'superrare' : 'legendary';
+    return {
+      list: [
+        { key: 'Palette',  val: res.pal.name, colors: res.pal.colors, rarity: palR },
+        { key: 'Depth',    val: res.depthLevel + ' levels', rarity: depthR },
+        { key: 'Air',      val: (res.air || 'Wide') + (res.fields > 1 ? ' · ' + res.fields + ' fields' : ''), rarity: 'common' },
+        { key: 'Coverage', val: coverageLabel + ' · ' + res.coveragePct + '%', rarity: coverageR },
+        { key: 'Texture',  val: 'Grain + Gradient', rarity: 'rare' },
+      ],
+      overall,
+    };
+  }
+
+  (global.HOKS = global.HOKS || {}).KRRTK = { render, traits, THRESHOLD, RECT_ALPHA, BG_GRADIENT };
+})(typeof window !== 'undefined' ? window : globalThis);

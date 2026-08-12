@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>muro · lab — hoks</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --ink:#111; --ink3:#bbb; --border:#e8e8e8; --surface:#f7f7f7; --f:'Courier New',Courier,monospace;
+          /* El muro: blanco cálido de sala, medio grado por debajo del papel de
+             la página. Esa diferencia es lo que separa superficie de hoja. */
+          --wall:#efece7; --wall-lo:#e7e3dc; --floor:#d9d5cd;
+          --ref:rgba(17,17,17,0.34); --ref-soft:rgba(17,17,17,0.16); --figure:rgba(17,17,17,0.135); }
+  body { font-family: var(--f); background: #fff; color: var(--ink); display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+  .panel { border-right: 1px solid var(--border); padding: 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; }
+  .lab-title { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+  .lab-title small { display:block; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; }
+  .group { display: flex; flex-direction: column; gap: 6px; }
+  .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); }
+  .hintline { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; line-height: 1.7; }
+  button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
+  button:hover { opacity: 0.78; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  /* Segmentado: pliego y referencias. Mismo lenguaje que los botones de formato
+     del motor (hoks-fmt-btn), para que el muro no estrene UI propia. */
+  .seg { display: flex; gap: 4px; }
+  .seg button { flex: 1; width: auto; font-size: 9px; background: transparent; color: var(--ink3);
+                border-color: var(--border); padding: 7px 3px; }
+  .seg button.on { border-color: var(--ink); color: var(--ink); }
+  .seg button:hover { opacity: 1; border-color: #d0d0d0; }
+
+  /* Ficha de la pieza: lo que el muro RECIBE y no puede tocar. */
+  .facts { font-size: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .facts .t { display: flex; justify-content: space-between; gap: 8px; }
+  .facts .k { color: var(--ink3); text-transform: uppercase; font-size: 9px; letter-spacing: 0.06em; }
+  .facts .v { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; word-break: break-all; }
+  .dots { display: inline-flex; gap: 2px; vertical-align: middle; margin-right: 4px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; border: 0.5px solid rgba(0,0,0,0.1); }
+  a.back { font-size: 10px; color: var(--ink); letter-spacing: 0.06em; text-decoration: none;
+           border-bottom: 1px solid var(--border); padding-bottom: 3px; }
+  a.back:hover { border-color: var(--ink); }
+
+  /* ── Escenario ─────────────────────────────────────────────────────────── */
+  /* `safe center` centra solo mientras quepa; cuando no, se comporta como
+     flex-start, así el desbordamiento queda al alcance del scroll en vez de
+     repartirse a los dos lados y dejar la mitad inalcanzable. Mismo motivo que
+     en la hoja de contactos de los harnesses. */
+  .stage { display: flex; flex-direction: column; align-items: center; align-items: safe center;
+           justify-content: center; justify-content: safe center;
+           gap: 10px; padding: 1.5rem; background: var(--surface); overflow: auto; }
+  .frame { width: 100%; max-width: 1180px; }
+  /* Los rótulos no escalan con el muro, así que por debajo de cierto ancho los
+     de los pliegos pequeños se pisan. Antes que amontonarlos, que desborde. */
+  .frame.ladder { min-width: 880px; }
+  /* Todo se posiciona en % de la caja, y la caja lleva el aspect-ratio del muro
+     en mm: la escala sale exacta sin medir un solo píxel en JS. */
+  .wall { position: relative; width: 100%; overflow: hidden;
+          background: linear-gradient(178deg, var(--wall) 0%, var(--wall) 62%, var(--wall-lo) 100%); }
+  /* El suelo va FUERA del muro: así la cota 0 de la regla es la línea de suelo. */
+  .floor { height: 30px; background: var(--floor); border-top: 1px solid rgba(17,17,17,0.22); }
+
+  .ruler { position: absolute; left: 0; bottom: 0; width: 40px; height: 100%; }
+  .ruler i { position: absolute; left: 0; height: 1px; background: var(--ref-soft); }
+  .ruler i.maj { background: var(--ref); width: 15px; }
+  .ruler i.min { width: 8px; }
+  .ruler b { position: absolute; left: 18px; font-size: 8px; font-weight: 400; letter-spacing: 0.06em;
+             color: var(--ink3); transform: translateY(-50%); font-variant-numeric: tabular-nums; }
+  .eyeline { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--ref-soft); }
+  .eyeline span { position: absolute; right: 10px; top: 4px; font-size: 8px; letter-spacing: 0.12em;
+                  text-transform: uppercase; color: var(--ink3); }
+  .figure { position: absolute; bottom: 0; fill: var(--figure); }
+
+  /* La pieza. Sin marco: son estampas. La sombra despega del muro, no decora. */
+  .hang { position: absolute; display: block; background: #fff;
+          outline: 1px solid rgba(17,17,17,0.16); outline-offset: -1px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.10), 0 7px 16px rgba(0,0,0,0.055); }
+  .hang canvas, .hang img { display: block; width: 100%; height: 100%; }
+  /* Dos líneas, no una: en cuadrado un rótulo de una línea es más ancho que un
+     A4 y se pisa con el del pliego siguiente. Partido, el pliego se escanea y
+     la medida queda de detalle. */
+  .tag { position: absolute; font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase;
+         color: var(--ink3); white-space: nowrap; font-variant-numeric: tabular-nums;
+         line-height: 1.5; }
+  .tag b { display: block; font-weight: 700; color: var(--ink); }
+  .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase;
+          font-variant-numeric: tabular-nums; text-align: center; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+  <aside class="panel">
+    <div class="lab-title">hoks · muro<small>aquí no se genera: aquí se mide</small></div>
+
+    <div class="group">
+      <span class="lbl">Piece</span>
+      <div class="facts" id="facts"></div>
+      <a class="back" id="back" href="#">← Abrir en el lab</a>
+      <span class="hintline">abre el lab en esta seed. Los ajustes del panel
+        (grid, fondo, grano…) no viajan de vuelta</span>
+    </div>
+
+    <div class="group">
+      <span class="lbl">Sheet</span>
+      <div class="seg" id="sheet"></div>
+      <span class="hintline" id="sheetNote">—</span>
+    </div>
+
+    <div class="group">
+      <span class="lbl">References</span>
+      <div class="seg" id="refs">
+        <button data-v="fig" class="on">Figura</button>
+        <button data-v="eye" class="on">Eje</button>
+        <button data-v="rule" class="on">Regla</button>
+      </div>
+      <span class="hintline">figura 1,70 m · eje de colgado 1,45 m · regla en cm.
+        La escala en pantalla es relativa: la referencia va dentro de la imagen</span>
+    </div>
+
+    <div class="group">
+      <button class="ghost" id="viewBtn">▦ Escalera de pliegos (g)</button>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="frame">
+      <div class="wall" id="wall"></div>
+      <div class="floor"></div>
+    </div>
+    <span class="hint" id="status">—</span>
+  </main>
+
+<script src="../_engine.js"></script>
+<script src="../_lab.js"></script>
+<script>
+/* hoks · muro — la pieza a escala sobre una pared.
+ *
+ * Página aparte a propósito. El laboratorio decide QUÉ se genera; el muro solo
+ * dice DE QUÉ TAMAÑO es el objeto que sale. La frontera es limpia y conviene
+ * respetarla: aquí solo hay mandos que NO cambian ni un píxel de la obra
+ * —pliego, ancho de pared, referencias—. Todo lo que mueve la imagen (seed,
+ * formato, paleta, params) llega por URL desde el lab y aquí es de solo lectura.
+ *
+ *   ../_wall/?r=<receta JSON urlencoded>     ← lo que pone HOKSLAB.wallUrl()
+ *   ../_wall/?work=dtkrt&seed=123&fmt=horizontal   ← forma legible, a mano
+ *
+ * La receta es la misma que usan los cinco harnesses y _batch.js, así que un
+ * parámetro nuevo en una obra llega hasta aquí sin tocar este archivo.
+ */
+'use strict';
+
+const $ = id => document.getElementById(id);
+
+// ── Geometría, en milímetros ────────────────────────────────────────────────
+const HANG_MM  = 1450;   // eje de colgado: centro de la obra sobre el suelo
+const FIG_MM   = 1700;   // altura de la figura de referencia
+const FIG_W_MM = 500;
+const FIG_X_MM = 340;
+// Un muro de 3 m y el encuadre recortado arriba en ancho/1,5. Eran mandos y
+// sobraban: elegir el ancho de la pared no ayuda a decidir el pliego —solo
+// reescala las dos cosas a la vez— y con el techo dentro no se juzga nada.
+const WALL_W_MM = 3000;
+const CROP      = 1.5;
+const PIECE_X  = 0.62;   // centro de la pieza, en fracción del ancho
+const RENDER_SHORT = 700;              // lado corto del render; la pantalla reduce
+const CMP_W_MM = 5200, CMP_H_MM = 2400, CMP_GAP = 150, CMP_PAD = 200;
+
+const pct = (v, total) => (v / total) * 100;
+
+// Silueta de alzado: la convención del dibujo de arquitectura, no un monigote.
+// Coordenadas en mm, con el suelo en y = 1700.
+const FIG_PATH =
+  'M214 242C212 280 194 294 166 308C116 330 76 356 60 404L42 704L48 848L54 876' +
+  'L112 872L118 762L128 474L104 474L118 686L96 906L88 1140L96 1420L104 1660L108 1692' +
+  'L216 1692L220 1420L232 1140L240 1010L250 940L260 1010L268 1140L280 1420L284 1692' +
+  'L392 1692L396 1660L404 1420L412 1140L404 906L382 686L396 474L372 474L382 762L388 872' +
+  'L446 876L452 848L458 704L440 404C424 356 384 330 334 308C306 294 288 280 286 242Z';
+
+// ── Estado: lo que llega (fijo) y lo que se mira (mutable) ──────────────────
+const recipe = readRecipe();
+const view = { sheet: 'A3', mode: 'single',
+               refs: { fig: true, eye: true, rule: true } };
+
+let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
+let piece = null, pieceUrl = '', pieceKey = '', resolvedPal = null;
+
+// La receta admite las dos formas: el blob JSON que manda el lab y una versión
+// legible que se puede teclear. Si no viene nada, una tirada de DTKRT para que
+// la página abra igual y se entienda de qué va.
+function readRecipe() {
+  const q = new URLSearchParams(location.search);
+  const raw = q.get('r');
+  if (raw) {
+    try {
+      const r = JSON.parse(raw);
+      if (r && r.work) return normalize(r);
+    } catch (e) { console.warn('[hoks] receta ilegible en ?r=', e); }
+  }
+  return normalize({
+    work:   q.get('work') || 'dtkrt',
+    seed:   q.get('seed'),
+    format: q.get('fmt') || q.get('format'),
+    palSel: q.get('pal'),
+  });
+}
+function normalize(r) {
+  const seed = parseInt(r.seed, 10);
+  const fmt = r.format === 'horizontal' || r.format === 'vertical' || r.format === 'square'
+    ? r.format : 'square';
+  const palSel = (r.palSel == null || r.palSel === 'auto' || r.palSel === '')
+    ? 'auto' : parseInt(r.palSel, 10);
+  return {
+    work:   String(r.work || 'dtkrt').toLowerCase(),
+    seed:   Number.isFinite(seed) ? (seed >>> 0) : ((Math.random() * 0xFFFFFFFF) >>> 0),
+    format: fmt,
+    params: (r.params && typeof r.params === 'object') ? r.params : {},
+    palSel: Number.isFinite(palSel) ? palSel : 'auto',
+  };
+}
+
+// ── Referencias del muro ────────────────────────────────────────────────────
+function figureSvg(wmm, hmm) {
+  if (!view.refs.fig) return '';
+  return `<svg class="figure" viewBox="0 0 500 1700" aria-hidden="true" ` +
+         `style="left:${pct(FIG_X_MM, wmm)}%;width:${pct(FIG_W_MM, wmm)}%;height:${pct(FIG_MM, hmm)}%">` +
+         `<ellipse cx="250" cy="134" rx="84" ry="114"/><path d="${FIG_PATH}"/></svg>`;
+}
+function rulerHtml(hmm) {
+  if (!view.refs.rule) return '';
+  let t = '';
+  for (let mm = 100; mm <= hmm; mm += 100) {
+    const maj = mm % 500 === 0;
+    t += `<i class="${maj ? 'maj' : 'min'}" style="bottom:${pct(mm, hmm)}%"></i>`;
+    if (maj) t += `<b style="bottom:${pct(mm, hmm)}%">${mm / 10}</b>`;
+  }
+  return `<div class="ruler">${t}<b style="bottom:6px">cm</b></div>`;
+}
+// El rótulo solo cabe donde hay muro libre a la derecha. En la escalera el A0
+// llega casi al canto, así que allí la línea va muda y lo dice el pie.
+function eyelineHtml(hmm, withLabel) {
+  if (!view.refs.eye) return '';
+  return `<div class="eyeline" style="bottom:${pct(HANG_MM, hmm)}%">` +
+         (withLabel ? '<span>1,45 m · eje de colgado</span>' : '') + '</div>';
+}
+// tagYmm: cota común para TODOS los rótulos. Colgados cada uno bajo su pieza,
+// los de los pliegos pequeños se meten debajo del siguiente —el rótulo es más
+// ancho que un A4—; en una sola línea por debajo del pliego más alto no se
+// pisan, y además se leen como la cartela de una sala.
+function hangHtml(xLeftMm, mm, wmm, hmm, inner, tag, tagYmm) {
+  const [w, h] = mm;
+  const left = pct(xLeftMm, wmm), bottom = pct(HANG_MM - h / 2, hmm);
+  return `<div class="hang" style="left:${left}%;bottom:${bottom}%;` +
+         `width:${pct(w, wmm)}%;height:${pct(h, hmm)}%">${inner}</div>` +
+         (tag ? `<div class="tag" style="left:${left}%;bottom:${pct(tagYmm, hmm)}%">${tag}</div>` : '');
+}
+
+// ── Render de la obra ───────────────────────────────────────────────────────
+// El palSel de la receta es un índice sobre la lista COMPLETA de paletas, que es
+// la que usa el laboratorio (loadAllPalettes). Si aquí cargáramos solo las
+// activas, el índice apuntaría a otra paleta y la pieza no sería la misma.
+function renderPiece() {
+  const W = HOKS[recipe.work.toUpperCase()];
+  if (!W) { $('status').textContent = `⚠ obra desconocida: ${recipe.work}`; return null; }
+  const d = HOKS.fmtDims(recipe.format, RENDER_SHORT);
+  const c = document.createElement('canvas');
+  c.width = d.W; c.height = d.H;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  const palOpts = recipe.palSel === 'auto'
+    ? { palettes: PALETTES } : { palettes: PALETTES, locked: true, lockedIdx: recipe.palSel };
+  try {
+    const res = W.render(ctx, d.W, d.H, recipe.seed >>> 0, { ...palOpts, params: recipe.params });
+    resolvedPal = res && res.pal;
+  } catch (e) {
+    $('status').textContent = '⚠ ' + e.message;
+    console.error(e);
+    return null;
+  }
+  return c;
+}
+
+// ── Los dos muros ───────────────────────────────────────────────────────────
+function paintSingle() {
+  const wall = $('wall'), wmm = WALL_W_MM, hmm = Math.round(wmm / CROP);
+  wall.style.aspectRatio = `${wmm} / ${hmm}`;
+  const p = HOKS.printDims(recipe.format, view.sheet);
+  wall.innerHTML = rulerHtml(hmm) + eyelineHtml(hmm, true) + figureSvg(wmm, hmm) +
+    hangHtml(wmm * PIECE_X - p.mm[0] / 2, p.mm, wmm, hmm, '<div id="slot"></div>', '');
+  if (piece) $('slot').replaceWith(piece);
+}
+
+function paintLadder() {
+  const wall = $('wall');
+  wall.style.aspectRatio = `${CMP_W_MM} / ${CMP_H_MM}`;
+  // El grupo se centra en el hueco que deja la figura: en cuadrado ocupa
+  // bastante menos que en horizontal y no debe quedar escorado.
+  const sheets = HOKS.WALL_SHEET_IDS.map(id => ({ id, p: HOKS.printDims(recipe.format, id) }));
+  const groupW = sheets.reduce((a, s) => a + s.p.mm[0], 0) + CMP_GAP * (sheets.length - 1);
+  const from = FIG_X_MM + FIG_W_MM + CMP_PAD, to = CMP_W_MM - 160;
+  let x = from + Math.max(0, (to - from - groupW) / 2);
+  // Cota de los rótulos: por debajo del canto inferior del pliego más alto.
+  const tallest = sheets.reduce((a, s) => Math.max(a, s.p.mm[1]), 0);
+  const tagY = HANG_MM - tallest / 2 - 150;
+
+  let html = rulerHtml(CMP_H_MM) + eyelineHtml(CMP_H_MM, false) + figureSvg(CMP_W_MM, CMP_H_MM);
+  for (const s of sheets) {
+    html += hangHtml(x, s.p.mm, CMP_W_MM, CMP_H_MM,
+      `<img src="${pieceUrl}" alt="${recipe.work} #${recipe.seed} en ${s.id}">`,
+      `<b>${s.id}</b>${s.p.mm[0]}×${s.p.mm[1]} mm`, tagY);
+    x += s.p.mm[0] + CMP_GAP;
+  }
+  wall.innerHTML = html;
+}
+
+// ── Panel ───────────────────────────────────────────────────────────────────
+function drawFacts() {
+  const p = HOKS.printDims(recipe.format, view.sheet);
+  const fmtLabel = { square: 'Square', horizontal: 'Horizontal', vertical: 'Vertical' }[recipe.format];
+  const rows = [
+    ['Work', recipe.work.toUpperCase()],
+    ['Seed', '#' + recipe.seed],
+    ['Format', fmtLabel],
+  ];
+  if (resolvedPal) {
+    const dots = (resolvedPal.colors || []).slice(0, 6)
+      .map(c => `<span class="dot" style="background:${c}"></span>`).join('');
+    rows.push(['Palette', `<span class="dots">${dots}</span>${resolvedPal.name}`]);
+  }
+  $('facts').innerHTML = rows.map(([k, v]) =>
+    `<div class="t"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+  const m2 = (p.mm[0] * p.mm[1] / 1e6).toFixed(2).replace('.', ',');
+  $('sheetNote').textContent = `${p.mm[0]} × ${p.mm[1]} mm · ${m2} m²`;
+  $('back').href = `../${recipe.work}/?seed=${recipe.seed}`;
+}
+
+function paint() {
+  if (view.mode === 'single') paintSingle(); else paintLadder();
+  drawFacts();
+  const p = HOKS.printDims(recipe.format, view.sheet);
+  $('status').textContent = view.mode === 'single'
+    ? `${recipe.work.toUpperCase()} · #${recipe.seed} · ${view.sheet} · ${p.mm[0]} × ${p.mm[1]} mm · ${p.W} × ${p.H} px @ ${p.dpi} dpi · muro ${(WALL_W_MM / 1000).toFixed(2).replace('.', ',')} m`
+    : `Los ${HOKS.WALL_SHEET_IDS.length} pliegos · misma seed, misma imagen: solo cambia el objeto`;
+}
+
+// El pliego NO vuelve a renderizar: la misma seed en el mismo formato da el
+// mismo archivo, y lo único que se mueve es el tamaño. Es la afirmación que
+// hace esta página, y el código tiene que sostenerla.
+function rebuild() {
+  const key = `${recipe.work}|${recipe.format}|${recipe.seed}`;
+  if (key !== pieceKey) {
+    const c = renderPiece();
+    if (!c) return;
+    piece = c; pieceUrl = c.toDataURL('image/png'); pieceKey = key;
+  }
+  paint();
+}
+
+function setView(mode) {
+  view.mode = mode;
+  $('viewBtn').textContent = mode === 'ladder' ? '▤ Muro (g)' : '▦ Escalera de pliegos (g)';
+  document.querySelector('.frame').classList.toggle('ladder', mode === 'ladder');
+  paint();
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+$('sheet').innerHTML = HOKS.WALL_SHEET_IDS
+  .map(id => `<button data-v="${id}"${id === view.sheet ? ' class="on"' : ''}>${id}</button>`).join('');
+$('sheet').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  view.sheet = b.dataset.v;
+  $('sheet').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === view.sheet));
+  paint();
+};
+$('refs').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  view.refs[b.dataset.v] = !view.refs[b.dataset.v];
+  b.classList.toggle('on', view.refs[b.dataset.v]);
+  paint();
+};
+$('viewBtn').onclick = () => setView(view.mode === 'ladder' ? 'single' : 'ladder');
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'g' || e.key === 'G') setView(view.mode === 'ladder' ? 'single' : 'ladder');
+});
+
+// Pinta YA con el fallback embebido y luego trae TODAS las paletas — el índice
+// de palSel es sobre esa lista, así que al llegar hay que rehacer la pieza.
+document.title = `${recipe.work} #${recipe.seed} · muro — hoks`;
+HOKSLAB.loadAlgos(() => {
+  rebuild();
+  HOKS.loadAllPalettes()
+    .then(p => { if (p && p.length) { PALETTES = p; pieceKey = ''; rebuild(); } })
+    .catch(() => {});
+});
+</script>
+</body>
+</html>
