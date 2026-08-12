@@ -68,5 +68,15 @@
       "eu": "Hazi bat, eta ondokoetara hedatzea. Ez dago forma-katalogorik.\nBarrak, eleak eta eskailerak arauaren ondorio dira, ez marrazki bat.",
       "en": "A seed cell, then spread to its neighbours. There is no catalogue of shapes.\nBars, ells and staircases are consequences of the rule, not a drawing."
     }
+  },
+  {
+    "id": "trzs",
+    "name": "TRZS",
+    "slug": "trzs",
+    "active": true,
+    "description": "Una cinta continua recorre el marco varias veces; al volver a entrar se cruza con lo que ya dejó escrito. La profundidad no es el orden del dibujo: se decide cruce a cruce, alternando encima y debajo como un diagrama de nudo. Lo que separa las hebras no es un contorno sino una incisión: el corte por donde se ve el suelo.",
+    "page": "trzs.html",
+    "canvas": "1273x900",
+    "created": 1786000000000
   }
 ]

@@ -59,6 +59,7 @@ body { background: #fff; color: #111; height: 100vh; overflow: hidden; }
      producción y laboratorio. Las demás series siguen con su versión reducida. -->
 <script src="sketches/_engine.js?v=1"></script>
 <script src="sketches/dtkrt/algo.js?v=1"></script>
+<script src="sketches/trzs/algo.js?v=1"></script>
 <style>
   /* Override nav.js defaults — landing needs fixed full-bleed layout */
   body { min-height: unset !important; display: block !important; overflow: hidden !important; }
@@ -224,11 +225,19 @@ function drawDTKRT(canvas,seed){
     {palettes:PALETTES.filter(p=>p.active!==false)});
 }
 
+// ── DRAW: TRZS (fuente única — sketches/trzs/algo.js) ────────────────────────
+// La celda es apaisada porque la obra nace apaisada: la cinta atraviesa el
+// marco, y en un cuadrado pequeño el nudo se apelotona y deja de leerse.
+function drawTRZS(canvas,seed){
+  HOKS.TRZS.render(canvas.getContext('2d'),canvas.width,canvas.height,seed,
+    {palettes:PALETTES.filter(p=>p.active!==false)});
+}
+
 // La demo de cada familia es su look publicado, que es el que traía la G.
-const DRAWFNS = {plls:drawPLLSG,krrtk:drawKRRTKG,dtk:drawDTKG,bzrs:drawBZRS,dtkrt:drawDTKRT};
-const LABELS  = {plls:'PLLS',krrtk:'KRRTK',dtk:'DTK',bzrs:'BZRS',dtkrt:'DTKRT'};
-const CRES    = {plls:[566,400],krrtk:[320,320],dtk:[320,320],bzrs:[320,320],dtkrt:[320,320]};
-const SERIES  = ['plls','krrtk','dtk','bzrs','dtkrt'];
+const DRAWFNS = {plls:drawPLLSG,krrtk:drawKRRTKG,dtk:drawDTKG,bzrs:drawBZRS,dtkrt:drawDTKRT,trzs:drawTRZS};
+const LABELS  = {plls:'PLLS',krrtk:'KRRTK',dtk:'DTK',bzrs:'BZRS',dtkrt:'DTKRT',trzs:'TRZS'};
+const CRES    = {plls:[566,400],krrtk:[320,320],dtk:[320,320],bzrs:[320,320],dtkrt:[320,320],trzs:[452,320]};
+const SERIES  = ['plls','krrtk','dtk','bzrs','dtkrt','trzs'];
 
 // ── GRID ─────────────────────────────────────────────────────────────────────
 const GAP=5, COLS=9, ROWS=10;
