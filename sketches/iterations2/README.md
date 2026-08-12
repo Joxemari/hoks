@@ -181,6 +181,33 @@ El corte entre las dos va por la **frontera de pasada**, no por la mitad de la
 lista de anchors: dos familias no tienen el mismo número de anchors, y partir
 por la mitad le daría a una cinta un trozo de la otra.
 
+### El desplazamiento entre pasadas no sirve: lo lava el encuadre
+
+Se probó a que cada pasada, además de girar, **se desplazara** en un rumbo
+—`paso · t`— para que la cinta atravesara el marco en vez de orbitarlo.
+Medido sobre 50 obras por tipo y cuatro valores de paso (0 / 0,12 / 0,22 /
+0,34):
+
+| tipo | aspecto de la mancha | desvío del centro | cruces (media) |
+|---|---|---|---|
+| anudado | 0,96 → 0,94 | 0,000 en los cuatro | 2,6 → 2,3 |
+| trama | 0,97 → 1,00 | 0,000 en los cuatro | 4,3 → 4,1 |
+| dos | 0,99 → 0,96 | 0,000 en los cuatro | 2,6 → **1,5** |
+
+**Ningún efecto sobre la forma, y sí un coste.** En `dos`, las obras con menos
+de dos cruces pasan de 11 de 50 a 23 de 50.
+
+El motivo es `shrinkIntoFrame`, que es lo último que corre y **centra la caja
+a mano** (`dx = A/2 − centro`). Cualquier desplazamiento metido antes se borra
+ahí. Por lo mismo, `placeJitter` —que desplaza dentro de `fitToExtent`— no
+llega a verse tampoco.
+
+La obra está **siempre exactamente centrada, por construcción**. Y es
+deliberado: sin centrar, la mancha acababa descolgada contra un borde con
+medio cuadro vacío enfrente. Para que una obra se descentre a propósito habría
+que decidirlo **después** del encuadre, como decisión de composición y no como
+reparación del solver. El mando se retiró; queda la medición.
+
 ### Las familias no se leen (una a una)
 
 Las cinco (`diagonal`, `compact`, `open`, `returning`, `cross`) siguen ahí como
