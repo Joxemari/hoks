@@ -273,9 +273,17 @@
   // guardadas que lo dicen.
   const FORMATS = ['square', 'horizontal'];
   const SHEETS = {            // lado corto × lado largo, en mm
-    A4: [210, 297], A3: [297, 420], A2: [420, 594], A1: [594, 841],
+    A4: [210, 297], A3: [297, 420], A2: [420, 594], A1: [594, 841], A0: [841, 1189],
   };
-  const SHEET_IDS = ['A4', 'A3', 'A2', 'A1'];
+  // A0 está en la tabla porque el MURO tiene que poder medirlo —es 1 m² exacto,
+  // por definición de la serie— pero NO en SHEET_IDS, que es lo que el lote
+  // exporta: a 300 dpi un A0 horizontal son 14043×9933 px, 139,5 Mpx y 532 MB de
+  // lienzo. Sale en Chromium, pero queda por encima del techo de área de canvas
+  // de otros navegadores, así que exportarlo pide antes decidir su dpi (a 150
+  // son 34,9 Mpx y no se nota a esa distancia de lectura). Mirarlo es gratis;
+  // imprimirlo, no.
+  const SHEET_IDS = ['A4', 'A3', 'A2', 'A1'];                    // los que exporta el lote
+  const WALL_SHEET_IDS = ['A4', 'A3', 'A2', 'A1', 'A0'];         // los que enseña el muro
   const DEFAULT_SHEET = 'A3', DPI = 300;
   const PREVIEW_SHORT = 760;  // lado corto en pantalla (y de lo que se guarda)
 
@@ -288,6 +296,9 @@
   function previewDims(fmt) { return fmtDims(fmt, PREVIEW_SHORT); }
   function printDims(fmt, sheet, dpi) {
     dpi = dpi || DPI;
+    // Un pliego que no esté en la tabla NO puede caer al de por defecto en
+    // silencio: se exportarían A3 con nombre de otra cosa. Se avisa y se sigue.
+    if (!SHEETS[sheet]) console.warn(`[hoks] pliego desconocido "${sheet}" → se usa ${DEFAULT_SHEET}`);
     const mm = SHEETS[sheet] || SHEETS[DEFAULT_SHEET];
     const sPx = Math.round(mm[0] / 25.4 * dpi), lPx = Math.round(mm[1] / 25.4 * dpi);
     if (fmt === 'square')   return { W: sPx, H: sPx, mm: [mm[0], mm[0]], dpi };
@@ -403,7 +414,7 @@
     Rng, hexToRgb, luma, lerpColor, softLight,
     drawMeshGradient, bakeGrain, applyGrain, grain, bgMode, pickBg, hash01, fieldMode, fieldGrid, FIELD_MARGIN,
     ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
-    FORMATS, SHEETS, SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,
+    FORMATS, SHEETS, SHEET_IDS, WALL_SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,
     fmtDims, previewDims, printDims, unit, mountFormat, exportPrint,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

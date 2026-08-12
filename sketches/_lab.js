@@ -103,6 +103,66 @@
     });
   }
 
+  // ── Enlace al muro ─────────────────────────────────────────────────────────
+  // El muro es una VISTA, no un parámetro: no cambia ni un píxel de la obra,
+  // solo dice de qué tamaño es el objeto. Por eso vive en su propia página y el
+  // panel solo pone un enlace — meter aquí pliego, ancho de pared y referencias
+  // sería engordar los mandos de generar con mandos de mirar.
+  //
+  // Lo que viaja es la RECETA, que ya es el contrato común de los cinco
+  // harnesses y de _batch.js. Se serializa entera en vez de campo a campo: así
+  // un parámetro nuevo en una obra llega al muro sin tocar nada.
+  function wallUrl(recipe) {
+    const r = {
+      work:   recipe.work,
+      seed:   recipe.seed >>> 0,
+      format: recipe.format || 'square',
+      params: recipe.params || {},
+      palSel: recipe.palSel == null ? 'auto' : recipe.palSel,
+    };
+    return '../_wall/?r=' + encodeURIComponent(JSON.stringify(r));
+  }
+
+  // Trae su propio CSS, como _batch.js y palette-picker.js: cinco harnesses no
+  // tienen por qué llevar cinco copias de la misma regla.
+  const WALL_CSS = `
+.wall-link { display:block; font-family:'Courier New',Courier,monospace; font-size:10px;
+  font-weight:700; letter-spacing:0.1em; text-transform:uppercase; text-align:center;
+  color:#bbb; text-decoration:none; border:1px dashed #e8e8e8; border-radius:2px;
+  padding:8px; cursor:pointer; transition:color .15s, border-color .15s; }
+.wall-link:hover, .wall-link:focus-visible { color:#111; border-color:#d0d0d0; }
+`;
+  let wallCssDone = false;
+  function injectWallCss() {
+    if (wallCssDone || typeof document === 'undefined') return;
+    wallCssDone = true;
+    const s = document.createElement('style'); s.textContent = WALL_CSS;
+    document.head.appendChild(s);
+  }
+
+  // El href se recalcula al posarse encima o al enfocar, no en cada refresh:
+  // así sigue siendo un enlace de verdad (botón central, abrir en pestaña) sin
+  // que arrastrar un slider tenga que reconstruir la URL en cada píxel.
+  function mountWallLink(host, getRecipe) {
+    injectWallCss();
+    const a = document.createElement('a');
+    a.className = 'wall-link';
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = '▤ Ver en el muro ↗';
+    a.title = 'Abre la pieza a escala sobre una pared, en otra pestaña';
+    host.appendChild(a);
+
+    function sync() {
+      try { a.href = wallUrl(getRecipe()); }
+      catch (e) { a.removeAttribute('href'); }
+    }
+    a.addEventListener('pointerenter', sync);
+    a.addEventListener('focus', sync);
+    sync();
+    return { sync };
+  }
+
   // Seed inicial: ?seed= si viene del selector de obra, si no una al azar.
   function initialSeed() {
     const q = new URLSearchParams(location.search).get('seed');
@@ -110,5 +170,6 @@
     return Number.isFinite(n) ? (n >>> 0) : (Math.random() * 0xFFFFFFFF) >>> 0;
   }
 
-  global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, initialSeed, loadAlgos };
+  global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, initialSeed, loadAlgos,
+                     wallUrl, mountWallLink };
 })(typeof window !== 'undefined' ? window : globalThis);
