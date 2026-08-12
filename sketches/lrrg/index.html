@@ -46,10 +46,7 @@
     </div>
     <div class="group">
       <span class="lbl">Format</span>
-      <select id="fmt">
-        <option value="square">□ Square (1:1)</option>
-        <option value="horizontal">▭ Horizontal (√2:1)</option>
-      </select>
+      <select id="fmt"></select>
       <button class="ghost" id="rot">⟲ Ver de pie (r)</button>
       <span class="hintline">vertical y horizontal son la misma obra girada:
         se genera en horizontal y el giro es de la vista, no del archivo</span>
@@ -362,7 +359,14 @@ document.addEventListener('keydown', e => {
 
 // Init: pinta YA con fallback, luego trae TODAS las paletas.
 populateSelect();
-$('fmt').value = FORMAT;
+// Los formatos los ofrece la OBRA, no el panel: unos existen en cuadrado y en
+// horizontal, y otros —una fila— solo en uno. El algo.js trae lo suyo y
+// works.json lo puede cambiar desde admin sin tocar código.
+const fmtSel = HOKSLAB.mountFormatSelect($('fmt'), SLUG, {
+  fallback: WORK.FORMATS,
+  onChange: f => { FORMAT = f; applyFormat(); refresh(); },
+});
+FORMAT = $('fmt').value;
 $('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
 // El muro recibe la receta por URL. Se pasa sin resolver el nombre de la paleta
 // (que exige un render de 8px): al muro le basta con volver a pintarla.

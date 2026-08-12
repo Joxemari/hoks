@@ -271,7 +271,22 @@
   // horizontal y se decide en la pared; el laboratorio gira la vista para poder
   // juzgarlo de pie. fmtDims sigue entendiendo 'vertical' porque hay recetas
   // guardadas que lo dicen.
+  // Dos listas distintas, y la diferencia importa: ALL_FORMATS es el CATÁLOGO
+  // —todo lo que el motor sabe medir— y FORMATS es lo que una obra ofrece si no
+  // dice otra cosa. Una familia puede existir en una sola proporción: LRRG es
+  // una fila, y en cuadrado no es la misma obra más corta, es otra. Lo que cada
+  // una habilita se declara en su algo.js (FORMATS) y lo puede cambiar el panel
+  // por works.json, sin tocar código.
+  const ALL_FORMATS = ['square', 'horizontal', 'double'];
   const FORMATS = ['square', 'horizontal'];
+  // 'double' = dos pliegos apaisados uno al lado del otro (2√2 : 1). Es la única
+  // proporción de la tabla que NO es un DIN, y por eso no se ofrece por defecto:
+  // se imprime en dos hojas, no en una.
+  function formatsFor(work, worksData) {
+    const w = Array.isArray(worksData) ? worksData.find(x => x && x.slug === work) : null;
+    const list = (w && Array.isArray(w.formats) ? w.formats : []).filter(f => ALL_FORMATS.indexOf(f) >= 0);
+    return list.length ? list : null;   // null = que decida quien pregunta
+  }
   const SHEETS = {            // lado corto × lado largo, en mm
     A4: [210, 297], A3: [297, 420], A2: [420, 594], A1: [594, 841], A0: [841, 1189],
   };
@@ -291,9 +306,29 @@
     const s = Math.round(shortSide), l = Math.round(s * SQRT2);
     if (fmt === 'vertical')   return { W: s, H: l };
     if (fmt === 'horizontal') return { W: l, H: s };
+    if (fmt === 'double')     return { W: l * 2, H: s };
     return { W: s, H: s };
   }
   function previewDims(fmt) { return fmtDims(fmt, PREVIEW_SHORT); }
+  // La proporción NOMINAL del formato más cercano. Una obra que toma decisiones
+  // ENTERAS a partir de la proporción (cuántos elementos caben) no puede leerla
+  // en píxeles: 4961×3508 (A3 horizontal) y 9933×7016 (A1 horizontal) son el
+  // MISMO formato, pero sus cocientes son 1,4142 y 1,4158 porque los milímetros
+  // DIN están redondeados — y esa diferencia basta para cruzar un Math.round y
+  // que la pieza cambie de un pliego a otro. Se lee el formato, no el lienzo.
+  function nominalAspect(W, H) {
+    const a = W / Math.min(W, H);
+    let best = 1, dist = Infinity;
+    for (const f of ALL_FORMATS) {
+      const d = fmtDims(f, 1e6), na = d.W / Math.min(d.W, d.H), e = Math.abs(a - na);
+      if (e < dist) { dist = e; best = na; }
+    }
+    return best;
+  }
+  // Los pliegos que se pueden EXPORTAR dependen del formato, porque el área sí:
+  // 'double' dobla el ancho, así que un A1 doble son 19866×7016 = 139,4 Mpx —
+  // exactamente el A0 que ya está excluido por esa misma razón. Se corta ahí.
+  function sheetIdsFor(fmt) { return fmt === 'double' ? SHEET_IDS.filter(id => id !== 'A1') : SHEET_IDS; }
   function printDims(fmt, sheet, dpi) {
     dpi = dpi || DPI;
     // Un pliego que no esté en la tabla NO puede caer al de por defecto en
@@ -303,6 +338,8 @@
     const sPx = Math.round(mm[0] / 25.4 * dpi), lPx = Math.round(mm[1] / 25.4 * dpi);
     if (fmt === 'square')   return { W: sPx, H: sPx, mm: [mm[0], mm[0]], dpi };
     if (fmt === 'vertical') return { W: sPx, H: lPx, mm: [mm[0], mm[1]], dpi };
+    // 'double' son DOS pliegos apaisados pegados: 2×420 mm de ancho en A3.
+    if (fmt === 'double')   return { W: lPx * 2, H: sPx, mm: [mm[1] * 2, mm[0]], dpi, sheets: 2 };
     return { W: lPx, H: sPx, mm: [mm[1], mm[0]], dpi };
   }
   // Unidad de escala de la obra: cuánto mide este lienzo respecto al de
@@ -337,7 +374,7 @@
     document.head.appendChild(s);
   }
 
-  const ICO = { square: [15, 15], vertical: [12, 17], horizontal: [17, 12] };
+  const ICO = { square: [15, 15], vertical: [12, 17], horizontal: [17, 12], double: [24, 9] };
 
   // Control de formato + pliego de impresión para la barra lateral de una obra.
   //   mountFormat(el, { work:'plls', onChange(fmt){…} }) → { format, sheet, … }
@@ -348,14 +385,17 @@
     const T = k => (global.HOKSI18N ? global.HOKSI18N.t(k) : k);
     injectFmtCss();
 
-    let format = opts.format || lsGet(kF, opts.defaultFormat || 'horizontal');
-    if (FORMATS.indexOf(format) < 0) format = 'horizontal';
+    // La obra puede ofrecer solo algunos formatos; si no dice nada, los de siempre.
+    const fmts = (Array.isArray(opts.formats) && opts.formats.length) ? opts.formats : FORMATS;
+    let format = opts.format || lsGet(kF, opts.defaultFormat || fmts[0]);
+    if (fmts.indexOf(format) < 0) format = fmts[0];
+    const sheets = sheetIdsFor(format);
     let sheet = lsGet(kS, opts.defaultSheet || DEFAULT_SHEET);
-    if (SHEET_IDS.indexOf(sheet) < 0) sheet = DEFAULT_SHEET;
+    if (sheets.indexOf(sheet) < 0) sheet = sheets.indexOf(DEFAULT_SHEET) >= 0 ? DEFAULT_SHEET : sheets[0];
 
     el.innerHTML =
       `<div class="sidebar-label" data-i18n="label.format">${T('label.format')}</div>` +
-      `<div class="hoks-fmt">` + FORMATS.map(f =>
+      `<div class="hoks-fmt">` + fmts.map(f =>
         `<button type="button" class="hoks-fmt-btn" data-fmt="${f}">` +
         `<span class="hoks-fmt-ico" style="width:${ICO[f][0]}px;height:${ICO[f][1]}px"></span>` +
         `<span data-i18n="format.${f}">${T('format.' + f)}</span></button>`).join('') + `</div>` +
@@ -414,7 +454,7 @@
     Rng, hexToRgb, luma, lerpColor, softLight,
     drawMeshGradient, bakeGrain, applyGrain, grain, bgMode, pickBg, hash01, fieldMode, fieldGrid, FIELD_MARGIN,
     ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
-    FORMATS, SHEETS, SHEET_IDS, WALL_SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,
-    fmtDims, previewDims, printDims, unit, mountFormat, exportPrint,
+    FORMATS, ALL_FORMATS, formatsFor, SHEETS, SHEET_IDS, sheetIdsFor, WALL_SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,
+    fmtDims, previewDims, printDims, nominalAspect, unit, mountFormat, exportPrint,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

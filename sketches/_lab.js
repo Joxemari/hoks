@@ -15,6 +15,53 @@
   const GRADUATED = ['plls', 'krrtk', 'dtk', 'dtkrt', 'lrrg'];
   const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
 
+  // works.json una sola vez por página: lo piden el selector de obra y el de
+  // formato, y no tiene sentido traerlo dos veces.
+  let worksCache = null, worksPending = null;
+  function loadWorks() {
+    if (worksCache) return Promise.resolve(worksCache);
+    if (!worksPending) {
+      worksPending = fetch(RAW + 'works.json?t=' + Date.now())
+        .then(r => r.ok ? r.json() : null)
+        .then(d => (worksCache = Array.isArray(d) ? d : []))
+        .catch(() => (worksCache = []));
+    }
+    return worksPending;
+  }
+
+  // ── Selector de formato: qué proporciones ofrece ESTA obra ──────────────────
+  // No todas las familias existen en todos los formatos. Una fila necesita
+  // recorrido y en cuadrado deja de ser una fila; un retículo, en cambio, se
+  // compone igual de bien en los dos. Lo que cada una admite se declara en su
+  // algo.js (FORMATS) y el panel lo puede cambiar por works.json sin tocar
+  // código. Sin red manda lo del algo.js, que es lo que viaja con la obra.
+  const FMT_LABEL = {
+    square:     '\u25A1 Square (1:1)',
+    vertical:   '\u25AF Vertical (1:\u221A2)',
+    horizontal: '\u25AD Horizontal (\u221A2:1)',
+    double:     '\u25AD\u25AD Doble \u00B7 dos pliegos (2\u221A2:1)',
+  };
+  function mountFormatSelect(sel, slug, opts) {
+    opts = opts || {};
+    const fallback = (opts.fallback && opts.fallback.length) ? opts.fallback : global.HOKS.FORMATS;
+    let current = null;
+    function fill(list) {
+      const keep = list.indexOf(sel.value) >= 0 ? sel.value : list[0];
+      sel.innerHTML = list.map(f => `<option value="${f}">${FMT_LABEL[f] || f}</option>`).join('');
+      sel.value = keep;
+      // Un solo formato no es una elección: se enseña, pero no se toca.
+      sel.disabled = list.length < 2;
+      const changed = current !== null && keep !== current;
+      current = keep;
+      return changed;
+    }
+    fill(fallback);
+    loadWorks().then(w => {
+      if (fill(global.HOKS.formatsFor(slug, w) || fallback) && opts.onChange) opts.onChange(sel.value);
+    });
+    return { value: () => sel.value };
+  }
+
   // ── Selector de obra ───────────────────────────────────────────────────────
   // Cambiar de familia sin volver al índice, conservando la seed: la misma seed
   // en otra gramática no da la misma imagen, pero mantiene el hilo de la sesión.
@@ -30,10 +77,9 @@
     // Sin red (file://, sin conexión) el laboratorio tiene que seguir abriendo.
     fill(GRADUATED.map(s => ({ slug: s, name: s.toUpperCase() })));
 
-    fetch(RAW + 'works.json?t=' + Date.now())
-      .then(r => r.ok ? r.json() : null)
+    loadWorks()
       .then(data => {
-        if (!Array.isArray(data)) return;
+        if (!Array.isArray(data) || !data.length) return;
         // Solo las ACTIVAS: el laboratorio es la mesa de trabajo, no el archivo.
         // Una familia retirada no debe estorbar la lista — se sigue pudiendo
         // abrir por URL (../<slug>/) mientras tenga su algo.js.
@@ -199,6 +245,6 @@
     return on;
   }
 
-  global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, initialSeed, loadAlgos,
-                     wallUrl, mountWallLink, formatControls };
+  global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, mountFormatSelect, loadWorks,
+                     initialSeed, loadAlgos, wallUrl, mountWallLink, formatControls };
 })(typeof window !== 'undefined' ? window : globalThis);

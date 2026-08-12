@@ -136,9 +136,8 @@
     const mulRnd    = rng.bool(P_MULTIPLY);
 
     // Diámetro: acotado para que el círculo entre en el alto CON su margen.
-    // El tope también se lee redondeado, por el mismo motivo que el rango de n:
-    // alimenta una decisión que no puede depender del redondeo a píxel.
-    const dCap   = Math.min(1, Math.round((H / S - E.FIELD_MARGIN * 2) * 1000) / 1000);
+    // El tope también sale de la proporción nominal, por el mismo motivo.
+    const dCap   = Math.min(1, E.nominalAspect(H, S) - E.FIELD_MARGIN * 2);
     const dScale = Math.min(params.diameter ? params.diameter : dRnd, dCap);
     const D = S * dScale, r = D / 2;
 
@@ -146,14 +145,12 @@
     //    los dos márgenes. De ahí sale el rango de n, y solo entonces se tira.
     const span = AW - margin * 2 - D;
 
-    // El rango de n se deduce de la PROPORCIÓN, y la proporción se lee
-    // REDONDEADA. 1075×760 en pantalla y 4961×3508 a 300 dpi son el mismo
-    // formato, pero su cociente difiere en la quinta cifra por el redondeo a
-    // píxel entero; sin redondear, esa diferencia cruza un límite de
-    // Math.round y cambia n — y entonces el archivo de impresión no sería la
-    // pieza de pantalla. El dibujo sigue usando los píxeles reales: lo que se
-    // redondea es solo la decisión entera.
-    const q = Math.round((AW / S) * 1000) / 1000;
+    // El rango de n sale de la PROPORCIÓN NOMINAL del formato, no del cociente
+    // en píxeles: 1075×760 en pantalla, 4961×3508 en A3 y 9933×7016 en A1 son
+    // el mismo 'horizontal', pero sus cocientes difieren lo bastante como para
+    // cruzar un Math.round y cambiar n de un pliego a otro. El dibujo sigue en
+    // píxeles reales; lo que se lee del formato es solo la decisión ENTERA.
+    const q = E.nominalAspect(AW, S);
     const [nMin, nMax] = slotRange(q - E.FIELD_MARGIN * 2 - dScale, dScale);
     const nRnd = rng.int(nMin, nMax);
 
@@ -280,5 +277,11 @@
     };
   }
 
-  (global.HOKS = global.HOKS || {}).LRRG = { render, traits, slotRange, THRESHOLD, MODES, RHYTHMS, BG_GRADIENT };
+  // La familia existe en UNA sola proporción. No es una limitación técnica —la
+  // obra se compone igual en cuadrado— es que una fila necesita recorrido: en
+  // cuadrado no es la misma obra más corta, son dos círculos y ya. El panel
+  // puede cambiarlo por works.json; esto es lo que vale sin red y por defecto.
+  const FORMATS = ['double'];
+
+  (global.HOKS = global.HOKS || {}).LRRG = { render, traits, slotRange, THRESHOLD, MODES, RHYTHMS, BG_GRADIENT, FORMATS };
 })(typeof window !== 'undefined' ? window : globalThis);

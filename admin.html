@@ -489,7 +489,17 @@ ${GRADUATED.includes(w.slug)?`
         <div style="margin-bottom:6px;">
           <div style="font-size:9px;color:var(--ink3);letter-spacing:0.1em;margin-bottom:3px;">${lg.toUpperCase()}</div>
           <textarea id="cart-${lg}-${i}" class="code-editor" style="min-height:44px;background:var(--surface);color:var(--ink);border-color:var(--border);" placeholder="—">${esc((w.cartela&&w.cartela[lg])||'')}</textarea>
-        </div>`).join('')}`:''}
+        </div>`).join('')}
+        <div style="font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.1em;margin:14px 0 6px;">
+          <span>Formats &middot; the proportions this family exists in</span>
+        </div>
+        <div style="font-size:9px;color:var(--ink3);line-height:1.7;margin-bottom:8px;">A family need not exist in every proportion: a row needs run, and in a square it stops being a row. Unchecking them all falls back to what <code>sketches/${esc(w.slug)}/algo.js</code> declares. <b>double</b> is two landscape sheets side by side &mdash; the only entry that is not a single DIN sheet, so it prints on two and drops A1 (an A1 double is 139 Mpx, the A0 ceiling).</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;">
+        ${FORMAT_IDS.map(f=>`
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:10px;letter-spacing:0.06em;">
+            <input type="checkbox" id="fmt-${f}-${i}" ${(w.formats||[]).includes(f)?'checked':''} onchange="saveWorkFormats(${i})"> ${f}
+          </label>`).join('')}
+        </div>`:''}
       </div>
     </div>`).join('');
 }
@@ -515,6 +525,19 @@ async function saveWorkDesc(i) {
 // aquí y no en el algo.js. El fragmento de código NO: ese es la obra.
 // Una lengua vacía se borra en vez de guardarse en blanco — así la cartela cae
 // a la frase que vive pegada al código en vez de salir muda.
+// Los formatos que puede ofrecer una familia. Copia del ALL_FORMATS del motor:
+// admin.html es un panel autónomo y no carga scripts del laboratorio — al añadir
+// un formato al motor, tocar las dos. 'vertical' no está porque el laboratorio
+// lo resuelve girando la vista, no generando otra imagen.
+const FORMAT_IDS = ['square','horizontal','double'];
+// Sin ninguno marcado NO se guarda una lista vacía: se borra la clave, y así la
+// obra cae a lo que declara su algo.js en vez de quedarse sin formatos.
+async function saveWorkFormats(i) {
+  const picked = FORMAT_IDS.filter(f => $('fmt-'+f+'-'+i).checked);
+  if (picked.length) works[i].formats = picked; else delete works[i].formats;
+  await saveWorks();
+  toast(works[i].name + ' · formats: ' + (picked.length ? picked.join(', ') : 'from algo.js'));
+}
 async function saveWorkCartela(i) {
   const c = {};
   for (const lg of ['eu','es','en']) {
@@ -529,7 +552,7 @@ function openAddWorkModal() {
   const name = prompt('Family name (e.g. BZRSG):'); if (!name) return;
   const slug = prompt('Slug (e.g. bzrsg):'); if (!slug) return;
   const canvasSize = prompt('Canvas size:', '600x600');
-  works.push({id:slug, name:name.toUpperCase(), slug, active:false, description:'', page:slug+'.html', canvas:canvasSize||'600x600', created:Date.now()});
+  works.push({id:slug, name:name.toUpperCase(), slug, active:false, description:'', page:slug+'.html', canvas:canvasSize||'600x600', formats:['square','horizontal'], created:Date.now()});
   saveWorks();
   renderWorks();
   toast('Family added — graduate it in the Lab, then activate when ready');
