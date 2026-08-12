@@ -49,7 +49,29 @@ sketches/
   krrtk/           ← graduada (porte fiel, verificado op-a-op)
   dtk/             ← graduada (porte fiel, verificado op-a-op)
   dtkrt/            ← EN PRUEBAS: familia nueva, aún sin página de producción
+  trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
 ```
+
+### TRZS: el porte salió idéntico al píxel
+
+`trzs/` viene de `sketches/iterations2/` (p5). El porte quitó p5 entero —vectores,
+azar, globales matemáticos— y **la imagen no se movió ni un píxel**: 200 obras de
+200, en ocho configuraciones (los cuatro tipos, esquinas rectas y curvas, cuadrado
+y apaisado).
+
+Eso no fue suerte: **p5 y el motor usan el mismo LCG**. `p5.prototype._lcg` es
+`(1664525·s + 1013904223) mod 2³²` dividido por 2³², que es exactamente
+`HOKS.Rng`. Contrastado en el p5 vendorizado, no supuesto. Traducir sitio a sitio
+—`random()`→`next()`, `random(a,b)`→`range(a,b)`, `random(arr)`→`pickFrom(arr)`—
+conserva el stream, y con él la obra.
+
+Y va **1,8× más rápido**: 40 obras a 900×900, mediana 378→211 ms en el tipo por
+defecto y 1130→608 ms en la trama, cuyo peor caso baja de 4,9 s a 3,0 s. El p5
+que quedaba estaba en el camino caliente, sobre todo `p5.Vector`.
+
+La equivalencia se midió sobre el algoritmo y su dibujo. Lo que el contrato añade
+—fondo del motor, grano, los tres formatos— es nuevo por definición y se verificó
+aparte.
 
 `dtkrt/` es el único caso hasta ahora de obra que **nace aquí** en vez de portarse
 desde p5: propuesta de sistema para mirar en hoja de contactos antes de decidir si
