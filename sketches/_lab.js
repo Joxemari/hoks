@@ -170,6 +170,35 @@
     return Number.isFinite(n) ? (n >>> 0) : (Math.random() * 0xFFFFFFFF) >>> 0;
   }
 
+  // ── Girar la vista y elegir campo: solo dicen algo en horizontal ────────────
+  // Los dos controles son no-ops sobre formato cuadrado, pero por motivos
+  // distintos:
+  //   · El giro no es inocuo. Sobre un DIN devuelve la misma obra vista de pie;
+  //     sobre un cuadrado devuelve la obra ROTADA 90°, que es otra imagen y no
+  //     es la que se publica. Juzgar por ahí sería juzgar lo que no existe.
+  //   · El campo sí es inocuo, y por eso confunde más: fieldGrid entra por la
+  //     rama del campo cuadrado en cuanto L−S < 1, mire lo que mire
+  //     params.field. El desplegable se mueve y no pasa nada.
+  // Se esconden en vez de quedarse ahí sin efecto, y el botón se deshabilita
+  // para que la tecla r tampoco lo reviva: un button disabled no dispara click().
+  // Devuelve el ROT que debe quedar — falso si el formato es cuadrado.
+  function formatControls(format, rotOn) {
+    const square = format === 'square';
+    const rot = document.getElementById('rot');
+    const field = document.getElementById('field');
+    const fieldGroup = field && field.closest('.group');
+    const rotHint = rot && rot.parentElement && rot.parentElement.querySelector('.hintline');
+    const on = square ? false : !!rotOn;
+    if (rot) {
+      rot.disabled = square;
+      rot.style.display = square ? 'none' : '';
+      rot.textContent = on ? '⟲ Ver tumbado (r)' : '⟲ Ver de pie (r)';
+    }
+    if (rotHint)    rotHint.style.display    = square ? 'none' : '';
+    if (fieldGroup) fieldGroup.style.display = square ? 'none' : '';
+    return on;
+  }
+
   global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, initialSeed, loadAlgos,
-                     wallUrl, mountWallLink };
+                     wallUrl, mountWallLink, formatControls };
 })(typeof window !== 'undefined' ? window : globalThis);

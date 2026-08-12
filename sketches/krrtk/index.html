@@ -151,6 +151,7 @@ let FORMAT = 'square';
 let ROT = false;              // girar la VISTA, no la obra
 let W, H, SHEET_W, SHEET_H;
 function applyFormat() {
+  ROT = HOKSLAB.formatControls(FORMAT, ROT);   // girar y campo, solo en horizontal
   const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
   const t = HOKS.fmtDims(FORMAT, SHEET_BASE); SHEET_W = t.W; SHEET_H = t.H;
   single.width = ROT ? H : W; single.height = ROT ? W : H;
@@ -270,7 +271,7 @@ $('th').oninput = () => { $('thV').textContent = parseFloat($('th').value).toFix
 $('al').oninput = () => { $('alV').textContent = parseFloat($('al').value).toFixed(2); refresh(); };
 const AIRE = { 0:'auto', 1:'1 · margen 29%', 2:'2 · margen 8,6%', 3:'3 · margen 18,9%' };
 $('fs').oninput = () => { $('fsV').textContent = AIRE[$('fs').value]; refresh(); };
-$('rot').onclick = () => { ROT = !ROT; $('rot').textContent = ROT ? '⟲ Ver tumbado (r)' : '⟲ Ver de pie (r)'; applyFormat(); refresh(); };
+$('rot').onclick = () => { ROT = !ROT; applyFormat(); refresh(); };   // la etiqueta la pone formatControls
 $('field').onchange = refresh;
 $('bg').onchange = () => { syncBgAuto(); refresh(); };
 // El % de degradado solo manda cuando el fondo va en 'auto': si lo fuerzas a

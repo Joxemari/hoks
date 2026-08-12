@@ -205,6 +205,7 @@ let FORMAT = 'horizontal';
 let ROT = false;              // girar la VISTA, no la obra
 let W, H, SHEET_W, SHEET_H;
 function applyFormat() {
+  ROT = HOKSLAB.formatControls(FORMAT, ROT);   // girar y campo, solo en horizontal
   const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
   const t = HOKS.fmtDims(FORMAT, SHEET_BASE); SHEET_W = t.W; SHEET_H = t.H;
   single.width = ROT ? H : W; single.height = ROT ? W : H;
@@ -400,7 +401,7 @@ function pasteRecipe() { const s = prompt('Pega una receta (JSON):'); if (!s) re
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('arch').onchange = refresh;
-$('rot').onclick = () => { ROT = !ROT; $('rot').textContent = ROT ? '⟲ Ver tumbado (r)' : '⟲ Ver de pie (r)'; applyFormat(); refresh(); };
+$('rot').onclick = () => { ROT = !ROT; applyFormat(); refresh(); };   // la etiqueta la pone formatControls
 $('field').onchange = refresh;
 $('bg').onchange = () => { syncBgAuto(); refresh(); };
 // El % de degradado solo manda cuando el fondo va en 'auto': si lo fuerzas a
