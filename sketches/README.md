@@ -41,6 +41,9 @@ sketches/
   _batch.js         ← lotes: la selección se hace aquí, sobre la hoja de
                       contactos. Un lote es una lista de RECETAS
                       (obra + seed + params), no de imágenes.
+  _wall/            ← el MURO: la pieza a escala sobre una pared. Página aparte,
+                      se abre desde el enlace del panel y recibe la receta por
+                      URL. Solo tiene mandos que NO cambian la obra.
   _template/        ← esqueleto para graduar una obra nueva
   plls/            ← graduada (algo.js + harness)
   krrtk/           ← graduada (porte fiel, verificado op-a-op)
@@ -94,9 +97,42 @@ Pliegos: A4, A3 (por defecto), A2, A1, siempre a 300 dpi. Un A3 horizontal son
 renderizar** fuera de pantalla a ese tamaño; el lienzo de la página es solo la
 vista previa (lado corto 760 px, que es también lo que se guarda en la galería).
 
+**A0 existe en la tabla `SHEETS` pero NO en `SHEET_IDS`**, que es lo que exporta
+el lote: solo lo enseña el muro (`WALL_SHEET_IDS`). A 300 dpi un A0 horizontal
+son 14043×9933 px — 139,5 Mpx y 532 MB de lienzo. Sale en Chromium (13,5 s, PNG
+de 10,7 MB) pero queda por encima del techo de área de canvas de otros
+navegadores, así que exportarlo pide antes decidir su dpi: a 150 son 34,9 Mpx y
+1,8 s, y a esa distancia de lectura no se nota. Mirar un A0 es gratis;
+imprimirlo, no.
+
 En el harness, el desplegable *Format* cambia la proporción de la vista única y
 de la hoja de contactos: mirar 12 seeds en vertical es la manera de saber si la
 obra aguanta ese formato antes de imprimirla.
+
+## El muro (`_wall/`)
+
+Cuánto mide la obra no se ve en pantalla, y el pliego es una decisión que hoy no
+se juzga en ningún sitio. El muro pone la pieza a escala sobre una pared, con
+figura de 1,70 m, eje de colgado a 1,45 m y regla en cm; su segunda vista pone
+los cinco pliegos en la misma pared, que es donde de verdad se decide.
+
+Vive en **su propia página a propósito**. El laboratorio decide QUÉ se genera;
+el muro solo dice DE QUÉ TAMAÑO es el objeto que sale. Aquí solo hay mandos que
+no cambian ni un píxel — pliego, ancho de pared, referencias —, y todo lo que sí
+mueve la imagen (seed, formato, paleta, params) llega por URL y es de solo
+lectura. Meter esos mandos en el panel del harness habría convertido los
+parámetros de generar en un cajón con parámetros de mirar.
+
+Lo que viaja es la **receta**, la misma que ya usan los cinco harnesses y
+`_batch.js`, serializada entera: un parámetro nuevo en una obra llega al muro sin
+tocar nada. El enlace lo pone `HOKSLAB.mountWallLink()` — una línea por harness —
+y recalcula el `href` al posarse encima, no en cada refresh, para seguir siendo
+un enlace de verdad.
+
+```
+../_wall/?r=<receta JSON urlencoded>            ← lo que pone el enlace del panel
+../_wall/?work=dtkrt&seed=123&fmt=horizontal    ← forma legible, a mano
+```
 
 ## Usar el harness (paso 3)
 

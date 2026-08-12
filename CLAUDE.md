@@ -82,8 +82,21 @@ No hay otro CSS/JS global: cada página trae su propio `<style>`.
 
 **Aquí se genera y aquí se elige.** Motor compartido (`_engine.js`: Rng, mesh
 gradient, grano, paletas) + `_lab.js` (selector de obra y de paleta) +
-`_batch.js` (lotes) + una carpeta por obra graduada con `algo.js` (el
-algoritmo, fuente única) y un harness (scrub de seeds, hoja de contactos).
+`_batch.js` (lotes) + `_wall/` (el muro) + una carpeta por obra graduada con
+`algo.js` (el algoritmo, fuente única) y un harness (scrub de seeds, hoja de
+contactos).
+
+**`_wall/` — el muro.** La pieza a escala sobre una pared: figura de 1,70 m, eje
+de colgado a 1,45 m, regla en cm, y una segunda vista con los cinco pliegos en
+la misma pared. Está en **su propia página a propósito**: el laboratorio decide
+*qué* se genera y el muro solo dice *de qué tamaño* es el objeto, así que aquí
+solo hay mandos que no cambian ni un píxel (pliego, ancho de pared,
+referencias). Todo lo que mueve la imagen llega por URL y es de solo lectura —
+si hay que cambiar la obra, se vuelve al lab. Lo que viaja es la **receta**, la
+misma de los harnesses y `_batch.js`, serializada entera, así que un parámetro
+nuevo llega al muro sin tocar nada. El enlace lo pone
+`HOKSLAB.mountWallLink()`, una línea por harness. No metas mandos de mirar en
+el panel de generar: esa separación es el motivo de que exista la página.
 
 El circuito completo: **lab → lote → publicar → galería**. Se mira la hoja de
 contactos, se aparta con `+` o `a`, y el lote —una lista de *recetas*, no de
@@ -167,6 +180,11 @@ redeploy de Pages.
   tamaño del pliego (A4 / **A3** / A2 / A1, 300 dpi); el lienzo de la página es
   solo vista previa (lado corto 760 px). Mismo seed + mismo formato = la misma
   imagen a cualquier tamaño, así que lo que se ve es lo que se imprime.
+  **A0 está en `SHEETS` pero no en `SHEET_IDS`**: solo lo enseña el muro
+  (`WALL_SHEET_IDS`), porque a 300 dpi son 139,5 Mpx y 532 MB de lienzo —
+  exportarlo pide antes decidir su dpi (a 150 son 34,9 Mpx y a ese tamaño no se
+  nota). Ojo: `printDims` con un pliego que no esté en la tabla no falla, cae al
+  de por defecto; ahora al menos avisa por consola.
 
 ## Despliegue
 
