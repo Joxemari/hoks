@@ -540,7 +540,7 @@ function generate(seed, cfg) {
   const { cuts, order, depth, cruces, plano, crossings } = intento.nudo;
 
 
-  return { seed, tipo, salto: intento.salto, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
+  return { seed, tipo, salto: intento.salto, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, conserva: intento.conserva, volteos: intento.volteos, width, colores, cfg };
 }
 
 // ------------------------------------------------------------
