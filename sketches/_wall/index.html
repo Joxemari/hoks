@@ -17,7 +17,6 @@
   .lab-title small { display:block; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; }
   .group { display: flex; flex-direction: column; gap: 6px; }
   .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); }
-  select { font-family: var(--f); font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 2px; width: 100%; }
   .hintline { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; line-height: 1.7; }
   button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
   button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
@@ -97,25 +96,15 @@
     <div class="group">
       <span class="lbl">Piece</span>
       <div class="facts" id="facts"></div>
-      <a class="back" id="back" href="#">← Volver al lab</a>
-      <span class="hintline">el muro no toca la obra: para cambiarla, al laboratorio.
-        Volver lleva la seed, no los parámetros</span>
+      <a class="back" id="back" href="#">← Abrir en el lab</a>
+      <span class="hintline">abre el lab en esta seed. Los ajustes del panel
+        (grid, fondo, grano…) no viajan de vuelta</span>
     </div>
 
     <div class="group">
       <span class="lbl">Sheet</span>
       <div class="seg" id="sheet"></div>
       <span class="hintline" id="sheetNote">—</span>
-    </div>
-
-    <div class="group">
-      <span class="lbl">Wall · width</span>
-      <select id="wallw">
-        <option value="3000" selected>3,00 m</option>
-        <option value="3600">3,60 m</option>
-        <option value="4200">4,20 m</option>
-      </select>
-      <span class="hintline">el encuadre se corta por arriba: con el techo dentro no se juzga nada</span>
     </div>
 
     <div class="group">
@@ -168,7 +157,11 @@ const HANG_MM  = 1450;   // eje de colgado: centro de la obra sobre el suelo
 const FIG_MM   = 1700;   // altura de la figura de referencia
 const FIG_W_MM = 500;
 const FIG_X_MM = 340;
-const CROP     = 1.5;    // el muro se recorta arriba en ancho/1,5
+// Un muro de 3 m y el encuadre recortado arriba en ancho/1,5. Eran mandos y
+// sobraban: elegir el ancho de la pared no ayuda a decidir el pliego —solo
+// reescala las dos cosas a la vez— y con el techo dentro no se juzga nada.
+const WALL_W_MM = 3000;
+const CROP      = 1.5;
 const PIECE_X  = 0.62;   // centro de la pieza, en fracción del ancho
 const RENDER_SHORT = 700;              // lado corto del render; la pantalla reduce
 const CMP_W_MM = 5200, CMP_H_MM = 2400, CMP_GAP = 150, CMP_PAD = 200;
@@ -186,7 +179,7 @@ const FIG_PATH =
 
 // ── Estado: lo que llega (fijo) y lo que se mira (mutable) ──────────────────
 const recipe = readRecipe();
-const view = { sheet: 'A3', wallW: 3000, mode: 'single',
+const view = { sheet: 'A3', mode: 'single',
                refs: { fig: true, eye: true, rule: true } };
 
 let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
@@ -288,7 +281,7 @@ function renderPiece() {
 
 // ── Los dos muros ───────────────────────────────────────────────────────────
 function paintSingle() {
-  const wall = $('wall'), wmm = view.wallW, hmm = Math.round(wmm / CROP);
+  const wall = $('wall'), wmm = WALL_W_MM, hmm = Math.round(wmm / CROP);
   wall.style.aspectRatio = `${wmm} / ${hmm}`;
   const p = HOKS.printDims(recipe.format, view.sheet);
   wall.innerHTML = rulerHtml(hmm) + eyelineHtml(hmm, true) + figureSvg(wmm, hmm) +
@@ -335,7 +328,8 @@ function drawFacts() {
   }
   $('facts').innerHTML = rows.map(([k, v]) =>
     `<div class="t"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
-  $('sheetNote').textContent = `${p.mm[0]} × ${p.mm[1]} mm · ${(p.mm[0] * p.mm[1] / 1e6).toFixed(2)} m²`;
+  const m2 = (p.mm[0] * p.mm[1] / 1e6).toFixed(2).replace('.', ',');
+  $('sheetNote').textContent = `${p.mm[0]} × ${p.mm[1]} mm · ${m2} m²`;
   $('back').href = `../${recipe.work}/?seed=${recipe.seed}`;
 }
 
@@ -344,7 +338,7 @@ function paint() {
   drawFacts();
   const p = HOKS.printDims(recipe.format, view.sheet);
   $('status').textContent = view.mode === 'single'
-    ? `${recipe.work.toUpperCase()} · #${recipe.seed} · ${view.sheet} · ${p.mm[0]} × ${p.mm[1]} mm · ${p.W} × ${p.H} px @ ${p.dpi} dpi`
+    ? `${recipe.work.toUpperCase()} · #${recipe.seed} · ${view.sheet} · ${p.mm[0]} × ${p.mm[1]} mm · ${p.W} × ${p.H} px @ ${p.dpi} dpi · muro ${(WALL_W_MM / 1000).toFixed(2).replace('.', ',')} m`
     : `Los ${HOKS.WALL_SHEET_IDS.length} pliegos · misma seed, misma imagen: solo cambia el objeto`;
 }
 
@@ -383,7 +377,6 @@ $('refs').onclick = e => {
   b.classList.toggle('on', view.refs[b.dataset.v]);
   paint();
 };
-$('wallw').onchange = () => { view.wallW = parseInt($('wallw').value, 10); paint(); };
 $('viewBtn').onclick = () => setView(view.mode === 'ladder' ? 'single' : 'ladder');
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
