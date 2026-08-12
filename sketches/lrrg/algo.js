@@ -1,16 +1,15 @@
-/* LRRG — lerroa. Iteración en un solo eje: una fila de círculos sobre mesh
- * gradient, con grano.
+/* LRRG — lerroa. Iteración en un solo eje: una fila de círculos.
  *
  * La gramática, en cuatro reglas:
- *   1. Ningún círculo pisa el borde del cuadro. El aire lateral iguala al
- *      vertical, lo que confina los centros al segmento [H/2, W − H/2]: un
- *      cuadrado de lado H que recorre el lienzo. El recorrido mide W − H, sea
- *      cual sea el diámetro.
- *   2. Ese recorrido se subdivide en n−1 pasos. El paso entre centros
- *      (pitch = (W − H)/(n − 1)) es SIEMPRE el mismo dentro de una pieza.
+ *   1. Ningún círculo pisa el borde. El margen es el del SISTEMA
+ *      (E.FIELD_MARGIN), el mismo que usan las obras de retículo.
+ *   2. Lo que queda de ancho tras sacar el círculo y los márgenes es el
+ *      RECORRIDO. Se subdivide en n−1 pasos, y el paso entre centros es
+ *      SIEMPRE el mismo dentro de una pieza.
  *   3. El diámetro no depende del paso. Por eso n es quien decide el solape:
  *      con n bajo los círculos se rozan; con n alto cada uno se come a varios
- *      vecinos.
+ *      vecinos. El rango de n se DEDUCE del solape que se quiere (×1 tangentes
+ *      a ×8 fundidos), así que ese recorrido es el mismo en cualquier formato.
  *   4. Algunos slots no se dibujan. La irregularidad no está en las posiciones
  *      — está en las ausencias.
  *
@@ -30,6 +29,10 @@
  * o en multiply. Con alpha < 1 el solape deja de tapar y empieza a mezclar:
  * cada intersección es un color que no está en la paleta.
  *
+ * Ni proporción ni resolución se dan por hechas: todo se mide contra W, H o
+ * min(W,H), así que la misma seed es la misma composición en cuadrado y en
+ * horizontal, y en pantalla o a 300 dpi.
+ *
  * Canvas 2D puro. Depende de window.HOKS (_engine.js).
  *
  *   HOKS.LRRG.render(ctx, W, H, seed, opts) → { pal, n, drawn, ratio, mode, … }
@@ -39,28 +42,18 @@
   'use strict';
   const E = global.HOKS;
 
-  // Rango de slots — anclado al FORMATO, no al ancho en píxeles. Los centros
-  // viven en un segmento de longitud W − H (ver abajo), así que el solape vale
-  // dScale·(n−1)/(W/H − 1). Para que el MISMO grado de solape esté disponible en
-  // cualquier proporción, (n−1) tiene que escalar con (W/H − 1). Calibrado para
-  // que el solape recorra ×1 (tangentes) a ×8 (fundidos) en cualquier formato.
-  const K_MIN = 1.64, K_MAX = 14.2;
-  function slotRange(W, H) {
-    const a = W / H - 1;              // 0.414 = un A3 · 1.828 = dos A3
-    return [1 + Math.max(1, Math.round(K_MIN * a)), 1 + Math.max(2, Math.round(K_MAX * a))];
-  }
-
-  const THRESHOLD = 0.68;             // Scatter: probabilidad de que un slot exista
-  // Diámetro como fracción de la altura. Centrado en 0.57, la proporción
-  // elegida: banda con aire generoso arriba y abajo, no un friso que llena
-  // el alto. Nunca > 1: el círculo no puede salirse del cuadro.
+  const REF = 1000;           // lado corto de referencia: calibra grano y px
+  const BG_GRADIENT = 70;     // % de degradado en 'auto' — la obra nació con mesh
+  const THRESHOLD = 0.68;     // Scatter: probabilidad de que un slot exista
+  // Diámetro como fracción del lado corto. Centrado en 0.57, la proporción
+  // elegida: banda con aire generoso arriba y abajo, no un friso que llena el
+  // alto. Nunca > 1 − 2·margen: el círculo no puede salirse del cuadro.
   const D_MIN = 0.46, D_MAX = 0.68;
-  const RING_LW = 0.0078;             // grosor de contorno como fracción de la ALTURA
-                                      // (la altura fija el tamaño del círculo; el
-                                      //  ancho ya no, porque la proporción varía)
+  const RING_LW = 0.0078;     // grosor de contorno como fracción del lado corto
   const A_MIN = 0.40, A_MAX = 0.85;   // alpha cuando la tinta no es opaca
-  const P_OPAQUE = 0.45;              // probabilidad de tinta opaca
-  const P_MULTIPLY = 0.35;            // probabilidad de fundido multiply
+  const P_OPAQUE = 0.45;      // probabilidad de tinta opaca
+  const P_MULTIPLY = 0.35;    // probabilidad de fundido multiply
+  const RATIO_MIN = 1.0, RATIO_MAX = 8.0;   // solape disponible: tangente → fundido
   const MODES = [
     { name: 'Stack', prob: 0.50 },
     { name: 'Xor',   prob: 0.28 },
@@ -70,6 +63,16 @@
     { name: 'Cadence', prob: 0.65 },
     { name: 'Scatter', prob: 0.35 },
   ];
+
+  // Rango de slots — DEDUCIDO, no calibrado. El solape vale D·(n−1)/recorrido,
+  // así que fijar el solape que se quiere fija n. Por eso el mismo abanico de
+  // solape existe en cuadrado y en horizontal aunque el recorrido sea otro.
+  function slotRange(span, D) {
+    if (!(span > 0) || !(D > 0)) return [1, 1];
+    const k = span / D;
+    const lo = Math.max(2, 1 + Math.round(RATIO_MIN * k));
+    return [lo, Math.max(lo + 1, 1 + Math.round(RATIO_MAX * k))];
+  }
 
   // Rachas alternas de presencia y silencio. Cada racha mide 1..runMax slots.
   // Es la diferencia entre un ritmo y un ruido: aquí las agrupaciones se
@@ -86,8 +89,8 @@
   }
 
   // ── Entrada principal ───────────────────────────────────────────────────────
-  // opts: { palettes, locked, lockedIdx, params:{ grainScale, slots, diameter,
-  //         mode, rhythm, runMax, alpha, blend, threshold } }
+  // opts: { palettes, locked, lockedIdx, params:{ field, bg, bgProbs, grainScale,
+  //         slots, diameter, mode, rhythm, runMax, alpha, blend, threshold } }
   function render(ctx, W, H, seed, opts) {
     opts = opts || {};
     const params = opts.params || {};
@@ -100,16 +103,30 @@
     const pal = (opts.locked && palettes[opts.lockedIdx]) ? palettes[opts.lockedIdx] : rng.weighted(palettes);
     const colors = pal.colors;
 
-    // 1. Fondo: mesh gradient (stream RNG independiente, como el resto de la familia G).
+    // 1. Fondo. Transversal: lo elige el sistema con su propio stream, así que
+    //    cambiarlo no mueve ni un círculo. La obra tiende a degradado porque
+    //    nació con mesh, pero el plano también es suyo.
+    const bg = E.pickBg(seed, params, BG_GRADIENT);
     const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
-    E.drawMeshGradient(ctx, W, H, colors, rngBg);
+    if (bg === 'gradient') {
+      E.drawMeshGradient(ctx, W, H, colors, rngBg);
+    } else {
+      ctx.fillStyle = colors[rngBg.int(0, colors.length - 1)];
+      ctx.fillRect(0, 0, W, H);
+    }
 
-    // 2. Escalares de la pieza. Se tiran TODOS y en bloque, aunque el
-    //    laboratorio los pise después: así mover un slider no descoloca el
+    // 2. Campo. El pliego y el campo son dos decisiones: con 'square' la obra se
+    //    compone en un cuadrado centrado en el pliego, no estirada en él.
+    const S = Math.min(W, H);
+    const square = E.fieldMode(params) === 'square';
+    const AW = square ? S : W;            // ancho del campo
+    const ox = (W - AW) / 2;              // el campo, centrado en el pliego
+    const margin = E.FIELD_MARGIN * S;    // margen del sistema, no de esta obra
+
+    // 3. Escalares de la pieza. Se tiran TODOS y en bloque, aunque el
+    //    laboratorio los pise después: así mover un mando no descoloca el
     //    resto. Los colores van antes que las ausencias por el mismo motivo —
     //    cambiar de ritmo no debe recolorear la fila.
-    const [nMin, nMax] = slotRange(W, H);
-    const nRnd      = rng.int(nMin, nMax);
     const dRnd      = rng.range(D_MIN, D_MAX);
     const mRnd      = rng.weighted(MODES).name;
     const rhyRnd    = rng.weighted(RHYTHMS).name;
@@ -118,31 +135,47 @@
     const aRnd      = rng.range(A_MIN, A_MAX);
     const mulRnd    = rng.bool(P_MULTIPLY);
 
-    const n      = params.slots    ? params.slots    : nRnd;
-    const dScale = params.diameter ? params.diameter : dRnd;
-    const mode   = params.mode     ? params.mode     : mRnd;
-    const rhythm = params.rhythm   ? params.rhythm   : rhyRnd;
-    const runMax = params.runMax   ? params.runMax   : runMaxRnd;
-    const alpha  = params.alpha    ? params.alpha    : (opaqueRnd ? 1 : aRnd);
-    const blend  = params.blend    ? params.blend    : (mulRnd ? 'multiply' : 'source-over');
+    // Diámetro: acotado para que el círculo entre en el alto CON su margen.
+    // El tope también se lee redondeado, por el mismo motivo que el rango de n:
+    // alimenta una decisión que no puede depender del redondeo a píxel.
+    const dCap   = Math.min(1, Math.round((H / S - E.FIELD_MARGIN * 2) * 1000) / 1000);
+    const dScale = Math.min(params.diameter ? params.diameter : dRnd, dCap);
+    const D = S * dScale, r = D / 2;
 
-    // Geometría. Ningún círculo pisa el borde: el aire lateral es el mismo que
-    // el vertical, (H − D)/2, y eso confina los centros al segmento
-    // [H/2, W − H/2] — longitud W − H, independiente del diámetro. El círculo
-    // queda inscrito en un cuadrado de lado H que recorre el cuadro; n subdivide
-    // ese recorrido en n−1 pasos iguales.
-    const r = (H * Math.min(1, dScale)) / 2;
-    const cy = H / 2;
-    const span = W - H;
-    const solo = n < 2 || span <= 0;              // un único círculo: al centro
+    // 4. El recorrido: lo que sobra del ancho del campo tras sacar el círculo y
+    //    los dos márgenes. De ahí sale el rango de n, y solo entonces se tira.
+    const span = AW - margin * 2 - D;
+
+    // El rango de n se deduce de la PROPORCIÓN, y la proporción se lee
+    // REDONDEADA. 1075×760 en pantalla y 4961×3508 a 300 dpi son el mismo
+    // formato, pero su cociente difiere en la quinta cifra por el redondeo a
+    // píxel entero; sin redondear, esa diferencia cruza un límite de
+    // Math.round y cambia n — y entonces el archivo de impresión no sería la
+    // pieza de pantalla. El dibujo sigue usando los píxeles reales: lo que se
+    // redondea es solo la decisión entera.
+    const q = Math.round((AW / S) * 1000) / 1000;
+    const [nMin, nMax] = slotRange(q - E.FIELD_MARGIN * 2 - dScale, dScale);
+    const nRnd = rng.int(nMin, nMax);
+
+    const n      = params.slots  ? params.slots  : nRnd;
+    const mode   = params.mode   ? params.mode   : mRnd;
+    const rhythm = params.rhythm ? params.rhythm : rhyRnd;
+    const runMax = params.runMax ? params.runMax : runMaxRnd;
+    const alpha  = params.alpha  ? params.alpha  : (opaqueRnd ? 1 : aRnd);
+    const blend  = params.blend  ? params.blend  : (mulRnd ? 'multiply' : 'source-over');
+
+    const solo  = n < 2 || span <= 0;             // un único círculo: al centro
     const pitch = solo ? 0 : span / (n - 1);      // distancia entre centros — constante
-    const ratio = solo ? 0 : (r * 2) / pitch;     // >1 = hay solape
+    const ratio = solo ? 0 : D / pitch;           // >1 = hay solape
+    const cy = H / 2;
+    // Primer centro a margen + radio; el último, simétrico. Nada pisa el borde.
+    const cx = i => ox + (solo ? AW / 2 : margin + r + i * pitch);
 
-    // 3. Color por slot (se tira siempre, exista o no el círculo).
+    // 5. Color por slot (se tira siempre, exista o no el círculo).
     const cols = [];
     for (let i = 0; i < n; i++) cols.push(colors[rng.int(0, colors.length - 1)]);
 
-    // 4. Ausencias. Cadence consume un número variable de tiradas; por eso va
+    // 6. Ausencias. Cadence consume un número variable de tiradas; por eso va
     //    la última, para no arrastrar al resto de la pieza.
     let present;
     if (rhythm === 'Scatter') {
@@ -152,9 +185,7 @@
       present = cadence(rng, n, runMax);
     }
 
-    // 5. Dibujo.
-    // Extremos con el mismo aire que arriba y abajo, (H − D)/2 — no tangentes.
-    const cx = i => (solo ? W / 2 : H / 2 + i * pitch);
+    // 7. Dibujo.
     let drawn = 0;
     for (let i = 0; i < n; i++) if (present[i]) drawn++;
 
@@ -174,7 +205,7 @@
       ctx.fillStyle = cols[0];
       ctx.fill('evenodd');
     } else if (mode === 'Ring') {
-      ctx.lineWidth = Math.max(1, H * RING_LW);
+      ctx.lineWidth = Math.max(1, S * RING_LW);
       for (let i = 0; i < n; i++) {
         if (!present[i]) continue;
         ctx.strokeStyle = cols[i];
@@ -195,11 +226,11 @@
 
     ctx.restore();
 
-    // 6. Grano.
-    E.applyGrain(ctx, W, H, E.bakeGrain(W, H, colors, grainScale));
+    // 8. Grano — unit mantiene su tamaño al subir a resolución de impresión.
+    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
 
-    return { pal, n, nMin, nMax, drawn, ratio, mode, dScale: Math.min(1, dScale),
-             rhythm, runMax, alpha, blend, present };
+    return { pal, n, nMin, nMax, drawn, ratio, mode, dScale, rhythm, runMax,
+             alpha, blend, bg, field: square ? 'square' : 'sheet', present };
   }
 
   // Traits + rareza global a partir de un resultado de render().
@@ -208,7 +239,7 @@
     const palR = E.palRarity(prob);
 
     // Posición dentro del rango del formato, no valor absoluto: así "Few" y
-    // "Many" significan lo mismo en un A3 que en dos.
+    // "Many" significan lo mismo en cuadrado que en horizontal.
     const span = Math.max(1, (res.nMax || 14) - (res.nMin || 2));
     const frac = (res.n - (res.nMin || 2)) / span;
     const slotsLabel = frac <= 0.15 ? 'Few' : frac <= 0.6 ? 'Medium' : 'Many';
@@ -249,5 +280,5 @@
     };
   }
 
-  (global.HOKS = global.HOKS || {}).LRRG = { render, traits, slotRange, THRESHOLD, MODES, RHYTHMS };
+  (global.HOKS = global.HOKS || {}).LRRG = { render, traits, slotRange, THRESHOLD, MODES, RHYTHMS, BG_GRADIENT };
 })(typeof window !== 'undefined' ? window : globalThis);
