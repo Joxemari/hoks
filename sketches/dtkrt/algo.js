@@ -71,6 +71,7 @@
   // ── Región: poliominó por crecimiento ortogonal ────────────────────────────
   // Semilla + expansión a vecinos: salen barras, eles, escaleras y campos, sin
   // catálogo de formas. La forma es consecuencia de la regla, no un dibujo.
+  // ⟨gramatika⟩
   function grow(rng, cols, rows, target, avoid) {
     const cells = new Set(), order = [];
     const si = rng.int(0, cols - 1), sj = rng.int(0, rows - 1);
@@ -89,6 +90,7 @@
     }
     return cells;
   }
+  // ⟨/gramatika⟩
 
   // Celdas pintadas con bordes redondeados al mismo entero: las contiguas
   // comparten arista exacta y la región se lee como una sola masa, sin costuras.

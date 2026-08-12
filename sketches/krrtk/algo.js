@@ -86,6 +86,7 @@
     const squares = [], toDraw = [];
     for (let cy = 0; cy < rows; cy++) {
       for (let cx = 0; cx < cols; cx++) {
+        // ⟨gramatika⟩
         const field = [{ x: cx * a, y: cy * a, size: a, color: colors[rng.int(0, colors.length - 1)] }];
         let si = 0;
         while (si < field.length) {
@@ -102,6 +103,7 @@
           }
           si++;
         }
+        // ⟨/gramatika⟩
         for (const sq of field) squares.push(sq);
         for (let i = 0; i < field.length; i++) toDraw.push(rng.next() > threshold);
       }

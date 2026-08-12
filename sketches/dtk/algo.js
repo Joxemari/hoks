@@ -55,11 +55,13 @@
     const size = pitch / 1.1;                        // 10% de aire entre círculos
 
     // Matriz de composición (una tirada por celda, como el original).
+    // ⟨gramatika⟩
     const composition = [];
     for (let i = 0; i < cols; i++) {
       composition.push([]);
       for (let j = 0; j < rows; j++) composition[i].push(rng.next());
     }
+    // ⟨/gramatika⟩
 
     // 3. Círculos.
     ctx.save();

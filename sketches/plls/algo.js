@@ -52,6 +52,7 @@
   function pillsOverlap(ax, ay, aL, at, bx, by, bL, bt, tol) {
     return Math.max(0, (at + bt) / 2 + Math.min(aL, bL) * 0.5 - Math.hypot(ax - bx, ay - by)) / ((at / 2 + bt / 2)) > tol;
   }
+  // ⟨gramatika⟩
   function pillPath(ctx, x1, y1, x2, y2, t) {
     const r = t / 2, a = Math.atan2(y2 - y1, x2 - x1);
     ctx.beginPath();
@@ -59,6 +60,7 @@
     ctx.arc(x2, y2, r, a - Math.PI / 2, a + Math.PI / 2);
     ctx.closePath();
   }
+  // ⟨/gramatika⟩
 
   // Acabado "ajedrez": teselas alternas recortadas a la silueta de la pill.
   function drawChessPill(ctx, x1, y1, x2, y2, t, col, rng, tile) {
@@ -206,6 +208,7 @@
     // Margen = extensión máxima de la cápsula desde su centro (hl + radio del cap).
     // Así todas caben sin recortes → todas conservan la MISMA proporción.
     const reach = maxSize / 4 + thick / 2, mx = Math.min(reach, FW / 2), my = Math.min(reach, FH / 2);
+    // ⟨gramatika⟩
     const pills = [], placed = [];
     for (let i = 0; i < num; i++) {
       const hl = maxSize / 4;
@@ -228,6 +231,7 @@
         : (colors.filter(c => !bgColors.includes(c)).length ? colors.filter(c => !bgColors.includes(c)) : colors);
       pills.push({ cx, cy, hl, angle, col: rng.pickFrom(pc), style: pickFinish(rng, params.finishProbs), thick });
     }
+    // ⟨/gramatika⟩
 
     const styleCount = {};
     ctx.save();

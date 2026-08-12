@@ -37,6 +37,18 @@
 .wk-piece { border: 1px solid #e8e8e8; cursor: zoom-in; background: #fff; }
 .wk-piece img { width: 100%; display: block; }
 .wk-piece figcaption { font-size: 9px; color: #bbb; letter-spacing: 0.06em; padding: 5px 7px; }
+.wk-gram { margin: 0 0 4rem; }
+.wk-gram { position: relative; }
+.wk-gram pre { font-family: inherit; font-size: 10px; line-height: 1.85; color: #555;
+  background: #fafafa; border-left: 1px solid #e8e8e8; padding: 1.1rem 1.3rem;
+  overflow-x: auto; max-width: 78ch; white-space: pre;
+  /* el texto se va por la derecha: se desvanece, para que el corte se lea como
+     decisión y no como un renglón truncado por accidente */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3.5rem), transparent);
+          mask-image: linear-gradient(to right, #000 calc(100% - 3.5rem), transparent); }
+.wk-gram .cut { color: #ccc; letter-spacing: 0.4em; display: block; padding: 0.6rem 0; }
+.wk-gram-note { font-size: 9px; color: #bbb; letter-spacing: 0.06em; line-height: 1.9;
+  max-width: 62ch; margin-top: 0.7rem; }
 .wk-empty { font-size: 10px; color: #bbb; letter-spacing: 0.06em; }
 .wk-lb { position: fixed; inset: 0; background: rgba(255,255,255,0.97); display: none;
   align-items: center; justify-content: center; flex-direction: column; gap: 1rem; z-index: 200; cursor: zoom-out; }
@@ -64,6 +76,14 @@
   }
   function t(key, fallback) {
     try { const s = global.HOKSI18N.t(key); return s === key ? fallback : s; } catch (e) { return fallback; }
+  }
+
+  // El fragmento vive dentro de dos funciones: sin quitar la sangría común se
+  // leería como un margen que no significa nada.
+  function dedent(block) {
+    const lines = block.replace(/\t/g, '  ').split('\n');
+    const pad = lines.filter(l => l.trim()).reduce((m, l) => Math.min(m, l.match(/^ */)[0].length), 99);
+    return lines.map(l => l.slice(pad)).join('\n');
   }
 
   function init(slug) {
@@ -94,6 +114,31 @@
     // nav.js ya ha puesto el footer al final del body: hay que entrar antes.
     const foot = document.querySelector('footer');
     if (foot) document.body.insertBefore(root, foot); else document.body.appendChild(root);
+
+
+    // ── Gramática: el código que decide la forma ──────────────────────────────
+    // Se extrae del algo.js REAL, de entre las marcas ⟨gramatika⟩: así lo que se
+    // lee es literalmente el código que hizo la pieza y no puede quedarse viejo
+    // cuando el algoritmo cambie. Lo que hay fuera de las marcas no sale — el
+    // corte se señala, no se disimula: es una obra, no un tutorial.
+    const gram = el('div', 'wk-gram');
+    const gramSec = el('div', 'wk-sec', esc(t('label.grammar', 'Grammar')));
+    const gramPre = el('pre');
+    const gramNote = el('p', 'wk-gram-note', esc(t('grammar.note', 'The fragment that decides the form.')));
+    gram.appendChild(gramSec); gram.appendChild(gramPre); gram.appendChild(gramNote);
+
+    fetch('sketches/' + slug + '/algo.js')
+      .then(r => r.ok ? r.text() : '')
+      .then(src => {
+        const parts = [];
+        const re = /⟨gramatika⟩\n([\s\S]*?)\n[^\n]*⟨\/gramatika⟩/g;
+        let m;
+        while ((m = re.exec(src))) parts.push(dedent(m[1]));
+        if (!parts.length) return;
+        gramPre.innerHTML = parts.map(p => esc(p)).join('<span class="cut">…</span>');
+        root.insertBefore(gram, sec);
+      })
+      .catch(() => {});
 
     const lb = el('div', 'wk-lb');
     const lbImg = el('img'); const lbCap = el('span', 'wk-lb-cap');
