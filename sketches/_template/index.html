@@ -217,11 +217,9 @@ function renderSheet() {
     fig.style.position = 'relative';
     fig.appendChild(c); fig.appendChild(cap);
     c.addEventListener('click', () => { seed = s; setSheet(false); });
-    // El ojo decide mirando las doce: apartar una tiene que ser un gesto de aquí.
-    const plus = document.createElement('button');
-    plus.className = 'hb-add'; plus.textContent = '+'; plus.title = 'Añadir al lote (a)';
-    plus.onclick = ev => { ev.stopPropagation(); if (batch && batch.add(s)) { plus.classList.add('done'); plus.textContent = '✓'; } };
-    fig.appendChild(plus);
+    // Apartar es un gesto de aquí, y el gesto lo pone el panel de lotes: el "+"
+    // para la mano rápida, el botón derecho para elegir a qué lote va.
+    if (batch) batch.attach(fig, s);
     grid.appendChild(fig);
   }
 }

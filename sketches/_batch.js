@@ -53,6 +53,18 @@
   text-align:center; cursor:pointer; opacity:0; transition:opacity 0.12s; font-family:inherit; }
 figure:hover .hb-add, .hb-add:focus { opacity:1; }
 .hb-add.done { background:#111; color:#fff; opacity:1; }
+/* el menú del botón derecho sobre una miniatura */
+.hb-menu { position:fixed; z-index:400; background:#fff; border:1px solid var(--border-dark,#d0d0d0);
+  border-radius:2px; box-shadow:0 3px 14px rgba(0,0,0,0.13); padding:3px; min-width:150px; }
+/* text-transform:none a propósito: el nombre del lote lo escribes tú, no es una
+   etiqueta de interfaz, y en versalitas deja de ser el que pusiste. */
+.hb-mi { display:block; width:100%; text-align:left; font-family:inherit; font-size:10px;
+  letter-spacing:0.04em; text-transform:none; border:none; background:none; color:var(--ink,#111);
+  padding:6px 9px; cursor:pointer; white-space:nowrap; }
+.hb-mi:hover { background:var(--surface,#f7f7f7); }
+.hb-mi-new { border-top:1px solid var(--border,#e8e8e8); margin-top:3px; padding-top:7px; }
+.hb-mi-off { color:var(--ink3,#bbb); cursor:default; }
+.hb-mi-off:hover { background:none; }
 `;
 
   let cssDone = false;
@@ -186,23 +198,84 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     function render() { renderSelect(); renderStrip(); }
 
     // ── Acciones ─────────────────────────────────────────────────────────────
-    function add(seed) {
-      const b = openBatch();
+    // Apartar una pieza no tiene por qué ir al lote que esté abierto: mirando
+    // doce a la vez uno separa a la vez para dos sitios distintos. addTo deja
+    // elegir el destino sin cambiar de lote y sin perder el hilo de lo que se
+    // está mirando.
+    function addTo(id, seed) {
+      const b = batches.find(v => v.id === id && v.status !== 'closed');
       if (!b) { toast('Sin lote abierto'); return false; }
       const r = opts.getRecipe(seed);
       if (!r) return false;
-      if (b.items.some(it => it.work === r.work && it.seed === r.seed)) { toast('Ya estaba en el lote'); return false; }
+      if (b.items.some(it => it.work === r.work && it.seed === r.seed)) { toast('Ya estaba en ' + b.name); return false; }
       b.items.push({ ...r, addedAt: Date.now() });
       schedulePush(); render();
       toast(`→ ${b.name} (${b.items.length})`);
       return true;
     }
-    function create() {
+    function add(seed) {
+      const b = openBatch();
+      if (!b) { toast('Sin lote abierto'); return false; }
+      return addTo(b.id, seed);
+    }
+    function create(seed) {
       const name = prompt('Nombre del lote:');
-      if (!name) return;
+      if (!name) return null;
       const b = { id: Date.now(), name: name.trim(), status: 'open', created: Date.now(), items: [] };
       batches.unshift(b); openId = b.id; localStorage.setItem(OPEN_KEY, String(openId));
       schedulePush(); render();
+      if (seed != null) addTo(b.id, seed);
+      return b;
+    }
+
+    // ── Apartar desde la hoja de contactos ──────────────────────────────────
+    // El ojo decide mirando las doce, así que apartar tiene que ser un gesto de
+    // ahí y no un viaje al panel. Dos caminos al mismo sitio: el "+" para la
+    // mano rápida, y el botón derecho para cuando el destino importa —abre el
+    // menú de lotes abiertos, y desde ahí también se crea uno nuevo con la
+    // pieza ya dentro.
+    function closeMenu() { const m = document.getElementById('hb-menu'); if (m) m.remove(); }
+    function openMenu(ev, seed, onAdd) {
+      closeMenu();
+      const m = document.createElement('div');
+      m.id = 'hb-menu'; m.className = 'hb-menu';
+      const open = batches.filter(b => b.status !== 'closed');
+      const item = (label, fn, cls) => {
+        const el = document.createElement('button');
+        el.className = 'hb-mi' + (cls ? ' ' + cls : ''); el.textContent = label;
+        el.onclick = () => { closeMenu(); fn(); };
+        m.appendChild(el);
+      };
+      if (open.length) {
+        open.forEach(b => item(
+          (b.id === openId ? '● ' : '○ ') + b.name + '  (' + b.items.length + ')',
+          () => { if (addTo(b.id, seed) && onAdd) onAdd(); }));
+      } else item('sin lotes abiertos', () => {}, 'hb-mi-off');
+      item('+ Lote nuevo…', () => { if (create(seed) && onAdd) onAdd(); }, 'hb-mi-new');
+      document.body.appendChild(m);
+      // Anclado al cursor, pero sin salirse: un menú medio fuera de la ventana
+      // no es un menú.
+      const r = m.getBoundingClientRect();
+      m.style.left = Math.min(ev.clientX, innerWidth  - r.width  - 8) + 'px';
+      m.style.top  = Math.min(ev.clientY, innerHeight - r.height - 8) + 'px';
+      setTimeout(() => {
+        document.addEventListener('click', closeMenu, { once: true });
+        document.addEventListener('contextmenu', closeMenu, { once: true });
+      }, 0);
+    }
+
+    // Deja una miniatura lista para apartarse. Lo llaman los cinco laboratorios:
+    // el gesto es el mismo en todos, así que el código también.
+    function attach(fig, seed) {
+      const plus = document.createElement('button');
+      plus.className = 'hb-add'; plus.textContent = '+';
+      plus.title = 'Añadir al lote — botón derecho para elegir a cuál';
+      const done = () => { plus.classList.add('done'); plus.textContent = '✓'; };
+      plus.onclick = ev => { ev.stopPropagation(); if (add(seed)) done(); };
+      plus.oncontextmenu = ev => { ev.preventDefault(); ev.stopPropagation(); openMenu(ev, seed, done); };
+      fig.oncontextmenu = ev => { ev.preventDefault(); openMenu(ev, seed, done); };
+      fig.appendChild(plus);
+      return plus;
     }
     // Exportar: se regenera desde la receta, así que la resolución la eliges ahora
     // y no cuando guardaste. Es la ventaja de haber guardado reglas y no píxeles.
@@ -353,7 +426,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
 
     // El pliego se elige una sola vez y aquí: la descarga de la obra y la de su
     // cartela tienen que hablar del mismo papel.
-    return { add, refresh: render, renderFull, sheet: () => $('hb-res').value,
+    return { add, addTo, attach, refresh: render, renderFull, sheet: () => $('hb-res').value,
              get open() { return openBatch(); } };
   }
 

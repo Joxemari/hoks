@@ -293,15 +293,17 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
     <!-- BATCHES -->
     <div class="tab-panel" id="tab-batches">
       <div style="font-size:10px;color:var(--ink3);letter-spacing:0.04em;line-height:1.7;margin-bottom:1.4rem;">
-        Los lotes se crean y se llenan en el <b>laboratorio</b>, sobre la hoja de contactos:
-        ahí es donde se mira y donde se decide. Aquí solo se revisan, se cierran y se borran.
-        Un lote guarda <b>recetas</b> (obra + seed + parámetros), no imágenes: la pieza se
-        regenera a cualquier resolución cuando hace falta.
+        Un lote se abre aquí y se llena en el <b>laboratorio</b>, sobre la hoja de contactos:
+        ahí es donde se mira y donde se decide. Con el botón derecho sobre cualquier miniatura
+        se elige a cuál de los lotes abiertos va. Aquí se abren, se renombran, se cierran y se
+        borran. Un lote guarda <b>recetas</b> (obra + seed + parámetros), no imágenes: la pieza
+        se regenera a cualquier resolución cuando hace falta.
         <a href="sketches/dtkrt/" target="_blank" style="color:var(--ink);">Abrir laboratorio →</a>
       </div>
 
       <div class="section-header">
         <span class="section-title">Lotes (<span id="batch-count">0</span>)</span>
+        <button class="btn" onclick="createBatch()">+ Nuevo lote</button>
       </div>
       <div class="batch-list" id="batch-list"></div>
 
@@ -704,6 +706,22 @@ function getBatches(){try{return JSON.parse(localStorage.getItem(BATCH_KEY)||'[]
 let batches = [];
 function loadBatches(){ ghRead('batches.json').then(d => { batches = Array.isArray(d) ? d : []; renderBatches(); }); }
 async function saveBatchesRemote(msg){ await ghFetch('data/batches.json', batches, msg); renderBatches(); }
+// Un lote se abre normalmente aquí: es una decisión de tirada, no de sesión de
+// laboratorio. El lab lo puede crear también, en caliente, cuando aparece algo
+// que no cabe en ninguno de los abiertos.
+async function createBatch(){
+  const name = prompt('Nombre del lote:'); if (!name || !name.trim()) return;
+  batches.unshift({ id: Date.now(), name: name.trim(), status: 'open', created: Date.now(), items: [] });
+  await saveBatchesRemote('open batch ' + name.trim());
+  toast('Lote abierto — llénalo desde el laboratorio');
+}
+async function renameBatch(id){
+  const b = batches.find(x => x.id === id); if (!b) return;
+  const name = prompt('Nombre del lote:', b.name); if (!name || !name.trim() || name.trim() === b.name) return;
+  b.name = name.trim();
+  await saveBatchesRemote('rename batch ' + b.name);
+  toast('Renombrado');
+}
 async function toggleBatch(id){
   const b = batches.find(x => x.id === id); if (!b) return;
   b.status = b.status === 'closed' ? 'open' : 'closed';
@@ -731,13 +749,14 @@ function renderBatches(){
         </div>
         <div class="batch-actions">
           <a class="btn btn-ghost" href="${lab}" target="_blank">Lab</a>
+          <button class="btn btn-ghost" onclick="renameBatch(${b.id})">Renombrar</button>
           <button class="btn btn-ghost" onclick="toggleBatch(${b.id})">${b.status==='closed'?'Reabrir':'Cerrar'}</button>
           <button class="btn btn-danger" onclick="deleteBatch(${b.id})">Borrar</button>
         </div>
       </div>
       <div class="batch-meta" style="padding:8px 14px;display:flex;flex-wrap:wrap;gap:8px;">${(b.items||[]).map(i=>`<span>${i.work}#${i.seed}</span>`).join('') || 'vacío'}</div>
     </div>`;
-  }).join('') : '<div class="empty-state">Sin lotes — se crean en el laboratorio</div>';
+  }).join('') : '<div class="empty-state">Sin lotes — abre uno con + Nuevo lote</div>';
 }
 // Lo del sistema anterior: imágenes en localStorage. Solo lectura.
 function renderLegacyBatches(){
