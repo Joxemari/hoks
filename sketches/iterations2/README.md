@@ -70,7 +70,8 @@ Tres tipos, y son **lo primero que se lee** en la obra:
 |---|---|---|---|---|---|
 | suelto | 22 % | 1 | gordo | 0–1 | un gesto abierto, casi un signo |
 | anudado | 55 % | 2 | estándar | 2–3 | un nudo cerrado, el encima/debajo es el asunto |
-| trama | 23 % | 3 | fino | 4+ | tejido, se lee como celosía |
+| trama | 20 % | 3 | fino | 4+ | tejido, se lee como celosía |
+| **dos** | **3 %** | 2 | estándar | 2+ | **dos cintas sueltas entrelazadas entre sí** |
 
 El tipo declara **dos cosas materiales** —cuánto recorrido y de qué grosor— y
 los cruces salen de ahí. Declarar sólo el recorrido no bastaba: a tres pasadas
@@ -91,6 +92,34 @@ El orden del desempate importa y está pagado en errores:
    tejido denso incumple casi siempre `conserva`, y si la preferencia manda, el
    sistema elige siempre el tejido flojo y el tipo no ocurre nunca.
 3. **preferible** — hipótesis sobre qué se ve bien.
+
+### Dos cintas: el salto
+
+El diagrama de nudo tiene que seguir siendo **uno**: los cruces *entre* las dos
+cintas también necesitan un orden de pintado, y ese orden sale de las secciones
+de un único recorrido. Así que las dos cintas van **concatenadas**, y el
+segmento que las une —el **salto**— no se dibuja, no cuenta como cruce y no lo
+tocan las restricciones del material.
+
+Eso obliga a cuatro cambios que no son evidentes:
+
+- El salto **no es un tramo**: no entra en la longitud mínima, ni en el
+  relajado de pliegues, ni en la auto-evitación, ni en la separación entre
+  cruces.
+- Se fuerza como **frontera de sección**, para que las dos cintas nunca se
+  pinten como un trazo continuo.
+- Sus dos bordes son **extremos de cinta**, no cortes: sin cabo y sin alargar
+  el halo. Si lo llevaran, el remate de una cinta se metería en el hueco de la
+  otra.
+- Hay **cuatro remates**, no dos, y la holgura del arranque y el final se mide
+  contra los cuatro.
+
+Las dos cintas se construyen **por separado** y luego se concatenan: pasándole
+los anchors de las dos a `buildPath` de una vez, insertaría puntos entre ellas
+y las uniría.
+
+Medido: 0 cruces defectuosos de 100, remates 0/30, 29 de 30 con tejido
+dibujable. El control con el orden de pintado invertido marca 50 de 51.
 
 ### Las familias no se leen
 
@@ -183,16 +212,18 @@ que sí lo eran.
 
 ### Estado
 
-**553 cruces sobre 4 configuraciones, cero defectuosos.**
+**652 cruces sobre 5 configuraciones, cero defectuosos.**
 
 | configuración | obras | cruces | a medias | sin corte |
 |---|---|---|---|---|
-| por defecto | 100 | 258 | 0 | 0 |
+| por defecto | 100 | 257 | 0 | 0 |
 | tipo suelto | 40 | 21 | 0 | 0 |
 | tipo anudado | 40 | 108 | 0 | 0 |
 | tipo trama | 40 | 166 | 0 | 0 |
+| tipo dos | 40 | 100 | 0 | 0 |
 
-100/100 obras con tejido dibujable. **0,23 s por obra** (10,2 s al empezar).
+199/200 obras con tejido dibujable. **0,23 s por obra** (10,2 s al empezar).
+Y 182 de 200 son del tipo que declaran: 44/45, 94/107, 40/44, 4/4.
 
 Otras tres clases, con su control cada una:
 

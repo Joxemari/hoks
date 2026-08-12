@@ -256,6 +256,21 @@ const FAMILIES = {
 const FAMILY_NAMES = Object.keys(FAMILIES);
 
 // ------------------------------------------------------------
+// EL SALTO
+// Con dos cintas el diagrama de nudo tiene que seguir siendo UNO: los
+// cruces ENTRE ellas también necesitan un orden de pintado, y ese orden
+// sale de las secciones de un único recorrido. Así que las dos cintas van
+// concatenadas y el segmento que las une —el SALTO— no se dibuja, no
+// cuenta como cruce y no lo tocan las restricciones del material.
+//
+// Es una variable de módulo y no un parámetro porque la atraviesan siete
+// funciones que ya tienen su firma hecha. El dibujo es síncrono: se pone
+// al empezar el tejido y se quita al acabar.
+let _salto = -1;
+
+const esSalto = (i) => i === _salto;
+
+// ------------------------------------------------------------
 // EL TIPO
 // Las cinco familias de arriba NO se leen. Medido sobre 60 obras: mismo
 // aspecto (mediana 0,97), mismo centro (0,50 / 0,50), misma dispersión en
@@ -280,7 +295,9 @@ const FAMILY_NAMES = Object.keys(FAMILIES);
 const TIPOS = {
   suelto:  { prob: 0.22, vueltas: 1, trazo: "gordo",    cruces: [0, 1] },
   anudado: { prob: 0.55, vueltas: 2, trazo: "estandar", cruces: [2, 3] },
-  trama:   { prob: 0.23, vueltas: 3, trazo: "fino",     cruces: [4, 999] }
+  trama:   { prob: 0.20, vueltas: 3, trazo: "fino",     cruces: [4, 999] },
+  // Dos cintas sueltas que se entrelazan entre sí. Rara a propósito.
+  dos:     { prob: 0.03, vueltas: 2, trazo: "estandar", cruces: [2, 999], dosCintas: true }
 };
 const TIPO_NAMES = Object.keys(TIPOS);
 
@@ -313,7 +330,9 @@ function generate(seed, cfg) {
   const pedidas = cfg.vueltasFijas ? floor(random(cfg.vueltasMin, cfg.vueltasMax + 1))
                                    : TIPOS[tipo].vueltas;
   // El trazo del tipo manda salvo que el laboratorio lo fije a mano.
-  if (!cfg.trazoFijo) cfg = Object.assign({}, cfg, { trazo: TIPOS[tipo].trazo });
+  if (!cfg.trazoFijo || cfg.trazo === 'auto')
+    cfg = Object.assign({}, cfg, { trazo: TIPOS[tipo].trazo });
+  if (TIPOS[tipo].dosCintas) cfg = Object.assign({}, cfg, { dosCintas: true });
 
   // La junta es innegociable: es lo único que distingue un cruce de una
   // costura. Si con las vueltas pedidas la cinta no encuentra sitio
@@ -371,6 +390,8 @@ function generate(seed, cfg) {
       randomSeed(seed ^ 0xA17E ^ (k * 0x9E3779B1));
       noiseSeed(seed ^ (k * 7));
       const t = tejer(family, v, cfg);
+      t.salto = _salto;
+      _salto = t.salto;
       t.ang = minAnguloCruce(t.nodes);
       t.nudo = buildKnot(t.nodes.map(n => n.p), t.width);
       t.ciclos = t.nudo.plano.ciclos;
@@ -463,6 +484,8 @@ function generate(seed, cfg) {
           randomSeed(seed ^ 0xA17E ^ (k * 0x9E3779B1));
           noiseSeed(seed ^ (k * 7));
           const t = tejer(F, v, cfg);
+          t.salto = _salto;
+          _salto = t.salto;
           t.ang = minAnguloCruce(t.nodes);
           t.nudo = buildKnot(t.nodes.map(n => n.p), t.width);
           t.ciclos = t.nudo.plano.ciclos;
@@ -490,7 +513,7 @@ function generate(seed, cfg) {
   const { cuts, order, depth, cruces, plano, crossings } = intento.nudo;
 
 
-  return { seed, tipo, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
+  return { seed, tipo, salto: intento.salto, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
 }
 
 // ------------------------------------------------------------
@@ -525,7 +548,22 @@ function tejer(family, vueltas, cfg) {
   if (random() < 0.35) for (const p of anchors) p.y = 1 - p.y;
 
   // los anchors son intocables, los insertados son material blando
-  let nodes = buildPath(anchors, anchors.length + floor(random(2, 7)), cfg);
+  let nodes;
+  if (cfg.dosCintas && vueltas >= 2) {
+    // DOS CINTAS: cada pasada es una cinta suya, no un tramo más del
+    // mismo recorrido. Se construyen por separado —si no, buildPath
+    // insertaría puntos ENTRE ellas y las uniría— y se concatenan con el
+    // salto en medio.
+    const mitad = floor(anchors.length / vueltas);
+    const a1 = anchors.slice(0, mitad), a2 = anchors.slice(mitad);
+    const n1 = buildPath(a1, a1.length + floor(random(1, 4)), cfg);
+    const n2 = buildPath(a2, a2.length + floor(random(1, 4)), cfg);
+    nodes = n1.concat(n2);
+    _salto = n1.length - 1;
+  } else {
+    _salto = -1;
+    nodes = buildPath(anchors, anchors.length + floor(random(2, 7)), cfg);
+  }
 
   // La extensión declarada vale para UNA pasada. Cada vuelta añade
   // recorrido dentro del mismo marco y necesita más campo.
@@ -670,6 +708,7 @@ function enforceMaterial(nodes, width, cfg) {
     changed = false;
 
     for (let i = 0; i < nodes.length - 1 && nodes.length > 4; i++) {
+      if (esSalto(i)) continue;              // el salto no es un tramo
       if (p5.Vector.dist(nodes[i].p, nodes[i+1].p) < minSeg) {
         const drop = !nodes[i+1].anchor ? i+1 : (!nodes[i].anchor ? i : -1);
         if (drop >= 0) { nodes.splice(drop, 1); changed = true; break; }
@@ -678,6 +717,7 @@ function enforceMaterial(nodes, width, cfg) {
     if (changed) continue;
 
     for (let i = 1; i < nodes.length - 1 && nodes.length > 4; i++) {
+      if (esSalto(i) || esSalto(i-1)) continue;   // extremos de cinta, no codos
       if (nodes[i].anchor) continue;
       const a = p5.Vector.sub(nodes[i-1].p, nodes[i].p);
       const b = p5.Vector.sub(nodes[i+1].p, nodes[i].p);
@@ -702,6 +742,7 @@ function relaxFolds(nodes, cfg) {
   for (let pass = 0; pass < 60; pass++) {
     let worst = -1, worstAng = minTurn;
     for (let i = 1; i < nodes.length - 1; i++) {
+      if (esSalto(i) || esSalto(i-1)) continue;   // extremos de cinta, no codos
       const a = p5.Vector.sub(nodes[i-1].p, nodes[i].p);
       const b = p5.Vector.sub(nodes[i+1].p, nodes[i].p);
       if (!a.magSq() || !b.magSq()) continue;
@@ -760,6 +801,7 @@ function selfAvoid(nodes, width, cfg) {
     let mayor = 0;
     for (let i = 0; i < n - 1; i++) {
       for (let j = i + 2; j < n - 1; j++) {
+        if (esSalto(i) || esSalto(j)) continue;
         const a = nodes[i].p, b = nodes[i+1].p, c = nodes[j].p, d = nodes[j+1].p;
         const mdx = (a.x + b.x - c.x - d.x) / 2, mdy = (a.y + b.y - c.y - d.y) / 2;
         const alcance = dMin
@@ -889,8 +931,10 @@ function minAnguloCruce(nodes) {
 // Tramo más corto del recorrido, en las unidades de los puntos.
 function minSegDe(nodes) {
   let d = Infinity;
-  for (let i = 0; i < nodes.length - 1; i++)
+  for (let i = 0; i < nodes.length - 1; i++) {
+    if (esSalto(i)) continue;
     d = min(d, p5.Vector.dist(nodes[i].p, nodes[i+1].p));
+  }
   return d === Infinity ? 0 : d;
 }
 
@@ -898,6 +942,7 @@ function sepCruces(nodes) {
   const P = [];
   for (let i = 0; i < nodes.length - 1; i++) {
     for (let j = i + 2; j < nodes.length - 1; j++) {
+      if (esSalto(i) || esSalto(j)) continue;
       const q = segParams(nodes[i].p, nodes[i+1].p, nodes[j].p, nodes[j+1].p);
       if (q) P.push(p5.Vector.lerp(nodes[i].p, nodes[i+1].p, q.t));
     }
@@ -914,6 +959,7 @@ function holguraReal(nodes) {
   let d = Infinity;
   for (let i = 0; i < nodes.length - 1; i++) {
     for (let j = i + 2; j < nodes.length - 1; j++) {
+      if (esSalto(i) || esSalto(j)) continue;
       const a = nodes[i].p, b = nodes[i+1].p, c = nodes[j].p, e = nodes[j+1].p;
       if (segIntersect(a, b, c, e)) continue;
       d = min(d, segDist(a, b, c, e));
@@ -937,7 +983,9 @@ function buildKnot(points, width) {
 
   const X = [];
   for (let i = 0; i < last; i++) {
+    if (esSalto(i)) continue;
     for (let j = i + 2; j < last; j++) {
+      if (esSalto(j)) continue;
       const r = segParams(points[i], points[i+1], points[j], points[j+1]);
       if (r) X.push({ a: i + r.t, b: j + r.u });
     }
@@ -1033,7 +1081,10 @@ function buildKnot(points, width) {
 
   // El plan de secciones se calcula aquí, no al dibujar, para poder
   // comprobar ANTES si este nudo se puede pintar en plano.
-  const plano = planoDeSecciones(last, cruces, points, width);
+  // El salto se fuerza como frontera de sección para que las dos cintas
+  // nunca se pinten como un trazo continuo.
+  const forzados = _salto >= 0 ? [_salto, _salto + 1] : [];
+  const plano = planoDeSecciones(last, cruces, points, width, forzados);
 
   // Con los cruces ya volteados por el plano: el ángulo, y con él la
   // huella, dependen de qué hebra ha quedado arriba.
@@ -1120,15 +1171,17 @@ function huellasDeCruces(points, cruces, width) {
 function holguraDeRemates(points, cruces, width) {
   const { acum, zonas, total } = zonasDeCruces(points, cruces, width);
   if (!zonas.length) return Infinity;
+  // Con dos cintas hay CUATRO remates, no dos: los dos extremos del
+  // recorrido y los dos lados del salto.
+  const finales = [0, total];
+  if (_salto >= 0) { finales.push(acum[_salto], acum[_salto + 1]); }
   let peor = Infinity;
-  for (const z of zonas) {
-    peor = min(peor, z.d / z.r);              // contra el arranque
-    peor = min(peor, (total - z.d) / z.r);    // contra el final
-  }
+  for (const z of zonas)
+    for (const f of finales) peor = min(peor, abs(z.d - f) / z.r);
   return peor;
 }
 
-function planoDeSecciones(last, cruces, points, width) {
+function planoDeSecciones(last, cruces, points, width, forzados) {
   // Con alternancia estricta casi ningún nudo de esta complejidad se
   // puede pintar en plano: aparecen ciclos (A sobre B, B sobre C, C
   // sobre A). Antes eso dejaba secciones fuera del orden y alguna
@@ -1145,7 +1198,7 @@ function planoDeSecciones(last, cruces, points, width) {
   // orden que lo salve: hay que partir también por el punto de arriba.
   // Ese cabo no queda al aire — lo tapa su propia otra mitad, que es
   // justo la que le pasa por encima.
-  const extra = new Set();
+  const extra = new Set(forzados || []);
   let plan = null, volteados = 0, atasco = 0;
 
   for (let i = 0; i < 120; i++) {
@@ -1348,6 +1401,14 @@ function renderComposition(ctx, ox, oy, S, comp) {
   const total = acum[acum.length - 1];
   _densa = curvaDensa(mapped, acum, cfg);
 
+  // El salto: ni se dibuja, ni sus bordes son cortes. Son CUATRO extremos
+  // de cinta, y un extremo no lleva cabo ni alarga el halo — si lo llevara,
+  // el remate de una cinta se metería en el hueco de la otra.
+  _salto = comp.salto == null ? -1 : comp.salto;
+  const saltoArc = _salto >= 0 ? [acum[_salto], acum[_salto + 1]] : null;
+  const esFinal = (d) => d <= 1e-6 || d >= total - 1e-6 ||
+    (saltoArc && (abs(d - saltoArc[0]) < 1e-6 || abs(d - saltoArc[1]) < 1e-6));
+
   const secciones = comp.plano.secciones.map(([a, b]) =>
     [arcoDeParam(mapped, acum, a), arcoDeParam(mapped, acum, b)]);
   const orden = comp.plano.orden;
@@ -1398,10 +1459,13 @@ function renderComposition(ctx, ox, oy, S, comp) {
     const [a, b] = secciones[i];
     const aJ = a > 0 && esJunta(a), bJ = b < total && esJunta(b);
 
-    const iniC = max(0, a > 0 ? a - (aJ ? pizca : caboEn(a)) : a);
-    const finC = min(total, b < total ? b + (bJ ? pizca : caboEn(b)) : b);
-    const iniH = max(0, a > 0 && !aJ ? a - caboEn(a) : a);
-    const finH = min(total, b < total && !bJ ? b + caboEn(b) : b);
+    if (saltoArc && a >= saltoArc[0] - 1e-6 && b <= saltoArc[1] + 1e-6) continue;
+
+    const aFin = esFinal(a), bFin = esFinal(b);
+    const iniC = max(0, !aFin ? a - (aJ ? pizca : caboEn(a)) : a);
+    const finC = min(total, !bFin ? b + (bJ ? pizca : caboEn(b)) : b);
+    const iniH = max(0, !aFin && !aJ ? a - caboEn(a) : a);
+    const finH = min(total, !bFin && !bJ ? b + caboEn(b) : b);
 
     if (gap > 0) trazarTramo(ctx, mapped, acum, iniH, finH, width + gap * 2, col.bg, cfg, "round");
     trazarTramo(ctx, mapped, acum, iniC, finC, width, tinta, cfg);
@@ -1410,14 +1474,16 @@ function renderComposition(ctx, ox, oy, S, comp) {
 
   if (cfg.ends === "redondos") {
     ctx.fillStyle = tinta;
-    for (const c of [mapped[0], mapped[mapped.length - 1]]) {
+    const cabos = [mapped[0], mapped[mapped.length - 1]];
+    if (_salto >= 0) cabos.push(mapped[_salto], mapped[_salto + 1]);
+    for (const c of cabos) {
       ctx.beginPath(); ctx.arc(c.x, c.y, width / 2, 0, TWO_PI); ctx.fill();
     }
   }
 
   if (cfg.dots === "encima") drawDots(ctx, mapped, width, comp, ox, oy, S);
 
-  _densa = null;
+  _densa = null; _salto = -1;
   return { mapped, width };
 }
 
@@ -2094,7 +2160,9 @@ function opciones() {
     paletas:    PALETAS,
     vueltasMin: int(ui.vueltas.value()),
     vueltasMax: int(ui.vueltas.value()),
+    tipo:       ui.tipo.value() === 'auto' ? null : ui.tipo.value(),
     trazo:      ui.trazo.value(),
+    trazoFijo:  ui.trazo.value() !== 'auto',
     corner:     ui.esquinas.value(),
     ends:       ui.extremos.value(),
     tinta:      ui.gradiente.checked() ? "gradiente" : "solido",
@@ -2274,8 +2342,11 @@ function construirUI() {
     [["auto", "Random (weighted)"]].concat(PALETAS.map((p, i) => [i, p.name])), 12, y); y += fila;
 
   [ui.vueltas, ui.vueltasV] = etiquetaSlider("vueltas", 2, 5, DEF.vueltasMax, 1, 12, y); y += fila;
+  ui.tipo = etiquetaSelect("tipo",
+    [["auto", "auto (por seed)"], ["suelto", "suelto"], ["anudado", "anudado"],
+     ["trama", "trama"], ["dos", "dos cintas"]], 12, y); y += fila;
   ui.trazo = etiquetaSelect("trazo",
-    [["estandar", "estándar"], ["fino", "fino"], ["gordo", "gordo"]], 12, y); y += fila;
+    [["auto", "el del tipo"], ["estandar", "estándar"], ["fino", "fino"], ["gordo", "gordo"]], 12, y); y += fila;
 
   ui.esquinas = etiquetaSelect("esquinas", [["rectas", "rectas"], ["curvas", "curvas"]], 12, y); y += fila;
   ui.extremos = etiquetaSelect("extremos", [["rectos", "rectos"], ["redondos", "redondos"]], 12, y); y += fila;
@@ -2297,7 +2368,7 @@ function construirUI() {
   estiloTexto(ui.info);
   ui.info.style("line-height", "17px");
 
-  [ui.paleta, ui.esquinas, ui.extremos, ui.trazo].forEach(e => e.changed(redibujar));
+  [ui.paleta, ui.esquinas, ui.extremos, ui.trazo, ui.tipo].forEach(e => e.changed(redibujar));
   [ui.vueltas, ui.dotsN, ui.dotR].forEach(e => e.input(redibujar));
   [ui.dots, ui.gradiente].forEach(e => e.changed(redibujar));
 }
