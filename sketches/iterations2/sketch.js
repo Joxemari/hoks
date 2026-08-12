@@ -1129,6 +1129,9 @@ function buildKnot(points, width) {
   // nunca se pinten como un trazo continuo.
   const forzados = _salto >= 0 ? [_salto, _salto + 1] : [];
   const plano = planoDeSecciones(last, cruces, points, width, forzados);
+  // Copia de la alternancia ANTES de que el plano voltee nada. Sin esto no
+  // se puede saber si un desequilibrio viene del reparto o del volteo.
+  plano.crudos = cruces.map(c => ({ arriba: c.arriba, abajo: c.abajo }));
 
   // Con los cruces ya volteados por el plano: el ángulo, y con él la
   // huella, dependen de qué hebra ha quedado arriba.
@@ -1196,9 +1199,15 @@ function zonasDeCruces(points, cruces, width) {
 
 function huellasDeCruces(points, cruces, width) {
   const { acum, zonas } = zonasDeCruces(points, cruces, width);
+  // Las dos secciones que se encuentran en una junta NO se tocan: se
+  // SOLAPAN una pizca, o el empalme se abriría al primer redondeo. Ese
+  // solape lleva tinta una pizca más allá del corte, así que una junta
+  // que cae justo fuera de la huella mete cuerpo dentro de ella igual.
+  // La zona vetada tiene que contar el solape, no sólo la huella.
+  const pizca = width * 0.15;
   return (s) => {
     const d = arcoDeParam(points, acum, s);
-    return zonas.some(z => abs(d - z.d) < z.r);
+    return zonas.some(z => abs(d - z.d) < z.r + pizca);
   };
 }
 
@@ -1273,10 +1282,46 @@ function planoDeSecciones(last, cruces, points, width, forzados) {
     }
     if (plan.culpable < 0) break;
 
+    // Un ciclo se rompe de dos maneras: volteando un cruce —que cambia
+    // el tejido— o PARTIENDO una de las secciones atrapadas, que no
+    // cambia nada de lo que se ve salvo una costura invisible a mitad
+    // de un tramo. Se prueba primero a partir. Con dos cintas esto es
+    // lo único que permite que se entrelacen de verdad: entrelazadas
+    // SIEMPRE hay ciclo, y volteando se llega inevitablemente al único
+    // estado sin ciclos, que es una cinta entera encima de la otra.
+    let cortado = false;
+    if (plan.ciclo) {
+      const veto = points ? huellasDeCruces(points, cr, width) : null;
+      for (const n of plan.ciclo) {
+        if (n.entra < 0 || n.sale < 0 || n.entra === n.sale) continue;
+        const p = cr[n.entra].arriba, q = cr[n.sale].abajo;
+        const medio = corteEntre(min(p, q), max(p, q), veto);
+        if (medio === null || extra.has(medio)) continue;
+        extra.add(medio); cortado = true; break;
+      }
+    }
+    if (cortado) continue;
+
     const k = plan.culpable;
     const c = cr[k];
     const t = c.arriba; c.arriba = c.abajo; c.abajo = t;
     veces[k]++; volteados++;
+  }
+
+  // COMPROBACIÓN FINAL DE LAS JUNTAS.
+  // Una junta se abre mirando las huellas de ESE momento. Cada volteo
+  // posterior cambia qué hebra va arriba, y con ella el ángulo y el
+  // tamaño de la huella: una junta que era buena cuando se abrió puede
+  // acabar dentro de una. Ahí la cinta cambia de profundidad dentro de
+  // la zona tapada y la incisión sale a medias. No se remienda —el
+  // motivo de la junta ya se ha perdido—: se descarta el tejido y se
+  // prueba otro, que es lo que ya se hace con los cruces rasantes.
+  // Los forzados (los dos lados del salto) no cuentan: no son juntas,
+  // son remates, y de ellos se ocupa holguraDeRemates.
+  if (!atasco && points) {
+    const vetoFinal = huellasDeCruces(points, cr, width);
+    const fijos = new Set(forzados || []);
+    for (const j of extra) if (!fijos.has(j) && vetoFinal(j)) { atasco = 1; break; }
   }
 
   return { secciones: plan.secciones, orden: plan.orden,
@@ -1346,17 +1391,33 @@ function ordenar(last, cr, extra) {
   // ARISTA DE RETORNO concreta, no una cualquiera de las atrapadas: se
   // busca con un recorrido en profundidad, y su cruce es el que se
   // voltea. Volteando una arista al azar el ciclo puede seguir intacto.
-  let culpable = -1;
+  // Se devuelve además EL CICLO ENTERO: por cada sección atrapada, el
+  // cruce por el que se entra (pasa por encima de ella) y el cruce por
+  // el que se sale (ella pasa por encima de otra). Partir la sección
+  // entre esos dos puntos rompe el ciclo sin voltear nada.
+  let culpable = -1, ciclo = null;
   if (orden.length < secciones.length) {
     const estado = secciones.map(() => 0);   // 0 sin ver, 1 en curso, 2 cerrado
+    const pila = [];
     const salida = (i) => {
       estado[i] = 1;
+      const yo = { sec: i, sale: -1 };
+      pila.push(yo);
       for (const e of aristas) {
         if (e.de !== i) continue;
-        if (estado[e.a] === 1) return e.k;             // arista de retorno
+        yo.sale = e.k;
+        if (estado[e.a] === 1) {                       // arista de retorno
+          const desde = pila.findIndex(x => x.sec === e.a);
+          const nodos = pila.slice(desde);
+          ciclo = nodos.map((x, n) => ({ sec: x.sec, sale: x.sale,
+                                         entra: n === 0 ? e.k : nodos[n-1].sale }));
+          return e.k;
+        }
         if (estado[e.a] === 0) { const r = salida(e.a); if (r >= 0) return r; }
       }
+      yo.sale = -1;
       estado[i] = 2;
+      pila.pop();
       return -1;
     };
     for (let i = 0; i < secciones.length && culpable < 0; i++)
@@ -1368,7 +1429,7 @@ function ordenar(last, cr, extra) {
 
   // Los cruces imposibles se atienden ANTES que los ciclos: un ciclo
   // sólo desordena, esto directamente no se puede dibujar.
-  return { secciones, orden, culpable, imposible };
+  return { secciones, orden, culpable, imposible, ciclo };
 }
 
 function sToCut(s0, s1, last) {
@@ -1407,15 +1468,28 @@ function shuffled(arr) {
 // El lienzo puede no ser cuadrado. La escala se saca del ALTO y se aplica
 // a los dos ejes: el campo ya viene con la proporción metida (mide A de
 // ancho), así que no hace falta —ni se debe— estirar aquí.
+// LA ESCALA ES UNA SOLA. Se limita por el eje que menos da: si el lienzo
+// es más cuadrado que el campo —por ejemplo, un campo apaisado dibujado
+// en un lienzo cuadrado— la obra se sale por los costados; medido, 16
+// obras de 40 con tinta pegada al borde. Encajar por el mínimo deja
+// banda arriba y abajo, que es feo pero no roto.
+//
+// Y la usan LOS DOS: las posiciones y el grosor. Estaban separadas —las
+// posiciones por el mínimo, el grosor por el alto— y con aspecto 1.5 la
+// cinta se pintaba media vez más gorda de lo que el generador había
+// medido. Todas las garantías geométricas (huella, separación, cabos,
+// remates) se calculan en proporción a la anchura: si la anchura crece
+// después, se quedan cortas. Ése era el 8% de cruces a medias que sólo
+// salía en apaisado.
+function escalaDe(S, alto, cfg) {
+  const A = cfg.aspecto || 1;
+  return min(alto * (1 - cfg.pad * 2), S * (1 - cfg.pad * 2) / A);
+}
+
 function mapToSquare(pts, ox, oy, S, cfg, H) {
   const alto = H == null ? S : H;
   const A = cfg.aspecto || 1;
-  // La escala se limita por el eje que menos da. Si el lienzo es más
-  // cuadrado que el campo —por ejemplo, un campo apaisado dibujado en un
-  // lienzo cuadrado— la obra se sale por los costados: medido, 16 obras
-  // de 40 con tinta pegada al borde. Encajar por el mínimo deja banda
-  // arriba y abajo, que es feo pero no roto.
-  const esc = min(alto * (1 - cfg.pad * 2), S * (1 - cfg.pad * 2) / A);
+  const esc = escalaDe(S, alto, cfg);
   const mx = (S - A * esc) / 2, my = (alto - esc) / 2;
   return pts.map(p => createVector(ox + mx + p.x * esc, oy + my + p.y * esc));
 }
@@ -1427,8 +1501,9 @@ function renderComposition(ctx, ox, oy, S, comp, H) {
   const ALTO = H == null ? S : H;
   const cfg = comp.cfg;
   const col = comp.colores;
-  const width = comp.width * ALTO * (1 - cfg.pad * 2);
-  const gap = cfg.gapAbs * ALTO * (1 - cfg.pad * 2);
+  const esc = escalaDe(S, ALTO, cfg);
+  const width = comp.width * esc;
+  const gap = cfg.gapAbs * esc;
 
   ctx.fillStyle = col.bg;
   ctx.fillRect(ox, oy, S, ALTO);
@@ -1545,7 +1620,7 @@ function renderComposition(ctx, ox, oy, S, comp, H) {
   if (cfg.dots === "encima") drawDots(ctx, mapped, width, comp, ox, oy, S, ALTO);
 
   _densa = null; _salto = -1;
-  return { mapped, width };
+  return { mapped, width, gap, esc };
 }
 
 // El gradiente recorre la composición, no la sección de la cinta:

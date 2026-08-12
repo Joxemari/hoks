@@ -152,6 +152,14 @@ del lienzo** aunque el lienzo sea más cuadrado que el campo — antes de eso,
 dibujar un campo apaisado en un lienzo cuadrado dejaba 16 obras de 40 con tinta
 pegada al borde.
 
+Y **la escala es una sola**: la usan las posiciones y el grosor. Estaban
+separadas —las posiciones por el eje que menos daba, el grosor por el alto— y
+con `aspecto` 1,5 la cinta se pintaba media vez más gorda de lo que el
+generador había medido. Todas las garantías geométricas (huella, separación,
+cabos, remates) se calculan en proporción a la anchura, así que al crecer la
+anchura después se quedaban cortas: 8 % de cruces a medias, y **sólo en
+apaisado**. Con una sola escala, cero.
+
 En el laboratorio: cuadrado, apaisado 3:2 y panorámico 2:1. El buffer de export
 sigue el formato, así que el PNG sale apaisado y no recortado de un cuadrado.
 
@@ -162,6 +170,27 @@ variación interna, pero **no son una categoría**. Medido sobre 60 obras: mismo
 aspecto (mediana 0,97), mismo centro (0,50 / 0,50), misma dispersión en los dos
 ejes, y repartidas por igual. Girar cada pasada sobre el centro y ajustar al
 marco lava la disposición de la familia.
+
+### Los ciclos se rompen cortando, no volteando
+
+Un nudo puede exigir que A vaya sobre B, B sobre C y C sobre A. En papel eso no
+existe, y hay dos maneras de deshacerlo: **voltear** un cruce —que cambia el
+tejido— o **partir** una de las secciones atrapadas, que no cambia nada de lo
+que se ve salvo una costura a mitad de un tramo recto, invisible por
+construcción. Se prueba primero a partir.
+
+Esto no es un detalle: con dos cintas es **lo único** que permite que se
+entrelacen. Dos cintas entrelazadas producen ciclo siempre, y volteando se
+llega inevitablemente al único estado sin ciclos, que es una cinta entera
+encima de la otra. Medido sobre 40 obras del tipo `dos`: el reparto de
+arriba/abajo entrelazaba en las 34 con dos o más cruces compartidos, y el plano
+lo deshacía en las 34. Cortando: **35 de 35 entrelazadas**, y los volteos caen
+a cero en casi todas.
+
+Las juntas se comprueban **otra vez al final**. Una junta se abre mirando las
+huellas de ese momento; cada volteo posterior cambia qué hebra va arriba y con
+ella el tamaño de la huella, así que una junta que era buena puede acabar
+dentro de una. Ahí no se remienda: se descarta el tejido y se prueba otro.
 
 `volteoMax` queda **desactivado**. Tres de las cinco obras que el autor aprobó
 lo incumplían, y además impedía que la trama existiera: más cruces obligan a
