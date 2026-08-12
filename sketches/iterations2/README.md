@@ -11,7 +11,14 @@ con lo que ya dejó escrito. La profundidad no es el orden de dibujo: se decide
 ## Estado
 
 Fase 2. Determinista (`seed` → imagen). Un solo archivo, `sketch.js`: núcleo
-generativo + UI de laboratorio. Se pega entero en OpenProcessing.
+generativo + UI de laboratorio. Se pega entero en OpenProcessing, y también se
+sirve como página desde este mismo directorio:
+**`joxemari.github.io/hoks/sketches/iterations2/`**.
+
+p5 va vendorizado aquí a propósito, no por CDN: en este repo lo commiteado es
+exactamente lo que se publica. Servido desde hoks no hay protección de bucles
+—la de OpenProcessing acumula el tiempo de cada bucle a lo largo de la sesión
+y acaba abortando aunque no haya ningún cuelgue— y va bastante más rápido.
 
 | tecla | acción |
 |---|---|
@@ -32,18 +39,17 @@ con un juego embebido de respaldo. Las paletas de hoks son listas planas sin
 roles, así que el reparto se decide por luminancia: fondo en un extremo, cinta
 con el mayor contraste contra él, discos con el resto.
 
-## Las tres esquinas
+## Las esquinas
 
-Un solo mando con tres valores, y el tercero **no es un número más alto**: es
-otro mecanismo.
+Un solo mando con dos valores:
 
 - **rectas** — ángulo vivo y junta a inglete. La cinta doblada, que es la
   referencia de la que salió la obra.
 - **curvas** — cada vértice redondeado hasta la mitad del tramo más corto, que
-  es el máximo antes de que dos redondeos vecinos choquen. Quedan tramos rectos
-  entre esquina y esquina.
-- **muy curvas** — sin una sola recta: la curva pasa por los puntos medios de
-  cada tramo usando los vértices como control.
+  es el máximo antes de que dos redondeos vecinos choquen.
+
+Se probó un tercer modo sin rectas (la curva por los puntos medios con los
+vértices de control) y se descartó: con dos basta.
 
 **La curva se calcula entera una vez y cada sección se recorta de ella.**
 Curvando cada trozo por separado las dos curvas no coinciden en la costura —el
@@ -53,7 +59,7 @@ salía como una cuña de tinta donde debía ir la incisión. Con la curva global
 todas las piezas caen sobre el mismo eje.
 
 Comprobado además que curvar no inventa ni destruye cruces: aplanando el eje
-tal y como se dibuja, los tres modos tienen exactamente los cruces que conoce
+tal y como se dibuja, los dos modos tienen exactamente los cruces que conoce
 el nudo, en las 40 obras probadas.
 
 ## Restricciones materiales

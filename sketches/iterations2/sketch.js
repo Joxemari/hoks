@@ -150,7 +150,21 @@ const DEF = {
   remateMin:    1.0,         // holgura mínima del arranque y el final frente a la huella de un cruce
   segMinRatio:  0.85,        // tramo más corto admisible, × anchura (por debajo la cinta se pliega)
   volteoMax:    0.34,        // volteos por cruce que se toleran
-  reintentos:   10,           // tejidos alternativos que se prueban con el mismo seed
+  // Baja de 10 a 5. Buscar MÁS estaba seleccionando EN CONTRA de la
+  // trama: entre los tejidos que pasan, el desempate prefiere menos
+  // volteos, y con más candidatos aparece más fácilmente uno flojo que se
+  // lleva el sitio. Con el rescate de familia puesto, sobre 60-80 obras:
+  //
+  //    reint.  obras limpias  cruces/obra  remates soldados  s/obra
+  //      3        100%            2,9          2 de 60        0,46
+  //      5        100%            2,7          0 de 60        0,70
+  //     10        100%            2,4          0 de 60        1,43
+  //
+  // El 3 sale más rápido y más entrelazado pero deja dos remates pegados
+  // a otra hebra: con tan pocos candidatos, la holgura del arranque y el
+  // final deja de encontrarse. El 5 es el primero que da cero en TODOS
+  // los detectores, y aun así dobla la velocidad del 10 y trae más trama.
+  reintentos:   5,           // tejidos alternativos que se prueban con el mismo seed
   densidad:     true,        // entre los que pasan, quedarse con el más entrelazado
   grosorMinimo: 0.78,    // fracción del grosor pedido que un intento debe conservar
   widthMax:     0.098,
@@ -171,7 +185,7 @@ const DEF = {
   placeJitter:  0.35,    // desplazamiento en el marco, × margen libre
 
   pad:          0.07,
-  corner:       "rectas",    // rectas | curvas | muycurvas — MANDO ÚNICO
+  corner:       "rectas",    // rectas | curvas — MANDO ÚNICO de la esquina
   ends:         "rectos",    // redondos | rectos
   tinta:        "solido",    // solido | gradiente
   juntaSolape:  0.05,        // alargue en las juntas internas, × anchura
@@ -182,14 +196,13 @@ const DEF = {
   // RECORRIDO y el otro sólo cambia el lineJoin del CONTORNO, así que
   // "rectas" con curvatura 0,4 daba una esquina redonda por fuera y
   // viva por dentro, que no es ninguna de las dos cosas.
-  //   rectas    → ángulo vivo y junta a inglete (la cinta doblada, que es
-  //               la referencia de la que salió la obra)
-  //   curvas    → cada vértice redondeado hasta la mitad del tramo más
-  //               corto, que es el máximo antes de que dos redondeos
-  //               vecinos choquen, y junta redonda
-  //   muycurvas → sin rectas: la curva pasa por los puntos medios de cada
-  //               tramo con los vértices de control. Cambio de mecanismo,
-  //               no un número más alto
+  //   rectas → ángulo vivo y junta a inglete (la cinta doblada, que es
+  //            la referencia de la que salió la obra)
+  //   curvas → cada vértice redondeado hasta la mitad del tramo más corto,
+  //            que es el máximo antes de que dos redondeos vecinos
+  //            choquen, y junta redonda
+  // Se probó un tercer modo sin rectas (la curva por los puntos medios con
+  // los vértices de control). Se descartó: con dos basta.
   curva:        0,           // derivado; no lo pongas a mano
   miterLimit:   1.0,         // el pico de inglete es tinta FUERA de la banda: no existe         // por encima, el pico del halo raja la hebra vecina
 
@@ -239,7 +252,7 @@ const FAMILY_NAMES = Object.keys(FAMILIES);
 // ------------------------------------------------------------
 function generate(seed, cfg) {
   cfg = Object.assign({}, DEF, cfg || {});
-  cfg.curva = cfg.corner === "muycurvas" ? 2 : cfg.corner === "curvas" ? 1 : 0;
+  cfg.curva = cfg.corner === "curvas" ? 1 : 0;
 
   randomSeed(seed);
   noiseSeed(seed);
@@ -1540,40 +1553,24 @@ function curvaDensa(mapped, acum, cfg) {
   if (k <= 0.001 || mapped.length < 3) return null;
   const N = 16;
   const pts = [mapped[0].copy()], arco = [0];
-  const mitad = (a, b) => createVector((a.x+b.x)/2, (a.y+b.y)/2);
   const q = (p0, p1, p2, t) => createVector(
     (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x,
     (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y);
 
-  if (k >= 2) {
-    let prev = mapped[0], arcPrev = 0;
-    for (let i = 1; i < mapped.length - 1; i++) {
-      const m = mitad(mapped[i], mapped[i+1]);
-      const arcFin = (acum[i] + acum[i+1]) / 2;      // el punto medio del tramo i
-      for (let t = 1; t <= N; t++) {
-        pts.push(q(prev, mapped[i], m, t/N));
-        arco.push(arcPrev + (arcFin - arcPrev) * t/N);
-      }
-      prev = m; arcPrev = arcFin;
+  for (let i = 1; i < mapped.length - 1; i++) {
+    const a = mapped[i-1], v = mapped[i], b = mapped[i+1];
+    const la = p5.Vector.dist(a, v), lb = p5.Vector.dist(v, b);
+    const r = k * 0.5 * min(la, lb);
+    const ent = p5.Vector.lerp(v, a, r / max(la, 1e-6));
+    const sal = p5.Vector.lerp(v, b, r / max(lb, 1e-6));
+    pts.push(ent); arco.push(acum[i] - r);
+    for (let t = 1; t <= N; t++) {
+      pts.push(q(ent, v, sal, t/N));
+      arco.push(acum[i] - r + 2*r * t/N);
     }
-    pts.push(mapped[mapped.length-1].copy());
-    arco.push(acum[acum.length-1]);
-  } else {
-    for (let i = 1; i < mapped.length - 1; i++) {
-      const a = mapped[i-1], v = mapped[i], b = mapped[i+1];
-      const la = p5.Vector.dist(a, v), lb = p5.Vector.dist(v, b);
-      const r = k * 0.5 * min(la, lb);
-      const ent = p5.Vector.lerp(v, a, r / max(la, 1e-6));
-      const sal = p5.Vector.lerp(v, b, r / max(lb, 1e-6));
-      pts.push(ent); arco.push(acum[i] - r);
-      for (let t = 1; t <= N; t++) {
-        pts.push(q(ent, v, sal, t/N));
-        arco.push(acum[i] - r + 2*r * t/N);
-      }
-    }
-    pts.push(mapped[mapped.length-1].copy());
-    arco.push(acum[acum.length-1]);
   }
+  pts.push(mapped[mapped.length-1].copy());
+  arco.push(acum[acum.length-1]);
   // monotonía, por si un tramo cortísimo desordena la escala
   for (let i = 1; i < arco.length; i++) if (arco[i] < arco[i-1]) arco[i] = arco[i-1];
   return { pts, arco };
@@ -1591,19 +1588,6 @@ function strokePath(ctx, pts, w, paint, cfg, junta) {
   const k = cfg.curva || 0;
   if (k <= 0.001 || pts.length < 3) {
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-  } else if (k >= 2) {
-    // MUY CURVAS. Redondear más no se puede: en 'curvas' cada vértice ya
-    // se come la mitad del tramo más corto, y pasado eso dos redondeos
-    // vecinos chocan. Para ir más allá hay que cambiar de mecanismo — el
-    // recorrido deja de tener rectas: la curva pasa por los PUNTOS MEDIOS
-    // de cada tramo y usa los vértices como control. Continua y sin
-    // esquinas, ni vivas ni redondeadas.
-    const mitad = (a, b) => ({ x: (a.x+b.x)/2, y: (a.y+b.y)/2 });
-    for (let i = 1; i < pts.length - 1; i++) {
-      const m = mitad(pts[i], pts[i+1]);
-      ctx.quadraticCurveTo(pts[i].x, pts[i].y, m.x, m.y);
-    }
-    ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
   } else {
     for (let i = 1; i < pts.length - 1; i++) {
       const a = pts[i-1], v = pts[i], b = pts[i+1];
@@ -1709,12 +1693,21 @@ function parMasProximo(a, b, c, d) {
   proyectaEn(_pmp[2][0], c, a, b); _pmp[2][1].x = c.x; _pmp[2][1].y = c.y;
   proyectaEn(_pmp[3][0], d, a, b); _pmp[3][1].x = d.x; _pmp[3][1].y = d.y;
 
-  let best = _pmp[0], bd = Infinity;
-  for (const par of _pmp) {
-    const dx = par[1].x - par[0].x, dy = par[1].y - par[0].y;
-    const v = Math.sqrt(dx*dx + dy*dy);   // p5.Vector.dist = sqrt(magSq)
-    if (v < bd) { bd = v; best = par; }
-  }
+  // Desenrollado a propósito. Son cuatro candidatos fijos, así que el
+  // bucle no aportaba nada — y la protección de bucles infinitos de
+  // OpenProcessing ACUMULA el tiempo de cada bucle a lo largo de toda la
+  // sesión. Éste se entra más de un millón de veces por composición, así
+  // que acababa saltando el aviso de los 13 segundos aunque cada vuelta
+  // dure nanosegundos.
+  let best = _pmp[0], bd = Infinity, dx, dy, v;
+  dx = _pmp[0][1].x - _pmp[0][0].x; dy = _pmp[0][1].y - _pmp[0][0].y;
+  bd = Math.sqrt(dx*dx + dy*dy);
+  dx = _pmp[1][1].x - _pmp[1][0].x; dy = _pmp[1][1].y - _pmp[1][0].y;
+  v = Math.sqrt(dx*dx + dy*dy); if (v < bd) { bd = v; best = _pmp[1]; }
+  dx = _pmp[2][1].x - _pmp[2][0].x; dy = _pmp[2][1].y - _pmp[2][0].y;
+  v = Math.sqrt(dx*dx + dy*dy); if (v < bd) { bd = v; best = _pmp[2]; }
+  dx = _pmp[3][1].x - _pmp[3][0].x; dy = _pmp[3][1].y - _pmp[3][0].y;
+  v = Math.sqrt(dx*dx + dy*dy); if (v < bd) { bd = v; best = _pmp[3]; }
   return best;
 }
 
@@ -2217,8 +2210,7 @@ function construirUI() {
   ui.trazo = etiquetaSelect("trazo",
     [["estandar", "estándar"], ["fino", "fino"], ["gordo", "gordo"]], 12, y); y += fila;
 
-  ui.esquinas = etiquetaSelect("esquinas",
-    [["rectas", "rectas"], ["curvas", "curvas"], ["muycurvas", "muy curvas"]], 12, y); y += fila;
+  ui.esquinas = etiquetaSelect("esquinas", [["rectas", "rectas"], ["curvas", "curvas"]], 12, y); y += fila;
   ui.extremos = etiquetaSelect("extremos", [["rectos", "rectos"], ["redondos", "redondos"]], 12, y); y += fila;
 
   ui.dots = etiquetaCheck("discos", true, 12, y); y += fila - 8;
