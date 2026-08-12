@@ -53,6 +53,17 @@ function algoVersion(cfg) {
 // El reparto se decide por luminancia — fondo en un extremo, cinta
 // con el mayor contraste contra él, disco con el contraste que quede.
 // ------------------------------------------------------------
+// Distancia entre dos colores, 0 a 1. Suma de diferencias por canal: no
+// es perceptual, pero distingue el tono, que es justo lo que la
+// luminancia no hace.
+function dcolor(a, b) {
+  const p = a.replace('#',''), q = b.replace('#','');
+  let d = 0;
+  for (let i = 0; i < 6; i += 2)
+    d += abs(parseInt(p.substr(i,2),16) - parseInt(q.substr(i,2),16));
+  return d / 765;
+}
+
 function lum(hex) {
   const c = hex.replace('#', '');
   const n = c.length === 3 ? c.split('').map(x => parseInt(x + x, 16)) : [0,2,4].map(i => parseInt(c.substr(i,2),16));
@@ -108,10 +119,25 @@ function pickRoles(colors) {
         (abs(lum(b)-lum(bg)) + abs(lum(b)-lum(fg))) - (abs(lum(a)-lum(bg)) + abs(lum(a)-lum(fg))))[0]
     : mixHex(fg, oscuro ? '#ffffff' : '#000000', 0.55);
 
-  // segundo extremo del gradiente: otro color de la paleta si lo hay,
-  // y si no, la propia tinta desplazada hacia el fondo.
-  const otros = porContraste.filter(c => c !== fg && c !== dot);
-  const fg2 = otros.length ? otros[0] : mixHex(fg, bg, 0.42);
+  // SEGUNDA CINTA. Antes esto era el extremo de un degradado y valía con
+  // que fuera parecido; ahora es una cinta entera y tiene que sostenerse
+  // sola: contraste suficiente contra el fondo Y diferencia suficiente
+  // con la primera. Un segundo color que se parece a la primera cinta no
+  // se lee como otra cinta, se lee como un error de impresión.
+  // Se elige por DISTANCIA DE COLOR, no por luminancia: dos turquesas
+  // pueden tener luminancias distintas y seguir siendo el mismo color a
+  // la vista. Con el criterio de luminancia salían cintas turquesa sobre
+  // fondo turquesa y dos naranjas casi iguales.
+  const otros = porContraste.filter(c => c !== fg);
+  const fg2 = otros.find(c => dcolor(c, bg) > 0.34 && dcolor(c, fg) > 0.28)
+           || otros.find(c => dcolor(c, bg) > 0.28 && dcolor(c, fg) > 0.20)
+           // Paleta de dos colores: no hay segunda tinta que elegir. Se
+           // fabrica a MEDIO CAMINO DEL FONDO, no hacia el blanco o el
+           // negro: mezclando hacia el extremo, una cinta crema sobre
+           // negro daba otra crema y las dos se leían como una sola.
+           // Hacia el fondo cambia de valor lo suficiente y conserva
+           // contraste de sobra. Sale una cinta dominante y otra recogida.
+           || mixHex(fg, bg, 0.38);
 
   // Los discos NO comparten un solo color: son el contrapunto, y en
   // una paleta como Mondrian el negro sobre crema casi no se ve. Se
@@ -193,6 +219,7 @@ const DEF = {
   placeJitter:  0.35,    // desplazamiento en el marco, × margen libre
 
   pad:          0.07,
+  aspecto:      1,           // ancho/alto del campo. 1 = cuadrado
   corner:       "rectas",    // rectas | curvas — MANDO ÚNICO de la esquina
   ends:         "rectos",    // redondos | rectos
   tinta:        "solido",    // solido | gradiente
@@ -542,6 +569,20 @@ function tejer(family, vueltas, cfg) {
     anchors = anchors.concat(pass);
   }
 
+  // El campo es A veces más ancho, así que la disposición se reparte por
+  // él. No deforma la cinta: sólo cambia dónde caen los anchors, y la
+  // anchura se saca DESPUÉS de la mediana de los tramos.
+  // Se estira MÁS que el marco (A^1.5 en vez de A). Con el estirado justo,
+  // la obra salía centrada y con los costados vacíos: separar hebras y
+  // abrir pliegues devuelve la mancha hacia lo isótropo, y se come buena
+  // parte del estirado. Medido: con A solo, el aspecto de la mancha
+  // apenas se movía de 1.
+  const A = cfg.aspecto || 1;
+  if (A !== 1) {
+    const k = pow(A, 1.5);
+    for (const p of anchors) p.x = A * 0.5 + (p.x - 0.5) * k;
+  }
+
   const j = cfg.anchorJitter;
   for (const p of anchors) { p.x += random(-j, j); p.y += random(-j, j); }
   if (random() < 0.5)  for (const p of anchors) p.x = 1 - p.x;
@@ -656,14 +697,17 @@ function buildPath(anchors, targetCount, cfg) {
 // Escala uniforme (nunca deforma) + colocación con holgura.
 // ------------------------------------------------------------
 function fitToExtent(nodes, extent, cfg) {
+  // El campo mide A de ancho por 1 de alto. La escala es SIEMPRE uniforme:
+  // deformarlo estiraría la cinta y dejaría de tener grosor constante.
+  const A = cfg.aspecto || 1;
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   for (const n of nodes) { minX=min(minX,n.p.x); minY=min(minY,n.p.y); maxX=max(maxX,n.p.x); maxY=max(maxY,n.p.y); }
   const bw = max(maxX-minX, 1e-6), bh = max(maxY-minY, 1e-6);
-  const s = extent / max(bw, bh);
+  const s = min(extent * A / bw, extent / bh);
 
   // recolocar: centrado + desplazamiento seeded dentro del margen libre
   const newW = bw * s, newH = bh * s;
-  const freeX = max(0, 1 - newW) / 2, freeY = max(0, 1 - newH) / 2;
+  const freeX = max(0, A - newW) / 2, freeY = max(0, 1 - newH) / 2;
   const ox = freeX + random(-freeX, freeX) * cfg.placeJitter;
   const oy = freeY + random(-freeY, freeY) * cfg.placeJitter;
 
@@ -856,8 +900,8 @@ function shrinkIntoFrame(nodes, width, cfg) {
   let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
   for (const n of nodes) { minX=min(minX,n.p.x); minY=min(minY,n.p.y); maxX=max(maxX,n.p.x); maxY=max(maxY,n.p.y); }
 
-  const avail = 1 - m * 2;
-  const s = min(1, avail / max(maxX-minX, 1e-9), avail / max(maxY-minY, 1e-9));
+  const A = cfg.aspecto || 1;
+  const s = min(1, (A - m*2) / max(maxX-minX, 1e-9), (1 - m*2) / max(maxY-minY, 1e-9));
   const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
 
   for (const n of nodes) {
@@ -870,7 +914,7 @@ function shrinkIntoFrame(nodes, width, cfg) {
   // cuadro vacío enfrente. El encuadre es del cuadro, no del solver.
   minX = cx + (minX-cx)*s; maxX = cx + (maxX-cx)*s;
   minY = cy + (minY-cy)*s; maxY = cy + (maxY-cy)*s;
-  const dx = 0.5 - (minX + maxX) / 2;
+  const dx = A / 2 - (minX + maxX) / 2;
   const dy = 0.5 - (minY + maxY) / 2;
   for (const n of nodes) { n.p.x += dx; n.p.y += dy; }
 
@@ -1360,29 +1404,45 @@ function shuffled(arr) {
 // ------------------------------------------------------------
 // MAPEO: transformación FIJA (la extensión ya la fijó la familia)
 // ------------------------------------------------------------
-function mapToSquare(pts, ox, oy, S, cfg) {
-  const p0 = cfg.pad, span = 1 - p0 * 2;
-  return pts.map(p => createVector(ox + (p0 + p.x * span) * S, oy + (p0 + p.y * span) * S));
+// El lienzo puede no ser cuadrado. La escala se saca del ALTO y se aplica
+// a los dos ejes: el campo ya viene con la proporción metida (mide A de
+// ancho), así que no hace falta —ni se debe— estirar aquí.
+function mapToSquare(pts, ox, oy, S, cfg, H) {
+  const alto = H == null ? S : H;
+  const A = cfg.aspecto || 1;
+  // La escala se limita por el eje que menos da. Si el lienzo es más
+  // cuadrado que el campo —por ejemplo, un campo apaisado dibujado en un
+  // lienzo cuadrado— la obra se sale por los costados: medido, 16 obras
+  // de 40 con tinta pegada al borde. Encajar por el mínimo deja banda
+  // arriba y abajo, que es feo pero no roto.
+  const esc = min(alto * (1 - cfg.pad * 2), S * (1 - cfg.pad * 2) / A);
+  const mx = (S - A * esc) / 2, my = (alto - esc) / 2;
+  return pts.map(p => createVector(ox + mx + p.x * esc, oy + my + p.y * esc));
 }
 
 // ------------------------------------------------------------
 // DIBUJO
 // ------------------------------------------------------------
-function renderComposition(ctx, ox, oy, S, comp) {
+function renderComposition(ctx, ox, oy, S, comp, H) {
+  const ALTO = H == null ? S : H;
   const cfg = comp.cfg;
   const col = comp.colores;
-  const width = comp.width * S * (1 - cfg.pad * 2);
-  const gap = cfg.gapAbs * S * (1 - cfg.pad * 2);
+  const width = comp.width * ALTO * (1 - cfg.pad * 2);
+  const gap = cfg.gapAbs * ALTO * (1 - cfg.pad * 2);
 
   ctx.fillStyle = col.bg;
-  ctx.fillRect(ox, oy, S, S);
+  ctx.fillRect(ox, oy, S, ALTO);
 
-  let mapped = mapToSquare(comp.points, ox, oy, S, cfg);
+  let mapped = mapToSquare(comp.points, ox, oy, S, cfg, ALTO);
   if (cfg.vibration) mapped = applyVibration(mapped, comp.seed, width, cfg);
 
   const tinta = cfg.tinta === "gradiente" ? makeGradient(ctx, mapped, comp) : col.fg;
+  // La segunda cinta va en su propio color. Sólo con tinta plana: sobre un
+  // degradado el cambio de cinta dejaría de leerse.
+  const tinta2 = (comp.salto != null && comp.salto >= 0 && cfg.tinta !== "gradiente")
+    ? col.fg2 : tinta;
 
-  if (cfg.dots === "bajo") drawDots(ctx, mapped, width, comp, ox, oy, S);
+  if (cfg.dots === "bajo") drawDots(ctx, mapped, width, comp, ox, oy, S, ALTO);
 
   // ============================================================
   // SECCIONES QUE TERMINAN DEBAJO DE OTRA HEBRA
@@ -1467,8 +1527,9 @@ function renderComposition(ctx, ox, oy, S, comp) {
     const iniH = max(0, !aFin && !aJ ? a - caboEn(a) : a);
     const finH = min(total, !bFin && !bJ ? b + caboEn(b) : b);
 
+    const segunda = saltoArc && a >= saltoArc[1] - 1e-6;
     if (gap > 0) trazarTramo(ctx, mapped, acum, iniH, finH, width + gap * 2, col.bg, cfg, "round");
-    trazarTramo(ctx, mapped, acum, iniC, finC, width, tinta, cfg);
+    trazarTramo(ctx, mapped, acum, iniC, finC, width, segunda ? tinta2 : tinta, cfg);
   }
 
 
@@ -1481,7 +1542,7 @@ function renderComposition(ctx, ox, oy, S, comp) {
     }
   }
 
-  if (cfg.dots === "encima") drawDots(ctx, mapped, width, comp, ox, oy, S);
+  if (cfg.dots === "encima") drawDots(ctx, mapped, width, comp, ox, oy, S, ALTO);
 
   _densa = null; _salto = -1;
   return { mapped, width };
@@ -1507,24 +1568,25 @@ function makeGradient(ctx, mapped, comp) {
 // Única regla de colocación: el CENTRO nunca queda bajo la cinta.
 // El borde sí puede quedar eclipsado — un disco a medio tapar dice
 // más que uno colocado a distancia prudente.
-function drawDots(ctx, mapped, width, comp, ox, oy, S) {
+function drawDots(ctx, mapped, width, comp, ox, oy, S, H) {
+  const ALTO = H == null ? S : H;
   const cfg = comp.cfg;
   randomSeed(comp.seed ^ 0xD075);
 
   const radios = [];
   for (let i = 0; i < cfg.dotsMax; i++) radios.push(width * random(cfg.dotRMin, cfg.dotRMax));
   const r = max(...radios);   // el hueco se reserva para el mayor
-  const need = r + width * (0.5 + cfg.dotClear) + cfg.gapAbs * S;
-  const borde = r + cfg.margen * S;
+  const need = r + width * (0.5 + cfg.dotClear) + cfg.gapAbs * ALTO;
+  const borde = r + cfg.margen * ALTO;
   const N = cfg.dotGrid;
 
   // mapa de vacíos: distancia de cada celda del campo a la cinta
   const huecos = [];
   for (let gy = 0; gy < N; gy++) {
     for (let gx = 0; gx < N; gx++) {
-      const p = createVector(ox + (gx + 0.5) * S / N, oy + (gy + 0.5) * S / N);
+      const p = createVector(ox + (gx + 0.5) * S / N, oy + (gy + 0.5) * ALTO / N);
       if (p.x < ox + borde || p.x > ox + S - borde) continue;
-      if (p.y < oy + borde || p.y > oy + S - borde) continue;
+      if (p.y < oy + borde || p.y > oy + ALTO - borde) continue;
       let d = Infinity;
       for (let i = 0; i < mapped.length - 1; i++) d = min(d, pointSegDist(p, mapped[i], mapped[i+1]));
       if (d >= need) huecos.push({ p, d });
@@ -2079,7 +2141,9 @@ function patronEnTexto(p, versionActual) {
 // guardas es ese buffer, no el lienzo con la UI encima.
 // ============================================================
 
-const ART = 1000;              // resolución interna de la obra
+const ART = 1000;              // resolución interna de la obra (alto)
+const FORMATOS = { cuadrado: 1, apaisado: 1.5, panoramico: 2 };
+let artW = ART, artH = ART;
 const CANVAS_W = 1360;
 const CANVAS_H = 900;
 const PANEL_W = 300;
@@ -2161,6 +2225,7 @@ function opciones() {
     vueltasMin: int(ui.vueltas.value()),
     vueltasMax: int(ui.vueltas.value()),
     tipo:       ui.tipo.value() === 'auto' ? null : ui.tipo.value(),
+    aspecto:    FORMATOS[ui.formato.value()] || 1,
     trazo:      ui.trazo.value(),
     trazoFijo:  ui.trazo.value() !== 'auto',
     corner:     ui.esquinas.value(),
@@ -2201,9 +2266,11 @@ function loteNuevo() {
 function votar(fallo) {
   if (modo !== "triaje" || !lote) return;
   const s = lote.seeds[lote.i];
-  const c = generate(s, opciones());
-  const r = renderComposition(art.drawingContext, 0, 0, ART, c);
-  const m = measure(r.mapped, r.width, ART);
+  const op = opciones();
+  ajustarBuffer(op);
+  const c = generate(s, op);
+  const r = renderComposition(art.drawingContext, 0, 0, artW, c, artH);
+  const m = measure(r.mapped, r.width, artH);
   veredictoPoner(s, fallo, rasgosDe(c, m), algoVersion(c.cfg));
   if (lote.i < LOTE_N - 1) { lote.i++; redibujar(); }
   else { modo = "patron"; redibujar(); }
@@ -2211,31 +2278,35 @@ function votar(fallo) {
 
 function pintarTriaje() {
   seed = lote.seeds[lote.i];
-  comp = generate(seed, opciones());
-  const r = renderComposition(art.drawingContext, 0, 0, ART, comp);
-  metrics = measure(r.mapped, r.width, ART);
+  const op = opciones();
+  ajustarBuffer(op);
+  comp = generate(seed, op);
+  const r = renderComposition(art.drawingContext, 0, 0, artW, comp, artH);
+  metrics = measure(r.mapped, r.width, artH);
 
   background(17);
   const lado = min(CANVAS_H - 76, CANVAS_W - PANEL_W - 40);
-  const x0 = PANEL_W + (CANVAS_W - PANEL_W - lado) / 2;
-  image(art, x0, 20, lado, lado);
+  const [w, h] = encajar(lado);
+  const x0 = PANEL_W + (CANVAS_W - PANEL_W - w) / 2;
+  image(art, x0, 20, w, h);
 
   // barra de progreso: un tramo por obra, coloreado según su veredicto
   const dichos = veredictosLeer();
   const v = algoVersion(comp.cfg);
-  const w = lado / LOTE_N;
+  const paso = w / LOTE_N;
+  const yBarra = 20 + h + 10;
   for (let i = 0; i < LOTE_N; i++) {
     const rec = dichos.find(d => d.seed === lote.seeds[i] && d.version === v);
     noStroke();
     fill(!rec ? color(60) : rec.fallo === "si" ? color(200, 60, 60)
          : rec.fallo === "no" ? color(80, 190, 110) : color(200, 180, 70));
-    rect(x0 + i * w + 1, 30 + lado, w - 2, 10);
-    if (i === lote.i) { fill(255); rect(x0 + i * w + 1, 44 + lado, w - 2, 3); }
+    rect(x0 + i * paso + 1, yBarra, paso - 2, 10);
+    if (i === lote.i) { fill(255); rect(x0 + i * paso + 1, yBarra + 14, paso - 2, 3); }
   }
   fill(230); noStroke(); textAlign(LEFT, TOP); textSize(12);
   text(`obra ${lote.i + 1}/${LOTE_N}  ·  lote #${lote.seed}  ·  seed ${seed}  ·  ${v}` +
        `      [a] va  ·  [x] fuera  ·  [d] duda  ·  [←] atrás  ·  [p] patrón`,
-       x0, 54 + lado);
+       x0, yBarra + 24);
 }
 
 // El informe. Lo único que hace es enseñar cómo se reparten los rasgos
@@ -2266,14 +2337,37 @@ function exportarVeredictos() {
              veredictos: regs }, "iterations2_veredictos.json");
 }
 
+// El buffer de la obra sigue el formato: el PNG que guardas sale de él,
+// así que un apaisado se exporta apaisado y no recortado de un cuadrado.
+function ajustarBuffer(op) {
+  const A = op.aspecto || 1;
+  const w = round(ART * A);
+  if (w !== artW || ART !== artH) {
+    artW = w; artH = ART;
+    art.remove();
+    art = createGraphics(artW, artH);
+    art.pixelDensity(2);
+  }
+}
+
+function encajar(lado) {
+  const A = artW / artH;
+  let w = lado, h = lado / A;
+  if (h > lado) { h = lado; w = lado * A; }
+  return [w, h];
+}
+
 function pintarUna() {
-  comp = generate(seed, opciones());
-  const r = renderComposition(art.drawingContext, 0, 0, ART, comp);
-  metrics = measure(r.mapped, r.width, ART);
+  const op = opciones();
+  ajustarBuffer(op);
+  comp = generate(seed, op);
+  const r = renderComposition(art.drawingContext, 0, 0, artW, comp, artH);
+  metrics = measure(r.mapped, r.width, artH);
 
   background(17);
   const lado = min(CANVAS_H - 40, CANVAS_W - PANEL_W - 40);
-  image(art, PANEL_W + (CANVAS_W - PANEL_W - lado) / 2, (CANVAS_H - lado) / 2, lado, lado);
+  const [w, h] = encajar(lado);
+  image(art, PANEL_W + (CANVAS_W - PANEL_W - w) / 2, (CANVAS_H - h) / 2, w, h);
 }
 
 // Hoja de contactos: la fealdad estructural se ve en la distribución,
@@ -2282,15 +2376,17 @@ function pintarHoja() {
   background(17);
   const filas = ceil(HOJA_N / HOJA_COLS);
   const lado = min((CANVAS_W - PANEL_W - 40) / HOJA_COLS, (CANVAS_H - 40) / filas) - 6;
-  const g = createGraphics(360, 360);
   const opt = opciones();
+  const A = opt.aspecto || 1;
+  const g = createGraphics(round(360 * A), 360);
+  const [w, h] = [lado, lado / A];
 
   for (let i = 0; i < HOJA_N; i++) {
     const s = (seed + i * 0x9E3779B1) >>> 0;
     const c = generate(s, opt);
-    renderComposition(g.drawingContext, 0, 0, 360, c);
+    renderComposition(g.drawingContext, 0, 0, g.width, c, g.height);
     image(g, PANEL_W + 20 + (i % HOJA_COLS) * (lado + 6),
-             20 + floor(i / HOJA_COLS) * (lado + 6), lado, lado);
+             20 + floor(i / HOJA_COLS) * (lado + 6), w, h);
   }
   g.remove();
   comp = null;
@@ -2342,6 +2438,8 @@ function construirUI() {
     [["auto", "Random (weighted)"]].concat(PALETAS.map((p, i) => [i, p.name])), 12, y); y += fila;
 
   [ui.vueltas, ui.vueltasV] = etiquetaSlider("vueltas", 2, 5, DEF.vueltasMax, 1, 12, y); y += fila;
+  ui.formato = etiquetaSelect("formato",
+    [["cuadrado", "cuadrado"], ["apaisado", "apaisado 3:2"], ["panoramico", "panorámico 2:1"]], 12, y); y += fila;
   ui.tipo = etiquetaSelect("tipo",
     [["auto", "auto (por seed)"], ["suelto", "suelto"], ["anudado", "anudado"],
      ["trama", "trama"], ["dos", "dos cintas"]], 12, y); y += fila;
@@ -2368,7 +2466,7 @@ function construirUI() {
   estiloTexto(ui.info);
   ui.info.style("line-height", "17px");
 
-  [ui.paleta, ui.esquinas, ui.extremos, ui.trazo, ui.tipo].forEach(e => e.changed(redibujar));
+  [ui.paleta, ui.esquinas, ui.extremos, ui.trazo, ui.tipo, ui.formato].forEach(e => e.changed(redibujar));
   [ui.vueltas, ui.dotsN, ui.dotR].forEach(e => e.input(redibujar));
   [ui.dots, ui.gradiente].forEach(e => e.changed(redibujar));
 }

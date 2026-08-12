@@ -121,6 +121,40 @@ y las uniría.
 Medido: 0 cruces defectuosos de 100, remates 0/30, 29 de 30 con tejido
 dibujable. El control con el orden de pintado invertido marca 50 de 51.
 
+### Dos cintas, dos colores
+
+Cuando hay dos cintas van en colores distintos. El segundo se elige por
+**distancia de color**, no por luminancia: dos turquesas pueden tener
+luminancias distintas y seguir siendo el mismo color a la vista, y con el
+criterio de luminancia salían cintas turquesa sobre fondo turquesa y dos
+naranjas casi iguales.
+
+En una paleta de **dos colores** no hay segunda tinta que elegir, así que se
+fabrica **a medio camino del fondo** (38 %). Mezclando hacia el blanco o el
+negro, una cinta crema sobre negro daba otra crema y las dos se leían como una
+sola. Hacia el fondo cambia de valor lo suficiente y conserva contraste de
+sobra: sale una cinta dominante y otra recogida.
+
+## El formato
+
+`aspecto` es el ancho/alto del **campo**, no un estirado del dibujo: deformar
+el dibujo ensancharía la cinta en un eje y dejaría de tener grosor constante.
+El campo mide `A` de ancho por 1 de alto, y el mapeo al lienzo es **siempre de
+escala uniforme**.
+
+El campo de anchors se estira **más que el marco** (`A^1.5`). Con el estirado
+justo, la obra salía centrada y con los costados vacíos: separar hebras y abrir
+pliegues devuelve la mancha hacia lo isótropo y se come buena parte del
+estirado.
+
+La escala se limita por el eje que menos da, así que **la obra nunca se sale
+del lienzo** aunque el lienzo sea más cuadrado que el campo — antes de eso,
+dibujar un campo apaisado en un lienzo cuadrado dejaba 16 obras de 40 con tinta
+pegada al borde.
+
+En el laboratorio: cuadrado, apaisado 3:2 y panorámico 2:1. El buffer de export
+sigue el formato, así que el PNG sale apaisado y no recortado de un cuadrado.
+
 ### Las familias no se leen
 
 Las cinco (`diagonal`, `compact`, `open`, `returning`, `cross`) siguen ahí como
@@ -212,7 +246,7 @@ que sí lo eran.
 
 ### Estado
 
-**652 cruces sobre 5 configuraciones, cero defectuosos.**
+**1 023 cruces sobre 8 configuraciones, cero defectuosos.**
 
 | configuración | obras | cruces | a medias | sin corte |
 |---|---|---|---|---|
@@ -221,6 +255,9 @@ que sí lo eran.
 | tipo anudado | 40 | 108 | 0 | 0 |
 | tipo trama | 40 | 166 | 0 | 0 |
 | tipo dos | 40 | 100 | 0 | 0 |
+| apaisado 3:2 | 60 | 156 | 0 | 0 |
+| panorámico 2:1 | 40 | 110 | 0 | 0 |
+| dos + apaisado | 40 | 105 | 0 | 0 |
 
 199/200 obras con tejido dibujable. **0,23 s por obra** (10,2 s al empezar).
 Y 182 de 200 son del tipo que declaran: 44/45, 94/107, 40/44, 4/4.
