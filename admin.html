@@ -211,6 +211,7 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
       <button class="tab-btn" onclick="switchTab('palettes')">Palettes</button>
       <button class="tab-btn" onclick="switchTab('gallery')">Gallery</button>
       <button class="tab-btn" onclick="switchTab('batches')">Batches</button>
+      <button class="tab-btn" onclick="switchTab('taller')">Taller</button>
       <button class="tab-btn" onclick="switchTab('site')">Site</button>
       <button class="tab-btn" onclick="switchTab('security')">Security</button>
     </div>
@@ -312,6 +313,36 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
           Del sistema anterior, guardados como imágenes en localStorage. Solo lectura: descárgalos si te sirven.
         </div>
         <div class="batch-list" id="legacy-list"></div>
+      </div>
+    </div>
+
+    <!-- TALLER -->
+    <div class="tab-panel" id="tab-taller">
+      <div style="font-size:10px;color:var(--ink3);letter-spacing:0.04em;line-height:1.7;margin-bottom:1.4rem;">
+        Cómo sale una obra del laboratorio al papel, y del papel a la pared. Recordatorio
+        para no volver a decidirlo cada vez: por qué se imprime <b>a sangre</b>, qué es
+        exactamente el margen interno de cada familia, los tres montajes comparados y la
+        ficha para llevar al marquista. Los ejemplos se renderizan en vivo con los
+        algoritmos reales y la página se mide a sí misma, así que sigue al día sola.
+        <a href="taller.html" target="_blank" style="color:var(--ink);">Abrir nota de taller →</a>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Regla</span>
+      </div>
+      <div style="border:1px solid var(--border-dark);border-radius:2px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:13px;font-weight:700;line-height:1.5;">
+          No hay margen blanco impreso. El fondo va a sangre: se imprime sobre el pliego
+          siguiente, al 100 %, y se guillotina a medida DIN.
+        </div>
+        <div style="font-size:11px;color:var(--ink3);line-height:1.7;">
+          El fondo llega siempre al canto —<code>fillRect(0,0,W,H)</code>— en todas las
+          familias: 25 obras guardadas, 150 puntos de borde muestreados, cero píxeles blancos.
+          El margen interno de las familias con retículo es de los <b>elementos</b>, no del
+          fondo: esa banda es color de paleta, no papel, y no hay que tenerla en cuenta para
+          imprimir. Si acaba habiendo aire blanco, lo pone el montaje, nunca la impresión.
+          Nunca el «sin bordes» del driver — escala la imagen y recorta.
+        </div>
       </div>
     </div>
 
@@ -486,7 +517,7 @@ function showAdmin(){$('login-screen').style.display='none';$('admin-screen').st
 $('pwd-input').addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
 
 // ── TABS ──────────────────────────────────────────────
-const TAB_NAMES=['works','palettes','gallery','batches','site','security'];
+const TAB_NAMES=['works','palettes','gallery','batches','taller','site','security'];
 function switchTab(name){
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',TAB_NAMES[i]===name));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
