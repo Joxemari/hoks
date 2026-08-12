@@ -90,9 +90,10 @@ contactos).
 de colgado a 1,45 m, regla en cm, y una segunda vista con los cinco pliegos en
 la misma pared. Está en **su propia página a propósito**: el laboratorio decide
 *qué* se genera y el muro solo dice *de qué tamaño* es el objeto, así que aquí
-solo hay mandos que no cambian ni un píxel (pliego, ancho de pared,
-referencias). Todo lo que mueve la imagen llega por URL y es de solo lectura —
-si hay que cambiar la obra, se vuelve al lab. Lo que viaja es la **receta**, la
+solo hay mandos que no cambian ni un píxel (pliego y referencias) — el muro
+mide 3 m y el encuadre se corta arriba, que son supuestos, no ajustes. Todo lo
+que mueve la imagen llega por URL y es de solo lectura: si hay que cambiar la
+obra, se vuelve al lab. Lo que viaja es la **receta**, la
 misma de los harnesses y `_batch.js`, serializada entera, así que un parámetro
 nuevo llega al muro sin tocar nada. El enlace lo pone
 `HOKSLAB.mountWallLink()`, una línea por harness. No metas mandos de mirar en

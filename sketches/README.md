@@ -118,7 +118,7 @@ los cinco pliegos en la misma pared, que es donde de verdad se decide.
 
 Vive en **su propia página a propósito**. El laboratorio decide QUÉ se genera;
 el muro solo dice DE QUÉ TAMAÑO es el objeto que sale. Aquí solo hay mandos que
-no cambian ni un píxel — pliego, ancho de pared, referencias —, y todo lo que sí
+no cambian ni un píxel — pliego y referencias —, y todo lo que sí
 mueve la imagen (seed, formato, paleta, params) llega por URL y es de solo
 lectura. Meter esos mandos en el panel del harness habría convertido los
 parámetros de generar en un cajón con parámetros de mirar.
