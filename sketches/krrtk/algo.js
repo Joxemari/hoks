@@ -67,7 +67,7 @@
     const n = params.fieldsShort ? Math.max(1, params.fieldsShort)
             : squareSheet ? 1 : (wide ? 1 : 2);
     const G = E.fieldGrid(W, H, n, params);
-    const { pitch: a, cols, rows, ox, oy } = G;
+    const { pitch: side, cols, rows, ox, oy } = G;
 
     // 1. Mesh gradient de fondo (stream RNG independiente, como el original).
     // Fondo: mesh gradient (lo propio de la obra) o plano si el laboratorio pide
@@ -84,24 +84,30 @@
     //    de la rejilla se subdivide por su cuenta: el sistema no sabe que hay
     //    otros, y por eso ninguno repite al de al lado.
     const squares = [], toDraw = [];
-    for (let cy = 0; cy < rows; cy++) {
-      for (let cx = 0; cx < cols; cx++) {
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+  // ⟨esaldia:eu⟩ Karratu bat, behin eta berriz, zatitu ala ez erabakitzen.
+  // ⟨esaldia:eu⟩ Lauetan zatitzen da, eta laugarrena beti botatzen: hutsune hori da serieak esaten duena.
+  // ⟨esaldia:en⟩ A square deciding, again and again, whether to divide.
+  // ⟨esaldia:en⟩ It splits in four and always discards the fourth: that missing quarter is what the series says.
         // ⟨gramatika⟩
-        const field = [{ x: cx * a, y: cy * a, size: a, color: colors[rng.int(0, colors.length - 1)] }];
-        let si = 0;
-        while (si < field.length) {
-          const sq = field[si];
-          if (sq.size > a / 4) {
-            const ns = sq.size / 2;
+        const anyColour = () => colors[rng.int(0, colors.length - 1)];
+        const field = [{ x: col * side, y: row * side, size: side, color: anyColour() }];
+        let pending = 0;
+        while (pending < field.length) {
+          const square = field[pending];
+          const bigEnoughToDivide = square.size > side / 4;
+          if (bigEnoughToDivide) {
+            const half = square.size / 2;
             field.push(
-              { x: sq.x,      y: sq.y,      size: ns, color: colors[rng.int(0, colors.length - 1)] },
-              { x: sq.x + ns, y: sq.y,      size: ns, color: colors[rng.int(0, colors.length - 1)] },
-              { x: sq.x,      y: sq.y + ns, size: ns, color: colors[rng.int(0, colors.length - 1)] },
-              { x: sq.x + ns, y: sq.y + ns, size: ns, color: colors[rng.int(0, colors.length - 1)] }
+              { x: square.x,        y: square.y,        size: half, color: anyColour() },
+              { x: square.x + half, y: square.y,        size: half, color: anyColour() },
+              { x: square.x,        y: square.y + half, size: half, color: anyColour() },
+              { x: square.x + half, y: square.y + half, size: half, color: anyColour() }
             );
-            field.splice(field.length - 1, 1);   // descarta el 4º hijo — firma de la serie
+            field.pop();                       // discard the fourth child
           }
-          si++;
+          pending++;
         }
         // ⟨/gramatika⟩
         for (const sq of field) squares.push(sq);
@@ -109,7 +115,7 @@
       }
     }
     const drawCount = toDraw.filter(Boolean).length;
-    const a0 = a;   // lado del campo: la profundidad se mide contra él
+    const a0 = side;   // lado del campo: la profundidad se mide contra él
 
     // 3. Dibujar cuadrados con alpha sobre el gradiente.
     for (let i = 0; i < squares.length; i++) {
