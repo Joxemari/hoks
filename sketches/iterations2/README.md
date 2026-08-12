@@ -141,28 +141,27 @@ que sí lo eran.
 
 ### Estado
 
-**981 cruces sobre 5 configuraciones, cero defectuosos.**
+**1 006 cruces sobre 6 configuraciones, cero defectuosos.**
 
 | configuración | obras | cruces | a medias | sin corte |
 |---|---|---|---|---|
-| por defecto | 200 | 445 | 0 | 0 |
-| trazo fino | 60 | 145 | 0 | 0 |
-| trazo estándar | 60 | 146 | 0 | 0 |
-| trazo gordo | 60 | 146 | 0 | 0 |
-| esquinas rectas | 60 | 146 | 0 | 0 |
-| esquinas curvas | 60 | 146 | 0 | 0 |
-| esquinas muy curvas | 60 | 146 | 0 | 0 |
+| por defecto | 120 | 323 | 0 | 0 |
+| trazo fino | 60 | 170 | 0 | 0 |
+| trazo estándar | 60 | 171 | 0 | 0 |
+| trazo gordo | 60 | 171 | 0 | 0 |
+| esquinas rectas | 60 | 171 | 0 | 0 |
+| esquinas curvas | 60 | 171 | 0 | 0 |
 
-Cero en las cuatro bandas de ángulo en todas ellas, y 0/200 obras sin tejido
-dibujable. 1,20 s por obra.
+Cero en las cuatro bandas de ángulo en todas ellas, y 0/120 obras sin tejido
+dibujable. **0,73 s por obra** (10,2 s al empezar).
 
 Otras tres clases, con su control cada una:
 
 | clase | resultado | control |
 |---|---|---|
 | remate soldado a otra hebra | 0 de 60 obras | 15 % antes del arreglo |
-| tinta pegada al borde | 0 de 140 obras · holgura 20–21 px (pedida 20) | con `margen 0`: holgura 0 px y aparece |
-| disco con el centro bajo la cinta | 0 de 244 discos | colocándolos al azar: 35,9 % |
+| tinta pegada al borde | 0 de 60 obras · holgura 25 px (pedida 20) | con `margen 0`: holgura 0 px y aparece |
+| disco con el centro bajo la cinta | 0 de 125 discos | colocándolos al azar: 35,9 % |
 
 **Determinismo verificado**: 7 seeds dan la misma imagen al píxel repitiendo la
 llamada, pidiéndolos en otro orden, tras recargar la página y en otra pestaña.
