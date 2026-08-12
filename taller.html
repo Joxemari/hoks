@@ -141,9 +141,11 @@ tr.on td { color: var(--ink); font-weight: 700; }
       <h2>A sangre, siempre</h2>
     </div>
     <div class="rule-box">
-      <div class="big">Imprimir sobre el pliego siguiente, al 100 %, y guillotinar a medida DIN.</div>
-      <div class="small">Una obra A3 se imprime en A3+ y se corta. El margen blanco no se
-        añade nunca: no está en el archivo y no debe estar en el papel.</div>
+      <div class="big">El fondo va a sangre. No hay margen blanco impreso — nunca, en ninguna
+        familia. Se imprime sobre el pliego siguiente, al 100 %, y se guillotina a medida DIN.</div>
+      <div class="small">Una obra A3 se imprime en A3+ y se corta. El blanco no se añade:
+        no está en el archivo y no debe estar en el papel. Si acaba habiendo aire blanco
+        alrededor, lo pone el <b>montaje</b> —cartón, paspartú—, nunca la impresión.</div>
     </div>
     <p class="warn"><b>Nunca el «sin bordes» del driver.</b> El modo sin márgenes de Canon
       funciona agrandando la imagen para que se desborde, y recorta lo que cae fuera. Eso
@@ -158,9 +160,10 @@ tr.on td { color: var(--ink); font-weight: 700; }
   <section>
     <div class="sec-head">
       <div class="eyebrow">02 · Por qué</div>
-      <h2>El fondo no tiene margen. La composición, a veces sí.</h2>
+      <h2>El margen es de los elementos, no del fondo</h2>
     </div>
-    <p>Son dos capas distintas y conviene no confundirlas, porque parecen contradecirse:</p>
+    <p>Es la confusión que se repite, y viene de mezclar dos capas que parecen
+      contradecirse:</p>
     <div class="tw">
       <table>
         <thead><tr><th>Capa</th><th>Qué hace</th><th>¿Llega al canto?</th></tr></thead>
@@ -217,6 +220,14 @@ tr.on td { color: var(--ink); font-weight: 700; }
       las 25 obras guardadas en <code>data/</code> — 6 puntos de borde por pieza, 150 en
       total — <b>no hay un solo píxel blanco</b>.</p>
 
+    <div class="rule-box">
+      <div class="big">A efectos prácticos: no hay margen blanco impreso. Listo.</div>
+      <div class="small">El margen de composición es <b>información interna</b> —dice dónde
+        caben las figuras— y no llega al papel como blanco, sino como color. Para imprimir y
+        enmarcar no hay que tenerlo en cuenta: solo importa que el fondo va a sangre. Lo que
+        sigue es contexto, no cambia la decisión.</div>
+    </div>
+
     <div class="demos">
       <div class="demo">
         <div class="stage">
@@ -252,7 +263,10 @@ tr.on td { color: var(--ink); font-weight: 700; }
       colores reales del borde. Tira otra vez y verás que el número de arriba baila y el de
       abajo no se mueve del 0.</p>
 
-    <h2 style="margin-top:0.8rem">Cuánto margen, exactamente</h2>
+    <h2 style="margin-top:0.8rem">Cuánto margen, exactamente <span style="font-weight:400;color:var(--ink3)">— contexto interno</span></h2>
+    <p style="font-size:11px;color:var(--ink3)">Nada de esto afecta a cómo se imprime. Está
+      aquí porque es fácil citar mal el 11 % y porque el rango explica una decisión de montaje
+      al final de la sección.</p>
     <p>El 11 % de <code>FIELD_MARGIN</code> es el <b>objetivo</b>, no el resultado. Con celda
       cuadrada y margen igual en los cuatro lados, de <code>S−2m = n·p</code> y
       <code>L−2m = (n+k)·p</code> sale <code>p = (L−S)/k</code>: el paso lo fija <b>k</b>, que
