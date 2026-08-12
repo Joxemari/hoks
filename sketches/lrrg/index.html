@@ -73,9 +73,35 @@
       </select>
     </div>
     <div class="group">
+      <span class="lbl">Rhythm</span>
+      <select id="rhythm">
+        <option value="">Random (weighted)</option>
+        <option value="Cadence">Cadence · rachas</option>
+        <option value="Scatter">Scatter · moneda por slot</option>
+      </select>
+    </div>
+    <div class="group">
+      <span class="lbl">Run max · <span id="runV">auto</span></span>
+      <input type="range" id="run" min="0" max="6" step="1" value="0">
+      <span class="hintline">solo Cadence · largo máximo de racha</span>
+    </div>
+    <div class="group">
       <span class="lbl">Threshold · <span id="thrV">0.68</span></span>
       <input type="range" id="thr" min="0" max="1" step="0.02" value="0.68">
-      <span class="hintline">probabilidad de que un slot exista</span>
+      <span class="hintline">solo Scatter · probabilidad de que un slot exista</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Alpha · <span id="alphaV">auto</span></span>
+      <input type="range" id="alpha" min="0" max="1" step="0.05" value="0">
+      <span class="hintline">0 = aleatorio · &lt;1 mezcla en vez de tapar</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Blend</span>
+      <select id="blend">
+        <option value="">Random (weighted)</option>
+        <option value="source-over">Normal</option>
+        <option value="multiply">Multiply</option>
+      </select>
     </div>
     <div class="group">
       <span class="lbl">Grain (×) · <span id="grainV">1.0</span></span>
@@ -115,6 +141,10 @@ function params() {
     slots: parseInt($('slots').value, 10) || 0,
     diameter: parseFloat($('dia').value) || 0,
     mode: $('mode').value || null,
+    rhythm: $('rhythm').value || null,
+    runMax: parseInt($('run').value, 10) || 0,
+    alpha: parseFloat($('alpha').value) || 0,
+    blend: $('blend').value || null,
     threshold: parseFloat($('thr').value),
   };
 }
@@ -167,6 +197,10 @@ $('next').onclick = () => { seed = (seed + 1) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('pal').onchange = refresh;
 $('mode').onchange = refresh;
+$('rhythm').onchange = refresh;
+$('blend').onchange = refresh;
+$('run').oninput = () => { $('runV').textContent = $('run').value === '0' ? 'auto' : $('run').value; refresh(); };
+$('alpha').oninput = () => { $('alphaV').textContent = parseFloat($('alpha').value) === 0 ? 'auto' : parseFloat($('alpha').value).toFixed(2); refresh(); };
 $('slots').oninput = () => { $('slotsV').textContent = $('slots').value === '0' ? 'auto' : $('slots').value; refresh(); };
 $('dia').oninput = () => { $('diaV').textContent = parseFloat($('dia').value) === 0 ? 'auto' : parseFloat($('dia').value).toFixed(2); refresh(); };
 $('thr').oninput = () => { $('thrV').textContent = parseFloat($('thr').value).toFixed(2); refresh(); };
@@ -175,7 +209,9 @@ $('sheet').onclick = () => setSheet(!sheetMode);
 $('reset').onclick = () => {
   $('slots').value = 0; $('slotsV').textContent = 'auto';
   $('dia').value = 0;   $('diaV').textContent = 'auto';
-  $('mode').value = '';
+  $('mode').value = ''; $('rhythm').value = ''; $('blend').value = '';
+  $('run').value = 0;   $('runV').textContent = 'auto';
+  $('alpha').value = 0; $('alphaV').textContent = 'auto';
   $('thr').value = 0.68; $('thrV').textContent = '0.68';
   $('grain').value = 1;  $('grainV').textContent = '1.0';
   refresh();
