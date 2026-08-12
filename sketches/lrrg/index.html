@@ -3,34 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>template · lab — hoks</title>
+<title>lrrg · lab — hoks</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root { --ink:#111; --ink3:#bbb; --border:#e8e8e8; --surface:#f7f7f7; --f:'Courier New',Courier,monospace; }
   body { font-family: var(--f); background: #fff; color: var(--ink); display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
   .panel { border-right: 1px solid var(--border); padding: 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; }
   .lab-title { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
-  .lab-title small { display:block; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; }
+  .lab-title small { display:block; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; text-transform:none; }
   .group { display: flex; flex-direction: column; gap: 6px; }
   .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); }
-  .row { display:flex; align-items:center; gap:6px; }
   input[type=range] { width: 100%; accent-color: var(--ink); cursor: pointer; }
-  input[type=number], select { font-family: var(--f); font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 2px; width: 100%; }
-  .val { font-size: 11px; font-weight: 700; min-width: 30px; text-align: right; color: var(--ink3); }
+  input[type=number], input[type=text], select { font-family: var(--f); font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 2px; width: 100%; }
   .hintline { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
   button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
   button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
   button:hover { opacity: 0.78; }
   #seed { text-align:center; letter-spacing:0.06em; }
-  /* justify-content:center centra, pero si el contenido NO cabe reparte el
-     desbordamiento a los dos lados y la parte de arriba queda fuera de alcance:
-     el scroll no llega. `safe center` centra solo mientras quepa y, cuando no,
-     se comporta como flex-start. Se deja el center suelto de reserva para
-     navegadores que no entiendan la palabra clave. Se nota con la hoja de
-     contactos en vertical, que es más alta que la pantalla. */
+  /* Ver la nota del template: `safe center` centra solo mientras quepa, y si no
+     se comporta como flex-start — con center suelto el scroll no llega arriba. */
   .stage { display: flex; flex-direction: column; align-items: safe center; justify-content: center; justify-content: safe center; gap: 10px; padding: 1.5rem; background: var(--surface); overflow: auto; }
   #single { max-width: min(100%, calc((100vh - 120px) * 1.414)); max-height: calc(100vh - 120px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
-  .sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 980px; }
+  .sheet { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 1040px; }
   .sheet canvas { width: 100%; outline: 1px solid rgba(0,0,0,0.1); cursor: pointer; display:block; }
   .sheet figcaption { padding: 3px 2px; font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
   .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; }
@@ -40,11 +34,12 @@
   .traits .v { font-weight: 700; }
   .dots { display:inline-flex; gap:2px; vertical-align:middle; margin-right:5px; }
   .dot { width:8px; height:8px; border-radius:50%; display:inline-block; border:0.5px solid rgba(0,0,0,0.1); }
+  .score { font-size:11px; letter-spacing:0.14em; color:var(--ink); word-break:break-all; }
 </style>
 </head>
 <body>
   <aside class="panel">
-    <div class="lab-title">hoks · lab<small>aquí se genera y aquí se elige</small></div>
+    <div class="lab-title">hoks · lab<small>fila de círculos, paso constante</small></div>
     <div class="group">
       <span class="lbl">Work</span>
       <div id="workPicker"></div>
@@ -82,11 +77,11 @@
         <option value="solid">Solid</option>
         <option value="gradient">Gradient</option>
       </select>
-      <span class="hintline">transversal: es lo que separaba a KRT de KRTG</span>
+      <span class="hintline">la obra nació con mesh, así que en auto tira a degradado</span>
       <div id="bgAuto">
         <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
           · plano <span id="bgPS">—</span></span>
-        <input type="range" id="bgP" min="0" max="100" step="5" value="30">
+        <input type="range" id="bgP" min="0" max="100" step="5" value="70">
         <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre</span>
       </div>
     </div>
@@ -99,9 +94,55 @@
       <span class="hintline">o lo hay o no lo hay: media dosis de grano no es una decisión</span>
     </div>
     <div class="group">
-      <span class="lbl">Count · <span id="countV">auto</span></span>
-      <input type="range" id="count" min="0" max="60" step="1" value="0">
-      <span class="hintline">0 = aleatorio</span>
+      <span class="lbl">Slots (n) · <span id="slotsV">auto</span></span>
+      <input type="range" id="slots" min="0" max="48" step="1" value="0">
+      <span class="hintline">0 = aleatorio · el rango lo fija el formato: <span id="nRange">—</span></span>
+    </div>
+    <div class="group">
+      <span class="lbl">Diameter (×lado corto) · <span id="diaV">auto</span></span>
+      <input type="range" id="dia" min="0" max="1" step="0.01" value="0">
+      <span class="hintline">0 = aleatorio 0.46–0.68 · la proporción elegida es 0.57</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Mode</span>
+      <select id="mode">
+        <option value="">Aleatorio (por peso)</option>
+        <option value="Stack">Stack · el que llega tapa</option>
+        <option value="Xor">Xor · even-odd, cancela</option>
+        <option value="Ring">Ring · solo contorno</option>
+      </select>
+    </div>
+    <div class="group">
+      <span class="lbl">Rhythm</span>
+      <select id="rhythm">
+        <option value="">Aleatorio (por peso)</option>
+        <option value="Cadence">Cadence · rachas compuestas</option>
+        <option value="Scatter">Scatter · moneda por slot</option>
+      </select>
+      <span class="score" id="scoreLine">—</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Run max · <span id="runV">auto</span></span>
+      <input type="range" id="run" min="0" max="6" step="1" value="0">
+      <span class="hintline">solo Cadence · largo máximo de racha</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Threshold · <span id="thrV">0.68</span></span>
+      <input type="range" id="thr" min="0" max="1" step="0.02" value="0.68">
+      <span class="hintline">solo Scatter · probabilidad de que un slot exista</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Alpha · <span id="alphaV">auto</span></span>
+      <input type="range" id="alpha" min="0" max="1" step="0.05" value="0">
+      <span class="hintline">0 = aleatorio · &lt;1 mezcla en vez de tapar</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Blend</span>
+      <select id="blend">
+        <option value="">Aleatorio (por peso)</option>
+        <option value="source-over">Normal</option>
+        <option value="multiply">Multiply</option>
+      </select>
     </div>
     <div class="group">
       <span class="lbl">Batch</span>
@@ -120,7 +161,7 @@
   </aside>
 
   <main class="stage">
-    <canvas id="single" width="1000" height="1000"></canvas>
+    <canvas id="single" width="1414" height="1000"></canvas>
     <div class="sheet" id="sheetGrid" style="display:none"></div>
     <span class="hint" id="status">—</span>
   </main>
@@ -133,10 +174,12 @@
 <script src="../_engine.js"></script>
 <script src="./algo.js"></script>
 <script>
-const WORK = HOKS.TEMPLATE;        // ← cámbialo al namespace de tu obra
+const WORK = HOKS.LRRG;
 const BASE = 1000, SHEET_BASE = 300;   // lado corto: hoja y hoja de contactos
 const SHEET_N = 12;
-let FORMAT = 'square';
+// La obra es una fila: nace en horizontal. En cuadrado existe igual, pero el
+// recorrido es corto y solo caben dos o tres círculos muy solapados.
+let FORMAT = 'horizontal';
 let ROT = false;              // girar la VISTA, no la obra
 let lastPalName = '', lastPalColors = [];   // la paleta del último render, para la cartela
 let W, H, SHEET_W, SHEET_H;
@@ -155,12 +198,27 @@ let seed = HOKSLAB.initialSeed();
 let sheetMode = false;
 const $ = id => document.getElementById(id);
 
-function params() { return { field: $('field').value, bg: $('bg').value, grainScale: parseFloat($('grain').value), count: parseInt($('count').value, 10) || 0 }; }
+function params() {
+  return {
+    field:      $('field').value,
+    bg:         $('bg').value,
+    bgProbs:  { gradient: parseInt($('bgP').value, 10) },
+    grainScale: parseFloat($('grain').value),
+    slots:      parseInt($('slots').value, 10) || 0,
+    diameter:   parseFloat($('dia').value) || 0,
+    mode:       $('mode').value || null,
+    rhythm:     $('rhythm').value || null,
+    runMax:     parseInt($('run').value, 10) || 0,
+    alpha:      parseFloat($('alpha').value) || 0,
+    blend:      $('blend').value || null,
+    threshold:  parseFloat($('thr').value),
+  };
+}
 let palPicker = null;
 function palOpts() { return palPicker ? palPicker.opts() : { palettes: PALETTES }; }
 
 let batch = null;
-const SLUG = '_template';
+const SLUG = 'lrrg';
 // La receta ES la pieza: seed + params + paleta + FORMATO (la proporción cambia
 // la composición, no solo el recorte). El nombre de la paleta se resuelve con un
 // render de 8px —el stream del RNG no depende del tamaño— para detectar deriva.
@@ -192,7 +250,9 @@ function renderSingle() {
     // La cartela necesita la paleta que SALIÓ, no la que pidiera la receta.
     lastPalName = res && res.pal ? res.pal.name : '';
     lastPalColors = res && res.pal ? res.pal.colors : [];
-    $('status').textContent = `seed #${seed}`;
+    $('nRange').textContent = res.nMin + '–' + res.nMax;
+    $('scoreLine').textContent = res.present.map(p => p ? '■' : '·').join('');
+    $('status').textContent = `seed #${seed} · ${res.n} slots · ×${res.ratio.toFixed(2)} · ${res.mode}`;
     drawTraits(WORK.traits(res));
   } catch (e) { $('status').textContent = '⚠ ' + e.message; console.error(e); }
 }
@@ -214,8 +274,7 @@ function renderSheet() {
     fig.style.position = 'relative';
     fig.appendChild(c); fig.appendChild(cap);
     c.addEventListener('click', () => { seed = s; setSheet(false); });
-    // Apartar es un gesto de aquí, y el gesto lo pone el panel de lotes: el "+"
-    // para la mano rápida, el botón derecho para elegir a qué lote va.
+    // Apartar es un gesto de aquí, y el gesto lo pone el panel de lotes.
     if (batch) batch.attach(fig, s);
     grid.appendChild(fig);
   }
@@ -224,8 +283,6 @@ function renderSheet() {
 // seed, y el lote entero — que es lo que de verdad se publica.
 let VIEW = 'single';                 // 'single' | 'sheet' | 'batch'
 function setView(v) {
-  // Sin lote no hay nada que enseñar, y cambiar de vista solo escondería la
-  // pieza para dejar un hueco gris. Se queda donde está y lo dice.
   if (v === 'batch' && !(batch && batch.open)) {
     $('status').textContent = 'No hay lote abierto — elige uno o crea otro con + en el panel';
     return;
@@ -249,9 +306,16 @@ function populateSelect() {
 
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
-$('count').oninput = () => { $('countV').textContent = $('count').value === '0' ? 'auto' : $('count').value; refresh(); };
 $('rot').onclick = () => { ROT = !ROT; applyFormat(); refresh(); };   // la etiqueta la pone formatControls
 $('field').onchange = refresh;
+$('mode').onchange = refresh;
+$('rhythm').onchange = refresh;
+$('blend').onchange = refresh;
+$('slots').oninput = () => { $('slotsV').textContent = $('slots').value === '0' ? 'auto' : $('slots').value; refresh(); };
+$('dia').oninput   = () => { $('diaV').textContent = parseFloat($('dia').value) === 0 ? 'auto' : parseFloat($('dia').value).toFixed(2); refresh(); };
+$('run').oninput   = () => { $('runV').textContent = $('run').value === '0' ? 'auto' : $('run').value; refresh(); };
+$('thr').oninput   = () => { $('thrV').textContent = parseFloat($('thr').value).toFixed(2); refresh(); };
+$('alpha').oninput = () => { $('alphaV').textContent = parseFloat($('alpha').value) === 0 ? 'auto' : parseFloat($('alpha').value).toFixed(2); refresh(); };
 $('bg').onchange = () => { syncBgAuto(); refresh(); };
 // El % de degradado solo manda cuando el fondo va en 'auto': si lo fuerzas a
 // plano o a degradado, el peso sobra y se esconde en vez de mentir.
@@ -267,9 +331,6 @@ syncBgAuto();
 $('grain').onchange = refresh;
 $('cartela').onclick = () => {
   if (VIEW !== 'single') setView('single');
-  // La cartela sale de la MISMA receta que la pieza: si no coincidiera con lo
-  // que cuelga en la pared, no serviría para nada. El pliego lo dice el panel
-  // del lote, que es donde se elige el papel.
   $('status').textContent = 'cartela A5…';
   HOKSCARTELA.download({
     work: SLUG, seed: seed >>> 0, format: FORMAT, field: $('field').value,
@@ -281,7 +342,7 @@ $('cartela').onclick = () => {
 };
 $('sheet').onclick = () => setView(VIEW === 'sheet' ? 'single' : 'sheet');
 $('batchView').onclick = () => setView(VIEW === 'batch' ? 'single' : 'batch');
-$('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `template_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
+$('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `lrrg_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
 
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -313,7 +374,7 @@ HOKSLAB.mountWallLink($('wallLink'), () => ({
   work: SLUG, seed: seed >>> 0, format: FORMAT, params: params(),
   palSel: palPicker ? palPicker.selection : 'auto',
 }));
-HOKSLAB.mountWorkPicker($('workPicker'), '_template', () => seed);
+HOKSLAB.mountWorkPicker($('workPicker'), SLUG, () => seed);
 batch = HOKSBATCH.mount($('batchPanel'), {
   work: SLUG, getRecipe: recipeFor, getPalettes: () => PALETTES, getSeed: () => seed,
   toast: m => { $('status').textContent = m; },
