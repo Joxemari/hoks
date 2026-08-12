@@ -148,7 +148,7 @@ const BASE = 600, SHEET_BASE = 300;   // lado corto: hoja y hoja de contactos
 const SHEET_N = 12;
 let FORMAT = 'square';
 let ROT = false;              // girar la VISTA, no la obra
-let lastPalName = '';         // la paleta del último render, para la cartela
+let lastPalName = '', lastPalColors = [];   // la paleta del último render, para la cartela
 let W, H, SHEET_W, SHEET_H;
 function applyFormat() {
   const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
@@ -207,7 +207,9 @@ function renderSingle() {
   $('seed').value = seed;
   try {
     const res = paint(sctx, single.width, single.height, seed >>> 0, { ...palOpts(), params: params() });
-    lastPalName = res && res.pal ? res.pal.name : '';   // la cartela necesita la paleta que SALIÓ
+    // La cartela necesita la paleta que SALIÓ, no la que pidiera la receta.
+    lastPalName = res && res.pal ? res.pal.name : '';
+    lastPalColors = res && res.pal ? res.pal.colors : [];
     $('status').textContent = `seed #${seed}`;
     drawTraits(WORK.traits(res));
   } catch (e) { $('status').textContent = '⚠ ' + e.message; console.error(e); }
@@ -287,13 +289,16 @@ syncBgAuto();
 
 $('grain').onchange = refresh;
 $('cartela').onclick = () => {
+  if (VIEW !== 'single') setView('single');
   // La cartela sale de la MISMA receta que la pieza: si no coincidiera con lo
   // que cuelga en la pared, no serviría para nada. El pliego lo dice el panel
   // del lote, que es donde se elige el papel.
   $('status').textContent = 'cartela A5…';
   HOKSCARTELA.download({
     work: SLUG, seed: seed >>> 0, format: FORMAT, field: $('field').value,
-    sheet: (batch && batch.sheet) ? batch.sheet() : HOKS.DEFAULT_SHEET, palette: lastPalName || '—', year: new Date().getFullYear(),
+    sheet: (batch && batch.sheet) ? batch.sheet() : HOKS.DEFAULT_SHEET,
+    palette: lastPalName || '—', palColors: lastPalColors, thumb: single,
+    year: new Date().getFullYear(),
   }).then(() => { $('status').textContent = 'cartela A5 · 148×210 mm · 300 dpi'; })
     .catch(e => { $('status').textContent = '⚠ ' + e.message; });
 };
