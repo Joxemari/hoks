@@ -131,6 +131,9 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       `<div class="hb-row"><select id="hb-res">` +
       global.HOKS.SHEET_IDS.map(id => `<option value="${id}"${id === global.HOKS.DEFAULT_SHEET ? ' selected' : ''}>${id} · 300 dpi</option>`).join('') +
       `</select><button class="hb-btn" id="hb-dl">↓ PNG</button>` +
+      // La obra y su cartela se imprimen juntas, así que se descargan juntas y
+      // al mismo pliego: el selector de arriba manda sobre las dos.
+      `<button class="hb-btn" id="hb-cart" title="Una cartela A5 por pieza">↓ A5</button>` +
       `<button class="hb-btn" id="hb-pub" title="Publicar a la galería">▲</button></div>` +
       `<span class="hb-note" id="hb-note"></span>`;
 
@@ -157,8 +160,8 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       const b = openBatch(), strip = $('hb-strip');
       $('hb-add').disabled = !b;
       $('hb-add').title = b ? 'Añade la pieza en pantalla al lote «' + b.name + '»' : 'Elige o crea un lote primero';
-      if (!b) { strip.innerHTML = '<span class="hb-empty">sin lote abierto</span>'; $('hb-dl').disabled = $('hb-pub').disabled = true; return; }
-      $('hb-dl').disabled = $('hb-pub').disabled = !b.items.length;
+      if (!b) { strip.innerHTML = '<span class="hb-empty">sin lote abierto</span>'; $('hb-dl').disabled = $('hb-cart').disabled = $('hb-pub').disabled = true; return; }
+      $('hb-dl').disabled = $('hb-cart').disabled = $('hb-pub').disabled = !b.items.length;
       if (!b.items.length) { strip.innerHTML = '<span class="hb-empty">vacío · pulsa <b>a</b> o el + de la hoja de contactos</span>'; return; }
       strip.innerHTML = '';
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
@@ -220,6 +223,36 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
         } catch (e) { note('⚠ ' + e.message); }
         if (i === b.items.length - 1) note('');
       }, i * 400));
+    }
+
+    // Las cartelas del lote. Una obra sin su hoja no está lista para colgar, y
+    // hacerlas de una en una desde la vista única es contar las piezas dos
+    // veces. La miniatura se pinta aquí desde la misma receta, y la paleta es la
+    // que SALIÓ en ese render — si hubo deriva, manda el píxel, igual que al
+    // publicar.
+    async function downloadCartelas() {
+      const b = openBatch(); if (!b || !b.items.length) return;
+      const sheet = $('hb-res').value;
+      const palettes = opts.getPalettes ? opts.getPalettes() : [];
+      note(`generando ${b.items.length} cartela(s) A5…`);
+      for (let i = 0; i < b.items.length; i++) {
+        const it = b.items[i];
+        try {
+          const d = dimsFor(it, 420);
+          const thumb = document.createElement('canvas'); thumb.width = d.W; thumb.height = d.H;
+          const res = renderRecipe(thumb.getContext('2d'), d.W, d.H, it, palettes);
+          await global.HOKSCARTELA.download({
+            work: it.work, seed: it.seed >>> 0,
+            format: it.format || 'square', field: (it.params && it.params.field) || 'sheet',
+            sheet, palette: (res && res.pal && res.pal.name) || it.palName || '—',
+            palColors: (res && res.pal && res.pal.colors) || [],
+            thumb, year: new Date().getFullYear(),
+          });
+          thumb.width = thumb.height = 0;
+        } catch (e) { note('⚠ ' + e.message); return; }
+      }
+      note('');
+      toast(`${b.items.length} cartela(s) A5 · 148×210 mm · 300 dpi`);
     }
 
     // Publicar: el lote es la curaduría, así que la galería pública se alimenta
@@ -293,7 +326,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
         fig.appendChild(c); fig.appendChild(cap); fig.appendChild(x);
         host.appendChild(fig);
       });
-      return `${b.name} · ${b.items.length} pieza(s) · el pliego y la descarga, en el panel`;
+      return `${b.name} · ${b.items.length} pieza(s) · el pliego, la descarga y las cartelas, en el panel`;
     }
 
     $('hb-pub').onclick = publish;
@@ -305,6 +338,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     };
     $('hb-new').onclick = create;
     $('hb-dl').onclick = download;
+    $('hb-cart').onclick = downloadCartelas;
     $('hb-add').onclick = () => {
       if (!opts.getSeed) { toast('El harness no expone la seed actual'); return; }
       if (add(opts.getSeed())) { $('hb-add').textContent = '✓ En el lote';

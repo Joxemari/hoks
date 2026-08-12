@@ -5,9 +5,17 @@
  * El código NO va en la web: su sitio es aquí, junto a la obra, donde sirve a
  * quien la tiene colgada para contar de dónde sale.
  *
- * El fragmento se lee del algo.js REAL, de entre las marcas ⟨gramatika⟩, y la
- * frase de las marcas ⟨esaldia:xx⟩ que viven pegadas a ese mismo código. No hay
- * copia que mantener: si cambia la regla, cambia la cartela.
+ * Dos textos, dos sitios, y a propósito:
+ *
+ *   El FRAGMENTO se lee del algo.js REAL, de entre las marcas ⟨gramatika⟩. No
+ *   se edita desde ningún panel porque no es texto: es la obra. Si cambia la
+ *   regla, cambia la cartela, y no hay copia que se quede vieja.
+ *
+ *   La FRASE es escritura, y la escritura se corrige mil veces. Vive en
+ *   data/works.json (campo `cartela`, una lengua por clave, un renglón por
+ *   línea) y se edita desde admin.html sin tocar código. Si una familia no la
+ *   tiene, se cae a las marcas ⟨esaldia:xx⟩ del propio algo.js, que es de donde
+ *   salieron: así ninguna cartela se queda muda.
  *
  *   HOKSCARTELA.download({ work, seed, format, sheet, palette, year, lang })
  *   HOKSCARTELA.render(ctx, W, H, info)   → dibuja en cualquier lienzo
@@ -24,6 +32,8 @@
   const GUTTER_MM = 7;              // aire entre el texto y la miniatura
   const MONO = `'Courier New', Courier, monospace`;
 
+  const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
+
   // ── Fuente del fragmento ────────────────────────────────────────────────────
   const cache = {};
   function loadSource(slug, base) {
@@ -32,6 +42,24 @@
       .then(r => r.ok ? r.text() : '')
       .then(src => (cache[slug] = parse(src)))
       .catch(() => ({ said: {}, code: [] }));
+  }
+
+  // ── La frase, escrita desde el panel ────────────────────────────────────────
+  // works.json en vivo, no por ruta relativa: corregir una frase en admin tiene
+  // que verse en la siguiente cartela, sin esperar al redespliegue de Pages.
+  let worksP = null;
+  function loadWorks() {
+    if (!worksP) worksP = fetch(RAW + 'works.json?t=' + Date.now())
+      .then(r => r.ok ? r.json() : []).catch(() => []);
+    return worksP;
+  }
+  function saidFor(works, slug, lang, fallback) {
+    const w = (works || []).find(v => v.slug === slug) || {};
+    const c = w.cartela || {};
+    const txt = c[lang] || c.en || c.eu || '';
+    const lines = String(txt).split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length) return lines;
+    return (fallback[lang] && fallback[lang].length) ? fallback[lang] : (fallback.en || []);
   }
 
   function dedent(block) {
@@ -207,24 +235,31 @@
     return { W: Math.round(A5[0] / MM * (dpi || 300)), H: Math.round(A5[1] / MM * (dpi || 300)) };
   }
 
-  function download(info) {
+  // Pinta la cartela a tamaño de impresión y devuelve el lienzo. Separado de
+  // download() porque el lote necesita muchas seguidas y no una descarga cada
+  // vez.
+  function sheetFor(info) {
     const lang = info.lang || (global.HOKSI18N && global.HOKSI18N.lang) || 'eu';
-    return loadSource(info.work, info.base).then(src => {
+    return Promise.all([loadSource(info.work, info.base), loadWorks()]).then(([src, works]) => {
       const d = dims(info.dpi);
       const c = document.createElement('canvas'); c.width = d.W; c.height = d.H;
       render(c.getContext('2d'), d.W, d.H, {
         ...info,
-        said: (src.said[lang] && src.said[lang].length) ? src.said[lang] : (src.said.en || []),
+        said: saidFor(works, info.work, lang, src.said),
         code: src.code,
       });
-      return new Promise(res => c.toBlob(b => {
-        const url = URL.createObjectURL(b), a = document.createElement('a');
-        a.download = `cartela_${info.work}_${info.seed}.png`; a.href = url; a.click();
-        setTimeout(() => { URL.revokeObjectURL(url); c.width = c.height = 0; }, 4000);
-        res(d);
-      }, 'image/png'));
+      return c;
     });
   }
 
-  global.HOKSCARTELA = { render, download, dims, loadSource, A5 };
+  function download(info) {
+    return sheetFor(info).then(c => new Promise(res => c.toBlob(b => {
+      const url = URL.createObjectURL(b), a = document.createElement('a');
+      a.download = `cartela_${info.work}_${info.seed}.png`; a.href = url; a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); c.width = c.height = 0; }, 4000);
+      res({ W: c.width, H: c.height });
+    }, 'image/png')));
+  }
+
+  global.HOKSCARTELA = { render, download, sheetFor, dims, loadSource, A5 };
 })(typeof window !== 'undefined' ? window : globalThis);

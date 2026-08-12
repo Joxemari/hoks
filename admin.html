@@ -477,7 +477,17 @@ function renderWorks() {
           <button onclick="saveWorkDesc(${i})" class="btn-preview">Save</button>
         </div>
         <textarea id="desc-${i}" class="code-editor" style="min-height:52px;background:var(--surface);color:var(--ink);border-color:var(--border);" placeholder="Describe this work...">${esc(w.description||'')}</textarea>
-
+${GRADUATED.includes(w.slug)?`
+        <div style="font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.1em;margin:14px 0 6px;display:flex;justify-content:space-between;align-items:center;">
+          <span>Wall label &middot; the rule, said</span>
+          <button onclick="saveWorkCartela(${i})" class="btn-preview">Save</button>
+        </div>
+        <div style="font-size:9px;color:var(--ink3);line-height:1.7;margin-bottom:8px;">One line per line of the label. The code fragment is not edited here &mdash; it is read from <code>sketches/${esc(w.slug)}/algo.js</code>. Leave a language empty to fall back to the sentence written next to the code.</div>
+        ${['eu','es','en'].map(lg=>`
+        <div style="margin-bottom:6px;">
+          <div style="font-size:9px;color:var(--ink3);letter-spacing:0.1em;margin-bottom:3px;">${lg.toUpperCase()}</div>
+          <textarea id="cart-${lg}-${i}" class="code-editor" style="min-height:44px;background:var(--surface);color:var(--ink);border-color:var(--border);" placeholder="—">${esc((w.cartela&&w.cartela[lg])||'')}</textarea>
+        </div>`).join('')}`:''}
       </div>
     </div>`).join('');
 }
@@ -498,6 +508,20 @@ async function saveWorkDesc(i) {
   works[i].description = $('desc-'+i).value.trim();
   await saveWorks();
   toast('Description saved');
+}
+// El texto de la cartela: escritura, y la escritura se corrige. Por eso vive
+// aquí y no en el algo.js. El fragmento de código NO: ese es la obra.
+// Una lengua vacía se borra en vez de guardarse en blanco — así la cartela cae
+// a la frase que vive pegada al código en vez de salir muda.
+async function saveWorkCartela(i) {
+  const c = {};
+  for (const lg of ['eu','es','en']) {
+    const v = $('cart-'+lg+'-'+i).value.trim();
+    if (v) c[lg] = v;
+  }
+  if (Object.keys(c).length) works[i].cartela = c; else delete works[i].cartela;
+  await saveWorks();
+  toast('Wall label saved');
 }
 function openAddWorkModal() {
   const name = prompt('Family name (e.g. BZRSG):'); if (!name) return;
