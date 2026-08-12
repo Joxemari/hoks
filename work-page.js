@@ -37,20 +37,6 @@
 .wk-piece { border: 1px solid #e8e8e8; cursor: zoom-in; background: #fff; }
 .wk-piece img { width: 100%; display: block; }
 .wk-piece figcaption { font-size: 9px; color: #bbb; letter-spacing: 0.06em; padding: 5px 7px; }
-.wk-gram { margin: 0 0 4rem; }
-.wk-gram { position: relative; }
-.wk-gram pre { font-family: inherit; font-size: 10px; line-height: 1.85; color: #555;
-  background: #fafafa; border-left: 1px solid #e8e8e8; padding: 1.1rem 1.3rem;
-  overflow-x: auto; max-width: 78ch; white-space: pre;
-  /* el texto se va por la derecha: se desvanece, para que el corte se lea como
-     decisión y no como un renglón truncado por accidente */
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3.5rem), transparent);
-          mask-image: linear-gradient(to right, #000 calc(100% - 3.5rem), transparent); }
-.wk-gram .cut { color: #ccc; letter-spacing: 0.4em; display: block; padding: 0.6rem 0; }
-.wk-gram-said { font-size: 12px; line-height: 2.1; color: #111; max-width: 58ch;
-  white-space: pre-line; margin-bottom: 1.4rem; }
-.wk-gram-note { font-size: 9px; color: #bbb; letter-spacing: 0.06em; line-height: 1.9;
-  max-width: 62ch; margin-top: 0.7rem; }
 .wk-empty { font-size: 10px; color: #bbb; letter-spacing: 0.06em; }
 .wk-lb { position: fixed; inset: 0; background: rgba(255,255,255,0.97); display: none;
   align-items: center; justify-content: center; flex-direction: column; gap: 1rem; z-index: 200; cursor: zoom-out; }
@@ -78,24 +64,6 @@
   }
   function t(key, fallback) {
     try { const s = global.HOKSI18N.t(key); return s === key ? fallback : s; } catch (e) { return fallback; }
-  }
-
-  // El fragmento vive dentro de dos funciones: sin quitar la sangría común se
-  // leería como un margen que no significa nada.
-  // El fuente está comentado en castellano y la web es eu/en: los comentarios
-  // se caen. Además la FRASE ya dice lo que decían — enseñar las dos cosas sería
-  // decirlo dos veces, y una de ellas en el idioma equivocado.
-  function stripComments(block) {
-    return block.split('\n')
-      .map(l => l.replace(/\s*\/\/(?=(?:[^'"`]*['"`][^'"`]*['"`])*[^'"`]*$).*$/, ''))
-      .filter(l => l.trim())
-      .join('\n');
-  }
-
-  function dedent(block) {
-    const lines = block.replace(/\t/g, '  ').split('\n');
-    const pad = lines.filter(l => l.trim()).reduce((m, l) => Math.min(m, l.match(/^ */)[0].length), 99);
-    return lines.map(l => l.slice(pad)).join('\n');
   }
 
   function init(slug) {
@@ -127,51 +95,6 @@
     const foot = document.querySelector('footer');
     if (foot) document.body.insertBefore(root, foot); else document.body.appendChild(root);
 
-
-    // ── Gramática: el código que decide la forma ──────────────────────────────
-    // Se extrae del algo.js REAL, de entre las marcas ⟨gramatika⟩: así lo que se
-    // lee es literalmente el código que hizo la pieza y no puede quedarse viejo
-    // cuando el algoritmo cambie. Lo que hay fuera de las marcas no sale — el
-    // corte se señala, no se disimula: es una obra, no un tutorial.
-    const gram = el('div', 'wk-gram');
-    const gramSec = el('div', 'wk-sec', esc(t('label.grammar', 'Grammar')));
-    const gramPre = el('pre');
-    const gramNote = el('p', 'wk-gram-note', esc(t('grammar.note', 'The fragment that decides the form.')));
-    gram.appendChild(gramSec); gram.appendChild(gramPre); gram.appendChild(gramNote);
-
-    fetch('sketches/' + slug + '/algo.js')
-      .then(r => r.ok ? r.text() : '')
-      .then(src => {
-        // Cada fragmento puede traer su FRASE: la versión conceptual, escrita en
-        // comentarios justo encima del código que describe. Viven en el mismo
-        // archivo a propósito — no se puede cambiar la regla sin tener la frase
-        // delante, que es la única sincronización que aguanta.
-        const lang = (global.HOKSI18N && global.HOKSI18N.lang) || 'eu';
-        const re = /((?:[^\n]*⟨esaldia:[a-z]{2}⟩[^\n]*\n)*)[^\n]*⟨gramatika⟩\n([\s\S]*?)\n[^\n]*⟨\/gramatika⟩/g;
-        const parts = [];
-        let m;
-        while ((m = re.exec(src))) {
-          const said = [];
-          const rl = /⟨esaldia:([a-z]{2})⟩\s*([^\n]*)/g;
-          let g;
-          while ((g = rl.exec(m[1]))) said.push({ lang: g[1], text: g[2].trim() });
-          const pick = said.filter(x => x.lang === lang);
-          parts.push({ said: (pick.length ? pick : said.filter(x => x.lang === 'en')).map(x => x.text),
-                       code: dedent(stripComments(m[2])) });
-        }
-        if (!parts.length) return;
-        gramPre.innerHTML = parts.map(p => esc(p.code)).join('<span class="cut">…</span>');
-        // La frase va primero y en tinta; el código, debajo y en voz baja. Quien
-        // quiera la verdad la tiene; quien mire, lee la regla.
-        const saidAll = parts.flatMap(p => p.said);
-        if (saidAll.length) {
-          const said = el('p', 'wk-gram-said');
-          said.textContent = saidAll.join('\n');
-          gram.insertBefore(said, gramPre);
-        }
-        root.insertBefore(gram, sec);
-      })
-      .catch(() => {});
 
     const lb = el('div', 'wk-lb');
     const lbImg = el('img'); const lbCap = el('span', 'wk-lb-cap');

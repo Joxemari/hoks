@@ -122,6 +122,7 @@
     </div>
     <div class="group">
       <button id="save">↓ Save PNG (s)</button>
+      <button class="ghost" id="cartela">↓ Cartela A5 (c)</button>
       <button class="ghost" id="sheet">▦ Hoja de contactos (g)</button>
       <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
     </div>
@@ -138,6 +139,7 @@
 <script src="../../usage.js"></script>
 <script src="../_lab.js"></script>
 <script src="../_batch.js"></script>
+<script src="../_cartela.js"></script>
 <script src="../_engine.js"></script>
 <script src="./algo.js"></script>
 <script>
@@ -146,6 +148,7 @@ const BASE = 600, SHEET_BASE = 300;   // lado corto: hoja y hoja de contactos
 const SHEET_N = 12;
 let FORMAT = 'square';
 let ROT = false;              // girar la VISTA, no la obra
+let lastPalName = '';         // la paleta del último render, para la cartela
 let W, H, SHEET_W, SHEET_H;
 function applyFormat() {
   const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
@@ -203,6 +206,7 @@ function renderSingle() {
   $('seed').value = seed;
   try {
     const res = paint(sctx, single.width, single.height, seed >>> 0, { ...palOpts(), params: params() });
+    lastPalName = res && res.pal ? res.pal.name : '';   // la cartela necesita la paleta que SALIÓ
     $('status').textContent = `seed #${seed}`;
     drawTraits(WORK.traits(res));
     drawRoles(res.roles);
@@ -287,6 +291,17 @@ $('bgP').oninput = () => { syncBgAuto(); refresh(); };
 syncBgAuto();
 
 $('grain').onchange = refresh;
+$('cartela').onclick = () => {
+  // La cartela sale de la MISMA receta que la pieza: si no coincidiera con lo
+  // que cuelga en la pared, no serviría para nada. El pliego lo dice el panel
+  // del lote, que es donde se elige el papel.
+  $('status').textContent = 'cartela A5…';
+  HOKSCARTELA.download({
+    work: SLUG, seed: seed >>> 0, format: FORMAT, field: $('field').value,
+    sheet: (batch && batch.sheet) ? batch.sheet() : HOKS.DEFAULT_SHEET, palette: lastPalName || '—', year: new Date().getFullYear(),
+  }).then(() => { $('status').textContent = 'cartela A5 · 148×210 mm · 300 dpi'; })
+    .catch(e => { $('status').textContent = '⚠ ' + e.message; });
+};
 $('sheet').onclick = () => setView(VIEW === 'sheet' ? 'single' : 'sheet');
 $('batchView').onclick = () => setView(VIEW === 'batch' ? 'single' : 'batch');
 $('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `dtkrt_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
@@ -296,6 +311,7 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); }
   else if (e.key === 'ArrowRight') { seed = (seed + 1) >>> 0; refresh(); }
   else if (e.key === 'ArrowLeft') { seed = (seed - 1) >>> 0; refresh(); }
+  else if (e.key === 'c' || e.key === 'C') $('cartela').click();
   else if (e.key === 'r' || e.key === 'R') $('rot').click();
   else if (e.key === 's' || e.key === 'S') $('save').click();
   else if (e.key === 'g' || e.key === 'G') setView(VIEW === 'sheet' ? 'single' : 'sheet');

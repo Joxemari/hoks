@@ -317,7 +317,10 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     render();
     pull().then(d => { batches = d; render(); });
 
-    return { add, refresh: render, renderFull, get open() { return openBatch(); } };
+    // El pliego se elige una sola vez y aquí: la descarga de la obra y la de su
+    // cartela tienen que hablar del mismo papel.
+    return { add, refresh: render, renderFull, sheet: () => $('hb-res').value,
+             get open() { return openBatch(); } };
   }
 
   global.HOKSBATCH = { mount, renderRecipe };
