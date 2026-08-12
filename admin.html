@@ -337,8 +337,10 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
         <div style="font-size:11px;color:var(--ink3);line-height:1.7;">
           El fondo llega siempre al canto: <code>fillRect(0,0,W,H)</code>. Ninguna obra tiene
           margen blanco — 25 obras guardadas, 150 puntos de borde muestreados, cero píxeles
-          blancos. El margen interno (11 % en KRRTK/DTK/DTKRT, ninguno en PLLS) es de los
-          <b>elementos</b>, no del fondo: esa banda es color de paleta, no papel.
+          blancos. El margen interno es de los <b>elementos</b>, no del fondo: esa banda es
+          color de paleta, no papel. Y no es el 11 % — ese es solo el objetivo con el que se
+          elige k. En DIN el margen está cuantizado (8,58 % toda n par; 13,76 / 15,48 / 18,93 /
+          29,29 % las impares) y PLLS no tiene ninguno.
           Nunca el «sin bordes» del driver — escala la imagen y recorta.
         </div>
       </div>

@@ -252,21 +252,57 @@ tr.on td { color: var(--ink); font-weight: 700; }
       colores reales del borde. Tira otra vez y verás que el número de arriba baila y el de
       abajo no se mueve del 0.</p>
 
+    <h2 style="margin-top:0.8rem">Cuánto margen, exactamente</h2>
+    <p>El 11 % de <code>FIELD_MARGIN</code> es el <b>objetivo</b>, no el resultado. Con celda
+      cuadrada y margen igual en los cuatro lados, de <code>S−2m = n·p</code> y
+      <code>L−2m = (n+k)·p</code> sale <code>p = (L−S)/k</code>: el paso lo fija <b>k</b>, que
+      es entero, y el margen es consecuencia. Se elige la k cuyo margen cae más cerca del
+      11 %, pero <b>no se llega nunca</b>. En pliego DIN los valores posibles son estos:</p>
     <div class="tw">
       <table>
-        <thead><tr><th>Familia</th><th>Margen de composición</th><th>De qué está hecho</th></tr></thead>
+        <thead><tr><th>n · celdas lado corto</th><th>k</th><th>Retículo</th><th>Margen real</th></tr></thead>
         <tbody>
-          <tr class="on"><td>PLLS</td><td>0 % — no usa retículo</td><td>—</td></tr>
-          <tr><td>KRRTK</td><td>11 % del lado corto</td><td>Fondo (color de paleta)</td></tr>
-          <tr><td>DTK</td><td>11 % del lado corto</td><td>Fondo (color de paleta)</td></tr>
-          <tr class="on"><td>DTKRT</td><td>11 % del lado corto</td><td>Suelo (color de paleta)</td></tr>
+          <tr><td>1</td><td>1</td><td>1 × 2</td><td>29,29 %</td></tr>
+          <tr><td>2</td><td>1</td><td>2 × 3</td><td>8,58 %</td></tr>
+          <tr><td>3</td><td>2</td><td>3 × 5</td><td>18,93 %</td></tr>
+          <tr><td>4</td><td>2</td><td>4 × 6</td><td>8,58 %</td></tr>
+          <tr><td>5</td><td>3</td><td>5 × 8</td><td>15,48 %</td></tr>
+          <tr><td>6</td><td>3</td><td>6 × 9</td><td>8,58 %</td></tr>
+          <tr><td>7</td><td>4</td><td>7 × 11</td><td>13,76 %</td></tr>
         </tbody>
       </table>
     </div>
+    <p><b>Toda n par da 8,58 %</b> — con k = n/2, el retículo consume exactamente dos veces
+      (L−S) y el margen queda fijado. Las n impares dan los márgenes anchos, que decrecen
+      hacia 8,58 % según crece n. El <b>11 % exacto solo existe con campo cuadrado</b>, donde
+      <code>mg = round(S · 0,11)</code> y el margen sí es el parámetro.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Familia</th><th>n</th><th>Margen real en DIN</th><th>De qué está hecho</th></tr></thead>
+        <tbody>
+          <tr class="on"><td>PLLS</td><td>—</td><td>0 % — no usa retículo</td><td>—</td></tr>
+          <tr><td>KRRTK</td><td>1 ó 2</td><td>29,29 % ó 8,58 %</td><td>Fondo (color de paleta)</td></tr>
+          <tr><td>DTK</td><td>1 … 7</td><td>8,58 % … 29,29 %</td><td>Fondo (color de paleta)</td></tr>
+          <tr class="on"><td>DTKRT</td><td>3 … 7</td><td>8,58 % · 13,76 % · 15,48 % · 18,93 %</td><td>Suelo (color de paleta)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:11px;color:var(--ink3)">Derivado de <code>fieldGrid()</code> en
+      <code>_engine.js</code> y de la n que pasa cada algoritmo
+      (<code>rng.int</code> es inclusivo en los dos extremos). La medida en vivo de arriba lo
+      confirma: DTKRT cae en 8,4 / 9,5 / 13,7 / 20 %, que son esos mismos valores leídos hasta
+      la primera figura.</p>
     <p class="warn"><b>PLLS no tiene margen.</b> No pasa por <code>fieldGrid</code>: su
       límite es <code>reach = maxSize/4 + thick/2</code>, calculado para que la cápsula quepa
-      entera. O sea que una cápsula <b>puede quedar tangente al canto del papel</b> — y eso es
-      un hecho compositivo, no un descuido. Un paspartú que monta 4 mm la cortaría.</p>
+      entera. Es una restricción sobre el <b>centro</b> de la cápsula, no una banda reservada:
+      una cápsula colocada en el extremo queda <b>tangente al canto del papel</b>. Eso es un
+      hecho compositivo, no un descuido. Un paspartú que monta 4 mm la cortaría.</p>
+    <p><b>Y de aquí sale un argumento contra el paspartú que no es de gusto:</b> el aire
+      propio de la obra varía más del doble entre tiradas —de 8,58 % a 29,29 %— porque
+      depende de cuántos campos salgan. Un paspartú de anchura fija pelearía con esa
+      variación en cada pieza. El montaje flotante no: añade el mismo aire a todas sin
+      pretender ser el aire de la obra.</p>
   </section>
 
   <hr>
