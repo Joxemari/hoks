@@ -142,6 +142,7 @@ let ROT = false;              // girar la VISTA, no la obra                 // f
 let W, H, SHEET_W, SHEET_H;
 // El formato es del ALGORITMO, no del lienzo: se le pasan W y H y él se adapta.
 function applyFormat() {
+  ROT = HOKSLAB.formatControls(FORMAT, ROT);   // girar y campo, solo en horizontal
   const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
   const t = HOKS.fmtDims(FORMAT, SHEET_BASE); SHEET_W = t.W; SHEET_H = t.H;
   single.width = ROT ? H : W; single.height = ROT ? W : H;
@@ -248,7 +249,7 @@ function populateSelect() {
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('count').oninput = () => { $('countV').textContent = $('count').value === '0' ? 'auto' : $('count').value; refresh(); };
-$('rot').onclick = () => { ROT = !ROT; $('rot').textContent = ROT ? '⟲ Ver tumbado (r)' : '⟲ Ver de pie (r)'; applyFormat(); refresh(); };
+$('rot').onclick = () => { ROT = !ROT; applyFormat(); refresh(); };   // la etiqueta la pone formatControls
 $('field').onchange = refresh;
 $('bg').onchange = () => { syncBgAuto(); refresh(); };
 // El % de degradado solo manda cuando el fondo va en 'auto': si lo fuerzas a
