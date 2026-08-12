@@ -149,7 +149,15 @@ const DEF = {
   crucesRescate: 3,          // cruces mínimos para aceptar un rescate de familia
   remateMin:    1.0,         // holgura mínima del arranque y el final frente a la huella de un cruce
   segMinRatio:  0.85,        // tramo más corto admisible, × anchura (por debajo la cinta se pliega)
-  volteoMax:    0.34,        // volteos por cruce que se toleran
+  // Se abre a 1,0, es decir, se desactiva. Dos razones, y las dos medidas:
+  // (1) De las cinco obras que el autor aprobó, TRES lo incumplían
+  //     (volteos 1,00, 1,00 y 0,50). El umbral salió de una hipótesis mía
+  //     —que un nudo con muchos volteos deja de alternar y el ojo no lo
+  //     sigue— y su ojo la contradice.
+  // (2) Impedía que el tipo 'trama' existiera: más cruces obligan a más
+  //     volteos, así que la puerta rechazaba justo los tejidos densos y el
+  //     sistema se quedaba siempre con el de dos vueltas.
+  volteoMax:    1.00,        // volteos por cruce que se toleran
   // Baja de 10 a 5. Buscar MÁS estaba seleccionando EN CONTRA de la
   // trama: entre los tejidos que pasan, el desempate prefiere menos
   // volteos, y con más candidatos aparece más fácilmente uno flojo que se
@@ -248,6 +256,41 @@ const FAMILIES = {
 const FAMILY_NAMES = Object.keys(FAMILIES);
 
 // ------------------------------------------------------------
+// EL TIPO
+// Las cinco familias de arriba NO se leen. Medido sobre 60 obras: mismo
+// aspecto (mediana 0,97), mismo centro (0,50 / 0,50), misma dispersión en
+// los dos ejes, y repartidas por igual. Son etiquetas puestas ANTES de
+// dibujar que no corresponden a nada visible — girar cada pasada sobre el
+// centro y ajustar al marco lava la disposición de la familia.
+//
+// Lo que sí se lee es cuánto se anuda la cinta, y se lee porque el
+// material acompaña: más cruces obligan a adelgazar, así que un tejido
+// denso sale además de cinta fina. Suelto ancho, trama fino.
+//
+// El tipo declara el LARGO DEL TRAZO —que es lo que gobierna los cruces:
+// 49 anchuras de recorrido dan 2,6 cruces, 102 dan 6,7— y luego se
+// COMPRUEBA sobre el resultado. Declarar sin comprobar es lo que ya falló
+// con las familias.
+// El tipo declara DOS cosas materiales —cuánto recorrido y de qué grosor—
+// y los cruces salen de ahí. Declarar sólo el recorrido no funcionaba: a
+// tres vueltas en un marco fijo los tramos se acortan respecto a la
+// anchura, el material adelgaza la cinta más de lo que 'conserva'
+// permite, y el tejido se descartaba entero. Una trama no es una cinta
+// ancha que ha adelgazado: es una cinta fina desde el principio.
+const TIPOS = {
+  suelto:  { prob: 0.22, vueltas: 1, trazo: "gordo",    cruces: [0, 1] },
+  anudado: { prob: 0.55, vueltas: 2, trazo: "estandar", cruces: [2, 3] },
+  trama:   { prob: 0.23, vueltas: 3, trazo: "fino",     cruces: [4, 999] }
+};
+const TIPO_NAMES = Object.keys(TIPOS);
+
+function elegirTipo() {
+  let r = random(), acc = 0;
+  for (const k of TIPO_NAMES) { acc += TIPOS[k].prob; if (r < acc) return k; }
+  return "anudado";
+}
+
+// ------------------------------------------------------------
 // GENERAR (todo lo aleatorio ocurre aquí, con seed)
 // ------------------------------------------------------------
 function generate(seed, cfg) {
@@ -262,7 +305,15 @@ function generate(seed, cfg) {
   const colores = pickRoles(pal.colors);
   colores.nombre = pal.name;
   const family = random(FAMILY_NAMES);
-  const pedidas = floor(random(cfg.vueltasMin, cfg.vueltasMax + 1));
+  // El tipo manda sobre las vueltas. Las familias siguen existiendo como
+  // variación dentro del tipo, no como categoría.
+  const tipo = cfg.tipo && TIPOS[cfg.tipo] ? cfg.tipo : elegirTipo();
+  const banda = TIPOS[tipo].cruces;
+  const enBandaDe = (t) => t.nudo.crossings >= banda[0] && t.nudo.crossings <= banda[1];
+  const pedidas = cfg.vueltasFijas ? floor(random(cfg.vueltasMin, cfg.vueltasMax + 1))
+                                   : TIPOS[tipo].vueltas;
+  // El trazo del tipo manda salvo que el laboratorio lo fije a mano.
+  if (!cfg.trazoFijo) cfg = Object.assign({}, cfg, { trazo: TIPOS[tipo].trazo });
 
   // La junta es innegociable: es lo único que distingue un cruce de una
   // costura. Si con las vueltas pedidas la cinta no encuentra sitio
@@ -316,7 +367,7 @@ function generate(seed, cfg) {
   const puntua = (t) => correcto(t) && preferible(t);
 
   for (let k = 0; k <= cfg.reintentos; k++) {
-    for (let v = pedidas; v >= cfg.vueltasMin; v--) {
+    for (let v = pedidas; v >= min(pedidas, cfg.vueltasMin); v--) {
       randomSeed(seed ^ 0xA17E ^ (k * 0x9E3779B1));
       noiseSeed(seed ^ (k * 7));
       const t = tejer(family, v, cfg);
@@ -340,6 +391,7 @@ function generate(seed, cfg) {
       // un pliegue — la cinta dobla sobre sí misma y el codo sale como un
       // pico o una muesca. Ahora se mide y se descarta el tejido.
       t.seg = minSegDe(t.nodes) / max(t.width, 1e-9);
+      t.enBanda = enBandaDe(t);
       t.puertas = puertasQueFalla(t);
 
       if (!intento) { intento = t; vueltas = v; continue; }
@@ -348,11 +400,23 @@ function generate(seed, cfg) {
       const ok = correcto(t), okAntes = correcto(intento);
       const pasa = ok && preferible(t), pasaba = okAntes && preferible(intento);
       let gana;
+      // El orden dice qué manda sobre qué, y está pagado en errores:
+      //   1. CORRECTO — si la obra se puede dibujar bien. No se negocia.
+      //   2. EN BANDA — el tipo declarado. Es lo que hace que 'trama'
+      //      exista: un tejido denso incumple casi siempre 'conserva',
+      //      porque un nudo apretado adelgaza la cinta, y si la
+      //      preferencia va antes que la banda el sistema elige siempre
+      //      el tejido flojo y el tipo no llega a ocurrir nunca.
+      //   3. PREFERIBLE — hipótesis mías sobre qué se ve bien.
       if (ok !== okAntes) gana = ok;
+      else if (ok && t.enBanda !== intento.enBanda) gana = t.enBanda;
       else if (pasa !== pasaba) gana = pasa;
       // entre dos que pasan: el más entrelazado, si se quiere conservar trama
       // entre dos que pasan: menos volteos manda sobre más trama, porque
       // la trama no se lee si el tejido no alterna
+      // Entre dos dibujables manda ESTAR EN LA BANDA del tipo: es lo que
+      // hace que el tipo signifique algo en la obra terminada y no sólo en
+      // la etiqueta.
       else if (pasa) gana = abs(t.volteos - intento.volteos) > 0.05
                           ? t.volteos < intento.volteos
                           : (cfg.densidad && t.ang.cruces > intento.ang.cruces);
@@ -408,9 +472,11 @@ function generate(seed, cfg) {
           t.sep = sepCruces(t.nodes) / max(t.width, 1e-9);
           t.seg = minSegDe(t.nodes) / max(t.width, 1e-9);
           if (!correcto(t) || t.nudo.crossings < cfg.crucesRescate) continue;
+          t.enBanda = enBandaDe(t);
           const mejorQue = !rescate
-            || (preferible(t) && !preferible(rescate.t))
-            || (preferible(t) === preferible(rescate.t)
+            || (t.enBanda && !rescate.t.enBanda)
+            || (t.enBanda === rescate.t.enBanda && preferible(t) && !preferible(rescate.t))
+            || (t.enBanda === rescate.t.enBanda && preferible(t) === preferible(rescate.t)
                 && t.nudo.crossings > rescate.t.nudo.crossings);
           if (mejorQue) rescate = { t, v, F };
         }
@@ -424,7 +490,7 @@ function generate(seed, cfg) {
   const { cuts, order, depth, cruces, plano, crossings } = intento.nudo;
 
 
-  return { seed, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
+  return { seed, tipo, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, width, colores, cfg };
 }
 
 // ------------------------------------------------------------
@@ -1758,6 +1824,7 @@ function seedsDeLote(loteSeed, n) {
 function rasgosDe(comp, med) {
   const p = comp.plano || {};
   return {
+    tipo:      comp.tipo,
     familia:   comp.family,
     paleta:    comp.colores.nombre || "?",
     vueltas:   comp.vueltas,
@@ -1781,7 +1848,7 @@ function rasgosDe(comp, med) {
 
 const RASGOS_NUM = ["vueltas","vertices","cruces","secciones","volteados","juntas",
                     "sep","anchura","gapW","segW","giro","ocupacion","discos"];
-const RASGOS_CAT = ["familia","paleta","trazo","esquinas"];
+const RASGOS_CAT = ["tipo","familia","paleta","trazo","esquinas"];
 
 // ------------------------------------------------------------
 // ALMACÉN
@@ -2177,7 +2244,7 @@ function actualizarInfo() {
       "<br><br>mira la obra.<br>la ficha sale<br>después de votar."); return; }
     ui.info.html(
       "<b>" + (rec.fallo === "si" ? "FUERA" : rec.fallo === "no" ? "VA" : "DUDA") + "</b><br>" +
-      "familia " + rec.rasgos.familia + "<br>" +
+      "<b>" + rec.rasgos.tipo + "</b> · " + rec.rasgos.familia + "<br>" +
       "paleta " + rec.rasgos.paleta + "<br>" +
       "cruces " + rec.rasgos.cruces + " · sep " + nf(rec.rasgos.sep, 1, 2) + "<br>" +
       "secciones " + rec.rasgos.secciones + " · volteos " + rec.rasgos.volteados + "<br>" +
@@ -2188,7 +2255,7 @@ function actualizarInfo() {
 
   ui.info.html(
     "seed " + seed + "<br>" +
-    "familia " + comp.family + "<br>" +
+    "<b>" + comp.tipo + "</b> · " + comp.family + "<br>" +
     "vértices " + comp.points.length + " · piezas " + comp.cuts.length + "<br>" +
     "<b>cruces " + comp.crossings + "</b><br>" +
     "gap " + nf(metrics.gapW, 1, 2) + " · seg " + nf(metrics.segW, 1, 2) + "<br>" +

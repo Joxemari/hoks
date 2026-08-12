@@ -62,6 +62,48 @@ Comprobado además que curvar no inventa ni destruye cruces: aplanando el eje
 tal y como se dibuja, los dos modos tienen exactamente los cruces que conoce
 el nudo, en las 40 obras probadas.
 
+## El tipo
+
+Tres tipos, y son **lo primero que se lee** en la obra:
+
+| tipo | prob. | pasadas | trazo | cruces | qué se ve |
+|---|---|---|---|---|---|
+| suelto | 22 % | 1 | gordo | 0–1 | un gesto abierto, casi un signo |
+| anudado | 55 % | 2 | estándar | 2–3 | un nudo cerrado, el encima/debajo es el asunto |
+| trama | 23 % | 3 | fino | 4+ | tejido, se lee como celosía |
+
+El tipo declara **dos cosas materiales** —cuánto recorrido y de qué grosor— y
+los cruces salen de ahí. Declarar sólo el recorrido no bastaba: a tres pasadas
+en un marco fijo los tramos se acortan respecto a la anchura, el material
+adelgaza la cinta más de lo que `grosorMinimo` permite, y el tejido se
+descartaba entero. **Una trama no es una cinta ancha que ha adelgazado: es una
+cinta fina desde el principio.**
+
+Y luego **se comprueba sobre el resultado**: entre los tejidos dibujables, gana
+el que cae en la banda de cruces de su tipo. Declarar sin comprobar es lo que
+falló con las familias. Medido sobre 100 obras: **92 son del tipo que
+declaran** (17/18, 56/60, 19/22).
+
+El orden del desempate importa y está pagado en errores:
+
+1. **correcto** — si la obra se puede dibujar bien. No se negocia.
+2. **en banda** — el tipo declarado. Va **antes** que las preferencias: un
+   tejido denso incumple casi siempre `conserva`, y si la preferencia manda, el
+   sistema elige siempre el tejido flojo y el tipo no ocurre nunca.
+3. **preferible** — hipótesis sobre qué se ve bien.
+
+### Las familias no se leen
+
+Las cinco (`diagonal`, `compact`, `open`, `returning`, `cross`) siguen ahí como
+variación interna, pero **no son una categoría**. Medido sobre 60 obras: mismo
+aspecto (mediana 0,97), mismo centro (0,50 / 0,50), misma dispersión en los dos
+ejes, y repartidas por igual. Girar cada pasada sobre el centro y ajustar al
+marco lava la disposición de la familia.
+
+`volteoMax` queda **desactivado**. Tres de las cinco obras que el autor aprobó
+lo incumplían, y además impedía que la trama existiera: más cruces obligan a
+más volteos.
+
 ## Restricciones materiales
 
 Una cinta no se pliega más corto que su anchura, no gira sobre sí misma y no se
@@ -141,19 +183,16 @@ que sí lo eran.
 
 ### Estado
 
-**1 006 cruces sobre 6 configuraciones, cero defectuosos.**
+**553 cruces sobre 4 configuraciones, cero defectuosos.**
 
 | configuración | obras | cruces | a medias | sin corte |
 |---|---|---|---|---|
-| por defecto | 120 | 323 | 0 | 0 |
-| trazo fino | 60 | 170 | 0 | 0 |
-| trazo estándar | 60 | 171 | 0 | 0 |
-| trazo gordo | 60 | 171 | 0 | 0 |
-| esquinas rectas | 60 | 171 | 0 | 0 |
-| esquinas curvas | 60 | 171 | 0 | 0 |
+| por defecto | 100 | 258 | 0 | 0 |
+| tipo suelto | 40 | 21 | 0 | 0 |
+| tipo anudado | 40 | 108 | 0 | 0 |
+| tipo trama | 40 | 166 | 0 | 0 |
 
-Cero en las cuatro bandas de ángulo en todas ellas, y 0/120 obras sin tejido
-dibujable. **0,73 s por obra** (10,2 s al empezar).
+100/100 obras con tejido dibujable. **0,23 s por obra** (10,2 s al empezar).
 
 Otras tres clases, con su control cada una:
 
