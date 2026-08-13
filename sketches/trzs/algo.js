@@ -2324,5 +2324,12 @@
     return { list, overall };
   }
 
-  (global.HOKS = global.HOKS || {}).TRZS = { render, traits, BG_GRADIENT, REF };
+  // Las dos proporciones existen, y el orden es el que manda: el primero es el
+  // que se abre. La cinta se traza en apaisado —el recorrido tiene que caber
+  // varias veces antes de volver a cruzarse consigo mismo— y el cuadrado es una
+  // segunda lectura de la misma regla, no la de partida. El panel lo puede
+  // cambiar por works.json; esto es lo que vale sin red.
+  const FORMATS = ['horizontal', 'square'];
+
+  (global.HOKS = global.HOKS || {}).TRZS = { render, traits, BG_GRADIENT, REF, FORMATS };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -55,10 +55,12 @@ body { background: #fff; color: #111; height: 100vh; overflow: hidden; }
 </head>
 <body>
 <script src="nav.js"></script>
-<!-- DTKRT no se reimplementa aquí: las celdas demo usan el mismo algo.js que
-     producción y laboratorio. Las demás series siguen con su versión reducida. -->
+<!-- DTKRT y ECLPS no se reimplementan aquí: las celdas demo usan el mismo
+     algo.js que producción y laboratorio. Las demás series siguen con su
+     versión reducida. -->
 <script src="sketches/_engine.js?v=1"></script>
 <script src="sketches/dtkrt/algo.js?v=1"></script>
+<script src="sketches/eclps/algo.js?v=1"></script>
 <script src="sketches/trzs/algo.js?v=1"></script>
 <style>
   /* Override nav.js defaults — landing needs fixed full-bleed layout */
@@ -225,6 +227,14 @@ function drawDTKRT(canvas,seed){
     {palettes:PALETTES.filter(p=>p.active!==false)});
 }
 
+// ── DRAW: ECLPS (fuente única — sketches/eclps/algo.js) ──────────────────────
+// La celda va en la proporción de la obra (2√2:1), no en la de la rejilla: una
+// fila metida en un cuadrado deja de ser una fila.
+function drawECLPS(canvas,seed){
+  HOKS.ECLPS.render(canvas.getContext('2d'),canvas.width,canvas.height,seed,
+    {palettes:PALETTES.filter(p=>p.active!==false)});
+}
+
 // ── DRAW: TRZS (fuente única — sketches/trzs/algo.js) ────────────────────────
 // La celda es apaisada porque la obra nace apaisada: la cinta atraviesa el
 // marco, y en un cuadrado pequeño el nudo se apelotona y deja de leerse.
@@ -234,10 +244,10 @@ function drawTRZS(canvas,seed){
 }
 
 // La demo de cada familia es su look publicado, que es el que traía la G.
-const DRAWFNS = {plls:drawPLLSG,krrtk:drawKRRTKG,dtk:drawDTKG,bzrs:drawBZRS,dtkrt:drawDTKRT,trzs:drawTRZS};
-const LABELS  = {plls:'PLLS',krrtk:'KRRTK',dtk:'DTK',bzrs:'BZRS',dtkrt:'DTKRT',trzs:'TRZS'};
-const CRES    = {plls:[566,400],krrtk:[320,320],dtk:[320,320],bzrs:[320,320],dtkrt:[320,320],trzs:[452,320]};
-const SERIES  = ['plls','krrtk','dtk','bzrs','dtkrt','trzs'];
+const DRAWFNS = {plls:drawPLLSG,krrtk:drawKRRTKG,dtk:drawDTKG,bzrs:drawBZRS,dtkrt:drawDTKRT,eclps:drawECLPS,trzs:drawTRZS};
+const LABELS  = {plls:'PLLS',krrtk:'KRRTK',dtk:'DTK',bzrs:'BZRS',dtkrt:'DTKRT',eclps:'ECLPS',trzs:'TRZS'};
+const CRES    = {plls:[566,400],krrtk:[320,320],dtk:[320,320],bzrs:[320,320],dtkrt:[320,320],eclps:[640,226],trzs:[452,320]};
+const SERIES  = ['plls','krrtk','dtk','bzrs','dtkrt','eclps','trzs'];
 
 // ── GRID ─────────────────────────────────────────────────────────────────────
 const GAP=5, COLS=9, ROWS=10;
@@ -381,7 +391,7 @@ function buildGrid(works) {
 // ── LOAD REAL WORKS ───────────────────────────────────────────────────────────
 const TOTAL = 90; // 9 cols × 10 rows
 const PER_SERIES = 13; // up to 13 saved works per series
-const SLUG_MAP = { pills:'plls', krrtk:'krrtk', dtk:'dtk', bzrs:'bzrs', krrtkg:'krrtkg', dtkg:'dtkg', pllsg:'pllsg', dtkrt:'dtkrt' };
+const SLUG_MAP = { pills:'plls', krrtk:'krrtk', dtk:'dtk', bzrs:'bzrs', krrtkg:'krrtkg', dtkg:'dtkg', pllsg:'pllsg', dtkrt:'dtkrt', eclps:'eclps' };
 
 async function load() {
   // 1. Read works.json — filter to active families only

@@ -49,11 +49,27 @@ sketches/
   krrtk/           ← graduada (porte fiel, verificado op-a-op)
   dtk/             ← graduada (porte fiel, verificado op-a-op)
   dtkrt/            ← EN PRUEBAS: familia nueva, aún sin página de producción
+  eclps/             ← EN PRUEBAS: iteración horizontal, aún sin página de producción
   trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
     verificacion/   ← los detectores del halo y sus controles rotos a propósito.
                       No se publica: se ejecuta a mano cuando alguien toca el
                       dibujo de la cinta. Ver su README.
 ```
+
+`dtkrt/` fue el primer caso de obra que **nace aquí** en vez de portarse
+desde p5: propuesta de sistema para mirar en el grid de obras antes de decidir si
+merece página. No está en `data/works.json` ni publicada.
+
+`eclps/` es el segundo, y llega igual: nace aquí. Una fila de círculos con paso
+constante donde las ausencias hacen el ritmo — un eclipse es exactamente eso, un
+disco que tapa a otro. Usa el harness compartido, está en `GRADUATED` y ya tiene
+página (`eclps.html`) y entrada activa en `works.json`.
+
+Es también la primera familia que existe en **un solo formato**: `double`, dos
+pliegos apaisados uno al lado del otro (2√2:1). No es capricho ni límite técnico
+—la obra se compone igual en cuadrado— es que una fila necesita recorrido: en
+1:1 el trayecto de los centros da para dos o tres círculos y deja de ser una
+fila. De ahí sale el mecanismo de formatos por familia.
 
 ### TRZS: el porte salió idéntico al píxel, y luego mejor
 
@@ -95,9 +111,10 @@ código para que no se reintenten: solapar sólo la sección que pinta después,
 alargar el halo de las dos en la junta, reducir la pizca del solape, y —descartado
 midiendo— que hubiera cuerpos solapados sin cruce registrado.
 
-`dtkrt/` es el único caso hasta ahora de obra que **nace aquí** en vez de portarse
-desde p5: propuesta de sistema para mirar en el grid de obras antes de decidir si
-merece página. No está en `data/works.json` ni publicada.
+Los detectores que encontraron todo eso están commiteados en
+`trzs/verificacion/`, con sus controles rotos a propósito y las siete trampas que
+dieron defectos inexistentes. Se ejecutan a mano cuando alguien toca el dibujo de
+la cinta.
 
 Cada obra expone el mismo contrato:
 
