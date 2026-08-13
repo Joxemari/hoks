@@ -1962,7 +1962,11 @@
     // Adelgazando, todas las garantías se conservan o mejoran: el cuerpo es más
     // fácil de tapar y el canal entre hebras, más ancho.
     // Un corte a mano quita material. No lo pone.
-    const anchoEn = (d) => width * (1 - min(tmb, TEMBLOR_MAX) * (ruido(d / onda) + 1) / 2);
+    // Siempre definida, con o sin temblor: los detectores la necesitan para
+    // saber dónde está el borde de verdad. Sin temblor devuelve la nominal.
+    const anchoEn = ruido
+      ? (d) => width * (1 - min(tmb, TEMBLOR_MAX) * (ruido(d / onda) + 1) / 2)
+      : () => width;
     const rango = {};
     orden.forEach((sec, k) => { rango[sec] = k; });
 
@@ -2094,7 +2098,13 @@
     if (cfg.dots === "encima") drawDots(ctx, mapped, width, comp, ox, oy, S, ALTO);
 
     _densa = null; _saltos = [];
-    return { mapped, width, gap, esc };
+    // `anchoEn` sale fuera A PROPÓSITO: con el temblor, la anchura ya no es un
+    // número y un detector que sonde a la nominal mide donde el borde no está.
+    // Costó 135 falsos positivos de 158 cruces enterarse.
+    // Sólo cuando hay temblor: si sale siempre, los detectores levantan sus
+    // máscaras con el polígono mientras el render usa el trazo, y son dos
+    // rasterizaciones distintas. Con eso, 61 cruces «sin corte» de la nada.
+    return { mapped, width, gap, esc, anchoEn: ruido ? anchoEn : null };
   }
 
   // El gradiente recorre la composición, no la sección de la cinta:

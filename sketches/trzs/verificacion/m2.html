@@ -33,6 +33,10 @@ window.medir = (seed, pals, extra, capa) => {
     r = T.renderComposition(xA, 0, 0, S, c, S, true, false);
   }
   const W = r.width, gap = r.gap, m = r.mapped;
+  // La anchura REAL: con temblor no es un numero. Las mascaras tienen que
+  // levantarse con la misma anchura con la que se dibujo, o miden otra cosa.
+  const WF = r.anchoEn || W;
+  const WH = r.anchoEn ? (d) => r.anchoEn(d) + gap*2 : W + gap*2;
   const acum = T.arcosDe(m), total = acum[acum.length-1];
   const dA = xA.getImageData(0,0,S,S).data;
 
@@ -81,13 +85,13 @@ window.medir = (seed, pals, extra, capa) => {
 
     xE.globalCompositeOperation='source-over';
     xE.fillStyle='#000'; xE.fillRect(0,0,S,S);
-    T.trazarTramo(xE, m, acum, tAr.iniH, tAr.finH, W+gap*2, '#fff', c.cfg, 'round');
-    T.trazarTramo(xE, m, acum, tAr.iniC, tAr.finC, W, '#000', c.cfg);
+    T.trazarTramo(xE, m, acum, tAr.iniH, tAr.finH, WH, '#fff', c.cfg, 'round');
+    T.trazarTramo(xE, m, acum, tAr.iniC, tAr.finC, WF, '#000', c.cfg);
     xE.globalCompositeOperation='destination-in';
     const abajos = [cual(dAb-1e-4), cual(dAb+1e-4)].filter((v,i,a)=>v>=0&&a.indexOf(v)===i);
     const cU = lienzo(), xU = cU.getContext('2d');
     xU.fillStyle='#000'; xU.fillRect(0,0,S,S);
-    for (const iu of abajos){ const t=tramoDe(iu); T.trazarTramo(xU,m,acum,t.iniC,t.finC,W,'#fff',c.cfg); }
+    for (const iu of abajos){ const t=tramoDe(iu); T.trazarTramo(xU,m,acum,t.iniC,t.finC,WF,'#fff',c.cfg); }
     xE.drawImage(cU,0,0);
     xE.beginPath(); xE.arc(P.x,P.y, alc*1.6+gap*3, 0, Math.PI*2);
     xE.fillStyle='#fff'; xE.fill();

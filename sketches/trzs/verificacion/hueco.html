@@ -22,6 +22,11 @@ window.huecos = (seed, pals, extra) => {
   const cA = lienzo(), xA = cA.getContext('2d');
   const r = T.renderComposition(xA, 0, 0, S, c, S, true, false);
   const W = r.width, gap = r.gap, m = r.mapped;
+  // LA ANCHURA REAL, que con el temblor ya no es un numero. Sondear a la
+  // nominal daba 135 falsos positivos de 158 cruces: el borde no esta donde
+  // el detector lo buscaba. `anchoEn` es la MISMA funcion que uso el render.
+  const AN = r.anchoEn || (() => W);
+  const WF = r.anchoEn || W;                 // para las mascaras: trazarTramo acepta funcion
   const acum = T.arcosDe(m), total = acum[acum.length-1];
   const img = xA.getImageData(0,0,S,S).data;
   const hex = h => [1,3,5].map(k=>parseInt(h.substr(k,2),16));
@@ -104,7 +109,7 @@ window.huecos = (seed, pals, extra) => {
     xU.fillStyle='#000'; xU.fillRect(0,0,S,S);
     const abajos = [cual(dAb-1e-4), cual(dAb+1e-4)].filter((v,i,a)=>v>=0&&a.indexOf(v)===i);
     for (const iu of abajos){ const t=tramoDe(iu);
-      T.trazarTramo(xU, m, acum, t.iniC, t.finC, W, '#fff', c.cfg); }
+      T.trazarTramo(xU, m, acum, t.iniC, t.finC, WF, '#fff', c.cfg); }
     const dU = xU.getImageData(0,0,S,S).data;
     const bajoHay = (x,y) => { x=Math.round(x); y=Math.round(y);
       if (x<0||y<0||x>=S||y>=S) return false;
@@ -129,7 +134,8 @@ window.huecos = (seed, pals, extra) => {
     // como hueco; y como el borde antialias es continuo, salian rachas de 29
     // px que no eran huecos sino el filo de la propia hebra.
     if (iAr2 >= 0) { const t=tramoDe(iAr2);
-      T.trazarTramo(xO, m, acum, t.iniC, t.finC, W + 3, '#fff', c.cfg); }
+      T.trazarTramo(xO, m, acum, t.iniC, t.finC,
+        r.anchoEn ? (d) => r.anchoEn(d) + 3 : W + 3, '#fff', c.cfg); }
     const dO = xO.getImageData(0,0,S,S).data;
     const arribaHay = (x,y) => { x=Math.round(x); y=Math.round(y);
       if (x<0||y<0||x>=S||y>=S) return false;
@@ -154,7 +160,7 @@ window.huecos = (seed, pals, extra) => {
       const iq = cual(T.arcoDeParam(m,acum,oq.arriba));
       if (iq < 0) continue;
       const t = tramoDe(iq);
-      T.trazarTramo(xT, m, acum, t.iniC, t.finC, W, '#fff', c.cfg);
+      T.trazarTramo(xT, m, acum, t.iniC, t.finC, WF, '#fff', c.cfg);
     }
     const dT = xT.getImageData(0,0,S,S).data;
     const terceraHay = (x,y) => { x=Math.round(x); y=Math.round(y);
@@ -168,7 +174,9 @@ window.huecos = (seed, pals, extra) => {
     // OTRA seccion cruza legitimamente. Alli exigir fondo es exigir que no haya
     // otro cruce.
     const alcance = W/(2*sen) + gap*2;
-    const off = W/2 + gap/2;
+    // El desplazamiento de la sonda ya no es constante: es el borde de la
+    // hebra de arriba EN ESE PUNTO del recorrido, mas medio gap.
+    const offEn = (d) => AN(d)/2 + gap/2;
     let peorRacha = 0, puntos = 0, malos = 0, dondePeor = null, colorPeor = null;
     for (const signo of [1,-1]) {
       let racha = 0;
@@ -185,7 +193,8 @@ window.huecos = (seed, pals, extra) => {
         const q2 = enCurva(Math.min(total, d+1));
         const ux = q2.x-q.x, uy = q2.y-q.y;
         const ul = Math.hypot(ux,uy) || 1;
-        const px = q.x - (uy/ul)*off*signo, py = q.y + (ux/ul)*off*signo;
+        const o = offEn(d);
+        const px = q.x - (uy/ul)*o*signo, py = q.y + (ux/ul)*o*signo;
         if (!bajoHay(px,py)) { racha = 0; continue; }   // aquí no hay nada que cortar
         if (arribaHay(px,py)) { racha = 0; continue; }  // es la propia hebra de arriba
         if (terceraHay(px,py)) { racha = 0; continue; }  // otra pasa por encima con derecho
