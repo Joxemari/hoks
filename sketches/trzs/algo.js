@@ -1970,6 +1970,79 @@
     const rango = {};
     orden.forEach((sec, k) => { rango[sec] = k; });
 
+    // EL REMATE VA EN EL TURNO DE SU SECCIÓN, no al final.
+    //
+    // Se pintaba después de todo, y eso lo dejaba ENCIMA de incisiones ya
+    // cortadas: un remate que cae sobre un cruce lo rellena de tinta. El
+    // step-trace del píxel lo dijo entero — la sección 3 cortaba bien la
+    // incisión y el remate la devolvía a tinta al final:
+    //
+    //   sec 3 HALO       -> 250,250,250   (corta)
+    //   sec 3 cuerpo     -> 250,250,250   (se mantiene)
+    //   tras los REMATES -> 205,20,64     (rellena)
+    //
+    // Darle su halo no basta, y se midió: el halo abre un anillo alrededor del
+    // remate, pero la tinta del remate sigue cayendo dentro de la incisión
+    // ajena. Lo que hace falta es que el remate se pinte CUANDO le toca a su
+    // cinta, para que las secciones que van después lo corten como cortan
+    // cualquier otro trozo de cinta.
+    //
+    // Por eso sólo salía con esquina curva: ahí el remate es un disco entero de
+    // radio W/2 y barre mucha más superficie que el triángulo del inglete. Con
+    // esquina viva, 0 huecos de 634 cruces; con curva, 4.
+    const remateEn = (p, hacia, kC) => {
+      if (cfg.ends !== "redondos" && cfg.ends !== "inglete") return;
+      for (const pasada of ['halo', 'tinta']) {
+        // La pasada de halo es la que separa el remate del suelo cuando la
+        // cinta es del color del suelo; si el halo ES el fondo, no pinta nada
+        // que se vea y se salta.
+        if (pasada === 'halo' && haloDe(kC) === col.bg && !borrar) continue;
+        const crece = pasada === 'halo' ? gap : 0;
+        ctx.fillStyle = pasada === 'halo' ? haloDe(kC) : tintaDe(kC);
+        if (cfg.ends === "redondos") {
+          ctx.beginPath(); ctx.arc(p.x, p.y, width / 2 + crece, 0, TWO_PI); ctx.fill();
+          continue;
+        }
+        // INGLETE: UN SOLO CORTE AL BIES.
+        // Una punta simétrica añadiría un VÉRTICE en el eje que no existe en
+        // una pletina cortada: el corte al bies es UNA línea, no dos. Se añade
+        // material en UN lado nada más y el filo que queda a la vista es la
+        // diagonal. El lado y la inclinación salen del seed — dos remates
+        // idénticos en la misma obra se leen como plantilla, y un corte a mano
+        // no repite.
+        const d = PV.sub(p, hacia).normalize();
+        if (!isFinite(d.x) || !isFinite(d.y) || (d.x === 0 && d.y === 0)) continue;
+        const rr = new E.Rng((_semilla ^ 0x81E5 ^ (mapped.indexOf(p) * 0x9E3779B1)) >>> 0);
+        const lado = rr.next() < 0.5 ? 1 : -1;
+        const largo = width * (0.35 + rr.next() * 0.55);
+        const n = V(-d.y * lado, d.x * lado);
+        const h = width / 2 + crece;
+        const A = V(p.x + n.x * h, p.y + n.y * h);
+        const B = V(p.x - n.x * h, p.y - n.y * h);
+        const C = V(A.x + d.x * largo, A.y + d.y * largo);
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y); ctx.lineTo(C.x, C.y); ctx.lineTo(B.x, B.y);
+        ctx.closePath();
+        ctx.fill();
+      }
+    };
+
+    // Cada extremo de cinta con su punto, su direccion de SALIDA y su arco: la
+    // direccion hace falta porque el inglete apunta hacia fuera, y el arco para
+    // saber a que seccion pertenece. Con varias cintas hay dos extremos por
+    // salto ademas de los dos del recorrido: seis en una obra de tres cintas.
+    const ultN = mapped.length - 1;
+    const cabos = [[mapped[0], mapped[1], 0], [mapped[ultN], mapped[ultN - 1], total]];
+    for (const sN of _saltos) {
+      if (sN - 1 >= 0)   cabos.push([mapped[sN],     mapped[sN - 1], acum[sN]]);
+      if (sN + 2 <= ultN) cabos.push([mapped[sN + 1], mapped[sN + 2], acum[sN + 1]]);
+    }
+    const cintaEnArco = (d) => {
+      let k = 0;
+      for (const r of saltoArcs) if (d >= r[1] - 1e-6) k++;
+      return k;
+    };
+
     for (const i of orden) {
       const [a, b] = secciones[i];
       const aJ = a > 0 && esJunta(a), bJ = b < total && esJunta(b);
@@ -2030,74 +2103,13 @@
         if (recorta) ctx.globalCompositeOperation = 'source-over';
       }
       trazarTramo(ctx, mapped, acum, iniC, finC, ruido ? anchoEn : width, tintaDe(cinta), cfg);
+
+      // El remate de esta seccion, si lo tiene: aqui y no al final.
+      for (const [cp, chacia, cd] of cabos)
+        if (cd >= a - 1e-6 && cd <= b + 1e-6) remateEn(cp, chacia, cintaEnArco(cd));
     }
 
 
-    // EL REMATE. Cada extremo de cinta con su punto y su dirección de SALIDA:
-    // hacen falta las dos, porque el inglete apunta hacia fuera y una lista de
-    // puntos sueltos no dice hacia dónde es fuera.
-    // Con varias cintas hay dos extremos por salto, además de los dos del
-    // recorrido: seis en una obra de tres cintas.
-    if (cfg.ends === "redondos" || cfg.ends === "inglete") {
-      const ult = mapped.length - 1;
-      const cabos = [[mapped[0], mapped[1]], [mapped[ult], mapped[ult - 1]]];
-      for (const s of _saltos) {
-        if (s - 1 >= 0)         cabos.push([mapped[s], mapped[s - 1]]);
-        if (s + 2 <= ult)       cabos.push([mapped[s + 1], mapped[s + 2]]);
-      }
-      // El color del remate es el de SU cinta, no el de la primera: con dos
-      // tintas, un remate de la tinta que no toca se lee como una mancha.
-      const cintaEn = (p) => {
-        let k = 0;
-        for (const s of _saltos) if (p > s) k++;
-        return k;
-      };
-      const idxDe = (v) => mapped.indexOf(v);
-      // DOS PASADAS: primero los remates en el color del HALO y un pelo más
-      // grandes, luego en tinta. Sin eso, en una cinta del color del suelo el
-      // remate se pintaba del color del fondo ENCIMA de su propia incisión y la
-      // reventaba justo en la punta: el trazo se quedaba sin cerrar. Sólo se
-      // hace donde hace falta — si el halo de esa cinta es el fondo, la primera
-      // pasada no pintaría nada que se vea y se salta.
-      for (const pasada of ['halo', 'tinta']) {
-      for (const [p, hacia] of cabos) {
-        const kC = cintaEn(idxDe(p));
-        // La pasada de halo va SIEMPRE, no sólo cuando el halo se ve sobre el
-        // suelo. El remate se pinta al final, encima de todo: si cae sobre un
-        // cruce y va en tinta pura, tapa la incisión de ese cruce. Con su halo
-        // delante, el corte se mantiene. Antes esta pasada estaba condicionada
-        // al trazo fantasma y por eso el defecto sólo salía en obras normales.
-        const crece = pasada === 'halo' ? gap : 0;
-        ctx.fillStyle = pasada === 'halo' ? haloDe(kC) : tintaDe(kC);
-        if (cfg.ends === "redondos") {
-          ctx.beginPath(); ctx.arc(p.x, p.y, width / 2 + crece, 0, TWO_PI); ctx.fill();
-          continue;
-        }
-        // INGLETE: UN SOLO CORTE AL BIES.
-        // El primer intento hacía una punta simétrica, y una punta añade un
-        // VÉRTICE en el eje que no existe en una pletina cortada: el corte al
-        // bies es UNA línea, no dos. Así que se añade material en UN lado nada
-        // más — el triángulo va de un borde al otro y el filo que queda a la
-        // vista es la diagonal.
-        // El lado y la inclinación salen del seed: dos remates idénticos en la
-        // misma obra se leen como una plantilla, y un corte a mano no repite.
-        const d = PV.sub(p, hacia).normalize();
-        if (!isFinite(d.x) || !isFinite(d.y) || (d.x === 0 && d.y === 0)) continue;
-        const rr = new E.Rng((_semilla ^ 0x81E5 ^ (idxDe(p) * 0x9E3779B1)) >>> 0);
-        const lado = rr.next() < 0.5 ? 1 : -1;
-        const largo = width * (0.35 + rr.next() * 0.55);
-        const n = V(-d.y * lado, d.x * lado);
-        const h = width / 2 + crece;
-        const A = V(p.x + n.x * h, p.y + n.y * h);
-        const B = V(p.x - n.x * h, p.y - n.y * h);
-        const C = V(A.x + d.x * largo, A.y + d.y * largo);
-        ctx.beginPath();
-        ctx.moveTo(A.x, A.y); ctx.lineTo(C.x, C.y); ctx.lineTo(B.x, B.y);
-        ctx.closePath();
-        ctx.fill();
-      }
-      }
-    }
 
     if (cfg.dots === "encima") drawDots(ctx, mapped, width, comp, ox, oy, S, ALTO);
 
