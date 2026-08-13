@@ -63,12 +63,12 @@ sus propios huecos. Lo que cuenta es el medido.
 
 ## Los cuatro tipos
 
-| tipo         | peso | estratos | puentes | lazos | ojos medidos | mancha    |
-|--------------|------|----------|---------|-------|--------------|-----------|
-| `estrato`    | 22%  | 1–2      | 0       | 1–2   | 0–2          | 5–22%     |
-| `soldado`    | 42%  | 2–3      | 1–3     | 1–3   | 1–4          | 10–32%    |
-| `ramificado` | 24%  | 2–3      | 0–1     | 0–1   | 0–1          | 8–28%     |
-| `isla`       | 12%  | 3–4      | 2–4     | 3–6   | 3–12         | 24–46%    |
+| tipo         | peso | estratos | puentes | lazos | muñones | ojos medidos | mancha  |
+|--------------|------|----------|---------|-------|---------|--------------|---------|
+| `estrato`    | 22%  | 1–2      | 0       | 1–2   | 1–3     | 0–2          | 5–20%   |
+| `soldado`    | 42%  | 2–3      | 1–3     | 1–3   | 2–5     | 1–4          | 9–28%   |
+| `ramificado` | 24%  | 2–3      | 0–1     | 0–1   | 4–8     | 0–1          | 7–25%   |
+| `isla`       | 12%  | 3–4      | 2–4     | 3–6   | 3–6     | 3–12         | 21–37%  |
 
 `soldado` es el centro de la familia. `isla` es rara a propósito: la masa asedia el
 suelo hasta que el vacío queda en minoría y figura y fondo se cambian el sitio.
@@ -86,11 +86,16 @@ encima/debajo no hay nada que proteger, así que el cuerpo puede cruzarse consig
 mismo cuantas veces quiera: se rellena. **Una sola llamada a `fill()`.** La
 soldadura no se dibuja — es la consecuencia de que todo esté en el mismo trazado.
 
-`algo.js` son 925 líneas frente a las 2.344 de TRZS, y de esas 925 buena parte son
+`algo.js` son 975 líneas frente a las 2.344 de TRZS, y de esas 975 buena parte son
 las notas de por qué cada número es el que es. Toda la complejidad que TRZS gasta en
 la profundidad, EVOL la gasta en el contorno y en el vacío.
 
-**Lo nuevo** es la anchura modulada, que es lo que obliga a construir el cuerpo como
+**Lo nuevo**, y hay dos cosas. La primera es que la composición **no se genera en
+píxeles**: se genera en un campo cuyo lado corto vale 1 y cuyo lado largo es la
+proporción *nominal* del formato, y solo al dibujar se multiplica por el lado corto
+real. No es elegancia — ver más abajo, en «Deriva».
+
+La segunda es la anchura modulada, que es lo que obliga a construir el cuerpo como
 polígono en vez de trazarlo: un cuadrilátero por tramo, con los dos vértices del
 corte compartidos por los tramos vecinos, e inglete topado a 2,4. Que todos los
 cuadriláteros salgan con la misma orientación no es un detalle — con `nonzero`, dos
@@ -138,6 +143,48 @@ tiene detrás una versión que se veía peor, y está anotado ahí:
   plancha. Por debajo del 18% de mancha la inversión **se cancela** — decidido
   después de medir, como los acoplamientos de ECLPS, así que corrige el color sin
   mover el dibujo.
+- **Dientes.** Al subir el grosor de las ramas para que pesaran como el tronco —que
+  es lo que hace la referencia: las ramas **son** la masa, no un apéndice suyo— los
+  muñones quedaron tan anchos como largos, y una masa con doce de ésos se lee como un
+  engranaje. El largo se mide ahora contra la anchura de la propia rama, con 3,5–8
+  anchuras de mínimo: viajando, vuelve a ser una rama. Y los muñones bajan a la
+  mitad — cuando cada rama pesa como el tronco, doce ramas no son un cuerpo
+  ramificado, son maleza.
+- **Sin candidatos ligeros.** Al bajar los topes de mancha para que la hoja
+  respirara, el 9% de las piezas no podía cumplirlos por mucho que se retejiera: con
+  el techo de grosor fijo, la mancha que sale de la gramática se agolpa entre el 16%
+  y el 32% y no había ningún candidato ligero que encontrar. La **escala del cuerpo**
+  pasa a tirarse por candidato (0,70–1,14), así que el bucle de reintentos busca de
+  verdad sobre ese eje. Y de paso la familia gana la variación que le faltaba: la que
+  hay entre una pieza cortada a hacha y otra cortada a cuchilla.
+- **Sin centro.** Con un solo estrato, el exponente de la gravedad no reparte nada:
+  un `u` de 0,30 con `p` de 2,1 caía en 0,076 y la única masa de la pieza se pegaba
+  al borde de arriba dejando tres cuartos de hoja vacíos. Eso no es una reserva, es
+  una pieza sin centro. Con `k = 1` la gravedad no se aplica.
+
+## Deriva: cuando medir cambia el dibujo
+
+El error más serio de todos, y el último en aparecer, porque solo se ve comparando
+tamaños.
+
+`medir` no solo informa: **elige**. `falta` se calcula sobre lo que mide y con eso se
+descarta un candidato. Generando la composición en píxeles, 1075×760 y 9933×7016 son
+el mismo `horizontal` pero sus cocientes son 1,41447 y 1,41576 —los milímetros DIN
+están redondeados—, así que la geometría normalizada difería en la cuarta cifra. Y un
+vacío justo en el filo de cerrarse cae de un lado en pantalla y del otro a 300 dpi.
+
+Medido: **el conteo de ojos cambiaba en 10 de 50 seeds** entre un tamaño y otro. En
+una familia cuyo rasgo central es el ojo, eso significa que la rareza de una pieza
+dependía del pliego en que se imprimiera.
+
+Arreglado generando en el **campo normalizado** (lado corto = 1, largo = la
+proporción nominal) y midiendo ahí mismo, con el número de columnas de la rejilla
+deducido también de la proporción nominal y no del cociente en píxeles. Es el mismo
+cuidado que ECLPS tiene con su rango de slots, y por la misma razón: del formato se
+lee la decisión **entera**, no el píxel. Verificado sobre 40 seeds por formato a tres
+resoluciones (760, 2400 y 4200 de lado corto): la huella completa —tipo, estratos,
+puentes, lazos, muñones, escala, ojos con su área a seis decimales, mancha,
+modulación, gravedad, reserva y colores— sale **idéntica**, cero diferencias.
 
 ## Color: dos, y se renuncia al resto
 
@@ -174,12 +221,10 @@ overall     common 40%  uncommon 39%  rare 10%  superrare 5%  legendary 6%
 ms          p50 67  p90 78  max 109   (760 px, incluido el grano)
 ```
 
-**Impresión.** Verificado que la composición no depende de la resolución: el mismo
-seed a 760 px de vista previa y a 300 dpi da el **mismo** tipo, los mismos estratos,
-el mismo número de ojos y la misma mancha con una décima de margen — en A3 cuadrado
-(3508², 788 ms), A3 horizontal (4961×3508, 1,3 s) y A1 horizontal (9933×7016,
-69,7 Mpx, 6,0 s). Lo que se ve es lo que se imprime. El coste a A1 es del grano,
-que es por píxel; el dibujo es vectorial.
+**Impresión.** A3 cuadrado (3508², 663 ms), A3 horizontal (4961×3508, 837 ms) y A1
+horizontal (9933×7016, 69,7 Mpx, 4,7 s), cada uno con la misma composición exacta que
+su vista previa. Lo que se ve es lo que se imprime. El coste a A1 es del grano, que es
+por píxel; el dibujo es vectorial.
 
 Los cortes de los traits salen de esa tabla, no de la intuición. El primero que se
 puso —«desbocado» a partir de 3 niveles— ponía la misma etiqueta al 88% de las

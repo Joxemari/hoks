@@ -73,7 +73,7 @@ hebra por encima, otra por debajo, y el suelo entre las dos como una incisión�
 sobrevive donde la masa se cierra a su alrededor. Ese hueco cerrado es un **ojo**, y
 los ojos son la obra.
 
-Por eso es **más pequeña** que su madre: 925 líneas contra 2.344. Sin encima/debajo
+Por eso es **más pequeña** que su madre: 975 líneas contra 2.344. Sin encima/debajo
 no hay nada que proteger, así que se cae el diagrama de nudo, el plan de secciones,
 el orden de pintado, el punzón y los detectores del halo — y el cuerpo puede
 cruzarse consigo mismo cuantas veces quiera, porque se rellena. **Una sola llamada a

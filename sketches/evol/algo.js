@@ -144,27 +144,38 @@
   // puesta antes de dibujar que no corresponde a nada visible no es un rasgo.
   //   ojos    — ojos MEDIDOS que se aceptan
   //   mancha  — fracción de tinta que se acepta
+  // Los muñones bajan a la mitad de lo que eran: cuando cada rama pesa como el
+  // tronco, doce ramas no son un cuerpo ramificado, son maleza.
+  // Y la mancha baja unos puntos en los cuatro tipos. Con el techo de 'isla' en 46%
+  // la pieza dejaba de leerse como figura sobre suelo y pasaba a ser un rompecabezas
+  // de dos colores: por encima del 38% no hay vacío en minoría, hay empate. La hoja
+  // tiene que respirar, y en la referencia respira mucho.
   const TIPOS = {
     // Un estrato solo, o dos sin tocarse — pero con un lazo: una masa que cruza la
     // hoja y encierra UN vacío es la pieza mínima de esta familia. Sin lazo la
     // versión callada salía sin suceso, una banda y nada más.
-    estrato:    { prob: 0.22, estratos: [1, 2], puentes: [0, 0], lazos: [1, 2], munones: [2, 5],
-                  ojos: [0, 2], mancha: [0.05, 0.22] },
+    estrato:    { prob: 0.22, estratos: [1, 2], puentes: [0, 0], lazos: [1, 2], munones: [1, 3],
+                  ojos: [0, 2], mancha: [0.05, 0.20] },
     // El de la referencia: dos o tres estratos soldados y cerrados sobre sí
     // mismos, con vacíos dentro de la masa. Es el centro de la familia.
-    soldado:    { prob: 0.42, estratos: [2, 3], puentes: [1, 3], lazos: [1, 3], munones: [3, 7],
-                  ojos: [1, 4], mancha: [0.10, 0.32] },
+    soldado:    { prob: 0.42, estratos: [2, 3], puentes: [1, 3], lazos: [1, 3], munones: [2, 5],
+                  ojos: [1, 4], mancha: [0.09, 0.28] },
     // Muchos muñones y nada que se cierre: la silueta se deshilacha.
-    ramificado: { prob: 0.24, estratos: [2, 3], puentes: [0, 1], lazos: [0, 1], munones: [7, 12],
-                  ojos: [0, 1], mancha: [0.08, 0.28] },
+    ramificado: { prob: 0.24, estratos: [2, 3], puentes: [0, 1], lazos: [0, 1], munones: [4, 8],
+                  ojos: [0, 1], mancha: [0.07, 0.25] },
     // Rara a propósito: la masa asedia el suelo hasta que el vacío queda en
     // minoría. Figura y fondo se cambian el sitio.
-    isla:       { prob: 0.12, estratos: [3, 4], puentes: [2, 4], lazos: [3, 6], munones: [4, 9],
-                  ojos: [3, 12], mancha: [0.24, 0.46] },
+    isla:       { prob: 0.12, estratos: [3, 4], puentes: [2, 4], lazos: [3, 6], munones: [3, 6],
+                  ojos: [3, 12], mancha: [0.21, 0.37] },
   };
   const TIPO_NAMES = Object.keys(TIPOS);
 
-  const REINTENTOS = 6;      // candidatos que se prueban con el mismo seed
+  // Sube de 6 a 9. El bucle corta en cuanto un candidato cumple, así que los 9 solo
+  // se pagan en las seeds difíciles: con 6 cumplía el 95,3% y con 9 el 98,0%, y la
+  // mediana por pieza no se mueve. Lo que queda sin cumplir se queda: con seeds
+  // difíciles no hay ningún candidato bueno, y entonces manda el que menos incumple
+  // —no el primero—, que es por lo que 'falta' es un número y no un sí/no.
+  const REINTENTOS = 9;      // candidatos que se prueban con el mismo seed
   const GRID = 150;          // resolución del campo de distancias, en el lado corto
   // Un ojo de dos celdas es ruido de rasterización, no un hueco. El umbral se
   // mide en fracción de la hoja para que signifique lo mismo en cualquier
@@ -445,8 +456,14 @@
     // anchuras del tronco salían lentejas: con un tronco de 25 px y una rama de 15,
     // cuatro anchuras dejaban el hueco en negativo y el ojo no llegaba a existir.
     // Así el hueco es un dato de la obra —cuánto suelo queda dentro— y no un resto.
+    // La rama de un lazo pesa CASI LO MISMO que el tronco del que sale, y su
+    // ventana se saca del nivel de ese tronco en vez de una fija baja. Con la
+    // ventana fija [1,3] las ramas salían siempre finas y el ojo quedaba cercado
+    // por un alambre: en la referencia el hueco está rodeado de masa por los cuatro
+    // lados, porque las ramas SON la masa, no un apéndice suyo.
     const nv = rng.int(2, 3);
-    const lv = grosores(rng, nv + 2, 1, 3);
+    const lvT = a.lv == null ? NIVELES - 3 : a.lv;
+    const lv = grosores(rng, nv + 2, max(0, lvT - 2), max(1, lvT));
     const bw = niveles[lv[1]] / 2;
     const hueco = S * rng.range(0.035, 0.115);
     const arco = max(a.hw, b.hw) + bw + hueco;
@@ -514,16 +531,31 @@
   // Un muñón es un trozo de la misma masa que se ha ido y se ha quedado a medias,
   // así que su grosor se mide contra el del tronco del que sale (0,45..1,15 de su
   // anchura), no contra la escala entera.
-  function munon(rng, ch, S, niveles) {
-    const i = rng.int(1, ch.length - 2);
+  // `foco` es el vértice alrededor del cual se agrupa el accidente. Sin él los
+  // muñones se reparten por todo el recorrido y la masa sale peluda de punta a
+  // punta; en la referencia el ramaje se concentra en una zona y el resto del
+  // cuerpo viaja limpio. Se sortean dos candidatos y gana el más cercano al foco:
+  // agrupa sin llegar a amontonar.
+  function munon(rng, ch, S, niveles, foco) {
+    let i = rng.int(1, ch.length - 2);
+    if (foco != null) {
+      const j = rng.int(1, ch.length - 2);
+      if (abs(j - foco) < abs(i - foco)) i = j;
+    }
     const a = ch[i], b = ch[i + 1], p = ch[i - 1];
     if (a.lv != null && a.lv < 2) return null;
     const dx = b.x - p.x, dy = b.y - p.y, m = hypot(dx, dy) || 1e-9;
     const lado = rng.bool(0.5) ? 1 : -1;
     const ang = Math.atan2(dy / m, dx / m) + lado * (Math.PI / 2) + rng.range(-0.7, 0.7);
-    const nv = rng.bool(0.65) ? 1 : 2;
-    const largo = max(a.hw * rng.range(1.6, 4.2), S * 0.018);
-    const out = [{ x: a.x, y: a.y, hw: a.hw * rng.range(0.55, 1.05), sesgo: 0, corte: 0 }];
+    // El largo se mide contra la ANCHURA DEL MUÑÓN, no contra la del tronco a secas,
+    // y con una proporción mínima: un muñón tan ancho como largo no es una rama, es
+    // un DIENTE, y una masa con doce dientes se lee como un engranaje. Al subir el
+    // grosor de la rama (de 0,45–1,15 del tronco a 0,62–1,28) el largo tenía que
+    // subir con él o el gesto se convertía en mordisco — que es exactamente lo que
+    // pasó. Con 3,5–8 anchuras la rama viaja, y viajando vuelve a ser una rama.
+    const nv = rng.bool(0.55) ? 1 : 2;
+    const largo = max(a.hw * rng.range(3.5, 8.0), S * 0.03);
+    const out = [{ x: a.x, y: a.y, hw: a.hw * rng.range(0.7, 1.1), sesgo: 0, corte: 0 }];
     let x = a.x, y = a.y, an = ang;
     for (let k = 1; k <= nv; k++) {
       const paso = largo / nv;
@@ -531,7 +563,7 @@
       x += Math.cos(an) * paso; y += Math.sin(an) * paso;
       // El remate puede ENGORDAR antes de morir —el remate en maza—: un muñón que
       // solo adelgaza se lee como una púa, y las púas no son de esta obra.
-      out.push({ x, y, hw: a.hw * rng.range(0.45, 1.15) * (k === nv ? rng.range(0.8, 1.5) : 1),
+      out.push({ x, y, hw: a.hw * rng.range(0.62, 1.28) * (k === nv ? rng.range(0.8, 1.5) : 1),
                  sesgo: rng.range(-SESGO_MAX, SESGO_MAX), corte: 0 });
     }
     const u = out[out.length - 1];
@@ -550,34 +582,51 @@
   // dibujo ya esté hecho. Su cuerpo es de cabos redondos y el dibujado es de
   // inglete topado, así que en las esquinas mide un pelo de más — cierra antes de
   // lo que se ve, nunca al revés, y por eso el umbral del ojo tiene holgura.
+  // OJO con la resolución: esto no solo informa, ELIGE. 'falta' se calcula sobre lo
+  // que mide y con eso se descarta un candidato, así que si midiera distinto en
+  // pantalla y a 300 dpi podría elegirse otro tejido y la misma seed daría dos
+  // imágenes. Pasaba: en A1 horizontal el conteo de ojos salía 0 donde en pantalla
+  // salía 1, porque un vacío justo en el filo de cerrarse cae de un lado o de otro
+  // según el redondeo en píxeles.
+  //
+  // Así que se mide en unidades de LADO CORTO, no en píxeles: la geometría se divide
+  // por S y la celda es 1/GRID. Y el número de columnas sale de la proporción
+  // NOMINAL, no del cociente en píxeles — 1075×760, 4961×3508 y 9933×7016 son el
+  // mismo 'horizontal' pero sus cocientes difieren lo bastante como para cruzar un
+  // Math.round. Es el mismo cuidado que ECLPS tiene con su rango de slots, y por la
+  // misma razón: del formato se lee la decisión ENTERA, no el píxel.
   function medir(cuerpos, W, H) {
     const S = min(W, H);
-    const paso = S / GRID;
-    const NX = max(4, Math.round(W / paso)), NY = max(4, Math.round(H / paso));
+    const k = 1 / S;                       // a unidades de lado corto
+    const paso = 1 / GRID;
+    const q = E.nominalAspect(max(W, H), S);
+    const NL = max(4, Math.round(q * GRID));
+    const NX = W >= H ? NL : GRID, NY = W >= H ? GRID : NL;
     const dentro = new Uint8Array(NX * NY);
 
     // Caja de cada tramo: sin ella esto es NX·NY·tramos y con 60 tramos en un A3
     // de rejilla fina ya se nota. Con caja, cada tramo solo mira sus celdas.
     for (const ch of cuerpos) {
       for (let i = 0; i < ch.length - 1; i++) {
-        const a = ch[i], b = ch[i + 1];
-        const hw = max(a.hw, b.hw) * (1 + SESGO_MAX) * MITER;
-        const x0 = max(0, Math.floor((min(a.x, b.x) - hw) / paso));
-        const x1 = min(NX - 1, Math.ceil((max(a.x, b.x) + hw) / paso));
-        const y0 = max(0, Math.floor((min(a.y, b.y) - hw) / paso));
-        const y1 = min(NY - 1, Math.ceil((max(a.y, b.y) + hw) / paso));
-        const L = hypot(b.x - a.x, b.y - a.y) || 1e-9;
+        const ax = ch[i].x * k, ay = ch[i].y * k, ahw = ch[i].hw * k;
+        const bx = ch[i + 1].x * k, by = ch[i + 1].y * k, bhw = ch[i + 1].hw * k;
+        const hw = max(ahw, bhw) * (1 + SESGO_MAX) * MITER;
+        const x0 = max(0, Math.floor((min(ax, bx) - hw) / paso));
+        const x1 = min(NX - 1, Math.ceil((max(ax, bx) + hw) / paso));
+        const y0 = max(0, Math.floor((min(ay, by) - hw) / paso));
+        const y1 = min(NY - 1, Math.ceil((max(ay, by) + hw) / paso));
+        const L = hypot(bx - ax, by - ay) || 1e-9;
         for (let gy = y0; gy <= y1; gy++) {
           for (let gx = x0; gx <= x1; gx++) {
-            const k = gy * NX + gx;
-            if (dentro[k]) continue;
+            const c = gy * NX + gx;
+            if (dentro[c]) continue;
             const px = (gx + 0.5) * paso, py = (gy + 0.5) * paso;
             // Media anchura donde cae la proyección: el cuerpo es un tronco de
             // cinta, no un tubo.
-            let t = ((px - a.x) * (b.x - a.x) + (py - a.y) * (b.y - a.y)) / (L * L);
+            let t = ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / (L * L);
             t = clamp(t, 0, 1);
-            const h = a.hw + (b.hw - a.hw) * t;
-            if (pointSegDist(px, py, a.x, a.y, b.x, b.y) <= h) dentro[k] = 1;
+            const h = ahw + (bhw - ahw) * t;
+            if (pointSegDist(px, py, ax, ay, bx, by) <= h) dentro[c] = 1;
           }
         }
       }
@@ -629,13 +678,26 @@
   }
 
   // ── Un candidato completo ───────────────────────────────────────────────────
+  // OJO: W y H llegan NORMALIZADOS (lado corto = 1, largo = proporción nominal), no
+  // en píxeles. Ver la nota del campo en render. Por eso S vale 1 y todas las
+  // medidas de aquí abajo son ya fracciones del lado corto.
   function tramar(rng, W, H, tipo, params) {
     const S = min(W, H);
     const t = TIPOS[tipo];
 
+    // LA ESCALA DEL CUERPO, por pieza. No es un ajuste del laboratorio que se haya
+    // colado aquí: es con qué grosor de plancha está cortada ESTA pieza, y hacía
+    // falta. Con el techo fijo, la mancha que sale de la gramática se agolpa entre
+    // el 16% y el 32%, así que al bajar los topes declarados el 9% de las piezas no
+    // podía cumplirlos por mucho que se retejiera — no había ningún candidato ligero
+    // que encontrar. Tirándola por candidato, el bucle de reintentos BUSCA de verdad
+    // sobre este eje: si el tipo pide una obra que respire, aparece una plancha más
+    // fina. Y de paso la familia gana la variación que le faltaba, que es la que hay
+    // entre una pieza cortada a hacha y otra cortada a cuchilla.
+    const esc = params.cuerpo ? params.cuerpo : rng.range(0.70, 1.14);
     // Niveles de anchura, geométricos. Se calculan aquí y no como constante
     // porque dependen del lado corto: la escala es de la hoja, no del px.
-    const wmax = S * (params.cuerpo ? W_MAX * params.cuerpo : W_MAX);
+    const wmax = S * W_MAX * esc;
     const niveles = [];
     for (let i = 0; i < NIVELES; i++) {
       niveles.push(S * W_MIN * Math.pow(wmax / (S * W_MIN), i / (NIVELES - 1)));
@@ -653,7 +715,12 @@
     const p = rng.range(1.25, 2.1);
     const ys = [];
     for (let j = 0; j < k; j++) {
-      const u = k === 1 ? rng.range(0.3, 0.7) : (j + 0.5) / k;
+      // Con UN estrato la gravedad no tiene nada que repartir, así que no se le
+      // aplica el exponente: aplicándoselo, un u de 0,30 con p de 2,1 caía en 0,076
+      // y la única masa de la pieza se pegaba al borde de arriba dejando tres cuartos
+      // de hoja vacíos — que no es una reserva, es una pieza sin centro.
+      if (k === 1) { ys.push(my + rng.range(0.28, 0.72) * alto); continue; }
+      const u = (j + 0.5) / k;
       const v = grav === 'N' ? Math.pow(u, p) : 1 - Math.pow(1 - u, p);
       ys.push(my + v * alto);
     }
@@ -701,6 +768,8 @@
     // concentra donde ya hay masa. Repartido a partes iguales, la jerarquía de
     // grosor que acaba de establecerse se deshace.
     const cual = () => (k > 1 && rng.bool(0.66)) ? prot : rng.int(0, k - 1);
+    // Un foco por estrato, tirado antes de los lazos para que no dependa de ellos.
+    const focos = chains.map(c => rng.int(1, max(1, c.length - 2)));
 
     // PUENTES. Dos entre el mismo par encierran suelo: el ojo es la consecuencia
     // de la soldadura, no un objeto que se dibuje.
@@ -736,7 +805,7 @@
     for (let n = 0; n < nM; n++) {
       const ch = chains[cual()];
       if (ch.length < 3) continue;
-      const mu = munon(rng, ch, S, niveles);
+      const mu = munon(rng, ch, S, niveles, focos[chains.indexOf(ch)]);
       if (mu) { cuerpos.push(mu); munones++; }
     }
 
@@ -749,7 +818,7 @@
       if (v.lv < lvMin) lvMin = v.lv;
       if (v.lv > lvMax) lvMax = v.lv;
     }
-    return { cuerpos, chains, k, prot, puentes, lazos, munones, grav, reserva, niveles,
+    return { cuerpos, chains, k, prot, puentes, lazos, munones, grav, reserva, niveles, esc,
              ojos: med.ojos, mancha: med.mancha,
              modulacion: lvMax >= lvMin ? lvMax - lvMin : 0 };
   }
@@ -790,6 +859,21 @@
     const cuad = E.fieldMode(params) === 'square';
     const AW = cuad ? S : W, ox = (W - AW) / 2;
 
+    // EL CAMPO NORMALIZADO. La composición NO se genera en píxeles: se genera en un
+    // campo cuyo lado corto vale 1 y cuyo lado largo es la proporción NOMINAL del
+    // formato, y solo al dibujar se multiplica por el lado corto real.
+    //
+    // No es elegancia, es corrección. Generando en píxeles, 1075×760 y 9933×7016 son
+    // el mismo 'horizontal' pero sus cocientes son 1,41447 y 1,41576, así que la
+    // geometría normalizada difería en la cuarta cifra — y como 'medir' ELIGE el
+    // candidato, un vacío al filo de cerrarse caía de un lado en pantalla y del otro
+    // a 300 dpi. Medido: el conteo de ojos cambiaba en el 20% de las seeds entre un
+    // tamaño y otro, y con él la rareza de la pieza. Generando normalizado, la misma
+    // seed en el mismo formato da la MISMA composición a cualquier resolución, que es
+    // el contrato de la casa.
+    const q = E.nominalAspect(max(AW, H), min(AW, H));
+    const fw = AW >= H ? q : 1, fh = AW >= H ? 1 : q;
+
     // 2. El tipo, y los candidatos. Declarar y comprobar: se traman varios con el
     //    mismo seed y se queda el que menos se sale de lo declarado. Con el mismo
     //    seed el orden de las tiradas es fijo, así que esto sigue siendo
@@ -798,7 +882,7 @@
     const t = TIPOS[tipo];
     let best = null, bestF = Infinity;
     for (let i = 0; i < REINTENTOS; i++) {
-      const c = tramar(new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0), AW, H, tipo, params);
+      const c = tramar(new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0), fw, fh, tipo, params);
       const f = falta(c, t);
       if (f < bestF) { bestF = f; best = c; }
       if (f === 0) break;
@@ -826,6 +910,7 @@
     //    profundidad que ordenar.
     ctx.save();
     ctx.translate(ox, 0);
+    ctx.scale(S, S);   // del campo normalizado al pliego
     // La segunda tinta, cuando la hay, se lleva UN estrato entero. No medio
     // cuerpo, no un degradado: un cuerpo. Es raro a propósito.
     const dos = rol.otra && rng.bool(0.14) && best.chains.length > 1;
@@ -851,6 +936,7 @@
     return { pal, rol, tipo, bg, dos, falta: bestF,
              field: cuad ? 'square' : 'sheet',
              estratos: best.k, puentes: best.puentes, lazos: best.lazos, munones: best.munones,
+             esc: best.esc,
              ojos: best.ojos, mancha: best.mancha, modulacion: best.modulacion,
              grav: best.grav, reserva: best.reserva };
   }
