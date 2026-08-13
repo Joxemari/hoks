@@ -1705,6 +1705,21 @@
     const juntas = (comp.plano.juntas || []).map(j => arcoDeParam(mapped, acum, j));
     const esJunta = (d) => juntas.some(j => abs(j - d) < 1e-6);
     const pizca = max(E.unit(S, ALTO, REF), width * 0.15);
+    // LA COSTURA DE 1 PX ERA EL FILO DEL CABO.
+    // El halo y el cuerpo acababan en el MISMO arco, y el remate va a ras
+    // (butt). En los píxeles que ese filo parte por la mitad, el halo se
+    // lleva una fracción f de la tinta y el cuerpo sólo devuelve (1−f) de
+    // lo que queda: sobra f(1−f) de fondo, hasta un 25% en el píxel justo
+    // encima del filo. Sobre la sección vecina —ya pintada— eso se lee como
+    // una raya finísima cruzando la cinta.
+    //
+    // Basta con que el cuerpo PASE del halo: su filo cae más allá y lo tapa
+    // entero. Es lo que ya hacían las juntas con la pizca, y por eso las
+    // juntas nunca tuvieron costura. El mínimo de 1 px es porque el efecto
+    // es de antialias y no de composición: por debajo de un píxel de
+    // dispositivo no hay nada que tapar, y las celdas de la landing se
+    // dibujan a 320 px de lado corto.
+    const sobra = max(E.unit(S, ALTO, REF), 1);
     const rango = {};
     orden.forEach((sec, k) => { rango[sec] = k; });
 
@@ -1735,8 +1750,12 @@
       // multiplica por 2,4 las costuras. Los dos pierden por lo mismo: el
       // remate del halo alargado corta a la vecina. Así que el solape se queda
       // como está, y el hueco se ataca por donde de verdad se produce.
-      const iniC = max(0, !aFin ? a - (aJ ? pizca : caboEn(a)) : a);
-      const finC = min(total, !bFin ? b + (bJ ? pizca : caboEn(b)) : b);
+      // El `sobra` va SÓLO en los cabos internos. En los remates de verdad
+      // —los cuatro extremos de cinta— se midió y empeora: alargar ahí mete
+      // tinta en el hueco de la otra cinta y el tipo 'dos' pasa de 4 a 12 px
+      // de costura. Un remate es el final de la cinta, no una junta tapada.
+      const iniC = max(0, !aFin ? a - (aJ ? pizca : caboEn(a) + sobra) : a);
+      const finC = min(total, !bFin ? b + (bJ ? pizca : caboEn(b) + sobra) : b);
       const iniH = max(0, !aFin && !aJ ? a - caboEn(a) : a);
       const finH = min(total, !bFin && !bJ ? b + caboEn(b) : b);
 

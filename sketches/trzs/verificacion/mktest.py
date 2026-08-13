@@ -3,8 +3,13 @@ import sys, re
 # que expone las tripas. Probar otra cosa que no sea el artefacto real es
 # probar otra cosa.
 src = open(__import__('os').path.join(__import__('os').path.dirname(__file__),'..','algo.js')).read()
-cierre = "  (global.HOKS = global.HOKS || {}).TRZS = { render, traits, BG_GRADIENT, REF };"
-assert cierre in src
+# La línea de exportación se busca por patrón, no literal: lo que exporta la
+# obra crece —FORMATS llegó después— y anclarse al texto exacto rompía el
+# banco entero por añadir una palabra. El assert sigue: si no aparece, falla
+# aquí y no a mitad de una batería.
+m = re.search(r'^  \(global\.HOKS = global\.HOKS \|\| \{\}\)\.TRZS = \{[^}]*\};$', src, re.M)
+assert m, 'no encuentro la exportacion de HOKS.TRZS en ../algo.js'
+cierre = m.group(0)
 expo = cierre + """
   global.__TRZS = { generate, renderComposition, arcosDe, arcoDeParam, puntoEnArco,
                     trazarTramo, curvaDensa, escalaDe, mapToSquare, drawDots,
@@ -40,6 +45,13 @@ elif roto == 'ojo':
     a = "      const rad = D[mejor] - aire;"
     assert a in src
     src = src.replace(a, "      const rad = D[mejor];   // ROTO A PROPOSITO: sin aire")
+elif roto == 'costura':
+    # El cuerpo vuelve a acabar a ras del halo, que es de donde salía la raya
+    # de 1 px. Es el control del bloque de costuras: sin él, su cero no dice
+    # nada. Deja el resto exactamente igual.
+    a = "    const sobra = max(E.unit(S, ALTO, REF), 1);"
+    assert a in src
+    src = src.replace(a, "    const sobra = 0;   // ROTO A PROPOSITO")
 elif roto == 'remate':
     # Abrir la puerta no basta: la selección puede seguir prefiriendo un tejido
     # con los remates holgados. Se abre la puerta Y se quitan los alternativos,
