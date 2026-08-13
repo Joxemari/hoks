@@ -1114,7 +1114,20 @@
     }
 
     if (!X.length) {
-      return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], cruces: [], plano: { secciones: [[0, last]], orden: [0], ciclos: 0, atasco: 0, juntas: [], volteados: 0 }, crossings: 0, remate: Infinity };
+      // SIN CRUCES SIGUE HABIENDO SALTO.
+      // El atajo devolvía UNA sección de 0 a last, salto incluido — y el salto
+      // sólo se deja de pintar cuando una sección cae dentro de él, cosa que
+      // con una sección única no pasa nunca. Resultado: una obra de dos cintas
+      // sin cruces se dibujaba como UNA cinta, con el salto pintado uniéndolas.
+      // Se veía como dos remates soldados (46 de 48 puntos) en las obras del
+      // tipo 'dos' que salen sin ningún cruce.
+      const secc = _salto >= 0
+        ? [[0, _salto], [_salto, _salto + 1], [_salto + 1, last]]
+        : [[0, last]];
+      const ord = secc.map((_, i) => i);
+      return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], cruces: [],
+               plano: { secciones: secc, orden: ord, ciclos: 0, atasco: 0, juntas: [], volteados: 0 },
+               crossings: 0, remate: Infinity };
     }
 
     const visits = [];
