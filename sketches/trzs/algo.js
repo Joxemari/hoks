@@ -2062,7 +2062,11 @@
       for (const pasada of ['halo', 'tinta']) {
       for (const [p, hacia] of cabos) {
         const kC = cintaEn(idxDe(p));
-        if (pasada === 'halo' && haloDe(kC) === col.bg) continue;
+        // La pasada de halo va SIEMPRE, no sólo cuando el halo se ve sobre el
+        // suelo. El remate se pinta al final, encima de todo: si cae sobre un
+        // cruce y va en tinta pura, tapa la incisión de ese cruce. Con su halo
+        // delante, el corte se mantiene. Antes esta pasada estaba condicionada
+        // al trazo fantasma y por eso el defecto sólo salía en obras normales.
         const crece = pasada === 'halo' ? gap : 0;
         ctx.fillStyle = pasada === 'halo' ? haloDe(kC) : tintaDe(kC);
         if (cfg.ends === "redondos") {
