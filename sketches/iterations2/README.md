@@ -1,6 +1,17 @@
-# iterations2 — obra en curso (sin nombre)
+# iterations2 — el boceto de p5 del que salió TRZS
 
-**No está graduada.** Esto es el sketch de p5 que se pega en OpenProcessing, no
+> **GRADUADA.** Esta obra ya es una familia: **TRZS**, en `sketches/trzs/`.
+> Lo que se publica y se opera es eso — `algo.js` sobre el motor compartido,
+> harness en el laboratorio general, página `trzs.html` y celda en la landing.
+>
+> Esta carpeta se queda como **el boceto de p5 del que salió**, porque el porte
+> se verificó contra ella: 200 obras de 200 idénticas al píxel. Es la referencia
+> de esa prueba, no código vivo. **No la toques para trabajar la obra.**
+>
+> Lo que TRZS tiene y esto no: los tres formatos, el fondo y el grano del motor,
+> los lotes del laboratorio general, el muro, y el hueco de la incisión cerrado.
+
+**No estaba graduada cuando se escribió lo de abajo.** Esto es el sketch de p5 que se pega en OpenProcessing, no
 producción. No hay página de obra, no entra en `works.json`, no se publica.
 Vive aquí solo para no perderlo entre sesiones.
 

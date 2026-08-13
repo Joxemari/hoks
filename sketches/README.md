@@ -52,7 +52,7 @@ sketches/
   trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
 ```
 
-### TRZS: el porte salió idéntico al píxel
+### TRZS: el porte salió idéntico al píxel, y luego mejor
 
 `trzs/` viene de `sketches/iterations2/` (p5). El porte quitó p5 entero —vectores,
 azar, globales matemáticos— y **la imagen no se movió ni un píxel**: 200 obras de
@@ -72,6 +72,25 @@ que quedaba estaba en el camino caliente, sobre todo `p5.Vector`.
 La equivalencia se midió sobre el algoritmo y su dibujo. Lo que el contrato añade
 —fondo del motor, grano, los tres formatos— es nuevo por definición y se verificó
 aparte.
+
+**Y desde ahí ya no es idéntica, a propósito.** Al portarla se encontró un hueco
+en la incisión que p5 también tenía: la zona que impide poner una junta cerca de
+un cruce medía `(W/2)/senθ × 1,20`, que cubre la huella del cruce pero **no el
+sobresaliente con que el cuerpo se alarga en la junta**. Donde ese trozo de cinta
+sin halo caía dentro de la incisión, la tapaba — hasta 26,5 px sobre una cinta de
+66, el 40% de su anchura. Con el factor en **1,60** se cierra, sin coste medible:
+las costuras se mueven un 1,4% y no se pierde ni un tejido.
+
+El defecto no se veía porque el detector de la incisión promediaba la cobertura de
+todo el anillo del cruce, y un hueco local se diluía. El que lo encontró no tiene
+umbrales: camina los dos bordes de la hebra de arriba y, donde debajo hay cuerpo
+de la otra, exige fondo; cuenta píxeles de **tinta sólida** seguidos. Un hueco es
+un hueco.
+
+Cuatro arreglos se probaron antes y perdieron, y los cuatro están medidos en el
+código para que no se reintenten: solapar sólo la sección que pinta después,
+alargar el halo de las dos en la junta, reducir la pizca del solape, y —descartado
+midiendo— que hubiera cuerpos solapados sin cruce registrado.
 
 `dtkrt/` es el único caso hasta ahora de obra que **nace aquí** en vez de portarse
 desde p5: propuesta de sistema para mirar en el grid de obras antes de decidir si
