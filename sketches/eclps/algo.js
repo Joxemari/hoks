@@ -1,4 +1,4 @@
-/* LRRG — lerroa. Iteración en un solo eje: una fila de círculos.
+/* ECLPS — lerroa. Iteración en un solo eje: una fila de círculos.
  *
  * La gramática, en cuatro reglas:
  *   1. Ningún círculo pisa el borde. El margen es el del SISTEMA
@@ -35,8 +35,8 @@
  *
  * Canvas 2D puro. Depende de window.HOKS (_engine.js).
  *
- *   HOKS.LRRG.render(ctx, W, H, seed, opts) → { pal, n, drawn, ratio, mode, … }
- *   HOKS.LRRG.traits(res)                   → { list:[…], overall }
+ *   HOKS.ECLPS.render(ctx, W, H, seed, opts) → { pal, n, drawn, ratio, mode, … }
+ *   HOKS.ECLPS.traits(res)                   → { list:[…], overall }
  */
 (function (global) {
   'use strict';
@@ -53,6 +53,8 @@
   const A_MIN = 0.40, A_MAX = 0.85;   // alpha cuando la tinta no es opaca
   const P_OPAQUE = 0.45;      // probabilidad de tinta opaca
   const P_MULTIPLY = 0.35;    // probabilidad de fundido multiply
+  const RING_ALPHA_MIN = 0.70; // tinta mínima del contorno (ver acoplamientos)
+  const MUD_LUMA = 0.18;      // por debajo de esto, un color es "negro" para multiply
   const RATIO_MIN = 1.0, RATIO_MAX = 8.0;   // solape disponible: tangente → fundido
   const MODES = [
     { name: 'Stack', prob: 0.50 },
@@ -77,6 +79,11 @@
   // Rachas alternas de presencia y silencio. Cada racha mide 1..runMax slots.
   // Es la diferencia entre un ritmo y un ruido: aquí las agrupaciones se
   // componen, no se le dejan al azar slot a slot.
+  // ⟨esaldia:es⟩ El paso entre centros no cambia nunca. Lo que cambia es cuál de los círculos se calla.
+  // ⟨esaldia:es⟩ La retícula no se rompe: el ritmo está hecho de ausencias.
+  // ⟨esaldia:en⟩ The step between centres never changes. What changes is which circle falls silent.
+  // ⟨esaldia:en⟩ The lattice never breaks: the rhythm is made of absences.
+  // ⟨gramatika⟩
   function cadence(rng, n, runMax) {
     const out = [];
     let on = rng.bool(0.6);                  // ¿la fila empieza sonando o callada?
@@ -87,6 +94,7 @@
     }
     return out;
   }
+  // ⟨/gramatika⟩
 
   // ── Entrada principal ───────────────────────────────────────────────────────
   // opts: { palettes, locked, lockedIdx, params:{ field, bg, bgProbs, grainScale,
@@ -158,8 +166,21 @@
     const mode   = params.mode   ? params.mode   : mRnd;
     const rhythm = params.rhythm ? params.rhythm : rhyRnd;
     const runMax = params.runMax ? params.runMax : runMaxRnd;
-    const alpha  = params.alpha  ? params.alpha  : (opaqueRnd ? 1 : aRnd);
-    const blend  = params.blend  ? params.blend  : (mulRnd ? 'multiply' : 'source-over');
+    // Dos acoplamientos, medidos sobre 3.000 tiradas antes de ponerlos. Se
+    // aplican DESPUÉS de tirar, así que no mueven el stream del RNG. Y solo
+    // corrigen la tirada automática: si el laboratorio fuerza un valor, pasa
+    // tal cual — explorar incluye poder mirar la zona mala a propósito.
+    //   · Un contorno al 40% sobre el degradado no es una veladura, es un
+    //     fallo: se perdía del todo en el 4,2% de las piezas. Ring conserva
+    //     una tinta mínima.
+    //   · multiply sobre una paleta con negros colapsa a barro y se come la
+    //     paleta entera (12,0%). Con un color muy oscuro en la mano no se
+    //     funde: el fundido estaba eligiendo por la paleta, no por la obra.
+    const alphaRaw = params.alpha ? params.alpha : (opaqueRnd ? 1 : aRnd);
+    const alpha = (!params.alpha && mode === 'Ring') ? Math.max(alphaRaw, RING_ALPHA_MIN) : alphaRaw;
+    const blendRaw = params.blend ? params.blend : (mulRnd ? 'multiply' : 'source-over');
+    const muddy = blendRaw === 'multiply' && colors.some(c => E.luma(c) < MUD_LUMA);
+    const blend = (!params.blend && muddy) ? 'source-over' : blendRaw;
 
     const solo  = n < 2 || span <= 0;             // un único círculo: al centro
     const pitch = solo ? 0 : span / (n - 1);      // distancia entre centros — constante
@@ -283,5 +304,5 @@
   // puede cambiarlo por works.json; esto es lo que vale sin red y por defecto.
   const FORMATS = ['double'];
 
-  (global.HOKS = global.HOKS || {}).LRRG = { render, traits, slotRange, THRESHOLD, MODES, RHYTHMS, BG_GRADIENT, FORMATS };
+  (global.HOKS = global.HOKS || {}).ECLPS = { render, traits, slotRange, THRESHOLD, MODES, RHYTHMS, BG_GRADIENT, FORMATS };
 })(typeof window !== 'undefined' ? window : globalThis);

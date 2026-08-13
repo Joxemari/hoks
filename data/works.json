@@ -90,16 +90,20 @@
     }
   },
   {
-    "id": "lrrg",
-    "name": "LRRG",
-    "slug": "lrrg",
-    "active": false,
+    "id": "eclps",
+    "name": "ECLPS",
+    "slug": "eclps",
+    "active": true,
     "description": "A single row of circles on one axis. The step between centres never changes; what changes is which of them are drawn. The grid stays perfect — the irregularity is all absence.",
-    "page": "",
+    "page": "eclps.html",
     "canvas": "double · dos pliegos apaisados (2√2:1)",
     "formats": [
       "double"
     ],
-    "created": 1786500000000
+    "created": 1786500000000,
+    "cartela": {
+      "es": "El paso entre centros no cambia nunca. Lo que cambia es cuál de los círculos se calla.\nLa retícula no se rompe: el ritmo está hecho de ausencias.",
+      "en": "The step between centres never changes. What changes is which circle falls silent.\nThe lattice never breaks: the rhythm is made of absences."
+    }
   }
 ]

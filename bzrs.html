@@ -264,11 +264,23 @@ function applyFormat(){
   const c=document.getElementById('c'),d=FMT?FMT.preview():HOKS.previewDims('square');
   if(c.width!==d.W||c.height!==d.H){c.width=d.W;c.height=d.H;}
 }
-FMT=HOKS.mountFormat(document.getElementById('formatMount'),{
-  work:'bzrs', defaultFormat:'square',
-  onChange(){ applyFormat(); draw(currentSeed); }
-});
-applyFormat();
+function mountFmt(list){
+  FMT=HOKS.mountFormat(document.getElementById('formatMount'),{
+    work:'bzrs', defaultFormat:'square', formats:list,
+    onChange(){ applyFormat(); draw(currentSeed); }
+  });
+  applyFormat();
+}
+// Los formatos que ofrece la familia los decide works.json desde el panel, no
+// esta página. Se monta ya con los de por defecto —sin red la página tiene que
+// seguir funcionando— y se vuelve a montar solo si el panel dice otra cosa.
+mountFmt(null);
+fetch(RAW+'works.json?t='+Date.now()).then(r=>r.ok?r.json():null).then(works=>{
+  const list=HOKS.formatsFor('bzrs',works);
+  if(!list || list.join()===HOKS.FORMATS.join()) return;
+  mountFmt(list);
+  draw(currentSeed);
+}).catch(()=>{});
 
 function draw(seed){
   if(!palettes.length)return;

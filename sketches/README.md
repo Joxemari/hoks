@@ -49,28 +49,23 @@ sketches/
   krrtk/           ← graduada (porte fiel, verificado op-a-op)
   dtk/             ← graduada (porte fiel, verificado op-a-op)
   dtkrt/            ← EN PRUEBAS: familia nueva, aún sin página de producción
-  lrrg/             ← EN PRUEBAS: iteración horizontal, aún sin página de producción
+  eclps/             ← EN PRUEBAS: iteración horizontal, aún sin página de producción
 ```
 
 `dtkrt/` fue el primer caso de obra que **nace aquí** en vez de portarse
 desde p5: propuesta de sistema para mirar en hoja de contactos antes de decidir si
 merece página. No está en `data/works.json` ni publicada.
 
-`lrrg/` es el segundo, y llega igual: nace aquí. Fila única de círculos con paso
-constante donde las ausencias hacen el ritmo. Ya usa el harness compartido y está
-en `GRADUATED`, así que existe en los dos formatos y en el muro.
+`eclps/` es el segundo, y llega igual: nace aquí. Una fila de círculos con paso
+constante donde las ausencias hacen el ritmo — un eclipse es exactamente eso, un
+disco que tapa a otro. Usa el harness compartido, está en `GRADUATED` y ya tiene
+página (`eclps.html`) y entrada activa en `works.json`.
 
-Queda una decisión abierta, y es de formato. La obra se compuso mirando **dos A3
-uno al lado del otro** (2√2:1), que no está en `FORMATS`: es la única proporción
-de la tabla que no sería un pliego DIN. En `horizontal` (√2:1) el recorrido de los
-centros se queda en ~0,62 del lado corto, así que caben pocos círculos y la fila
-pierde el ritmo largo que justificaba la familia. La obra existe y cumple el
-contrato en los dos formatos; lo que está por decidir es si esa proporción entra
-en la tabla —y con ella en pliego, muro, lote y cartela— o si la familia se
-conforma con √2:1.
-
-El nombre sigue llevando **G**, heredada de cuando el grano justificaba familia
-aparte. Ya no hay G: está pendiente de renombrar.
+Es también la primera familia que existe en **un solo formato**: `double`, dos
+pliegos apaisados uno al lado del otro (2√2:1). No es capricho ni límite técnico
+—la obra se compone igual en cuadrado— es que una fila necesita recorrido: en
+1:1 el trayecto de los centros da para dos o tres círculos y deja de ser una
+fila. De ahí sale el mecanismo de formatos por familia.
 
 Cada obra expone el mismo contrato:
 
