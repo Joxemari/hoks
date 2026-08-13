@@ -1,0 +1,49 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
+<script src="../../_engine.js"></script>
+<script src="./trzs_test.js"></script>
+<script>
+// ============================================================
+// CUERPOS QUE SE SOLAPAN SIN CRUCE REGISTRADO
+// El nudo se construye con las intersecciones de los EJES. Dos hebras
+// pueden solaparse de CUERPO sin que sus ejes se corten —corriendo casi
+// paralelas, o acabando una junto a la otra—. Ahi no hay cruce, no hay
+// profundidad decidida y no hay incision: el halo no separa nada porque
+// nadie sabe que hay algo que separar.
+//
+// Se mide en el ESPACIO NORMALIZADO del algoritmo, en unidades de
+// anchura: distancia minima entre cada par de tramos NO consecutivos,
+// descartando los pares que ya tienen cruce registrado.
+// ============================================================
+const T = window.__TRZS;
+function segSeg(p1,p2,p3,p4){
+  // distancia minima entre dos segmentos
+  const d=(a,b,c)=>{ const vx=c.x-b.x, vy=c.y-b.y, wx=a.x-b.x, wy=a.y-b.y;
+    const L=vx*vx+vy*vy; let t=L?(wx*vx+wy*vy)/L:0; t=t<0?0:t>1?1:t;
+    return Math.hypot(a.x-(b.x+vx*t), a.y-(b.y+vy*t)); };
+  return Math.min(d(p1,p3,p4), d(p2,p3,p4), d(p3,p1,p2), d(p4,p1,p2));
+}
+window.solapes = (seed, pals, extra) => {
+  const c = T.generate(seed, Object.assign({paletas:pals, aspecto:1, dots:'no'}, extra||{}));
+  const p = c.points, W = c.width, last = p.length-1;
+  // los pares que YA tienen cruce
+  const conCruce = new Set();
+  for (const q of c.cruces) conCruce.add(Math.floor(q.arriba)+'-'+Math.floor(q.abajo)),
+                            conCruce.add(Math.floor(q.abajo)+'-'+Math.floor(q.arriba));
+  const salto = c.salto == null ? -1 : c.salto;
+  let peor = Infinity, cuenta = 0; const casos = [];
+  for (let i=0;i<last;i++){
+    if (i===salto) continue;
+    for (let j=i+2;j<last;j++){
+      if (j===salto) continue;
+      if (conCruce.has(i+'-'+j)) continue;
+      const d = segSeg(p[i],p[i+1],p[j],p[j+1]) / W;
+      if (d < peor) peor = d;
+      if (d < 1.0) { cuenta++; if (casos.length<3) casos.push({i,j,d:+d.toFixed(2)}); }
+    }
+  }
+  return { seed, tipo:c.tipo, cruces:c.cruces.length,
+           peorHolgura:+peor.toFixed(2), solapados:cuenta, casos,
+           holguraMin:c.cfg.holguraMin, avoidRatio:c.cfg.avoidRatio };
+};
+window.__ok = true;
+</script></body></html>

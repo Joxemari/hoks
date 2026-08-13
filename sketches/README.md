@@ -50,6 +50,9 @@ sketches/
   dtk/             ← graduada (porte fiel, verificado op-a-op)
   dtkrt/            ← EN PRUEBAS: familia nueva, aún sin página de producción
   trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
+    verificacion/   ← los detectores del halo y sus controles rotos a propósito.
+                      No se publica: se ejecuta a mano cuando alguien toca el
+                      dibujo de la cinta. Ver su README.
 ```
 
 ### TRZS: el porte salió idéntico al píxel, y luego mejor

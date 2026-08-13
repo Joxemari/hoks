@@ -1,0 +1,15 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
+<script src="../../_engine.js"></script><script src="./trzs_test.js"></script><script>
+const S=900, T=window.__TRZS;
+window.h=(seed,pal,extra)=>{
+  const c=T.generate(seed,Object.assign({paletas:pal,aspecto:1},extra||{}));
+  const cv=document.createElement('canvas'); cv.width=cv.height=S;
+  const x=cv.getContext('2d');
+  T.renderComposition(x,0,0,S,c,S,true,false);
+  const d=x.getImageData(0,0,S,S).data;
+  let hh=2166136261>>>0; for(let k=0;k<d.length;k+=4){hh^=d[k];hh=Math.imul(hh,16777619)>>>0;
+    hh^=d[k+1];hh=Math.imul(hh,16777619)>>>0; hh^=d[k+2];hh=Math.imul(hh,16777619)>>>0;}
+  return {h:hh, pal:c.colores.nombre, tipo:c.tipo, cruces:c.cruces.length, secs:c.plano.secciones.length};
+};
+window.__ok=true;
+</script></body></html>
