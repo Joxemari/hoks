@@ -1996,7 +1996,14 @@
         // La pasada de halo es la que separa el remate del suelo cuando la
         // cinta es del color del suelo; si el halo ES el fondo, no pinta nada
         // que se vea y se salta.
-        if (pasada === 'halo' && haloDe(kC) === col.bg && !borrar) continue;
+        // La pasada de halo vuelve a ser SÓLO para el trazo fantasma, que es
+        // para lo que se hizo: separar del suelo un remate del color del suelo.
+        // Ponerla en todos los remates fue un intento de tapar el hueco de la
+        // incisión, y no era eso —el hueco era de ORDEN— pero sí traía de vuelta
+        // la costura de 1 px: halo y tinta acabando a ras es exactamente el
+        // mecanismo f(1−f) que se cerró en el cuerpo. Medido: 26–107 px de
+        // costura pasaban a 2.512 por defecto y 5.561 con inglete.
+        if (pasada === 'halo' && haloDe(kC) === col.bg) continue;
         const crece = pasada === 'halo' ? gap : 0;
         ctx.fillStyle = pasada === 'halo' ? haloDe(kC) : tintaDe(kC);
         if (cfg.ends === "redondos") {
