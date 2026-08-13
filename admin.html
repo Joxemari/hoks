@@ -442,8 +442,15 @@ async function loadWorks() {
   renderWorks();
 }
 
+// Un guardado que falla NO puede dejar el cambio en pantalla. El panel seguía
+// enseñando lo editado aunque el commit no hubiera llegado, así que parecía
+// guardado hasta recargar — y así es como algo puede "existir" en el panel y no
+// estar en el fichero. Si la escritura falla se recupera el estado real de
+// GitHub; ghFetch ya ha puesto su propio toast con el motivo.
 async function saveWorks() {
-  await ghFetch('data/works.json', works, 'update works');
+  const ok = await ghFetch('data/works.json', works, 'update works');
+  if (!ok) { works = await ghRead('works.json') || []; renderWorks(); }
+  return ok;
 }
 
 
@@ -505,21 +512,20 @@ ${GRADUATED.includes(w.slug)?`
 }
 
 async function toggleWork(i, val) {
+  const name = works[i].name;
   works[i].active = val;
-  await saveWorks();
-  toast(works[i].name + (val ? ' activated' : ' deactivated'));
+  if (await saveWorks()) toast(name + (val ? ' activated' : ' deactivated'));
 }
 async function deleteWork(i) {
   if (!confirm('Delete ' + works[i].name + '?')) return;
   works.splice(i, 1);
-  await saveWorks();
+  if (!await saveWorks()) return;
   renderWorks();
   toast('Deleted');
 }
 async function saveWorkDesc(i) {
   works[i].description = $('desc-'+i).value.trim();
-  await saveWorks();
-  toast('Description saved');
+  if (await saveWorks()) toast('Description saved');
 }
 // El texto de la cartela: escritura, y la escritura se corrige. Por eso vive
 // aquí y no en el algo.js. El fragmento de código NO: ese es la obra.
@@ -534,9 +540,9 @@ const FORMAT_IDS = ['square','horizontal','double'];
 // obra cae a lo que declara su algo.js en vez de quedarse sin formatos.
 async function saveWorkFormats(i) {
   const picked = FORMAT_IDS.filter(f => $('fmt-'+f+'-'+i).checked);
+  const name = works[i].name;
   if (picked.length) works[i].formats = picked; else delete works[i].formats;
-  await saveWorks();
-  toast(works[i].name + ' · formats: ' + (picked.length ? picked.join(', ') : 'from algo.js'));
+  if (await saveWorks()) toast(name + ' · formats: ' + (picked.length ? picked.join(', ') : 'from algo.js'));
 }
 async function saveWorkCartela(i) {
   const c = {};
@@ -545,8 +551,7 @@ async function saveWorkCartela(i) {
     if (v) c[lg] = v;
   }
   if (Object.keys(c).length) works[i].cartela = c; else delete works[i].cartela;
-  await saveWorks();
-  toast('Wall label saved');
+  if (await saveWorks()) toast('Wall label saved');
 }
 function openAddWorkModal() {
   const name = prompt('Family name (e.g. BZRSG):'); if (!name) return;
@@ -623,8 +628,15 @@ function renderPalettes(){
       </div>
     </div>`}).join('');
 }
-async function togglePal(i,val){pals[i].active=val;await ghFetch('data/palettes.json',pals,`toggle palette: ${pals[i].name}`);renderPalettes();toast(val?'Palette activated':'Deactivated');}
-async function deletePal(i){if(!confirm('Delete this palette?'))return;const name=pals[i].name;pals.splice(i,1);await ghFetch('data/palettes.json',pals,`delete: ${name}`);renderPalettes();toast('Deleted');}
+// Misma regla que en works: sin commit no hay cambio, y no se anuncia.
+async function persistPals(msg){
+  const ok=await ghFetch('data/palettes.json',pals,msg);
+  if(!ok){pals=await ghRead('palettes.json')||[];}
+  renderPalettes();
+  return ok;
+}
+async function togglePal(i,val){const n=pals[i].name;pals[i].active=val;if(await persistPals(`toggle palette: ${n}`))toast(val?'Palette activated':'Deactivated');}
+async function deletePal(i){if(!confirm('Delete this palette?'))return;const name=pals[i].name;pals.splice(i,1);if(await persistPals(`delete: ${name}`))toast('Deleted');}
 
 let editIdx=null,tmpColors=[];
 function openPalModal(idx){editIdx=idx!==undefined?idx:null;const p=editIdx!==null?pals[editIdx]:null;$('modal-title').textContent=p?'Edit Palette':'New Palette';$('pal-name').value=p?.name||'';$('pal-tags').value=(p?.tags||[]).join(', ');$('pal-notes').value=p?.notes||'';tmpColors=p?[...p.colors]:[];refreshChips();$('overlay').classList.add('open');setTimeout(()=>$('pal-name').focus(),100);}
@@ -640,10 +652,14 @@ function editPal(i){openPalModal(i);}
 async function savePalette(){
   const name=$('pal-name').value.trim();if(!name){toast('Add a name');return;}if(!tmpColors.length){toast('Add at least one color');return;}
   const tags=$('pal-tags').value.split(',').map(t=>t.trim()).filter(Boolean),notes=$('pal-notes').value.trim();
-  if(editIdx!==null){pals[editIdx]={...pals[editIdx],name,colors:[...tmpColors],tags,notes};toast('Palette updated');}
-  else{pals.unshift({id:Date.now(),name,colors:[...tmpColors],tags,notes,active:true,created:Date.now()});toast('Palette saved');}
-  await ghFetch('data/palettes.json',pals,(editIdx!==null?'update':'add')+' palette: '+name);
-  closePalModal();renderPalettes();
+  const editing=editIdx!==null;
+  if(editing){pals[editIdx]={...pals[editIdx],name,colors:[...tmpColors],tags,notes};}
+  else{pals.unshift({id:Date.now(),name,colors:[...tmpColors],tags,notes,active:true,created:Date.now()});}
+  // El aviso va DESPUÉS de escribir: antes se cantaba 'Palette saved' aunque el
+  // commit fallara. Y si falla no se cierra el modal, para no tirar el trabajo.
+  if(!await persistPals((editing?'update':'add')+' palette: '+name))return;
+  closePalModal();
+  toast(editing?'Palette updated':'Palette saved');
 }
 
 // ── GALLERY ───────────────────────────────────────────
