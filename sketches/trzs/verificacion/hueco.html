@@ -1,0 +1,219 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
+<script src="../../_engine.js"></script>
+<script src="./SRC"></script>
+<script>
+// ============================================================
+// HUECOS EN LA INCISIÓN — sin umbrales, sin promedios
+//
+// La incisión vive en los dos BORDES de la hebra de arriba, a W/2+gap/2
+// del eje. Se camina por esos dos bordes y, en cada punto donde DEBAJO
+// hay cuerpo de la otra hebra, el píxel TIENE que ser fondo. Si es
+// tinta, es un hueco, y lo que importa es cuántos píxeles seguidos:
+// un pixel suelto es antialias, veinte seguidos es que la incisión no
+// está. Sin bins, sin cobertura media, sin nada que diluya.
+// ============================================================
+const S = 900, T = window.__TRZS;
+const lienzo = () => { const c=document.createElement('canvas'); c.width=c.height=S; return c; };
+const cons = (v,a,b) => v<a?a:v>b?b:v;
+
+window.huecos = (seed, pals, extra) => {
+  const cfg = Object.assign({ paletas: pals, dots: 'no', aspecto: 1 }, extra || {});
+  const c = T.generate(seed, cfg);
+  const cA = lienzo(), xA = cA.getContext('2d');
+  const r = T.renderComposition(xA, 0, 0, S, c, S, true, false);
+  const W = r.width, gap = r.gap, m = r.mapped;
+  const acum = T.arcosDe(m), total = acum[acum.length-1];
+  const img = xA.getImageData(0,0,S,S).data;
+  const hex = h => [1,3,5].map(k=>parseInt(h.substr(k,2),16));
+  const B = hex(c.colores.bg);
+  const F = hex(c.colores.fg), F2 = hex(c.colores.fg2);
+  // fg2 SOLO se pinta cuando hay dos cintas. Y con una sola es, por
+  // construcción, mixHex(fg, bg, 0.38): exactamente el color de un píxel
+  // mezclado al 38%. Contarlo como tinta convertía cada filo antialias en un
+  // hueco — y de ahí salían rachas de 28 px que no existen.
+  const dosCintas = c.salto != null && c.salto >= 0;
+  const d3 = (i,C) => Math.abs(img[i]-C[0])+Math.abs(img[i+1]-C[1])+Math.abs(img[i+2]-C[2]);
+  // Tres clases, no dos. Un pixel MEZCLADO es el filo antialias de algo, no un
+  // hueco: contarlo como hueco es lo que inflaba las rachas. Hueco es tinta
+  // SOLIDA donde tiene que haber fondo.
+  const clase = (x,y) => { x=Math.round(x); y=Math.round(y);
+    if (x<0||y<0||x>=S||y>=S) return 'fondo';
+    const i=4*(y*S+x);
+    if (d3(i,B) < 55) return 'fondo';
+    if (d3(i,F) < 55 || (dosCintas && d3(i,F2) < 55)) return 'tinta';
+    return 'mezcla'; };
+  const esFondo = (x,y) => clase(x,y) === 'fondo';
+
+  // Geometría de las secciones, tal y como se pintan.
+  const secs = c.plano.secciones.map(([a,b]) => [T.arcoDeParam(m,acum,a), T.arcoDeParam(m,acum,b)]);
+  const juntas = (c.plano.juntas||[]).map(j => T.arcoDeParam(m,acum,j));
+  const esJunta = d => juntas.some(j => Math.abs(j-d) < 1e-6);
+  const pizca = Math.max(HOKS.unit(S,S,900), W*0.15);
+  const dir = s => { const i = cons(Math.floor(s),0,m.length-2);
+    return T.PV.sub(m[i+1], m[i]).normalize(); };
+  const caboEn = d => { let l = W*c.cfg.cabo;
+    for (const q of c.cruces) { if (Math.abs(T.arcoDeParam(m,acum,q.abajo)-d) > 1e-6) continue;
+      const sen = Math.max(Math.abs(Math.sin(dir(q.abajo).angleBetween(dir(q.arriba)))), 0.18);
+      l = Math.max(l, (W/2)/sen*c.cfg.caboMargen); }
+    return l; };
+  const salto = c.salto != null && c.salto >= 0 ? [acum[c.salto], acum[c.salto+1]] : null;
+  const esFin = d => d <= 1e-6 || d >= total-1e-6 ||
+    (salto && (Math.abs(d-salto[0])<1e-6 || Math.abs(d-salto[1])<1e-6));
+  // Los limites del HALO de una seccion (no los del cuerpo).
+  const tramoDeH = i => { const [a,b] = secs[i];
+    const aJ = a>0&&esJunta(a), bJ = b<total&&esJunta(b);
+    const aF = esFin(a), bF = esFin(b);
+    return { ini: Math.max(0, !aF && !aJ ? a-caboEn(a) : a),
+             fin: Math.min(total, !bF && !bJ ? b+caboEn(b) : b) }; };
+  const tramoDe = i => { const [a,b] = secs[i];
+    const aJ = a>0&&esJunta(a), bJ = b<total&&esJunta(b);
+    const aF = esFin(a), bF = esFin(b);
+    return { iniC: Math.max(0, !aF ? a-(aJ?pizca:caboEn(a)) : a),
+             finC: Math.min(total, !bF ? b+(bJ?pizca:caboEn(b)) : b) }; };
+  const cual = d => { for (let i=0;i<secs.length;i++) if (d>=secs[i][0]-1e-6 && d<=secs[i][1]+1e-6) return i; return -1; };
+
+  const densa = T.curvaDensa(m, acum, c.cfg);
+  T.setDensa(densa);
+  // CON ESQUINAS CURVAS, EL DIBUJO NO VA POR EL POLIGONO.
+  // trazarTramo usa la curva densa, pero puntoEnArco camina el poligono, y la
+  // curva se aparta de el hasta un cuarto del tramo. Sondear sobre el poligono
+  // ponia las sondas fuera de la cinta: 55 cruces "con hueco" y uno de 76 px,
+  // que no existian. Las sondas tienen que ir por la MISMA curva que el render.
+  const enCurva = (d) => {
+    if (!densa) return T.puntoEnArco(m, acum, d);
+    const A = densa.arco, P = densa.pts;
+    // el arco de la curva y el del poligono no coinciden: se reescala
+    const dd = d / total * A[A.length-1];
+    let i = 0;
+    while (i < A.length - 2 && A[i+1] < dd) i++;
+    const t = (dd - A[i]) / Math.max(A[i+1] - A[i], 1e-9);
+    return T.PV.lerp(P[i], P[i+1], Math.max(0, Math.min(1, t)));
+  };
+  const cU = lienzo(), xU = cU.getContext('2d');
+  const cO = lienzo(), xO = cO.getContext('2d');
+  const cT = lienzo(), xT = cT.getContext('2d');
+  const out = [];
+
+  for (let k=0;k<c.cruces.length;k++){
+    const cr = c.cruces[k];
+    const dAr = T.arcoDeParam(m,acum,cr.arriba), dAb = T.arcoDeParam(m,acum,cr.abajo);
+    const sen = Math.max(Math.abs(Math.sin(dir(cr.abajo).angleBetween(dir(cr.arriba)))), 0.18);
+
+    // Máscara del CUERPO de la hebra de abajo, sus dos mitades como se pintan.
+    xU.fillStyle='#000'; xU.fillRect(0,0,S,S);
+    const abajos = [cual(dAb-1e-4), cual(dAb+1e-4)].filter((v,i,a)=>v>=0&&a.indexOf(v)===i);
+    for (const iu of abajos){ const t=tramoDe(iu);
+      T.trazarTramo(xU, m, acum, t.iniC, t.finC, W, '#fff', c.cfg); }
+    const dU = xU.getImageData(0,0,S,S).data;
+    const bajoHay = (x,y) => { x=Math.round(x); y=Math.round(y);
+      if (x<0||y<0||x>=S||y>=S) return false;
+      return dU[4*(y*S+x)] >= 128; };
+
+    // Y la máscara del CUERPO DE ARRIBA, para poder descartar sus propios
+    // píxeles. La sonda va a W/2+gap/2 del eje, apenas gap/2 fuera del cuerpo,
+    // y EN UN CODO el inglete saca el borde más allá de W/2: ahí la sonda cae
+    // dentro de la propia hebra de arriba y se lee como hueco. El detector
+    // tiene que saber qué está mirando.
+    const iAr2 = cual(dAr);
+    // EL PASEO ACABA DONDE ACABA EL HALO DE ARRIBA.
+    // La incision la abre el halo de la hebra de arriba y nadie mas. Pasado su
+    // extremo no hay nada que corte, asi que la hebra de abajo esta al
+    // descubierto y es tinta con todo derecho. Exigir fondo ahi es exigir que no
+    // haya cinta donde si hay cinta: era el ultimo "hueco" que quedaba, 1 cruce
+    // de 4.234, y se veia perfectamente pintando las sondas sobre la obra.
+    const tArr = iAr2 >= 0 ? tramoDeH(iAr2) : null;
+    xO.fillStyle='#000'; xO.fillRect(0,0,S,S);
+    // La mascara va DILATADA (W + 3px). Al 50% de cobertura, un pixel cubierto
+    // al 35% por el propio cuerpo de arriba no entraba en ella y se contaba
+    // como hueco; y como el borde antialias es continuo, salian rachas de 29
+    // px que no eran huecos sino el filo de la propia hebra.
+    if (iAr2 >= 0) { const t=tramoDe(iAr2);
+      T.trazarTramo(xO, m, acum, t.iniC, t.finC, W + 3, '#fff', c.cfg); }
+    const dO = xO.getImageData(0,0,S,S).data;
+    const arribaHay = (x,y) => { x=Math.round(x); y=Math.round(y);
+      if (x<0||y<0||x>=S||y>=S) return false;
+      return dO[4*(y*S+x)] >= 128; };
+
+    // LA TERCERA HEBRA.
+    // La hebra de arriba de ESTE cruce puede ir, a su vez, por debajo de otra
+    // en un cruce vecino. Donde esa tercera pasa, tapa lo que haya —incluida
+    // esta incision— y hace bien: el nudo ya decidio que va encima. Exigir
+    // fondo ahi es exigir que no se cumpla el cruce de al lado.
+    // Verificado por dos medidas independientes en #226678576: los ejes de las
+    // dos secciones estan a 1,51 anchuras (no se tocan por geometria) pero
+    // comparten 3.287 px de cuerpo, y entre ellas SI hay cruce registrado.
+    xT.fillStyle='#000'; xT.fillRect(0,0,S,S);
+    for (let q = 0; q < c.cruces.length; q++) {
+      if (q === k) continue;
+      const oq = c.cruces[q];
+      const dAbq = T.arcoDeParam(m,acum,oq.abajo);
+      // ¿pasa esa otra por encima de la hebra de arriba de este cruce?
+      const bajo = [cual(dAbq-1e-4), cual(dAbq+1e-4)];
+      if (!bajo.includes(iAr2)) continue;
+      const iq = cual(T.arcoDeParam(m,acum,oq.arriba));
+      if (iq < 0) continue;
+      const t = tramoDe(iq);
+      T.trazarTramo(xT, m, acum, t.iniC, t.finC, W, '#fff', c.cfg);
+    }
+    const dT = xT.getImageData(0,0,S,S).data;
+    const terceraHay = (x,y) => { x=Math.round(x); y=Math.round(y);
+      if (x<0||y<0||x>=S||y>=S) return false;
+      return dT[4*(y*S+x)] >= 128; };
+
+    // Se camina por los DOS bordes de la hebra de arriba.
+    // El paseo se limita a la HUELLA del cruce, no huella + 0,7 anchuras. Mas
+    // alla de la huella la mascara de abajo sigue existiendo porque incluye el
+    // cabo, que se alarga por debajo de la de arriba y entra en tramos donde
+    // OTRA seccion cruza legitimamente. Alli exigir fondo es exigir que no haya
+    // otro cruce.
+    const alcance = W/(2*sen) + gap*2;
+    const off = W/2 + gap/2;
+    let peorRacha = 0, puntos = 0, malos = 0, dondePeor = null, colorPeor = null;
+    for (const signo of [1,-1]) {
+      let racha = 0;
+      for (let t=-alcance; t<=alcance; t+=0.5) {
+        const d = dAr + t;
+        if (d < 1 || d > total-1) { racha = 0; continue; }
+        if (tArr && (d < tArr.ini || d > tArr.fin)) { racha = 0; continue; }
+        // La dirección hay que sacarla DEL ARCO, no de dir(), que espera un
+        // parámetro de recorrido (índice de segmento + t) y no una longitud.
+        // Pasándole el arco, la normal salía a cualquier sitio y las sondas
+        // caían dentro del propio cuerpo: 406 de 406 puntos "malos", que es
+        // justo lo que delata un detector roto y no una obra rota.
+        const q  = enCurva(d);
+        const q2 = enCurva(Math.min(total, d+1));
+        const ux = q2.x-q.x, uy = q2.y-q.y;
+        const ul = Math.hypot(ux,uy) || 1;
+        const px = q.x - (uy/ul)*off*signo, py = q.y + (ux/ul)*off*signo;
+        if (!bajoHay(px,py)) { racha = 0; continue; }   // aquí no hay nada que cortar
+        if (arribaHay(px,py)) { racha = 0; continue; }  // es la propia hebra de arriba
+        if (terceraHay(px,py)) { racha = 0; continue; }  // otra pasa por encima con derecho
+        puntos++;
+        const cl = clase(px,py);
+        if (cl === 'fondo') { racha = 0; continue; }
+        if (cl === 'mezcla') { continue; }   // filo, ni abre ni cierra la racha
+        malos++; racha += 0.5;
+        if (racha > peorRacha) { peorRacha = racha; dondePeor = [Math.round(px),Math.round(py)];
+          const ii = 4*(Math.round(py)*S+Math.round(px));
+          colorPeor = `rgb(${img[ii]},${img[ii+1]},${img[ii+2]})`; }
+      }
+    }
+    // ¿A qué distancia está el hueco de la junta más cercana? Si el mecanismo
+    // es el sobresaliente del cuerpo en las juntas, los huecos tienen que caer
+    // a menos de una pizca de una de ellas.
+    let aJunta = null;
+    if (dondePeor) {
+      let mn = 1e9;
+      for (const j of juntas) { const q = T.puntoEnArco(m,acum,j);
+        mn = Math.min(mn, Math.hypot(q.x-dondePeor[0], q.y-dondePeor[1])); }
+      aJunta = juntas.length ? +mn.toFixed(0) : null;
+    }
+    out.push({ k, ang: Math.round(Math.asin(sen)*180/Math.PI),
+               puntos, malos, racha:+peorRacha.toFixed(1), donde:dondePeor,
+               aJunta, pizca:+pizca.toFixed(1), colorPeor });
+  }
+  T.setDensa(null);
+  return { seed, tipo:c.tipo, W:Math.round(W), gap:+gap.toFixed(2), cruces: out };
+};
+window.__ok = true;
+</script></body></html>

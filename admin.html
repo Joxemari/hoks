@@ -293,7 +293,7 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
     <!-- BATCHES -->
     <div class="tab-panel" id="tab-batches">
       <div style="font-size:10px;color:var(--ink3);letter-spacing:0.04em;line-height:1.7;margin-bottom:1.4rem;">
-        Un lote se abre aquí y se llena en el <b>laboratorio</b>, sobre la hoja de contactos:
+        Un lote se abre aquí y se llena en el <b>laboratorio</b>, sobre el grid de obras:
         ahí es donde se mira y donde se decide. Con el botón derecho sobre cualquier miniatura
         se elige a cuál de los lotes abiertos va. Aquí se abren, se renombran, se cierran y se
         borran. Un lote guarda <b>recetas</b> (obra + seed + parámetros), no imágenes: la pieza
@@ -456,7 +456,7 @@ async function saveWorks() {
 
 
 // Familias graduadas al laboratorio de fuente única (sketches/<slug>/).
-const GRADUATED = ['plls','krrtk','dtk','dtkrt','eclps'];
+const GRADUATED = ['plls','krrtk','dtk','dtkrt','eclps','trzs'];
 function renderWorks() {
   const el = $('works-count');
   if (el) el.textContent = works.length;

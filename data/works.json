@@ -105,5 +105,23 @@
       "es": "El paso entre centros no cambia nunca. Lo que cambia es cuál de los círculos se calla.\nLa retícula no se rompe: el ritmo está hecho de ausencias.",
       "en": "The step between centres never changes. What changes is which circle falls silent.\nThe lattice never breaks: the rhythm is made of absences."
     }
+  },
+  {
+    "id": "trzs",
+    "name": "TRZS",
+    "slug": "trzs",
+    "active": true,
+    "description": "One continuous ribbon crosses the frame again and again; coming back in, it meets what it already wrote. Depth is not the order of drawing: it is settled crossing by crossing, over and under in turn, the way a knot diagram is read. What parts the strands is not an outline but an incision — the cut where the ground shows through.",
+    "page": "trzs.html",
+    "canvas": "horizontal (DIN) · square",
+    "formats": [
+      "horizontal",
+      "square"
+    ],
+    "created": 1786579200000,
+    "cartela": {
+      "eu": "Gainetik eta azpitik ez dira bi geruza: ibilbideari jarraituz txandakatzen dira.\nGurutzagune bakoitzetik bi aldiz igarotzen da, eta bigarrenak lehenaren kontrakoa dio.",
+      "en": "Over and under are not two layers: they alternate as the line is walked.\nEvery crossing is passed twice, and the second pass says the opposite of the first."
+    }
   }
 ]

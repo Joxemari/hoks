@@ -118,9 +118,11 @@ redeploy de Pages.
 
 - **`works.json`** — Registro de familias: `id, name, slug, active, description,
   page, canvas`. El flag `active` decide qué series aparecen en la landing y en
-  el dropdown *Work* del nav. Hoy activas: **plls y dtkrt**; el resto
-  (pills/krrtk/dtk/bzrs/krrtk/dtk) están inactivas. La landing reimplementa el
-  algoritmo de cada serie salvo DTKRT, que consume su `algo.js` real.
+  el dropdown *Work* del nav — y también en el selector de obra del laboratorio,
+  que filtra por `active !== false`: por eso una familia no puede estar en el lab
+  general sin estar activa. Hoy activas: **plls, krrtk, dtkrt y trzs**. La landing
+  reimplementa el algoritmo de cada serie salvo DTKRT y TRZS, que consumen su
+  `algo.js` real.
 - **`palettes.json`** — Paletas con `colors`, `active`, `tags`, `notes`. Mezcla
   sets de Roni Kaufman (color_pals) y series Itten (contraste complementario).
 - **`site.json`** — `aboutText`, `footerEmail`, `footerInstagram`.
@@ -152,6 +154,15 @@ redeploy de Pages.
 - **Familias base**: PLLS (cápsulas/pills con arquetipos de densidad y *finishes*),
   KRRTK (subdivisión recursiva de cuadrados), DTK (rejilla de círculos), BZRS
   (cientos de curvas Bézier con degradado entre dos colores).
+- **TRZS** (trazos): una cinta continua recorre el marco varias veces y al volver
+  a entrar se cruza con lo que ya dejó escrito. La profundidad **no** es el orden
+  del dibujo: se decide cruce a cruce, alternando encima y debajo como un diagrama
+  de nudo, y el dibujo se parte en secciones ordenadas para que ese orden se pueda
+  pintar en plano. Lo que separa las hebras no es un contorno: es una **incisión**,
+  el corte por donde se ve el suelo. Cuatro tipos declarados (suelto, anudado,
+  trama y —raro— dos cintas entrelazadas) que se comprueban sobre el resultado.
+  Graduada desde p5 (`sketches/iterations2/`), con el porte verificado idéntico al
+  píxel.
 - **Variantes "G"** (KRRTK/DTK/PLLS): añaden **mesh gradient** de fondo
   (interpolación bilineal de 4 esquinas, `drawMeshGradient`) y **grano de film**
   por soft-light (`bakeGrain`/`applyGrain`).

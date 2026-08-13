@@ -1,0 +1,93 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
+<script src="../../_engine.js"></script>
+<script src="./SRC"></script>
+<script>
+const S = 900, T = window.__TRZS;
+const lienzo = () => { const c=document.createElement('canvas'); c.width=c.height=S; return c; };
+
+// Tres clases de defecto que no ve el detector de la incisión.
+window.otros = (seed, pals, extra) => {
+  const cfg = Object.assign({ paletas: pals, aspecto: 1 }, extra || {});
+  const c = T.generate(seed, cfg);
+  const cA = lienzo(), xA = cA.getContext('2d');
+  const r = T.renderComposition(xA, 0, 0, S, c, S, true, false);
+  const W = r.width, gap = r.gap, m = r.mapped;
+  const px = xA.getImageData(0,0,S,S).data;
+  const hex = h => [1,3,5].map(k=>parseInt(h.substr(k,2),16));
+  const B = hex(c.colores.bg);
+  // Los remates se miden SIN DISCOS. El detector busca tinta más allá del
+  // cabo sin fondo por medio, y no distingue de qué es la tinta: un disco
+  // pegado al remate se leía como soldadura. Se comprobó con un control que
+  // sólo agranda los discos y aun así marcaba un remate.
+  const cS = lienzo(), xS = cS.getContext('2d');
+  const gdots = c.cfg.dots; c.cfg.dots = 'no';
+  T.renderComposition(xS, 0, 0, S, c, S, true, false);
+  c.cfg.dots = gdots;
+  const pxS = xS.getImageData(0,0,S,S).data;
+  const esFondoS = (x,y) => { x=Math.round(x); y=Math.round(y);
+    if (x<0||y<0||x>=S||y>=S) return true;
+    const i=4*(y*S+x);
+    return Math.abs(pxS[i]-B[0])+Math.abs(pxS[i+1]-B[1])+Math.abs(pxS[i+2]-B[2]) < 40; };
+  const esFondo = (x,y) => { x=Math.round(x); y=Math.round(y);
+    if (x<0||y<0||x>=S||y>=S) return true;
+    const i=4*(y*S+x);
+    return Math.abs(px[i]-B[0])+Math.abs(px[i+1]-B[1])+Math.abs(px[i+2]-B[2]) < 40; };
+
+  // ── 1. REMATES SOLDADOS ────────────────────────────────────────────────
+  // Cada punto del ancho del remate se mira hacia FUERA, en la dirección del
+  // recorrido. Si a menos de gap+3 px hay tinta sin haber cruzado un solo
+  // píxel de fondo, ese trozo de remate está pegado a otra hebra.
+  const ext = [{ p:m[0], d:T.PV.sub(m[0],m[1]).normalize() },
+               { p:m[m.length-1], d:T.PV.sub(m[m.length-1],m[m.length-2]).normalize() }];
+  if (c.salto != null && c.salto >= 0) {   // con dos cintas hay CUATRO remates
+    const k = c.salto;
+    ext.push({ p:m[k],   d:T.PV.sub(m[k],m[k-1]).normalize() });
+    ext.push({ p:m[k+1], d:T.PV.sub(m[k+1],m[k+2]).normalize() });
+  }
+  let pegado=0, tot=0;
+  for (const e of ext) {
+    if (!isFinite(e.d.x) || !isFinite(e.d.y) || (e.d.x===0&&e.d.y===0)) continue;
+    const n = T.V(-e.d.y, e.d.x);
+    for (let t=-0.48; t<=0.48; t+=0.02) {
+      const bx = e.p.x + n.x*W*t, by = e.p.y + n.y*W*t;
+      tot++;
+      let vioFondo=false, tocaTinta=false;
+      for (let s=1; s<=gap+3; s++) {
+        if (esFondoS(bx+e.d.x*s, by+e.d.y*s)) { vioFondo=true; break; }
+        if (s>=2) tocaTinta=true;
+      }
+      if (!vioFondo && tocaTinta) pegado++;
+    }
+  }
+
+  // ── 2. MARGEN ──────────────────────────────────────────────────────────
+  // Ni un píxel de tinta pegado al borde del cuadro.
+  let borde = 0;
+  const mira = (x,y) => { if (!esFondo(x,y)) borde++; };
+  for (let i=0;i<S;i++){ mira(i,0); mira(i,1); mira(i,S-1); mira(i,S-2);
+                         mira(0,i); mira(1,i); mira(S-1,i); mira(S-2,i); }
+
+  // ── 3. DISCOS ──────────────────────────────────────────────────────────
+  // Ningún píxel de disco puede caer sobre la cinta ENGORDADA por el aire que
+  // se le exige. Mirar sólo el centro deja pasar el disco que muerde.
+  let solape=0, area=0, enOjo=0, nDisc=0;
+  if (c.cfg.dots !== 'no') {
+    const cD=lienzo(), xD=cD.getContext('2d');
+    xD.fillStyle='#000'; xD.fillRect(0,0,S,S); xD.fillStyle='#fff';
+    const guarda=c.cfg.dots; c.cfg.dots='bajo';
+    const puestos = T.drawDots(xD, m, W, c, 0, 0, S, S);
+    c.cfg.dots=guarda;
+    nDisc = puestos.length; enOjo = puestos.filter(d=>d.ojo).length;
+    const acum = T.arcosDe(m);
+    const cR=lienzo(), xR=cR.getContext('2d');
+    xR.fillStyle='#000'; xR.fillRect(0,0,S,S);
+    const aire = W*c.cfg.dotClear + gap;
+    T.trazarTramo(xR, m, acum, 0, acum[acum.length-1], W+aire*2, '#fff', c.cfg);
+    const dd=xD.getImageData(0,0,S,S).data, rr=xR.getImageData(0,0,S,S).data;
+    for (let i=0;i<dd.length;i+=4){ if (dd[i]<128) continue; area++; if (rr[i]>=128) solape++; }
+  }
+  return { seed, pegado, tot, borde, solape, area, nDisc, enOjo,
+           tipo:c.tipo, cruces:c.cruces.length, secs:c.plano.secciones.length };
+};
+window.__ok = true;
+</script></body></html>

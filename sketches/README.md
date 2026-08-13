@@ -14,7 +14,7 @@ sola fuente de código por obra. Normalmente la opera Claude, no tú.
    `sketches/<obra>/algo.js` (canvas 2D, `HOKS.Rng` sembrado), monta el harness
    y **verifica la equivalencia** (mismo seed → misma imagen; si porta desde una
    página ya en producción, con prueba op-a-op contra el motor original).
-3. **Validar** — abres el harness, pulsas `g` y miras la **hoja de contactos**:
+3. **Validar** — abres el harness, pulsas `g` y miras el **grid de obras**:
    12 seeds a la vez. Ahí es donde tu ojo decide — variaciones feas, repetitivas
    o rotas se ven en la distribución, nunca en una pieza suelta.
 4. **Publicar** — la página de producción (`/<obra>.html`) consume el mismo
@@ -50,10 +50,14 @@ sketches/
   dtk/             ← graduada (porte fiel, verificado op-a-op)
   dtkrt/            ← EN PRUEBAS: familia nueva, aún sin página de producción
   eclps/             ← EN PRUEBAS: iteración horizontal, aún sin página de producción
+  trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
+    verificacion/   ← los detectores del halo y sus controles rotos a propósito.
+                      No se publica: se ejecuta a mano cuando alguien toca el
+                      dibujo de la cinta. Ver su README.
 ```
 
 `dtkrt/` fue el primer caso de obra que **nace aquí** en vez de portarse
-desde p5: propuesta de sistema para mirar en hoja de contactos antes de decidir si
+desde p5: propuesta de sistema para mirar en el grid de obras antes de decidir si
 merece página. No está en `data/works.json` ni publicada.
 
 `eclps/` es el segundo, y llega igual: nace aquí. Una fila de círculos con paso
@@ -66,6 +70,51 @@ pliegos apaisados uno al lado del otro (2√2:1). No es capricho ni límite téc
 —la obra se compone igual en cuadrado— es que una fila necesita recorrido: en
 1:1 el trayecto de los centros da para dos o tres círculos y deja de ser una
 fila. De ahí sale el mecanismo de formatos por familia.
+
+### TRZS: el porte salió idéntico al píxel, y luego mejor
+
+`trzs/` viene de `sketches/iterations2/` (p5). El porte quitó p5 entero —vectores,
+azar, globales matemáticos— y **la imagen no se movió ni un píxel**: 200 obras de
+200, en ocho configuraciones (los cuatro tipos, esquinas rectas y curvas, cuadrado
+y apaisado).
+
+Eso no fue suerte: **p5 y el motor usan el mismo LCG**. `p5.prototype._lcg` es
+`(1664525·s + 1013904223) mod 2³²` dividido por 2³², que es exactamente
+`HOKS.Rng`. Contrastado en el p5 vendorizado, no supuesto. Traducir sitio a sitio
+—`random()`→`next()`, `random(a,b)`→`range(a,b)`, `random(arr)`→`pickFrom(arr)`—
+conserva el stream, y con él la obra.
+
+Y va **1,8× más rápido**: 40 obras a 900×900, mediana 378→211 ms en el tipo por
+defecto y 1130→608 ms en la trama, cuyo peor caso baja de 4,9 s a 3,0 s. El p5
+que quedaba estaba en el camino caliente, sobre todo `p5.Vector`.
+
+La equivalencia se midió sobre el algoritmo y su dibujo. Lo que el contrato añade
+—fondo del motor, grano, los tres formatos— es nuevo por definición y se verificó
+aparte.
+
+**Y desde ahí ya no es idéntica, a propósito.** Al portarla se encontró un hueco
+en la incisión que p5 también tenía: la zona que impide poner una junta cerca de
+un cruce medía `(W/2)/senθ × 1,20`, que cubre la huella del cruce pero **no el
+sobresaliente con que el cuerpo se alarga en la junta**. Donde ese trozo de cinta
+sin halo caía dentro de la incisión, la tapaba — hasta 26,5 px sobre una cinta de
+66, el 40% de su anchura. Con el factor en **1,60** se cierra, sin coste medible:
+las costuras se mueven un 1,4% y no se pierde ni un tejido.
+
+El defecto no se veía porque el detector de la incisión promediaba la cobertura de
+todo el anillo del cruce, y un hueco local se diluía. El que lo encontró no tiene
+umbrales: camina los dos bordes de la hebra de arriba y, donde debajo hay cuerpo
+de la otra, exige fondo; cuenta píxeles de **tinta sólida** seguidos. Un hueco es
+un hueco.
+
+Cuatro arreglos se probaron antes y perdieron, y los cuatro están medidos en el
+código para que no se reintenten: solapar sólo la sección que pinta después,
+alargar el halo de las dos en la junta, reducir la pizca del solape, y —descartado
+midiendo— que hubiera cuerpos solapados sin cruce registrado.
+
+Los detectores que encontraron todo eso están commiteados en
+`trzs/verificacion/`, con sus controles rotos a propósito y las siete trampas que
+dieron defectos inexistentes. Se ejecutan a mano cuando alguien toca el dibujo de
+la cinta.
 
 Cada obra expone el mismo contrato:
 
@@ -118,7 +167,7 @@ navegadores, así que exportarlo pide antes decidir su dpi: a 150 son 34,9 Mpx y
 imprimirlo, no.
 
 En el harness, el desplegable *Format* cambia la proporción de la vista única y
-de la hoja de contactos: mirar 12 seeds en vertical es la manera de saber si la
+del grid de obras: mirar 12 seeds en vertical es la manera de saber si la
 obra aguanta ese formato antes de imprimirla.
 
 ## El muro (`_wall/`)
@@ -160,14 +209,14 @@ También publicados: `https://joxemari.github.io/hoks/sketches/<obra>/`.
 |-----------|------------------------------------------|
 | `Espacio` | nueva seed aleatoria                     |
 | `←` / `→` | seed − 1 / seed + 1                      |
-| `g`       | hoja de contactos ↔ vista única         |
+| `g`       | grid de obras ↔ vista única             |
 | `a`       | añadir la pieza actual al lote abierto   |
 | `s`       | guardar PNG                              |
 
 ## Lotes (paso 3, la parte que importa)
 
 Mirar doce y quedarte con dos **es** el trabajo, así que apartar una pieza es un
-gesto de aquí: el `+` sobre cualquier miniatura de la hoja de contactos, o `a`
+gesto de aquí: el `+` sobre cualquier miniatura del grid de obras, o `a`
 en vista única. Va al lote abierto, que eliges en el panel.
 
 Un lote guarda **recetas** —`{obra, seed, params, palSel}`—, no imágenes. Como

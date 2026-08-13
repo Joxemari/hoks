@@ -313,6 +313,7 @@ nav.innerHTML = `
         <li data-slug="bzrs"><a href="bzrs.html"${path==='bzrs.html'?' class="active"':''}>BZRS</a></li>
         <li data-slug="dtkrt"><a href="dtkrt.html"${path==='dtkrt.html'?' class="active"':''}>DTKRT</a></li>
         <li data-slug="eclps"><a href="eclps.html"${path==='eclps.html'?' class="active"':''}>ECLPS</a></li>
+        <li data-slug="trzs"><a href="trzs.html"${path==='trzs.html'?' class="active"':''}>TRZS</a></li>
       </ul>
     </li>
     <li><a href="about.html"${isAbout?' class="active"':''} data-i18n="nav.about">About</a></li>

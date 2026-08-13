@@ -1,0 +1,130 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
+<script src="../../_engine.js"></script>
+<script src="./SRC"></script>
+<script>
+// ============================================================
+// LA INCISIÓN QUE LA GEOMETRÍA EXIGE  —  versión TRZS (sin p5)
+// Misma cuenta que el detector del sketch: se construye la máscara de
+// dónde TIENE que haber fondo,
+//    anillo(hebra de arriba, entre W/2 y W/2+gap) ∩ cuerpo(hebra de abajo)
+// y se mira qué fracción de esa máscara es fondo de verdad en el render.
+// Se mide POR MITADES a lo largo de la hebra de arriba: una inversión de
+// medio lado abre una y deja la otra cerrada.
+// ============================================================
+const S = 900;
+const T = window.__TRZS;
+const lienzo = () => { const c = document.createElement('canvas'); c.width = c.height = S; return c; };
+const cons = (v,a,b) => v<a?a:v>b?b:v;
+
+window.medir = (seed, pals, extra, capa) => {
+  const cfg = Object.assign({ paletas: pals, dots: 'no', aspecto: 1 }, extra || {});
+  const c = T.generate(seed, cfg);
+  const cA = lienzo(), xA = cA.getContext('2d');
+  // Se prueban los DOS caminos de pintado: el directo (suelo plano, el halo
+  // pinta el color del fondo) y el de CAPA (suelo en degradado, el halo
+  // recorta). Si el segundo no cortara igual, el degradado sería un modo roto.
+  let r;
+  if (capa) {
+    xA.fillStyle = c.colores.bg; xA.fillRect(0,0,S,S);
+    const cp = lienzo();
+    r = T.renderComposition(cp.getContext('2d'), 0, 0, S, c, S, false, true);
+    xA.drawImage(cp, 0, 0);
+  } else {
+    r = T.renderComposition(xA, 0, 0, S, c, S, true, false);
+  }
+  const W = r.width, gap = r.gap, m = r.mapped;
+  const acum = T.arcosDe(m), total = acum[acum.length-1];
+  const dA = xA.getImageData(0,0,S,S).data;
+
+  const hex = h => [1,3,5].map(k => parseInt(h.substr(k,2),16));
+  const F = hex(c.colores.bg);
+  const esFondo = i => Math.abs(dA[i]-F[0])+Math.abs(dA[i+1]-F[1])+Math.abs(dA[i+2]-F[2]) < 60;
+
+  const secs = c.plano.secciones.map(([a,b]) => [T.arcoDeParam(m,acum,a), T.arcoDeParam(m,acum,b)]);
+  const juntas = (c.plano.juntas||[]).map(j => T.arcoDeParam(m,acum,j));
+  const esJunta = d => juntas.some(j => Math.abs(j-d) < 1e-6);
+  const pizca = Math.max(HOKS.unit(S,S,900), W*0.15);
+  const dir = s => { const i = cons(Math.floor(s),0,m.length-2);
+    return T.PV.sub(m[i+1], m[i]).normalize(); };
+  const caboEn = d => { let l = W*c.cfg.cabo;
+    for (const cr of c.cruces) { if (Math.abs(T.arcoDeParam(m,acum,cr.abajo)-d) > 1e-6) continue;
+      const sen = Math.max(Math.abs(Math.sin(dir(cr.abajo).angleBetween(dir(cr.arriba)))), 0.18);
+      l = Math.max(l, (W/2)/sen*c.cfg.caboMargen); }
+    return l; };
+  const salto = c.salto != null && c.salto >= 0 ? [acum[c.salto], acum[c.salto+1]] : null;
+  const esFin = d => d <= 1e-6 || d >= total-1e-6 ||
+    (salto && (Math.abs(d-salto[0])<1e-6 || Math.abs(d-salto[1])<1e-6));
+  const tramoDe = i => { const [a,b] = secs[i];
+    const aJ = a>0 && esJunta(a), bJ = b<total && esJunta(b);
+    const aF = esFin(a), bF = esFin(b);
+    return { iniC: Math.max(0, !aF ? a-(aJ?pizca:caboEn(a)) : a),
+             finC: Math.min(total, !bF ? b+(bJ?pizca:caboEn(b)) : b),
+             iniH: Math.max(0, !aF && !aJ ? a-caboEn(a) : a),
+             finH: Math.min(total, !bF && !bJ ? b+caboEn(b) : b) }; };
+  const cual = d => { for (let i=0;i<secs.length;i++) if (d>=secs[i][0]-1e-6 && d<=secs[i][1]+1e-6) return i; return -1; };
+
+  // La máscara sale de la MISMA curva que el render, o todo saldría marcado
+  // por una diferencia que no existe en la obra.
+  T.setDensa(T.curvaDensa(m, acum, c.cfg));
+
+  const cE = lienzo(), xE = cE.getContext('2d');
+  const res = [];
+  for (let k=0;k<c.cruces.length;k++){
+    const cr = c.cruces[k];
+    const dAr = T.arcoDeParam(m,acum,cr.arriba), dAb = T.arcoDeParam(m,acum,cr.abajo);
+    const P = T.puntoEnArco(m,acum,dAr);
+    const sen = Math.max(Math.abs(Math.sin(dir(cr.abajo).angleBetween(dir(cr.arriba)))), 0.18);
+    const alc = (W/2)/sen;
+    const iAr = cual(dAr); if (iAr < 0) continue;
+    const tAr = tramoDe(iAr);
+
+    xE.globalCompositeOperation='source-over';
+    xE.fillStyle='#000'; xE.fillRect(0,0,S,S);
+    T.trazarTramo(xE, m, acum, tAr.iniH, tAr.finH, W+gap*2, '#fff', c.cfg, 'round');
+    T.trazarTramo(xE, m, acum, tAr.iniC, tAr.finC, W, '#000', c.cfg);
+    xE.globalCompositeOperation='destination-in';
+    const abajos = [cual(dAb-1e-4), cual(dAb+1e-4)].filter((v,i,a)=>v>=0&&a.indexOf(v)===i);
+    const cU = lienzo(), xU = cU.getContext('2d');
+    xU.fillStyle='#000'; xU.fillRect(0,0,S,S);
+    for (const iu of abajos){ const t=tramoDe(iu); T.trazarTramo(xU,m,acum,t.iniC,t.finC,W,'#fff',c.cfg); }
+    xE.drawImage(cU,0,0);
+    xE.beginPath(); xE.arc(P.x,P.y, alc*1.6+gap*3, 0, Math.PI*2);
+    xE.fillStyle='#fff'; xE.fill();
+
+    const dE = xE.getImageData(0,0,S,S).data;
+    const dirA = dir(cr.arriba);
+    // POR TRAMOS, no en bloque. Agregando todo el anillo, un hueco local se
+    // diluye: media incisión perfecta y un agujero del 20% daban 0,90 y
+    // pasaban. Se parte en tramos a lo largo del eje de la hebra de arriba y
+    // manda EL PEOR — un halo bueno lo es en todo su recorrido.
+    const NB = 10;
+    const n1=new Array(NB).fill(0), o1=new Array(NB).fill(0);
+    const n2=new Array(NB).fill(0), o2=new Array(NB).fill(0);
+    const alcance = alc*1.6 + gap*3;
+    let t1=0,q1=0,t2=0,q2=0;
+    for (let y=0;y<S;y++) for (let x=0;x<S;x++){
+      const i=4*(y*S+x); if (dE[i]<128) continue;
+      const lado = (x-P.x)*dirA.y - (y-P.y)*dirA.x;      // a qué lado del eje
+      const alo  = (x-P.x)*dirA.x + (y-P.y)*dirA.y;      // a lo largo del eje
+      let b = Math.floor((alo/alcance*0.5 + 0.5) * NB);
+      b = b<0?0:b>=NB?NB-1:b;
+      const f = esFondo(i);
+      if (lado>=0){ n1[b]++; if(f)o1[b]++; t1++; if(f)q1++; }
+      else        { n2[b]++; if(f)o2[b]++; t2++; if(f)q2++; }
+    }
+    // Sólo cuentan los tramos con superficie suficiente para juzgarlos: uno de
+    // tres píxeles en un extremo del anillo no dice nada.
+    const peor = (n,o) => { let p=1;
+      for (let i=0;i<NB;i++) if (n[i]>=25) p=Math.min(p, o[i]/n[i]);
+      return p; };
+    res.push({ k, ang: Math.round(Math.asin(sen)*180/Math.PI),
+               cob1:+((t1?q1/t1:1).toFixed(2)), cob2:+((t2?q2/t2:1).toFixed(2)),
+               peor1:+peor(n1,o1).toFixed(2), peor2:+peor(n2,o2).toFixed(2) });
+  }
+  T.setDensa(null);
+  const limpio = c.sep>=c.cfg.cruceSepMin && c.seg>=c.cfg.segMinRatio &&
+                 c.remate>=c.cfg.remateMin && c.ciclos===0;
+  return { seed, resultados: res, limpio, cruces: c.cruces.length, tipo: c.tipo };
+};
+window.__ok = true;
+</script></body></html>
