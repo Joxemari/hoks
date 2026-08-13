@@ -1130,6 +1130,14 @@
                crossings: 0, remate: Infinity };
     }
 
+    // La profundidad no es el orden del dibujo: se recorre la cinta y se
+    // alterna. Cada cruce se pisa dos veces, y la segunda dice lo contrario
+    // que la primera, que es lo que obliga a que tenga un arriba y un abajo.
+    // ⟨esaldia:eu⟩ Gainetik eta azpitik ez dira bi geruza: ibilbideari jarraituz txandakatzen dira.
+    // ⟨esaldia:eu⟩ Gurutzagune bakoitzetik bi aldiz igarotzen da, eta bigarrenak lehenaren kontrakoa dio.
+    // ⟨esaldia:en⟩ Over and under are not two layers: they alternate as the line is walked.
+    // ⟨esaldia:en⟩ Every crossing is passed twice, and the second pass says the opposite of the first.
+    // ⟨gramatika⟩
     const visits = [];
     X.forEach((x, k) => { visits.push({ s: x.a, k }, { s: x.b, k }); });
     visits.sort((p, q) => p.s - q.s);
@@ -1140,6 +1148,7 @@
       if (first[v.k] === undefined) first[v.k] = v.over;
       else v.over = !first[v.k];          // el cruce necesita un arriba y un abajo
     }
+    // ⟨/gramatika⟩
 
     // Los cortes van SIEMPRE al interior de un segmento, nunca cerca de
     // un vértice. En un codo las dos piezas no están alineadas, y el halo

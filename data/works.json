@@ -118,6 +118,10 @@
       "horizontal",
       "square"
     ],
-    "created": 1786579200000
+    "created": 1786579200000,
+    "cartela": {
+      "eu": "Gainetik eta azpitik ez dira bi geruza: ibilbideari jarraituz txandakatzen dira.\nGurutzagune bakoitzetik bi aldiz igarotzen da, eta bigarrenak lehenaren kontrakoa dio.",
+      "en": "Over and under are not two layers: they alternate as the line is walked.\nEvery crossing is passed twice, and the second pass says the opposite of the first."
+    }
   }
 ]
