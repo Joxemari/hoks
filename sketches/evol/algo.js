@@ -322,7 +322,7 @@
 
   const P_INV = 0.16;        // tinta clara sobre suelo oscuro
   // Y el acoplamiento: una masa LEVE invertida no es un negativo, es un arañazo.
-  // Medido sobre 400 tiradas —la mancha va de 15,5% (p10) a 31,2% (p90)— por debajo
+  // Medido sobre 500 tiradas —la mancha va de 14,4% (p10) a 28,6% (p90)— por debajo
   // del 18% la tinta clara sobre suelo oscuro se lee como una raya en una plancha,
   // no como un cuerpo. Ahí la inversión se cancela. Es el patrón de ECLPS: se decide
   // DESPUÉS de medir, así que corrige el color sin mover el dibujo.

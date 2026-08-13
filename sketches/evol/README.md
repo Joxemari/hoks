@@ -106,7 +106,7 @@ definen con la normal, que gira con el tramo.
 
 ## Lo que costó, y por qué está escrito en el código
 
-Nueve pasadas mirando el grid. Cada número del `algo.js` que parece arbitrario
+Trece pasadas mirando el grid. Cada número del `algo.js` que parece arbitrario
 tiene detrás una versión que se veía peor, y está anotado ahí:
 
 - **Diente de sierra.** La `y` como tirada por vértice da ruido. Va por **rachas**
@@ -207,19 +207,23 @@ Dos tintas —un estrato entero en otro color— existen y son el 4% de las piez
 
 ## Medido
 
-400 tiradas en cuadrado, sobre las 15 paletas activas:
+500 tiradas en cuadrado, sobre las 15 paletas activas:
 
 ```
 tipo        soldado 42%  ramificado 24%  estrato 22%  isla 12%
-ojos        media 2,1 · p50 2 · p90 4 · max 12
-            0:14% 1:32% 2:23% 3:13% 4:8% 5-7:7% 8+:3%
-mancha      p10 16,1%  p50 24,0%  p90 31,2%  max 43,9%
-modulación  2:6% 3:6% 4:13% 5:27% 6:49%   (niveles recorridos por la pieza)
-falta = 0   99,8% de las piezas cumplen lo que su tipo declara
-papel       crudo 25%  ·  invertida 14%  ·  dos tintas 4%
-overall     common 40%  uncommon 39%  rare 10%  superrare 5%  legendary 6%
-ms          p50 67  p90 78  max 109   (760 px, incluido el grano)
+ojos        media 2,1 · p50 2 · p90 4 · max 11
+            0:16% 1:31% 2:21% 3:13% 4:10% 5-7:8% 8+:2%
+mancha      p10 14,4%  p50 22,1%  p90 28,6%  max 36,8%
+modulación  2:6% 3:8% 4:12% 5:33% 6:42%   (niveles recorridos por la pieza)
+falta = 0   98,2% de las piezas cumplen lo que su tipo declara (max 0,45)
+papel       crudo 25%  ·  invertida 12%  ·  dos tintas 4%
+overall     common 39%  uncommon 40%  rare 10%  superrare 6%  legendary 5%
+ms          ~50 por pieza a 760 px, incluido el grano
 ```
+
+Las piezas que no cumplen (1,8%) se quedan: con seeds difíciles no hay ningún
+candidato bueno, y entonces manda **el que menos incumple** — no el primero. Por eso
+`falta` es un número y no un sí/no, y por eso el panel lo enseña.
 
 **Impresión.** A3 cuadrado (3508², 663 ms), A3 horizontal (4961×3508, 837 ms) y A1
 horizontal (9933×7016, 69,7 Mpx, 4,7 s), cada uno con la misma composición exacta que
