@@ -1268,7 +1268,20 @@
     const zonas = [];
     for (const c of cruces) {
       const sen = max(abs(sin(dir(c.abajo).angleBetween(dir(c.arriba)))), 0.18);
-      const r = (width / 2) / sen * 1.20;
+      // El 1,20 era el margen de la huella y se quedaba corto por un pelo. La
+    // zona vetada tiene que cubrir la huella MÁS el sobresaliente del cuerpo en
+    // la junta: medido en la obra que peor salía, la junta caía a 55 px de un
+    // cruce cuya huella + pizca medía 55,8 — justo en el filo, y ahí el
+    // sobresaliente entraba en la incisión y la tapaba. Barrido del factor
+    // sobre 120 obras y 322 cruces:
+    //
+    //   ×1,20  5 cruces con hueco (peor 26,5 px)   costuras 5.757 px
+    //   ×1,60  0 cruces con hueco                  costuras 5.838 px
+    //   ×2,00  0 cruces con hueco                  costuras 5.793 px
+    //
+    // y en los tres casos, cero obras sin tejido limpio: apretar aquí no cuesta
+    // tejidos. Se toma 1,60, que es el primero que cierra sin pedir más.
+    const r = (width / 2) / sen * 1.60;
       zonas.push({ d: arcoDeParam(points, acum, c.arriba), r });
       zonas.push({ d: arcoDeParam(points, acum, c.abajo),  r });
     }
@@ -1681,46 +1694,29 @@
 
       const aFin = esFinal(a), bFin = esFinal(b);
 
-      // EL SOLAPE DE LA JUNTA ES ASIMÉTRICO, Y LO DECIDE EL ORDEN DE PINTADO.
+      // EL SOLAPE DE LA JUNTA, Y POR QUÉ SIGUE SIENDO DE LAS DOS.
       //
-      // Dos secciones que se encuentran en una junta tienen que solaparse o el
-      // empalme se abre al primer redondeo. El solape era de las dos, y el
-      // halo no acompañaba: cada una metía una pizca de CUERPO DESNUDO más
-      // allá de su propio halo, y donde ese trozo caía encima de otra hebra la
-      // incisión tenía un hueco. Medido sobre 1.000 obras y 2.603 cruces:
-      // 1,61% con hueco de 3 px o más y 0,23% con 20 px o más, el peor de 28.
+      // Dos secciones que se encuentran en una junta se solapan una pizca o el
+      // empalme se abre al primer redondeo. El halo no acompaña, así que cada
+      // una mete una pizca de cuerpo desnudo más allá de su propio halo. Eso
+      // abre un hueco en la incisión cuando ese trozo cae encima de otra hebra.
       //
-      // Alargar el halo de las dos tampoco vale: su remate a tope corta una
-      // línea entera a través del cuerpo de la vecina, y las costuras se
-      // duplicaban (2.747 px → 6.545).
+      // Se probaron los dos arreglos y los dos están medidos sobre 1.000 obras
+      // y 2.603 cruces, con el detector ya limpio:
       //
-      // La salida es que solape UNA SOLA: la que se pinta DESPUÉS. Ella alarga
-      // cuerpo y halo a la vez, así que no deja cuerpo desnudo; y su corte cae
-      // por fuera del cuerpo de la vecina —en la junta las dos secciones son
-      // colineales, porque la junta se abre siempre en el centro de un tramo—,
-      // así que no la raja. La que se pinta antes no sobresale y no tiene nada
-      // que tapar.
-      // Y el solape NO PUEDE PASAR DE UN VÉRTICE. La junta se abre en el
-      // centro de un tramo, así que las dos secciones son colineales ahí — pero
-      // sólo hasta el vértice. Con una pizca de 10 px y un tramo corto, el
-      // solape lo cruzaba, la dirección cambiaba y el remate del halo volvía a
-      // cortar a la vecina: medido, el 57% de las costuras pasaba a estar
-      // pegado a una junta. Recortado al vértice, el solape se queda dentro del
-      // tramo recto y la colinealidad se cumple de verdad.
-      const alVertice = (d) => {
-        let lo = 0, hi = total;
-        for (const x of acum) { if (x <= d && x > lo) lo = x; if (x >= d && x < hi) hi = x; }
-        return min(d - lo, hi - d);
-      };
-      const yoDespues = (vecina) =>
-        vecina >= 0 && vecina < secciones.length && rango[i] > rango[vecina];
-      const solA = aJ && yoDespues(i - 1) ? min(pizca, alVertice(a) * 0.9) : 0;
-      const solB = bJ && yoDespues(i + 1) ? min(pizca, alVertice(b) * 0.9) : 0;
-
-      const iniC = max(0, !aFin ? (aJ ? a - solA : a - caboEn(a)) : a);
-      const finC = min(total, !bFin ? (bJ ? b + solB : b + caboEn(b)) : b);
-      const iniH = max(0, !aFin ? (aJ ? a - solA : a - caboEn(a)) : a);
-      const finH = min(total, !bFin ? (bJ ? b + solB : b + caboEn(b)) : b);
+      //   alargar el halo de LAS DOS   → costuras 2.755 → 6.545 px
+      //   solapar sólo la que pinta
+      //   DESPUÉS (cuerpo y halo)      → huecos 1,46% → 1,31% (>=3px)
+      //                                  costuras 2.755 → 6.652 px
+      //
+      // El segundo mejora los huecos un 0,15%, no toca el peor caso (26,5 px) y
+      // multiplica por 2,4 las costuras. Los dos pierden por lo mismo: el
+      // remate del halo alargado corta a la vecina. Así que el solape se queda
+      // como está, y el hueco se ataca por donde de verdad se produce.
+      const iniC = max(0, !aFin ? a - (aJ ? pizca : caboEn(a)) : a);
+      const finC = min(total, !bFin ? b + (bJ ? pizca : caboEn(b)) : b);
+      const iniH = max(0, !aFin && !aJ ? a - caboEn(a) : a);
+      const finH = min(total, !bFin && !bJ ? b + caboEn(b) : b);
 
       const segunda = saltoArc && a >= saltoArc[1] - 1e-6;
       // LA INCISIÓN NO ES UN COLOR, ES UN CORTE.
