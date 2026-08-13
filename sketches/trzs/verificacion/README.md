@@ -20,8 +20,16 @@ quedan viejos: son el código de producción más una avería concreta.
 ```bash
 npm i -g playwright && npx playwright install chromium
 cd sketches/trzs/verificacion
-./todo.sh                 # la batería entera, tarda un rato
+./todo.sh                 # la corta del día a día, ~50 obras por bloque
+./mil.sh                  # la larga: 1.000 obras por bloque, tarda un rato largo
+./mil.sh costuras         # un bloque suelto de la larga
 ```
+
+**La corta no basta para dar por bueno un cambio en el dibujo.** Con 50 obras
+por configuración, un defecto que sale en el 2 % de las obras da cero más de la
+mitad de las veces — y un cero así no dice que no esté, dice que no se ha
+mirado bastante. Dos de los defectos abiertos hoy aparecieron al pasar de 50 a
+250 obras, sin que el código cambiara.
 
 Suelto, con la configuración que sea:
 
@@ -44,7 +52,7 @@ otra cosa.
 | `hueco.js` | **huecos en la incisión**: tinta sólida donde tiene que haber fondo | `trzs_orden` (orden de pintado invertido) |
 | `m2.js` | la incisión por cobertura de máscara, medida por mitades | `trzs_orden`, `trzs_mitad` |
 | `o2.js` | remates soldados, tinta en el borde, discos que invaden la cinta | `trzs_margen`, `trzs_ojo`, `trzs_remate` |
-| `cos.js` | **costuras**: raya de 1 px dentro de la tinta | — (artefacto conocido, se registra el nivel) |
+| `cos.js` | **costuras**: raya de 1 px dentro de la tinta | `trzs_costura` (el cuerpo vuelve a acabar a ras del halo) |
 | `det.js` | determinismo en cuatro condiciones | — |
 | `solape.js` | holgura geométrica entre hebras sin cruce | — |
 | `lupa2.js` | PNG de una obra **diciendo qué color es tinta y cuál fondo** | — |
@@ -105,13 +113,35 @@ Batería completa sobre el algoritmo publicado, ejecutada desde esta carpeta:
 Las ocho configuraciones son: por defecto, los cuatro tipos, esquinas curvas,
 apaisado, y dos cintas en apaisado.
 
-**Lo que sigue abierto:** la costura de 1 px dentro de la tinta. Existía antes del
-porte, no la cierra ninguno de los arreglos probados y dos de ellos la
-empeoraban. Se registra su nivel en cada batería para que se note si sube.
+## El estado hoy, con la batería larga
 
-**Y un control flojo:** el de remates dispara en 1 de 30. Abre la puerta y quita
-los reintentos, pero la selección puede seguir prefiriendo un tejido con los
-remates holgados. Un cero de remates está peor respaldado que los demás.
+La costura ya no está abierta: era el filo del cabo —halo y cuerpo acababan en
+el mismo arco, a ras— y se cierra haciendo que el cuerpo pase del halo. Con eso
+el bloque tiene por fin un control, que es el código publicado con `sobra = 0`.
+
+| bloque | resultado (1.000 obras por bloque) | su control |
+|---|---|---|
+| huecos en la incisión | 2.000 obras · **0** con 3 px o más | 332 de 332, hasta 72 px |
+| la incisión por máscara | 0 sin corte · **3 a medias de 2.653 cruces** | 158/158 y 157/158 |
+| costuras | **0 de 125 obras** en las ocho · 26–107 px | 97/125 · 5.967 px |
+| remates soldados | **4 de 250** por defecto, 7 de 250 en trama | 1/30 (flojo) |
+
+**Lo que sigue abierto, y los dos son PREVIOS al arreglo de la costura** —el
+mismo código con `sobra = 0` da los mismos números y los mismos seeds:
+
+1. **Remates soldados**, ~2 % de las obras: un extremo de cinta pegado a otra
+   hebra sin fondo entre medias.
+2. **Incisiones a medias**, 3 de 2.653 cruces, sólo en apaisado.
+
+Ninguno de los dos salía en la graduación, y no porque el código fuera otro:
+porque se medían 50 obras por configuración. A un 2 %, cero de cincuenta es lo
+más probable que puede pasar. **La muestra era el defecto.**
+
+**Y un control flojo, el mismo de siempre:** el de remates dispara en 1 de 30.
+Abre la puerta y quita los reintentos, pero la selección puede seguir
+prefiriendo un tejido con los remates holgados. Un cero de remates está peor
+respaldado que los demás — y ahora que sabemos que hay remates soldados de
+verdad, eso importa más.
 
 ## Lo que se midió con esto
 

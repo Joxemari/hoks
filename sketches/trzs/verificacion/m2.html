@@ -51,7 +51,8 @@ window.medir = (seed, pals, extra, capa) => {
       const sen = Math.max(Math.abs(Math.sin(dir(cr.abajo).angleBetween(dir(cr.arriba)))), 0.18);
       l = Math.max(l, (W/2)/sen*c.cfg.caboMargen); }
     return l; };
-  const salto = c.salto != null && c.salto >= 0 ? [acum[c.salto], acum[c.salto+1]] : null;
+  const saltos = (c.saltos || []).map(k => [acum[k], acum[k+1]]);
+  const salto = saltos.length ? saltos[0] : null;   // compat: el primero
   const esFin = d => d <= 1e-6 || d >= total-1e-6 ||
     (salto && (Math.abs(d-salto[0])<1e-6 || Math.abs(d-salto[1])<1e-6));
   const tramoDe = i => { const [a,b] = secs[i];

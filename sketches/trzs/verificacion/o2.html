@@ -39,8 +39,8 @@ window.otros = (seed, pals, extra) => {
   // píxel de fondo, ese trozo de remate está pegado a otra hebra.
   const ext = [{ p:m[0], d:T.PV.sub(m[0],m[1]).normalize() },
                { p:m[m.length-1], d:T.PV.sub(m[m.length-1],m[m.length-2]).normalize() }];
-  if (c.salto != null && c.salto >= 0) {   // con dos cintas hay CUATRO remates
-    const k = c.salto;
+  // Cada salto son DOS remates mas: con dos cintas hay cuatro, con tres seis.
+  for (const k of (c.saltos || [])) {
     ext.push({ p:m[k],   d:T.PV.sub(m[k],m[k-1]).normalize() });
     ext.push({ p:m[k+1], d:T.PV.sub(m[k+1],m[k+2]).normalize() });
   }

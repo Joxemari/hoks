@@ -21,6 +21,10 @@
 
   const REF = 900;          // lado corto de referencia: calibra grano y px
   const BG_GRADIENT = 22;   // % de fondo en degradado cuando va en 'auto'
+  // Cada cuánto la esquina sale curva cuando nadie la fija. Una de cada
+  // cuatro: la cinta doblada en ángulo vivo es la referencia de la que salió
+  // la obra, y la curva es la segunda lectura de la misma regla, no un empate.
+  const CURVA_PROB = 0.25;
 
   // ── Aritmética ────────────────────────────────────────────────────────────
   // Los nombres cortos son los de p5 a propósito: el algoritmo viene de ahí y
@@ -74,7 +78,10 @@
   // el degradado), así que el RNG es de módulo y reseed() lo repone. El dibujo
   // es síncrono: no hay dos renders a la vez.
   let rng = new E.Rng(0);
-  function reseed(s) { rng = new E.Rng(s >>> 0); }
+  // La semilla de la obra, aparte del RNG: la necesitan los azares que van por
+  // su cuenta (el degradado, la esquina, el temblor) para no correr el stream.
+  let _semilla = 0;
+  function reseed(s) { _semilla = s >>> 0; rng = new E.Rng(s >>> 0); }
   // ============================================================
   // ITERATIONS 2 — FASE 2
   // Núcleo generativo. Determinista: seed -> imagen.
@@ -248,6 +255,7 @@
     corner:       "rectas",    // rectas | curvas — MANDO ÚNICO de la esquina
     ends:         "rectos",    // redondos | rectos
     tinta:        "solido",    // solido | gradiente
+    temblor:      0,           // amplitud del temblor del recorrido, × anchura
     juntaSolape:  0.05,        // alargue en las juntas internas, × anchura
     punzonExtra:  0.35,        // recorrido extra del punzón más allá del cruce, × anchura         // longitud del punzón en cada cruce, × anchura
     // 'curva' ya NO es un mando aparte: se deriva de 'corner'. Tener un
@@ -315,19 +323,25 @@
   const VECINAS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
   // ------------------------------------------------------------
-  // EL SALTO
-  // Con dos cintas el diagrama de nudo tiene que seguir siendo UNO: los
+  // LOS SALTOS
+  // Con varias cintas el diagrama de nudo tiene que seguir siendo UNO: los
   // cruces ENTRE ellas también necesitan un orden de pintado, y ese orden
-  // sale de las secciones de un único recorrido. Así que las dos cintas van
-  // concatenadas y el segmento que las une —el SALTO— no se dibuja, no
-  // cuenta como cruce y no lo tocan las restricciones del material.
+  // sale de las secciones de un único recorrido. Así que las cintas van
+  // concatenadas y los segmentos que las unen —los SALTOS— no se dibujan, no
+  // cuentan como cruce y no los tocan las restricciones del material.
+  //
+  // Es una LISTA porque tres cintas necesitan dos saltos. Fue un escalar
+  // mientras sólo hubo dos, y toda la maquinaría pregunta por `esSalto(i)`,
+  // así que pasar a lista no tocó ninguno de los sitios que sólo preguntan.
   //
   // Es una variable de módulo y no un parámetro porque la atraviesan siete
   // funciones que ya tienen su firma hecha. El dibujo es síncrono: se pone
   // al empezar el tejido y se quita al acabar.
-  let _salto = -1;
+  let _saltos = [];
 
-  const esSalto = (i) => i === _salto;
+  const esSalto = (i) => _saltos.indexOf(i) >= 0;
+  // El índice de cinta de un nodo: cuántos saltos han quedado atrás.
+  const cintaDe = (i) => { let k = 0; for (const s of _saltos) if (i > s) k++; return k; };
 
   // ------------------------------------------------------------
   // EL TIPO
@@ -356,7 +370,13 @@
     anudado: { prob: 0.55, vueltas: 2, trazo: "estandar", cruces: [2, 3] },
     trama:   { prob: 0.20, vueltas: 3, trazo: "fino",     cruces: [4, 999] },
     // Dos cintas sueltas que se entrelazan entre sí. Rara a propósito.
-    dos:     { prob: 0.03, vueltas: 2, trazo: "estandar", cruces: [2, 999], dosCintas: true }
+    dos:     { prob: 0.03, vueltas: 2, trazo: "estandar", cruces: [2, 999], cintas: 2 },
+    // Y tres. Cada cinta se lleva una pasada, así que pide tres vueltas y el
+    // trazo fino: tres cintas estándar en el mismo cuadro no dejan holgura y
+    // la cinta lo pagaría adelgazando de todas formas, pero eligiendo mal.
+    // Sigue fuera del reparto por peso (prob 0) mientras se prueba: el tipo
+    // existe para el laboratorio, no para la galería.
+    tres:    { prob: 0,    vueltas: 3, trazo: "fino",     cruces: [3, 999], cintas: 3 }
   };
   const TIPO_NAMES = Object.keys(TIPOS);
 
@@ -371,6 +391,19 @@
   // ------------------------------------------------------------
   function generate(seed, cfg) {
     cfg = Object.assign({}, DEF, cfg || {});
+
+    // LA ESQUINA LA TIRA LA OBRA, cuando nadie la fija.
+    // El default era "rectas" a secas, así que la variante curva no salía
+    // NUNCA sola: ni en un lote, ni en la landing, ni en la galería, sólo si
+    // se elegía a mano en el laboratorio. Un rasgo que vale lo mismo en todas
+    // las obras no es un rasgo, es una constante mal puesta.
+    //
+    // Y se tira con su PROPIO azar, no con el principal. Meter una decisión
+    // más en el stream compartido correría todos los números siguientes y
+    // cambiaría hasta la última obra ya vista por un motivo que no tiene nada
+    // que ver con ellas. Es el mismo recurso que usa el degradado.
+    if (!cfg.cornerFijo) cfg.corner = new E.Rng((seed ^ 0xC0FFEE) >>> 0).next() < CURVA_PROB
+                                    ? "curvas" : "rectas";
     cfg.curva = cfg.corner === "curvas" ? 1 : 0;
 
     reseed(seed);
@@ -394,7 +427,7 @@
     // El trazo del tipo manda salvo que el laboratorio lo fije a mano.
     if (!cfg.trazoFijo || cfg.trazo === 'auto')
       cfg = Object.assign({}, cfg, { trazo: TIPOS[tipo].trazo });
-    if (TIPOS[tipo].dosCintas) cfg = Object.assign({}, cfg, { dosCintas: true });
+    if (TIPOS[tipo].cintas > 1) cfg = Object.assign({}, cfg, { cintas: TIPOS[tipo].cintas });
 
     // La junta es innegociable: es lo único que distingue un cruce de una
     // costura. Si con las vueltas pedidas la cinta no encuentra sitio
@@ -448,11 +481,14 @@
     const puntua = (t) => correcto(t) && preferible(t);
 
     for (let k = 0; k <= cfg.reintentos; k++) {
-      for (let v = pedidas; v >= min(pedidas, cfg.vueltasMin); v--) {
+      // El suelo de vueltas no es sólo vueltasMin: una cinta se lleva una
+      // pasada, así que bajar de ahí le quita cintas al tipo y el tipo deja de
+      // ser lo que dice. 'tres' con dos pasadas son dos cintas, y eso ya tiene
+      // su propio tipo.
+      for (let v = pedidas; v >= min(pedidas, max(cfg.vueltasMin, cfg.cintas || 1)); v--) {
         reseed(seed ^ 0xA17E ^ (k * 0x9E3779B1));
         const t = tejer(family, v, cfg);
-        t.salto = _salto;
-        _salto = t.salto;
+        t.saltos = _saltos.slice();
         t.ang = minAnguloCruce(t.nodes);
         t.nudo = buildKnot(t.nodes.map(n => n.p), t.width);
         t.ciclos = t.nudo.plano.ciclos;
@@ -541,11 +577,10 @@
       for (const F of FAMILY_NAMES) {
         if (F === family) continue;
         for (let k = 0; k <= cfg.reintentos; k++) {
-          for (let v = pedidas; v >= cfg.vueltasMin; v--) {
+          for (let v = pedidas; v >= max(cfg.vueltasMin, cfg.cintas || 1); v--) {
             reseed(seed ^ 0xA17E ^ (k * 0x9E3779B1));
             const t = tejer(F, v, cfg);
-            t.salto = _salto;
-            _salto = t.salto;
+            t.saltos = _saltos.slice();
             t.ang = minAnguloCruce(t.nodes);
             t.nudo = buildKnot(t.nodes.map(n => n.p), t.width);
             t.ciclos = t.nudo.plano.ciclos;
@@ -577,24 +612,77 @@
     // cruce compartido. Cuando el nudo no deja partir ninguna sección, el plano
     // resuelve el ciclo volteando y acaba con una cinta entera encima: se puede
     // dibujar, pero es otra cosa, y como rasgo se dice.
+    // Con tres cintas la pregunta es la misma pero no basta con "una y otra":
+    // se exige que TODAS ganen algún cruce compartido. Si una de las tres pasa
+    // entera por encima de las demás, el tejido está apilado igual que antes,
+    // aunque las otras dos sí se entrelacen.
     let entrelazada = null;
-    if (intento.salto != null && intento.salto >= 0) {
-      const lim = intento.salto + 0.5;
-      let a = 0, b = 0;
+    const saltos = intento.saltos || [];
+    if (saltos.length) {
+      const cinta = (s) => { let k = 0; for (const x of saltos) if (s > x + 0.5) k++; return k; };
+      const gana = new Array(saltos.length + 1).fill(0);
       for (const c of cruces) {
-        const arrA = c.arriba < lim, abaA = c.abajo < lim;
-        if (arrA === abaA) continue;          // cruce de una cinta consigo misma
-        if (arrA) a++; else b++;
+        const ka = cinta(c.arriba), kb = cinta(c.abajo);
+        if (ka === kb) continue;              // cruce de una cinta consigo misma
+        gana[ka]++;
       }
-      entrelazada = a > 0 && b > 0;
+      entrelazada = gana.every(v => v > 0);
     }
 
-    return { seed, tipo, pal, entrelazada, salto: intento.salto, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, family2: intento.family2, conserva: intento.conserva, volteos: intento.volteos, width, colores, cfg };
+    return { seed, tipo, pal, entrelazada, saltos, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, family2: intento.family2, conserva: intento.conserva, volteos: intento.volteos, width, colores, cfg };
   }
 
   // ------------------------------------------------------------
   // TEJER — un intento completo con un nº de vueltas dado
   // ------------------------------------------------------------
+  // ── El temblor: la mano, no la máquina ────────────────────────────────────
+  // Ruido COHERENTE y SEMBRADO. En el sketch de p5 era `noise(i * 0.55)` sin
+  // noiseSeed, así que todas las obras temblaban exactamente igual — el mismo
+  // perfil de ondas en todas. Aquí el ruido sale de su propio Rng, sembrado
+  // con el seed de la obra: cada una tiembla a su manera y el azar principal
+  // no se mueve ni un número.
+  //
+  // Es valor interpolado con smoothstep, no Perlin. Para lo que hace falta
+  // —una onda suave a lo largo del recorrido— la diferencia no se ve, y esto
+  // cabe en diez líneas sin traer una tabla de gradientes.
+  function ruidoCoherente(semilla, escala) {
+    const r = new E.Rng(semilla >>> 0);
+    const tabla = [];
+    for (let i = 0; i < 256; i++) tabla.push(r.next() * 2 - 1);
+    return (i) => {
+      const x = i * escala, k = floor(x), t = x - k;
+      const s = t * t * (3 - 2 * t);
+      return tabla[k % 256] * (1 - s) + tabla[(k + 1) % 256] * s;
+    };
+  }
+
+  // Desplaza cada vértice interior por su normal. Viene de la "vibración
+  // opcional" del sketch de p5, con dos diferencias que no son de estilo:
+  //
+  //   1. Allí se aplicaba a los puntos YA MAPEADOS, en renderComposition,
+  //      DESPUÉS de analizar el nudo. Eso mueve la cinta sin avisar a nadie:
+  //      los cruces, los cabos y las incisiones estaban medidos sobre el
+  //      recorrido de antes, así que la incisión dejaba de caer donde el
+  //      análisis creía que caía. Aquí el temblor entra dentro de `tejer`, y
+  //      todo lo que viene después —cruces, secciones, holguras, marco— se
+  //      calcula sobre la cinta que de verdad se dibuja.
+  //   2. El ruido va sembrado (ver arriba).
+  function temblar(nodes, width, cfg) {
+    const amp = width * (cfg.temblor || 0);
+    if (!(amp > 0) || nodes.length < 3) return nodes;
+    const n = ruidoCoherente((_semilla ^ 0x7E3B10) >>> 0, 0.55);
+    return nodes.map((nd, i) => {
+      // Los extremos de cinta se quedan quietos: sacarExtremos los saca de la
+      // trama a propósito y un temblor los devolvería adentro.
+      if (i === 0 || i === nodes.length - 1 || esSalto(i) || esSalto(i - 1)) return nd;
+      const dir = PV.sub(nodes[i+1].p, nodes[i-1].p);
+      if (dir.magSq() === 0) return nd;
+      const nor = V(-dir.y, dir.x).normalize();
+      const d = n(i) * amp;
+      return { p: V(nd.p.x + nor.x * d, nd.p.y + nor.y * d), anchor: nd.anchor };
+    });
+  }
+
   function tejer(family, vueltas, cfg) {
     const spec = FAMILIES[family];
     const anchura = cfg.widthOfSeg || ANCHOS[cfg.trazo] || ANCHOS.estandar;
@@ -604,25 +692,37 @@
     // que ya dejó escrito. De ahí sale la trama.
     const centro = V(0.5, 0.5);
 
-    // Con dos cintas, cada pasada ES una cinta. Y dos cintas de la misma
+    // Con varias cintas, cada pasada ES una cinta. Y dos cintas de la misma
     // familia son la misma forma girada 0,62 de vuelta y encogida: se leen
-    // como el eco de una sola, no como dos tejidos que se encuentran. La
-    // segunda saca sus anchors de OTRA familia.
+    // como el eco de una sola, no como dos tejidos que se encuentran. Cada
+    // cinta a partir de la primera saca sus anchors de OTRA familia.
     //
     // Medido, las familias no se distinguen una a una —mismo aspecto de
     // mancha, mismo centro, misma dispersión—, y por eso no son una
-    // categoría. Pero aquí no se comparan contra una media recordada: las
-    // dos están EN LA MISMA IMAGEN, una al lado de la otra, y ahí la
-    // comparación sí es directa.
-    const dosCintas = cfg.dosCintas && vueltas >= 2;
+    // categoría. Pero aquí no se comparan contra una media recordada: están
+    // EN LA MISMA IMAGEN, una al lado de la otra, y ahí la comparación sí es
+    // directa.
+    //
+    // Una cinta se lleva una pasada, así que no puede haber más cintas que
+    // pasadas: tres cintas piden tres vueltas. Si el tipo pide más cintas de
+    // las que caben, manda lo que cabe.
+    const nCintas = min(max(1, cfg.cintas || 1), vueltas);
     const specs = [];
     for (let t = 0; t < vueltas; t++) specs.push(spec);
-    let family2 = null;
-    if (dosCintas) {
+    const familiasExtra = [];
+    if (nCintas > 1) {
+      // Familias DISTINTAS entre sí: repetir familia en dos cintas devuelve el
+      // eco que se quería evitar.
       const otras = FAMILY_NAMES.filter(f => f !== family);
-      family2 = otras[floor(rng.next() * otras.length)];
-      specs[1] = FAMILIES[family2];
+      for (let k = 1; k < nCintas; k++) {
+        const libres = otras.filter(f => familiasExtra.indexOf(f) < 0);
+        const f = libres.length ? libres[floor(rng.next() * libres.length)]
+                                : otras[floor(rng.next() * otras.length)];
+        familiasExtra.push(f);
+        specs[k] = FAMILIES[f];
+      }
     }
+    const family2 = familiasExtra.length ? familiasExtra[0] : null;
 
     let anchors = [];
     const cortes = [];
@@ -662,22 +762,32 @@
 
     // los anchors son intocables, los insertados son material blando
     let nodes;
-    if (dosCintas) {
-      // DOS CINTAS: cada pasada es una cinta suya, no un tramo más del
+    if (nCintas > 1) {
+      // VARIAS CINTAS: cada pasada es una cinta suya, no un tramo más del
       // mismo recorrido. Se construyen por separado —si no, buildPath
-      // insertaría puntos ENTRE ellas y las uniría— y se concatenan con el
-      // salto en medio.
-      // El corte va por la FRONTERA DE PASADA, no por la mitad de la
-      // lista: dos familias distintas no tienen el mismo número de
-      // anchors, y partir por la mitad le daría a una cinta un trozo de
-      // la otra.
-      const a1 = anchors.slice(0, cortes[0]), a2 = anchors.slice(cortes[0]);
-      const n1 = buildPath(a1, a1.length + floor(rng.range(1, 4)), cfg);
-      const n2 = buildPath(a2, a2.length + floor(rng.range(1, 4)), cfg);
-      nodes = n1.concat(n2);
-      _salto = n1.length - 1;
+      // insertaría puntos ENTRE ellas y las uniría— y se concatenan con un
+      // salto entre cada dos.
+      // El corte va por la FRONTERA DE PASADA, no por partes iguales de la
+      // lista: dos familias distintas no tienen el mismo número de anchors,
+      // y repartir a ojo le daría a una cinta un trozo de la otra.
+      const trozos = [];
+      let desde = 0;
+      for (let k = 0; k < nCintas; k++) {
+        const hasta = k === nCintas - 1 ? anchors.length : cortes[k];
+        const aK = anchors.slice(desde, hasta);
+        trozos.push(buildPath(aK, aK.length + floor(rng.range(1, 4)), cfg));
+        desde = hasta;
+      }
+      nodes = trozos[0];
+      _saltos = [];
+      for (let k = 1; k < trozos.length; k++) {
+        // el salto es el ÍNDICE DEL ÚLTIMO NODO de la cinta anterior: el
+        // segmento que va de ahí al siguiente es el que no se dibuja.
+        _saltos.push(nodes.length - 1);
+        nodes = nodes.concat(trozos[k]);
+      }
     } else {
-      _salto = -1;
+      _saltos = [];
       nodes = buildPath(anchors, anchors.length + floor(rng.range(2, 7)), cfg);
     }
 
@@ -685,7 +795,7 @@
     // recorrido dentro del mismo marco y necesita más campo.
     // Con dos familias manda la más extendida: encajar dos cintas en la
     // extensión de la más recogida las apelotona en el centro.
-    const extension = dosCintas ? max(spec.extent, FAMILIES[family2].extent) : spec.extent;
+    const extension = familiasExtra.reduce((m, f) => max(m, FAMILIES[f].extent), spec.extent);
     nodes = fitToExtent(nodes, min(0.98, extension + 0.12 * (vueltas - 1)), cfg);
     let width = constrain(anchura * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
 
@@ -719,6 +829,19 @@
       nodes = relaxFolds(nodes, cfg);
       nodes = shrinkIntoFrame(nodes, width, cfg);
     }
+    // EL TEMBLOR VA AQUÍ, detrás de todos los lazos.
+    // Se probó antes de ellos y después de sacarExtremos, y en los dos sitios
+    // selfAvoid y relaxFolds se lo comían: a amplitud 1,0 —el ancho entero de
+    // la cinta— la obra salía indistinguible de la lisa. Ahí no hay temblor,
+    // hay tiempo gastado.
+    // Detrás sólo queda shrinkIntoFrame, que es una escala y una traslación
+    // uniformes: mete la mancha en el cuadro sin alisar nada. Y la anchura se
+    // recalcula justo después sobre el recorrido ya tembloroso, así que la
+    // holgura entre hebras se sigue exigiendo sobre lo que se dibuja: si el
+    // temblor junta dos hebras, la cinta adelgaza. Por eso de 0,30 para arriba
+    // el mando que de verdad manda es el grosor.
+    nodes = temblar(nodes, width, cfg);
+    nodes = shrinkIntoFrame(nodes, width, cfg);
     width = constrain(anchura * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
 
     // La cinta cede: adelgaza hasta que la incisión quepa, y hasta que
@@ -1121,9 +1244,18 @@
       // sin cruces se dibujaba como UNA cinta, con el salto pintado uniéndolas.
       // Se veía como dos remates soldados (46 de 48 puntos) en las obras del
       // tipo 'dos' que salen sin ningún cruce.
-      const secc = _salto >= 0
-        ? [[0, _salto], [_salto, _salto + 1], [_salto + 1, last]]
-        : [[0, last]];
+      // Con N saltos, N+1 cintas y N secciones-salto en medio: se parte en
+      // cada salto y el trozo que ES el salto queda como sección suya, que es
+      // lo único que hace que no se pinte.
+      const secc = [];
+      let ini = 0;
+      for (const s of _saltos.slice().sort((a, b) => a - b)) {
+        if (s > ini) secc.push([ini, s]);
+        secc.push([s, s + 1]);
+        ini = s + 1;
+      }
+      if (last > ini) secc.push([ini, last]);
+      if (!secc.length) secc.push([0, last]);
       const ord = secc.map((_, i) => i);
       return { cuts: [{ startSeg: 0, startT: 0, endSeg: last - 1, endT: 1 }], order: [0], depth: [0], cruces: [],
                plano: { secciones: secc, orden: ord, ciclos: 0, atasco: 0, juntas: [], volteados: 0 },
@@ -1227,7 +1359,8 @@
     // comprobar ANTES si este nudo se puede pintar en plano.
     // El salto se fuerza como frontera de sección para que las dos cintas
     // nunca se pinten como un trazo continuo.
-    const forzados = _salto >= 0 ? [_salto, _salto + 1] : [];
+    const forzados = [];
+    for (const s of _saltos) { forzados.push(s, s + 1); }
     const plano = planoDeSecciones(last, cruces, points, width, forzados);
     // Copia de la alternancia ANTES de que el plano voltee nada. Sin esto no
     // se puede saber si un desequilibrio viene del reparto o del volteo.
@@ -1340,7 +1473,7 @@
     // Con dos cintas hay CUATRO remates, no dos: los dos extremos del
     // recorrido y los dos lados del salto.
     const finales = [0, total];
-    if (_salto >= 0) { finales.push(acum[_salto], acum[_salto + 1]); }
+    for (const s of _saltos) { finales.push(acum[s], acum[s + 1]); }
     let peor = Infinity;
     for (const z of zonas)
       for (const f of finales) peor = min(peor, abs(z.d - f) / z.r);
@@ -1628,10 +1761,16 @@
     let mapped = mapToSquare(comp.points, ox, oy, S, cfg, ALTO);
 
     const tinta = cfg.tinta === "gradiente" ? makeGradient(ctx, mapped, comp) : col.fg;
-    // La segunda cinta va en su propio color. Sólo con tinta plana: sobre un
+    // Cada cinta va en su color, alternando. Sólo con tinta plana: sobre un
     // degradado el cambio de cinta dejaría de leerse.
-    const tinta2 = (comp.salto != null && comp.salto >= 0 && cfg.tinta !== "gradiente")
-      ? col.fg2 : tinta;
+    // Se ALTERNA entre dos tintas en vez de pedir una tercera: con tres cintas
+    // salen fg, fg2, fg — la primera y la tercera comparten color, y no se
+    // confunden porque lo que las separa donde se cruzan no es el color, es la
+    // incisión. Una tercera tinta sacada a la fuerza de la paleta salía casi
+    // siempre pegada a una de las dos, y eso sí se lee como un error.
+    const nSaltos = (comp.saltos || []).length;
+    const tintaDe = (k) => (cfg.tinta === "gradiente" || !nSaltos) ? tinta
+                         : (k % 2 === 0 ? tinta : col.fg2);
 
     if (cfg.dots === "bajo") drawDots(ctx, mapped, width, comp, ox, oy, S, ALTO);
 
@@ -1652,13 +1791,14 @@
     const total = acum[acum.length - 1];
     _densa = curvaDensa(mapped, acum, cfg);
 
-    // El salto: ni se dibuja, ni sus bordes son cortes. Son CUATRO extremos
-    // de cinta, y un extremo no lleva cabo ni alarga el halo — si lo llevara,
-    // el remate de una cinta se metería en el hueco de la otra.
-    _salto = comp.salto == null ? -1 : comp.salto;
-    const saltoArc = _salto >= 0 ? [acum[_salto], acum[_salto + 1]] : null;
+    // Los saltos: ni se dibujan, ni sus bordes son cortes. Cada uno son DOS
+    // extremos de cinta —con dos cintas hay cuatro, con tres hay seis— y un
+    // extremo no lleva cabo ni alarga el halo: si lo llevara, el remate de una
+    // cinta se metería en el hueco de la otra.
+    _saltos = (comp.saltos || []).slice();
+    const saltoArcs = _saltos.map(s => [acum[s], acum[s + 1]]);
     const esFinal = (d) => d <= 1e-6 || d >= total - 1e-6 ||
-      (saltoArc && (abs(d - saltoArc[0]) < 1e-6 || abs(d - saltoArc[1]) < 1e-6));
+      saltoArcs.some(r => abs(d - r[0]) < 1e-6 || abs(d - r[1]) < 1e-6);
 
     const secciones = comp.plano.secciones.map(([a, b]) =>
       [arcoDeParam(mapped, acum, a), arcoDeParam(mapped, acum, b)]);
@@ -1727,7 +1867,7 @@
       const [a, b] = secciones[i];
       const aJ = a > 0 && esJunta(a), bJ = b < total && esJunta(b);
 
-      if (saltoArc && a >= saltoArc[0] - 1e-6 && b <= saltoArc[1] + 1e-6) continue;
+      if (saltoArcs.some(r => a >= r[0] - 1e-6 && b <= r[1] + 1e-6)) continue;
 
       const aFin = esFinal(a), bFin = esFinal(b);
 
@@ -1759,7 +1899,9 @@
       const iniH = max(0, !aFin && !aJ ? a - caboEn(a) : a);
       const finH = min(total, !bFin && !bJ ? b + caboEn(b) : b);
 
-      const segunda = saltoArc && a >= saltoArc[1] - 1e-6;
+      // De qué cinta es esta sección: cuántos saltos ha dejado atrás.
+      let cinta = 0;
+      for (const r of saltoArcs) if (a >= r[1] - 1e-6) cinta++;
       // LA INCISIÓN NO ES UN COLOR, ES UN CORTE.
       // Pintarla del color del fondo sólo funciona si el fondo es plano. Sobre
       // un mesh gradient, un halo de color plano deja de leerse como incisión y
@@ -1773,14 +1915,14 @@
                     borrar ? 'rgba(0,0,0,1)' : col.bg, cfg, "round");
         if (borrar) ctx.globalCompositeOperation = 'source-over';
       }
-      trazarTramo(ctx, mapped, acum, iniC, finC, width, segunda ? tinta2 : tinta, cfg);
+      trazarTramo(ctx, mapped, acum, iniC, finC, width, tintaDe(cinta), cfg);
     }
 
 
     if (cfg.ends === "redondos") {
       ctx.fillStyle = tinta;
       const cabos = [mapped[0], mapped[mapped.length - 1]];
-      if (_salto >= 0) cabos.push(mapped[_salto], mapped[_salto + 1]);
+      for (const s of _saltos) cabos.push(mapped[s], mapped[s + 1]);
       for (const c of cabos) {
         ctx.beginPath(); ctx.arc(c.x, c.y, width / 2, 0, TWO_PI); ctx.fill();
       }
@@ -1788,7 +1930,7 @@
 
     if (cfg.dots === "encima") drawDots(ctx, mapped, width, comp, ox, oy, S, ALTO);
 
-    _densa = null; _salto = -1;
+    _densa = null; _saltos = [];
     return { mapped, width, gap, esc };
   }
 
@@ -2261,7 +2403,10 @@
     // no se pisa el default: producción no pasa params y por tanto los defaults
     // SON el comportamiento publicado.
     if (params.tipo && params.tipo !== 'auto') cfg.tipo = params.tipo;
-    if (params.corner && params.corner !== 'auto') cfg.corner = params.corner;
+    // 'cornerFijo' es lo que distingue "la obra decide" de "lo decido yo": sin
+    // él, generate no sabría si un "rectas" viene del laboratorio o del dado.
+    if (params.corner && params.corner !== 'auto') { cfg.corner = params.corner; cfg.cornerFijo = true; }
+    if (params.temblor != null && params.temblor !== 'auto') cfg.temblor = +params.temblor;
     if (params.dots && params.dots !== 'auto') cfg.dots = params.dots;
     if (params.reintentos) cfg.reintentos = params.reintentos | 0;
 
@@ -2306,7 +2451,8 @@
     return {
       pal: comp.pal, tipo: comp.tipo, familia: comp.family, familia2: comp.family2,
       cruces: comp.cruces.length, vueltas: comp.vueltas,
-      esquinas: comp.cfg.corner, trazo: comp.cfg.trazo,
+      esquinas: comp.cfg.corner, trazo: comp.cfg.trazo, temblor: comp.cfg.temblor || 0,
+      cintas: (comp.saltos || []).length + 1,
       secciones: comp.plano.secciones.length, volteos: comp.volteos,
       conserva: comp.conserva, entrelazada: comp.entrelazada,
       fondo: modo, campo,
@@ -2330,14 +2476,28 @@
       { key: 'Type', val: NOMBRE_TIPO[res.tipo] || res.tipo, rarity: rarezaDe(t.prob || 0.25) },
       { key: 'Crossings', val: String(res.cruces),
         rarity: res.cruces >= 8 ? 'rare' : res.cruces >= 5 ? 'uncommon' : 'common' },
-      { key: 'Corners', val: res.esquinas === 'curvas' ? 'Round' : 'Sharp', rarity: 'common' },
+      // Ya no es un empate: la esquina curva sale una de cada cuatro, y la
+      // rareza tiene que decir la probabilidad de verdad o no dice nada.
+      { key: 'Corners', val: res.esquinas === 'curvas' ? 'Round' : 'Sharp',
+        rarity: res.esquinas === 'curvas' ? 'uncommon' : 'common' },
       { key: 'Ground', val: res.fondo === 'gradient' ? 'Gradient' : 'Flat',
         rarity: res.fondo === 'gradient' ? 'uncommon' : 'common' },
     ];
-    // Sólo en el tipo de dos cintas: que se entrelacen de verdad —cada una gana
-    // algún cruce— frente a una entera encima de la otra, que es lo que pasa
-    // cuando el nudo no deja partir ninguna sección.
-    if (res.tipo === 'dos')
+    // El temblor sólo se declara cuando lo hay: en las obras lisas no es un
+    // rasgo con valor cero, es un rasgo que no existe.
+    if (res.temblor > 0)
+      list.push({ key: 'Shake', val: res.temblor.toFixed(2).replace('.', ','),
+                  rarity: 'uncommon' });
+
+    // Cuántas cintas, cuando hay más de una: es la primera cosa que se ve.
+    if (res.cintas > 1)
+      list.push({ key: 'Ribbons', val: String(res.cintas),
+                  rarity: res.cintas >= 3 ? 'rare' : 'uncommon' });
+
+    // Con más de una cinta: que se entrelacen DE VERDAD —cada una gana algún
+    // cruce compartido— frente a una entera por encima de las demás, que es lo
+    // que pasa cuando el nudo no deja partir ninguna sección.
+    if (res.cintas > 1)
       list.push({ key: 'Interlace', val: res.entrelazada ? 'Woven' : 'Stacked',
                   rarity: res.entrelazada ? 'rare' : 'superrare' });
 

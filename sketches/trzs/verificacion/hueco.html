@@ -31,7 +31,7 @@ window.huecos = (seed, pals, extra) => {
   // construcción, mixHex(fg, bg, 0.38): exactamente el color de un píxel
   // mezclado al 38%. Contarlo como tinta convertía cada filo antialias en un
   // hueco — y de ahí salían rachas de 28 px que no existen.
-  const dosCintas = c.salto != null && c.salto >= 0;
+  const dosCintas = (c.saltos || []).length > 0;   // dos tintas en cuanto hay un salto
   const d3 = (i,C) => Math.abs(img[i]-C[0])+Math.abs(img[i+1]-C[1])+Math.abs(img[i+2]-C[2]);
   // Tres clases, no dos. Un pixel MEZCLADO es el filo antialias de algo, no un
   // hueco: contarlo como hueco es lo que inflaba las rachas. Hueco es tinta
@@ -56,7 +56,8 @@ window.huecos = (seed, pals, extra) => {
       const sen = Math.max(Math.abs(Math.sin(dir(q.abajo).angleBetween(dir(q.arriba)))), 0.18);
       l = Math.max(l, (W/2)/sen*c.cfg.caboMargen); }
     return l; };
-  const salto = c.salto != null && c.salto >= 0 ? [acum[c.salto], acum[c.salto+1]] : null;
+  const saltos = (c.saltos || []).map(k => [acum[k], acum[k+1]]);
+  const salto = saltos.length ? saltos[0] : null;   // compat: el primero
   const esFin = d => d <= 1e-6 || d >= total-1e-6 ||
     (salto && (Math.abs(d-salto[0])<1e-6 || Math.abs(d-salto[1])<1e-6));
   // Los limites del HALO de una seccion (no los del cuerpo).

@@ -138,6 +138,41 @@ Los detectores que encontraron todo eso están commiteados en
 dieron defectos inexistentes. Se ejecutan a mano cuando alguien toca el dibujo de
 la cinta.
 
+**Y la costura de 1 px, que se quedó abierta al graduar, ya está cerrada.** Era
+el filo del cabo: el halo y el cuerpo acababan en el mismo arco y el remate va a
+ras, así que en los píxeles que ese filo parte por la mitad el halo se llevaba
+una fracción de tinta que el cuerpo no devolvía entera. Basta con que el cuerpo
+pase del halo un píxel. Los cuatro arreglos que habían fallado antes atacaban la
+junta; no era la junta.
+
+Lo que sí sigue abierto son dos defectos **que ya estaban** y que no se veían
+porque la batería medía 50 obras por configuración: remates soldados a otra
+hebra (~2 %) e incisiones a medias en apaisado (3 de 2.653 cruces). A un 2 %,
+cero de cincuenta es lo más probable que puede pasar — la muestra era el
+defecto. De ahí `mil.sh`, que mide mil.
+
+### Lo que la cinta sabe hacer y no se veía
+
+Tres mandos que existían a medias o no existían:
+
+- **La esquina curva la tira ahora la obra.** El default era `rectas` a secas, así
+  que la variante curva no salía nunca sola: ni en un lote, ni en la landing, ni
+  en la galería, sólo eligiéndola a mano en el laboratorio. Un rasgo que vale lo
+  mismo en todas las obras no es un rasgo. Sale una de cada cuatro, con su propio
+  azar para no correr el stream principal y dejar igual todo lo ya visto.
+- **El temblor** (`params.temblor`), portado de la "vibración opcional" del sketch
+  de p5 con dos diferencias: entra *dentro* de `tejer`, antes de analizar el nudo
+  —en p5 movía los puntos ya mapeados, después, así que la incisión dejaba de
+  caer donde el análisis creía— y su ruido va sembrado, porque el de p5 no
+  llamaba a `noiseSeed` y todas las obras temblaban exactamente igual. Va detrás
+  de los lazos de restricción: probado antes, `selfAvoid` y `relaxFolds` se lo
+  comían enteros incluso a amplitud 1,0.
+- **Tres cintas** (`tipo: "tres"`). El salto pasó de escalar a lista y `esSalto()`
+  siguió siendo la única puerta, así que de los 39 sitios que lo tocaban sólo
+  cambiaron los que contaban uno. Cada cinta se lleva una pasada, y el suelo de
+  vueltas ahora respeta eso: antes el bucle bajaba las vueltas hasta que el
+  tejido validaba, y con eso un tipo de tres cintas devolvía dos.
+
 Cada obra expone el mismo contrato:
 
 ```js
