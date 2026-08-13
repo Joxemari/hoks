@@ -50,6 +50,7 @@ sketches/
   dtk/             ← graduada (porte fiel, verificado op-a-op)
   dtkrt/            ← EN PRUEBAS: familia nueva, aún sin página de producción
   eclps/             ← EN PRUEBAS: iteración horizontal, aún sin página de producción
+  evol/             ← EN PRUEBAS: la ley del encuentro invertida. Ver su README
   trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
     verificacion/   ← los detectores del halo y sus controles rotos a propósito.
                       No se publica: se ejecuta a mano cuando alguien toca el
@@ -65,7 +66,28 @@ constante donde las ausencias hacen el ritmo — un eclipse es exactamente eso, 
 disco que tapa a otro. Usa el harness compartido, está en `GRADUATED` y ya tiene
 página (`eclps.html`) y entrada activa en `works.json`.
 
-Es también la primera familia que existe en **un solo formato**: `double`, dos
+`evol/` es el tercero, y el primero que nace **de otra familia de aquí** en vez de
+una idea suelta: es TRZS con la ley del encuentro invertida. Donde TRZS cruza —una
+hebra por encima, otra por debajo, y el suelo entre las dos como una incisión— EVOL
+**suelda**: los cuerpos se funden, no hay profundidad que ordenar, y el suelo solo
+sobrevive donde la masa se cierra a su alrededor. Ese hueco cerrado es un **ojo**, y
+los ojos son la obra.
+
+Por eso es **más pequeña** que su madre: 925 líneas contra 2.344. Sin encima/debajo
+no hay nada que proteger, así que se cae el diagrama de nudo, el plan de secciones,
+el orden de pintado, el punzón y los detectores del halo — y el cuerpo puede
+cruzarse consigo mismo cuantas veces quiera, porque se rellena. **Una sola llamada a
+`fill()`.** Lo que TRZS gasta en la profundidad, EVOL lo gasta en el contorno (la
+anchura va por niveles discretos, así que la masa engorda a escalones) y en el
+vacío. Lo que sí hereda entero es el método: el tipo declara cuántos ojos quiere y
+luego **se comprueban** sobre el dibujo, por campo de distancias e inundación desde
+el borde — el mismo mapa de vacíos con el que TRZS coloca sus discos.
+
+No está en `works.json` ni publicada. Ver `evol/README.md` para el concepto, las
+nueve pasadas que costó y las decisiones que quedan abiertas (el nombre, entre
+ellas).
+
+ECLPS es también la primera familia que existe en **un solo formato**: `double`, dos
 pliegos apaisados uno al lado del otro (2√2:1). No es capricho ni límite técnico
 —la obra se compone igual en cuadrado— es que una fila necesita recorrido: en
 1:1 el trayecto de los centros da para dos o tres círculos y deja de ser una
