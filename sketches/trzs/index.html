@@ -131,16 +131,27 @@
         pide esquina curva</span>
     </div>
     <div class="group">
+      <span class="lbl">Ghost ribbon</span>
+      <select id="fantasma">
+        <option value="auto">Auto (3,5% de las obras)</option>
+        <option value="no">Nunca</option>
+        <option value="si">Siempre · la última cinta, del color del suelo</option>
+      </select>
+      <span class="hintline">no se ve como cinta: se ve como el corte que la separa del suelo.
+        Con una sola cinta, la obra entera es un dibujo de incisiones</span>
+    </div>
+    <div class="group">
       <span class="lbl">Shake</span>
       <select id="temblor">
         <option value="auto">Auto (sin temblor)</option>
-        <option value="0">Ninguno · la máquina</option>
-        <option value="0.08">Poco · 0,08 × anchura</option>
-        <option value="0.18">Medio · 0,18 × anchura</option>
-        <option value="0.30">Mucho · 0,30 × anchura</option>
+        <option value="0">Ninguno · corte de máquina</option>
+        <option value="0.12">Poco · 0,12</option>
+        <option value="0.25">Medio · 0,25</option>
+        <option value="0.40">Mucho · 0,40</option>
       </select>
-      <span class="hintline">el temblor se come holgura y la cinta lo paga adelgazando: de 0,30 para
-        arriba manda el grosor, no el recorrido</span>
+      <span class="hintline">el eje no se mueve: lo que respira es el ancho, así que la composición
+        es la misma y sólo cambia el filo. El tope es 0,45, y es la holgura entre hebras
+        quien lo pone</span>
     </div>
     <div class="group">
       <span class="lbl">Discs</span>
@@ -218,6 +229,7 @@ function params() {
     tipo:       $('tipo').value,
     corner:     $('corner').value,
     ends:       $('ends').value,
+    fantasma:   $('fantasma').value,
     temblor:    $('temblor').value,
     dots:       $('dots').value,
   };

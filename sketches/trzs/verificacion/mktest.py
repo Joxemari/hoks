@@ -47,6 +47,15 @@ elif roto == 'ojo':
     a = "      const rad = D[mejor] - aire;"
     assert a in src
     src = src.replace(a, "      const rad = D[mejor];   // ROTO A PROPOSITO: sin aire")
+elif roto == 'sueloigual':
+    # Fuerza el caso que pickRoles evita por contraste: la SEGUNDA cinta sale
+    # exactamente del color del suelo. Sin esto no se puede comprobar que el
+    # halo aparece a lo largo de todo el cuerpo, porque por la vía normal el
+    # caso no se alcanza — y un arreglo que no se puede ver disparar no está
+    # comprobado, está escrito.
+    a = "    return { bg, fg, fg2, fg3, dot, dots };"
+    assert a in src
+    src = src.replace(a, "    return { bg, fg, fg2: bg, fg3, dot, dots };   // ROTO A PROPOSITO")
 elif roto == 'costura':
     # El cuerpo vuelve a acabar a ras del halo, que es de donde salía la raya
     # de 1 px. Es el control del bloque de costuras: sin él, su cero no dice

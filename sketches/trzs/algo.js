@@ -25,15 +25,27 @@
   // cuatro: la cinta doblada en ángulo vivo es la referencia de la que salió
   // la obra, y la curva es la segunda lectura de la misma regla, no un empate.
   const CURVA_PROB = 0.25;
-  // El tope del temblor. La holgura entre hebras se exige a 1,45 anchuras y el
-  // temblor se la come a razón de 2 por unidad, así que 0,20 deja 1,05: los
-  // cuerpos no se tocan ni en el peor caso. Subir de aquí pide volver a medir
-  // la holgura, y sobre el recorrido partido eso no se puede medir.
-  const TEMBLOR_MAX = 0.20;
+  // El tope del temblor. Como sólo adelgaza, no hay riesgo geométrico ninguno:
+  // el tope es de lectura. Por encima de la mitad del ancho, los adelgazamientos
+  // estrangulan la cinta y lo que se lee ya no es un filo cortado a mano sino
+  // una cinta rota.
+  const TEMBLOR_MAX = 0.5;
   // Cada cuánto el remate va en inglete cuando la esquina es viva. El remate a
   // escuadra es el corte de sierra y el inglete es el corte a 45º: los dos son
   // de la misma pletina, así que reparten casi a medias.
   const INGLETE_PROB = 0.45;
+  // Por debajo de esta distancia de color, una cinta y el suelo no se
+  // distinguen y el halo de esa cinta deja de ser invisible sobre el suelo: se
+  // pinta en un tono corrido para que la incisión la separe también del fondo.
+  // 0,12 es holgado a propósito — el criterio de la segunda tinta ya exige
+  // 0,34 contra el fondo, así que esto sólo salta en lo que se le escapa.
+  const HALO_MIN_DIST = 0.12;
+  // EL TRAZO FANTASMA. Una cinta del color exacto del suelo: no se ve como
+  // cinta, se ve como el corte que la separa del suelo. Antes el reparto de
+  // roles lo evitaba por contraste —y con razón, mientras el remate lo
+  // reventaba— pero resuelto es de lo mejor que da la familia, así que se
+  // busca a propósito. Improbable: es lo que lo hace valioso.
+  const FANTASMA_PROB = 0.035;
 
   // ── Aritmética ────────────────────────────────────────────────────────────
   // Los nombres cortos son los de p5 a propósito: el algoritmo viene de ahí y
@@ -272,7 +284,7 @@
 
     pad:          0.07,
     aspecto:      1,           // ancho/alto del campo. 1 = cuadrado
-    corner:       "rectas",    // rectas | curvas — MANDO ÚNICO de la esquina
+    corner:       "auto",      // auto | rectas | curvas — MANDO ÚNICO de la esquina
     ends:         "auto",      // auto | rectos | inglete | redondos
     tinta:        "solido",    // solido | gradiente
     temblor:      0,           // amplitud del temblor del recorrido, × anchura
@@ -425,8 +437,14 @@
     // más en el stream compartido correría todos los números siguientes y
     // cambiaría hasta la última obra ya vista por un motivo que no tiene nada
     // que ver con ellas. Es el mismo recurso que usa el degradado.
-    if (!cfg.cornerFijo) cfg.corner = new E.Rng((seed ^ 0xC0FFEE) >>> 0).next() < CURVA_PROB
-                                    ? "curvas" : "rectas";
+    // El dado SÓLO cuando nadie la ha fijado, y eso se sabe por el valor: si
+    // cfg.corner trae "rectas" o "curvas", manda. Con una bandera aparte
+    // (cornerFijo) el dado pisaba a quien llamaba a generate() directamente —
+    // que es lo que hacen los seis detectores— y sus configuraciones de esquina
+    // se estaban ignorando EN SILENCIO. Una batería que no puede fijar lo que
+    // mide no mide.
+    if (!cfg.corner || cfg.corner === "auto")
+      cfg.corner = new E.Rng((seed ^ 0xC0FFEE) >>> 0).next() < CURVA_PROB ? "curvas" : "rectas";
     cfg.curva = cfg.corner === "curvas" ? 1 : 0;
 
     // Y EL REMATE IGUAL, que tenía el mismo problema exacto: `ends` valía
@@ -434,10 +452,14 @@
     // dibujado y sin usar. En la esquina curva el remate va redondo, que es lo
     // que pide una cinta redondeada; en la viva reparte entre escuadra e
     // inglete. Mismo azar aparte, por lo mismo.
-    if (!cfg.endsFijo || cfg.ends === "auto") {
+    if (!cfg.ends || cfg.ends === "auto") {
       cfg.ends = cfg.corner === "curvas" ? "redondos"
                : (new E.Rng((seed ^ 0x1A6E7E) >>> 0).next() < INGLETE_PROB ? "inglete" : "rectos");
     }
+    // EL REDONDO ES DE LA CURVA. Un medio disco al final de una cinta de
+    // ángulos vivos es de otra obra: si alguien lo pide sobre esquina recta, se
+    // le da el corte al bies, que es el remate que esa cinta sí admite.
+    if (cfg.ends === "redondos" && cfg.corner !== "curvas") cfg.ends = "inglete";
 
     reseed(seed);
 
@@ -448,6 +470,16 @@
               : (cfg.paletas && cfg.paletas.length ? rng.weighted(cfg.paletas)
                                                    : { colors: PALETA_BASE, name: "base", prob: 0.05 });
     const colores = pickRoles(pal.colors);
+    // Con su propio azar, como la esquina y el remate: una decisión más en el
+    // stream principal correría todas las obras ya vistas.
+    // El valor se lee, no se convierte a booleano a lo bruto: quien llama a
+    // generate() directamente —los seis detectores— usa el vocabulario del
+    // laboratorio, y `!!"no"` es true. Con eso, pedir "sin fantasma" ponía
+    // fantasma en TODAS las obras. Es el mismo error que ya costó la esquina.
+    const fq = cfg.fantasma;
+    colores.fantasma = (fq === true || fq === 'si') ? true
+                     : (fq === false || fq === 'no') ? false
+                     : new E.Rng((seed ^ 0xFA5714) >>> 0).next() < FANTASMA_PROB;
     colores.nombre = pal.name;
     const family = rng.pickFrom(FAMILY_NAMES);
     // El tipo manda sobre las vueltas. Las familias siguen existiendo como
@@ -689,82 +721,6 @@
     };
   }
 
-  // Desplaza cada vértice interior por su normal. Viene de la "vibración
-  // opcional" del sketch de p5, con dos diferencias que no son de estilo:
-  //
-  //   1. Allí se aplicaba a los puntos YA MAPEADOS, en renderComposition,
-  //      DESPUÉS de analizar el nudo. Eso mueve la cinta sin avisar a nadie:
-  //      los cruces, los cabos y las incisiones estaban medidos sobre el
-  //      recorrido de antes, así que la incisión dejaba de caer donde el
-  //      análisis creía que caía. Aquí el temblor entra dentro de `tejer`, y
-  //      todo lo que viene después —cruces, secciones, holguras, marco— se
-  //      calcula sobre la cinta que de verdad se dibuja.
-  //   2. El ruido va sembrado (ver arriba).
-  //   3. PARTE LOS TRAMOS. Mover sólo los vértices no tiembla: los vértices son
-  //      los PLIEGUES de la cinta, y desplazar un pliegue mueve la esquina
-  //      dejando los tramos perfectamente rectos. Se probó con la amplitud a
-  //      1,0 —el ancho entero— y lo que cambiaba era la composición, no el
-  //      trazo. Para que tiemble el trazo hay que meter puntos DENTRO del
-  //      tramo, y eso es lo que hace que se lea como cinta cortada a mano y no
-  //      como cinta doblada por una máquina.
-  //
-  //      Sólo se parte cuando el temblor está encendido: el análisis del nudo
-  //      es cuadrático en el número de tramos y doblarlos cuadruplica el coste
-  //      de cada intento. Con el temblor a 0 —que es lo publicado— no se paga
-  //      nada.
-  //
-  //      Y el ruido se indexa por ARCO, no por vértice: así la longitud de onda
-  //      del temblor se mide en anchuras de cinta y no depende de cómo hayan
-  //      caído los pliegues. Un temblor cuya frecuencia cambia con el número de
-  //      vértices no es un temblor, es una casualidad por obra.
-  function temblar(nodes, width, cfg) {
-    const amp = width * (cfg.temblor || 0);
-    if (!(amp > 0) || nodes.length < 3) return nodes;
-    const onda = max(width * (cfg.temblorOnda || 2), 1e-6);   // longitud de onda
-    const n = ruidoCoherente((_semilla ^ 0x7E3B10) >>> 0, 1);
-
-    // 1. Partir cada tramo en trozos de media anchura como mucho. El salto NO
-    //    se parte: no es cinta, es el aire entre dos cintas.
-    const densos = [];
-    let arco = 0;
-    const arcos = [];
-    for (let i = 0; i < nodes.length - 1; i++) {
-      densos.push(nodes[i]); arcos.push(arco);
-      const largo = PV.dist(nodes[i].p, nodes[i+1].p);
-      const trozos = esSalto(i) ? 1 : constrain(round(largo / (width * 0.5)), 1, 24);
-      for (let k = 1; k < trozos; k++) {
-        const t = k / trozos;
-        densos.push({ p: PV.lerp(nodes[i].p, nodes[i+1].p, t), anchor: false, blando: true });
-        arcos.push(arco + largo * t);
-      }
-      arco += largo;
-    }
-    densos.push(nodes[nodes.length - 1]); arcos.push(arco);
-
-    // Los saltos se recolocan: la lista de índices es de la cinta ya partida.
-    const antes = _saltos.slice();
-    if (antes.length) {
-      const nuevos = [];
-      for (let i = 0, j = 0; i < nodes.length - 1; i++) {
-        if (antes.indexOf(i) >= 0) nuevos.push(j);
-        j += esSalto(i) ? 1 : constrain(round(PV.dist(nodes[i].p, nodes[i+1].p) / (width * 0.5)), 1, 24);
-      }
-      _saltos = nuevos;
-    }
-
-    // 2. Desplazar por la normal. Los extremos de cinta se quedan quietos:
-    //    sacarExtremos los saca de la trama a propósito y un temblor los
-    //    devolvería adentro.
-    return densos.map((nd, i) => {
-      if (i === 0 || i === densos.length - 1 || esSalto(i) || esSalto(i - 1)) return nd;
-      const dir = PV.sub(densos[i+1].p, densos[i-1].p);
-      if (dir.magSq() === 0) return nd;
-      const nor = V(-dir.y, dir.x).normalize();
-      const d = n(arcos[i] / onda) * amp;
-      return { p: V(nd.p.x + nor.x * d, nd.p.y + nor.y * d), anchor: nd.anchor };
-    });
-  }
-
   function tejer(family, vueltas, cfg) {
     const spec = FAMILIES[family];
     const anchura = cfg.widthOfSeg || ANCHOS[cfg.trazo] || ANCHOS.estandar;
@@ -937,34 +893,12 @@
                          segPercentil(nodes, 0.15) / 1.05);
     width = constrain(admitida, cfg.widthMin, cfg.widthMax);
 
-    // EL TEMBLOR VA AQUÍ, DETRÁS DE LA ANCHURA, y el orden importó:
-    //
-    //   - Detrás de los lazos de restricción, porque delante selfAvoid y
-    //     relaxFolds se lo comían. Con la amplitud a 1,0 —el ancho entero de la
-    //     cinta— la obra salía indistinguible de la lisa: ahí no hay temblor,
-    //     hay tiempo gastado.
-    //   - Y detrás del cálculo de la anchura, porque el temblor PARTE los
-    //     tramos: puesto delante, medianSeg pasaba a medir media anchura en vez
-    //     de tramo y tramo, y la cinta colapsaba a un pelo. La anchura se decide
-    //     sobre el recorrido liso, que es el que tiene tramos.
-    //
-    // Y la holgura NO se vuelve a medir sobre el recorrido tembloroso: se
-    // ACOTA. Medirla ahí sale absurdo, y por una razón que no es un detalle —
-    // holguraReal mira pares de tramos que no se cruzan, y en un recorrido
-    // partido los tramos i e i+2 son trozos de la MISMA recta separados por
-    // medio ancho. La holgura salía casi cero y la cinta colapsaba a un pelo.
-    // El paseo entre tramos largos daba por hecho que un tramo es un tramo.
-    //
-    // No hace falta medir: el temblor desplaza como mucho `amp` a cada lado, así
-    // que la holgura baja como mucho 2·temblor anchuras. Con holguraMin 1,45 y
-    // el temblor topado en 0,20 queda 1,05 — los cuerpos no llegan a tocarse
-    // ni en el peor caso. La cota es del mando, no de la obra, y por eso el
-    // tope está aquí y no en el laboratorio.
-    if (cfg.temblor > 0) {
-      cfg = Object.assign({}, cfg, { temblor: min(cfg.temblor, TEMBLOR_MAX) });
-      nodes = temblar(nodes, width, cfg);
-      nodes = shrinkIntoFrame(nodes, width, cfg);
-    }
+    // El temblor NO va aquí. Se probó moviendo el recorrido —en tres sitios
+    // distintos del pipeline— y el resultado fue siempre el mismo callejón:
+    // con amplitud pequeña no se ve, y con amplitud grande deja de ser la misma
+    // obra. El temblor vive ahora en el DIBUJO, variando la anchura sobre un
+    // eje que no se mueve (ver trazarVariable). Así los cruces y las incisiones
+    // no se recalculan y no hay nada que se pueda romper.
 
     return { nodes, width, deseada, family2, conserva: admitida / deseada };
   }
@@ -1883,9 +1817,41 @@
     // color y no se confunden, porque lo que las separa donde se cruzan no es
     // el color sino la incisión.
     const tintas = [tinta, col.fg2, col.fg3 || tinta];
-    const tintaDe = (k) => (cfg.tinta === "gradiente" || !nSaltos) ? tinta
+    // La última cinta puede ser FANTASMA: del color exacto del suelo. Con una
+    // sola cinta, la obra entera pasa a ser un dibujo hecho sólo de incisiones.
+    const kFantasma = col.fantasma ? nSaltos : -1;
+    const tintaDe = (k) => k === kFantasma ? col.bg
+                         : (cfg.tinta === "gradiente" || !nSaltos) ? tinta
                          : (nSaltos >= 2 && col.fg3 ? tintas[k % 3]
                                                     : (k % 2 === 0 ? tinta : col.fg2));
+
+    // UNA CINTA DEL COLOR DEL SUELO SIGUE SIENDO UNA CINTA.
+    // El halo se pinta a lo largo de TODO el cuerpo de cada sección, pero del
+    // color del fondo: donde la cinta pasa sobre el suelo, fondo sobre fondo no
+    // se ve, y sólo asoma como incisión donde hay otra hebra debajo. Eso es
+    // exactamente lo que se quiere... mientras la cinta y el suelo se
+    // distingan. Si no —y puede pasar: una paleta corta, una tercera tinta
+    // apretada, un mesh que roza el color de una cinta— la cinta desaparece
+    // contra el suelo y de ella sólo quedan los trozos de incisión de los
+    // cruces, que se leen como fragmentos sueltos.
+    //
+    // Entonces el halo de ESA cinta se pinta en un tono corrido del fondo, y
+    // pasa a verse en todo el recorrido. No es un contorno dibujado alrededor:
+    // es la misma incisión de siempre, que ahora tiene que separar la cinta del
+    // suelo y no sólo de otra hebra. El orden de pintado, los solapes y los
+    // cabos no cambian NADA — una cinta del color del suelo se dibuja como
+    // cualquier otra.
+    const haloDe = (k) => {
+      const t = tintaDe(k);
+      if (typeof t !== 'string') return col.bg;         // tinta en degradado
+      if (dcolor(t, col.bg) >= HALO_MIN_DIST) return col.bg;
+      return mixHex(col.bg, lum(col.bg) > 0.5 ? '#000000' : '#ffffff', 0.42);
+    };
+    // Y si alguna cinta lo necesita, el fondo en degradado deja de poder
+    // RECORTAR: recortar enseña el suelo, y el problema es justo que el suelo y
+    // la cinta se parecen. En esas obras el halo se pinta, no borra.
+    let sueloIgual = false;
+    for (let k = 0; k <= nSaltos; k++) if (haloDe(k) !== col.bg) sueloIgual = true;
 
     if (cfg.dots === "bajo") drawDots(ctx, mapped, width, comp, ox, oy, S, ALTO);
 
@@ -1904,7 +1870,7 @@
     // ============================================================
     const acum = arcosDe(mapped);
     const total = acum[acum.length - 1];
-    _densa = curvaDensa(mapped, acum, cfg);
+    _densa = curvaDensa(mapped, acum, Object.assign({}, cfg, { unidadAncho: width }));
 
     // Los saltos: ni se dibujan, ni sus bordes son cortes. Cada uno son DOS
     // extremos de cinta —con dos cintas hay cuatro, con tres hay seis— y un
@@ -1975,6 +1941,28 @@
     // dispositivo no hay nada que tapar, y las celdas de la landing se
     // dibujan a 320 px de lado corto.
     const sobra = max(E.unit(S, ALTO, REF), 1);
+
+    // EL TEMBLOR, EN EL ANCHO. Una cinta cortada a mano no tiene el mismo
+    // grosor en todo su recorrido. El eje no se toca —de ahí que sea seguro— y
+    // el ancho ondula con ruido coherente, sembrado y medido en anchuras: la
+    // onda es la misma a cualquier resolución y a cualquier formato.
+    //
+    // El tope de 0,45 no es estético: la holgura entre hebras se exige a 1,45
+    // anchuras, y una cinta que engorda un 45% por los dos lados se come 0,9 de
+    // esa holgura. Por encima, dos hebras que no se cruzan llegarían a tocarse.
+    const tmb = cfg.temblor || 0;
+    const ruido = tmb > 0 ? ruidoCoherente((_semilla ^ 0x7E3B10) >>> 0, 1) : null;
+    const onda = max(width * (cfg.temblorOnda || 2), 1e-6);
+    // EL TEMBLOR SÓLO QUITA MATERIAL, nunca lo añade — y no es una elección
+    // estética, es lo que lo hace seguro. Los cabos, las huellas de los cruces
+    // y el veto de las juntas están medidos con la anchura NOMINAL: una cinta
+    // que engorda se sale de lo que el análisis dio por hecho y su cuerpo asoma
+    // por donde el halo de la de arriba ya no llega. Medido: con el temblor
+    // engordando a 0,45, 132 de 158 cruces con hueco, el peor de 77 px.
+    // Adelgazando, todas las garantías se conservan o mejoran: el cuerpo es más
+    // fácil de tapar y el canal entre hebras, más ancho.
+    // Un corte a mano quita material. No lo pone.
+    const anchoEn = (d) => width * (1 - min(tmb, TEMBLOR_MAX) * (ruido(d / onda) + 1) / 2);
     const rango = {};
     orden.forEach((sec, k) => { rango[sec] = k; });
 
@@ -2025,12 +2013,19 @@
       // es plano la obra se pinta en una capa y el halo RECORTA: por el corte se
       // ve el suelo que haya, y la incisión vuelve a ser lo que dice ser.
       if (gap > 0) {
-        if (borrar) ctx.globalCompositeOperation = 'destination-out';
-        trazarTramo(ctx, mapped, acum, iniH, finH, width + gap * 2,
-                    borrar ? 'rgba(0,0,0,1)' : col.bg, cfg, "round");
-        if (borrar) ctx.globalCompositeOperation = 'source-over';
+        // El halo de ESTA cinta. Casi siempre es el color del fondo (o el
+        // recorte, si el suelo va en degradado); en las obras donde una cinta
+        // no se separa del suelo, el tono corrido — y entonces se pinta, porque
+        // recortar enseñaría justamente el suelo del que hay que separarla.
+        const halo = haloDe(cinta);
+        const recorta = borrar && !sueloIgual;
+        if (recorta) ctx.globalCompositeOperation = 'destination-out';
+        trazarTramo(ctx, mapped, acum, iniH, finH,
+                    ruido ? (d) => anchoEn(d) + gap * 2 : width + gap * 2,
+                    recorta ? 'rgba(0,0,0,1)' : halo, cfg, "round");
+        if (recorta) ctx.globalCompositeOperation = 'source-over';
       }
-      trazarTramo(ctx, mapped, acum, iniC, finC, width, tintaDe(cinta), cfg);
+      trazarTramo(ctx, mapped, acum, iniC, finC, ruido ? anchoEn : width, tintaDe(cinta), cfg);
     }
 
 
@@ -2054,26 +2049,45 @@
         return k;
       };
       const idxDe = (v) => mapped.indexOf(v);
+      // DOS PASADAS: primero los remates en el color del HALO y un pelo más
+      // grandes, luego en tinta. Sin eso, en una cinta del color del suelo el
+      // remate se pintaba del color del fondo ENCIMA de su propia incisión y la
+      // reventaba justo en la punta: el trazo se quedaba sin cerrar. Sólo se
+      // hace donde hace falta — si el halo de esa cinta es el fondo, la primera
+      // pasada no pintaría nada que se vea y se salta.
+      for (const pasada of ['halo', 'tinta']) {
       for (const [p, hacia] of cabos) {
-        ctx.fillStyle = tintaDe(cintaEn(idxDe(p)));
+        const kC = cintaEn(idxDe(p));
+        if (pasada === 'halo' && haloDe(kC) === col.bg) continue;
+        const crece = pasada === 'halo' ? gap : 0;
+        ctx.fillStyle = pasada === 'halo' ? haloDe(kC) : tintaDe(kC);
         if (cfg.ends === "redondos") {
-          ctx.beginPath(); ctx.arc(p.x, p.y, width / 2, 0, TWO_PI); ctx.fill();
+          ctx.beginPath(); ctx.arc(p.x, p.y, width / 2 + crece, 0, TWO_PI); ctx.fill();
           continue;
         }
-        // INGLETE: la cinta no acaba a escuadra, acaba en punta. Dos aristas
-        // desde el ancho hasta un vértice en el eje — el corte a 45º de una
-        // pletina, que es de donde viene la obra. El pico sale medio ancho, que
-        // es lo que da 45º justos.
+        // INGLETE: UN SOLO CORTE AL BIES.
+        // El primer intento hacía una punta simétrica, y una punta añade un
+        // VÉRTICE en el eje que no existe en una pletina cortada: el corte al
+        // bies es UNA línea, no dos. Así que se añade material en UN lado nada
+        // más — el triángulo va de un borde al otro y el filo que queda a la
+        // vista es la diagonal.
+        // El lado y la inclinación salen del seed: dos remates idénticos en la
+        // misma obra se leen como una plantilla, y un corte a mano no repite.
         const d = PV.sub(p, hacia).normalize();
         if (!isFinite(d.x) || !isFinite(d.y) || (d.x === 0 && d.y === 0)) continue;
-        const n = V(-d.y, d.x);
-        const h = width / 2;
+        const rr = new E.Rng((_semilla ^ 0x81E5 ^ (idxDe(p) * 0x9E3779B1)) >>> 0);
+        const lado = rr.next() < 0.5 ? 1 : -1;
+        const largo = width * (0.35 + rr.next() * 0.55);
+        const n = V(-d.y * lado, d.x * lado);
+        const h = width / 2 + crece;
+        const A = V(p.x + n.x * h, p.y + n.y * h);
+        const B = V(p.x - n.x * h, p.y - n.y * h);
+        const C = V(A.x + d.x * largo, A.y + d.y * largo);
         ctx.beginPath();
-        ctx.moveTo(p.x + n.x * h, p.y + n.y * h);
-        ctx.lineTo(p.x + d.x * h, p.y + d.y * h);
-        ctx.lineTo(p.x - n.x * h, p.y - n.y * h);
+        ctx.moveTo(A.x, A.y); ctx.lineTo(C.x, C.y); ctx.lineTo(B.x, B.y);
         ctx.closePath();
         ctx.fill();
+      }
       }
     }
 
@@ -2293,9 +2307,79 @@
     return dir(sA).angleBetween(dir(sB));
   }
 
+  // Pinta un tramo con la anchura variando a lo largo, COMO POLÍGONO.
+  //
+  // El primer intento lo hacía con trozos de trazo solapados, cada uno con su
+  // grosor. No vale: eso son losas puestas una encima de otra, y lo que se ve
+  // son escalones, no un filo. Un corte deja ARISTAS — puntos unidos.
+  //
+  // Así que se levantan los dos lados a mano: cada punto del recorrido se
+  // desplaza por su normal media anchura, la de ESE punto, y el contorno es el
+  // lado de ida más el de vuelta. Las esquinas del polígono son las aristas.
+  //
+  // El eje no se toca. El halo pide lo mismo con `+ gap` y sale un contorno
+  // paralelo al del cuerpo, así que la incisión conserva su grosor exacto en
+  // todo el recorrido.
+  function poligonoTramo(ctx, mapped, acum, a, b, hf, paint) {
+    const P = [], A = [];
+    if (_densa) {
+      const { pts: DP, arco: DA } = _densa;
+      const en = (d) => {
+        let i = 0;
+        while (i < DA.length - 2 && DA[i+1] < d) i++;
+        const t = (d - DA[i]) / max(DA[i+1] - DA[i], 1e-9);
+        return PV.lerp(DP[i], DP[i+1], constrain(t, 0, 1));
+      };
+      P.push(en(a)); A.push(a);
+      for (let i = 0; i < DA.length; i++) if (DA[i] > a && DA[i] < b) { P.push(DP[i].copy()); A.push(DA[i]); }
+      P.push(en(b)); A.push(b);
+    } else {
+      P.push(puntoEnArco(mapped, acum, a)); A.push(a);
+      for (let i = 0; i < acum.length; i++) if (acum[i] > a && acum[i] < b) { P.push(mapped[i].copy()); A.push(acum[i]); }
+      P.push(puntoEnArco(mapped, acum, b)); A.push(b);
+    }
+    if (P.length < 2) return;
+
+    // La normal de cada punto: la del segmento en los extremos, y la media de
+    // los dos en los vértices — si no, la arista se abre por fuera del codo.
+    const nor = [];
+    for (let i = 0; i < P.length; i++) {
+      const p0 = P[max(0, i - 1)], p1 = P[min(P.length - 1, i + 1)];
+      const d = PV.sub(p1, p0).normalize();
+      nor.push(V(-d.y, d.x));
+    }
+    ctx.save();
+    ctx.beginPath();
+    for (let i = 0; i < P.length; i++) {
+      const h = hf(A[i]);
+      const x = P[i].x + nor[i].x * h, y = P[i].y + nor[i].y * h;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    for (let i = P.length - 1; i >= 0; i--) {
+      const h = hf(A[i]);
+      ctx.lineTo(P[i].x - nor[i].x * h, P[i].y - nor[i].y * h);
+    }
+    ctx.closePath();
+    ctx.fillStyle = paint;
+    ctx.fill();
+    ctx.restore();
+  }
+
   // Un tramo de cinta entre dos distancias, con sus vértices intactos.
+  //
+  // `w` puede ser un número o una FUNCIÓN del arco. Con función, el tramo se
+  // pinta en trozos cortos, cada uno con su anchura: el eje no se mueve ni un
+  // píxel y lo que respira es el ancho. Esa es toda la diferencia entre esto y
+  // el temblor que se descartó — aquel movía el recorrido, así que pequeño no
+  // se veía y grande cambiaba la obra. Aquí los cruces, los cabos y el plan de
+  // secciones siguen siendo exactamente los mismos, porque el eje es el mismo:
+  // no hay nada que recalcular y nada que se pueda romper.
+  //
+  // El halo se pide con la MISMA función más el doble del gap, así que la
+  // incisión conserva su grosor exacto en todo el recorrido: respiran juntos.
   function trazarTramo(ctx, mapped, acum, a, b, w, paint, cfg, junta) {
     if (b - a < 1e-6) return;
+    if (typeof w === 'function') { poligonoTramo(ctx, mapped, acum, a, b, (d) => w(d) / 2, paint); return; }
     if (_densa) {
       // recorte de la curva global: ya viene aplanada, así que se traza a
       // rectas y strokePath no vuelve a curvar nada
@@ -2361,6 +2445,25 @@
 
   function curvaDensa(mapped, acum, cfg) {
     const k = cfg.curva || 0;
+    // Con TEMBLOR hace falta un recorrido denso aunque la esquina sea viva: el
+    // temblor se dibuja uniendo puntos, y entre dos vértices sueltos no hay
+    // nada que unir. Se reparte cada tramo en trozos de un tercio de onda, que
+    // es lo que hace falta para que la onda se lea y no se vea el muestreo.
+    if (k <= 0.001 && (cfg.temblor || 0) > 0 && mapped.length >= 2) {
+      const paso = max((cfg.temblorOnda || 2) * (cfg.unidadAncho || 0.03) / 3, 1e-4);
+      const pts = [], arco = [];
+      for (let i = 0; i < mapped.length - 1; i++) {
+        const largo = acum[i+1] - acum[i];
+        const n = constrain(round(largo / paso), 1, 64);
+        for (let t = 0; t < n; t++) {
+          pts.push(PV.lerp(mapped[i], mapped[i+1], t / n));
+          arco.push(acum[i] + largo * t / n);
+        }
+      }
+      pts.push(mapped[mapped.length-1].copy());
+      arco.push(acum[acum.length-1]);
+      return { pts, arco };
+    }
     if (k <= 0.001 || mapped.length < 3) return null;
     const N = 16;
     const pts = [mapped[0].copy()], arco = [0];
@@ -2552,11 +2655,14 @@
     // no se pisa el default: producción no pasa params y por tanto los defaults
     // SON el comportamiento publicado.
     if (params.tipo && params.tipo !== 'auto') cfg.tipo = params.tipo;
-    // 'cornerFijo' es lo que distingue "la obra decide" de "lo decido yo": sin
-    // él, generate no sabría si un "rectas" viene del laboratorio o del dado.
-    if (params.corner && params.corner !== 'auto') { cfg.corner = params.corner; cfg.cornerFijo = true; }
+    // Lo que distingue "la obra decide" de "lo decido yo" es el propio valor:
+    // "auto" o vacío deja el dado, y cualquier otra cosa manda. Se probó con
+    // una bandera aparte y el dado acababa pisando a quien llamaba a generate()
+    // sin pasar por aquí.
+    if (params.corner && params.corner !== 'auto') cfg.corner = params.corner;
     if (params.temblor != null && params.temblor !== 'auto') cfg.temblor = +params.temblor;
-    if (params.ends && params.ends !== 'auto') { cfg.ends = params.ends; cfg.endsFijo = true; }
+    if (params.ends && params.ends !== 'auto') cfg.ends = params.ends;
+    if (params.fantasma && params.fantasma !== 'auto') cfg.fantasma = params.fantasma;
     if (params.dots && params.dots !== 'auto') cfg.dots = params.dots;
     if (params.reintentos) cfg.reintentos = params.reintentos | 0;
 
@@ -2572,7 +2678,10 @@
     // Si al quitar las tintas no quedan dos colores, no hay degradado que
     // hacer y el suelo se queda plano, que es lo correcto y no un apaño.
     const modo0 = E.pickBg(seed, params, BG_GRADIENT);
-    const suelo = comp.pal.colors.filter(c => c !== col.fg && c !== col.fg2);
+    // fg3 también, y no es un detalle: al añadir la tercera tinta el mesh podía
+    // volver a caer del color de una cinta —justo el fallo que este filtro
+    // existe para evitar— porque la tercera no estaba en la lista.
+    const suelo = comp.pal.colors.filter(c => c !== col.fg && c !== col.fg2 && c !== col.fg3);
     const modo = (modo0 === 'gradient' && suelo.length >= 2) ? 'gradient' : 'solid';
     if (modo === 'gradient') {
       E.drawMeshGradient(ctx, W, H, suelo, new E.Rng((seed ^ 0x5EEDB6) >>> 0));
@@ -2602,6 +2711,7 @@
       pal: comp.pal, tipo: comp.tipo, familia: comp.family, familia2: comp.family2,
       cruces: comp.cruces.length, vueltas: comp.vueltas,
       esquinas: comp.cfg.corner, trazo: comp.cfg.trazo, temblor: comp.cfg.temblor || 0,
+      fantasma: !!comp.colores.fantasma,
       remate: comp.cfg.ends, tresTintas: !!(comp.colores.fg3 && (comp.saltos||[]).length >= 2),
       cintas: (comp.saltos || []).length + 1,
       secciones: comp.plano.secciones.length, volteos: comp.volteos,
@@ -2638,6 +2748,10 @@
       { key: 'Ground', val: res.fondo === 'gradient' ? 'Gradient' : 'Flat',
         rarity: res.fondo === 'gradient' ? 'uncommon' : 'common' },
     ];
+    // El trazo fantasma: una cinta que sólo existe como corte.
+    if (res.fantasma)
+      list.push({ key: 'Ghost', val: 'Ribbon as cut', rarity: 'legendary' });
+
     // El temblor sólo se declara cuando lo hay: en las obras lisas no es un
     // rasgo con valor cero, es un rasgo que no existe.
     if (res.temblor > 0)
