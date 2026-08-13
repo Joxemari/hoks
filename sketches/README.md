@@ -14,7 +14,7 @@ sola fuente de código por obra. Normalmente la opera Claude, no tú.
    `sketches/<obra>/algo.js` (canvas 2D, `HOKS.Rng` sembrado), monta el harness
    y **verifica la equivalencia** (mismo seed → misma imagen; si porta desde una
    página ya en producción, con prueba op-a-op contra el motor original).
-3. **Validar** — abres el harness, pulsas `g` y miras la **hoja de contactos**:
+3. **Validar** — abres el harness, pulsas `g` y miras el **grid de obras**:
    12 seeds a la vez. Ahí es donde tu ojo decide — variaciones feas, repetitivas
    o rotas se ven en la distribución, nunca en una pieza suelta.
 4. **Publicar** — la página de producción (`/<obra>.html`) consume el mismo
@@ -74,7 +74,7 @@ La equivalencia se midió sobre el algoritmo y su dibujo. Lo que el contrato añ
 aparte.
 
 `dtkrt/` es el único caso hasta ahora de obra que **nace aquí** en vez de portarse
-desde p5: propuesta de sistema para mirar en hoja de contactos antes de decidir si
+desde p5: propuesta de sistema para mirar en el grid de obras antes de decidir si
 merece página. No está en `data/works.json` ni publicada.
 
 Cada obra expone el mismo contrato:
@@ -128,7 +128,7 @@ navegadores, así que exportarlo pide antes decidir su dpi: a 150 son 34,9 Mpx y
 imprimirlo, no.
 
 En el harness, el desplegable *Format* cambia la proporción de la vista única y
-de la hoja de contactos: mirar 12 seeds en vertical es la manera de saber si la
+del grid de obras: mirar 12 seeds en vertical es la manera de saber si la
 obra aguanta ese formato antes de imprimirla.
 
 ## El muro (`_wall/`)
@@ -170,14 +170,14 @@ También publicados: `https://joxemari.github.io/hoks/sketches/<obra>/`.
 |-----------|------------------------------------------|
 | `Espacio` | nueva seed aleatoria                     |
 | `←` / `→` | seed − 1 / seed + 1                      |
-| `g`       | hoja de contactos ↔ vista única         |
+| `g`       | grid de obras ↔ vista única             |
 | `a`       | añadir la pieza actual al lote abierto   |
 | `s`       | guardar PNG                              |
 
 ## Lotes (paso 3, la parte que importa)
 
 Mirar doce y quedarte con dos **es** el trabajo, así que apartar una pieza es un
-gesto de aquí: el `+` sobre cualquier miniatura de la hoja de contactos, o `a`
+gesto de aquí: el `+` sobre cualquier miniatura del grid de obras, o `a`
 en vista única. Va al lote abierto, que eliges en el panel.
 
 Un lote guarda **recetas** —`{obra, seed, params, palSel}`—, no imágenes. Como

@@ -116,7 +116,7 @@
     <div class="group">
       <button id="save">↓ Save PNG (s)</button>
       <button class="ghost" id="cartela">↓ Cartela A5 (c)</button>
-      <button class="ghost" id="sheet">▦ Hoja de contactos (g)</button>
+      <button class="ghost" id="sheet">▦ Grid de obras (g)</button>
       <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
       <!-- El muro es una VISTA, no un parámetro: se va a su página y no engorda
            el panel con mandos que no cambian la obra, solo cómo se mira. -->
@@ -126,6 +126,10 @@
   </aside>
 
   <main class="stage">
+    <!-- La salida del grid esta DONDE ESTAS, junto a la obra, y no en el panel:
+         entrar en una pieza desde el grid y no ver por donde volver es quedarse
+         encerrado en un sitio del que si hay puerta. -->
+    <button class="ghost" id="volver" style="display:none;align-self:flex-start">&larr; Volver al grid (g)</button>
     <canvas id="single" width="600" height="600"></canvas>
     <div class="sheet" id="sheetGrid" style="display:none"></div>
     <span class="hint" id="status">—</span>
@@ -219,6 +223,10 @@ function drawTraits(t) {
 function renderSheet() {
   const grid = $('sheetGrid'); grid.innerHTML = '';
   const base = seed >>> 0;
+  // El campo de la seed se actualizaba SOLO en vista unica, asi que en el grid
+  // se quedaba mostrando una seed vieja que no era la del grid que estabas
+  // mirando. El grid sale de esta seed: que se vea.
+  $('seed').value = base;
   for (let i = 0; i < SHEET_N; i++) {
     const s = (base + i * 0x9E3779B1) >>> 0;
     const c = document.createElement('canvas');
@@ -227,7 +235,7 @@ function renderSheet() {
     const fig = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = '#' + s;
     fig.style.position = 'relative';
     fig.appendChild(c); fig.appendChild(cap);
-    c.addEventListener('click', () => { seed = s; setSheet(false); });
+    c.addEventListener('click', () => { gridSeed = base; seed = s; setSheet(false); });
     // Apartar es un gesto de aquí, y el gesto lo pone el panel de lotes: el "+"
     // para la mano rápida, el botón derecho para elegir a qué lote va.
     if (batch) batch.attach(fig, s);
@@ -237,6 +245,10 @@ function renderSheet() {
 // Tres modos de mirar, en el mismo sitio: la pieza, doce variaciones de su
 // seed, y el lote entero — que es lo que de verdad se publica.
 let VIEW = 'single';                 // 'single' | 'sheet' | 'batch'
+// De que seed salio el grid. Volver tiene que devolverte al MISMO grid: el grid
+// se deriva de la seed, asi que sin guardarla, despues de mover la seed el boton
+// te llevaba a otro conjunto de obras y "volver" dejaba de significar volver.
+let gridSeed = null;
 function setView(v) {
   // Sin lote no hay nada que enseñar, y cambiar de vista solo escondería la
   // pieza para dejar un hueco gris. Se queda donde está y lo dice.
@@ -247,7 +259,8 @@ function setView(v) {
   VIEW = v; sheetMode = (v === 'sheet');
   $('single').style.display = v === 'single' ? 'block' : 'none';
   $('sheetGrid').style.display = v === 'single' ? 'none' : 'grid';
-  $('sheet').textContent = v === 'sheet' ? '▦ Vista única (g)' : '▦ Hoja de contactos (g)';
+  $('volver').style.display = (v === 'single' && gridSeed !== null) ? 'block' : 'none';
+  $('sheet').textContent = v === 'sheet' ? '▦ Vista única (g)' : '▦ Grid de obras (g)';
   $('batchView').textContent = v === 'batch' ? '▦ Vista única (b)' : '▦ Ver el lote (b)';
   if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; }
   else if (v === 'batch') { $('sheetGrid').innerHTML = ''; $('status').textContent = batch.renderFull($('sheetGrid')); }
@@ -295,6 +308,7 @@ $('cartela').onclick = () => {
     .catch(e => { $('status').textContent = '⚠ ' + e.message; });
 };
 $('sheet').onclick = () => setView(VIEW === 'sheet' ? 'single' : 'sheet');
+$('volver').onclick = () => { if (gridSeed !== null) seed = gridSeed; gridSeed = null; setView('sheet'); };
 $('batchView').onclick = () => setView(VIEW === 'batch' ? 'single' : 'batch');
 $('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `${SLUG}_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
 
