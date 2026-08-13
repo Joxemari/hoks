@@ -27,7 +27,7 @@ done
 # La batería tiene que cubrir lo que se publica: cuando entró el tipo de tres
 # cintas y el temblor, entraron aquí. Un detector que no ve la tercera cinta no
 # dice nada sobre ella.
-CFGS=('{}' '{"tipo":"suelto"}' '{"tipo":"anudado"}' '{"tipo":"trama"}' '{"tipo":"dos"}' '{"tipo":"tres"}' '{"corner":"curvas"}' '{"temblor":0.18}' '{"aspecto":1.5}' '{"tipo":"dos","aspecto":1.5}' '{"tipo":"tres","aspecto":1.5}')
+CFGS=('{}' '{"tipo":"suelto"}' '{"tipo":"anudado"}' '{"tipo":"trama"}' '{"tipo":"dos"}' '{"tipo":"tres"}' '{"corner":"curvas"}' '{"ends":"inglete"}' '{"temblor":0.12}' '{"aspecto":1.5}' '{"tipo":"dos","aspecto":1.5}' '{"tipo":"tres","aspecto":1.5}')
 POR=90   # 11 configuraciones x 90 = 990, mas las cuatro tandas de 250
 
 res() { python3 -c "
@@ -77,7 +77,7 @@ echo
 echo "##### 5. DETERMINISMO"; node det.js
 echo
 echo "##### 6. HOLGURA GEOMETRICA entre hebras sin cruce (200 x 5 = 1.000)"
-for c in '{}' '{"tipo":"trama"}' '{"tipo":"dos"}' '{"tipo":"tres"}' '{"temblor":0.18}'; do
+for c in '{}' '{"tipo":"trama"}' '{"tipo":"dos"}' '{"tipo":"tres"}' '{"temblor":0.12}'; do
   node solape.js 200 0 "$c" 2>&1 | sed -n '2,3p'; done
 fi
 

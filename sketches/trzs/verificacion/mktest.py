@@ -23,17 +23,19 @@ if roto == 'orden':
     assert a in src
     src = src.replace(a, "    const orden = comp.plano.orden.slice().reverse();   // ROTO A PROPOSITO")
 elif roto == 'mitad':
-    a = """      trazarTramo(ctx, mapped, acum, iniC, finC, width, segunda ? tinta2 : tinta, cfg);
-    }
-"""
-    assert a in src
-    src = src.replace(a, """      trazarTramo(ctx, mapped, acum, iniC, finC, width, segunda ? tinta2 : tinta, cfg);
-      _rotoRep.push([iniC, finC, segunda ? tinta2 : tinta]);   // ROTO A PROPOSITO
+    # Se ancla al trazo del CUERPO por patrón, no al texto exacto: la expresión
+    # del color ha cambiado ya dos veces (tinta2 -> tintaDe(cinta)) y cada vez
+    # rompía el banco entero por una palabra.
+    m2 = re.search(r'^      trazarTramo\(ctx, mapped, acum, iniC, finC, width, (.+?), cfg\);\n    \}\n', src, re.M)
+    assert m2, 'no encuentro el trazo del cuerpo en renderComposition'
+    a, color = m2.group(0), m2.group(1)
+    src = src.replace(a, """      trazarTramo(ctx, mapped, acum, iniC, finC, width, %s, cfg);
+      _rotoRep.push([iniC, finC, %s]);   // ROTO A PROPOSITO
     }
     for (const [i0, f0, t0] of _rotoRep)
       trazarTramo(ctx, mapped, acum, i0, (i0 + f0) / 2, width, t0, cfg);
     _rotoRep.length = 0;
-""")
+""" % (color, color))
     src = src.replace("  let rng = new E.Rng(0);", "  const _rotoRep = [];\n  let rng = new E.Rng(0);")
 elif roto == 'margen':
     # Margen NEGATIVO: con 0 la cinta sólo roza el borde de vez en cuando y el

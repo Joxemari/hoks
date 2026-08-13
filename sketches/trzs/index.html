@@ -120,6 +120,17 @@
       <span class="hintline">con recto y curvo basta: un tercer modo se probó y sobraba</span>
     </div>
     <div class="group">
+      <span class="lbl">Ends</span>
+      <select id="ends">
+        <option value="auto">Auto (redondo si la esquina es curva)</option>
+        <option value="rectos">Square · corte de sierra</option>
+        <option value="inglete">Mitre · corte a 45º, en punta</option>
+        <option value="redondos">Round · medio disco</option>
+      </select>
+      <span class="hintline">el remate a escuadra y el inglete son cortes de la misma pletina; el redondo
+        pide esquina curva</span>
+    </div>
+    <div class="group">
       <span class="lbl">Shake</span>
       <select id="temblor">
         <option value="auto">Auto (sin temblor)</option>
@@ -206,6 +217,7 @@ function params() {
     grainScale: parseFloat($('grain').value),
     tipo:       $('tipo').value,
     corner:     $('corner').value,
+    ends:       $('ends').value,
     temblor:    $('temblor').value,
     dots:       $('dots').value,
   };

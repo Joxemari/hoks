@@ -25,6 +25,15 @@
   // cuatro: la cinta doblada en ángulo vivo es la referencia de la que salió
   // la obra, y la curva es la segunda lectura de la misma regla, no un empate.
   const CURVA_PROB = 0.25;
+  // El tope del temblor. La holgura entre hebras se exige a 1,45 anchuras y el
+  // temblor se la come a razón de 2 por unidad, así que 0,20 deja 1,05: los
+  // cuerpos no se tocan ni en el peor caso. Subir de aquí pide volver a medir
+  // la holgura, y sobre el recorrido partido eso no se puede medir.
+  const TEMBLOR_MAX = 0.20;
+  // Cada cuánto el remate va en inglete cuando la esquina es viva. El remate a
+  // escuadra es el corte de sierra y el inglete es el corte a 45º: los dos son
+  // de la misma pletina, así que reparten casi a medias.
+  const INGLETE_PROB = 0.45;
 
   // ── Aritmética ────────────────────────────────────────────────────────────
   // Los nombres cortos son los de p5 a propósito: el algoritmo viene de ahí y
@@ -171,13 +180,24 @@
              // contraste de sobra. Sale una cinta dominante y otra recogida.
              || mixHex(fg, bg, 0.38);
 
+    // TERCERA CINTA, cuando la paleta la tiene. Mismo criterio que la segunda
+    // —distancia de color, no luminancia— y encima tiene que separarse de las
+    // DOS anteriores. Si no hay ninguna que cumpla, no se inventa: se devuelve
+    // null y las cintas alternan entre dos tintas, que es lo que hacían antes.
+    // Una tercera tinta sacada a la fuerza sale pegada a otra y se lee como un
+    // error de impresión, que es justo lo que el criterio de la segunda ya
+    // aprendió a evitar.
+    const fg3 = otros.filter(c => c !== fg2)
+                     .find(c => dcolor(c, bg) > 0.34 && dcolor(c, fg) > 0.28 && dcolor(c, fg2) > 0.28)
+             || null;
+
     // Los discos NO comparten un solo color: son el contrapunto, y en
     // una paleta como Mondrian el negro sobre crema casi no se ve. Se
     // quedan con todo lo que no es fondo ni cinta, por contraste.
     let dots = porContraste.filter(c => c !== fg);
     if (!dots.length) dots = [mixHex(fg, oscuro ? '#ffffff' : '#000000', 0.55)];
 
-    return { bg, fg, fg2, dot, dots };
+    return { bg, fg, fg2, fg3, dot, dots };
   }
 
   // Tres grosores fijos en vez de un slider continuo: el estándar
@@ -253,9 +273,12 @@
     pad:          0.07,
     aspecto:      1,           // ancho/alto del campo. 1 = cuadrado
     corner:       "rectas",    // rectas | curvas — MANDO ÚNICO de la esquina
-    ends:         "rectos",    // redondos | rectos
+    ends:         "auto",      // auto | rectos | inglete | redondos
     tinta:        "solido",    // solido | gradiente
     temblor:      0,           // amplitud del temblor del recorrido, × anchura
+    // La longitud de onda del temblor, EN ANCHURAS DE CINTA. Dos anchuras es
+    // un picado corto; subiendo, la cinta se mece en vez de temblar.
+    temblorOnda:  2,
     juntaSolape:  0.05,        // alargue en las juntas internas, × anchura
     punzonExtra:  0.35,        // recorrido extra del punzón más allá del cruce, × anchura         // longitud del punzón en cada cruce, × anchura
     // 'curva' ya NO es un mando aparte: se deriva de 'corner'. Tener un
@@ -405,6 +428,16 @@
     if (!cfg.cornerFijo) cfg.corner = new E.Rng((seed ^ 0xC0FFEE) >>> 0).next() < CURVA_PROB
                                     ? "curvas" : "rectas";
     cfg.curva = cfg.corner === "curvas" ? 1 : 0;
+
+    // Y EL REMATE IGUAL, que tenía el mismo problema exacto: `ends` valía
+    // "rectos" fijo, así que el remate redondo NO SALÍA NUNCA — estaba escrito,
+    // dibujado y sin usar. En la esquina curva el remate va redondo, que es lo
+    // que pide una cinta redondeada; en la viva reparte entre escuadra e
+    // inglete. Mismo azar aparte, por lo mismo.
+    if (!cfg.endsFijo || cfg.ends === "auto") {
+      cfg.ends = cfg.corner === "curvas" ? "redondos"
+               : (new E.Rng((seed ^ 0x1A6E7E) >>> 0).next() < INGLETE_PROB ? "inglete" : "rectos");
+    }
 
     reseed(seed);
 
@@ -667,18 +700,67 @@
   //      todo lo que viene después —cruces, secciones, holguras, marco— se
   //      calcula sobre la cinta que de verdad se dibuja.
   //   2. El ruido va sembrado (ver arriba).
+  //   3. PARTE LOS TRAMOS. Mover sólo los vértices no tiembla: los vértices son
+  //      los PLIEGUES de la cinta, y desplazar un pliegue mueve la esquina
+  //      dejando los tramos perfectamente rectos. Se probó con la amplitud a
+  //      1,0 —el ancho entero— y lo que cambiaba era la composición, no el
+  //      trazo. Para que tiemble el trazo hay que meter puntos DENTRO del
+  //      tramo, y eso es lo que hace que se lea como cinta cortada a mano y no
+  //      como cinta doblada por una máquina.
+  //
+  //      Sólo se parte cuando el temblor está encendido: el análisis del nudo
+  //      es cuadrático en el número de tramos y doblarlos cuadruplica el coste
+  //      de cada intento. Con el temblor a 0 —que es lo publicado— no se paga
+  //      nada.
+  //
+  //      Y el ruido se indexa por ARCO, no por vértice: así la longitud de onda
+  //      del temblor se mide en anchuras de cinta y no depende de cómo hayan
+  //      caído los pliegues. Un temblor cuya frecuencia cambia con el número de
+  //      vértices no es un temblor, es una casualidad por obra.
   function temblar(nodes, width, cfg) {
     const amp = width * (cfg.temblor || 0);
     if (!(amp > 0) || nodes.length < 3) return nodes;
-    const n = ruidoCoherente((_semilla ^ 0x7E3B10) >>> 0, 0.55);
-    return nodes.map((nd, i) => {
-      // Los extremos de cinta se quedan quietos: sacarExtremos los saca de la
-      // trama a propósito y un temblor los devolvería adentro.
-      if (i === 0 || i === nodes.length - 1 || esSalto(i) || esSalto(i - 1)) return nd;
-      const dir = PV.sub(nodes[i+1].p, nodes[i-1].p);
+    const onda = max(width * (cfg.temblorOnda || 2), 1e-6);   // longitud de onda
+    const n = ruidoCoherente((_semilla ^ 0x7E3B10) >>> 0, 1);
+
+    // 1. Partir cada tramo en trozos de media anchura como mucho. El salto NO
+    //    se parte: no es cinta, es el aire entre dos cintas.
+    const densos = [];
+    let arco = 0;
+    const arcos = [];
+    for (let i = 0; i < nodes.length - 1; i++) {
+      densos.push(nodes[i]); arcos.push(arco);
+      const largo = PV.dist(nodes[i].p, nodes[i+1].p);
+      const trozos = esSalto(i) ? 1 : constrain(round(largo / (width * 0.5)), 1, 24);
+      for (let k = 1; k < trozos; k++) {
+        const t = k / trozos;
+        densos.push({ p: PV.lerp(nodes[i].p, nodes[i+1].p, t), anchor: false, blando: true });
+        arcos.push(arco + largo * t);
+      }
+      arco += largo;
+    }
+    densos.push(nodes[nodes.length - 1]); arcos.push(arco);
+
+    // Los saltos se recolocan: la lista de índices es de la cinta ya partida.
+    const antes = _saltos.slice();
+    if (antes.length) {
+      const nuevos = [];
+      for (let i = 0, j = 0; i < nodes.length - 1; i++) {
+        if (antes.indexOf(i) >= 0) nuevos.push(j);
+        j += esSalto(i) ? 1 : constrain(round(PV.dist(nodes[i].p, nodes[i+1].p) / (width * 0.5)), 1, 24);
+      }
+      _saltos = nuevos;
+    }
+
+    // 2. Desplazar por la normal. Los extremos de cinta se quedan quietos:
+    //    sacarExtremos los saca de la trama a propósito y un temblor los
+    //    devolvería adentro.
+    return densos.map((nd, i) => {
+      if (i === 0 || i === densos.length - 1 || esSalto(i) || esSalto(i - 1)) return nd;
+      const dir = PV.sub(densos[i+1].p, densos[i-1].p);
       if (dir.magSq() === 0) return nd;
       const nor = V(-dir.y, dir.x).normalize();
-      const d = n(i) * amp;
+      const d = n(arcos[i] / onda) * amp;
       return { p: V(nd.p.x + nor.x * d, nd.p.y + nor.y * d), anchor: nd.anchor };
     });
   }
@@ -840,8 +922,6 @@
     // holgura entre hebras se sigue exigiendo sobre lo que se dibuja: si el
     // temblor junta dos hebras, la cinta adelgaza. Por eso de 0,30 para arriba
     // el mando que de verdad manda es el grosor.
-    nodes = temblar(nodes, width, cfg);
-    nodes = shrinkIntoFrame(nodes, width, cfg);
     width = constrain(anchura * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
 
     // La cinta cede: adelgaza hasta que la incisión quepa, y hasta que
@@ -856,6 +936,35 @@
                          holguraReal(nodes) / cfg.holguraMin,   // canal de verdad, no un pelo
                          segPercentil(nodes, 0.15) / 1.05);
     width = constrain(admitida, cfg.widthMin, cfg.widthMax);
+
+    // EL TEMBLOR VA AQUÍ, DETRÁS DE LA ANCHURA, y el orden importó:
+    //
+    //   - Detrás de los lazos de restricción, porque delante selfAvoid y
+    //     relaxFolds se lo comían. Con la amplitud a 1,0 —el ancho entero de la
+    //     cinta— la obra salía indistinguible de la lisa: ahí no hay temblor,
+    //     hay tiempo gastado.
+    //   - Y detrás del cálculo de la anchura, porque el temblor PARTE los
+    //     tramos: puesto delante, medianSeg pasaba a medir media anchura en vez
+    //     de tramo y tramo, y la cinta colapsaba a un pelo. La anchura se decide
+    //     sobre el recorrido liso, que es el que tiene tramos.
+    //
+    // Y la holgura NO se vuelve a medir sobre el recorrido tembloroso: se
+    // ACOTA. Medirla ahí sale absurdo, y por una razón que no es un detalle —
+    // holguraReal mira pares de tramos que no se cruzan, y en un recorrido
+    // partido los tramos i e i+2 son trozos de la MISMA recta separados por
+    // medio ancho. La holgura salía casi cero y la cinta colapsaba a un pelo.
+    // El paseo entre tramos largos daba por hecho que un tramo es un tramo.
+    //
+    // No hace falta medir: el temblor desplaza como mucho `amp` a cada lado, así
+    // que la holgura baja como mucho 2·temblor anchuras. Con holguraMin 1,45 y
+    // el temblor topado en 0,20 queda 1,05 — los cuerpos no llegan a tocarse
+    // ni en el peor caso. La cota es del mando, no de la obra, y por eso el
+    // tope está aquí y no en el laboratorio.
+    if (cfg.temblor > 0) {
+      cfg = Object.assign({}, cfg, { temblor: min(cfg.temblor, TEMBLOR_MAX) });
+      nodes = temblar(nodes, width, cfg);
+      nodes = shrinkIntoFrame(nodes, width, cfg);
+    }
 
     return { nodes, width, deseada, family2, conserva: admitida / deseada };
   }
@@ -1769,8 +1878,14 @@
     // incisión. Una tercera tinta sacada a la fuerza de la paleta salía casi
     // siempre pegada a una de las dos, y eso sí se lee como un error.
     const nSaltos = (comp.saltos || []).length;
+    // Con tres cintas y una paleta que da tercera tinta, tres colores. Si la
+    // paleta no la da, se alterna entre dos: la primera y la tercera comparten
+    // color y no se confunden, porque lo que las separa donde se cruzan no es
+    // el color sino la incisión.
+    const tintas = [tinta, col.fg2, col.fg3 || tinta];
     const tintaDe = (k) => (cfg.tinta === "gradiente" || !nSaltos) ? tinta
-                         : (k % 2 === 0 ? tinta : col.fg2);
+                         : (nSaltos >= 2 && col.fg3 ? tintas[k % 3]
+                                                    : (k % 2 === 0 ? tinta : col.fg2));
 
     if (cfg.dots === "bajo") drawDots(ctx, mapped, width, comp, ox, oy, S, ALTO);
 
@@ -1919,12 +2034,46 @@
     }
 
 
-    if (cfg.ends === "redondos") {
-      ctx.fillStyle = tinta;
-      const cabos = [mapped[0], mapped[mapped.length - 1]];
-      for (const s of _saltos) cabos.push(mapped[s], mapped[s + 1]);
-      for (const c of cabos) {
-        ctx.beginPath(); ctx.arc(c.x, c.y, width / 2, 0, TWO_PI); ctx.fill();
+    // EL REMATE. Cada extremo de cinta con su punto y su dirección de SALIDA:
+    // hacen falta las dos, porque el inglete apunta hacia fuera y una lista de
+    // puntos sueltos no dice hacia dónde es fuera.
+    // Con varias cintas hay dos extremos por salto, además de los dos del
+    // recorrido: seis en una obra de tres cintas.
+    if (cfg.ends === "redondos" || cfg.ends === "inglete") {
+      const ult = mapped.length - 1;
+      const cabos = [[mapped[0], mapped[1]], [mapped[ult], mapped[ult - 1]]];
+      for (const s of _saltos) {
+        if (s - 1 >= 0)         cabos.push([mapped[s], mapped[s - 1]]);
+        if (s + 2 <= ult)       cabos.push([mapped[s + 1], mapped[s + 2]]);
+      }
+      // El color del remate es el de SU cinta, no el de la primera: con dos
+      // tintas, un remate de la tinta que no toca se lee como una mancha.
+      const cintaEn = (p) => {
+        let k = 0;
+        for (const s of _saltos) if (p > s) k++;
+        return k;
+      };
+      const idxDe = (v) => mapped.indexOf(v);
+      for (const [p, hacia] of cabos) {
+        ctx.fillStyle = tintaDe(cintaEn(idxDe(p)));
+        if (cfg.ends === "redondos") {
+          ctx.beginPath(); ctx.arc(p.x, p.y, width / 2, 0, TWO_PI); ctx.fill();
+          continue;
+        }
+        // INGLETE: la cinta no acaba a escuadra, acaba en punta. Dos aristas
+        // desde el ancho hasta un vértice en el eje — el corte a 45º de una
+        // pletina, que es de donde viene la obra. El pico sale medio ancho, que
+        // es lo que da 45º justos.
+        const d = PV.sub(p, hacia).normalize();
+        if (!isFinite(d.x) || !isFinite(d.y) || (d.x === 0 && d.y === 0)) continue;
+        const n = V(-d.y, d.x);
+        const h = width / 2;
+        ctx.beginPath();
+        ctx.moveTo(p.x + n.x * h, p.y + n.y * h);
+        ctx.lineTo(p.x + d.x * h, p.y + d.y * h);
+        ctx.lineTo(p.x - n.x * h, p.y - n.y * h);
+        ctx.closePath();
+        ctx.fill();
       }
     }
 
@@ -2407,6 +2556,7 @@
     // él, generate no sabría si un "rectas" viene del laboratorio o del dado.
     if (params.corner && params.corner !== 'auto') { cfg.corner = params.corner; cfg.cornerFijo = true; }
     if (params.temblor != null && params.temblor !== 'auto') cfg.temblor = +params.temblor;
+    if (params.ends && params.ends !== 'auto') { cfg.ends = params.ends; cfg.endsFijo = true; }
     if (params.dots && params.dots !== 'auto') cfg.dots = params.dots;
     if (params.reintentos) cfg.reintentos = params.reintentos | 0;
 
@@ -2452,6 +2602,7 @@
       pal: comp.pal, tipo: comp.tipo, familia: comp.family, familia2: comp.family2,
       cruces: comp.cruces.length, vueltas: comp.vueltas,
       esquinas: comp.cfg.corner, trazo: comp.cfg.trazo, temblor: comp.cfg.temblor || 0,
+      remate: comp.cfg.ends, tresTintas: !!(comp.colores.fg3 && (comp.saltos||[]).length >= 2),
       cintas: (comp.saltos || []).length + 1,
       secciones: comp.plano.secciones.length, volteos: comp.volteos,
       conserva: comp.conserva, entrelazada: comp.entrelazada,
@@ -2480,6 +2631,10 @@
       // rareza tiene que decir la probabilidad de verdad o no dice nada.
       { key: 'Corners', val: res.esquinas === 'curvas' ? 'Round' : 'Sharp',
         rarity: res.esquinas === 'curvas' ? 'uncommon' : 'common' },
+      // El remate: escuadra, inglete o medio disco. El redondo va atado a la
+      // esquina curva, así que su rareza es la de la esquina.
+      { key: 'Ends', val: res.remate === 'redondos' ? 'Round' : res.remate === 'inglete' ? 'Mitre' : 'Square',
+        rarity: res.remate === 'redondos' ? 'uncommon' : 'common' },
       { key: 'Ground', val: res.fondo === 'gradient' ? 'Gradient' : 'Flat',
         rarity: res.fondo === 'gradient' ? 'uncommon' : 'common' },
     ];
@@ -2491,7 +2646,7 @@
 
     // Cuántas cintas, cuando hay más de una: es la primera cosa que se ve.
     if (res.cintas > 1)
-      list.push({ key: 'Ribbons', val: String(res.cintas),
+      list.push({ key: 'Ribbons', val: String(res.cintas) + (res.tresTintas ? ' · 3 tintas' : ''),
                   rarity: res.cintas >= 3 ? 'rare' : 'uncommon' });
 
     // Con más de una cinta: que se entrelacen DE VERDAD —cada una gana algún
