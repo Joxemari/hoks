@@ -59,6 +59,12 @@ window.huecos = (seed, pals, extra) => {
   const salto = c.salto != null && c.salto >= 0 ? [acum[c.salto], acum[c.salto+1]] : null;
   const esFin = d => d <= 1e-6 || d >= total-1e-6 ||
     (salto && (Math.abs(d-salto[0])<1e-6 || Math.abs(d-salto[1])<1e-6));
+  // Los limites del HALO de una seccion (no los del cuerpo).
+  const tramoDeH = i => { const [a,b] = secs[i];
+    const aJ = a>0&&esJunta(a), bJ = b<total&&esJunta(b);
+    const aF = esFin(a), bF = esFin(b);
+    return { ini: Math.max(0, !aF && !aJ ? a-caboEn(a) : a),
+             fin: Math.min(total, !bF && !bJ ? b+caboEn(b) : b) }; };
   const tramoDe = i => { const [a,b] = secs[i];
     const aJ = a>0&&esJunta(a), bJ = b<total&&esJunta(b);
     const aF = esFin(a), bF = esFin(b);
@@ -108,6 +114,13 @@ window.huecos = (seed, pals, extra) => {
     // dentro de la propia hebra de arriba y se lee como hueco. El detector
     // tiene que saber qué está mirando.
     const iAr2 = cual(dAr);
+    // EL PASEO ACABA DONDE ACABA EL HALO DE ARRIBA.
+    // La incision la abre el halo de la hebra de arriba y nadie mas. Pasado su
+    // extremo no hay nada que corte, asi que la hebra de abajo esta al
+    // descubierto y es tinta con todo derecho. Exigir fondo ahi es exigir que no
+    // haya cinta donde si hay cinta: era el ultimo "hueco" que quedaba, 1 cruce
+    // de 4.234, y se veia perfectamente pintando las sondas sobre la obra.
+    const tArr = iAr2 >= 0 ? tramoDeH(iAr2) : null;
     xO.fillStyle='#000'; xO.fillRect(0,0,S,S);
     // La mascara va DILATADA (W + 3px). Al 50% de cobertura, un pixel cubierto
     // al 35% por el propio cuerpo de arriba no entraba en ella y se contaba
@@ -134,6 +147,7 @@ window.huecos = (seed, pals, extra) => {
       for (let t=-alcance; t<=alcance; t+=0.5) {
         const d = dAr + t;
         if (d < 1 || d > total-1) { racha = 0; continue; }
+        if (tArr && (d < tArr.ini || d > tArr.fin)) { racha = 0; continue; }
         // La dirección hay que sacarla DEL ARCO, no de dir(), que espera un
         // parámetro de recorrido (índice de segmento + t) y no una longitud.
         // Pasándole el arco, la normal salía a cualquier sitio y las sondas
