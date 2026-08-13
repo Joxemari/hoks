@@ -2024,9 +2024,18 @@
         const largo = width * (0.35 + rr.next() * 0.55);
         const n = V(-d.y * lado, d.x * lado);
         const h = width / 2 + crece;
-        const A = V(p.x + n.x * h, p.y + n.y * h);
-        const B = V(p.x - n.x * h, p.y - n.y * h);
-        const C = V(A.x + d.x * largo, A.y + d.y * largo);
+        // LA BASE DEL TRIANGULO ENTRA EN EL CUERPO, no se queda a ras de él.
+        // A ras, el filo del triángulo y el del cuerpo comparten arista, y dos
+        // figuras del mismo color que comparten arista NO suman cobertura 1:
+        // cada una aporta su fracción y queda una raya más clara. Es el mismo
+        // f(1−f) del cabo, ahora en el remate. Medido: con remate a escuadra
+        // 0 de 85 obras y 39 px de costura; con inglete a ras, 77 de 85 y
+        // 5.631 px. Metiendo la base una pizca dentro, la arista cae sobre
+        // tinta maciza y no hay nada que sumar.
+        const atras = max(E.unit(S, ALTO, REF), 1) * 2;
+        const A = V(p.x + n.x * h - d.x * atras, p.y + n.y * h - d.y * atras);
+        const B = V(p.x - n.x * h - d.x * atras, p.y - n.y * h - d.y * atras);
+        const C = V(p.x + n.x * h + d.x * largo, p.y + n.y * h + d.y * largo);
         ctx.beginPath();
         ctx.moveTo(A.x, A.y); ctx.lineTo(C.x, C.y); ctx.lineTo(B.x, B.y);
         ctx.closePath();
