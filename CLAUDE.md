@@ -113,9 +113,19 @@ No hay otro CSS/JS global: cada página trae su propio `<style>`.
 
 **Aquí se genera y aquí se elige.** Motor compartido (`_engine.js`: Rng, mesh
 gradient, grano, paletas) + `_lab.js` (selector de obra y de paleta) +
-`_batch.js` (lotes) + `_wall/` (el muro) + una carpeta por obra graduada con
-`algo.js` (el algoritmo, fuente única) y un harness (scrub de seeds, hoja de
-contactos).
+`_batch.js` (lotes) + `_wall/` (el muro) + `_firma.js` (el sitio de la firma) +
+una carpeta por obra graduada con `algo.js` (el algoritmo, fuente única) y un
+harness (scrub de seeds, hoja de contactos).
+
+**`_firma.js` — dónde firma la mano.** La firma **no está en el archivo**: va a
+mano sobre la tinta, porque el fondo va a sangre y no hay margen blanco donde
+firmar (`impresion.html` §03). Una firma que sale del código no acredita nada
+—mismo seed, misma firma, mil veces—, así que ningún `algo.js` la dibuja. Lo que
+hace el módulo es medir el píxel ya renderizado y decir **dónde** cabe y **con
+qué**: recorre la banda inferior, elige la caja quieta más a la derecha donde el
+lápiz se vea, y devuelve los milímetros desde el canto. Lo que cambia con el
+fondo es la mina —grafito en claro, lápiz blanco en oscuro—, no el gesto. La caja
+mide 58 × 14 mm en cualquier pliego: la obra escala, la mano no.
 
 **`_wall/` — el muro.** La pieza a escala sobre una pared: figura de 1,70 m, eje
 de colgado a 1,45 m, regla en cm, y una segunda vista con los cinco pliegos en
