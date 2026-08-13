@@ -89,13 +89,44 @@ configuración en el **cuarto** argumento. Pasarle ahí el umbral hace que las o
 configuraciones corran como la de por defecto — y los números salen sospechosamente
 idénticos, que es la única pista.
 
+## El estado al graduar
+
+Batería completa sobre el algoritmo publicado, ejecutada desde esta carpeta:
+
+| bloque | resultado | su control |
+|---|---|---|
+| huecos en la incisión | 4.234 cruces · **0** con 3 px o más · peor 1,5 px | 87 de 87, hasta 72 px |
+| la incisión por máscara | 997 cruces en 8 configuraciones · **0 defectuosos** | 52/52 y 52/52 |
+| remates, margen y discos | **0 de 50** en las tres configuraciones | 23/30 y 22/30 |
+| determinismo | idéntico en las cuatro condiciones | — |
+| holgura geométrica | 1,45 anchuras mínimo · **0 solapes** en 240 obras | — |
+| costuras | 2.284 / 3.221 / 2.501 px | — (artefacto conocido) |
+
+Las ocho configuraciones son: por defecto, los cuatro tipos, esquinas curvas,
+apaisado, y dos cintas en apaisado.
+
+**Lo que sigue abierto:** la costura de 1 px dentro de la tinta. Existía antes del
+porte, no la cierra ninguno de los arreglos probados y dos de ellos la
+empeoraban. Se registra su nivel en cada batería para que se note si sube.
+
+**Y un control flojo:** el de remates dispara en 1 de 30. Abre la puerta y quita
+los reintentos, pero la selección puede seguir prefiriendo un tejido con los
+remates holgados. Un cero de remates está peor respaldado que los demás.
+
 ## Lo que se midió con esto
 
 - **El hueco de la incisión.** La zona que veta poner una junta cerca de un cruce
   medía `(W/2)/senθ × 1,20`, que cubre la huella pero no el sobresaliente con que
   el cuerpo se alarga en la junta. Con `1,60` se cierra. Sobre 1.000 obras y 2.603
   cruces: de 1,61 % con hueco de 3 px o más (el peor de 28 px sobre una cinta de
-  66) a prácticamente cero.
+  66) a cero.
+- **Dos cintas dibujadas como una.** Con cero cruces, `buildKnot` devolvía una sola
+  sección de 0 a `last`, salto incluido — y el salto sólo se deja de pintar cuando
+  una sección cae dentro de él, cosa que con una sección única no pasa nunca. Las
+  dos cintas salían unidas por el salto. Lo delató el barrido POR CONFIGURACIÓN,
+  no el grande: sólo pasa en el tipo `dos`, que es el 3 % de las obras, y se veía
+  como dos remates soldados (46 de 48 puntos). El barrido por defecto no lo habría
+  encontrado nunca.
 - **Cuatro arreglos que perdieron**, cada uno con su medición escrita en
   `../algo.js` para que no se reintenten: solapar sólo la sección que pinta
   después, alargar el halo de las dos en la junta, reducir la pizca del solape, y
