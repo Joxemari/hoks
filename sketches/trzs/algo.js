@@ -1680,6 +1680,13 @@
       const aFin = esFinal(a), bFin = esFinal(b);
       const iniC = max(0, !aFin ? a - (aJ ? pizca : caboEn(a)) : a);
       const finC = min(total, !bFin ? b + (bJ ? pizca : caboEn(b)) : b);
+      // El halo NO se alarga en las juntas, y el cuerpo sí. Se probó a
+      // alargarlo la misma pizca —para que ningún trozo de cuerpo quedara
+      // desnudo— razonando que, como la junta cae siempre en el centro de un
+      // tramo, las dos secciones son colineales y el sobreancho caería fuera.
+      // Medido sobre 60 obras, es falso y sale caro: las costuras pasan de
+      // 2.747 px a 6.545 (de 43 obras a 54), y a cambio quita un hueco de 4 px
+      // en un cruce de 158. El halo alargado sí corta a su vecina.
       const iniH = max(0, !aFin && !aJ ? a - caboEn(a) : a);
       const finH = min(total, !bFin && !bJ ? b + caboEn(b) : b);
 
