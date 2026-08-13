@@ -26,16 +26,21 @@ elif roto == 'mitad':
     # Se ancla al trazo del CUERPO por patrón, no al texto exacto: la expresión
     # del color ha cambiado ya dos veces (tinta2 -> tintaDe(cinta)) y cada vez
     # rompía el banco entero por una palabra.
-    m2 = re.search(r'^      trazarTramo\(ctx, mapped, acum, iniC, finC, width, (.+?), cfg\);\n    \}\n', src, re.M)
+    # Ni la anchura ni el color son ya texto fijo: la anchura puede ser una
+    # función (el temblor la hace variar) y el color depende de la cinta. Se
+    # capturan los dos, porque anclarse al texto exacto ha roto el banco entero
+    # dos veces por cambiar una palabra.
+    m2 = re.search(r'^      trazarTramo\(ctx, mapped, acum, iniC, finC, (?P<w>.+), (?P<paint>[^,]+), cfg\);\n    \}\n',
+                   src, re.M)
     assert m2, 'no encuentro el trazo del cuerpo en renderComposition'
-    a, color = m2.group(0), m2.group(1)
-    src = src.replace(a, """      trazarTramo(ctx, mapped, acum, iniC, finC, width, %s, cfg);
-      _rotoRep.push([iniC, finC, %s]);   // ROTO A PROPOSITO
+    a, ancho, color = m2.group(0), m2.group('w'), m2.group('paint')
+    src = src.replace(a, """      trazarTramo(ctx, mapped, acum, iniC, finC, %s, %s, cfg);
+      _rotoRep.push([iniC, finC, %s, %s]);   // ROTO A PROPOSITO
     }
-    for (const [i0, f0, t0] of _rotoRep)
-      trazarTramo(ctx, mapped, acum, i0, (i0 + f0) / 2, width, t0, cfg);
+    for (const [i0, f0, w0, t0] of _rotoRep)
+      trazarTramo(ctx, mapped, acum, i0, (i0 + f0) / 2, w0, t0, cfg);
     _rotoRep.length = 0;
-""" % (color, color))
+""" % (ancho, color, ancho, color))
     src = src.replace("  let rng = new E.Rng(0);", "  const _rotoRep = [];\n  let rng = new E.Rng(0);")
 elif roto == 'margen':
     # Margen NEGATIVO: con 0 la cinta sólo roza el borde de vez en cuando y el

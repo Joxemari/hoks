@@ -27,8 +27,11 @@ done
 # La batería tiene que cubrir lo que se publica: cuando entró el tipo de tres
 # cintas y el temblor, entraron aquí. Un detector que no ve la tercera cinta no
 # dice nada sobre ella.
-CFGS=('{}' '{"tipo":"suelto"}' '{"tipo":"anudado"}' '{"tipo":"trama"}' '{"tipo":"dos"}' '{"tipo":"tres"}' '{"corner":"curvas"}' '{"ends":"inglete"}' '{"temblor":0.12}' '{"aspecto":1.5}' '{"tipo":"dos","aspecto":1.5}' '{"tipo":"tres","aspecto":1.5}')
-POR=90   # 11 configuraciones x 90 = 990, mas las cuatro tandas de 250
+# Las obras FANTASMA se excluyen a mano: su cinta es del color del suelo y los
+# detectores que comparan tinta contra fondo no pueden medirlas por
+# construccion. Tienen su propio control (sueloigual) y se miran aparte.
+CFGS=('{"fantasma":"no"}' '{"tipo":"suelto","fantasma":"no"}' '{"tipo":"anudado","fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}' '{"tipo":"tres","fantasma":"no"}' '{"corner":"curvas","fantasma":"no"}' '{"ends":"inglete","fantasma":"no"}' '{"temblor":0.2,"fantasma":"no"}' '{"temblor":0.35,"corner":"curvas","fantasma":"no"}' '{"aspecto":1.5,"fantasma":"no"}' '{"tipo":"tres","aspecto":1.5,"fantasma":"no"}')
+POR=85   # 12 configuraciones x 85 = 1.020, mas las cuatro tandas de 250
 
 res() { python3 -c "
 import sys,json,re; d=json.load(sys.stdin)
@@ -38,11 +41,11 @@ print(f\"  {json.dumps(d['cfg'],ensure_ascii=False):<30} {d['obras']:>4} obras {
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = huecos ]; then
 echo "##### 1. HUECOS EN LA INCISION (tinta solida donde debe haber fondo)"
 echo "  1.000 obras con la configuracion por defecto, en cuatro tandas:"
-for o in 0 250 500 750; do node hueco.js trzs_test.js 250 '{}' $o | res; done
+for o in 0 250 500 750; do node hueco.js trzs_test.js 250 '{"fantasma":"no"}' $o | res; done
 echo "  1.000 mas repartidas entre las once configuraciones:"
 for c in "${CFGS[@]}"; do node hueco.js trzs_test.js $POR "$c" | res; done
 echo "-- CONTROL: orden de pintado invertido (debe disparar)"
-node hueco.js trzs_orden.js 125 '{}' | res
+node hueco.js trzs_orden.js 125 '{"fantasma":"no"}' | res
 fi
 
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = mascara ]; then
@@ -50,8 +53,8 @@ echo
 echo "##### 2. LA INCISION por cobertura de mascara (90 x 11 = 990)"
 for c in "${CFGS[@]}"; do printf '  %-30s' "$c"; node m2.js trzs_test.js $POR "$c" 2>&1 | sed -n 2p; done
 echo "-- CONTROLES (deben disparar)"
-printf '  %-30s' 'orden invertido';    node m2.js trzs_orden.js 60 '{}' 2>&1 | sed -n 2p
-printf '  %-30s' 'media seccion encima'; node m2.js trzs_mitad.js 60 '{}' 2>&1 | sed -n 2p
+printf '  %-30s' 'orden invertido';    node m2.js trzs_orden.js 60 '{"fantasma":"no"}' 2>&1 | sed -n 2p
+printf '  %-30s' 'media seccion encima'; node m2.js trzs_mitad.js 60 '{"fantasma":"no"}' 2>&1 | sed -n 2p
 fi
 
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = costuras ]; then
@@ -69,7 +72,7 @@ echo "##### 4. REMATES, MARGEN Y DISCOS (200 x 5 = 1.000)"
 for c in '{}' '{"tipo":"trama"}' '{"tipo":"dos"}' '{"tipo":"tres"}' '{"tipo":"tres","aspecto":1.5}'; do
   node o2.js trzs_test.js 200 "$c" 2>&1 | sed -n '1,5p'; done
 echo "-- CONTROLES (deben disparar)"
-for r in margen ojo remate; do echo "  [$r]"; node o2.js trzs_$r.js 60 '{}' 2>&1 | sed -n '2,4p'; done
+for r in margen ojo remate; do echo "  [$r]"; node o2.js trzs_$r.js 60 '{"fantasma":"no"}' 2>&1 | sed -n '2,4p'; done
 fi
 
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = resto ]; then
