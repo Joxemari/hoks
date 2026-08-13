@@ -1670,6 +1670,8 @@
     const juntas = (comp.plano.juntas || []).map(j => arcoDeParam(mapped, acum, j));
     const esJunta = (d) => juntas.some(j => abs(j - d) < 1e-6);
     const pizca = max(E.unit(S, ALTO, REF), width * 0.15);
+    const rango = {};
+    orden.forEach((sec, k) => { rango[sec] = k; });
 
     for (const i of orden) {
       const [a, b] = secciones[i];
@@ -1678,17 +1680,47 @@
       if (saltoArc && a >= saltoArc[0] - 1e-6 && b <= saltoArc[1] + 1e-6) continue;
 
       const aFin = esFinal(a), bFin = esFinal(b);
-      const iniC = max(0, !aFin ? a - (aJ ? pizca : caboEn(a)) : a);
-      const finC = min(total, !bFin ? b + (bJ ? pizca : caboEn(b)) : b);
-      // El halo NO se alarga en las juntas, y el cuerpo sí. Se probó a
-      // alargarlo la misma pizca —para que ningún trozo de cuerpo quedara
-      // desnudo— razonando que, como la junta cae siempre en el centro de un
-      // tramo, las dos secciones son colineales y el sobreancho caería fuera.
-      // Medido sobre 60 obras, es falso y sale caro: las costuras pasan de
-      // 2.747 px a 6.545 (de 43 obras a 54), y a cambio quita un hueco de 4 px
-      // en un cruce de 158. El halo alargado sí corta a su vecina.
-      const iniH = max(0, !aFin && !aJ ? a - caboEn(a) : a);
-      const finH = min(total, !bFin && !bJ ? b + caboEn(b) : b);
+
+      // EL SOLAPE DE LA JUNTA ES ASIMÉTRICO, Y LO DECIDE EL ORDEN DE PINTADO.
+      //
+      // Dos secciones que se encuentran en una junta tienen que solaparse o el
+      // empalme se abre al primer redondeo. El solape era de las dos, y el
+      // halo no acompañaba: cada una metía una pizca de CUERPO DESNUDO más
+      // allá de su propio halo, y donde ese trozo caía encima de otra hebra la
+      // incisión tenía un hueco. Medido sobre 1.000 obras y 2.603 cruces:
+      // 1,61% con hueco de 3 px o más y 0,23% con 20 px o más, el peor de 28.
+      //
+      // Alargar el halo de las dos tampoco vale: su remate a tope corta una
+      // línea entera a través del cuerpo de la vecina, y las costuras se
+      // duplicaban (2.747 px → 6.545).
+      //
+      // La salida es que solape UNA SOLA: la que se pinta DESPUÉS. Ella alarga
+      // cuerpo y halo a la vez, así que no deja cuerpo desnudo; y su corte cae
+      // por fuera del cuerpo de la vecina —en la junta las dos secciones son
+      // colineales, porque la junta se abre siempre en el centro de un tramo—,
+      // así que no la raja. La que se pinta antes no sobresale y no tiene nada
+      // que tapar.
+      // Y el solape NO PUEDE PASAR DE UN VÉRTICE. La junta se abre en el
+      // centro de un tramo, así que las dos secciones son colineales ahí — pero
+      // sólo hasta el vértice. Con una pizca de 10 px y un tramo corto, el
+      // solape lo cruzaba, la dirección cambiaba y el remate del halo volvía a
+      // cortar a la vecina: medido, el 57% de las costuras pasaba a estar
+      // pegado a una junta. Recortado al vértice, el solape se queda dentro del
+      // tramo recto y la colinealidad se cumple de verdad.
+      const alVertice = (d) => {
+        let lo = 0, hi = total;
+        for (const x of acum) { if (x <= d && x > lo) lo = x; if (x >= d && x < hi) hi = x; }
+        return min(d - lo, hi - d);
+      };
+      const yoDespues = (vecina) =>
+        vecina >= 0 && vecina < secciones.length && rango[i] > rango[vecina];
+      const solA = aJ && yoDespues(i - 1) ? min(pizca, alVertice(a) * 0.9) : 0;
+      const solB = bJ && yoDespues(i + 1) ? min(pizca, alVertice(b) * 0.9) : 0;
+
+      const iniC = max(0, !aFin ? (aJ ? a - solA : a - caboEn(a)) : a);
+      const finC = min(total, !bFin ? (bJ ? b + solB : b + caboEn(b)) : b);
+      const iniH = max(0, !aFin ? (aJ ? a - solA : a - caboEn(a)) : a);
+      const finH = min(total, !bFin ? (bJ ? b + solB : b + caboEn(b)) : b);
 
       const segunda = saltoArc && a >= saltoArc[1] - 1e-6;
       // LA INCISIÓN NO ES UN COLOR, ES UN CORTE.
