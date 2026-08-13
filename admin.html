@@ -489,17 +489,17 @@ ${GRADUATED.includes(w.slug)?`
         <div style="margin-bottom:6px;">
           <div style="font-size:9px;color:var(--ink3);letter-spacing:0.1em;margin-bottom:3px;">${lg.toUpperCase()}</div>
           <textarea id="cart-${lg}-${i}" class="code-editor" style="min-height:44px;background:var(--surface);color:var(--ink);border-color:var(--border);" placeholder="—">${esc((w.cartela&&w.cartela[lg])||'')}</textarea>
-        </div>`).join('')}
+        </div>`).join('')}`:''}
         <div style="font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.1em;margin:14px 0 6px;">
           <span>Formats &middot; the proportions this family exists in</span>
         </div>
-        <div style="font-size:9px;color:var(--ink3);line-height:1.7;margin-bottom:8px;">A family need not exist in every proportion: a row needs run, and in a square it stops being a row. Unchecking them all falls back to what <code>sketches/${esc(w.slug)}/algo.js</code> declares. <b>double</b> is two landscape sheets side by side &mdash; the only entry that is not a single DIN sheet, so it prints on two and drops A1 (an A1 double is 139 Mpx, the A0 ceiling).</div>
+        <div style="font-size:9px;color:var(--ink3);line-height:1.7;margin-bottom:8px;">A family need not exist in every proportion: a row needs run, and in a square it stops being a row. Applies to graduated families and to legacy pages alike &mdash; both read it. Unchecking them all falls back to the engine default (or, for a graduated work, to what its <code>algo.js</code> declares). <b>double</b> is two landscape sheets side by side &mdash; the only entry that is not a single DIN sheet, so it prints on two and drops A1 (an A1 double is 139 Mpx, the A0 ceiling).</div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;">
         ${FORMAT_IDS.map(f=>`
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:10px;letter-spacing:0.06em;">
             <input type="checkbox" id="fmt-${f}-${i}" ${(w.formats||[]).includes(f)?'checked':''} onchange="saveWorkFormats(${i})"> ${f}
           </label>`).join('')}
-        </div>`:''}
+        </div>
       </div>
     </div>`).join('');
 }
