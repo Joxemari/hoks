@@ -213,24 +213,22 @@
   // la pieza dejaba de leerse como figura sobre suelo y pasaba a ser un rompecabezas
   // de dos colores: por encima del 38% no hay vacío en minoría, hay empate. La hoja
   // tiene que respirar, y en la referencia respira mucho.
+  // Los cuatro salen de mirar las referencias juntas, y cada uno es una de ellas:
+  //   red    — la trama laxa y estirada: hebras finas, celdas grandes, mucho aire.
+  //   trama  — el centro: hebras gordas cruzándose, celdas cuadrangulares apretadas.
+  //   muro   — casi maciza, y los ojos quedan como VANOS abiertos en la masa.
+  //   nudo   — pocas hebras, muy gordas y concentradas: la masa se apelotona.
   const TIPOS = {
-    // Un estrato solo, o dos sin tocarse — pero con un lazo: una masa que cruza la
-    // hoja y encierra UN vacío es la pieza mínima de esta familia. Sin lazo la
-    // versión callada salía sin suceso, una banda y nada más.
-    estrato:    { prob: 0.22, estratos: [1, 2], puentes: [0, 0], lazos: [1, 2], munones: [1, 3],
-                  ojos: [0, 2], mancha: [0.05, 0.20] },
-    // El de la referencia: dos o tres estratos soldados y cerrados sobre sí
-    // mismos, con vacíos dentro de la masa. Es el centro de la familia.
-    soldado:    { prob: 0.42, estratos: [2, 3], puentes: [1, 3], lazos: [1, 3], munones: [2, 5],
-                  ojos: [1, 4], mancha: [0.09, 0.28] },
-    // Muchos muñones y nada que se cierre: la silueta se deshilacha.
-    ramificado: { prob: 0.24, estratos: [2, 3], puentes: [0, 1], lazos: [0, 1], munones: [4, 8],
-                  ojos: [0, 1], mancha: [0.07, 0.25] },
-    // Rara a propósito: la masa asedia el suelo hasta que el vacío queda en
-    // minoría. Figura y fondo se cambian el sitio.
-    isla:       { prob: 0.12, estratos: [3, 4], puentes: [2, 4], lazos: [3, 6], munones: [3, 6],
-                  ojos: [3, 12], mancha: [0.21, 0.37] },
+    red:    { prob: 0.24, hebras: [[2, 3], [1, 2]], nivel: [1, 4], ramales: [2, 4], munones: [2, 4],
+              ojos: [1, 4],  mancha: [0.14, 0.29] },
+    trama:  { prob: 0.40, hebras: [[2, 3], [1, 2]], nivel: [2, 5], ramales: [3, 6], munones: [2, 4],
+              ojos: [2, 8],  mancha: [0.22, 0.40] },
+    muro:   { prob: 0.18, hebras: [[2, 3], [2, 3]], nivel: [4, 6], ramales: [2, 4], munones: [1, 3],
+              ojos: [2, 7],  mancha: [0.34, 0.50] },
+    nudo:   { prob: 0.18, hebras: [[2, 2], [1, 1]], nivel: [3, 6], ramales: [3, 5], munones: [3, 5],
+              ojos: [1, 3],  mancha: [0.18, 0.35] },
   };
+;
   const TIPO_NAMES = Object.keys(TIPOS);
 
   // Sube de 6 a 9. El bucle corta en cuanto un candidato cumple, así que los 9 solo
@@ -538,7 +536,10 @@
   // y se rompe. Y cuando la masa llega al techo de su banda, la pendiente REBOTA
   // en vez de recortarse — recortando, el cuerpo se queda pegado al límite y sale
   // una meseta; rebotando, el límite produce el pliegue.
-  function estrato(rng, X0, X1, yc, banda, niveles, sentido, lo, hi, yLo, yHi) {
+  // La HEBRA es lo que antes era el estrato, ahora sin dirección propia: avanza a lo
+  // largo de un eje y vagabundea en el otro, y quien la llama decide cuál es cuál.
+  // Ésa es toda la diferencia entre un estrato y una trama.
+  function hebra(rng, X0, X1, yc, banda, niveles, sentido, lo, hi, yLo, yHi) {
     const nv = rng.int(VERT_MIN, VERT_MAX);
     const lv = grosores(rng, nv, lo, hi);
     const ch = [];
@@ -699,12 +700,7 @@
   // punta; en la referencia el ramaje se concentra en una zona y el resto del
   // cuerpo viaja limpio. Se sortean dos candidatos y gana el más cercano al foco:
   // agrupa sin llegar a amontonar.
-  function munon(rng, ch, S, niveles, foco) {
-    let i = rng.int(1, ch.length - 2);
-    if (foco != null) {
-      const j = rng.int(1, ch.length - 2);
-      if (abs(j - foco) < abs(i - foco)) i = j;
-    }
+  function munon(rng, ch, S, niveles, i) {
     const a = ch[i], b = ch[i + 1], p = ch[i - 1];
     if (a.lv != null && a.lv < 2) return null;
     const dx = b.x - p.x, dy = b.y - p.y, m = hypot(dx, dy) || 1e-9;
@@ -844,144 +840,202 @@
   // OJO: W y H llegan NORMALIZADOS (lado corto = 1, largo = proporción nominal), no
   // en píxeles. Ver la nota del campo en render. Por eso S vale 1 y todas las
   // medidas de aquí abajo son ya fracciones del lado corto.
+  // Punto de una polilínea en el parámetro continuo t (índice + fracción).
+  function enT(ch, t) {
+    const i = clamp(Math.floor(t), 0, ch.length - 2), f = clamp(t - i, 0, 1);
+    return { x: ch[i].x + (ch[i + 1].x - ch[i].x) * f, y: ch[i].y + (ch[i + 1].y - ch[i].y) * f, i, f };
+  }
+
+  // Los CRUCES entre dos hebras. En TRZS un cruce era el problema entero —había que
+  // decidir quién pasa por encima y abrir la incisión—; aquí es lo contrario: el
+  // cruce es donde la trama se hace una sola pieza. Y hay que encontrarlos igual,
+  // pero para otra cosa: para ENGORDARLOS. En la referencia el encuentro no es una
+  // suma de dos anchuras, es un NUDO — la masa se acumula donde se cruza.
+  function cruces(a, b) {
+    const out = [];
+    for (let i = 0; i < a.length - 1; i++) {
+      for (let j = 0; j < b.length - 1; j++) {
+        const p1 = a[i], p2 = a[i + 1], p3 = b[j], p4 = b[j + 1];
+        const rx = p2.x - p1.x, ry = p2.y - p1.y, sx = p4.x - p3.x, sy = p4.y - p3.y;
+        const den = rx * sy - ry * sx;
+        if (abs(den) < 1e-12) continue;
+        const t = ((p3.x - p1.x) * sy - (p3.y - p1.y) * sx) / den;
+        const u = ((p3.x - p1.x) * ry - (p3.y - p1.y) * rx) / den;
+        if (t < 0 || t > 1 || u < 0 || u > 1) continue;
+        out.push({ ta: i + t, tb: j + u, x: p1.x + rx * t, y: p1.y + ry * t });
+      }
+    }
+    return out;
+  }
+
+  // Engorda una hebra alrededor de un cruce: el nudo. El engorde cae con la
+  // distancia al cruce medida EN VÉRTICES, no en unidades del pliego, porque lo que
+  // se quiere es que el nudo abarque un par de tramos y no un radio fijo.
+  function anudar(ch, t, niveles, subir, alcance) {
+    for (let k = 0; k < ch.length; k++) {
+      const d = abs(k - t);
+      if (d > alcance) continue;
+      const s = subir * (1 - d / (alcance + 1));
+      const lv = clamp(Math.round((ch[k].lv == null ? 3 : ch[k].lv) + s), 0, NIVELES - 1);
+      if (lv > ch[k].lv) { ch[k].lv = lv; ch[k].hw = niveles[lv] / 2; }
+    }
+  }
+
+  // EL RAMAL. Una hebra que NO cruza el pliego: nace sobre otra y muere dentro, a
+  // corte vivo. Es lo que separa una red de una retícula.
+  //
+  // Con solo hebras pasantes la trama sale de celdas grandes, limpias y parecidas
+  // —un plano de calles— porque cada hebra corta el cuadro de lado a lado y las
+  // celdas son los rectángulos que quedan. En las referencias eso no pasa nunca: la
+  // red se concentra en una zona y se deshilacha en otra, y buena parte de las hebras
+  // mueren a medio camino. El ramal es lo que produce las celdas pequeñas e
+  // irregulares de los nudos, que son las que se leen como ojos.
+  //
+  // Y puede cruzar otras hebras por el camino: entonces suelda y encierra celdas
+  // nuevas. Un ramal es tan hebra como las demás, solo que más corto.
+  function ramal(rng, madre, S, niveles, lo, hi, W, H) {
+    if (madre.length < 3) return null;
+    const i = rng.int(1, madre.length - 2);
+    const a = madre[i], b = madre[i + 1], q = madre[i - 1];
+    const dx = b.x - q.x, dy = b.y - q.y, m = hypot(dx, dy) || 1e-9;
+    const lado = rng.bool(0.5) ? 1 : -1;
+    // Sale casi perpendicular a la madre: es lo que hace celda. Saliendo en diagonal
+    // se pone en paralelo a las otras hebras y no cierra nada.
+    let ang = Math.atan2(dy / m, dx / m) + lado * (Math.PI / 2) + rng.range(-0.45, 0.45);
+    const nv = rng.int(4, 8);
+    const largo = min(W, H) * rng.range(0.22, 0.62);
+    const lv = grosores(rng, nv + 1, lo, hi);
+    const out = [{ x: a.x, y: a.y, hw: a.hw, lv: a.lv, sesgo: 0, corte: 0 }];
+    let x = a.x, y = a.y;
+    let ses = rng.range(-SESGO_MAX, SESGO_MAX), rachaS = rng.pickFrom(RACHA_S);
+    for (let k = 1; k <= nv; k++) {
+      // Rachas de dirección, igual que en la hebra: sin ellas el ramal serpentea.
+      if (k % 2 === 1) ang += pendiente(rng) * 0.5;
+      x += Math.cos(ang) * (largo / nv); y += Math.sin(ang) * (largo / nv);
+      if (rachaS-- <= 0) { ses = rng.range(-SESGO_MAX, SESGO_MAX); rachaS = rng.pickFrom(RACHA_S); }
+      out.push({ x, y, hw: niveles[lv[k]] / 2, lv: lv[k], sesgo: ses, corte: 0 });
+    }
+    const u = out[out.length - 1];
+    u.corte = corteDe(rng, u.hw, niveles[NIVELES - 1] / 2);
+    return out;
+  }
+
   function tramar(rng, W, H, tipo, params) {
     const S = min(W, H);
     const t = TIPOS[tipo];
 
-    // LA ESCALA DEL CUERPO, por pieza. No es un ajuste del laboratorio que se haya
-    // colado aquí: es con qué grosor de plancha está cortada ESTA pieza, y hacía
-    // falta. Con el techo fijo, la mancha que sale de la gramática se agolpa entre
-    // el 16% y el 32%, así que al bajar los topes declarados el 9% de las piezas no
-    // podía cumplirlos por mucho que se retejiera — no había ningún candidato ligero
-    // que encontrar. Tirándola por candidato, el bucle de reintentos BUSCA de verdad
-    // sobre este eje: si el tipo pide una obra que respire, aparece una plancha más
-    // fina. Y de paso la familia gana la variación que le faltaba, que es la que hay
-    // entre una pieza cortada a hacha y otra cortada a cuchilla.
     const esc = params.cuerpo ? params.cuerpo : rng.range(0.70, 1.14);
-    // Niveles de anchura, geométricos. Se calculan aquí y no como constante
-    // porque dependen del lado corto: la escala es de la hoja, no del px.
     const wmax = S * W_MAX * esc;
     const niveles = [];
     for (let i = 0; i < NIVELES; i++) {
       niveles.push(S * W_MIN * Math.pow(wmax / (S * W_MIN), i / (NIVELES - 1)));
     }
 
-    const my = H * MARGEN_Y;
-    const alto = H - my * 2;
-    const k = params.estratos ? params.estratos : rng.int(t.estratos[0], t.estratos[1]);
+    const my = H * MARGEN_Y, mx = W * MARGEN_Y;
+    const nH = params.hebrasH ? params.hebrasH : rng.int(t.hebras[0][0], t.hebras[0][1]);
+    const nV = params.hebrasV != null ? params.hebrasV : rng.int(t.hebras[1][0], t.hebras[1][1]);
+    const lo = t.nivel[0], hi = t.nivel[1];
 
-    // GRAVEDAD. Los estratos no se reparten a partes iguales: se apiñan hacia un
-    // borde con exponente, y el hueco que dejan enfrente es la RESERVA. Chillida
-    // titula una serie entera 'Gravitaciones'; el peso cae hacia un lado y la
-    // hoja se lee por lo que queda libre.
+    // GRAVEDAD: las hebras no se reparten a partes iguales por su eje, se apiñan
+    // hacia un lado. Lo que queda enfrente es la RESERVA.
     const grav = params.gravedad ? params.gravedad : (rng.bool(0.5) ? 'N' : 'S');
-    const p = rng.range(1.25, 2.1);
-    const ys = [];
-    for (let j = 0; j < k; j++) {
-      // Con UN estrato la gravedad no tiene nada que repartir, así que no se le
-      // aplica el exponente: aplicándoselo, un u de 0,30 con p de 2,1 caía en 0,076
-      // y la única masa de la pieza se pegaba al borde de arriba dejando tres cuartos
-      // de hoja vacíos — que no es una reserva, es una pieza sin centro.
-      if (k === 1) { ys.push(my + rng.range(0.28, 0.72) * alto); continue; }
-      const u = (j + 0.5) / k;
-      const v = grav === 'N' ? Math.pow(u, p) : 1 - Math.pow(1 - u, p);
-      ys.push(my + v * alto);
-    }
-    // Hueco vertical de cada estrato: hasta el vecino, nunca más.
-    const banda = [];
-    for (let j = 0; j < k; j++) {
-      const arr = j > 0 ? ys[j] - ys[j - 1] : (ys[j] - my) * 2;
-      const aba = j < k - 1 ? ys[j + 1] - ys[j] : (my + alto - ys[j]) * 2;
-      banda.push(min(arr, aba) * 0.5 * BANDA);
-    }
-
-    // La RESERVA es una esquina: el lado por el que el estrato más cercano a ella
-    // NO llega. Es el único sitio donde la obra renuncia a cruzar la hoja, y por
-    // eso el vacío tiene dónde acumularse.
-    const lado = rng.bool(0.5) ? 'E' : 'O';
-    const jRes = grav === 'N' ? k - 1 : 0;
-    const reserva = (grav === 'N' ? 'S' : 'N') + lado;
-
-    // JERARQUÍA. Uno de los estratos es el PROTAGONISTA: escala desplazada arriba,
-    // y se queda con la mayoría de los lazos y los muñones. Los demás son ecos.
-    const prot = rng.int(0, k - 1);
-
-    const cuerpos = [];
-    const chains = [];
-    for (let j = 0; j < k; j++) {
-      let X0 = -W * SANGRE, X1 = W * (1 + SANGRE);
-      // El estrato de la reserva muere dentro del cuadro por su lado.
-      if (j === jRes && k > 1) {
-        if (lado === 'E') X1 = W * rng.range(0.55, 0.86);
-        else              X0 = W * rng.range(0.14, 0.45);
+    const p = rng.range(1.15, 1.9);
+    function repartir(n, m0, largo, sesgar) {
+      const out = [];
+      for (let j = 0; j < n; j++) {
+        // Con (j+0.5)/n exacto la trama sale de paso constante y se lee como una RED
+        // DE CALLES: un plano, no un gesto. El desorden va en el reparto, no en el
+        // recorrido — así las hebras siguen siendo rectas y lo irregular es dónde caen.
+        const u = n === 1 ? rng.range(0.3, 0.7) : (j + 0.5) / n + rng.range(-0.42, 0.42) / n;
+        const v = !sesgar ? u : (grav === 'N' ? Math.pow(u, p) : 1 - Math.pow(1 - u, p));
+        out.push(m0 + clamp(v, 0.04, 0.96) * largo);
       }
-      // La ventana de niveles: el protagonista arriba de la escala y los ecos UNO O
-      // DOS niveles por debajo, nunca en el suelo de la escala. Dejándolos caer al
-      // nivel 1 salían gusanos: una banda de 6 px que cruza la hoja entera no es un
-      // eco de la masa, es un pelo — y con dos ecos así la pieza se quedaba sin
-      // suceso. En la referencia hasta la masa más callada tiene cuerpo.
-      const alto0 = NIVELES - 1 - VENTANA;
-      const base = j === prot ? alto0 : max(1, alto0 - rng.int(1, 2));
-      const ch = estrato(rng, X0, X1, ys[j], banda[j], niveles, rng.bool(0.5) ? 1 : -1,
-                         base, base + VENTANA, my, H - my);
-      chains.push(ch);
-      cuerpos.push(ch);
+      return out;
     }
-    // Dos de cada tres lazos y muñones caen en el protagonista: el accidente se
-    // concentra donde ya hay masa. Repartido a partes iguales, la jerarquía de
-    // grosor que acaba de establecerse se deshace.
-    const cual = () => (k > 1 && rng.bool(0.66)) ? prot : rng.int(0, k - 1);
-    // Un foco por estrato, tirado antes de los lazos para que no dependa de ellos.
-    const focos = chains.map(c => rng.int(1, max(1, c.length - 2)));
+    const ys = repartir(nH, my, H - my * 2, true);
+    const xs = repartir(nV, mx, W - mx * 2, false);
 
-    // PUENTES. Dos entre el mismo par encierran suelo: el ojo es la consecuencia
-    // de la soldadura, no un objeto que se dibuje.
-    const nP = params.puentes != null ? params.puentes : rng.int(t.puentes[0], t.puentes[1]);
-    let puentes = 0;
-    if (k > 1) {
-      for (let n = 0; n < nP; n++) {
-        const j = rng.int(0, k - 2);
-        const a = chains[j], b = chains[j + 1];
-        const lo = max(min(a[0].x, a[a.length - 1].x), min(b[0].x, b[b.length - 1].x));
-        const hi = min(max(a[0].x, a[a.length - 1].x), max(b[0].x, b[b.length - 1].x));
-        if (hi - lo < W * 0.08) continue;
-        const pu = puente(rng, a, b, rng.range(lo + (hi - lo) * 0.06, hi - (hi - lo) * 0.06), niveles);
-        if (pu) { cuerpos.push(pu); puentes++; }
+    const banda = (arr, m0, m1) => arr.map((c, j) => {
+      const antes = j > 0 ? c - arr[j - 1] : (c - m0) * 2;
+      const desp = j < arr.length - 1 ? arr[j + 1] - c : (m1 - c) * 2;
+      return min(antes, desp) * 0.5 * BANDA;
+    });
+    const bH = banda(ys, my, H - my), bV = banda(xs, mx, W - mx);
+
+    // JERARQUÍA. El rango del tipo es el de la PIEZA, no el de cada hebra: dentro de
+    // él, una hebra es la protagonista y va arriba del rango, y las demás caen abajo.
+    // Sin esto todas pesaban igual y la trama se leía como retícula — que es el mismo
+    // fallo del «papel pintado» que ya hubo con los estratos, ahora en dos ejes. En la
+    // referencia siempre hay una hebra gorda y otras que apenas son un hilo.
+    const total = nH + nV;
+    const prot = rng.int(0, total - 1);
+    const ventana = (j) => {
+      const b = j === prot ? max(lo, hi - 1) : lo;
+      return [b, min(NIVELES - 1, b + (j === prot ? 1 : VENTANA))];
+    };
+
+    const cuerpos = [], hs = [], vs = [];
+    for (let j = 0; j < nH; j++) {
+      const w = ventana(j);
+      const ch = hebra(rng, -W * SANGRE, W * (1 + SANGRE), ys[j], bH[j], niveles,
+                       rng.bool(0.5) ? 1 : -1, w[0], w[1], my, H - my);
+      hs.push(ch); cuerpos.push(ch);
+    }
+    // Las verticales se generan en el eje contrario y se giran: la hebra no sabe
+    // hacia dónde va, y así las dos direcciones salen de la misma gramática.
+    for (let j = 0; j < nV; j++) {
+      const w = ventana(nH + j);
+      const ch = hebra(rng, -H * SANGRE, H * (1 + SANGRE), xs[j], bV[j], niveles,
+                       rng.bool(0.5) ? 1 : -1, w[0], w[1], mx, W - mx);
+      for (const q of ch) { const t2 = q.x; q.x = q.y; q.y = t2; q.sesgo = -q.sesgo; }
+      vs.push(ch); cuerpos.push(ch);
+    }
+
+    // LOS RAMALES, antes de los nudos: son hebras de pleno derecho, así que sus cruces
+    // también anudan.
+    const nR = params.ramales != null ? params.ramales : rng.int(t.ramales[0], t.ramales[1]);
+    const rs = [];
+    for (let n = 0; n < nR; n++) {
+      const pool = hs.concat(vs, rs);
+      const md = pool[rng.int(0, pool.length - 1)];
+      const w = ventana(rng.int(0, total - 1));
+      const r = ramal(rng, md, S, niveles, w[0], w[1], W, H);
+      if (r) { rs.push(r); cuerpos.push(r); }
+    }
+
+    // LOS NUDOS. Cada cruce engorda las dos hebras que lo forman.
+    let nCruces = 0;
+    const hilos = hs.concat(vs, rs);
+    for (let i = 0; i < hilos.length; i++) {
+      for (let j = i + 1; j < hilos.length; j++) {
+        for (const c of cruces(hilos[i], hilos[j])) {
+          nCruces++;
+          anudar(hilos[i], c.ta, niveles, rng.range(0.6, 1.8), 1);
+          anudar(hilos[j], c.tb, niveles, rng.range(0.6, 1.8), 1);
+        }
       }
     }
 
-    // LAZOS. Van DESPUÉS de los puentes y ANTES de los muñones a propósito: el
-    // lazo es la fuente principal de ojos, así que se tira sobre el tronco limpio
-    // —sin muñones que le estorben la elección de vértices— y el muñón, que no
-    // cierra nada, se pone al final sobre lo que haya.
-    const nL = params.lazos != null ? params.lazos : rng.int(t.lazos[0], t.lazos[1]);
-    let lazos = 0;
-    for (let n = 0; n < nL; n++) {
-      const lz = lazo(rng, chains[cual()], S, niveles);
-      if (lz) { cuerpos.push(lz); lazos++; }
-    }
-
-    // MUÑONES. Solo desde masa: un muñón que sale de un vértice de nivel 0 o 1 es
-    // un pelo pegado al dibujo, no un gesto. Ahí se descarta en vez de adelgazarlo.
+    // MUÑONES: salen de cualquier hebra, y solo desde masa.
+    const todas = hilos;
     const nM = params.munones != null ? params.munones : rng.int(t.munones[0], t.munones[1]);
     let munones = 0;
     for (let n = 0; n < nM; n++) {
-      const ch = chains[cual()];
+      const ch = todas[rng.int(0, todas.length - 1)];
       if (ch.length < 3) continue;
-      const mu = munon(rng, ch, S, niveles, focos[chains.indexOf(ch)]);
+      const mu = munon(rng, ch, S, niveles, rng.int(1, max(1, ch.length - 2)));
       if (mu) { cuerpos.push(mu); munones++; }
     }
 
     const med = medir(cuerpos, W, H);
-    // Rango de niveles usado: la modulación real del cuerpo, que es el rasgo que
-    // separa esta familia de TRZS.
     let lvMin = NIVELES, lvMax = 0;
-    for (const ch of chains) for (const v of ch) {
+    for (const ch of todas) for (const v of ch) {
       if (v.lv == null) continue;
       if (v.lv < lvMin) lvMin = v.lv;
       if (v.lv > lvMax) lvMax = v.lv;
     }
-    return { cuerpos, chains, k, prot, puentes, lazos, munones, grav, reserva, niveles, esc,
+    return { cuerpos, chains: todas, k: nH + nV, nH, nV, ramales: rs.length, cruces: nCruces, munones,
+             grav, reserva: (grav === 'N' ? 'S' : 'N'), niveles, esc,
              ojos: med.ojos, mancha: med.mancha,
              modulacion: lvMax >= lvMin ? lvMax - lvMin : 0 };
   }
@@ -995,10 +1049,11 @@
     const m = c.mancha;
     const fm = m < t.mancha[0] ? (t.mancha[0] - m) / t.mancha[0]
              : m > t.mancha[1] ? (m - t.mancha[1]) / t.mancha[1] : 0;
-    // La modulación no la declara el tipo: la exige la familia. Un cuerpo que se
-    // mueve menos de dos niveles es una cinta de TRZS sin su incisión, o sea nada.
-    const fmod = c.modulacion < 2 ? (2 - c.modulacion) : 0;
-    return fo + fm * 2 + fmod * 0.6;
+    // Y la trama tiene que TRAMAR: sin cruces no hay nudos, no hay celdas y no hay
+    // ojos — son dos o tres hebras paralelas y ya. Es la condición de la familia, no
+    // del tipo, así que la exige 'falta' y no la tabla.
+    const fc = c.cruces < 2 ? (2 - c.cruces) : 0;
+    return fo + fm * 2 + fc * 0.8;
   }
 
   // ── Entrada principal ───────────────────────────────────────────────────────
@@ -1078,7 +1133,7 @@
     ctx.save();
     ctx.translate(ox, 0);
     ctx.scale(S, S);   // del campo normalizado al pliego
-    // La segunda tinta, cuando la hay, se lleva UN estrato entero. No medio
+    // La segunda tinta, cuando la hay, se lleva UNA hebra entera. No medio
     // cuerpo, no un degradado: un cuerpo. Es raro a propósito.
     const dos = rol.otra && rng.bool(0.14) && best.chains.length > 1;
     const jOtra = dos ? rng.int(0, best.chains.length - 1) : -1;
@@ -1130,7 +1185,8 @@
 
     return { pal, rol, tipo, filo: filoName, bg, dos, falta: bestF,
              field: cuad ? 'square' : 'sheet',
-             estratos: best.k, puentes: best.puentes, lazos: best.lazos, munones: best.munones,
+             hebras: best.nH + '\u00d7' + best.nV, ramales: best.ramales, cruces: best.cruces,
+             munones: best.munones,
              esc: best.esc,
              ojos: best.ojos, mancha: best.mancha, modulacion: best.modulacion,
              grav: best.grav, reserva: best.reserva };
@@ -1145,7 +1201,7 @@
     // El ojo es el rasgo de la familia, así que su rareza está en los extremos:
     // una masa que no encierra nada (ciega) y una que encierra mucho (asedio)
     // son las dos cosas difíciles.
-    const ojosLbl = n === 0 ? 'Ciego' : n === 1 ? 'Un ojo' : n + ' ojos';
+    const ojosLbl = n === 0 ? 'Ciego' : n === 1 ? 'Un ojo' : n + ' ojos';   // 'Ciego' ya no sale: la trama siempre cierra algo
     // Medido: 0:15% 1:35% 2:22% 3:12% 4:8% 5-7:8% 8+:2%.
     const ojosR = n === 0 ? 'uncommon' : n <= 2 ? 'common' : n <= 4 ? 'uncommon' : n <= 7 ? 'rare' : 'superrare';
     // Cuánto suelo queda atrapado: dos piezas con tres ojos no son lo mismo si
@@ -1153,8 +1209,8 @@
     const areaOjos = res.ojos.reduce((a, b) => a + b, 0);
 
     const m = res.mancha;
-    const manchaLbl = m < 0.10 ? 'Leve' : m < 0.20 ? 'Justa' : m < 0.32 ? 'Cargada' : 'Asedio';
-    const manchaR = m < 0.07 ? 'uncommon' : m >= 0.32 ? 'rare' : 'common';
+    const manchaLbl = m < 0.20 ? 'Leve' : m < 0.30 ? 'Justa' : m < 0.42 ? 'Cargada' : 'Asedio';
+    const manchaR = m < 0.16 ? 'uncommon' : m >= 0.48 ? 'rare' : 'common';
 
     // Los cortes salen de la distribución MEDIDA sobre 400 tiradas, no de la
     // intuición: 2:6% 3:6% 4:13% 5:28% 6:47%. Con el corte anterior (desbocado a
@@ -1185,7 +1241,7 @@
       list: [
         { key: 'Palette', val: res.pal.name, colors: res.pal.colors, rarity: palR },
         { key: 'Type',    val: res.tipo, rarity: tipoR },
-        { key: 'Strata',  val: res.estratos + ' · ' + res.puentes + ' welds · ' + res.lazos + ' loops', rarity: 'common' },
+        { key: 'Weave',   val: res.hebras + ' + ' + res.ramales + ' · ' + res.cruces + ' knots', rarity: 'common' },
         { key: 'Voids',   val: ojosLbl + (n ? ' · ' + (areaOjos * 100).toFixed(1) + '%' : ''), rarity: ojosR },
         { key: 'Body',    val: cuerpoLbl + ' · ' + (mod + 1) + '/' + NIVELES, rarity: cuerpoR },
         { key: 'Ink',     val: manchaLbl + ' · ' + Math.round(m * 100) + '%', rarity: manchaR },

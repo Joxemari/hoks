@@ -14,69 +14,93 @@ desde el laboratorio.
 
 ## La idea, en una frase
 
-**TRZS es el cruce. EVOL es la soldadura.**
+**TRZS es el cruce. EVOL es el nudo.**
 
-En TRZS dos hebras se encuentran y **pasan**: una por encima, otra por debajo, y
-el suelo aparece entre ellas como una **incisión** — una línea, un corte que las
-mantiene separadas. La profundidad se decide cruce a cruce, como un diagrama de
-nudo, y toda la máquina de esa obra existe para que ese corte se vea.
+En TRZS dos hebras se encuentran y **pasan**: una por encima, otra por debajo, y el
+suelo aparece entre ellas como una **incisión** — una línea que las mantiene
+separadas. Toda la máquina de esa obra existe para que ese corte se vea.
 
-En EVOL dos cuerpos se encuentran y se **funden**. No hay encima ni debajo, no hay
-incisión, no hay diagrama de nudo. Un solo cuerpo. Y el suelo, que en TRZS pasaba
-**entre**, aquí queda **atrapado**: sobrevive solo donde la masa se cierra a su
-alrededor. Deja de ser una línea y se vuelve una isla con borde.
+En EVOL se **sueldan**. No hay encima ni debajo, no hay incisión, no hay diagrama de
+nudo: donde se cruzan, la masa se acumula y se hace una sola pieza. Y lo que queda
+encerrado entre cuatro hebras es una **celda** de suelo con borde por los cuatro
+lados. Eso es un **ojo**, y los ojos son la obra: el vacío no es lo que sobra, es lo
+que la trama está ahí para definir.
 
-Eso es un **ojo**, y los ojos son la obra. El vacío no es lo que sobra: es lo que
-la masa está ahí para definir. La misma técnica —una cinta que recorre el marco—
-con la ley del encuentro invertida da la otra mitad del asunto: si TRZS trata de
-cómo dos cosas se separan sin dejar de tocarse, EVOL trata de cómo dejan de ser
-dos.
+De ahí el subtítulo. *Hutsune* es el hueco — palabra de Chillida, de un escultor de
+Donostia que se pasó la vida diciendo que no trabajaba el hierro sino el espacio que
+el hierro deja. La continuidad con **Elena Asins** no solo sigue: se refuerza, porque
+una trama es una retícula que ha perdido la regla — el sistema sigue ahí, pero el paso
+ya no es constante y las hebras no llegan todas al otro lado.
 
-De ahí el subtítulo. *Hutsune* es el hueco, el vacío — y es palabra de Chillida,
-título suyo, de un escultor de Donostia que se pasó la vida diciendo que no
-trabajaba el hierro sino el espacio que el hierro deja. La continuidad con
-**Elena Asins** sigue donde estaba: el sistema, la serie, la regla que produce la
-forma. Chillida entra por la otra puerta, la de que el material solo está para
-poner un borde al vacío.
+## Por qué la trama, y no los estratos
+
+La primera versión de esta familia iba por **estratos**: bandas casi horizontales que
+cruzaban el pliego, unidas por puentes, y los ojos salían de **lazos** — una rama que
+sale del tronco y vuelve. Funcionaba, y estaba medida, pero se quedaba corta, y
+mirando cuatro referencias juntas se ve exactamente por qué:
+
+**Los huecos de Chillida son cuadrangulares.** Compactos, de cuatro a seis lados,
+esquinas casi rectas, proporción de habitación. Un lazo no puede dar eso: una rama que
+sale y vuelve encierra un **huso**, gordo en el centro y afilado en las puntas. Y ese
+huso se lee como dibujado, porque la forma la pone el trazo y no el encuentro.
+
+Sus huecos son cuadrangulares porque son **celdas**: lo que dejan cuatro hebras al
+cruzarse. En una de las referencias eso se ve sin interpretar nada — dos trazos de
+pincel horizontales cruzados con dos verticales, y los huecos son las cuatro celdas.
+Otra es lo mismo con la tinta mucho más gorda. La tercera es esa trama estirada y laxa,
+con los brazos viajando y adelgazando. Y la cuarta es la trama casi maciza, donde los
+huecos ya no son celdas sino **vanos** abiertos en la masa.
+
+Así que la familia se reformula sobre eso: **hebras en dos direcciones que se cruzan y
+se sueldan**. El ojo deja de dibujarse de ninguna manera — es la consecuencia
+geométrica de que cuatro hebras se encuentren. Y la cobertura sube sola, porque una
+trama pesa más que tres bandas.
 
 ## La gramática, en cinco reglas
 
-1. **ESTRATOS.** La masa no divaga por el cuadro: recorre bandas casi horizontales
-   que lo cruzan. Cada estrato **entra por un borde** — la obra es el corte de algo
-   más grande, no una figura centrada en su hoja.
-2. **CUERPO.** La anchura no es constante. Ahí es donde se separa de TRZS, donde el
-   grosor **es** el material y no cambia nunca. Aquí va por **niveles discretos** y
-   salta de uno a otro en los vértices: la masa engorda y adelgaza a escalones, no
-   en rampa. De ahí el contorno facetado, y de ahí que en una misma pieza convivan
-   el pelo y el bloque.
-3. **SOLDADURA.** Los estratos se unen por **puentes**, y un cuerpo se cierra sobre
-   sí mismo por **lazos** — una rama que sale y vuelve al tronco. Ni una cosa ni la
-   otra tapa nada: suma. Y lo que queda encerrado es el ojo. **El ojo no se dibuja,
-   se deja.**
-4. **MUÑONES.** Ramas cortas que salen y mueren a corte vivo, oblicuo. No cierran
-   nada: rompen la silueta. Un cuerpo sin muñones se lee como un tubo.
-5. **GRAVEDAD.** El peso es asimétrico y hay una **reserva**: una esquina por la que
-   no pasa nada, y por la que se lee todo lo demás. Chillida titula *Gravitaciones*
-   a una serie entera; el peso cae hacia un lado y la hoja se lee por lo que queda
-   libre.
+1. **HEBRAS.** Recorren el pliego en dos direcciones. Las **pasantes** entran y salen
+   por los bordes — la obra es el corte de algo más grande, no una figura centrada en
+   su hoja. La hebra no sabe hacia dónde va: se genera en un eje y se gira, así que las
+   dos direcciones salen de la misma gramática.
+2. **RAMALES.** Hebras que **no** cruzan: nacen sobre otra, salen casi
+   perpendiculares y mueren dentro, a corte vivo. Son lo que separa una red de una
+   retícula — sin ellas las celdas salen grandes, limpias y todas parecidas, un plano
+   de calles. Con ellas aparecen las celdas pequeñas e irregulares de los nudos, que
+   son las que se leen como ojos.
+3. **NUDOS.** Donde dos hebras se cruzan, la masa **engorda**. En la referencia el
+   encuentro no es la suma de dos anchuras: es una acumulación. En TRZS el cruce era
+   el problema entero —había que decidir quién pasa y abrir la incisión—; aquí es
+   donde la trama se hace una sola pieza.
+4. **CUERPO.** La anchura va por **niveles discretos** y salta en los vértices: la
+   masa engorda y adelgaza a escalones, no en rampa. Y hay **jerarquía**: una hebra es
+   la protagonista y va arriba del rango, las demás caen abajo. Sin eso todas pesan
+   igual y la trama vuelve a leerse como retícula.
+5. **GRAVEDAD.** Las hebras no se reparten a partes iguales: se apiñan hacia un lado y
+   lo que queda enfrente es la **reserva**. Y el reparto lleva desorden — con el paso
+   exacto sale una red de calles: un plano, no un gesto.
 
-Y una regla de método, heredada tal cual de TRZS: el tipo **declara** cuántos ojos
-y cuánta mancha quiere, y luego se **comprueba sobre el resultado**. *Declarar sin
-comprobar es lo que ya falló con las familias de TRZS.* Aquí importa más que allí,
-porque el ojo declarado y el ojo medido no son el mismo: la masa engorda y se come
-sus propios huecos. Lo que cuenta es el medido.
+Y la regla de método, heredada de TRZS: el tipo **declara** cuántos ojos y cuánta
+mancha, y luego se **comprueba sobre el resultado**. *Declarar sin comprobar es lo que
+ya falló con las familias de TRZS.* Aquí importa doble, porque el ojo declarado y el
+medido no son el mismo: la masa engorda en los nudos y se come sus propias celdas.
+Además la familia exige que la trama **trame**: sin dos cruces no hay celdas y no hay
+ojos — son dos hebras paralelas y ya.
 
 ## Los cuatro tipos
 
-| tipo         | peso | estratos | puentes | lazos | muñones | ojos medidos | mancha  |
-|--------------|------|----------|---------|-------|---------|--------------|---------|
-| `estrato`    | 22%  | 1–2      | 0       | 1–2   | 1–3     | 0–2          | 5–20%   |
-| `soldado`    | 42%  | 2–3      | 1–3     | 1–3   | 2–5     | 1–4          | 9–28%   |
-| `ramificado` | 24%  | 2–3      | 0–1     | 0–1   | 4–8     | 0–1          | 7–25%   |
-| `isla`       | 12%  | 3–4      | 2–4     | 3–6   | 3–6     | 3–12         | 21–37%  |
+Cada uno es una de las cuatro referencias, y por eso son cuatro y no tres o cinco.
 
-`soldado` es el centro de la familia. `isla` es rara a propósito: la masa asedia el
-suelo hasta que el vacío queda en minoría y figura y fondo se cambian el sitio.
+| tipo    | peso | hebras | ramales | nivel | ojos medidos | mancha  |
+|---------|------|--------|---------|-------|--------------|---------|
+| `red`   | 24%  | 2–3 × 1–2 | 2–4  | 1–4   | 1–4          | 10–24%  |
+| `trama` | 40%  | 2–3 × 1–2 | 3–6  | 2–5   | 2–8          | 20–38%  |
+| `muro`  | 18%  | 2–3 × 2–3 | 2–4  | 4–6   | 2–7          | 32–46%  |
+| `nudo`  | 18%  | 2 × 1     | 3–5  | 3–6   | 1–3          | 16–32%  |
+
+`red` es la trama laxa y estirada: hebras finas, celdas grandes, mucho aire. `trama` es
+el centro. `muro` va casi maciza y ahí los ojos dejan de ser celdas y se leen como
+**vanos**. `nudo` tiene pocas hebras y muy gordas: la masa se apelotona y el pliego
+respira alrededor.
 
 ## Lo que se hereda y lo que se abandona
 
@@ -261,19 +285,28 @@ Dos tintas —un estrato entero en otro color— existen y son el 4% de las piez
 
 ## Medido
 
-500 tiradas en cuadrado, sobre las 15 paletas activas:
+Sobre las paletas activas, en cuadrado:
 
 ```
-tipo        soldado 42%  ramificado 24%  estrato 22%  isla 12%
-ojos        media 2,1 · p50 2 · p90 4 · max 11
-            0:16% 1:31% 2:21% 3:13% 4:10% 5-7:8% 8+:2%
-mancha      p10 14,4%  p50 22,1%  p90 28,6%  max 36,8%
-modulación  2:6% 3:8% 4:12% 5:33% 6:42%   (niveles recorridos por la pieza)
-falta = 0   98,2% de las piezas cumplen lo que su tipo declara (max 0,45)
-papel       crudo 25%  ·  invertida 12%  ·  dos tintas 4%
-overall     common 39%  uncommon 40%  rare 10%  superrare 6%  legendary 5%
-ms          ~50 por pieza a 760 px, incluido el grano
+tipo        trama 41%  red 23%  nudo 19%  muro 17%
+ojos        media 2,9 · p50 3 · p90 5 · max 8
+            1:17% 2:27% 3:27% 4:19% 5-6:8% 7+:2%
+ciegas      0,0%  ← ninguna pieza deja de cerrar algo
+cruces      media 14 · p10 10 · p90 19
+mancha      p10 20,3%  p50 33,0%  p90 45,6%
+falta = 0   95,3% de las piezas cumplen lo que su tipo declara (max 0,26)
+overall     uncommon 48%  common 35%  rare 15%  superrare 2%
 ```
+
+**Cero piezas ciegas** es el dato que justifica la reformulación entera. Con estratos y
+lazos, el 16% de las piezas no encerraba nada: el ojo era un accidente que salía o no
+salía. Con hebras que se cruzan es una consecuencia geométrica — si hay trama, hay
+celdas. Y por eso lo raro se ha dado la vuelta: ya no es tener pocos ojos, es tener
+muchos.
+
+La mancha sube del 22% al 33% de mediana, y no es un efecto secundario: una trama pesa
+más que tres bandas, y las referencias son gordas. Los cortes de los traits están
+recalibrados contra esta distribución, no contra la anterior.
 
 Las piezas que no cumplen (1,8%) se quedan: con seeds difíciles no hay ningún
 candidato bueno, y entonces manda **el que menos incumple** — no el primero. Por eso

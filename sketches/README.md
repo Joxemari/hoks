@@ -83,9 +83,15 @@ vacío. Lo que sí hereda entero es el método: el tipo declara cuántos ojos qu
 luego **se comprueban** sobre el dibujo, por campo de distancias e inundación desde
 el borde — el mismo mapa de vacíos con el que TRZS coloca sus discos.
 
-Activa en `works.json`. Ver `evol/README.md` para el concepto, las trece pasadas
-que costó, el filo —el canto vivo, que no toca la anatomía— y las decisiones que
-quedan abiertas (el nombre, entre ellas).
+Activa en `works.json`. Reformulada desde los estratos a **la trama**: hebras en dos
+direcciones que se cruzan y se sueldan, y el ojo es la celda que dejan al cruzarse
+—cuadrangular, como los de la referencia, y no el huso que daba un lazo—. Ver
+`evol/README.md` para el concepto, el filo (el canto vivo, que no toca la anatomía) y
+las decisiones que quedan abiertas.
+
+`chlld/` es la tercera propuesta viva, y todavía solo un **prototipo**: partición del
+plano por fronteras compartidas, sin tipos ni traits. Ahí no se traza nada — el pliego
+se parte, y la masa se decide bajando por el árbol de la partición. Ver su README.
 
 ECLPS es también la primera familia que existe en **un solo formato**: `double`, dos
 pliegos apaisados uno al lado del otro (2√2:1). No es capricho ni límite técnico
