@@ -56,9 +56,13 @@ window.medir = (seed, pals, extra, capa) => {
       l = Math.max(l, (W/2)/sen*c.cfg.caboMargen); }
     return l; };
   const saltos = (c.saltos || []).map(k => [acum[k], acum[k+1]]);
-  const salto = saltos.length ? saltos[0] : null;   // compat: el primero
+  // TODOS los saltos, no el primero. Con tres cintas hay dos, y quedarse con
+  // uno deja el segundo par de cabos leido como junta: el tramo se alarga con
+  // su cabo, la mascara pide incision donde no hay cinta dibujada y el cruce
+  // sale "sin corte". Uno de 363 cruces en el tipo `tres` — el algoritmo hace
+  // rato que trabaja con la lista entera (`esFinal`), y esto se quedo atras.
   const esFin = d => d <= 1e-6 || d >= total-1e-6 ||
-    (salto && (Math.abs(d-salto[0])<1e-6 || Math.abs(d-salto[1])<1e-6));
+    saltos.some(s => Math.abs(d-s[0])<1e-6 || Math.abs(d-s[1])<1e-6);
   const tramoDe = i => { const [a,b] = secs[i];
     const aJ = a>0 && esJunta(a), bJ = b<total && esJunta(b);
     const aF = esFin(a), bF = esFin(b);

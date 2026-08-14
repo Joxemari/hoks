@@ -972,9 +972,19 @@
     return l[floor((l.length - 1) * q)];
   }
 
+  // EL SALTO NO ES UN TRAMO, TAMPOCO AQUÍ.
+  // De esta mediana sale la anchura de la cinta, y el salto es un brinco de una
+  // cinta a otra: suele medir media obra. Metiéndolo en la lista, con tres
+  // cintas hay dos brincos entre unos veinte tramos y la mediana se va arriba,
+  // así que la cinta sale más ancha de lo que su propio recorrido admite y
+  // todos los tramos quedan cortos EN ANCHURAS. Medido: 63 de 200 obras de tres
+  // cintas descartadas por tramo mínimo, y ninguna con una sola cinta.
   function medianSeg(nodes) {
     const l = [];
-    for (let i = 0; i < nodes.length - 1; i++) l.push(PV.dist(nodes[i].p, nodes[i+1].p));
+    for (let i = 0; i < nodes.length - 1; i++) {
+      if (esSalto(i)) continue;
+      l.push(PV.dist(nodes[i].p, nodes[i+1].p));
+    }
     if (!l.length) return 0.2;
     l.sort((a, b) => a - b);
     return l[floor(l.length / 2)];
@@ -990,6 +1000,18 @@
   function enforceMaterial(nodes, width, cfg) {
     const minSeg = cfg.minSegRatio * width;
     const minTurn = radians(cfg.minTurnDeg);
+    // QUITAR UN NODO MUEVE LOS SALTOS.
+    // `_saltos` son ÍNDICES en esta misma lista, y esta es la única función que
+    // la acorta. Sin recolocarlos, a partir del primer borrado `esSalto` protege
+    // un segmento que no es el salto y deja sin tocar uno que sí es un tramo: el
+    // tejido sale con tramos más cortos que el material y la obra se descarta.
+    // Medido: con tres cintas, 65 de 200 obras fallaban el mínimo de tramo y con
+    // una cinta ninguna. El índice guarda el ÚLTIMO NODO de la cinta anterior,
+    // así que baja uno por cada nodo quitado en su posición o antes.
+    const quita = (j) => {
+      nodes.splice(j, 1);
+      _saltos = _saltos.map(s => j <= s ? s - 1 : s);
+    };
 
     let changed = true, guard = 0;
     while (changed && guard++ < 30) {
@@ -999,7 +1021,7 @@
         if (esSalto(i)) continue;              // el salto no es un tramo
         if (PV.dist(nodes[i].p, nodes[i+1].p) < minSeg) {
           const drop = !nodes[i+1].anchor ? i+1 : (!nodes[i].anchor ? i : -1);
-          if (drop >= 0) { nodes.splice(drop, 1); changed = true; break; }
+          if (drop >= 0) { quita(drop); changed = true; break; }
         }
       }
       if (changed) continue;
@@ -1010,7 +1032,7 @@
         const a = PV.sub(nodes[i-1].p, nodes[i].p);
         const b = PV.sub(nodes[i+1].p, nodes[i].p);
         if (!a.magSq() || !b.magSq()) continue;
-        if (abs(a.angleBetween(b)) < minTurn) { nodes.splice(i, 1); changed = true; break; }
+        if (abs(a.angleBetween(b)) < minTurn) { quita(i); changed = true; break; }
       }
     }
     return nodes;
