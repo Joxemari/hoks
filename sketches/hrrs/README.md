@@ -364,6 +364,133 @@ Sobre las doce configuraciones juntas `falta = 0` en **993 de 996**: con seeds
 difíciles ningún candidato cumple lo que su tipo declara y manda el que menos
 incumple (máximo 0,26). Por eso `falta` es un número y no un sí/no.
 
+---
+
+# Segunda vuelta: seis referencias, y un error de modelo
+
+Con la familia ya construida y medida, aparecieron **seis referencias más** y el
+veredicto fue: *no se parece en nada*. Tenía razón, y no era cosa de afinar
+números. Era el modelo.
+
+## El diagnóstico, en una frase
+
+**Mis hebras son independientes. Las suyas son UNA que se parte.**
+
+Lo que construí genera N cintas que se esquivan y a las que se premia por caer
+cerca; el acompañamiento sale de un peso, así que es **incidental**. Lo que hay en
+las referencias es un **cuerpo conectado que se bifurca**: dos tramos van juntos
+porque *eran el mismo tramo*, y por eso van juntos todo el rato y a la distancia
+exacta. De ahí el «confeti» que se ve en mi grid — muchas hebras sueltas que no
+acompañan a nada — y de ahí que las suyas se lean como un organismo.
+
+## Las seis, una a una
+
+1. **La original, firmada** (papel crudo, deckle). Una banda entra por el borde
+   izquierdo y forma el **techo de un recinto grande**; dentro del recinto hay dos
+   **muñones** cortos, uno diagonal. Por la esquina derecha el cuerpo **se abre en
+   tres o cuatro tramos paralelos** con dos o tres canales de un pelo entre ellos,
+   que bajan y se convierten en **patas** con el cabo a escuadra. Deriva diagonal:
+   denso arriba-izquierda, se deshilacha abajo-derecha.
+2. **La gris, misma gramática.** Recinto a la izquierda, una entrada que sangra por
+   el borde, y a la derecha el haz paralelo que baja en **tres patas** claras, cada
+   una con sus quiebros. Dos muñones cortos apuntando arriba.
+3. **La enmarcada, fondo texturado.** *Sin recinto.* Siete tramos casi
+   horizontales que **converge­n hacia la derecha y se abren en abanico a la
+   izquierda**. Los canales sólo aparecen donde dos tramos se emparejan, cerca de
+   la convergencia. Cabos libres a los dos lados. Y **trazo curvo, no quebrado**.
+4. **La de trazo grueso y blando.** Como la 3 pero más rotunda: seis tramos que se
+   **reúnen en un nudo** a la derecha, con canales de un pelo donde se aparean. Dos
+   tramos **sangran** por arriba y por abajo. Curva otra vez.
+5. **El cartel de Múnich 72.** Geométrica: dos bandas **atraviesan el cuadro de
+   lado a lado** (arriba y abajo, sangrando por los dos bordes) y en el centro un
+   **cruce** donde cuatro o cinco se juntan y corren en paralelo con sus canales.
+   Ángulos casi rectos y tramos largos.
+6. **La última, casi cuadrada.** Un **recinto rectangular** arriba y, colgando de
+   él, un **haz denso de tramos paralelos que se engranan** —dos peines que se
+   meten uno en otro— y bajan en patas. Todo dentro del cuadro, con margen
+   generoso.
+
+## La ley que las une, y es una sola
+
+> **El canal y el ojo son lo mismo a dos escalas.**
+
+Una bifurcación cuyos dos hijos **vuelven a juntarse enseguida** deja un canal de
+un pelo. Una bifurcación cuyos dos hijos **se vuelven a juntar muy lejos** deja un
+**recinto**. Es la misma operación —el material se abre— leída a dos distancias.
+
+Y el canal aparece **siempre que dos tramos de material van juntos**, sea porque
+uno se partió (referencias 1, 3, 4, 6) o porque dos se encontraron (la 5). Las dos
+cosas son el mismo corte; lo que cambia es la topología: **horquilla** o **cruce**.
+
+Eso convierte la regla 3 de restricción en consecuencia: no hay que *impedir* que
+se toquen, porque el material **nace ya partido** y el corte es lo que lo separa.
+La regla negativa («no se tocan nunca») describe el resultado; la regla positiva
+que lo produce es **«el material se abre y el corte queda»**. Es, literalmente, la
+doctrina del vacío de Chillida puesta en un algoritmo — y es la misma lectura que
+`ptzd/README.md` ya tenía escrita para la grieta: *el corte mete espacio, no quita
+materia*.
+
+## La categorización, en seis ejes
+
+Lo que pedías: poder contemplarlas todas. Ninguna referencia es un «tipo»; cada
+una es una **combinación** de valores en estos ejes. Eso es lo que hay que poder
+tirar.
+
+| eje | valores | dónde se ve |
+|---|---|---|
+| **topología** | `horquilla` (uno se parte) · `cruce` (dos se encuentran) · `suelta` (se va y muere) | 1,3,4,6 · 5 · todas |
+| **reencuentro** | `canal` (se junta enseguida) · `recinto` (se junta lejos) · `nunca` (no se junta) | todas · 1,2,6 · 3,4 |
+| **marco** | `contenido` (con margen) · `sangrado` (algún cabo cruza) · `travesía` (de lado a lado) | 3,6 · 1,2,4 · 5 |
+| **cabos** | `patas` (varios, paralelos, mismo sentido) · `abanico` (abiertos) · `a ras` (mueren junto a otro) | 1,2,6 · 3,4 · 1,5 |
+| **trazo** | `quebrado` (ángulo vivo, quiebros) · `ortogonal` (rectos largos) · `liso` (curva suave) | 1,2,6 · 5 · **3,4** |
+| **haz** | `par` (2 juntos) · `terna` (3) · `peine` (4+ engranados) | todas · 1,2 · 6 |
+
+Dos avisos sobre esa tabla:
+
+- **`liso` contradice la observación 5 de arriba** («ni una curva»). Las referencias
+  3 y 4 son curvas sin discusión. Tu README ya lo había anticipado y despachado
+  —*«una versión curva sería otra obra; probablemente ni ofrecerla»*—, y sigo
+  pensando que tienes razón: mezclarla diluye la familia. Queda en la tabla porque
+  **existe en la fuente**, no porque proponga meterla.
+- **`travesía` tampoco cabe hoy**: el margen en los cuatro lados (regla del campo)
+  la prohíbe por construcción. Es la decisión que habría que reabrir si la 5 entra.
+
+## Lo que esto rompe de lo que hay hecho
+
+Honestamente, y por orden de gravedad:
+
+1. **La estructura de datos.** Hoy `cintas` es una lista de poligonales
+   independientes. Hace falta un **árbol**: cada tramo con su padre, y los
+   hermanos de una bifurcación corriendo a `W + g` por construcción. Eso es
+   rehacer `andar` y `tramar`, no ajustarlos.
+2. **`arranqueAlLado` se cae entero.** Nacer «al lado de» era la manera de fingir
+   una bifurcación sin tenerla. Con horquillas de verdad, sobra.
+3. **La franja del acompañamiento (`CERCA`, `PESO_CERCA`) también sobra**, y con
+   ella el peso que la sostiene. La adyacencia deja de ser un premio y pasa a ser
+   estructural. Sospecho que ahí se va la mitad del `andar` actual.
+4. **Los tipos hay que rehacerlos** sobre los seis ejes, no sobre «cuántas cintas».
+5. **La medida del ojo aguanta** —«el suelo donde la cinta ya no cabe» sigue
+   valiendo, y además ahora *explica* el recinto— y **el pliegue declarado
+   aguanta** como caso particular de horquilla con reencuentro inmediato.
+6. **La batería aguanta casi entera.** `canal.js`, `toque.js` y `det.js` miden el
+   resultado, no el método, así que sirven igual. `obra.js` necesitaría medir la
+   topología nueva (bifurcaciones, reencuentros, profundidad del árbol).
+
+Lo que **no** cambia es la garantía: el bisel sigue siendo lo que hace suficiente
+la distancia mínima, y el canal sigue midiendo `W/5`.
+
+## Lo que propongo, y lo que no voy a decidir solo
+
+El siguiente paso es una **tercera pasada** que cambie el modelo: un cuerpo que se
+bifurca, con reencuentro a dos escalas, y los seis ejes como parámetros del
+laboratorio para poder mirarlos todos en el grid. Es rehacer `algo.js`, no
+parchearlo — unas 400 líneas de las 700 actuales.
+
+Y dos cosas que son tuyas:
+
+- **Si la curva entra.** Yo diría que no, por lo que ya dejaste escrito.
+- **Si la travesía entra**, porque obliga a reabrir el margen en los cuatro lados.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
