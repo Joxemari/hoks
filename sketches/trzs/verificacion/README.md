@@ -93,7 +93,10 @@ medir — sin avisar, porque un detector que se equivoca sigue dando un número.
 7. **La Y de dos incisiones.** Donde dos cruces se encuentran, el detector camina
    por el borde de uno y entra en la cuña donde manda el otro. Ahí la tinta es
    cinta. Queda como falso positivo conocido: 3,5 px en 1 cruce de 2.597,
-   inspeccionado a 11 aumentos y sin nada visible.
+   inspeccionado a 11 aumentos y sin nada visible. La punta del anillo de la
+   máscara es de la misma familia: donde el anillo se acaba caben cuatro píxeles
+   y decide el antialias, así que un cruce con todos sus tramos al 100 % de
+   fondo puede dar 0,50 de media.
 
 8. **La tinta propia leída como ajena.** El sondeo de remates busca tinta más
    allá del cabo, y desde que el remate va en inglete o redondo la primera tinta
@@ -139,33 +142,43 @@ apaisado, y dos cintas en apaisado.
 
 ## El estado hoy, con la batería larga
 
-La costura ya no está abierta: era el filo del cabo —halo y cuerpo acababan en
-el mismo arco, a ras— y se cierra haciendo que el cuerpo pase del halo. Con eso
-el bloque tiene por fin un control, que es el código publicado con `sobra = 0`.
+Batería completa (`./mil.sh`) sobre el algoritmo publicado, 1.000 obras por
+bloque repartidas entre doce configuraciones: por defecto, los cinco tipos,
+esquina curva, remate en inglete, temblor a 0,20 y a 0,35 con curva, apaisado, y
+tres cintas en apaisado.
 
-| bloque | resultado (1.000 obras por bloque) | su control |
+| bloque | resultado | su control |
 |---|---|---|
-| huecos en la incisión | 2.000 obras · **0** con 3 px o más | 332 de 332, hasta 72 px |
-| la incisión por máscara | 0 sin corte · **3 a medias de 2.653 cruces** | 158/158 y 157/158 |
-| costuras | **0 de 125 obras** en las ocho · 26–107 px | 97/125 · 5.967 px |
-| remates soldados | **4 de 250** por defecto, 7 de 250 en trama | 1/30 (flojo) |
+| huecos en la incisión | 2.000 obras · **0** con 3 px o más | 349 de 349, hasta 79 px |
+| la incisión por máscara | 0 sin corte · **2 a medias de 2.666 cruces** | 171/172 y 152/172 |
+| costuras | **0 de 85** en diez de doce · 10–100 px | 94–108 de 125 · 5.775–7.061 px |
+| remates soldados | **0 de 1.000** | 4 de 60 (`cara`) |
+| tinta pegada al borde | **0 de 1.000** | 48 de 60 |
+| discos que invaden la cinta | **0 de 1.000** | 40 de 60 |
+| cuerpos solapados sin cruce | **0 de 1.000** · mínimo 1,45 anchuras | — |
+| determinismo | idéntico en las cuatro condiciones | — |
 
-**Lo que sigue abierto, y los dos son PREVIOS al arreglo de la costura** —el
-mismo código con `sobra = 0` da los mismos números y los mismos seeds:
+**Lo que queda, y es lo que hay:**
 
-1. **Remates soldados**, ~2 % de las obras: un extremo de cinta pegado a otra
-   hebra sin fondo entre medias.
-2. **Incisiones a medias**, 3 de 2.653 cruces, sólo en apaisado.
+1. **Dos incisiones "a medias" de 2.666 cruces**, las dos en apaisado. Miradas a
+   cinco aumentos las dos están limpias, y una de ellas tiene *todos* sus tramos
+   al 100 % de fondo: su 0,50 sale de las puntas del anillo, donde caben cuatro
+   píxeles y decide el antialias. Es de la familia de la trampa 7.
+2. **Dos obras de 85 con costura con temblor a 0,20**, 482 px en total. Con el
+   temblor la cinta se dibuja como polígono y sus aristas no coinciden píxel a
+   píxel con las del halo.
 
-Ninguno de los dos salía en la graduación, y no porque el código fuera otro:
-porque se medían 50 obras por configuración. A un 2 %, cero de cincuenta es lo
-más probable que puede pasar. **La muestra era el defecto.**
+Se probó decidir el bloque de la máscara por el PEOR tramo en vez de por el
+agregado —que es lo que pedía su propio comentario— y dispara donde no hay nada:
+3,2 % "a medias" y 1,2 % "sin corte" en configuraciones donde `hueco.js`, que no
+tiene umbrales, da cero sobre 2.000 obras. El agregado se queda como criterio y
+el peor tramo se imprime al lado, que para mirar es mejor pista.
 
-**Y un control flojo, el mismo de siempre:** el de remates dispara en 1 de 30.
-Abre la puerta y quita los reintentos, pero la selección puede seguir
-prefiriendo un tejido con los remates holgados. Un cero de remates está peor
-respaldado que los demás — y ahora que sabemos que hay remates soldados de
-verdad, eso importa más.
+**Y un aviso sobre los controles:** el de remates (`cara`) dispara 4 de 60 con
+dos cintas y 0 de 60 con una. La cara del cabo ya lleva incisión, así que para
+verlo fallar hace falta además que el cabo caiga contra otra hebra, y con una
+sola cinta eso casi no pasa. El cero de una cinta está respaldado por el de dos,
+no por sí mismo.
 
 ## Lo que se midió con esto
 
