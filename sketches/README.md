@@ -57,6 +57,8 @@ sketches/
   eclps/             ← publicada: la fila, con su pliego doble
   evol/             ← EN PRUEBAS: la ley del encuentro invertida. Ver su README
   ptzd/             ← SOLO CONCEPTO: el bloque partido. Aún no hay algo.js.
+  hrrs/             ← SOLO CONCEPTO: la ley del encuentro esquivada — la cinta
+                      no se cruza, se pone al lado. Sin algo.js todavía.
                       Ver su README
   trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
     verificacion/   ← los detectores del halo y sus controles rotos a propósito.

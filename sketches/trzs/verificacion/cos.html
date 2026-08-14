@@ -42,7 +42,22 @@ window.costuras = (seed, pals, extra) => {
     if (esTinta(idx(x+3,y))) n++;
     if (esTinta(idx(x,y-3))) n++;
     if (esTinta(idx(x,y+3))) n++;
-    if (n >= 4) { mez++; todos.push([x,y]); if (pts.length < 5) pts.push([x,y]); }
+    if (n < 4) continue;
+    // Y NADA DE FONDO CERCA. Una costura es una raya mezclada METIDA EN LA
+    // TINTA; el filo de una incisión también está mezclado, y en la PUNTA de
+    // una incisión —una cuña que se cierra— la cuña es más estrecha que el
+    // sondeo, así que los cuatro brazos caen en tinta y el filo pasaba por
+    // costura. Con el temblor esas puntas se agudizan y salían 2 obras de 85
+    // con 30 px cada una, con la incisión perfectamente dibujada al lado.
+    // Una costura de verdad no tiene fondo a tres píxeles por ningún lado.
+    let fondoCerca = false;
+    for (let dx=-3; dx<=3 && !fondoCerca; dx++)
+      for (let dy=-3; dy<=3; dy++) {
+        if (!dx && !dy) continue;
+        if (esFondo(idx(x+dx,y+dy))) { fondoCerca = true; break; }
+      }
+    if (fondoCerca) continue;
+    { mez++; todos.push([x,y]); if (pts.length < 5) pts.push([x,y]); }
   }
   // ¿Dónde caen? Distancia de cada píxel de costura a la junta más cercana y
   // al cruce más cercano. Si el mecanismo es la junta, saldrá pegado a ellas.
