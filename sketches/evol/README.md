@@ -62,11 +62,20 @@ trama pesa más que tres bandas.
    por los bordes — la obra es el corte de algo más grande, no una figura centrada en
    su hoja. La hebra no sabe hacia dónde va: se genera en un eje y se gira, así que las
    dos direcciones salen de la misma gramática.
-2. **RAMALES.** Hebras que **no** cruzan: nacen sobre otra, salen casi
+2. **RAMALES, Y SU RAMAJE.** Hebras que **no** cruzan: nacen sobre otra, salen casi
    perpendiculares y mueren dentro, a corte vivo. Son lo que separa una red de una
-   retícula — sin ellas las celdas salen grandes, limpias y todas parecidas, un plano
-   de calles. Con ellas aparecen las celdas pequeñas e irregulares de los nudos, que
-   son las que se leen como ojos.
+   retícula — sin ellas las celdas salen grandes, limpias y todas parecidas, un plano de
+   calles.
+
+   Y un ramal es una hebra de pleno derecho, así que tiene **sus** ramales. Ahí está la
+   diferencia entre una rejilla de seis elementos y lo que hacen las referencias: con
+   hebras y ramales de un solo orden, todas las piezas salían del mismo tamaño de suceso
+   y las celdas todas parecidas. Miradas de cerca, las referencias tienen un tronco muy
+   gordo, ramas medianas, ramitas finas y celdas de todos los tamaños a la vez. Eso no
+   se consigue metiendo más trazos del mismo tamaño —eso es ruido—: se consigue metiendo
+   **escalas**. Cada generación es menos de la mitad de larga que la anterior y baja de
+   nivel, así que lo que se añade siempre es menor que lo que ya hay, y se lee como
+   detalle de la masa en vez de como otra masa peleando por el sitio.
 3. **NUDOS.** Donde dos hebras se cruzan, la masa **engorda**. En la referencia el
    encuentro no es la suma de dos anchuras: es una acumulación. En TRZS el cruce era
    el problema entero —había que decidir quién pasa y abrir la incisión—; aquí es
@@ -361,14 +370,16 @@ ojos        media 2,9 · p50 3 · p90 5 · max 8
 ciegas      0,0%  ← ninguna pieza deja de cerrar algo
 cruces      media 14 · p10 10 · p90 19
 mancha      p10 20,3%  p50 33,0%  p90 45,6%
-ojos        media 4,2 · p50 3 · p90 10   (la cola larga es de las piezas tejidas)
+ramales     media 9,1 · p90 15     cruces media 29 · p90 43
+ojos        media 4,1 · p50 3 · p90 10   (la cola larga es de las piezas tejidas)
 ciegas      0,0%
 area de ojo p50 8,7% del pliego · p90 21,0%
 mancha      p50 31%  p90 41%
             muro p50 42%  ·  nudo 33%  ·  trama 31%  ·  red 22%
-falta = 0   92% de las piezas cumplen lo que su tipo declara (max 0,33)
+falta = 0   90% de las piezas cumplen lo que su tipo declara (max 0,42)
 tejidas     24% de las piezas
-overall     uncommon 50%  common 39%  rare 11%
+overall     uncommon 51%  common 35%  rare 14%
+ms          ~200 por pieza a 700 px
 ```
 
 El **área de ojo** es el dato que faltaba: casi el 9% del pliego es vacío con borde por

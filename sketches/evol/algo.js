@@ -216,7 +216,10 @@
   // Declaran cuántos estratos, cuántos puentes y cuánta mancha, y luego se
   // comprueba. Es el mecanismo de TRZS, y está aquí por lo mismo: una etiqueta
   // puesta antes de dibujar que no corresponde a nada visible no es un rasgo.
-  //   ojos    — ojos MEDIDOS que se aceptan
+  //   ojos    — ojos MEDIDOS que se aceptan. Los techos suben con el ramaje
+  //             recursivo: más generaciones son más celdas, y el techo tiene que
+  //             acompañar o el bucle acaba eligiendo por un criterio que no se puede
+  //             cumplir — el mismo cuidado que hubo que tener con las piezas tejidas.
   //   mancha  — fracción de tinta que se acepta
   // Los muñones bajan a la mitad de lo que eran: cuando cada rama pesa como el
   // tronco, doce ramas no son un cuerpo ramificado, son maleza.
@@ -230,14 +233,14 @@
   //   muro   — casi maciza, y los ojos quedan como VANOS abiertos en la masa.
   //   nudo   — pocas hebras, muy gordas y concentradas: la masa se apelotona.
   const TIPOS = {
-    red:    { prob: 0.24, hebras: [[2, 3], [1, 2]], nivel: [1, 4], ramales: [2, 4], munones: [2, 4],
-              ojos: [1, 4],  mancha: [0.14, 0.29] },
-    trama:  { prob: 0.40, hebras: [[2, 3], [1, 2]], nivel: [2, 5], ramales: [3, 6], munones: [2, 4],
-              ojos: [2, 8],  mancha: [0.22, 0.40] },
-    muro:   { prob: 0.18, hebras: [[2, 3], [2, 3]], nivel: [4, 5], ramales: [2, 4], munones: [1, 3],
-              ojos: [2, 7],  mancha: [0.32, 0.43] },
-    nudo:   { prob: 0.18, hebras: [[2, 2], [1, 1]], nivel: [3, 6], ramales: [3, 5], munones: [3, 5],
-              ojos: [1, 3],  mancha: [0.18, 0.35] },
+    red:    { prob: 0.24, hebras: [[2, 3], [1, 2]], nivel: [1, 4], ramales: [2, 3], munones: [1, 3],
+              ojos: [1, 6],  mancha: [0.14, 0.29] },
+    trama:  { prob: 0.40, hebras: [[2, 3], [1, 2]], nivel: [2, 5], ramales: [3, 4], munones: [1, 3],
+              ojos: [2, 10], mancha: [0.22, 0.40] },
+    muro:   { prob: 0.18, hebras: [[2, 3], [2, 3]], nivel: [4, 5], ramales: [2, 3], munones: [1, 2],
+              ojos: [2, 9],  mancha: [0.32, 0.43] },
+    nudo:   { prob: 0.18, hebras: [[2, 2], [1, 1]], nivel: [3, 6], ramales: [3, 4], munones: [2, 3],
+              ojos: [1, 5],  mancha: [0.18, 0.35] },
   };
 ;
   const TIPO_NAMES = Object.keys(TIPOS);
@@ -538,6 +541,15 @@
   const P_SOBRE = 0.46;
   const PISO_FOCO = 1;       // por debajo de este nivel el foco no adelgaza más
   const PISO_PROT = 3;       // y la hebra protagonista aguanta bastante más
+  const RAM_PROF = 2;        // generaciones de ramaje por debajo del ramal raíz
+  // Con [1,2] hijos y encogimiento 0,58 el ramaje EXPLOTABA: cada generación seguía
+  // midiendo más de la mitad que la anterior, todos los hijos salían de una madre corta
+  // y el resultado era una maraña apelotonada en un punto con el resto del pliego
+  // vacío — un arbusto, no una trama. Con [0,2] hay ramas que no descienden, y con 0,45
+  // cada generación es de verdad menor: se lee como detalle de la masa, que era el
+  // objetivo, y no como otra masa peleando por el sitio.
+  const RAM_HIJOS = [0, 2];  // ramales que saca cada uno — el 0 es importante
+  const RAM_ESC = 0.45;      // cuánto encoge el largo en cada generación
   // Y el acoplamiento: una masa LEVE invertida no es un negativo, es un arañazo.
   // Medido sobre 500 tiradas —la mancha va de 14,4% (p10) a 28,6% (p90)— por debajo
   // del 18% la tinta clara sobre suelo oscuro se lee como una raya en una plancha,
@@ -977,7 +989,7 @@
   //
   // Y puede cruzar otras hebras por el camino: entonces suelda y encierra celdas
   // nuevas. Un ramal es tan hebra como las demás, solo que más corto.
-  function ramal(rng, madre, S, niveles, lo, hi, W, H, foco) {
+  function ramal(rng, madre, S, niveles, lo, hi, W, H, foco, escala) {
     if (madre.length < 3) return null;
     let i = rng.int(1, madre.length - 2);
     if (foco) {
@@ -999,7 +1011,7 @@
                                 : (rng.bool(0.5) ? 1 : -1) * rng.range(0.60, 1.15);
     let ang = Math.atan2(dy / m, dx / m) + lado * (Math.PI / 2) + abre;
     const nv = rng.int(4, 8);
-    const largo = min(W, H) * rng.range(0.22, 0.62);
+    const largo = min(W, H) * rng.range(0.22, 0.62) * (escala || 1);
     const lv = grosores(rng, nv + 1, lo, hi);
     const out = [{ x: a.x, y: a.y, hw: a.hw, lv: a.lv, sesgo: 0, corte: 0 }];
     let x = a.x, y = a.y;
@@ -1022,6 +1034,31 @@
     }
     u.corte = corteDe(rng, u.hw, niveles[NIVELES - 1] / 2);
     return out;
+  }
+
+  // EL RAMAJE. Un ramal es una hebra de pleno derecho, así que puede tener SUS
+  // ramales — y ahí está la diferencia entre una rejilla de seis elementos y lo que
+  // hacen las referencias.
+  //
+  // Con hebras y ramales de un solo orden, todas las piezas salían del mismo tamaño de
+  // suceso: unas pocas líneas gordas cruzándose, y las celdas todas parecidas. Miradas
+  // de cerca, las referencias tienen un tronco muy gordo, ramas medianas, ramitas finas
+  // y celdas de todos los tamaños a la vez. Eso no se consigue metiendo más trazos del
+  // mismo tamaño —eso es ruido—: se consigue metiendo ESCALAS.
+  //
+  // Cada generación es más corta (×RAM_ESC) y baja de nivel, así que la densidad crece
+  // sin que la pieza se emborrone: lo que se añade es siempre menor que lo que ya hay,
+  // y por eso se lee como detalle de la masa y no como otra masa.
+  function ramaje(rng, madre, S, niveles, lo, hi, W, H, foco, prof, out) {
+    const r = ramal(rng, madre, S, niveles, lo, hi, W, H, prof === 0 ? foco : null,
+                    Math.pow(RAM_ESC, prof));
+    if (!r) return;
+    out.push(r);
+    if (prof >= RAM_PROF) return;
+    const n = rng.int(RAM_HIJOS[0], RAM_HIJOS[1]);
+    for (let i = 0; i < n; i++) {
+      ramaje(rng, r, S, niveles, max(0, lo - 1), max(1, hi - 1), W, H, foco, prof + 1, out);
+    }
   }
 
   function tramar(rng, W, H, tipo, params, ajenos) {
@@ -1140,12 +1177,15 @@
     const nR = params.ramales != null ? params.ramales : rng.int(t.ramales[0], t.ramales[1]);
     const rs = [];
     for (let n = 0; n < nR; n++) {
-      const pool = hs.concat(vs, rs);
+      const pool = hs.concat(vs);
       const md = pool[rng.int(0, pool.length - 1)];
       const w = ventana(rng.int(0, total - 1));
-      const r = ramal(rng, md, S, niveles, w[0], w[1], W, H, foco);
-      if (r) { rs.push(r); cuerpos.push(r); }
+      // Solo la mitad de los ramales raíz busca el foco. Llevándolos todos, el ramaje
+      // entero nacía en la zona apretada y la pieza se partía en dos: una maraña y un
+      // desierto. El foco tiene que espesar, no monopolizar.
+      ramaje(rng, md, S, niveles, w[0], w[1], W, H, rng.bool(0.5) ? foco : null, 0, rs);
     }
+    for (const r of rs) cuerpos.push(r);
 
     // LOS NUDOS. Cada cruce engorda las dos hebras que lo forman.
     let nCruces = 0;
