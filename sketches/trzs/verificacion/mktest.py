@@ -23,24 +23,26 @@ if roto == 'orden':
     assert a in src
     src = src.replace(a, "    const orden = comp.plano.orden.slice().reverse();   // ROTO A PROPOSITO")
 elif roto == 'mitad':
-    # Se ancla al trazo del CUERPO por patrón, no al texto exacto: la expresión
-    # del color ha cambiado ya dos veces (tinta2 -> tintaDe(cinta)) y cada vez
-    # rompía el banco entero por una palabra.
-    # Ni la anchura ni el color son ya texto fijo: la anchura puede ser una
-    # función (el temblor la hace variar) y el color depende de la cinta. Se
-    # capturan los dos, porque anclarse al texto exacto ha roto el banco entero
-    # dos veces por cambiar una palabra.
-    m2 = re.search(r'^      trazarTramo\(ctx, mapped, acum, iniC, finC, (?P<w>.+), (?P<paint>[^,]+), cfg\);\n    \}\n',
+    # Se ancla a UNA LÍNEA, la del trazo del cuerpo, y a nada de su alrededor.
+    # Ha roto tres veces por pedir contexto: primero el color cambió, luego la
+    # anchura pasó a poder ser función, y luego apareció el remate entre el
+    # trazo y la llave de cierre. La línea es única en el fichero; lo que la
+    # rodea no es asunto del control.
+    m2 = re.search(r'^( *)trazarTramo\(ctx, mapped, acum, iniC, finC, (?P<w>.+), (?P<paint>[^,]+), cfg\);$',
                    src, re.M)
     assert m2, 'no encuentro el trazo del cuerpo en renderComposition'
-    a, ancho, color = m2.group(0), m2.group('w'), m2.group('paint')
-    src = src.replace(a, """      trazarTramo(ctx, mapped, acum, iniC, finC, %s, %s, cfg);
-      _rotoRep.push([iniC, finC, %s, %s]);   // ROTO A PROPOSITO
-    }
-    for (const [i0, f0, w0, t0] of _rotoRep)
+    linea, sangria, ancho, color = m2.group(0), m2.group(1), m2.group('w'), m2.group('paint')
+    src = src.replace(linea, linea + """
+%s_rotoRep.push([iniC, finC, %s, %s]);   // ROTO A PROPOSITO""" % (sangria, ancho, color))
+    # y el repintado de media seccion, justo antes de cerrar el bucle de orden
+    cierre = "    if (cfg.ends === \"redondos\" || cfg.ends === \"inglete\") {"
+    if cierre not in src:
+        cierre = "    if (cfg.dots === \"encima\")"
+    assert cierre in src, 'no encuentro donde vaciar _rotoRep'
+    src = src.replace(cierre, """    for (const [i0, f0, w0, t0] of _rotoRep)
       trazarTramo(ctx, mapped, acum, i0, (i0 + f0) / 2, w0, t0, cfg);
     _rotoRep.length = 0;
-""" % (ancho, color, ancho, color))
+""" + cierre, 1)
     src = src.replace("  let rng = new E.Rng(0);", "  const _rotoRep = [];\n  let rng = new E.Rng(0);")
 elif roto == 'margen':
     # Margen NEGATIVO: con 0 la cinta sólo roza el borde de vez en cuando y el
