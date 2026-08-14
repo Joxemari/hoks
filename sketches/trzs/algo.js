@@ -2221,13 +2221,23 @@
 
     // Distancia de cada celda del campo a la cinta. Se calcula una vez y
     // sirve para las dos cosas: los vacíos abiertos y los ojos del nudo.
+    //
+    // SE MIDE CONTRA EL RECORRIDO QUE SE DIBUJA, no contra el polígono.
+    // Con esquina curva la cinta va por la curva densa, que corta el codo y
+    // pasa POR DENTRO del vértice: un punto en la parte cóncava del codo está
+    // más cerca de la cinta de lo que dice el polígono, y el disco que se
+    // coloca ahí con el aire justo se le mete encima. Medido: 0 de 100 obras
+    // con esquina viva y 6 de 100 con esquina curva, una con el 15,7% del
+    // disco dentro de la cinta. Es la misma trampa que ya se cazó en el
+    // detector de huecos, esta vez en el dibujo.
+    const via = _densa ? _densa.pts : mapped;
     const D = new Float32Array(N * N);
     const P = new Array(N * N);
     for (let gy = 0; gy < N; gy++) {
       for (let gx = 0; gx < N; gx++) {
         const p = V(ox + (gx + 0.5) * S / N, oy + (gy + 0.5) * ALTO / N);
         let d = Infinity;
-        for (let i = 0; i < mapped.length - 1; i++) d = min(d, pointSegDist(p, mapped[i], mapped[i+1]));
+        for (let i = 0; i < via.length - 1; i++) d = min(d, pointSegDist(p, via[i], via[i+1]));
         D[gy * N + gx] = d; P[gy * N + gx] = p;
       }
     }
