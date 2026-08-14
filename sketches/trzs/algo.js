@@ -2535,6 +2535,28 @@
     arco.push(acum[acum.length-1]);
     // monotonía, por si un tramo cortísimo desordena la escala
     for (let i = 1; i < arco.length; i++) if (arco[i] < arco[i-1]) arco[i] = arco[i-1];
+
+    // CON TEMBLOR, DENSO EN TODAS PARTES. La curva mete dieciséis puntos en
+    // cada codo y deja los TRAMOS RECTOS con sólo sus dos extremos — para
+    // dibujar una curva sobra, porque entre dos vértices la cinta es recta.
+    // Pero el temblor se dibuja uniendo puntos: donde no hay puntos, el
+    // polígono salta de un extremo al otro con las anchuras de esos dos
+    // extremos, y el filo se va de sitio. Medido, con temblor 0,35: esquina
+    // viva 0 huecos de 634 cruces, esquina curva 49.
+    if ((cfg.temblor || 0) > 0) {
+      const paso = max((cfg.temblorOnda || 2) * (cfg.unidadAncho || 0.03) / 3, 1e-4);
+      const P2 = [pts[0]], A2 = [arco[0]];
+      for (let i = 1; i < pts.length; i++) {
+        const dl = arco[i] - arco[i-1];
+        const n = constrain(round(dl / paso), 1, 64);
+        for (let t = 1; t < n; t++) {
+          P2.push(PV.lerp(pts[i-1], pts[i], t / n));
+          A2.push(arco[i-1] + dl * t / n);
+        }
+        P2.push(pts[i]); A2.push(arco[i]);
+      }
+      return { pts: P2, arco: A2 };
+    }
     return { pts, arco };
   }
 
