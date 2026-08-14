@@ -125,7 +125,13 @@
   const REPARTO_MIN = 0.10, REPARTO_MAX = 0.42;
   const CANDIDATOS  = 4;
 
-  const PIEZA_MIN  = 0.032;                     // área mínima de pieza / área del bloque
+  // El mínimo se mide contra la PIEZA QUE SE CORTA y no contra el bloque entero:
+  // con la reserva apartada queda poca superficie, y un mínimo absoluto rechazaba
+  // casi todas las particiones de dentro (27% de las obras no llegaba a los cortes
+  // de su tipo). Queda un suelo absoluto, porque una placa por debajo de él no se
+  // ve aunque su región sea pequeña.
+  const PIEZA_MIN   = 0.16;                     // área mínima de placa / área de la pieza partida
+  const PIEZA_SUELO = 0.016;                    // y nunca menos de esto del bloque
   const DERIVA_MIN = 0.15, DERIVA_MAX = 0.50;   // paso de deriva, en anchuras de gubia
   const GRAVEDAD   = 0.28;                      // sesgo hacia abajo de la deriva
   const RETIRO_MAX = 0.030;                     // retirada del canto / lado del bloque
@@ -425,22 +431,34 @@
    * el corte mide lo que mide la herramienta— y sólo el último tercio se afila
    * hasta morir. Lo que se estrecha no es el corte: es el gesto de sacarla.
    */
-  function cuna(pts, w, desde) {
+  function cinta(pts, w, rng) {
     const n = pts.length;
     if (n < 2) return null;
-    const L = []; let tot = 0;
-    for (let i = 0; i < n; i++) { L.push(tot); if (i < n - 1) tot += len(sub(pts[i + 1], pts[i])); }
-    if (!(tot > 0)) return null;
     const izq = [], der = [];
     for (let i = 0; i < n; i++) {
       const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
       const d = norm(sub(b, a)), nr = [-d[1], d[0]];
-      const t = L[i] / tot;
-      const k = t <= desde ? 1 : Math.max(0.18, 1 - (t - desde) / (1 - desde));
-      izq.push(add(pts[i], mul(nr,  w * k / 2)));
-      der.push(add(pts[i], mul(nr, -w * k / 2)));
+      izq.push(add(pts[i], mul(nr,  w / 2)));
+      der.push(add(pts[i], mul(nr, -w / 2)));
     }
-    return izq.concat(der.reverse());
+
+    // EL TOPE. La anchura es constante hasta el final —la regla 3 no admite que
+    // el corte se estreche—, así que el remate es un CORTE RECTO. Pero recto a
+    // escuadra y a regla es un rectángulo acabado en tapa: se lee dibujado. Va
+    // ladeado unos grados y con la cara temblando, como el final de un trazo de
+    // lápiz o de una gubia que se levanta a mano.
+    const P = pts[n - 1], d = norm(sub(P, pts[n - 2])), nr = [-d[1], d[0]];
+    const a = rng.range(-0.34, 0.34);
+    const ca = Math.cos(a), sa = Math.sin(a);
+    const e = [nr[0] * ca - nr[1] * sa, nr[0] * sa + nr[1] * ca];
+    const A = add(P, mul(e,  w / 2)), B = add(P, mul(e, -w / 2));
+    izq[n - 1] = A; der[n - 1] = B;
+    const cara = [];
+    for (let k = 1; k <= 2; k++) {
+      const t = k / 3;
+      cara.push(add(lerp2(A, B, t), mul(d, rng.range(-0.22, 0.22) * w)));
+    }
+    return izq.concat(cara, der.reverse());
   }
 
   /* El área no basta para aceptar una placa. Una tira larga y estrecha tiene
@@ -455,6 +473,52 @@
     return 4 * Math.PI * Math.abs(area(poly)) / (per * per) >= min;
   }
   const ESBELTEZ_MIN = 0.16;
+
+  /* LA VETA. Es la única familia donde la textura es CONTENIDO y no atmósfera:
+   * no es el grano de película del motor —que simula la emulsión de una foto—
+   * sino la fibra de la madera, que es de lo que está hecho el objeto que se
+   * rompió. Y es lo que él llamaba «espacio lento»: la materia sentida como un
+   * espacio que también se mueve, sólo que despacio, y la veta es lo único que
+   * lo dice.
+   *
+   * Va como VECTOR y no por píxel: rayas casi horizontales recortadas contra las
+   * placas, con su propio temblor. Así el coste a A1 sigue siendo el del grano y
+   * no el de un filtro, y la fibra se imprime a la resolución del papel en vez de
+   * ampliarse. Y por eso no toca `E.grain`, que es de seis familias: lo que aquí
+   * es contenido, allí sería una avería.
+   */
+  const VETA_PASO = 3.2, VETA_ALFA = 0.115;
+  function veta(ctx, ctxPts, rng, ink, ground, W, H, u, fuerza) {
+    if (!(fuerza > 0)) return;
+    ctx.save();
+    ctx.beginPath();
+    for (const poly of ctxPts) {
+      poly.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])));
+      ctx.closePath();
+    }
+    ctx.clip();
+    const paso = Math.max(1.4, VETA_PASO * u);
+    const claro = E.lerpColor(ink, ground, 0.26), oscuro = E.lerpColor(ink, ground, -0.16);
+    ctx.lineCap = 'butt';
+    // El paso NO es constante: a intervalos iguales la veta bandea y se lee como
+    // una trama de impresión, no como fibra. La madera va a rachas.
+    for (let y = -paso; y < H + paso; y += paso * rng.range(0.55, 1.8)) {
+      const largo = rng.range(0.25, 1.0) * W, x0 = rng.range(-0.15, 0.9) * W;
+      ctx.strokeStyle = rng.bool(0.62) ? claro : oscuro;
+      ctx.globalAlpha = VETA_ALFA * fuerza * rng.range(0.35, 1.6);
+      ctx.lineWidth = paso * rng.range(0.30, 0.85);
+      ctx.beginPath();
+      // La fibra no es una regla: se desvía un pelo a lo largo del tablón.
+      const n = 4, dy = paso * 0.55;
+      for (let k = 0; k <= n; k++) {
+        const x = x0 + largo * k / n, yy = y + rng.range(-dy, dy);
+        if (k === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
 
   // ¿Cuánto del perímetro de una pieza es canto del bloque? Lo usa «la que
   // falta»: sólo se puede perder una placa que esté por fuera.
@@ -531,6 +595,37 @@
     return { ink: lo, ground, crudo };
   }
 
+  /* Las tintas de la obra. La primera es la del par elegido por distancia; las
+   * demás se buscan lejos del SUELO —para que la figura siga leyéndose— y lejos
+   * entre sí, pero no tanto como para que parezcan dos obras superpuestas: se
+   * ordenan por distancia al suelo y se toman las mejores. Si la paleta no da
+   * para tantas, se devuelven las que haya: la obra sale monócroma y no falla. */
+  function paleta(rng, colors, col, n) {
+    const out = [col.ink];
+    if (n <= 1) return out;
+    // La exigencia con el SUELO es mucho más dura que entre tintas: una placa del
+    // color del papel no se lee como otra tinta, se lee como un AGUJERO, y con eso
+    // se va figura/fondo y con ella la obra. Si la paleta no da una segunda tinta
+    // que aguante, la pieza sale monócroma: es preferible a una placa fantasma.
+    // TODAS LAS TINTAS CAEN DEL MISMO LADO DEL SUELO. Si la primera es más oscura
+    // que el papel y la segunda más clara, esa segunda no se lee como otra tinta:
+    // se lee como un AGUJERO en la masa, porque el ojo asigna el papel a lo claro.
+    // Da igual que esté lejísimos del suelo en color — lo que decide es de qué
+    // lado del valor cae. Con esto, todas las tintas son materia y el suelo sigue
+    // siendo el vacío, que es la única lectura que esta familia admite.
+    const lg = E.luma(col.ground), lado = Math.sign(E.luma(col.ink) - lg) || -1;
+    const resto = colors
+      .filter(c => c !== col.ground && c !== col.ink &&
+                   Math.sign(E.luma(c) - lg) === lado &&
+                   dist(c, col.ground) > 120 && Math.abs(E.luma(c) - lg) > 0.14)
+      .sort((a, b) => dist(b, col.ground) - dist(a, col.ground));
+    for (const c of resto) {
+      if (out.length >= n) break;
+      if (out.every(o => dist(o, c) > 70)) out.push(c);
+    }
+    return out;
+  }
+
   // ── Entrada principal ──────────────────────────────────────────────────────
   // opts: { palettes, locked, lockedIdx, params:{ grainScale, tipo, gubia, cortes,
   //         sajaduras, deriva, bg } }
@@ -558,6 +653,22 @@
                                : rng.weighted(GUBIAS.map(g => ({ ...g, prob: g.p })));
     const ladeo = rng.range(-LADEO_MAX, LADEO_MAX);
 
+    /* MONOCROMO O POLÍCROMO. La regla 1 dice una masa, una tinta, y sigue siendo
+     * el caso de la mayoría — pero un taco se puede entintar en más de una
+     * pasada, y él mismo lo hizo. Lo que NO puede pasar es que cada placa lleve
+     * su color: eso es KRRTK, y convierte un bloque roto en un montaje.
+     *
+     * Así que el color no sigue a la placa: SIGUE A LA ROTURA. Cada tinta nueva
+     * arranca en una de las primeras fracturas y la heredan todas las placas que
+     * se soltaron de allí. El resultado es que el color cuenta el ORDEN en que el
+     * bloque dejó de ser uno — que es exactamente lo que la regla 4 hace legible.
+     * Dos placas del mismo color estuvieron juntas; dos de colores distintos se
+     * separaron pronto. */
+    const nTintas = params.tintas != null ? params.tintas
+                  : rng.weighted([{ prob: 0.74, v: 1 }, { prob: 0.20, v: 2 }, { prob: 0.06, v: 3 }]).v;
+    const tintas = paleta(rng, pal.colors, col, nTintas);
+    const fuerzaVeta = params.veta != null ? params.veta : rng.range(0.55, 1.35);
+
     // El bloque. Nace exacto: toda la irregularidad viene después, y viene de las
     // reglas 6 y 7. No está centrado del todo — la reserva pesa a un lado, que es
     // lo que las hilarriak enseñan: un bloque plantado de cara, con su aire.
@@ -583,7 +694,7 @@
     // El foco de la cadencia (regla 8): hacia dónde se agolpan los cortes.
     const foco = [bx + rng.range(0.22, 0.78) * bw, by + rng.range(0.22, 0.78) * bh];
 
-    let piezas = [{ poly: bloque, kind: bloque.map(() => 0), drift: [0, 0], hondura: 0, retiro: 0 }];
+    let piezas = [{ poly: bloque, kind: bloque.map(() => 0), drift: [0, 0], hondura: 0, retiro: 0, tinta: 0 }];
     const sajaduras = [];
     const cortes = [];
 
@@ -638,7 +749,7 @@
         const par = split(pc.poly, pc.kind, cand);
         const a0 = Math.abs(area(par[0].poly)), a1 = Math.abs(area(par[1].poly));
         if (par[0].poly.length < 3 || par[1].poly.length < 3) continue;
-        if (Math.min(a0, a1) < PIEZA_MIN * areaBloque) continue;
+        if (Math.min(a0, a1) < Math.max(PIEZA_SUELO * areaBloque, PIEZA_MIN * (a0 + a1))) continue;
         if (!esbelta(par[0].poly, ESBELTEZ_MIN) || !esbelta(par[1].poly, ESBELTEZ_MIN)) continue;
         const falla = Math.abs(Math.min(a0, a1) / Math.max(a0, a1) - quiere);
         if (!mejor || falla < mejor.falla) mejor = { cut: cand, par, a0, a1, falla };
@@ -656,9 +767,13 @@
       const delta = add(mul(dir, paso), [0, GRAVEDAD * paso]);
 
       piezas.splice(idx, 1);
-      piezas.push({ poly: madre.poly, kind: madre.kind, drift: pc.drift, hondura: pc.hondura, retiro: pc.retiro });
+      // La tinta nueva arranca en una de las PRIMERAS fracturas y desde ahí se
+      // hereda: así cada color es una rama entera del árbol, no una placa suelta.
+      const nueva = cortes.length < tintas.length - 1;
+      piezas.push({ poly: madre.poly, kind: madre.kind, drift: pc.drift, hondura: pc.hondura, retiro: pc.retiro, tinta: pc.tinta });
       piezas.push({ poly: hija.poly,  kind: hija.kind,  drift: add(pc.drift, delta), hondura: pc.hondura + 1,
-                    retiro: rng.bool(0.3) ? 0 : rng.range(0.008, RETIRO_MAX) * S });
+                    retiro: rng.bool(0.3) ? 0 : rng.range(0.008, RETIRO_MAX) * S,
+                    tinta: nueva ? cortes.length + 1 : pc.tinta });
       cortes.push(cut);
     }
 
@@ -694,7 +809,9 @@
       const cand = piezas
         .map((p, i) => ({ i, o: orilla(p.poly, p.kind), a: Math.abs(area(p.poly)), e: aEsquina(p.poly), p }))
         .filter(c => !c.p.reserva && c.o > 0.28 && c.a < areaBloque * 0.34);
-      if (!cand.length || piezas.length <= 2) break;
+      // Y no se pierde media obra: por encima de un tercio de las placas, lo que
+      // queda deja de leerse como un bloque roto y pasa a ser dos objetos sueltos.
+      if (!cand.length || piezas.length <= 2 || faltan >= Math.floor(piezas.length / 2)) break;
       // Pesa por estar fuera, por ser pequeña —la grande de en medio no se cae
       // sola— y sobre todo por tocar una esquina.
       let tot = 0;
@@ -719,8 +836,8 @@
       let x = rng.next() * tot, idx = 0;
       while (idx < piezas.length - 1 && x > pesos[idx]) { x -= pesos[idx]; idx++; }
       const pc = piezas[idx];
-      const ent = entrada(rng, pc, foco, true);
-      const cut = walk(rng, pc, ent.e, ent.t, S, TRAMOS_SAJA, ladeo, 0.5, pulso);
+      const ent = entrada(rng, pc, foco, rng.bool(0.6));
+      const cut = walk(rng, pc, ent.e, ent.t, S, TRAMOS_SAJA, ladeo, rng.range(0.45, 1.0), pulso);
       if (cut.suelta) continue;
       // Una sajadura que muere a un pelo del borde no es una sajadura: es un corte
       // que no llegó. Se exige aire por delante.
@@ -747,41 +864,51 @@
       }
       if (choca) continue;
 
-      sajaduras.push({ pts: cut.pts, drift: pc.drift });
+      sajaduras.push({ pts: cut.pts, poly: cinta(cut.pts, gubia.w * S, rng), drift: pc.drift });
     }
 
     // ── Dibujo ───────────────────────────────────────────────────────────────
+    // El orden importa: se rellenan TODAS las placas, después entra la veta
+    // recortada contra ellas, y sólo entonces se repasan los contornos. Así el
+    // repaso se lleva la veta que hubiera caído dentro del corte y el hueco
+    // queda limpio. Rellenar y repasar placa a placa daría el mismo resultado,
+    // pero la veta tiene que ir en medio.
     ctx.fillStyle = col.ground;
     ctx.fillRect(0, 0, W, H);
 
-    // Regla 3: la anchura sale de un lineWidth. Cada pieza se come SU mitad del
+    const gPx = gubia.w * S * SS;
+    const caras = piezas.map(pc => pc.poly.map(p => toPx(add(p, pc.drift))));
+
+    caras.forEach((q, i) => {
+      ctx.beginPath();
+      q.forEach((p, k) => (k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+      ctx.closePath();
+      ctx.fillStyle = tintas[piezas[i].tinta % tintas.length];
+      ctx.fill();
+    });
+
+    veta(ctx, caras, new E.Rng(seed ^ 0x7E7A), col.ink, col.ground, W, H, u, fuerzaVeta);
+
+    // Regla 3: la anchura sale de un lineWidth. Cada placa se come SU mitad del
     // corte repasando su propio contorno con el color del suelo, así que dos
     // vecinas dejan el corte entero — y el canto exterior también queda cortado,
     // que es lo que le pasa al canto del taco.
-    const gPx = gubia.w * S * SS;
     ctx.lineJoin = 'round';
     ctx.lineWidth = gPx;
-
-    for (const pc of piezas) {
+    ctx.strokeStyle = col.ground;
+    for (const q of caras) {
       ctx.beginPath();
-      pc.poly.forEach((p, i) => {
-        const q = toPx(add(p, pc.drift));
-        if (i === 0) ctx.moveTo(q[0], q[1]); else ctx.lineTo(q[0], q[1]);
-      });
+      q.forEach((p, k) => (k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
       ctx.closePath();
-      ctx.fillStyle = col.ink; ctx.fill();
-      ctx.strokeStyle = col.ground; ctx.stroke();
+      ctx.stroke();
     }
 
     // Las sajaduras se pintan encima: son el único blanco que no es una frontera.
-    // Y van como POLÍGONO en cuña, no como trazo: un remate redondo las convierte
-    // en un palito con bola, y esta familia no dibuja el blanco — lo quita.
     ctx.fillStyle = col.ground;
     for (const s of sajaduras) {
-      const poly = cuna(s.pts, gubia.w * S, AFILA);
-      if (!poly) continue;
+      if (!s.poly) continue;
       ctx.beginPath();
-      poly.forEach((p, i) => {
+      s.poly.forEach((p, i) => {
         const q = toPx(add(p, s.drift));
         if (i === 0) ctx.moveTo(q[0], q[1]); else ctx.lineTo(q[0], q[1]);
       });
@@ -789,14 +916,14 @@
       ctx.fill();
     }
 
-    E.grain(ctx, W, H, [col.ink, col.ground], grainScale, u);
+    E.grain(ctx, W, H, tintas.concat([col.ground]), grainScale, u);
 
     // Lo medido, que es lo que manda sobre lo declarado.
     const mancha = piezas.reduce((s, p) => s + Math.abs(area(p.poly)), 0) / (FW * FH);
     return {
-      pal, tipo: tipo.key, gubia: gubia.key, col,
+      pal, tipo: tipo.key, gubia: gubia.key, col, inks: tintas,
       piezas: piezas.length, sajaduras: sajaduras.length, cortes: cortes.length,
-      faltan, escalones, seguir: +seguir.toFixed(2), pulso: +(pulso / S).toFixed(4), morfa: +morfa.toFixed(3),
+      faltan, escalones, tintas: tintas.length, seguir: +seguir.toFixed(2), pulso: +(pulso / S).toFixed(4), morfa: +morfa.toFixed(3),
       pedidos: nCortes,
       hondura: piezas.reduce((m, p) => Math.max(m, p.hondura), 0),
       mancha, crudo: !!col.crudo,
@@ -812,10 +939,11 @@
    *
    * Las frecuencias de abajo salen de esa misma medición, no de la intuición, y
    * hay que volver a medirlas cada vez que se toque la gramática. */
-  const F_PIEZAS = { 2: 0.14, 3: 0.19, 4: 0.19, 5: 0.14, 6: 0.10, 7: 0.09, 8: 0.07, 9: 0.05, 10: 0.02, 11: 0.01 };
-  const F_SAJA   = { 0: 0.34, 1: 0.43, 2: 0.23 };
-  const F_FALTA  = { 0: 0.34, 1: 0.40, 2: 0.26 };
-  const F_ESCAL  = { 0: 0.22, 1: 0.53, 2: 0.25 };
+  const F_PIEZAS = { 2: .160, 3: .206, 4: .110, 5: .090, 6: .092, 7: .086, 8: .110, 9: .074, 10: .036, 11: .026, 12: .010 };
+  const F_SAJA   = { 0: .364, 1: .426, 2: .210 };
+  const F_FALTA  = { 0: .348, 1: .468, 2: .184 };
+  const F_ESCAL  = { 0: .212, 1: .532, 2: .256 };
+  const F_TINTA  = { 1: .790, 2: .176, 3: .034 };
 
   function rar(p) { return p > 0.06 ? 'common' : p > 0.018 ? 'uncommon' : p > 0.005 ? 'rare' : p > 0.0012 ? 'superrare' : 'legendary'; }
 
@@ -824,12 +952,12 @@
   // obras en el mismo cajón. Lo que se compara es contra la obra MÁS PROBABLE de
   // la familia — cuánto se aparta ésta de la que más sale. Así la escala es
   // legible (1 = la más corriente posible) y no depende de cuántos rasgos haya.
-  const P_MAX = { tipo: 0.38, gubia: 0.50, pz: 0.19, sj: 0.43, papel: 0.68, pal: 0.12, fl: 0.40, es: 0.53 };
+  const P_MAX = { tipo: 0.38, gubia: 0.50, pz: 0.206, sj: 0.426, papel: 0.68, pal: 0.12, fl: 0.468, es: 0.532, tn: 0.79 };
   // Los cortes NO salen de la intuición: se midió la distribución real de `r`
   // sobre 500 tiradas y se pusieron en los percentiles que la casa reparte
   // (≈40/35/15/7/3). La paleta va aparte en el producto y sólo empuja hacia más
   // raro, así que el reparto medido queda algo por debajo de esos números.
-  function rarComb(r) { return r > 0.165 ? 'common' : r > 0.071 ? 'uncommon' : r > 0.036 ? 'rare' : r > 0.018 ? 'superrare' : 'legendary'; }
+  function rarComb(r) { return r > 0.0855 ? 'common' : r > 0.0295 ? 'uncommon' : r > 0.0098 ? 'rare' : r > 0.0034 ? 'superrare' : 'legendary'; }
 
   function traits(res) {
     const pTipo  = (TIPOS.find(t => t.key === res.tipo)  || { p: 0.25 }).p;
@@ -840,6 +968,7 @@
     const pPal   = res.pal.prob || 0.05;
     const pFl    = F_FALTA[res.faltan] || 0.02;
     const pEs    = F_ESCAL[res.escalones] || 0.02;
+    const pTn    = F_TINTA[res.tintas] || 0.02;
 
     const list = [
       { key: 'Palette',  val: res.pal.name, colors: res.pal.colors, rarity: E.palRarity(pPal) },
@@ -849,6 +978,7 @@
       { key: 'Sajadura', val: res.sajaduras ? String(res.sajaduras) : '—', rarity: rar(pSj) },
       { key: 'Faltan',   val: res.faltan ? String(res.faltan) : '—', rarity: rar(pFl) },
       { key: 'Escalones', val: String(res.escalones), rarity: rar(pEs) },
+      { key: 'Tintas',   val: String(res.tintas), colors: res.inks, rarity: rar(pTn) },
       { key: 'Hondura',  val: String(res.hondura), rarity: 'common' },
       { key: 'Mancha',   val: (res.mancha * 100).toFixed(1) + '%', rarity: 'common' },
       { key: 'Papel',    val: res.crudo ? 'crudo' : 'blanco', rarity: rar(pPapel) },
@@ -856,7 +986,8 @@
     const r = Math.min(1, pTipo / P_MAX.tipo) * Math.min(1, pGubia / P_MAX.gubia) *
               Math.min(1, pPz / P_MAX.pz) * Math.min(1, pSj / P_MAX.sj) *
               Math.min(1, pPapel / P_MAX.papel) * Math.min(1, pPal / P_MAX.pal) *
-              Math.min(1, pFl / P_MAX.fl) * Math.min(1, pEs / P_MAX.es);
+              Math.min(1, pFl / P_MAX.fl) * Math.min(1, pEs / P_MAX.es) *
+              Math.min(1, pTn / P_MAX.tn);
     return { list, overall: rarComb(r) };
   }
 

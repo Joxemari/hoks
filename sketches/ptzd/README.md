@@ -87,9 +87,20 @@ abierto, no una explosión detenida.
 
 ## La gramática, en diez reglas
 
-1. **UN BLOQUE, UNA TINTA.** El punto de partida es una masa, no una composición.
-   Un color para lo que es materia y otro para el suelo. No hay un color por
-   pieza — esa puerta la tiene KRRTK y lleva a otro sitio.
+1. **UN BLOQUE, UNA TINTA — Y SI HAY MÁS, EL COLOR SIGUE A LA ROTURA.** El punto
+   de partida es una masa, no una composición. Lo que **nunca** puede pasar es que
+   cada placa lleve su color: esa puerta la tiene KRRTK y convierte un bloque roto
+   en un montaje. Pero un taco se entinta en más de una pasada, así que la obra
+   puede ser policroma con una condición — **el color no sigue a la placa, sigue a
+   la fractura**. Cada tinta nueva arranca en una de las primeras roturas y la
+   heredan todas las placas que se soltaron de allí. El resultado es que el color
+   cuenta el **orden** en que el bloque dejó de ser uno, que es justo lo que la
+   regla 4 hace legible: dos placas del mismo color estuvieron juntas; dos de
+   colores distintos se separaron pronto.
+   Y una condición de valor: **todas las tintas caen del mismo lado del suelo**. Si
+   una es más clara que el papel y las otras más oscuras, esa no se lee como otra
+   tinta sino como un **agujero** — el ojo asigna el papel a lo claro. Si la paleta
+   no da una segunda tinta que lo cumpla, la pieza sale monócroma.
 2. **EL CORTE ENTRA POR EL BORDE Y PASA POR ENCIMA DEL CANTO.** Una grieta no
    empieza en el centro de un cuerpo: empieza en un canto y viaja hacia dentro.
    Las que no entran por el borde del bloque entran por otro corte: son ramas. Y
@@ -466,6 +477,38 @@ que crece la hoja), y como los cortes se siguen midiendo contra el lado del
 bloque, en el ancho de más **caben más**: la obra se recompone en vez de
 deformarse, que es la regla de los formatos de la casa.
 
+### Tercera revisión: el tope, la veta y las tintas
+
+- **El remate en cuña era un error mío.** Se cambió el remate redondo por una
+  cuña que se afilaba, y un filo que se afila es una **punta**: una gubia
+  levantada deja un **tope**, no una aguja. Y además el afilado contradecía la
+  regla 3 por la puerta de atrás — el corte mide lo que mide la herramienta, y
+  eso vale hasta el último milímetro. Ahora la anchura es constante hasta el
+  final y la cara del remate es un **corte recto ladeado unos grados, con la cara
+  temblando**: el final de un trazo hecho a mano, no una tapa a escuadra.
+- **La veta**, que llevaba tres revisiones apuntada como pendiente. Es la única
+  familia donde la textura es **contenido** y no atmósfera: no es el grano de
+  película del motor —que simula la emulsión de una foto— sino la fibra de la
+  madera, que es de lo que está hecho el objeto que se rompió. Y es lo que él
+  llamaba *espacio lento*: la materia sentida como un espacio que también se
+  mueve, sólo que despacio. Va como **vector**, rayas casi horizontales recortadas
+  contra las placas, así que el coste a A1 sigue siendo el del grano y la fibra se
+  imprime a la resolución del papel en vez de ampliarse. Y **no toca `E.grain`**,
+  que es de seis familias: lo que aquí es contenido, allí sería una avería. El
+  paso entre rayas no es constante — a intervalos iguales bandea y se lee como una
+  trama de impresión, no como fibra.
+- **Y el 27% de tipos incumplidos, resuelto: baja al 1,6%.** No era falta de
+  reintentos. El área mínima de placa y la esbeltez se medían contra el **bloque
+  entero**, y con la reserva apartada queda poca superficie: dentro de una región
+  pequeña casi ninguna partición las pasaba. Ahora se miden contra la **pieza que
+  se corta**, con un suelo absoluto por debajo del cual una placa no se ve aunque
+  su región sea diminuta. Es el mismo número que EVOL (1,8%).
+
+Y dos guardas más: **no se pierde media obra** —por encima de la mitad de las
+placas, lo que queda deja de leerse como un bloque roto y pasa a ser dos objetos
+sueltos— y **la segunda tinta no puede parecerse al suelo**, ni en color ni en
+lado del valor.
+
 ## Medido
 
 500 tiradas en cuadrado, sobre las paletas por defecto del motor:
@@ -473,15 +516,17 @@ deformarse, que es la regla de los formatos de la casa.
 ```
 tipo        arbol 38%  partido 29%  hendido 19%  astillado 14%
 gubia       fina 31%  media 46%  ancha 24%
-piezas      p10 2 · p50 4 · p90 8 · max 11
+tintas      una 79%  dos 18%  tres 3%
+piezas      p10 2 · p50 5 · p90 9 · max 12
 sajaduras   p10 0 · p50 1 · p90 2 · max 2
 faltan      p10 0 · p50 1 · p90 2            (placas que se soltaron y no están)
 escalones   p10 0 · p50 1 · p90 2            (esquinas quitadas al taco)
 hondura     p10 1 · p50 2 · p90 3            (profundidad del árbol de fractura)
-mancha      p10 25,1%  p50 32,7%  p90 44,0%  max 59,9%
+mancha      p10 24,6%  p50 32,2%  p90 43,4%  max 58,2%
 papel crudo 32%
-overall     common 40%  uncommon 35%  rare 15%  superrare 8%  legendary 2%
-ms          ~7 por pieza a 300 px, incluido el grano
+overall     common 40%  uncommon 35%  rare 15%  superrare 7%  legendary 3%
+tipo cumplido  98,4% de las piezas alcanza los cortes que declara
+ms          ~9 por pieza a 300 px, incluidos el grano y la veta
 ```
 
 Los cortes de la rareza **no salen de la intuición**: se midió la distribución
@@ -497,23 +542,20 @@ normalizado: **60 de 60 huellas idénticas** a 760, 2400 y 4200 de lado corto, e
 cuadrado y en apaisado — tipo, gubia, piezas, sajaduras, cortes, hondura, mancha a
 seis decimales y los dos colores. Cero diferencias.
 
-Lo que **sigue mal**, y hay que decirlo: el **27%** de las piezas no alcanza los
-cortes que su tipo declara — y ha empeorado desde el 21% de la primera pasada,
-porque el reparto desigual y la guardia de esbeltez rechazan más particiones. Con
-la reserva apartada queda poca superficie donde cortar, y tanto el área mínima
-como la esbeltez se miden contra el bloque entero, así que dentro de una región
-pequeña casi nada las pasa. Subir los reintentos no lo arregla: hay que medir esos
-mínimos contra la **pieza que se corta** y no contra el bloque. Manda lo medido,
-pero un 27% es mucho — EVOL tenía un 1,8%. Es lo primero de la siguiente pasada.
+Todas las frecuencias de arriba **realimentan la rareza**: los cortes de
+`common`→`legendary` se ponen en los percentiles de la distribución medida, no a
+ojo, y hay que volver a medirlos cada vez que se toque la gramática. Es lo que
+EVOL aprendió después de que su primer rasgo etiquetara al 88% de las piezas.
 
 ## Siguiente paso
 
 Está para mirar en el grid, que es donde se decide. Lo que falta:
 
 - **Las variantes `calado` y `gofrado` no están implementadas.** Están escritas y
-  no existen en el código.
-- **La veta tampoco:** el grano sigue siendo el isótropo del motor.
-- Bajar ese 21% de tipos incumplidos.
+  no existen en el código, y las dos a propósito: el `calado` es territorio de
+  EVOL y tiene que entrar raro y decidido, y el `gofrado` es la pregunta abierta
+  de si hoks acepta una obra que la web no puede enseñar. Ninguna de las dos se
+  mete por lo bajo.
 - Y la de verdad: **si merece página.** Eso se decide viendo doce seeds a la vez,
   no leyendo esto.
 
@@ -525,7 +567,7 @@ No aparece en el desplegable *Work* del laboratorio, porque ese desplegable list
 las familias activas de `works.json` y PTZD no está ahí. Se llega por URL, que es
 lo correcto para una propuesta. Sí está en `GRADUATED`, así que un lote que la
 mezcle con otras obras pinta sus miniaturas. Los mandos propios: tipo, gubia,
-cortes, sajaduras y deriva.
+cortes, sajaduras, deriva, tintas, veta y faltan.
 
 ## Fuentes
 
