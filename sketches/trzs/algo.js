@@ -46,6 +46,10 @@
   // reventaba— pero resuelto es de lo mejor que da la familia, así que se
   // busca a propósito. Improbable: es lo que lo hace valioso.
   const FANTASMA_PROB = 0.035;
+  // Cuánto respira el radio de un disco a lo largo de su contorno, × radio.
+  // A 0,018 son medio píxel en un disco de treinta: se lee como carácter y no
+  // como forma, que es justo lo que se pide.
+  const DISCO_MANO = 0.018;
 
   // ── Aritmética ────────────────────────────────────────────────────────────
   // Los nombres cortos son los de p5 a propósito: el algoritmo viene de ahí y
@@ -2094,10 +2098,33 @@
       if (pasada === 'halo' && recorta) ctx.globalCompositeOperation = 'destination-out';
       ctx.fillStyle = pasada === 'halo' ? (recorta ? 'rgba(0,0,0,1)' : haloDe(kC))
                                         : tintaDe(kC);
-      // La incisión del extremo: un disco de la anchura del cabo más el
-      // hueco. Lo que se come del cuerpo lo devuelve la tinta, que va después.
+      // LA INCISIÓN DEL EXTREMO ES EL REMATE ENGORDADO, NO UN DISCO.
+      // Un cabo cortado a escuadra, engordado por la incisión, es un rectángulo
+      // que se pasa `gap` de la cara — no un medio disco de media anchura. Con
+      // el disco, más allá de la cara quedaba una media luna de color de
+      // incisión de radio wR/2+gap, o sea veinte veces más ancha que la
+      // incisión. En una obra normal esa luna es del color del suelo y no se ve;
+      // en un trazo fantasma el corte es un tono corrido y aparece un cuño claro
+      // en cada cabo. Nadie lo había visto porque las obras fantasma estaban
+      // excluidas de la batería entera — y el defecto lo había metido el arreglo
+      // de la cara del cabo, sin que nada lo midiera.
+      // Con remate redondo el disco SÍ es la forma correcta: un extremo redondo
+      // engordado es otro redondo.
       if (pasada === 'halo') {
-        ctx.beginPath(); ctx.arc(p.x, p.y, wR / 2 + gap, 0, TWO_PI); ctx.fill();
+        const dd = PV.sub(p, hacia).normalize();
+        if (redondo || !isFinite(dd.x) || !isFinite(dd.y) || (dd.x === 0 && dd.y === 0)) {
+          ctx.beginPath(); ctx.arc(p.x, p.y, wR / 2 + gap, 0, TWO_PI); ctx.fill();
+        } else {
+          const nn = V(-dd.y, dd.x), h2 = wR / 2 + gap, atras2 = wR / 2;
+          const A2 = V(p.x + nn.x*h2 - dd.x*atras2, p.y + nn.y*h2 - dd.y*atras2);
+          const B2 = V(p.x - nn.x*h2 - dd.x*atras2, p.y - nn.y*h2 - dd.y*atras2);
+          const C2 = V(p.x - nn.x*h2 + dd.x*gap,    p.y - nn.y*h2 + dd.y*gap);
+          const D2 = V(p.x + nn.x*h2 + dd.x*gap,    p.y + nn.y*h2 + dd.y*gap);
+          ctx.beginPath();
+          ctx.moveTo(A2.x, A2.y); ctx.lineTo(D2.x, D2.y);
+          ctx.lineTo(C2.x, C2.y); ctx.lineTo(B2.x, B2.y);
+          ctx.closePath(); ctx.fill();
+        }
       }
       if (!inglete) {
         if (pasada === 'tinta' && redondo) {
@@ -2122,7 +2149,7 @@
       const lado = rr.next() < 0.5 ? 1 : -1;
       const largo = wR * (0.35 + rr.next() * 0.55);
       const n = V(-d.y * lado, d.x * lado);
-      const h = wR / 2 + crece;
+      const h = wR / 2;   // el halo no engorda el triángulo: lo bordea
       // LA BASE DEL TRIANGULO ENTRA EN EL CUERPO, no se queda a ras de él.
       // A ras, el filo del triángulo y el del cuerpo comparten arista, y dos
       // figuras del mismo color que comparten arista NO suman cobertura 1:
@@ -2134,15 +2161,28 @@
       const atras = max(E.unit(S, ALTO, REF), 1) * 2;
       const A = V(p.x + n.x * h - d.x * atras, p.y + n.y * h - d.y * atras);
       const B = V(p.x - n.x * h - d.x * atras, p.y - n.y * h - d.y * atras);
-      // El halo crece también HACIA DELANTE: la punta es justo la parte del
-      // remate que se mete en terreno ajeno, y una incisión que sólo la
-      // rodease por los lados la dejaría soldada por el filo.
-      const alcance = largo + crece;
-      const C = V(p.x + n.x * h + d.x * alcance, p.y + n.y * h + d.y * alcance);
+      const C = V(p.x + n.x * h + d.x * largo, p.y + n.y * h + d.y * largo);
       ctx.beginPath();
       ctx.moveTo(A.x, A.y); ctx.lineTo(C.x, C.y); ctx.lineTo(B.x, B.y);
       ctx.closePath();
       ctx.fill();
+      // EL HALO DEL INGLETE ES EL INGLETE DESPLAZADO HACIA FUERA, y eso se
+      // consigue trazando su propio contorno con un pincel de dos incisiones,
+      // no engordando sus medidas a ojo. Engordadas —media anchura por un lado
+      // y el largo por otro— el triángulo que sale NO es el original
+      // desplazado: por la punta sobra y por el filo del bies falta. Quedaba un
+      // cuño de color de incisión en el cabo y, donde los dos filos casi
+      // coinciden, una raya de un píxel. En una obra normal las dos cosas son
+      // del color del suelo y no se ven; en un trazo fantasma el corte es un
+      // tono corrido y aparecen: 16 obras de 85 forzando el inglete, 6 de 85
+      // por la vía normal, y CERO en las obras no fantasma. Esa firma —sólo se
+      // ve cuando el corte no es el suelo— es lo que lo identifica.
+      if (pasada === 'halo') {
+        ctx.lineWidth = gap * 2;
+        ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        ctx.strokeStyle = ctx.fillStyle;
+        ctx.stroke();
+      }
       if (pasada === 'halo' && recorta) ctx.globalCompositeOperation = 'source-over';
     };
 
@@ -2216,9 +2256,18 @@
         const halo = haloDe(cinta);
         const recorta = borrar && !sueloIgual;
         if (recorta) ctx.globalCompositeOperation = 'destination-out';
+        // LA JUNTA DEL HALO ES LA DEL CUERPO, no una redonda suya.
+        // El halo es el cuerpo engordado, así que si dobla la esquina de otra
+        // manera deja de seguirlo: con junta redonda —radio W/2+gap— asoma por
+        // fuera del bisel del cuerpo, que va a inglete topado a 1. Ese asomo es
+        // una luna de color de incisión que el cuerpo no tapa. En una obra
+        // normal la luna es del color del suelo y no se ve; en un trazo
+        // fantasma el corte es un tono corrido y aparece un cuño claro en cada
+        // esquina viva. Nadie lo había visto porque las obras fantasma estaban
+        // excluidas de la batería entera.
         trazarTramo(ctx, mapped, acum, iniH, finH,
                     ruido ? (d) => anchoEn(d) + gap * 2 : width + gap * 2,
-                    recorta ? 'rgba(0,0,0,1)' : halo, cfg, "round");
+                    recorta ? 'rgba(0,0,0,1)' : halo, cfg);
         if (recorta) ctx.globalCompositeOperation = 'source-over';
         // El halo del remate va AQUÍ, con el del cuerpo: lo que se mete dentro
         // del cuerpo lo vuelve a tapar la tinta de abajo y no queda arista que
@@ -2246,7 +2295,23 @@
     // Sólo cuando hay temblor: si sale siempre, los detectores levantan sus
     // máscaras con el polígono mientras el render usa el trazo, y son dos
     // rasterizaciones distintas. Con eso, 61 cruces «sin corte» de la nada.
-    return { mapped, width, gap, esc, anchoEn: ruido ? anchoEn : null };
+    // LOS TONOS DE LA INCISIÓN, uno por cinta.
+    // Casi siempre son el color del suelo, y por eso los detectores podían
+    // preguntar por el fondo y acertar. En el trazo fantasma no: la cinta ES
+    // del color del suelo, así que su corte se pinta de un tono corrido, y un
+    // detector que sólo conozca el fondo no ve ni una incisión de esa obra.
+    // Por eso las obras fantasma estaban excluidas de la batería entera —el
+    // 3,5% de lo que se publica, sin medir—. Sacándolos aquí, el detector deja
+    // de suponer de qué color es el corte y se lo pregunta a la obra.
+    // Y LAS TINTAS con ellos, que sin las tintas los tonos no sirven de nada:
+    // en una obra fantasma el color del suelo ES la tinta de una cinta, así que
+    // un detector que acepte el fondo como corte se queda ciego justo donde
+    // hacía falta que viera. Con las dos listas puede decidir: el fondo cuenta
+    // como corte sólo si no es tinta de nadie.
+    const halos = [], tintas2 = [];
+    for (let k = 0; k <= nSaltos; k++) { halos.push(haloDe(k)); tintas2.push(tintaDe(k)); }
+    return { mapped, width, gap, esc, anchoEn: ruido ? anchoEn : null,
+             halos, tintas: tintas2, bg: col.bg };
   }
 
   // El gradiente recorre la composición, no la sección de la cinta:
@@ -2269,6 +2334,31 @@
   // Única regla de colocación: el CENTRO nunca queda bajo la cinta.
   // El borde sí puede quedar eclipsado — un disco a medio tapar dice
   // más que uno colocado a distancia prudente.
+  // El contorno de un disco dibujado a mano: mismo centro, mismo radio medio,
+  // pero el radio varía por el camino. Tres armónicos bastan —uno solo da un
+  // huevo y cinco ya es una piedra— y van con fase propia para que el eje del
+  // óvalo no caiga siempre igual. La curva se cierra sola: al ser periódica en
+  // la vuelta, el último punto coincide con el primero sin costura.
+  function contornoMano(ctx, c, r, rng, cfg) {
+    const amp = (cfg.discoMano == null ? DISCO_MANO : cfg.discoMano);
+    const N = max(48, round(r * 1.2));
+    const a1 = rng.range(-1, 1), a2 = rng.range(-1, 1), a3 = rng.range(-1, 1);
+    const f1 = rng.range(0, TWO_PI), f2 = rng.range(0, TWO_PI), f3 = rng.range(0, TWO_PI);
+    // Normalizado para que el tope sea el tope: la suma de los tres armónicos
+    // no puede pasar de 1 aunque los tres coincidan en el mismo punto.
+    const norma = (abs(a1) + abs(a2) * 0.6 + abs(a3) * 0.35) || 1;
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const t = i / N * TWO_PI;
+      const on = (a1 * sin(t * 2 + f1) + a2 * 0.6 * sin(t * 3 + f2)
+                + a3 * 0.35 * sin(t * 5 + f3)) / norma;
+      const rr = r * (1 + amp * on);
+      const x = c.x + cos(t) * rr, y = c.y + sin(t) * rr;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+  }
+
   function drawDots(ctx, mapped, width, comp, ox, oy, S, H) {
     const ALTO = H == null ? S : H;
     const cfg = comp.cfg;
@@ -2406,9 +2496,25 @@
     }
 
     const gama = comp.colores.dots;
+    // EL DISCO NO ES UN COMPÁS.
+    // Un `arc` es perfecto, y perfecto aquí quiere decir ajeno: la cinta se
+    // corta a gubia y lleva su temblor, y al lado un círculo de compás se lee
+    // como una pegatina puesta encima. Se le da la irregularidad de una mano
+    // que cierra el trazo: el radio respira a lo largo del contorno con un
+    // ruido coherente —dos o tres ondas por vuelta, no rizado— y el cierre es
+    // exacto porque la onda es periódica en la vuelta entera.
+    //
+    // MUY SUTIL, y con un tope que lo garantiza: la desviación máxima es
+    // DISCO_MANO por el radio, y a 0,018 son medio píxel en un disco de treinta.
+    // Se ve como carácter, no como forma. Por encima de 0,05 deja de ser un
+    // disco dibujado a mano y pasa a ser una mancha, que es otra obra.
+    //
+    // El azar es propio de cada disco y sale del seed: dos discos de la misma
+    // obra no repiten contorno, y la misma obra repite el suyo.
     placed.forEach((d, i) => {
       ctx.fillStyle = gama[i % gama.length];
-      ctx.beginPath(); ctx.arc(d.p.x, d.p.y, d.r, 0, TWO_PI); ctx.fill();
+      contornoMano(ctx, d.p, d.r, new E.Rng((comp.seed ^ 0xD15C0 ^ (i * 0x9E3779B1)) >>> 0), cfg);
+      ctx.fill();
     });
     return placed;
   }

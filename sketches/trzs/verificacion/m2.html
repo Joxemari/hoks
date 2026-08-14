@@ -41,8 +41,20 @@ window.medir = (seed, pals, extra, capa) => {
   const dA = xA.getImageData(0,0,S,S).data;
 
   const hex = h => [1,3,5].map(k => parseInt(h.substr(k,2),16));
-  const F = hex(c.colores.bg);
-  const esFondo = i => Math.abs(dA[i]-F[0])+Math.abs(dA[i+1]-F[1])+Math.abs(dA[i+2]-F[2]) < 60;
+  // LA INCISIÓN NO ES SIEMPRE EL FONDO. En el trazo fantasma la cinta es del
+  // color del suelo y su corte se pinta de un tono corrido; preguntando sólo
+  // por el fondo, esas obras salían con TODAS sus incisiones rotas y por eso
+  // estaban excluidas de la batería. El render dice ahora de qué color es cada
+  // corte, así que el detector no supone: pregunta.
+  // El fondo cuenta como corte SÓLO si no es tinta de nadie: en una obra
+  // fantasma el suelo es la tinta de una cinta, y aceptarlo dejaba pasar una
+  // incisión rellena por el cuerpo de al lado. Con eso el control caía del 97%
+  // al 1,7% sin que se notara, que es como se queda ciego un detector.
+  const mismo = (a,b) => String(a).toLowerCase() === String(b).toLowerCase();
+  const bgEsTinta = (r.tintas||[]).some(t => mismo(t, c.colores.bg));
+  const CORTES = (r.halos||[]).map(hex).concat(bgEsTinta ? [] : [hex(c.colores.bg)]);
+  const esFondo = i => CORTES.some(F =>
+    Math.abs(dA[i]-F[0])+Math.abs(dA[i+1]-F[1])+Math.abs(dA[i+2]-F[2]) < 60);
 
   const secs = c.plano.secciones.map(([a,b]) => [T.arcoDeParam(m,acum,a), T.arcoDeParam(m,acum,b)]);
   const juntas = (c.plano.juntas||[]).map(j => T.arcoDeParam(m,acum,j));
