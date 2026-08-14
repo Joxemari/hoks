@@ -234,8 +234,8 @@
               ojos: [1, 4],  mancha: [0.14, 0.29] },
     trama:  { prob: 0.40, hebras: [[2, 3], [1, 2]], nivel: [2, 5], ramales: [3, 6], munones: [2, 4],
               ojos: [2, 8],  mancha: [0.22, 0.40] },
-    muro:   { prob: 0.18, hebras: [[2, 3], [2, 3]], nivel: [4, 6], ramales: [2, 4], munones: [1, 3],
-              ojos: [2, 7],  mancha: [0.34, 0.50] },
+    muro:   { prob: 0.18, hebras: [[2, 3], [2, 3]], nivel: [4, 5], ramales: [2, 4], munones: [1, 3],
+              ojos: [2, 7],  mancha: [0.32, 0.43] },
     nudo:   { prob: 0.18, hebras: [[2, 2], [1, 1]], nivel: [3, 6], ramales: [3, 5], munones: [3, 5],
               ojos: [1, 3],  mancha: [0.18, 0.35] },
   };
@@ -529,6 +529,8 @@
   // y lo que queda es barro de dos colores. La tensión la da que una atraviese a la
   // otra, no que compitan por el sitio.
   const P_SOBRE = 0.46;
+  const PISO_FOCO = 1;       // por debajo de este nivel el foco no adelgaza más
+  const PISO_PROT = 3;       // y la hebra protagonista aguanta bastante más
   // Y el acoplamiento: una masa LEVE invertida no es un negativo, es un arañazo.
   // Medido sobre 500 tiradas —la mancha va de 14,4% (p10) a 28,6% (p90)— por debajo
   // del 18% la tinta clara sobre suelo oscuro se lee como una raya en una plancha,
@@ -1002,7 +1004,15 @@
       if (rachaS-- <= 0) { ses = rng.range(-SESGO_MAX, SESGO_MAX); rachaS = rng.pickFrom(RACHA_S); }
       out.push({ x, y, hw: niveles[lv[k]] / 2, lv: lv[k], sesgo: ses, corte: 0 });
     }
+    // EL REMATE EN MAZA. Un brazo que solo adelgaza hasta morir se lee como una púa, y
+    // en las referencias pasa lo contrario más veces de las que uno diría: el brazo
+    // viaja fino y ENGORDA justo antes de cortarse. Ese engorde es lo que convierte un
+    // final en un remate.
     const u = out[out.length - 1];
+    if (rng.bool(0.45)) {
+      const lv = clamp((u.lv == null ? 2 : u.lv) + rng.int(1, 2), 0, NIVELES - 1);
+      u.lv = lv; u.hw = niveles[lv] / 2;
+    }
     u.corte = corteDe(rng, u.hw, niveles[NIVELES - 1] / 2);
     return out;
   }
@@ -1093,15 +1103,28 @@
       y: grav === 'N' ? H * rng.range(0.16, 0.46) : H * rng.range(0.54, 0.84),
     };
     const R = hypot(W, H) * 0.5;
-    const caida = params.caida != null ? params.caida : rng.range(1.4, 3.2);
-    for (const ch of hs.concat(vs)) {
+    // La caída tiene TOPE y SUELO, y las dos cosas por lo mismo. Con caída hasta 3,2 y
+    // sin suelo, las hebras llegaban al nivel 0 en cuanto se alejaban un poco y la
+    // pieza entera se leía como un mapa de GRIETAS: hilos de dos píxeles sobre el
+    // fondo, no masa. En la referencia los brazos viajan adelgazando pero nunca dejan
+    // de tener cuerpo — el hilo es un tramo, no el estado de media obra.
+    // El suelo NO es plano: lo pone la jerarquía. Con un piso igual para todas, el
+    // foco acababa dejando la pieza entera en dos o tres niveles vecinos y salía un
+    // craquelado —celdas separadas por hilos del mismo grosor, como barro seco—, que
+    // tiene el defecto contrario al de las grietas pero la misma causa: sin contraste
+    // de grosor dentro de la pieza no hay nada que mirar. La protagonista aguanta el
+    // adelgazamiento y las demás no, así que lejos del foco siguen conviviendo el
+    // bloque y el hilo.
+    const caida = params.caida != null ? params.caida : rng.range(1.0, 2.4);
+    hs.concat(vs).forEach((ch, j) => {
+      const piso = j === prot ? PISO_PROT : PISO_FOCO;
       for (const v of ch) {
         if (v.lv == null) continue;
         const d = hypot(v.x - foco.x, v.y - foco.y) / R;
-        const lv = clamp(Math.round(v.lv - caida * d), 0, NIVELES - 1);
+        const lv = clamp(Math.round(v.lv - caida * d), piso, NIVELES - 1);
         v.lv = lv; v.hw = niveles[lv] / 2;
       }
-    }
+    });
 
     // LOS RAMALES, antes de los nudos: son hebras de pleno derecho, así que sus cruces
     // también anudan. Y nacen CERCA DEL FOCO — se sortean dos candidatos y gana el más
@@ -1230,7 +1253,11 @@
     // otra plancha. El bucle sigue buscando la de abajo, pero midiendo las dos juntas.
     const puedeSobre = (rol.otras || []).length > 0 && !params.sinSobre;
     const sobre = (puedeSobre && rng.bool(params.sobre != null ? params.sobre : P_SOBRE))
-      ? tramar(new E.Rng((seed ^ 0x5B3C1A7) >>> 0), fw, fh, 'red', {})
+      // Con el tipo 'red' a secas no bastaba: el foco y el piso la dejaban casi tan
+      // gorda como la de abajo, y dos tramas gordas cruzándose son barro de dos
+      // colores. Se le baja la ESCALA del cuerpo, que es el mando que gobierna su
+      // techo de grosor — así es laxa por construcción y no por suerte del tipo.
+      ? tramar(new E.Rng((seed ^ 0x5B3C1A7) >>> 0), fw, fh, 'red', { cuerpo: 0.62 })
       : null;
 
     let best = null, bestF = Infinity;

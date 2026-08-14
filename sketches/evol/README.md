@@ -84,6 +84,16 @@ trama pesa más que tres bandas.
    queda enfrente es la **reserva**. El mismo peso en todas partes es lo que delata una
    retícula, aunque las hebras estén torcidas.
 
+   El foco tiene **tope y suelo**, y los dos por lo mismo. Sin suelo, las hebras
+   llegaban al nivel 0 en cuanto se alejaban un poco y la pieza se leía como un mapa de
+   **grietas**: hilos de dos píxeles sobre el fondo, no masa. Pero con un suelo plano
+   para todas, el foco dejaba la pieza en dos o tres niveles vecinos y salía un
+   **craquelado** —celdas separadas por hilos del mismo grosor, como barro seco—, que
+   es el defecto contrario y la misma causa: sin contraste de grosor dentro de la pieza
+   no hay nada que mirar. El suelo lo pone la **jerarquía**: la protagonista aguanta el
+   adelgazamiento y las demás no, así que lejos del foco siguen conviviendo el bloque y
+   el hilo.
+
 Y la regla de método, heredada de TRZS: el tipo **declara** cuántos ojos y cuánta
 mancha, y luego se **comprueba sobre el resultado**. *Declarar sin comprobar es lo que
 ya falló con las familias de TRZS.* Aquí importa doble, porque el ojo declarado y el
@@ -99,7 +109,7 @@ Cada uno es una de las cuatro referencias, y por eso son cuatro y no tres o cinc
 |---------|------|--------|---------|-------|--------------|---------|
 | `red`   | 24%  | 2–3 × 1–2 | 2–4  | 1–4   | 1–4          | 10–24%  |
 | `trama` | 40%  | 2–3 × 1–2 | 3–6  | 2–5   | 2–8          | 20–38%  |
-| `muro`  | 18%  | 2–3 × 2–3 | 2–4  | 4–6   | 2–7          | 32–46%  |
+| `muro`  | 18%  | 2–3 × 2–3 | 2–4  | 4–5   | 2–7          | 32–43%  |
 | `nudo`  | 18%  | 2 × 1     | 3–5  | 3–6   | 1–3          | 16–32%  |
 
 `red` es la trama laxa y estirada: hebras finas, celdas grandes, mucho aire. `trama` es
@@ -338,10 +348,12 @@ ojos        media 2,9 · p50 3 · p90 5 · max 8
 ciegas      0,0%  ← ninguna pieza deja de cerrar algo
 cruces      media 14 · p10 10 · p90 19
 mancha      p10 20,3%  p50 33,0%  p90 45,6%
+ojos        media 4,8 · p50 3 · p90 11   (la cola larga es de las piezas tejidas)
+mancha      p10 20%  p50 32%  p90 40%
+            muro p50 40%  ·  trama 32%  ·  nudo 31%  ·  red 22%
 falta = 0   93% de las piezas cumplen lo que su tipo declara
-overall     uncommon 46%  common 34%  rare 18%  superrare 2%
-2ª trama    24% de las piezas
-mancha      muro p50 44%  ·  nudo 31%  ·  trama 29%  ·  red 18%
+tejidas     24% de las piezas
+overall     uncommon 45%  common 35%  rare 19%  superrare 1%
 ```
 
 **Cero piezas ciegas** es el dato que justifica la reformulación entera. Con estratos y
