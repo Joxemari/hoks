@@ -482,11 +482,11 @@
     // las que ya están—, si no se lee como un error de registro en la impresión. Y se
     // ordenan por distancia a la primera tinta: la que más se separa entra antes.
     const resto = uniq.filter(c => c !== suelo && c !== tinta)
-      .filter(c => dcolor(c, suelo) > 0.30)
+      .filter(c => dcolor(c, suelo) > 0.24)
       .sort((a, b) => dcolor(b, tinta) - dcolor(a, tinta));
     const otras = [];
     for (const c of resto) {
-      if (dcolor(c, tinta) < 0.26) continue;
+      if (dcolor(c, tinta) < 0.22) continue;
       if (otras.some(o => dcolor(o, c) < 0.24)) continue;   // dos tintas casi iguales son una
       otras.push(c);
       if (otras.length === 2) break;
@@ -499,7 +499,20 @@
   // trama se lee de lado a lado, mientras que en los estratos era una banda más. Lo
   // que allí era una rareza testimonial aquí es carácter, así que pasa a salir en
   // tres de cada diez piezas — y en una de cada cuatro de ésas, con dos tintas más.
-  const P_DOS = 0.30, P_TRES = 0.26;
+  // LA TRAMA DE ENCIMA. No es una hebra teñida: es OTRA TRAMA entera, con sus hebras,
+  // sus ramales, su foco y su tinta. La diferencia importa y es conceptual, no de
+  // grado: una hebra teñida de esta misma trama está SOLDADA a las demás por los
+  // nudos, así que es la misma masa de otro color y no hay tensión ninguna. Dos tramas
+  // no se sueldan — se superponen, porque no se conocen: cada una cruza el pliego a su
+  // manera y se encuentran donde se encuentran.
+  //
+  // Con eso la regla queda dicha del todo: LA SOLDADURA SOLO OCURRE DENTRO DE UNA
+  // TRAMA. Entre tramas hay pasada y registro, que es como se imprime de verdad.
+  //
+  // La de encima va siempre laxa ('red'): dos tramas gordas se tapan la una a la otra
+  // y lo que queda es barro de dos colores. La tensión la da que una atraviese a la
+  // otra, no que compitan por el sitio.
+  const P_SOBRE = 0.46;
   // Y el acoplamiento: una masa LEVE invertida no es un negativo, es un arañazo.
   // Medido sobre 500 tiradas —la mancha va de 14,4% (p10) a 28,6% (p90)— por debajo
   // del 18% la tinta clara sobre suelo oscuro se lee como una raya en una plancha,
@@ -944,7 +957,7 @@
     return out;
   }
 
-  function tramar(rng, W, H, tipo, params) {
+  function tramar(rng, W, H, tipo, params, ajenos) {
     const S = min(W, H);
     const t = TIPOS[tipo];
 
@@ -1078,7 +1091,10 @@
       if (mu) { cuerpos.push(mu); munones++; }
     }
 
-    const med = medir(cuerpos, W, H);
+    // Se mide la pieza COMPLETA, con la trama de encima incluida si la hay: los ojos
+    // de una obra de dos tramas los cierran las dos, y la mancha es la de las dos. Si
+    // se midiera solo ésta, 'falta' estaría juzgando media pieza.
+    const med = medir(ajenos ? cuerpos.concat(ajenos) : cuerpos, W, H);
     let lvMin = NIVELES, lvMax = 0;
     for (const ch of todas) for (const v of ch) {
       if (v.lv == null) continue;
@@ -1094,9 +1110,15 @@
   // Cuánto se sale un candidato de lo que su tipo declara. Cero es cumplir.
   // No es un booleano porque con seeds difíciles ningún candidato cumple, y
   // entonces hay que quedarse con el que menos incumple — no con el primero.
-  function falta(c, t) {
+  function falta(c, t, sobre) {
     const n = c.ojos.length;
-    const fo = n < t.ojos[0] ? t.ojos[0] - n : n > t.ojos[1] ? n - t.ojos[1] : 0;
+    // Con dos tramas, las celdas no se suman: se MULTIPLICAN, porque cada hebra de
+    // encima parte en dos las celdas que cruza. Medido, el conteo se va por encima del
+    // triple, así que el techo declarado por el tipo tiene que acompañar — si no, cada
+    // pieza de dos tramas sale con una falta enorme y el bucle acaba eligiendo por un
+    // criterio que no puede cumplir.
+    const hi = sobre ? Math.round(t.ojos[1] * 3) : t.ojos[1];
+    const fo = n < t.ojos[0] ? t.ojos[0] - n : n > hi ? n - hi : 0;
     const m = c.mancha;
     const fm = m < t.mancha[0] ? (t.mancha[0] - m) / t.mancha[0]
              : m > t.mancha[1] ? (m - t.mancha[1]) / t.mancha[1] : 0;
@@ -1153,10 +1175,19 @@
     const filoName = params.filo || rng.weighted(FILO_NAMES.map(n => ({ n, prob: FILOS[n].prob }))).n;
     const filo = FILOS[filoName] || FILOS.pincel;
     const t = TIPOS[tipo];
+
+    // La trama de encima se traba UNA vez y fuera del bucle: no es un candidato, es la
+    // otra plancha. El bucle sigue buscando la de abajo, pero midiendo las dos juntas.
+    const puedeSobre = (rol.otras || []).length > 0 && !params.sinSobre;
+    const sobre = (puedeSobre && rng.bool(params.sobre != null ? params.sobre : P_SOBRE))
+      ? tramar(new E.Rng((seed ^ 0x5B3C1A7) >>> 0), fw, fh, 'red', {})
+      : null;
+
     let best = null, bestF = Infinity;
     for (let i = 0; i < REINTENTOS; i++) {
-      const c = tramar(new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0), fw, fh, tipo, params);
-      const f = falta(c, t);
+      const c = tramar(new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0), fw, fh, tipo, params,
+                       sobre ? sobre.cuerpos : null);
+      const f = falta(c, t, !!sobre);
       if (f < bestF) { bestF = f; best = c; }
       if (f === 0) break;
     }
@@ -1186,39 +1217,23 @@
     ctx.scale(S, S);   // del campo normalizado al pliego
     // La segunda tinta, cuando la hay, se lleva UNA hebra entera. No medio
     // cuerpo, no un degradado: un cuerpo. Es raro a propósito.
-    // Se reparten hebras a las otras tintas. Se eligen entre las PASANTES —las que
-    // cruzan el pliego— y no entre los ramales: una hebra de color que atraviesa se
-    // lee entera, y un ramal de color se lee como una mancha suelta.
-    const pasantes = best.chains.slice(0, best.nH + best.nV);
-    const disp = (rol.otras || []).slice(0, max(0, pasantes.length - 1));
-    let nOtras = 0;
-    if (disp.length) nOtras = rng.bool(P_DOS) ? (disp.length > 1 && rng.bool(P_TRES) ? 2 : 1) : 0;
-    const teñidas = new Map();
-    const libres = pasantes.slice();
-    for (let k = 0; k < nOtras && libres.length > 1; k++) {
-      teñidas.set(libres.splice(rng.int(0, libres.length - 1), 1)[0], disp[k]);
-    }
-    const dos = nOtras > 0;
+    const nOtras = sobre ? 1 : 0;
+    const dos = !!sobre;
 
     // La semilla del filo va por CUERPO (índice + seed), no por pieza: si todos
     // compartieran ruido, dos cuerpos paralelos ondularían a la vez y se leería el
     // patrón en vez del pincel.
-    ctx.beginPath();
-    best.cuerpos.forEach((ch, i) => {
-      if (!teñidas.has(ch)) emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
-    });
-    ctx.fillStyle = rol.tinta;
-    ctx.fill();
-
-    // Cada tinta, su pasada. El orden es el de la impresión: la última tapa en los
-    // cruces, y ahí vuelve a haber un encima y un debajo — la única profundidad que
-    // esta obra admite, y no la decide el dibujo, la decide el orden de las tintas.
-    for (const [ch, col] of teñidas) {
+    // Una pasada por trama, y el orden es el de la impresión: la de encima tapa en los
+    // cruces. Ahí vuelve a haber un encima y un debajo — la única profundidad que esta
+    // obra admite, y no la decide el dibujo, la decide el orden de las planchas.
+    const pasada = (cs, col, sal) => {
       ctx.beginPath();
-      emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (best.cuerpos.indexOf(ch) + 1))) >>> 0);
+      cs.forEach((ch, i) => emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (i + 1)) ^ sal) >>> 0));
       ctx.fillStyle = col;
       ctx.fill();
-    }
+    };
+    pasada(best.cuerpos, rol.tinta, 0);
+    if (sobre) pasada(sobre.cuerpos, rol.otras[0], 0x3F1B9C);
     ctx.restore();
 
     // 5. Grano: el papel. unit lo mantiene del mismo tamaño físico a 300 dpi.
@@ -1230,18 +1245,27 @@
       ctx.globalAlpha = ALISO;
       ctx.translate(ox, 0);
       ctx.scale(S, S);
-      ctx.beginPath();
-      best.cuerpos.forEach((ch, i) => {
-        if (!teñidas.has(ch)) emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
-      });
-      ctx.fillStyle = rol.tinta;
-      ctx.fill();
-      for (const [ch, col] of teñidas) {
-        ctx.beginPath();
-        emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (best.cuerpos.indexOf(ch) + 1))) >>> 0);
-        ctx.fillStyle = col;
-        ctx.fill();
-      }
+      // OJO con el solape, que costó dos intentos.
+      //
+      // Repintando las dos tramas al 55% una detrás de otra, la zona de cruce se lleva
+      // las dos manos y sale un color intermedio que no está en la paleta: se veía
+      // como una transparencia, y estas tintas no son transparentes.
+      //
+      // El arreglo obvio —recortar la de abajo por fuera de la de encima con 'evenodd'
+      // y un rectángulo exterior— NO funciona, y el motivo merece quedar escrito:
+      // 'emitir' construye un cuadrilátero por tramo y los deja SOLAPARSE a propósito,
+      // porque con 'nonzero' solaparse es sumar. Bajo 'evenodd' esos mismos solapes se
+      // CANCELAN, así que el recorte salía agujereado justo donde la masa es más
+      // espesa. La regla de relleno no es un detalle del pintado: es parte de cómo
+      // está construido el cuerpo, y no se puede cambiar al vuelo.
+      //
+      // Así que con dos tramas el aliso se aplica SOLO a la de encima, que es la última
+      // pasada. Ningún píxel recibe dos manos y no hay mezcla en ningún sitio. Y se
+      // sostiene por lo material: la plancha de encima imprime sobre tinta ya seca y
+      // cubre más, así que es la que tapa el diente del papel. La de abajo conserva su
+      // grano, y esa diferencia entre las dos pasadas es del oficio, no un defecto.
+      if (sobre) pasada(sobre.cuerpos, rol.otras[0], 0x3F1B9C);
+      else pasada(best.cuerpos, rol.tinta, 0);
       ctx.restore();
     }
 
@@ -1264,8 +1288,20 @@
     // una masa que no encierra nada (ciega) y una que encierra mucho (asedio)
     // son las dos cosas difíciles.
     const ojosLbl = n === 0 ? 'Ciego' : n === 1 ? 'Un ojo' : n + ' ojos';   // 'Ciego' ya no sale: la trama siempre cierra algo
-    // Medido: 0:15% 1:35% 2:22% 3:12% 4:8% 5-7:8% 8+:2%.
-    const ojosR = n === 0 ? 'uncommon' : n <= 2 ? 'common' : n <= 4 ? 'uncommon' : n <= 7 ? 'rare' : 'superrare';
+    // Recalibrado contra la trama, que reparte muy distinto de los estratos: con hebras
+    // que se cruzan el ojo deja de ser un accidente y pasa a ser consecuencia
+    // geométrica —cero piezas ciegas—, así que lo raro ya no es tener pocos: es tener
+    // muchos.
+    //
+    // Y se mide DENTRO DE SU CLASE. Con dos tramas las celdas no se suman, se
+    // multiplican —cada hebra de encima parte en dos las celdas que cruza— y el conteo
+    // se va por encima del triple: doce ojos en una pieza de dos tramas es lo
+    // corriente. Sin normalizar, el 24% que lleva segunda trama se iba entero a 'rare'
+    // o 'superrare' por el mero hecho de llevarla, y la rareza acababa midiendo el
+    // número de planchas en vez de lo que salió en la tirada.
+    const nn = res.nOtras ? n / 2.6 : n;
+    const ojosR = nn <= 1 ? 'uncommon' : nn <= 3 ? 'common' : nn <= 4.5 ? 'uncommon'
+                : nn <= 6.5 ? 'rare' : 'superrare';
     // Cuánto suelo queda atrapado: dos piezas con tres ojos no son lo mismo si
     // en una miden el 0,1% de la hoja y en la otra el 6%.
     const areaOjos = res.ojos.reduce((a, b) => a + b, 0);
@@ -1286,8 +1322,8 @@
     // Solo 'isla' es rara: 'estrato' y 'ramificado' salen uno de cada cuatro, que
     // es corriente. La rareza del tipo se la lleva el que asedia el suelo.
     const tipoR = res.tipo === 'isla' ? 'rare' : 'common';
-    const tintaR = res.nOtras === 2 ? 'rare' : res.nOtras === 1 ? 'uncommon' : res.rol.inv ? 'uncommon' : 'common';
-    const tintaLbl = (res.nOtras === 2 ? 'Tres tintas' : res.nOtras === 1 ? 'Dos tintas' : 'Una tinta')
+    const tintaR = res.nOtras ? 'uncommon' : res.rol.inv ? 'uncommon' : 'common';
+    const tintaLbl = (res.nOtras ? 'Dos tramas' : 'Una trama')
                    + (res.rol.inv ? ' · invertida' : '');
     const papelLbl = res.rol.inv ? 'Oscuro' : res.rol.papel === 'crudo' ? 'Crudo' : 'Blanco';
 

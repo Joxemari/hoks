@@ -283,21 +283,41 @@ contraste, se usa la mitad de las veces. Sobre papel crudo la masa pesa distinto
 porque el suelo deja de ser ausencia de tinta y se vuelve material. No es un ajuste
 del laboratorio: es qué papel se compra.
 
-**Las otras tintas.** Con estratos esto era una rareza testimonial del 4%: una banda
-más, en otro color. En una trama pesa muchísimo más, porque una hebra teñida
-**atraviesa** la pieza, se cruza con las demás y se lee de lado a lado. Así que deja de
-ser una anécdota y pasa a ser una decisión: tres de cada diez piezas llevan una segunda
-tinta, y una de cada cuatro de ésas, una tercera.
+**La trama de encima.** No es una hebra teñida: es **otra trama entera**, con sus
+hebras, sus ramales, su foco y su tinta. La diferencia importa y es conceptual, no de
+grado — una hebra teñida de esta misma trama está **soldada** a las demás por los
+nudos, así que es la misma masa de otro color y no hay tensión ninguna. Dos tramas no
+se sueldan: se **superponen**, porque no se conocen. Cada una cruza el pliego a su
+manera y se encuentran donde se encuentran.
 
-Se reparten entre las hebras **pasantes**, nunca entre los ramales: una hebra de color
-que cruza se lee entera, y un ramal de color se lee como una mancha suelta. Cada tinta
-tiene que sostenerse sola —contraste contra el suelo y diferencia con las que ya
-están—, si no se lee como un error de registro. Y dos tintas casi iguales se descartan:
-son una.
+Con eso la regla queda dicha del todo: **la soldadura solo ocurre dentro de una
+trama.** Entre tramas hay pasada y registro, que es como se imprime de verdad. Y ahí
+reaparece un encima y un debajo — la única profundidad que esta obra admite, y no la
+decide el dibujo: la decide el orden de las planchas.
 
-Cada tinta es **su pasada**, y el orden es el de la impresión: la última tapa en los
-cruces. Ahí vuelve a haber un encima y un debajo — la única profundidad que esta obra
-admite, y no la decide el dibujo, la decide el orden de las tintas.
+Sale en una de cada cuatro piezas. La de encima va siempre laxa: dos tramas gordas se
+tapan la una a la otra y lo que queda es barro de dos colores. La tensión la da que una
+atraviese a la otra, no que compitan por el sitio.
+
+Y dos cosas que costaron, las dos por medir la pieza completa y no media:
+
+- **Los ojos se multiplican, no se suman.** Cada hebra de encima parte en dos las
+  celdas que cruza, así que el conteo se va por encima del triple. Hubo que ampliar el
+  techo declarado por el tipo —si no, cada pieza de dos tramas salía con una falta
+  enorme y el bucle elegía por un criterio imposible de cumplir— y normalizar la rareza
+  del ojo **dentro de su clase**: doce ojos en una pieza de dos tramas es lo corriente,
+  y sin normalizar la rareza acababa midiendo el número de planchas.
+- **El solape no puede recibir dos manos.** Repintando las dos tramas al 55% una detrás
+  de otra, la zona de cruce se llevaba las dos y salía un color intermedio que no está
+  en la paleta: se veía como una transparencia, y estas tintas no son transparentes.
+  El arreglo obvio —recortar la de abajo con `evenodd` y un rectángulo exterior— **no
+  funciona**, y el motivo merece quedar escrito: `emitir` deja los cuadriláteros
+  solaparse a propósito porque con `nonzero` solaparse es sumar, y bajo `evenodd` esos
+  mismos solapes se cancelan, así que el recorte salía agujereado justo donde la masa
+  es más espesa. La regla de relleno no es un detalle del pintado: es parte de cómo
+  está construido el cuerpo. Con dos tramas el aliso se aplica **solo a la de encima**,
+  que es la última pasada — ningún píxel recibe dos manos, y se sostiene por lo
+  material: la plancha de encima imprime sobre tinta seca y cubre más.
 
 ## Medido
 
@@ -310,8 +330,10 @@ ojos        media 2,9 · p50 3 · p90 5 · max 8
 ciegas      0,0%  ← ninguna pieza deja de cerrar algo
 cruces      media 14 · p10 10 · p90 19
 mancha      p10 20,3%  p50 33,0%  p90 45,6%
-falta = 0   95,3% de las piezas cumplen lo que su tipo declara (max 0,26)
-overall     uncommon 48%  common 35%  rare 15%  superrare 2%
+falta = 0   93% de las piezas cumplen lo que su tipo declara
+overall     uncommon 46%  common 34%  rare 18%  superrare 2%
+2ª trama    24% de las piezas
+mancha      muro p50 44%  ·  nudo 31%  ·  trama 29%  ·  red 18%
 ```
 
 **Cero piezas ciegas** es el dato que justifica la reformulación entera. Con estratos y
