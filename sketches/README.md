@@ -51,6 +51,8 @@ sketches/
   dtkrt/            ← EN PRUEBAS: familia nueva, aún sin página de producción
   eclps/             ← EN PRUEBAS: iteración horizontal, aún sin página de producción
   evol/             ← EN PRUEBAS: la ley del encuentro invertida. Ver su README
+  ptzd/             ← SOLO CONCEPTO: el bloque partido. Aún no hay algo.js.
+                      Ver su README
   trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
     verificacion/   ← los detectores del halo y sus controles rotos a propósito.
                       No se publica: se ejecuta a mano cuando alguien toca el
@@ -86,6 +88,16 @@ el borde — el mismo mapa de vacíos con el que TRZS coloca sus discos.
 No está en `works.json` ni publicada. Ver `evol/README.md` para el concepto, las
 nueve pasadas que costó y las decisiones que quedan abiertas (el nombre, entre
 ellas).
+
+`ptzd/` es el cuarto, y es distinto de los tres anteriores en una cosa: **por
+ahora sólo es concepto**. No hay `algo.js`, no hay harness, no hay una sola pieza
+renderizada — está escrita la gramática antes que el código, que es el paso que a
+`dtkrt/`, `eclps/` y `evol/` les faltó por escrito. El bloque nace cuadrado y unos
+cortes de anchura constante entran por los cantos, se ramifican y mueren unos
+contra otros; las piezas que sueltan se apartan, y la silueta es lo que queda. Si
+KRRTK **parte** el cuadrado, PTZD lo **rompe**: la subdivisión conoce el todo, y
+una grieta sólo conoce su punta. Ver `ptzd/README.md` para las ocho reglas, las
+influencias contrastadas de las que sale cada una y lo que habrá que medir.
 
 ECLPS es también la primera familia que existe en **un solo formato**: `double`, dos
 pliegos apaisados uno al lado del otro (2√2:1). No es capricho ni límite técnico
