@@ -290,9 +290,21 @@ if (!document.querySelector('link[rel="icon"]')) {
 }
 
 const path = window.location.pathname.split('/').pop() || 'index.html';
-const isWork = ['index.html','','plls.html','krrtk.html','dtk.html','bzrs.html','dtkrt.html'].includes(path);
+// Adivinanza inicial, corregida en cuanto llega works.json: el catálogo de
+// familias es un dato, no una lista escrita aquí. Sirve para que el nav no
+// parpadee mientras tanto.
+const isWork = ['index.html','','work.html','plls.html','krrtk.html','dtk.html','bzrs.html',
+                'dtkrt.html','eclps.html','trzs.html'].includes(path);
 const isAbout = path === 'about.html';
 const isPalettes = path === 'palettes.html';
+
+// Dónde vive la sección de una familia. Sin `page` no hay página propia: la
+// obra cae a la página genérica, que es lo que permite que activar una familia
+// en el panel baste para que tenga sección en la web. La regla vive aquí y se
+// exporta porque la landing enlaza a lo mismo: dos reglas distintas darían dos
+// destinos distintos para la misma obra.
+function workHref(w) { return w.page || ('work.html?w=' + encodeURIComponent(w.slug)); }
+window.HOKSNAV = { workHref };
 
 const nav = document.createElement('nav');
 nav.innerHTML = `
@@ -306,11 +318,11 @@ nav.innerHTML = `
   <ul class="nav-links">
     <li class="nav-work${isWork?' active':''}">
       <span class="nav-work-label" id="nav-work-label" data-i18n="nav.work">Work</span>
+      <!-- Lista de arranque: la de verdad la escribe works.json unas líneas más
+           abajo. Esta se queda si no hay red, y evita el hueco mientras llega. -->
       <ul class="nav-work-dropdown" id="nav-work-dropdown">
         <li data-slug="plls"><a href="plls.html"${path==='plls.html'?' class="active"':''}>PLLS</a></li>
         <li data-slug="krrtk"><a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}>KRRTK</a></li>
-        <li data-slug="dtk"><a href="dtk.html"${path==='dtk.html'?' class="active"':''}>DTK</a></li>
-        <li data-slug="bzrs"><a href="bzrs.html"${path==='bzrs.html'?' class="active"':''}>BZRS</a></li>
         <li data-slug="dtkrt"><a href="dtkrt.html"${path==='dtkrt.html'?' class="active"':''}>DTKRT</a></li>
         <li data-slug="eclps"><a href="eclps.html"${path==='eclps.html'?' class="active"':''}>ECLPS</a></li>
         <li data-slug="trzs"><a href="trzs.html"${path==='trzs.html'?' class="active"':''}>TRZS</a></li>
@@ -351,16 +363,36 @@ if (workLabel && workDropdown) {
   document.addEventListener('click', () => workDropdown.classList.remove('open'));
   workDropdown.addEventListener('click', e => e.stopPropagation());
 
-  // El dropdown lista solo las familias activas de data/works.json.
-  // Si el fetch falla, se dejan visibles todas (degradación segura).
+  // El dropdown SE ESCRIBE desde data/works.json: una entrada por familia
+  // activa, en el orden del catálogo. Antes la lista estaba escrita en este
+  // archivo y works.json solo podía esconder entradas, así que activar una
+  // familia nueva en el panel no la traía al nav — había que venir a tocar
+  // código. Ahora `active` es el único interruptor.
+  // Si el fetch falla se queda la lista de arranque (degradación segura).
   fetch('https://raw.githubusercontent.com/Joxemari/hoks/main/data/works.json?t=' + Date.now())
     .then(r => r.ok ? r.json() : null)
     .then(works => {
       if (!Array.isArray(works) || !works.length) return;
-      const activeSlugs = new Set(works.filter(w => w.active).map(w => w.slug));
-      workDropdown.querySelectorAll('li[data-slug]').forEach(li => {
-        if (!activeSlugs.has(li.dataset.slug)) li.style.display = 'none';
-      });
+      const live = works.filter(w => w && w.active && w.slug);
+      if (!live.length) return;
+      const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      // La página genérica sirve a varias familias, así que para saber cuál se
+      // está mirando no basta el nombre del archivo: hay que mirar el ?w=.
+      const hereSlug = new URLSearchParams(location.search).get('w');
+      let here = false;
+      workDropdown.innerHTML = live.map(w => {
+        const href = workHref(w);
+        const mine = href.split('?')[0] === path &&
+                     (href.indexOf('?w=') < 0 || hereSlug === w.slug);
+        if (mine) here = true;
+        return `<li data-slug="${esc(w.slug)}"><a href="${esc(href)}"${mine ? ' class="active"' : ''}>` +
+               `${esc(w.name || w.slug.toUpperCase())}</a></li>`;
+      }).join('');
+      // …y con la lista real ya se sabe si esta página es una obra: en la
+      // adivinanza inicial no cabían las familias que aún no existían.
+      const workLi = workLabel.closest('li');
+      if (workLi) workLi.classList.toggle('active', here || path === 'index.html' || path === '');
     })
     .catch(() => {});
 }

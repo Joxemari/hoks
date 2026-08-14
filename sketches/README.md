@@ -17,8 +17,11 @@ sola fuente de código por obra. Normalmente la opera Claude, no tú.
 3. **Validar** — abres el harness, pulsas `g` y miras el **grid de obras**:
    12 seeds a la vez. Ahí es donde tu ojo decide — variaciones feas, repetitivas
    o rotas se ven en la distribución, nunca en una pieza suelta.
-4. **Publicar** — la página de producción (`/<obra>.html`) consume el mismo
-   `algo.js`. Push a `main` y está en la web.
+4. **Publicar** — marcar *Active* en el panel. Con eso la obra entra en la
+   landing, en el dropdown *Work* y tiene sección: la página genérica
+   (`work.html?w=<obra>`) consume el mismo `algo.js`. Un cascarón propio
+   (`/<obra>.html`) es opcional y se apunta en `page`; las veteranas lo tienen
+   porque sus URLs estuvieron publicadas.
 
 Tú tocas los pasos 1 y 3. El 2 y el 4 son mecánicos: delégalos.
 
@@ -37,7 +40,9 @@ sketches/
                       Una sola fuente: arréglalo aquí una vez.
   _lab.js           ← piezas comunes del harness: selector de obra (salta de
                       familia conservando la seed) y selector de paleta sobre
-                      ../../palette-picker.js. Lista GRADUATED de obras.
+                      ../../palette-picker.js. Lista GRADUATED de obras: las
+                      abre TODAS, publicadas o no — `active` es cosa de la web,
+                      no de la mesa. Las apagadas van marcadas.
   _batch.js         ← lotes: la selección se hace aquí, sobre la hoja de
                       contactos. Un lote es una lista de RECETAS
                       (obra + seed + params), no de imágenes.
@@ -48,8 +53,8 @@ sketches/
   plls/            ← graduada (algo.js + harness)
   krrtk/           ← graduada (porte fiel, verificado op-a-op)
   dtk/             ← graduada (porte fiel, verificado op-a-op)
-  dtkrt/            ← EN PRUEBAS: familia nueva, aún sin página de producción
-  eclps/             ← EN PRUEBAS: iteración horizontal, aún sin página de producción
+  dtkrt/            ← publicada: la primera familia que nació aquí
+  eclps/             ← publicada: la fila, con su pliego doble
   evol/             ← EN PRUEBAS: la ley del encuentro invertida. Ver su README
   ptzd/             ← SOLO CONCEPTO: el bloque partido. Aún no hay algo.js.
                       Ver su README
@@ -342,8 +347,13 @@ Los sliders son de exploración: producción usa siempre los defaults.
    `FORMAT` de partida de la obra.
 3. Verificar: `node --check`, y si reemplaza un motor existente, prueba de
    equivalencia (log de operaciones de canvas idéntico para N seeds).
-4. En la página de producción: cargar `_engine.js` + `algo.js` y delegar
-   `draw()` en `HOKS.<OBRA>.render/traits`. Nada de motor inline.
+4. Añadir el slug a `GRADUATED` — en `_lab.js` **y** en `admin.html`, que es un
+   panel autónomo y lleva su propia copia. Con eso ya se abre en el laboratorio
+   y aparece en su selector de obra, esté publicada o no.
+5. La página de producción no hay que escribirla: `work.html?w=<obra>` carga
+   `_engine.js` + el `algo.js` del slug y delega en `HOKS.<OBRA>.render`. Solo si
+   la obra merece URL propia se escribe el cascarón de veinte líneas y se apunta
+   en `page`. Nada de motor inline, en cualquier caso.
 
 Nada está publicado hasta el push a `main`; se puede probar y revertir sin
 miedo (ver CLAUDE.md).
