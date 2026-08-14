@@ -134,9 +134,38 @@ alargar el halo de las dos en la junta, reducir la pizca del solape, y —descar
 midiendo— que hubiera cuerpos solapados sin cruce registrado.
 
 Los detectores que encontraron todo eso están commiteados en
-`trzs/verificacion/`, con sus controles rotos a propósito y las siete trampas que
+`trzs/verificacion/`, con sus controles rotos a propósito y las once trampas que
 dieron defectos inexistentes. Se ejecutan a mano cuando alguien toca el dibujo de
 la cinta.
+
+**Y el final de la cinta también lleva incisión.** El halo del cuerpo se traza
+con cabo a hueso, así que se acaba justo donde se acaba la cinta: la cara del
+final era el único filo de la obra sin corte, y cuando caía contra otra hebra las
+dos tintas se tocaban y se leían como una sola pieza. La holgura sólo está
+garantizada frente a las huellas de cruce, no frente a una vecina que pasa de
+largo, así que el caso no era raro: 22 de 60 obras de tres cintas y 13 de 60 de
+dos. El remate en inglete o redondo llevaba el mismo problema, y ahí el halo ya
+se había intentado una vez y se retiró porque traía de vuelta la costura de 1 px.
+No era el halo: era el ORDEN. Se pintaba detrás de la tinta del cuerpo, y ahora
+va con los demás halos.
+
+**Y el salto no es una esquina.** La curva redondeaba todos los vértices
+interiores, y el vértice de un salto es el final de una cinta y el principio de
+otra: redondeándolo, el final se doblaba hacia la cinta siguiente y el remate
+—que va al vértice— caía fuera del cuerpo. Tampoco es un tramo para la mediana
+de la que sale la anchura: un brinco que mide media obra inflaba la mediana y
+dejaba la cinta más ancha de lo que su recorrido admite.
+
+**Y el cabo no se aplasta: es material, no holgura.** Separar hebras empuja los
+dos segmentos de cada par, y a un extremo de cinta lo empuja contra su vecino.
+En medio del recorrido eso lo arregla `enforceMaterial` quitando el nodo; en un
+cabo no hay nodo que quitar sin acortar la cinta. Con una cinta hay dos extremos
+y no se nota; con tres hay seis, y **una de cada cuatro obras** salía con un
+tramo más corto que el material admite. Reponerlo al final del solver no
+funciona —mete el cabo en la vecina, y los cuerpos solapados sin cruce pasaron de
+0 a 53 de 200—; reponerlo DENTRO de las pasadas de `selfAvoid` sí, porque la
+pasada siguiente vuelve a separar y lo que cede es la otra hebra. Con eso el
+tejido de tres cintas pasa de 29 obras sucias de 100 a 2, y de 1.546 a 977 ms.
 
 **Y la costura de 1 px, que se quedó abierta al graduar, ya está cerrada.** Era
 el filo del cabo: el halo y el cuerpo acababan en el mismo arco y el remate va a
