@@ -555,6 +555,96 @@ Y dos cosas que son tuyas:
 - **Si la curva entra.** Yo diría que no, por lo que ya dejaste escrito.
 - **Si la travesía entra**, porque obliga a reabrir el margen en los cuatro lados.
 
+---
+
+# Tercera vuelta: trazos independientes, relacionados a propósito
+
+La segunda lectura también era falsa. **No hay horquillas, ni nudos, ni
+reencuentros, ni un cuerpo que se parte.** Corregido por el autor mirando sus
+propias referencias: *«lo que veo son trazos independientes, que se relacionan
+compositivamente pero nunca se juntan; como mucho podrían entrelazarse y ni
+siquiera hacen eso»*.
+
+## Los dos errores, escritos para no repetirlos
+
+1. **La topología que no existe.** Leí bifurcaciones donde hay dos trazos
+   distintos que se acercan. Ni una sola unión en ninguna de las seis referencias.
+2. **El garabato.** Las dos primeras versiones hacían trazos de ocho a quince
+   quiebros deambulando. Los de la referencia son **largos y simples**: de uno a
+   cinco quiebros en todo el recorrido, con una dirección clara de principio a
+   fin. Un trazo cruza media hoja y se quiebra tres veces. **Esto solo explicaba
+   la mitad del no-parecido**, y era independiente de toda la discusión de
+   topología — o sea que la segunda vuelta se equivocó dos veces a la vez.
+
+Y de ahí, el **recinto tampoco es una figura**: el blanco grande de las
+referencias 1 y 6 no está encerrado por un trazo cerrado, está rodeado por
+**varios trazos que casi se cierran** y dejan aberturas. Es vecindad (`cerco`), no
+lazo. Por eso el `lazo` de la segunda vuelta no salía nunca: no existe.
+
+## El modelo, ahora
+
+**Trazos independientes, y la relación se COMPONE.** Se declara y luego se
+construye la geometría que la cumple; no se espera a que emerja de un paseo con
+pesos, que es lo que daba confeti. Seis relaciones, con los nombres del autor:
+
+| relación | qué es | cómo se construye |
+|---|---|---|
+| `paralelo` | comparten dirección a distancia casi constante | **desplazando** un trozo del otro — única forma de que el canal salga constante |
+| `abanico` | arrancan cerca y se abren | mismo punto ±poco, dirección ±poco |
+| `tangencia` | mínimo **puntual** y se separan; el pelo aparece en un punto | cruzan en ángulo, con el paso a la distancia del canal |
+| `caboCabo` | dos extremos se buscan sin tocarse | extremo a `1…3,2 D` de su extremo |
+| `caboCuerpo` | un extremo muere junto al costado de otro | extremo a `1…3,2 D` de su costado |
+| `suelto` | lejos. La separación también es una relación | sitio con aire |
+
+Un **tipo** es sólo un reparto de relaciones y un número de trazos (3–20). No hay
+topología que declarar porque no hay topología: `tendido` (refs 3 y 4), `recinto`
+(1 y 2), `haz` (6), `disperso` (el examen duro).
+
+## Medido
+
+Batería completa sobre el algoritmo publicado, doce configuraciones (los cuatro
+tipos, apaisado, apaisado con haz, campo cuadrado sobre DIN, gubia fina y ancha,
+vibrada, degradado):
+
+```
+canal (regla 3)   996 obras · 217.517 pares no contiguos · 0 incumplen
+                  minimo 1,0001 en las doce · 0 con tintas solapadas
+toque             0 de 120 con tinta fuera de la geometria
+                  0 de 120 con tinta mas alla del cabo
+margen            0 de 204 con un trazo escapado (1.089 sangrados declarados)
+garabato          0 de 204 con mas de 6 quiebros de media (p50 2,3 · max 5)
+pizcas            0 de 204 con un trazo mas corto de 0,20 del lado corto
+determinismo      60/60 al pixel · 60/60 con la paleta fijada
+resolucion        60/60 misma huella a 760 / 2400 / 4200
+```
+
+Y los controles, todos disparando: `duro` 63/120 · `corta` 36/120 · `miter` 47/48
+· `cabo` 48/48 · `margen` 73/120 · `garabato` 15/120 · `pizca` 89/120.
+
+Distribución sobre 996: tipos `haz` 34% · `tendido` 26% · `recinto` 23% ·
+`disperso` 17%; ojos p50 2, pasillos p50 2 con 11,7 anchuras, ocupación p50 8,8%.
+
+**`falta = 0` sólo en 553 de 996** (máximo 2,1), y es lo más flojo del estado
+actual: la hoja no admite todos los trazos que el tipo pide cuando son largos, así
+que se queda con menos. Manda el candidato que menos incumple, como en el resto de
+la casa, pero el número está para mirarlo.
+
+## Tres trampas nuevas, pagadas en esta vuelta
+
+1. **El sangrado leído como defecto.** El detector de margen marcaba 20 obras
+   sanas de 60: un trazo puede salirse del cuadro **a propósito** (es uno de los
+   ejes de la familia). Hay que distinguir sangrado declarado de escape — y de
+   paso apareció que `SANGRE` medía el **eje** en el algoritmo y el **filo de la
+   tinta** en el detector, así que una gubia ancha se pasaba media anchura de lo
+   declarado. Ahora las dos miden el filo.
+2. **La vibración contada como quiebros.** Contar vértices marcaba de garabato una
+   obra limpia: con la vibración puesta, un tramo se subdivide en muchos puntos
+   con desvíos de tres grados. Se cuentan **giros de más de 15°**, que es lo que
+   la regla dice.
+3. **Dos suelos de longitud distintos.** El `cerco` usaba `LARGO_MIN × 0,8` y el
+   detector `LARGO_MIN`: 19 pizcas de 996 que eran de la definición, no del
+   dibujo.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

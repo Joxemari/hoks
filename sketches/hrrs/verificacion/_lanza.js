@@ -17,16 +17,16 @@ const REPO = path.join(__dirname, '..', '..', '..');
 // extremos de la gubia y del canal.
 const CONFIGS = [
   { n: 'defecto',    fmt: 'square',     p: {} },
-  { n: 'suelto',     fmt: 'square',     p: { tipo: 'suelto' } },
-  { n: 'plegado',    fmt: 'square',     p: { tipo: 'plegado' } },
-  { n: 'acompanado', fmt: 'square',     p: { tipo: 'acompanado' } },
-  { n: 'trenza',     fmt: 'square',     p: { tipo: 'trenza' } },
+  { n: 'tendido',    fmt: 'square',     p: { tipo: 'tendido' } },
+  { n: 'recinto',    fmt: 'square',     p: { tipo: 'recinto' } },
+  { n: 'haz',        fmt: 'square',     p: { tipo: 'haz' } },
+  { n: 'disperso',   fmt: 'square',     p: { tipo: 'disperso' } },
   { n: 'apaisado',   fmt: 'horizontal', p: {} },
-  { n: 'apais-tren', fmt: 'horizontal', p: { tipo: 'trenza' } },
+  { n: 'apais-haz',  fmt: 'horizontal', p: { tipo: 'haz' } },
   { n: 'cuadro',     fmt: 'horizontal', p: { field: 'square' } },
-  { n: 'gubia-fina', fmt: 'square',     p: { ancho: 0.46, canal: 0.17 } },
+  { n: 'gubia-fina', fmt: 'square',     p: { ancho: 0.52, canal: 0.17 } },
   { n: 'gubia-ancha',fmt: 'square',     p: { ancho: 1.0, canal: 0.26 } },
-  { n: 'sin-reserva',fmt: 'square',     p: { reserva: 0 } },
+  { n: 'vibrada',    fmt: 'square',     p: { vibra: 1 } },
   { n: 'degradado',  fmt: 'square',     p: { bg: 'gradient' } },
 ];
 

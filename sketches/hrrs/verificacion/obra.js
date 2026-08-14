@@ -48,13 +48,45 @@ function medir({ seed, fmt, params, base }) {
   // MARGEN: lo mas cerca que el borde de la cinta llega del borde del cuadro, en
   // fraccion del lado corto. Se mide contra el campo normalizado, que es donde el
   // algoritmo lo decide.
-  let margen = Infinity;
-  for (const pts of g.cintas) for (const p of pts) {
-    margen = Math.min(margen, p.x - h, p.y - h, g.fw - p.x - h, g.fh - p.y - h);
-  }
+  // Y hay que separar el SANGRADO del escape: un trazo puede salirse del cuadro a
+  // proposito (es uno de los ejes de la familia), pero solo hasta el sangrado
+  // declarado. Sin distinguirlos el detector marcaba 20 de 60 obras sanas — el
+  // sangrado leido como defecto.
+  let margen = Infinity, escapes = 0, sangrados = 0;
+  const lim = -(g.SANGRE || 0.09) * Math.min(g.fw, g.fh);
+  g.cintas.forEach((pts, k) => {
+    const sangra = g.sangra && g.sangra[k];
+    let m = Infinity;
+    for (const p of pts) m = Math.min(m, p.x - h, p.y - h, g.fw - p.x - h, g.fh - p.y - h);
+    if (sangra) { sangrados++; if (m < lim) escapes++; }
+    else if (m <= 0) escapes++;
+    margen = Math.min(margen, m);
+  });
 
-  // CADENCIA: coeficiente de variacion de las longitudes de tramo. Con todos los
-  // tramos iguales sale 0, que es el «muestrario».
+  // EL TRAZO LARGO Y SIMPLE: quiebros por trazo, y trazos-pizca. Son las dos
+  // reglas que costaron dos versiones enteras, asi que se miden.
+  // Los quiebros son GIROS DE VERDAD, no vertices: con la vibracion puesta un
+  // tramo se subdivide en muchos puntos con desvios de tres grados, y contarlos
+  // como quiebros marcaba de garabato una obra que va limpia. Se cuenta lo que
+  // cambia la direccion mas de 15 grados.
+  const QUIEBRO_MIN = 15;
+  let quiebros = 0, pizcas = 0, cortoMin = Infinity;
+  for (const pts of g.cintas) {
+    for (let i = 1; i < pts.length - 1; i++) {
+      const a = Math.atan2(pts[i].y - pts[i-1].y, pts[i].x - pts[i-1].x);
+      const b = Math.atan2(pts[i+1].y - pts[i].y, pts[i+1].x - pts[i].x);
+      let d = Math.abs((b - a) * 180 / Math.PI) % 360;
+      if (d > 180) d = 360 - d;
+      if (d > QUIEBRO_MIN) quiebros++;
+    }
+    let L = 0;
+    for (let i = 0; i < pts.length - 1; i++) L += Math.hypot(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y);
+    if (L < 0.20 * Math.min(g.fw, g.fh)) pizcas++;
+    if (L < cortoMin) cortoMin = L;
+  }
+  const qm = g.cintas.length ? quiebros / g.cintas.length : 0;
+
+  // CADENCIA: coeficiente de variacion de las longitudes de tramo.
   const largos = [];
   for (const pts of g.cintas)
     for (let i = 0; i < pts.length - 1; i++)
@@ -68,7 +100,8 @@ function medir({ seed, fmt, params, base }) {
   const disp = n >= 2 ? res.ojos[0] / res.ojos[(n - 1) >> 1] : 0;
 
   return { seed, tipo: res.tipo, cintas: res.cintas, vert: res.vert,
-           margen: +margen.toFixed(5), cadencia: +cv2.toFixed(3),
+           margen: +margen.toFixed(5), escapes, sangrados, cadencia: +cv2.toFixed(3),
+           quiebros: +qm.toFixed(2), pizcas, cortoMin: +cortoMin.toFixed(3),
            ojos: n, disp: +disp.toFixed(2),
            area: +(res.ojos.reduce((a, b) => a + b, 0)).toFixed(4),
            ocup: +res.ocupacion.toFixed(4), pliegues: res.pliegues,
@@ -84,13 +117,19 @@ function medir({ seed, fmt, params, base }) {
     const e = rs.find(r => r.err); if (e) console.log('  ' + e.err);
     process.exit(2);
   }
-  const fuera = ok.filter(r => r.margen <= 0);
+  const fuera = ok.filter(r => r.escapes > 0);
   const lab = ok.filter(r => r.ojos >= 2 && r.disp < 1.3);
   const muestrario = ok.filter(r => r.cadencia < 0.10);
   const P = (k, f) => { const s = stats(ok.map(r => r[k])); return f ? f(s) : s; };
   console.log(`\nobra · ${algo} · ${ok.length} obras`);
   console.log(`  margen (fraccion del lado corto, >0 sano): min ${P('margen').min}  p50 ${P('margen').p50}`);
-  console.log(`  OBRAS CON LA CINTA FUERA DEL CUADRO: ${fuera.length} de ${ok.length}`);
+  console.log(`  OBRAS CON UN TRAZO ESCAPADO (fuera sin declararlo): ${fuera.length} de ${ok.length}`);
+  console.log(`  sangrados declarados: ${ok.reduce((a, r) => a + r.sangrados, 0)} trazos`);
+  console.log(`  quiebros por trazo (1..5 sano): p50 ${P('quiebros').p50}  max ${P('quiebros').max}`);
+  const garab = ok.filter(r => r.quiebros > 6);
+  console.log(`  OBRAS-GARABATO (>6 quiebros de media): ${garab.length} de ${ok.length}`);
+  const piz = ok.filter(r => r.pizcas > 0);
+  console.log(`  OBRAS CON PIZCAS (trazo < 0,20 del lado corto): ${piz.length} de ${ok.length}`);
   console.log(`  cadencia (CV de longitudes): p50 ${P('cadencia').p50}  min ${P('cadencia').min}`);
   console.log(`  OBRAS-MUESTRARIO (CV < 0,10, degenerado): ${muestrario.length} de ${ok.length}`);
   console.log(`  ojos: p50 ${P('ojos').p50}  p90 ${P('ojos').p90}  max ${P('ojos').max}`);
@@ -104,5 +143,5 @@ function medir({ seed, fmt, params, base }) {
   for (const r of ok) { porTipo[r.tipo] = (porTipo[r.tipo] || 0) + 1; }
   console.log(`  tipos: ${Object.entries(porTipo).map(([k, v]) => k + ' ' + Math.round(v * 100 / ok.length) + '%').join('  ')}`);
   fuera.slice(0, 4).forEach(r => console.log(`    ✗ margen #${r.seed} ${r.cfg} ${r.margen}`));
-  process.exit((fuera.length || muestrario.length) ? 1 : 0);
+  process.exit((fuera.length || garab.length || piz.length) ? 1 : 0);
 })();
