@@ -91,6 +91,22 @@ Tres cosas que no se ven mirando un borde:
   pidió más estructura, no menos, así que dónde está el límite es decisión de
   autor y no de la batería.
 
+## `donde.html` — la batería dice cuántas, esto dice dónde
+
+```
+sketches/ptzd/verificacion/donde.html?l=900474:horizontal,900468:horizontal&cols=2
+```
+
+Se le pasa la lista de seeds que la pregunta 1 ha sacado y marca **cada punto del
+borde** donde el disco ve menos tinta de la que vería en una esquina: verde por
+debajo de 30°, cian por debajo de 62°. Un número de cuñas sólo dice que hay que
+tocar algo; esto dice qué.
+
+Y las tres veces que ha hecho falta, la causa estaba donde nadie la buscaba —el
+contorno del taco, la retirada del canto, el repaso de una placa afeitándole la
+punta a la vecina—, así que **mirar antes de tocar `GROSOR_*` no es prudencia,
+es lo que ha funcionado**.
+
 ## Lo que hay que hacer si sale MAL
 
 En este orden, porque el orden es el que evita perder el tiempo:
@@ -100,8 +116,12 @@ En este orden, porque el orden es el que evita perder el tiempo:
 2. **Cortos por encima del 3%** → mirar el desglose por gubia. Casi siempre es
    que la gubia y el número de cortes se han desacoplado: con un filo gordo no
    caben nueve placas en el mismo taco (`TIPOS[].gubias` y `TECHO`).
-3. **Cuñas por encima del 2%** → mirar de dónde salen antes de tocar `GROSOR_*`.
-   Las tres veces que ha pasado, la causa estaba fuera de la partición: en el
-   contorno del taco, en la retirada del canto o en el escalón al bies.
+3. **Cuñas por encima del 2%** → abrir `donde.html` con las seeds que la propia
+   pregunta imprime, y mirar. Las tres veces que ha pasado, la causa estaba fuera
+   de la partición: en el contorno del taco, en la retirada del canto o en el
+   escalón al bies. Y hay una que **ninguna guarda geométrica puede ver**: la
+   *punta afeitada* —el repaso de una placa comiéndole la esquina a otra que la
+   deriva ha traído cerca—, que ocurre en el píxel y no en el polígono. Está
+   descrita en `../README.md`, entre los riesgos.
 4. **Soldadura o recorte** → no ha pasado nunca, y si pasa no es un ajuste: es que
    algo dibuja fuera de la partición o que la deriva ha dejado de tener tope.

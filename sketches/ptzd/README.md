@@ -398,6 +398,18 @@ Declarar sin comprobar es lo que ya falló dos veces en esta casa:
 - **La etiqueta que miente.** Un `astillado` con cuatro placas. No es un defecto
   de la imagen —puede ser buena— es que la rareza se calcula sobre lo declarado.
   Se mide en `verificacion/` como *cortos*, y por eso la gubia pone techo.
+- **La punta afeitada.** *(la que la medida sobre 2000 sacó, y que ninguna guarda
+  geométrica puede ver)* Cada placa repasa **su propio** contorno con el color del
+  suelo, así que la forma que se ve de una placa no es su polígono: es su polígono
+  **menos el repaso de todas las demás**. Donde dos placas que no son vecinas se
+  acercan —la deriva las junta—, el repaso de una le afeita la esquina a la otra y
+  aparece una punta aguda **que no existe en ninguno de los dos polígonos**. Es el
+  único defecto que sobrevive a la regla 11, y sobrevive por construcción: la
+  regla mide polígonos y esto ocurre en el píxel. Sale en el 0,9% de las obras y
+  se concentra en la gubia ancha, donde el repaso es más gordo. Arreglarlo
+  significaría prohibir que dos placas se acerquen, que es tocar las reglas 6 y 7
+  —el corte mete espacio y las piezas gravitan—, así que **se deja dicho y no se
+  toca**: es decisión de autor, no de guarda.
 
 ## Decisiones abiertas
 
@@ -703,26 +715,28 @@ declarado y la huella a tres resoluciones. Tiene su propio README.
 
 ## Medido
 
-600 tiradas, cuadrado y apaisado, sobre el catálogo real de paletas activas.
+**2000 tiradas**, cuadrado y apaisado, sobre el catálogo real de paletas activas.
 Todo esto sale de `verificacion/`, no de la intuición:
 
 ```
-cuñas       1,0% de las obras tiene un ángulo visible por debajo de 62°
-            el más cerrado de las 600: 54,1° · ninguno por debajo de 45°
-            (antes de esta revisión: 20% de las obras, y los peores a 2°, 8°, 12°)
+cuñas       0,9% de las obras tiene un ángulo visible por debajo de 62°
+            (antes de esta revisión: 20%, y los peores a 2°, 8°, 12°)
             reparto del ángulo más cerrado por obra:
-            45–60° 5 · 60–75° 53 · 75–90° 455 · 90–105° 87
-cortos      1,5% no llega a los cortes que declara su tipo   (era el 20%)
-tipo        partido 34%  arbol 32%  astillado 19%  hendido 15%
-gubia       fina 41%  media 44%  ancha 16%
-tintas      una 82%  dos 15%  tres 3%
+            15–30° 2 · 30–45° 3 · 45–60° 11 · 60–75° 183 · 75–90° 1511 · 90–105° 290
+            y las peores son casi todas de gubia ancha: es «la punta afeitada»,
+            que está entre los riesgos y no la puede ver ninguna guarda
+cortos      1,1% no llega a los cortes que declara su tipo   (era el 20%)
+tipo        partido 34%  arbol 33%  astillado 18%  hendido 15%
+gubia       fina 40%  media 47%  ancha 14%
+tintas      una 82%  dos 16%  tres 2%
 piezas      p10 2 · p50 4 · p90 8 · max 10
-            2:14% 3:27% 4:18% 5:13% 6:10% 7:6% 8:8% 9:4% 10:1%
+            2:13% 3:29% 4:18% 5:12% 6:10% 7:7% 8:6% 9:3% 10:1%
 sajaduras   0 · 92%   1 · 8%    (dos, ya nunca)
-faltan      0 · 32%   1 · 48%   2 · 20%
-escalones   0 · 23%   1 · 53%   2 · 24%
-overall     common 40,5%  uncommon 35%  rare 14,5%  superrare 7%  legendary 3%
-huella      0 de 120 obras cambia a 760 / 2400 / 4200 px, en los tres formatos
+faltan      0 · 31%   1 · 50%   2 · 20%
+escalones   0 · 22%   1 · 53%   2 · 25%
+overall     common 40,5%  uncommon 38%  rare 13,6%  superrare 5,7%  legendary 2,2%
+            (los umbrales se reajustaron después, a los percentiles de estas 2000)
+huella      0 de 180 obras cambia a 760 / 2400 / 4200 px, en los tres formatos
 ms          ~30 por pieza a 520 px, con grano y veta
 ```
 
