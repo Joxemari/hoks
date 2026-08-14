@@ -249,10 +249,17 @@
   // —no el primero—, que es por lo que 'falta' es un número y no un sí/no.
   const REINTENTOS = 9;      // candidatos que se prueban con el mismo seed
   const GRID = 150;          // resolución del campo de distancias, en el lado corto
-  // Un ojo de dos celdas es ruido de rasterización, no un hueco. El umbral se
-  // mide en fracción de la hoja para que signifique lo mismo en cualquier
-  // formato y a cualquier resolución del grid.
-  const OJO_MIN = 0.00035;
+  // Un ojo de dos celdas es ruido de rasterización, no un hueco. El umbral se mide en
+  // fracción de la hoja para que signifique lo mismo en cualquier formato y a cualquier
+  // resolución del grid.
+  //
+  // Sube de 0,00035 a 0,0011, y el motivo es la trama: con hebras que se cruzan —y más
+  // con dos tramas— aparecen muchísimas celdas minúsculas en los nudos, y con el umbral
+  // viejo TODAS contaban. El rasgo acababa diciendo 'once ojos' de una pieza en la que
+  // se ven tres, porque las otras ocho miden menos que la anchura de la hebra que las
+  // cierra. Un ojo tiene que verse para ser un ojo: 0,0011 del pliego son 21×21 px en
+  // una hoja de 760, que es lo que mide el hueco más pequeño legible de la referencia.
+  const OJO_MIN = 0.0011;
 
   // ── Geometría ───────────────────────────────────────────────────────────────
   const hypot = Math.hypot, min = Math.min, max = Math.max, abs = Math.abs;
@@ -1098,7 +1105,7 @@
     // Se aplica sobre el NIVEL, no sobre la anchura: así el cuerpo sigue moviéndose a
     // escalones —que es la materia de esta familia— y lo que cambia es en qué peldaño
     // de la escala está cada tramo.
-    const foco = {
+    const foco = params.foco || {
       x: W * rng.range(0.22, 0.78),
       y: grav === 'N' ? H * rng.range(0.16, 0.46) : H * rng.range(0.54, 0.84),
     };
@@ -1252,17 +1259,38 @@
     // La trama de encima se traba UNA vez y fuera del bucle: no es un candidato, es la
     // otra plancha. El bucle sigue buscando la de abajo, pero midiendo las dos juntas.
     const puedeSobre = (rol.otras || []).length > 0 && !params.sinSobre;
-    const sobre = (puedeSobre && rng.bool(params.sobre != null ? params.sobre : P_SOBRE))
+    const hay = puedeSobre && rng.bool(params.sobre != null ? params.sobre : P_SOBRE);
+
+    // LOS DOS FOCOS SE DECIDEN JUNTOS, y separados. Sorteado cada uno por su cuenta,
+    // los dos aprietes caían a veces en el mismo sitio: las dos tramas se amontonaban
+    // ahí y el tejido dejaba de leerse — para ver que una pasa por encima y por debajo
+    // hace falta seguirla, y eso solo se puede hacer donde no hay barullo. Separando
+    // los focos, las tramas se ENCUENTRAN en una zona y se SUELTAN en otra, que es
+    // justo la tensión que se busca.
+    const focoA = {
+      x: fw * rng.range(0.20, 0.80),
+      y: (rng.bool(0.5) ? fh * rng.range(0.16, 0.46) : fh * rng.range(0.54, 0.84)),
+    };
+    let focoB = null;
+    if (hay) {
+      const SEP = 0.42;                       // separación mínima, en lado corto
+      const a = rng.range(0, Math.PI * 2), r2 = SEP + rng.range(0, 0.22);
+      focoB = { x: clamp(focoA.x + Math.cos(a) * r2, fw * 0.12, fw * 0.88),
+                y: clamp(focoA.y + Math.sin(a) * r2, fh * 0.12, fh * 0.88) };
+    }
+
+    const sobre = hay
       // Con el tipo 'red' a secas no bastaba: el foco y el piso la dejaban casi tan
       // gorda como la de abajo, y dos tramas gordas cruzándose son barro de dos
       // colores. Se le baja la ESCALA del cuerpo, que es el mando que gobierna su
       // techo de grosor — así es laxa por construcción y no por suerte del tipo.
-      ? tramar(new E.Rng((seed ^ 0x5B3C1A7) >>> 0), fw, fh, 'red', { cuerpo: 0.62 })
+      ? tramar(new E.Rng((seed ^ 0x5B3C1A7) >>> 0), fw, fh, 'red', { cuerpo: 0.62, foco: focoB })
       : null;
 
     let best = null, bestF = Infinity;
     for (let i = 0; i < REINTENTOS; i++) {
-      const c = tramar(new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0), fw, fh, tipo, params,
+      const c = tramar(new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0), fw, fh, tipo,
+                       Object.assign({ foco: focoA }, params),
                        sobre ? sobre.cuerpos : null);
       const f = falta(c, t, !!sobre);
       if (f < bestF) { bestF = f; best = c; }

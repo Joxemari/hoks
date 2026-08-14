@@ -330,6 +330,19 @@ del filo casa y no se ve junta ninguna. Sale en una de cada cuatro piezas, y la 
 encima va siempre laxa: dos tramas gordas se tapan la una a la otra y queda barro de dos
 colores. La tensión la da que una atraviese a la otra, no que compitan por el sitio.
 
+**Los focos se deciden juntos, y separados.** Sorteado cada uno por su cuenta, los dos
+aprietes caían a veces en el mismo sitio: las dos tramas se amontonaban ahí y el tejido
+dejaba de leerse, porque para ver que una hebra pasa por encima y luego por debajo hay
+que poder seguirla, y eso solo se puede donde no hay barullo. Separados, las tramas se
+**encuentran** en una zona y se **sueltan** en otra, que es justo la tensión que se
+busca.
+
+**Un ojo tiene que verse para ser un ojo.** El umbral sube de 0,00035 a 0,0011 del
+pliego, y el motivo es la trama: con hebras que se cruzan —y más con dos— aparecen
+muchísimas celdas minúsculas en los nudos, y con el umbral viejo todas contaban. El
+rasgo acababa diciendo «once ojos» de una pieza en la que se ven tres, porque las otras
+ocho miden menos que la anchura de la hebra que las cierra.
+
 **Los ojos se multiplican, no se suman.** Cada hebra de encima parte en dos las celdas
 que cruza, así que el conteo se va por encima del triple. Hubo que ampliar el techo
 declarado por el tipo —si no, cada pieza de dos tramas salía con una falta enorme y el
@@ -348,13 +361,19 @@ ojos        media 2,9 · p50 3 · p90 5 · max 8
 ciegas      0,0%  ← ninguna pieza deja de cerrar algo
 cruces      media 14 · p10 10 · p90 19
 mancha      p10 20,3%  p50 33,0%  p90 45,6%
-ojos        media 4,8 · p50 3 · p90 11   (la cola larga es de las piezas tejidas)
-mancha      p10 20%  p50 32%  p90 40%
-            muro p50 40%  ·  trama 32%  ·  nudo 31%  ·  red 22%
-falta = 0   93% de las piezas cumplen lo que su tipo declara
+ojos        media 4,2 · p50 3 · p90 10   (la cola larga es de las piezas tejidas)
+ciegas      0,0%
+area de ojo p50 8,7% del pliego · p90 21,0%
+mancha      p50 31%  p90 41%
+            muro p50 42%  ·  nudo 33%  ·  trama 31%  ·  red 22%
+falta = 0   92% de las piezas cumplen lo que su tipo declara (max 0,33)
 tejidas     24% de las piezas
-overall     uncommon 45%  common 35%  rare 19%  superrare 1%
+overall     uncommon 50%  common 39%  rare 11%
 ```
+
+El **área de ojo** es el dato que faltaba: casi el 9% del pliego es vacío con borde por
+los cuatro lados. Contar ojos sin mirar cuánto miden no dice gran cosa — es lo que llevó
+a subir el umbral.
 
 **Cero piezas ciegas** es el dato que justifica la reformulación entera. Con estratos y
 lazos, el 16% de las piezas no encerraba nada: el ojo era un accidente que salía o no
