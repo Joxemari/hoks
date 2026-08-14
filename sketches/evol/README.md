@@ -162,6 +162,55 @@ tiene detrás una versión que se veía peor, y está anotado ahí:
   al borde de arriba dejando tres cuartos de hoja vacíos. Eso no es una reserva, es
   una pieza sin centro. Con `k = 1` la gravedad no se aplica.
 
+## El filo y la superficie
+
+La forma estaba bien y la marca no existía: el borde era un polígono exacto, y eso
+es lo que delataba el dibujo como vectorial. Una masa de tinta sobre papel no tiene
+el canto recto — lo tiene vivo, porque el pelo del pincel y el diente del papel se
+pelean por el último milímetro.
+
+El borde se subdivide y se desplaza con un ruido **coherente** a lo largo del
+recorrido. Coherente es la palabra: con ruido por punto sale un serrucho, que es
+suciedad, no pincel. Tres octavas y cada borde con su semilla, porque el canto de un
+pincel no es simétrico respecto a su eje. Tres filos: `cortado` (el canto exacto, que
+se queda porque la serigrafía corta así y porque conviene poder comparar), `pincel`
+(el centro de la familia) y `seco` (con mordidas, el salto por falta de carga).
+
+**El filo no toca la anatomía.** `medir` trabaja sobre el eje y la media anchura, no
+sobre el contorno dibujado, así que cambiar de pincel no mueve ni un ojo ni un punto
+de mancha — ni, por tanto, la rareza. Cambia la piel, no el esqueleto. Por eso `Edge`
+es el único trait que no entra en el cálculo de rareza: describe la herramienta, no
+lo que salió en la tirada.
+
+Dos cosas costaron:
+
+- **La octava de la mano.** El primer intento llevaba una octava lenta y gorda —«la
+  ondulación de la mano»— y estaba mal planteada: esa ondulación YA ESTÁ en la
+  geometría, son los vértices. Puesta otra vez en el filo, la masa engordaba y
+  adelgazaba a lo largo del recorrido, o sea que el filo invadía la FORMA, que es lo
+  único que no debe tocar. Y se comía las esquinas de cincel, que son lo mejor del
+  dibujo. Al filo le toca el pelo y el diente: nada por encima de 17 px de onda en
+  una hoja de 760. El paso de subdivisión baja a 0,0015 por muestreo — un subtramo de
+  0,006 no puede dibujar una onda de 0,006, y la octava fina salía como un moaré.
+- **Las almendras.** Para la superficie se probaron VETAS: rayas de suelo dentro de
+  la masa, pegadas al canto, imitando el salto del pincel. Se descartaron. Una veta
+  que engorda en el centro y se afila en las puntas tiene forma de almendra, y esa
+  forma no la hace un pincel: la hace quien la dibuja. Se leían como agujeros
+  dibujados — y encima competían con los ojos, que son los huecos que sí significan
+  algo.
+
+Lo que sí resolvió la superficie fue una línea, no una textura: **el grano es del
+papel, y la tinta lo tapa.** El motor aplica el grano a todo el lienzo por igual, así
+que la masa y el suelo salían del mismo material y solo cambiaba el color. En una
+hoja impresa el diente lo tiene el papel y donde hay carga queda cubierto. Se repinta
+el cuerpo por encima del grano al 55%: el suelo conserva su grano entero y la tinta
+queda casi lisa. No añade ninguna forma, que era la condición.
+
+Verificado **por píxeles**, no solo por los valores devueltos —que del contorno no
+dicen nada—: el mismo seed a 400 y a 1200 de lado corto, reducido el grande al tamaño
+del pequeño, discrepa un 0,00% en cuadrado y un 0,03% en horizontal, y ese resto es
+el remuestreo del propio canto.
+
 ## Deriva: cuando medir cambia el dibujo
 
 El error más serio de todos, y el último en aparecer, porque solo se ve comparando

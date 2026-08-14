@@ -92,6 +92,69 @@
   // la ventana. Es el cuello de la referencia —donde la masa casi se corta y sigue—
   // y funciona porque es uno, no porque sea frecuente.
   const P_ESTRANGULA = 0.5, ESTRANGULA = 3;
+  // ── EL FILO ─────────────────────────────────────────────────────────────────
+  // Hasta aquí el borde era un polígono exacto, y eso es lo que delataba el dibujo
+  // como vectorial: la FORMA estaba bien, pero la MARCA no existía. Una masa de
+  // tinta sobre papel no tiene el canto recto — lo tiene vivo, porque el pelo del
+  // pincel y el diente del papel se pelean por el último milímetro.
+  //
+  // Así que el borde se subdivide y se desplaza con un ruido COHERENTE a lo largo
+  // del recorrido. Coherente es la palabra: con ruido por punto sale un serrucho,
+  // que es suciedad, no pincel. Tres octavas —la ondulación de la mano, el temblor
+  // del pelo y el diente del papel— y cada borde con su propia semilla, porque un
+  // canto de pincel no es simétrico respecto a su eje.
+  //
+  // Lo que NO toca: la anatomía. 'medir' trabaja sobre el eje y la media anchura,
+  // no sobre el contorno dibujado, así que el filo no mueve ni un ojo ni un punto
+  // de mancha. Cambia la piel, no el esqueleto — y por tanto tampoco la rareza.
+  // Las frecuencias son ALTAS y la amplitud pequeña, y ése es el ajuste que costó.
+  // El primer intento llevaba una octava lenta y gorda —«la ondulación de la mano»—
+  // y estaba mal planteado: la ondulación de la mano YA ESTÁ en la geometría, son los
+  // vértices. Poniéndola otra vez en el filo, la masa engordaba y adelgazaba a lo
+  // largo del recorrido, o sea que el filo invadía la FORMA, que es exactamente lo
+  // que no debe tocar. Y de paso se comía las esquinas de cincel, que son lo mejor
+  // del dibujo. Al filo le toca el pelo y el diente del papel: nada por encima de
+  // 17 px de onda en una hoja de 760.
+  //
+  // El paso baja a 0,0015 porque el muestreo manda: un subtramo de 0,006 no puede
+  // dibujar una onda de 0,006 —hacen falta cuatro muestras por onda como poco—, así
+  // que la octava fina se habría convertido en un alias, que se ve como un moaré.
+  const PASO_FILO = 0.0015;  // longitud de subtramo, en lado corto
+  const OCT = [
+    { f: 45,  a: 0.50 },     // 17 px de onda en una hoja de 760
+    { f: 95,  a: 0.32 },     // el pelo
+    { f: 160, a: 0.18 },     // el diente del papel
+  ];
+  // Cuánto puede comerse el ruido de la anchura local. Sin tope, en un nivel 0
+  // —media anchura 0,006— una amplitud de 0,0045 se lleva el cuerpo por delante y
+  // el borde cruza el eje: el cuadrilátero se da la vuelta y aparece un agujero.
+  const FILO_TOPE = 0.45;
+  // La MORDIDA es el salto en seco: el pincel se queda sin carga y el papel se ve.
+  // Va siempre hacia dentro —una mordida que sale es un pegote, no un salto— y es
+  // rara por definición: si pasa a menudo deja de ser un accidente y es una textura.
+  const MORD_F = 34;         // celdas por lado corto donde puede caer una mordida
+  const FILOS = {
+    // El corte limpio: lo que la familia hacía antes de esto. Se queda porque es
+    // una decisión legítima —la serigrafía corta así— y porque conviene poder
+    // comparar contra ella.
+    cortado: { prob: 0.22, amp: 0,      mord: 0    },
+    pincel:  { prob: 0.56, amp: 0.0021, mord: 0.06 },
+    seco:    { prob: 0.22, amp: 0.0032, mord: 0.20 },
+  };
+  const FILO_NAMES = Object.keys(FILOS);
+
+  // EL GRANO ES DEL PAPEL, Y LA TINTA LO TAPA. Ésta es la parte de superficie, y
+  // resultó ser una línea, no una textura: el motor aplica el grano a todo el
+  // lienzo por igual, así que la masa y el suelo salían del MISMO material, solo
+  // que de distinto color. En una hoja impresa no es así — el diente lo tiene el
+  // papel, y donde hay carga queda cubierto. Se repinta el cuerpo por encima del
+  // grano con esta opacidad: el suelo conserva su grano entero y la tinta queda
+  // casi lisa. No añade ninguna forma, que es la condición — el primer intento
+  // metió vetas de suelo dentro de la masa y se leían como agujeros dibujados,
+  // porque una veta que engorda en el centro y se afila en las puntas tiene forma
+  // de almendra, y esa forma no la hace un pincel: la hace quien la dibuja.
+  const ALISO = 0.55;
+
   const MITER = 2.4;         // tope del inglete: por encima, el pico es una astilla
   const SESGO_MAX = 0.34;    // asimetría del cuerpo respecto a su eje
   const CORTE_MAX = 0.75;    // oblicuidad del corte de un remate, × anchura
@@ -186,6 +249,34 @@
   const hypot = Math.hypot, min = Math.min, max = Math.max, abs = Math.abs;
   const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 
+  // Ruido de valor 1D, interpolado con smoothstep. Es función PURA de (semilla,
+  // posición) —no un RNG con estado— y ésa es la condición: el dibujo recorre las
+  // cadenas en un orden que no tiene por qué ser el de generación, y el filo tiene
+  // que salir igual pase lo que pase. hash01 es el finalizer de murmur3 del motor,
+  // que ya está ahí porque el fondo lo necesitaba por lo mismo: sin avalancha, dos
+  // enteros vecinos dan valores casi iguales y el ruido sale peinado.
+  function ruido1(sem, t) {
+    const i = Math.floor(t), f = t - i;
+    const a = E.hash01((sem + i) >>> 0), b = E.hash01((sem + i + 1) >>> 0);
+    return a + (b - a) * f * f * (3 - 2 * f);
+  }
+  function filoRuido(sem, s) {
+    let v = 0;
+    for (let k = 0; k < OCT.length; k++) {
+      v += (ruido1((sem ^ (0x9E3779B1 * (k + 1))) >>> 0, s * OCT[k].f) * 2 - 1) * OCT[k].a;
+    }
+    return v;
+  }
+  // Mordida: una celda de cada tantas se muerde, y dentro de la celda el mordisco
+  // sube y baja (seno) en vez de aparecer de golpe — un escalón se lee como un
+  // defecto del trazado, no como falta de carga.
+  function mordida(sem, s, p) {
+    if (p <= 0) return 0;
+    const c = Math.floor(s * MORD_F);
+    if (E.hash01(((sem ^ 0xB17E5) + c * 0x27D4EB2D) >>> 0) >= p) return 0;
+    return Math.sin((s * MORD_F - c) * Math.PI);
+  }
+
   function pointSegDist(px, py, ax, ay, bx, by) {
     const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
     if (l2 < 1e-12) return hypot(px - ax, py - ay);
@@ -219,7 +310,7 @@
       ux[i] = dx / m; uy[i] = dy / m;
       nx[i] = -uy[i];  ny[i] = ux[i];
     }
-    const I = new Array(n), D = new Array(n);
+    const I = new Array(n), D = new Array(n), M = new Array(n);
     for (let i = 0; i < n; i++) {
       let mx, my, esc = 1;
       if (i === 0) { mx = nx[0]; my = ny[0]; }
@@ -243,19 +334,91 @@
       const k = (i === 0 || i === n - 1) ? c * ch[i].hw : 0;
       I[i] = { x: ch[i].x + mx * hi + tx * k, y: ch[i].y + my * hi + ty * k };
       D[i] = { x: ch[i].x - mx * hd - tx * k, y: ch[i].y - my * hd - ty * k };
+      // La dirección del vértice y la anchura que se usó ahí: las necesita el filo
+      // para desplazar el borde por donde toca y para saber cuánto puede morder.
+      M[i] = { mx, my, hi, hd };
     }
-    return { I, D };
+    return { I, D, M };
   }
 
-  function emitir(ctx, ch) {
+  // Emite el cuerpo como cuadriláteros consecutivos. Con filo, cada tramo se parte
+  // en subtramos y los dos bordes se desplazan; sin filo (amp 0) sale exactamente el
+  // polígono de antes, sin coste.
+  //
+  // Las COSTURAS son lo delicado. Dos condiciones, y las dos se cumplen por
+  // construcción: dentro de un tramo, los subcuadriláteros comparten sus dos puntos
+  // de corte; y entre dos tramos, el punto del vértice se calcula UNA vez —con la
+  // dirección de la bisectriz, no con la normal de ninguno de los dos tramos— y lo
+  // usan los dos. Si cada tramo desplazara el vértice con su propia normal, en cada
+  // esquina se abriría una rendija por la que se vería el suelo.
+  function emitir(ctx, ch, filo, sem) {
     if (ch.length < 2) return;
-    const { I, D } = bordes(ch);
-    for (let i = 0; i < ch.length - 1; i++) {
-      ctx.moveTo(I[i].x, I[i].y);
-      ctx.lineTo(I[i + 1].x, I[i + 1].y);
-      ctx.lineTo(D[i + 1].x, D[i + 1].y);
-      ctx.lineTo(D[i].x, D[i].y);
-      ctx.closePath();
+    const { I, D, M } = bordes(ch);
+    const n = ch.length;
+    const amp = filo ? filo.amp : 0;
+
+    if (!amp) {
+      for (let i = 0; i < n - 1; i++) {
+        ctx.moveTo(I[i].x, I[i].y);
+        ctx.lineTo(I[i + 1].x, I[i + 1].y);
+        ctx.lineTo(D[i + 1].x, D[i + 1].y);
+        ctx.lineTo(D[i].x, D[i].y);
+        ctx.closePath();
+      }
+      return;
+    }
+
+    const semI = (sem ^ 0x1F35C) >>> 0, semD = (sem ^ 0x7A21B) >>> 0;
+    // Arco acumulado sobre el EJE, en unidades de lado corto: es la coordenada del
+    // ruido, así que el filo no depende ni del número de vértices ni del tamaño.
+    const arco = new Float64Array(n);
+    for (let i = 1; i < n; i++) {
+      arco[i] = arco[i - 1] + hypot(ch[i].x - ch[i - 1].x, ch[i].y - ch[i - 1].y);
+    }
+
+    // Desplazamiento de un borde: ruido menos mordida, topado contra la anchura de
+    // ahí. El tope es lo que impide que en un estrangulamiento el borde cruce el eje
+    // y el cuadrilátero se dé la vuelta.
+    const off = (semilla, sArco, hw) => {
+      const v = filoRuido(semilla, sArco) - mordida(semilla, sArco, filo.mord) * 1.6;
+      const t = hw * FILO_TOPE;
+      return clamp(v * amp, -t, t);
+    };
+    // Los puntos de los VÉRTICES, una sola vez y con la bisectriz.
+    const vI = new Array(n), vD = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const oI = off(semI, arco[i], M[i].hi), oD = off(semD, arco[i], M[i].hd);
+      vI[i] = { x: I[i].x + M[i].mx * oI, y: I[i].y + M[i].my * oI };
+      vD[i] = { x: D[i].x - M[i].mx * oD, y: D[i].y - M[i].my * oD };
+    }
+
+    for (let i = 0; i < n - 1; i++) {
+      const L = hypot(ch[i + 1].x - ch[i].x, ch[i + 1].y - ch[i].y);
+      const k = max(1, Math.ceil(L / PASO_FILO));
+      // Normal del TRAMO para los puntos de dentro; en los extremos manda el vértice.
+      const ux = (ch[i + 1].x - ch[i].x) / (L || 1e-9), uy = (ch[i + 1].y - ch[i].y) / (L || 1e-9);
+      const nx = -uy, ny = ux;
+      let aI = vI[i], aD = vD[i];
+      for (let j = 1; j <= k; j++) {
+        let bI, bD;
+        if (j === k) { bI = vI[i + 1]; bD = vD[i + 1]; }
+        else {
+          const t = j / k, sA = arco[i] + L * t;
+          const bx = I[i].x + (I[i + 1].x - I[i].x) * t, by = I[i].y + (I[i + 1].y - I[i].y) * t;
+          const dx = D[i].x + (D[i + 1].x - D[i].x) * t, dy = D[i].y + (D[i + 1].y - D[i].y) * t;
+          const hwI = M[i].hi + (M[i + 1].hi - M[i].hi) * t;
+          const hwD = M[i].hd + (M[i + 1].hd - M[i].hd) * t;
+          const oI = off(semI, sA, hwI), oD = off(semD, sA, hwD);
+          bI = { x: bx + nx * oI, y: by + ny * oI };
+          bD = { x: dx - nx * oD, y: dy - ny * oD };
+        }
+        ctx.moveTo(aI.x, aI.y);
+        ctx.lineTo(bI.x, bI.y);
+        ctx.lineTo(bD.x, bD.y);
+        ctx.lineTo(aD.x, aD.y);
+        ctx.closePath();
+        aI = bI; aD = bD;
+      }
     }
   }
 
@@ -840,7 +1003,7 @@
 
   // ── Entrada principal ───────────────────────────────────────────────────────
   // opts: { palettes, locked, lockedIdx, params:{ tipo, estratos, puentes,
-  //         munones, cuerpo, gravedad, bg, bgProbs, field, grainScale } }
+  //         munones, cuerpo, gravedad, filo, bg, bgProbs, field, grainScale } }
   function render(ctx, W, H, seed, opts) {
     opts = opts || {};
     const params = opts.params || {};
@@ -879,6 +1042,10 @@
     //    seed el orden de las tiradas es fijo, así que esto sigue siendo
     //    determinista aunque el número de candidatos cambie de un tipo a otro.
     const tipo = params.tipo || rng.weighted(TIPO_NAMES.map(n => ({ n, prob: TIPOS[n].prob }))).n;
+    // El filo es la HERRAMIENTA, no el tejido: se tira una vez por pieza y fuera del
+    // bucle de candidatos, porque cambiar de pincel no puede cambiar la composición.
+    const filoName = params.filo || rng.weighted(FILO_NAMES.map(n => ({ n, prob: FILOS[n].prob }))).n;
+    const filo = FILOS[filoName] || FILOS.pincel;
     const t = TIPOS[tipo];
     let best = null, bestF = Infinity;
     for (let i = 0; i < REINTENTOS; i++) {
@@ -917,14 +1084,20 @@
     const jOtra = dos ? rng.int(0, best.chains.length - 1) : -1;
     const suyos = dos ? new Set([best.chains[jOtra]]) : null;
 
+    // La semilla del filo va por CUERPO (índice + seed), no por pieza: si todos
+    // compartieran ruido, dos cuerpos paralelos ondularían a la vez y se leería el
+    // patrón en vez del pincel.
     ctx.beginPath();
-    for (const ch of best.cuerpos) if (!dos || !suyos.has(ch)) emitir(ctx, ch);
+    best.cuerpos.forEach((ch, i) => {
+      if (!dos || !suyos.has(ch)) emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
+    });
     ctx.fillStyle = rol.tinta;
     ctx.fill();
 
     if (dos) {
       ctx.beginPath();
-      emitir(ctx, best.chains[jOtra]);
+      const i = best.cuerpos.indexOf(best.chains[jOtra]);
+      emitir(ctx, best.chains[jOtra], filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
       ctx.fillStyle = rol.otra;
       ctx.fill();
     }
@@ -933,7 +1106,29 @@
     // 5. Grano: el papel. unit lo mantiene del mismo tamaño físico a 300 dpi.
     E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
 
-    return { pal, rol, tipo, bg, dos, falta: bestF,
+    // 6. Y la tinta, por encima del grano, tapando el diente del papel.
+    if (grainScale > 0 && ALISO > 0) {
+      ctx.save();
+      ctx.globalAlpha = ALISO;
+      ctx.translate(ox, 0);
+      ctx.scale(S, S);
+      ctx.beginPath();
+      best.cuerpos.forEach((ch, i) => {
+        if (!dos || !suyos.has(ch)) emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
+      });
+      ctx.fillStyle = rol.tinta;
+      ctx.fill();
+      if (dos) {
+        ctx.beginPath();
+        const i = best.cuerpos.indexOf(best.chains[jOtra]);
+        emitir(ctx, best.chains[jOtra], filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
+        ctx.fillStyle = rol.otra;
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    return { pal, rol, tipo, filo: filoName, bg, dos, falta: bestF,
              field: cuad ? 'square' : 'sheet',
              estratos: best.k, puentes: best.puentes, lazos: best.lazos, munones: best.munones,
              esc: best.esc,
@@ -977,6 +1172,11 @@
     const tintaLbl = (res.dos ? 'Dos tintas' : 'Una tinta') + (res.rol.inv ? ' · invertida' : '');
     const papelLbl = res.rol.inv ? 'Oscuro' : res.rol.papel === 'crudo' ? 'Crudo' : 'Blanco';
 
+    // El filo NO entra en la rareza global, y es a propósito: es con qué está hecha
+    // la marca, no qué salió en la tirada. Un rasgo que describe la herramienta se
+    // enseña, pero no encarece la pieza.
+    const filoR = 'common';
+
     const f = r => r === 'superrare' ? 0.18 : r === 'rare' ? 0.3 : r === 'uncommon' ? 0.7 : 1;
     const s = prob * f(ojosR) * f(manchaR) * f(cuerpoR) * f(tipoR) * f(tintaR);
     const overall = s > 0.06 ? 'common' : s > 0.025 ? 'uncommon' : s > 0.008 ? 'rare' : s > 0.002 ? 'superrare' : 'legendary';
@@ -990,6 +1190,7 @@
         { key: 'Body',    val: cuerpoLbl + ' · ' + (mod + 1) + '/' + NIVELES, rarity: cuerpoR },
         { key: 'Ink',     val: manchaLbl + ' · ' + Math.round(m * 100) + '%', rarity: manchaR },
         { key: 'Gravity', val: res.grav === 'N' ? 'North' : 'South', rarity: 'common' },
+        { key: 'Edge',    val: res.filo, rarity: filoR },
         { key: 'Paper',   val: papelLbl, rarity: res.rol.papel === 'crudo' ? 'uncommon' : 'common' },
         { key: 'Inks',    val: tintaLbl, rarity: tintaR },
       ],
@@ -1007,5 +1208,5 @@
   // Queda apuntado como decisión del autor, no resuelto por lo bajo.
   const FORMATS = ['square', 'horizontal'];
 
-  (global.HOKS = global.HOKS || {}).EVOL = { render, traits, TIPOS, NIVELES, BG_GRADIENT, FORMATS };
+  (global.HOKS = global.HOKS || {}).EVOL = { render, traits, TIPOS, FILOS, NIVELES, BG_GRADIENT, FORMATS };
 })(typeof window !== 'undefined' ? window : globalThis);
