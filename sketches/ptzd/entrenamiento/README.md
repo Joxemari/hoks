@@ -33,7 +33,7 @@ versiones del algoritmo daría un patrón sobre una obra que ya no existe.
 |---|---|---|---|
 | 1ª | 700000– | `…-v1` | antes de las guardas del hilo, la rectitud y el casi |
 | 2ª | 710000– | `…-v2` | con ellas, y con los pesos ya movidos por la 1ª |
-| 3ª | — | — | pendiente: haría falta regenerar el artefacto sobre la 5ª revisión |
+| 3ª | 720000– | `…-v3` | pendiente: la 5ª revisión, y ya con las seeds mezcladas |
 
 Lo que dieron las dos está en `../README.md`, en «Lo que el grid cambió». En
 resumen: la primera dio dos señales independientes —menos placas y **ninguna
@@ -55,6 +55,30 @@ instrumento produce.
 Y una tercera vuelta **juzgaría otra obra**: la quinta revisión cambió la
 gramática después de esto. Antes de volver a juzgar hay que regenerar el
 artefacto, o se estará midiendo el gusto sobre una familia que ya no existe.
+
+## La seed se mezcla, y las dos primeras vueltas no lo hacían
+
+El `Rng` del motor es un LCG, y en un LCG los primeros sorteos de seeds
+**consecutivas** no son independientes: el primero avanza 0,000388 por seed y el
+segundo 0,0907. Del tercero en adelante ya está disperso.
+
+Aquí eso importaba el doble, porque **el primer sorteo de esta familia es la
+paleta** y el segundo la pareja tinta/suelo. Con seeds seguidas, las cinco obras
+de un lote salían casi siempre de la misma paleta — medido: 300 seeds seguidas
+usaron **3 paletas de 15**, y las tres vecinas en el catálogo.
+
+Así que la fila `paleta ≈ 0` de las dos primeras vueltas **no dice «da igual la
+paleta»: dice que no había ninguna que comparar**. Hay que tacharla, no leerla. Y
+lo mismo con `tintas`, que depende de qué colores trae la paleta que tocó.
+
+Lo demás **sí vale**: tipo, gubia, piezas, sajaduras, faltan, escalones y todo lo
+geométrico se sortean del tercer sorteo en adelante, donde el LCG ya está
+disperso. Las señales que movieron la gramática —la sajadura, el recuento de
+placas, el tipo— no están tocadas.
+
+Desde la 3ª vuelta la seed pasa por un mezclador (MurmurHash3) antes de usarse.
+**No se toca el `Rng`**: cambiarlo cambiaría todas las obras ya guardadas de seis
+familias. El fallo estaba en cómo el instrumento elegía la muestra, no en el motor.
 
 **Y ojo con la deriva.** Cada vuelta mueve los pesos hacia lo que gustó, así que
 la siguiente juzga una familia ya estrechada y volverá a pedir más de lo mismo.

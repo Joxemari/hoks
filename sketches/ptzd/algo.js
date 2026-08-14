@@ -66,7 +66,7 @@
   const GUBIAS = [
     { key: 'fina',  w: 0.0130, p: 0.40 },
     { key: 'media', w: 0.0210, p: 0.47 },   // ~2%, que es lo que se mide en la referencia
-    { key: 'ancha', w: 0.0330, p: 0.14 },
+    { key: 'ancha', w: 0.0330, p: 0.13 },
   ];
 
   // ── Los cuatro tipos ───────────────────────────────────────────────────────
@@ -1185,14 +1185,19 @@
    * hay que volver a medirlas cada vez que se toque la gramática. Las de ahora
    * están medidas sobre 2000 tiradas en `verificacion/`, que las imprime listas
    * para pegar — incluidos los umbrales de `rarComb`, que son percentiles. */
-  const F_PIEZAS = { 2: .132, 3: .286, 4: .181, 5: .124, 6: .101, 7: .073, 8: .061, 9: .030, 10: .011 };
+  const F_PIEZAS = { 2: .149, 3: .236, 4: .173, 5: .160, 6: .118, 7: .077, 8: .043, 9: .035, 10: .010 };
   // La sajadura pasó de una de cada cuatro a una de cada trece: se sortea menos
   // (22%) y de las sorteadas sólo pasa la que viaja de verdad por su placa. Ya no
   // es un rasgo frecuente sino un suceso, y la rareza lo dice.
-  const F_SAJA   = { 0: .919, 1: .081, 2: .002 };
-  const F_FALTA  = { 0: .309, 1: .495, 2: .197 };
-  const F_ESCAL  = { 0: .224, 1: .530, 2: .246 };
-  const F_TINTA  = { 1: .819, 2: .163, 3: .018 };
+  const F_SAJA   = { 0: .920, 1: .080, 2: .002 };
+  const F_FALTA  = { 0: .343, 1: .479, 2: .178 };
+  const F_ESCAL  = { 0: .218, 1: .547, 2: .235 };
+  /* Ojo con esta tabla: NO es el sorteo (74/20/6). La regla 1 exige que todas las
+   * tintas caigan del mismo lado del suelo, y dos de cada tres veces la paleta no
+   * da una segunda que lo cumpla, así que la pieza sale monócroma. Lo policromo es
+   * mucho más raro de lo que se pide — y esto sólo se vio al dispersar las seeds:
+   * con seeds seguidas salía 82/16/2, porque se medían tres paletas. */
+  const F_TINTA  = { 1: .902, 2: .083, 3: .015 };
 
   function rar(p) { return p > 0.06 ? 'common' : p > 0.018 ? 'uncommon' : p > 0.005 ? 'rare' : p > 0.0012 ? 'superrare' : 'legendary'; }
 
@@ -1201,12 +1206,12 @@
   // obras en el mismo cajón. Lo que se compara es contra la obra MÁS PROBABLE de
   // la familia — cuánto se aparta ésta de la que más sale. Así la escala es
   // legible (1 = la más corriente posible) y no depende de cuántos rasgos haya.
-  const P_MAX = { tipo: 0.34, gubia: 0.47, pz: 0.286, sj: 0.919, papel: 0.685, pal: 0.12, fl: 0.495, es: 0.530, tn: 0.819 };
+  const P_MAX = { tipo: 0.34, gubia: 0.47, pz: 0.236, sj: 0.920, papel: 0.685, pal: 0.12, fl: 0.479, es: 0.547, tn: 0.902 };
   // Los cortes NO salen de la intuición: se midió la distribución real de `r`
   // sobre 500 tiradas y se pusieron en los percentiles que la casa reparte
   // (≈40/35/15/7/3). La paleta va aparte en el producto y sólo empuja hacia más
   // raro, así que el reparto medido queda algo por debajo de esos números.
-  function rarComb(r) { return r > 0.0833 ? 'common' : r > 0.0224 ? 'uncommon' : r > 0.0071 ? 'rare' : r > 0.0026 ? 'superrare' : 'legendary'; }
+  function rarComb(r) { return r > 0.0747 ? 'common' : r > 0.0209 ? 'uncommon' : r > 0.0069 ? 'rare' : r > 0.0028 ? 'superrare' : 'legendary'; }
 
   function traits(res) {
     const pTipo  = (TIPOS.find(t => t.key === res.tipo)  || { p: 0.25 }).p;

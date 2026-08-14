@@ -43,7 +43,14 @@ en una cuña de 45°. Y una tira más fina que el disco da lo mismo que una cuñ
 que es lo que hace que un defecto y otro se cuenten juntos: los dos son falta de
 materia. Tres radios (3,5%, 5,5% y 8,5% del lado del bloque) y se guarda el peor.
 
-Por debajo de **62°** hay triángulo. El listón está en el 2% de las obras.
+**Dos umbrales, y no es duplicar.** El reparto de ángulos se amontona justo por
+encima de 60°, así que contar «por debajo de 62» cae en mitad de la cuesta y el
+número baila: dos bloques de seeds independientes dieron 0,9% y 2,4% sin que
+cambiara una línea. Lo que no baila es la cola — por debajo de **45°** hay
+triángulo de verdad, y ahí los dos bloques dieron 0,25% y 0,10%. Así que **la
+cifra dura manda en el veredicto** (listón: 0,5%) y la blanda se informa para ver
+la tendencia (listón flojo: 4%). Un listón puesto donde la distribución se
+amontona no mide la obra: mide el ruido.
 
 ### 2 · Reparto — ¿sale lo que la gramática declara?
 
@@ -58,6 +65,17 @@ los umbrales de `rarComb` en los percentiles que la casa reparte
 (≈40/35/15/7/3), listos para pegar. Es circular a propósito y hay que darle dos
 vueltas: al cambiar las tablas cambia la cifra sobre la que se calculan los
 percentiles.
+
+⚠ **Las seeds se mezclan antes de usarse, y hubo que descubrirlo por las malas.**
+El `Rng` del motor es un LCG: los primeros sorteos de seeds *consecutivas* no son
+independientes —el primero avanza 0,000388 por seed, el segundo 0,0907— y del
+tercero en adelante ya está disperso. Como el primer sorteo de esta familia es la
+paleta y el segundo la pareja tinta/suelo, medir sobre un bloque de seeds seguidas
+usaba **3 paletas de 15**: el reparto de tintas salió «1 al 100%» en un bloque y
+«82/16/2» en otro, sin que cambiara una línea de código. Desde entonces la seed
+pasa por un mezclador antes de usarse. No se toca el `Rng` —cambiarlo cambiaría
+todas las obras guardadas de seis familias—: el fallo estaba en cómo el
+instrumento elegía la muestra.
 
 ⚠ Sin catálogo de paletas esta pregunta no vale. `HOKS.loadPalettes()` cae al
 catálogo mínimo embebido cuando no hay red, y con una sola paleta el reparto de

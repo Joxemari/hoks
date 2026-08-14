@@ -719,26 +719,42 @@ declarado y la huella a tres resoluciones. Tiene su propio README.
 Todo esto sale de `verificacion/`, no de la intuición:
 
 ```
-cuñas       0,9% de las obras tiene un ángulo visible por debajo de 62°
-            (antes de esta revisión: 20%, y los peores a 2°, 8°, 12°)
+cuñas       0,1% de las obras tiene un ángulo por debajo de 45° — hay una en 1200
+            1,5% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
+            reparto se amontona y baila entre bloques (0,9% y 2,4% sin tocar nada)
+            (antes de esta revisión: 20% de las obras, y los peores a 2°, 8°, 12°)
             reparto del ángulo más cerrado por obra:
-            15–30° 2 · 30–45° 3 · 45–60° 11 · 60–75° 183 · 75–90° 1511 · 90–105° 290
-            y las peores son casi todas de gubia ancha: es «la punta afeitada»,
-            que está entre los riesgos y no la puede ver ninguna guarda
-cortos      1,1% no llega a los cortes que declara su tipo   (era el 20%)
-tipo        partido 34%  arbol 33%  astillado 18%  hendido 15%
-gubia       fina 40%  media 47%  ancha 14%
-tintas      una 82%  dos 16%  tres 2%
-piezas      p10 2 · p50 4 · p90 8 · max 10
-            2:13% 3:29% 4:18% 5:12% 6:10% 7:7% 8:6% 9:3% 10:1%
+            15–30° 1 · 45–60° 12 · 60–75° 106 · 75–90° 901 · 90–105° 180
+            y las peores tiran a gubia ancha: es «la punta afeitada», que está
+            entre los riesgos y que no puede ver ninguna guarda geométrica
+cortos      0,8% no llega a los cortes que declara su tipo   (era el 20%)
+soldadas    0 · dos placas nunca se tocan, comprobado sobre 1200
+recortadas  0 · ninguna obra toca el borde del pliego
+tipo        arbol 34%  partido 32%  astillado 17%  hendido 17%
+gubia       fina 40%  media 47%  ancha 13%
+tintas      una 90%  dos 8%  tres 1,5%   ← el sorteo pide 74/20/6: la regla del
+            mismo lado del suelo tumba dos de cada tres segundas tintas
+piezas      p10 2 · p50 4 · p90 7 · max 10
+            2:15% 3:24% 4:17% 5:16% 6:12% 7:8% 8:4% 9:3% 10:1%
 sajaduras   0 · 92%   1 · 8%    (dos, ya nunca)
-faltan      0 · 31%   1 · 50%   2 · 20%
-escalones   0 · 22%   1 · 53%   2 · 25%
-overall     common 40,5%  uncommon 38%  rare 13,6%  superrare 5,7%  legendary 2,2%
-            (los umbrales se reajustaron después, a los percentiles de estas 2000)
+faltan      0 · 34%   1 · 48%   2 · 18%
+escalones   0 · 22%   1 · 55%   2 · 24%
+mancha      p05 16% · p50 26% · p95 40%
+flequillo   tres placas o más en el suelo de carne: 0,4% de las obras
 huella      0 de 180 obras cambia a 760 / 2400 / 4200 px, en los tres formatos
 ms          ~30 por pieza a 520 px, con grano y veta
 ```
+
+**Y estas cifras están medidas con las seeds mezcladas, que no es un detalle.** El
+`Rng` es un LCG y los primeros sorteos de seeds *consecutivas* no son
+independientes: el primero avanza 0,000388 por seed y el segundo 0,0907; del
+tercero en adelante ya está disperso. Como **el primer sorteo de esta familia es
+la paleta** y el segundo la pareja tinta/suelo, medir sobre un bloque de seeds
+seguidas usaba tres paletas de quince — y el reparto de tintas salía 82/16/2 en un
+bloque y 100/0/0 en otro sin que cambiara una línea de código. La geometría no
+estaba tocada (se sortea del tercero en adelante), pero el color sí, y con él la
+rareza. No se toca el `Rng`: cambiarlo cambiaría todas las obras guardadas de seis
+familias. Se mezcla la seed en los instrumentos, que es donde estaba el fallo.
 
 El coste por pieza subió de ~18 a ~30 ms: el grosor compara el contorno consigo
 mismo por cada candidato, y hay siete candidatos por corte. Es geometría, así que

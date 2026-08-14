@@ -32,6 +32,7 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
   <button id="go">Medir</button>
   <span id="estado" class="esperando"></span>
 </p>
+<p id="aviso" class="no" hidden></p>
 
 <section>
   <h2>1 · Cuñas</h2>
@@ -103,8 +104,17 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
         if (d && d.length) p = HOKS.normalizePalettes(d.filter(x => x.active !== false));
       } catch (e) { /* sin red y sin fichero: se avisa abajo */ }
     }
-    if (p.length <= HOKS.DEFAULTS.length)
-      $('estado').textContent = '⚠ sin catálogo de paletas: el reparto de tintas y la rareza no valen';
+    // El aviso va en SU PROPIO sitio y se queda. Estuvo en el hueco del progreso
+    // y la línea siguiente se lo comía: una medida inválida corrió entera sin que
+    // nadie viera que lo era, y el reparto de tintas salió «1 al 100%» pareciendo
+    // un dato. Un aviso que se puede tapar no es un aviso.
+    if (p.length <= HOKS.DEFAULTS.length) {
+      const a = $('aviso');
+      a.hidden = false;
+      a.textContent = '⚠ sin catálogo de paletas (' + p.length + '): el reparto de tintas y la ' +
+                      'rareza de la pregunta 2 NO valen. Todo lo demás sí — la geometría no ' +
+                      'depende de la paleta.';
+    }
     return (PALS = p);
   }
   function pinta(ctx, W, H, seed, params) {
@@ -115,12 +125,43 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
     const cv = document.createElement('canvas'); cv.width = d.W; cv.height = d.H;
     return { cv, ctx: cv.getContext('2d', { willReadFrequently: true }), W: d.W, H: d.H };
   }
+  /* LA SEED SE MEZCLA ANTES DE USARLA, y no es un adorno. El Rng del motor es un
+   * LCG, y en un LCG los primeros sorteos de seeds CONSECUTIVAS no son
+   * independientes: el primero avanza 0,000388 por seed y el segundo 0,0907, así
+   * que en un bloque de mil seeds seguidas el primer sorteo recorre el 39% del
+   * rango y el segundo da tres vueltas ordenadas. Del tercero en adelante ya está
+   * disperso.
+   *
+   * Y el primer sorteo de esta familia ES LA PALETA; el segundo, la pareja
+   * tinta/suelo. Medido: 300 seeds seguidas usaron 3 paletas de 15, y las tres
+   * eran vecinas en el catálogo. Con eso, «tintas» y la parte de la rareza que
+   * depende de la paleta no miden la familia: miden un trozo del catálogo.
+   *
+   * No se toca el Rng —cambiarlo cambiaría TODAS las obras ya guardadas, de seis
+   * familias—. Se mezcla la seed aquí, que es donde está el problema: el
+   * instrumento elegía mal la muestra, el motor no. Mezclador de MurmurHash3.
+   * Con él, la geometría no cambia (venía del tercer sorteo en adelante y ya
+   * estaba bien) pero el color deja de estar congelado. */
+  function semilla(n) {
+    let x = n >>> 0;
+    x = Math.imul(x ^ (x >>> 16), 2246822507) >>> 0;
+    x = Math.imul(x ^ (x >>> 13), 3266489909) >>> 0;
+    return (x ^ (x >>> 16)) >>> 0;
+  }
+
   const suelta = c => { c.width = c.height = 0; };
   const pc = (a, b) => (100 * a / b).toFixed(1) + '%';
 
   // ── 1 · Cuñas ────────────────────────────────────────────────────────────
   const ESCALAS = [0.035, 0.055, 0.085];   // radios del disco / lado del bloque
-  const UMBRAL = 62;                       // grados: por debajo, hay triángulo
+  /* DOS UMBRALES, y no es duplicar: el reparto de ángulos se amontona justo por
+   * encima de 60°, así que contar «por debajo de 62» cae en mitad de la cuesta y
+   * el número baila —dos bloques de seeds independientes dieron 0,9% y 2,4% sin
+   * que cambiara una línea—. Lo que no baila es la cola: por debajo de 45° hay
+   * triángulo de verdad, y ahí los dos bloques dieron 0,25% y 0,10%. Así que la
+   * cifra dura manda en el veredicto y la blanda se informa para ver la
+   * tendencia, no para decidir. */
+  const AGUDO = 45, BLANDO = 62;
 
   function peorAngulo(ctx, W, H, ground, S) {
     const im = ctx.getImageData(0, 0, W, H).data;
@@ -159,24 +200,27 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
     const hist = {}, malas = [];
     let n = 0;
     for (const fmt of ['square', 'horizontal']) for (let i = 0; i < N; i++) {
-      const seed = S0 + i, L = lienzo(fmt, 760);
+      const seed = semilla(S0 + i), L = lienzo(fmt, 760);
       const r = pinta(L.ctx, L.W, L.H, seed, { grainScale: 0, veta: 0 });
       const a = peorAngulo(L.ctx, L.W, L.H, r.col.ground, 0.64);
       suelta(L.cv); n++;
       const b = Math.min(150, Math.floor(a / 15) * 15);
       hist[b] = (hist[b] || 0) + 1;
-      if (a < UMBRAL) malas.push({ fmt, seed, ang: +a.toFixed(1), tipo: r.tipo, gubia: r.gubia, pz: r.piezas });
+      if (a < BLANDO) malas.push({ fmt, seed, ang: +a.toFixed(1), tipo: r.tipo, gubia: r.gubia, pz: r.piezas });
       if (i % 8 === 0) await esperar();
     }
     malas.sort((x, y) => x.ang - y.ang);
-    const bien = malas.length <= Math.ceil(n * 0.02);
+    const agudas = malas.filter(x => x.ang < AGUDO);
     return {
-      bien,
+      bien: agudas.length <= Math.ceil(n * 0.005) && malas.length <= Math.ceil(n * 0.04),
       texto: [
-        `obras ${n} · con cuña (< ${UMBRAL}°) ${malas.length} = ${pc(malas.length, n)}`,
+        `obras ${n}`,
+        `cuña de verdad  (< ${AGUDO}°) ${agudas.length} = ${pc(agudas.length, n)}   ← la que decide`,
+        `en la cuesta    (< ${BLANDO}°) ${malas.length} = ${pc(malas.length, n)}   ← informativa: el umbral cae donde se amontona`,
         `ángulo visible más cerrado, por tramos: ` +
           Object.keys(hist).map(Number).sort((a, b) => a - b).map(k => `${k}–${k + 15}° ${hist[k]}`).join(' · '),
-        malas.length ? 'peores: ' + malas.slice(0, 6).map(x => `${x.seed} ${x.fmt} ${x.ang}° (${x.tipo} ${x.gubia}, ${x.pz} pz)`).join(' · ') : '',
+        malas.length ? 'peores: ' + malas.slice(0, 6).map(x => `${x.seed}:${x.fmt} ${x.ang}° (${x.tipo} ${x.gubia}, ${x.pz} pz)`).join(' · ') : '',
+        malas.length ? 'para verlas: donde.html?l=' + malas.slice(0, 6).map(x => `${x.seed}:${x.fmt}`).join(',') : '',
       ].filter(Boolean).join('\n'),
     };
   }
@@ -188,7 +232,7 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
     let n = 0, cortos = 0;
     for (const fmt of ['square', 'horizontal']) for (let i = 0; i < N; i++) {
       const L = lienzo(fmt, 520);
-      const r = pinta(L.ctx, L.W, L.H, S0 + i, { grainScale: 0 });
+      const r = pinta(L.ctx, L.W, L.H, semilla(S0 + i), { grainScale: 0 });
       suelta(L.cv); n++;
       add('tipo', r.tipo); add('gubia', r.gubia); add('piezas', r.piezas);
       add('sajaduras', r.sajaduras); add('faltan', r.faltan); add('escalones', r.escalones);
@@ -226,11 +270,11 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
       const hs = [];
       for (const lado of lados) {
         const L = lienzo(fmt, lado);
-        hs.push(huella(pinta(L.ctx, L.W, L.H, S0 + i, { grainScale: 0 })));
+        hs.push(huella(pinta(L.ctx, L.W, L.H, semilla(S0 + i), { grainScale: 0 })));
         suelta(L.cv);
       }
       n++;
-      if (hs.some(h => h !== hs[0])) malas.push({ fmt, seed: S0 + i, hs });
+      if (hs.some(h => h !== hs[0])) malas.push({ fmt, seed: semilla(S0 + i), hs });
       await esperar();
     }
     return {
@@ -281,7 +325,7 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
     const soldadas = [], recortadas = [], flecos = [], finasHist = {}, cobertura = [];
     let n = 0;
     for (const fmt of ['square', 'horizontal', 'vertical']) for (let i = 0; i < N; i++) {
-      const seed = S0 + i, L = lienzo(fmt, 620), W = L.W, H = L.H;
+      const seed = semilla(S0 + i), L = lienzo(fmt, 620), W = L.W, H = L.H;
       const r = pinta(L.ctx, W, H, seed, { grainScale: 0, veta: 0 });
       const { m, tinta } = mascara(L.ctx, W, H, r.col.ground);
       suelta(L.cv); n++;

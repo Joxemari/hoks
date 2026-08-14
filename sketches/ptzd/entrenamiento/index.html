@@ -98,8 +98,8 @@
  *      presencia en ESE lote hacía esperar. Así el número no se lo lleva la
  *      composición del muestreo.
  */
-const LOTES = 100, POR_LOTE = 5, SEED0 = 710000, LADO = 300;
-const CLAVE = 'hoks-ptzd-entrenamiento-v2';
+const LOTES = 100, POR_LOTE = 5, SEED0 = 720000, LADO = 300;
+const CLAVE = 'hoks-ptzd-entrenamiento-v3';
 
 const $ = id => document.getElementById(id);
 const PALS = HOKS.normalizePalettes(HOKS.DEFAULTS);
@@ -112,7 +112,27 @@ function cargar() {
 }
 function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) {} }
 
-const seedDe = (lote, i) => SEED0 + lote * POR_LOTE + i;
+/* LA SEED SE MEZCLA ANTES DE USARLA. El Rng del motor es un LCG, y en un LCG los
+ * primeros sorteos de seeds CONSECUTIVAS no son independientes: el primero avanza
+ * 0,000388 por seed y el segundo 0,0907. Del tercero en adelante ya está disperso.
+ *
+ * Y aquí eso importaba el doble, porque el primer sorteo de esta familia ES LA
+ * PALETA y el segundo la pareja tinta/suelo. Con seeds seguidas, las cinco obras
+ * de un lote salían de la MISMA paleta —medido: 300 seeds seguidas usaron 3
+ * paletas de 15— así que la columna «paleta» del patrón no decía «da igual la
+ * paleta»: decía que no había ninguna que comparar. Las dos primeras vueltas
+ * están medidas así, y por eso su fila de paleta hay que tacharla, no leerla.
+ *
+ * No se toca el Rng: cambiarlo cambiaría todas las obras ya guardadas de seis
+ * familias. Se mezcla la seed aquí, que es donde estaba el fallo — el
+ * instrumento elegía mal la muestra, el motor no. */
+function semilla(n) {
+  let x = n >>> 0;
+  x = Math.imul(x ^ (x >>> 16), 2246822507) >>> 0;
+  x = Math.imul(x ^ (x >>> 13), 3266489909) >>> 0;
+  return (x ^ (x >>> 16)) >>> 0;
+}
+const seedDe = (lote, i) => semilla(SEED0 + lote * POR_LOTE + i);
 
 // Lo que se guarda de cada obra: la huella entera, para poder cruzar cualquier
 // rasgo después sin tener que volver a generar nada.
@@ -278,7 +298,7 @@ function analiza() {
 function verPanel() { $('juicio').style.display = 'none'; $('panel').style.display = 'block'; analiza(); }
 $('volver').onclick = () => { $('panel').style.display = 'none'; $('juicio').style.display = 'block'; if (estado.lote >= LOTES) estado.lote = LOTES - 1; pinta(); };
 $('bajar').onclick = () => {
-  const b = new Blob([JSON.stringify({ version: 1, lotes: LOTES, porLote: POR_LOTE, seed0: SEED0, juicios: estado.juicios }, null, 1)], { type: 'application/json' });
+  const b = new Blob([JSON.stringify({ version: 2, mezcla: 'murmur3', lotes: LOTES, porLote: POR_LOTE, seed0: SEED0, juicios: estado.juicios }, null, 1)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(b); a.download = 'ptzd-entrenamiento.json'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
