@@ -8,6 +8,20 @@ laboratorio y no escribe nada en `data/`.
 python -m http.server    # → http://localhost:8000/sketches/ptzd/entrenamiento/
 ```
 
+Hay además un **gemelo publicado como artefacto**, con el motor y el algoritmo
+metidos dentro del propio HTML, para juzgar sin levantar un servidor:
+<https://claude.ai/code/artifact/a46643c5-5add-43b5-87e5-95036d9f971f>
+
+Es el mismo instrumento con una diferencia obligada: allí el entorno bloquea la
+descarga de ficheros, así que los juicios salen al **portapapeles y a un cuadro de
+texto** en vez de a un `.json`. Los dos guardan en `localStorage`, pero **cada uno
+en el suyo**: son almacenamientos distintos y el avance no se comparte. Se elige
+uno y se termina en él.
+
+Y si se toca `algo.js`, el artefacto **no se entera**: lleva su copia congelada
+dentro. Hay que volver a generarlo para que juzgue la obra de ahora — y conviene,
+porque juzgar una versión vieja produce un patrón sobre una obra que ya no existe.
+
 ## Para qué
 
 El grid de obras ya sirve para decidir, pero **no deja registro**: mirar doce
