@@ -867,6 +867,13 @@
       nodes = relaxFolds(nodes, cfg);
       nodes = shrinkIntoFrame(nodes, width, cfg);
     }
+    // Y el último gesto es devolverle el material a los cabos que el solver se
+    // haya comido. Va al final a propósito: cualquier lazo posterior volvería a
+    // aplastarlos. Encoger después puede sacarlo del mínimo por un pelo, así que
+    // se estira, se encoge y se vuelve a estirar.
+    nodes = estirarCabos(nodes, width, cfg);
+    nodes = shrinkIntoFrame(nodes, width, cfg);
+    nodes = estirarCabos(nodes, width, cfg);
     // EL TEMBLOR VA AQUÍ, detrás de todos los lazos.
     // Se probó antes de ellos y después de sacarExtremos, y en los dos sitios
     // selfAvoid y relaxFolds se lo comían: a amplitud 1,0 —el ancho entero de
@@ -1195,6 +1202,31 @@
   // Prolonga los dos extremos siguiendo su propia dirección hasta salir
   // del cuerpo de la trama. Si un extremo apunta hacia dentro no se toca:
   // alargarlo lo haría atravesar toda la composición.
+  // EL CABO CORTO: cuando el solver se come el último tramo de una cinta.
+  // selfAvoid empuja los nodos para separar hebras y no mira si al hacerlo
+  // aplasta un tramo contra su vecino. En medio del recorrido eso lo arregla
+  // enforceMaterial quitando el nodo; en un EXTREMO no hay nodo que quitar sin
+  // acortar la cinta, así que el tramo se queda como esté. Con una cinta hay
+  // dos extremos y no se nota; con tres hay seis, y una de cada cuatro obras
+  // salía con un tramo más corto que el material admite.
+  // Se estira el cabo hasta el mínimo, en su propia dirección: la cinta no
+  // cambia de sitio ni de forma, sólo deja de estar cortada a hueso.
+  function estirarCabos(nodes, width, cfg) {
+    const minL = cfg.minSegRatio * width * 1.08;
+    const cabos = [[0, 1], [nodes.length - 1, nodes.length - 2]];
+    for (const s of _saltos) { cabos.push([s, s - 1]); cabos.push([s + 1, s + 2]); }
+    for (const [fin, vec] of cabos) {
+      if (vec < 0 || vec >= nodes.length || fin < 0 || fin >= nodes.length) continue;
+      const d = PV.sub(nodes[fin].p, nodes[vec].p);
+      const l = d.mag();
+      if (l >= minL || l < 1e-9) continue;
+      d.normalize();
+      nodes[fin].p.x = nodes[vec].p.x + d.x * minL;
+      nodes[fin].p.y = nodes[vec].p.y + d.y * minL;
+    }
+    return nodes;
+  }
+
   function sacarExtremos(nodes, width, cfg) {
     let cx = 0, cy = 0;
     for (const n of nodes) { cx += n.p.x; cy += n.p.y; }
