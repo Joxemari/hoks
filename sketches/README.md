@@ -83,9 +83,9 @@ vacío. Lo que sí hereda entero es el método: el tipo declara cuántos ojos qu
 luego **se comprueban** sobre el dibujo, por campo de distancias e inundación desde
 el borde — el mismo mapa de vacíos con el que TRZS coloca sus discos.
 
-No está en `works.json` ni publicada. Ver `evol/README.md` para el concepto, las
-nueve pasadas que costó y las decisiones que quedan abiertas (el nombre, entre
-ellas).
+Activa en `works.json`. Ver `evol/README.md` para el concepto, las trece pasadas
+que costó, el filo —el canto vivo, que no toca la anatomía— y las decisiones que
+quedan abiertas (el nombre, entre ellas).
 
 ECLPS es también la primera familia que existe en **un solo formato**: `double`, dos
 pliegos apaisados uno al lado del otro (2√2:1). No es capricho ni límite técnico

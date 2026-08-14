@@ -1,9 +1,14 @@
 # EVOL — *hutsunea*
 
-**Estado: nace aquí. No está en `data/works.json`, no tiene página, no está
-publicada.** Es una propuesta de sistema para mirar en el grid de obras y decidir
-si merece página, como lo fueron `dtkrt/` y `eclps/` antes que ella. El nombre es
-provisional.
+**Estado: nació aquí y está ACTIVA.** Empezó como propuesta para mirar en el grid,
+igual que `dtkrt/` y `eclps/`, y ha pasado a `data/works.json` con `active: true`.
+Eso arrastra cuatro sitios, no uno —el desplegable del lab es solo el último—:
+`evol.html` (el cascarón de `work-page.js`; sin él el nav enlazaría a un 404),
+`data/evol.json` (la galería, de momento vacía), y la landing, que consume su
+`algo.js` real como DTKRT, ECLPS y TRZS. El nombre sigue siendo provisional.
+
+Todavía no hay obra guardada: la galería está vacía hasta que se publique un lote
+desde el laboratorio.
 
 ---
 
