@@ -80,6 +80,12 @@
  * Qué hace: 100 lotes de 5 obras. De cada lote se eligen las dos que más gustan
  * —o una, o ninguna—, y de ahí sale un patrón de preferencia sobre los rasgos.
  *
+ * SEGUNDA VUELTA. Seeds nuevas (710000) y clave de almacenamiento nueva, y las
+ * dos cosas por el mismo motivo: volver a juzgar las MISMAS obras no sería una
+ * muestra, sería un re-test contaminado por el recuerdo — y mezclar los juicios
+ * de dos versiones del algoritmo daría un patrón sobre una obra que no existe.
+ * La primera vuelta sigue guardada bajo su clave, intacta.
+ *
  * Dos decisiones de método, que son lo que hace que esto sirva de algo:
  *
  *   1. A CIEGAS. Ni traits, ni tipo, ni seed a la vista mientras se juzga. Saber
@@ -92,8 +98,8 @@
  *      presencia en ESE lote hacía esperar. Así el número no se lo lleva la
  *      composición del muestreo.
  */
-const LOTES = 100, POR_LOTE = 5, SEED0 = 700000, LADO = 300;
-const CLAVE = 'hoks-ptzd-entrenamiento-v1';
+const LOTES = 100, POR_LOTE = 5, SEED0 = 710000, LADO = 300;
+const CLAVE = 'hoks-ptzd-entrenamiento-v2';
 
 const $ = id => document.getElementById(id);
 const PALS = HOKS.normalizePalettes(HOKS.DEFAULTS);
