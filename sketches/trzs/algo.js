@@ -1870,7 +1870,8 @@
     // ============================================================
     const acum = arcosDe(mapped);
     const total = acum[acum.length - 1];
-    _densa = curvaDensa(mapped, acum, Object.assign({}, cfg, { unidadAncho: width }));
+    _densa = curvaDensa(mapped, acum, Object.assign({}, cfg, { unidadAncho: width }),
+                        comp.saltos || []);
 
     // Los saltos: ni se dibujan, ni sus bordes son cortes. Cada uno son DOS
     // extremos de cinta —con dos cintas hay cuatro, con tres hay seis— y un
@@ -1995,58 +1996,90 @@
     // de anchura nominal sobresale por los lados y pisa incisiones vecinas —
     // que es exactamente lo que hacía: 0 huecos de 321 cruces con el remate a
     // escuadra (que no dibuja nada) y 17 de 634 con el remate rodando.
-    const remateEn = (p, hacia, kC, arco) => {
+    //
+    // EL REMATE TAMBIÉN LLEVA INCISIÓN, Y VA EN EL TURNO DEL HALO.
+    //
+    // Sin ella, el remate es el único trozo de cinta que se suelda a lo que
+    // pisa: el cuerpo se separa de la hebra de debajo con su halo y el remate
+    // cae encima a pelo. Con la punta del inglete llegando a 1,03 anchuras por
+    // delante del cabo y la holgura garantizada allí de 1,0, el caso no es
+    // raro: 43 de 60 obras con inglete y 43 de 60 con esquina curva.
+    //
+    // Ponerla ya se intentó una vez y trajo de vuelta la costura de 1 px
+    // (26–107 px pasaban a 2.512 y a 5.561 con inglete). No era el halo: era el
+    // ORDEN. Se pintaba halo-del-remate DESPUÉS de la tinta del cuerpo, así que
+    // el halo mordía el cuerpo ya pintado y la tinta del remate volvía a taparlo
+    // acabando a ras — el f(1−f) de siempre. Pintándolo con los demás halos, la
+    // tinta del cuerpo pasa por encima después y no queda nada que sumar.
+    //
+    // Y LA CARA DEL CABO TAMBIÉN, AUNQUE EL REMATE SEA A ESCUADRA.
+    //
+    // El halo del cuerpo se traza con cabo a hueso (`lineCap = "butt"`), así que
+    // se acaba exactamente donde se acaba la cinta: la cara del final es el
+    // único filo de la obra sin incisión. Cuando ese final cae contra otra
+    // hebra —y la holgura sólo está garantizada frente a las HUELLAS DE CRUCE,
+    // no frente a una vecina que pasa de largo— las dos tintas se tocan y se
+    // leen como una sola pieza. Medido con remate a escuadra, que no dibuja
+    // nada: 22 de 60 obras de tres cintas y 13 de 60 de dos. Por eso la
+    // incisión del extremo se pinta siempre, sea cual sea el remate.
+    const remateEn = (p, hacia, kC, arco, pasada, recorta) => {
       const wR = ruido ? anchoEn(arco) : width;
-      if (cfg.ends !== "redondos" && cfg.ends !== "inglete") return;
-      for (const pasada of ['halo', 'tinta']) {
-        // La pasada de halo es la que separa el remate del suelo cuando la
-        // cinta es del color del suelo; si el halo ES el fondo, no pinta nada
-        // que se vea y se salta.
-        // La pasada de halo vuelve a ser SÓLO para el trazo fantasma, que es
-        // para lo que se hizo: separar del suelo un remate del color del suelo.
-        // Ponerla en todos los remates fue un intento de tapar el hueco de la
-        // incisión, y no era eso —el hueco era de ORDEN— pero sí traía de vuelta
-        // la costura de 1 px: halo y tinta acabando a ras es exactamente el
-        // mecanismo f(1−f) que se cerró en el cuerpo. Medido: 26–107 px de
-        // costura pasaban a 2.512 por defecto y 5.561 con inglete.
-        if (pasada === 'halo' && haloDe(kC) === col.bg) continue;
-        const crece = pasada === 'halo' ? gap : 0;
-        ctx.fillStyle = pasada === 'halo' ? haloDe(kC) : tintaDe(kC);
-        if (cfg.ends === "redondos") {
-          ctx.beginPath(); ctx.arc(p.x, p.y, wR / 2 + crece, 0, TWO_PI); ctx.fill();
-          continue;
-        }
-        // INGLETE: UN SOLO CORTE AL BIES.
-        // Una punta simétrica añadiría un VÉRTICE en el eje que no existe en
-        // una pletina cortada: el corte al bies es UNA línea, no dos. Se añade
-        // material en UN lado nada más y el filo que queda a la vista es la
-        // diagonal. El lado y la inclinación salen del seed — dos remates
-        // idénticos en la misma obra se leen como plantilla, y un corte a mano
-        // no repite.
-        const d = PV.sub(p, hacia).normalize();
-        if (!isFinite(d.x) || !isFinite(d.y) || (d.x === 0 && d.y === 0)) continue;
-        const rr = new E.Rng((_semilla ^ 0x81E5 ^ (mapped.indexOf(p) * 0x9E3779B1)) >>> 0);
-        const lado = rr.next() < 0.5 ? 1 : -1;
-        const largo = wR * (0.35 + rr.next() * 0.55);
-        const n = V(-d.y * lado, d.x * lado);
-        const h = wR / 2 + crece;
-        // LA BASE DEL TRIANGULO ENTRA EN EL CUERPO, no se queda a ras de él.
-        // A ras, el filo del triángulo y el del cuerpo comparten arista, y dos
-        // figuras del mismo color que comparten arista NO suman cobertura 1:
-        // cada una aporta su fracción y queda una raya más clara. Es el mismo
-        // f(1−f) del cabo, ahora en el remate. Medido: con remate a escuadra
-        // 0 de 85 obras y 39 px de costura; con inglete a ras, 77 de 85 y
-        // 5.631 px. Metiendo la base una pizca dentro, la arista cae sobre
-        // tinta maciza y no hay nada que sumar.
-        const atras = max(E.unit(S, ALTO, REF), 1) * 2;
-        const A = V(p.x + n.x * h - d.x * atras, p.y + n.y * h - d.y * atras);
-        const B = V(p.x - n.x * h - d.x * atras, p.y - n.y * h - d.y * atras);
-        const C = V(p.x + n.x * h + d.x * largo, p.y + n.y * h + d.y * largo);
-        ctx.beginPath();
-        ctx.moveTo(A.x, A.y); ctx.lineTo(C.x, C.y); ctx.lineTo(B.x, B.y);
-        ctx.closePath();
-        ctx.fill();
+      const redondo = cfg.ends === "redondos", inglete = cfg.ends === "inglete";
+      if (pasada === 'tinta' && !redondo && !inglete) return;
+      const crece = pasada === 'halo' ? gap : 0;
+      if (pasada === 'halo' && recorta) ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = pasada === 'halo' ? (recorta ? 'rgba(0,0,0,1)' : haloDe(kC))
+                                        : tintaDe(kC);
+      // La incisión del extremo: un disco de la anchura del cabo más el
+      // hueco. Lo que se come del cuerpo lo devuelve la tinta, que va después.
+      if (pasada === 'halo') {
+        ctx.beginPath(); ctx.arc(p.x, p.y, wR / 2 + gap, 0, TWO_PI); ctx.fill();
       }
+      if (!inglete) {
+        if (pasada === 'tinta' && redondo) {
+          ctx.beginPath(); ctx.arc(p.x, p.y, wR / 2, 0, TWO_PI); ctx.fill();
+        }
+        if (pasada === 'halo' && recorta) ctx.globalCompositeOperation = 'source-over';
+        return;
+      }
+      // INGLETE: UN SOLO CORTE AL BIES.
+      // Una punta simétrica añadiría un VÉRTICE en el eje que no existe en
+      // una pletina cortada: el corte al bies es UNA línea, no dos. Se añade
+      // material en UN lado nada más y el filo que queda a la vista es la
+      // diagonal. El lado y la inclinación salen del seed — dos remates
+      // idénticos en la misma obra se leen como plantilla, y un corte a mano
+      // no repite.
+      const d = PV.sub(p, hacia).normalize();
+      if (!isFinite(d.x) || !isFinite(d.y) || (d.x === 0 && d.y === 0)) {
+        if (pasada === 'halo' && recorta) ctx.globalCompositeOperation = 'source-over';
+        return;
+      }
+      const rr = new E.Rng((_semilla ^ 0x81E5 ^ (mapped.indexOf(p) * 0x9E3779B1)) >>> 0);
+      const lado = rr.next() < 0.5 ? 1 : -1;
+      const largo = wR * (0.35 + rr.next() * 0.55);
+      const n = V(-d.y * lado, d.x * lado);
+      const h = wR / 2 + crece;
+      // LA BASE DEL TRIANGULO ENTRA EN EL CUERPO, no se queda a ras de él.
+      // A ras, el filo del triángulo y el del cuerpo comparten arista, y dos
+      // figuras del mismo color que comparten arista NO suman cobertura 1:
+      // cada una aporta su fracción y queda una raya más clara. Es el mismo
+      // f(1−f) del cabo, ahora en el remate. Medido: con remate a escuadra
+      // 0 de 85 obras y 39 px de costura; con inglete a ras, 77 de 85 y
+      // 5.631 px. Metiendo la base una pizca dentro, la arista cae sobre
+      // tinta maciza y no hay nada que sumar.
+      const atras = max(E.unit(S, ALTO, REF), 1) * 2;
+      const A = V(p.x + n.x * h - d.x * atras, p.y + n.y * h - d.y * atras);
+      const B = V(p.x - n.x * h - d.x * atras, p.y - n.y * h - d.y * atras);
+      // El halo crece también HACIA DELANTE: la punta es justo la parte del
+      // remate que se mete en terreno ajeno, y una incisión que sólo la
+      // rodease por los lados la dejaría soldada por el filo.
+      const alcance = largo + crece;
+      const C = V(p.x + n.x * h + d.x * alcance, p.y + n.y * h + d.y * alcance);
+      ctx.beginPath();
+      ctx.moveTo(A.x, A.y); ctx.lineTo(C.x, C.y); ctx.lineTo(B.x, B.y);
+      ctx.closePath();
+      ctx.fill();
+      if (pasada === 'halo' && recorta) ctx.globalCompositeOperation = 'source-over';
     };
 
     // Cada extremo de cinta con su punto, su direccion de SALIDA y su arco: la
@@ -2123,12 +2156,19 @@
                     ruido ? (d) => anchoEn(d) + gap * 2 : width + gap * 2,
                     recorta ? 'rgba(0,0,0,1)' : halo, cfg, "round");
         if (recorta) ctx.globalCompositeOperation = 'source-over';
+        // El halo del remate va AQUÍ, con el del cuerpo: lo que se mete dentro
+        // del cuerpo lo vuelve a tapar la tinta de abajo y no queda arista que
+        // sumar. Detrás de la tinta era de donde salía la costura.
+        for (const [cp, chacia, cd] of cabos)
+          if (cd >= a - 1e-6 && cd <= b + 1e-6)
+            remateEn(cp, chacia, cintaEnArco(cd), cd, 'halo', recorta);
       }
       trazarTramo(ctx, mapped, acum, iniC, finC, ruido ? anchoEn : width, tintaDe(cinta), cfg);
 
       // El remate de esta seccion, si lo tiene: aqui y no al final.
       for (const [cp, chacia, cd] of cabos)
-        if (cd >= a - 1e-6 && cd <= b + 1e-6) remateEn(cp, chacia, cintaEnArco(cd), cd);
+        if (cd >= a - 1e-6 && cd <= b + 1e-6)
+          remateEn(cp, chacia, cintaEnArco(cd), cd, 'tinta', false);
     }
 
 
@@ -2491,7 +2531,17 @@
   // costuras casan.
   let _densa = null;   // { pts, arco } — arco en la escala del polígono
 
-  function curvaDensa(mapped, acum, cfg) {
+  // EL SALTO NO ES UNA ESQUINA.
+  // La curva redondea todos los vértices interiores, y el vértice de un salto
+  // no es un codo de la cinta: es el final de una cinta y el principio de otra,
+  // unidos por un tramo que no se dibuja. Redondeándolo, el final de la cinta
+  // se doblaba HACIA la cinta siguiente y dejaba de acabar donde dice el
+  // recorrido — el remate y su incisión, que van al vértice, caían fuera del
+  // cuerpo. Sólo se veía en obras de varias cintas con esquina curva, y salía
+  // como remates soldados en 6 de 60. Los dos lados del salto se quedan vivos.
+  function curvaDensa(mapped, acum, cfg, saltos) {
+    const _s = saltos || [];
+    const finDeCinta = (i) => _s.indexOf(i) >= 0 || _s.indexOf(i - 1) >= 0;
     const k = cfg.curva || 0;
     // Con TEMBLOR hace falta un recorrido denso aunque la esquina sea viva: el
     // temblor se dibuja uniendo puntos, y entre dos vértices sueltos no hay
@@ -2520,6 +2570,7 @@
       (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y);
 
     for (let i = 1; i < mapped.length - 1; i++) {
+      if (finDeCinta(i)) { pts.push(mapped[i].copy()); arco.push(acum[i]); continue; }
       const a = mapped[i-1], v = mapped[i], b = mapped[i+1];
       const la = PV.dist(a, v), lb = PV.dist(v, b);
       const r = k * 0.5 * min(la, lb);
