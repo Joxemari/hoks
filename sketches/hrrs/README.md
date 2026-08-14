@@ -436,14 +436,30 @@ Lo que pedías: poder contemplarlas todas. Ninguna referencia es un «tipo»; ca
 una es una **combinación** de valores en estos ejes. Eso es lo que hay que poder
 tirar.
 
+Los nombres de los ejes son **los del autor**, no los míos: «algunos más separado,
+otros vibran, algunos en paralelo, otros se alejan, algunos se salen del cuadro y
+otros juntan sus extremos». Esa frase *es* la taxonomía; lo de abajo sólo la ordena.
+
 | eje | valores | dónde se ve |
 |---|---|---|
 | **topología** | `horquilla` (uno se parte) · `cruce` (dos se encuentran) · `suelta` (se va y muere) | 1,3,4,6 · 5 · todas |
-| **reencuentro** | `canal` (se junta enseguida) · `recinto` (se junta lejos) · `nunca` (no se junta) | todas · 1,2,6 · 3,4 |
-| **marco** | `contenido` (con margen) · `sangrado` (algún cabo cruza) · `travesía` (de lado a lado) | 3,6 · 1,2,4 · 5 |
-| **cabos** | `patas` (varios, paralelos, mismo sentido) · `abanico` (abiertos) · `a ras` (mueren junto a otro) | 1,2,6 · 3,4 · 1,5 |
-| **trazo** | `quebrado` (ángulo vivo, quiebros) · `ortogonal` (rectos largos) · `liso` (curva suave) | 1,2,6 · 5 · **3,4** |
+| **reencuentro** | `canal` (van *en paralelo*) · `recinto` (se juntan lejos) · `abanico` (*se alejan*) | todas · 1,2,6 · 3,4 |
+| **nudo** | `sin nudo` · `un nudo` (varios cabos *juntan sus extremos*) · `dos nudos` | 1,6 · 3,4 · 5 |
+| **separación** | `pegado` (un canal) · `holgado` (2–3 canales) · `suelto` (mucho suelo entre tramos) | 6 · 1,2 · 3,4 |
+| **marco** | `contenido` (con margen) · `sangrado` (algún cabo *se sale del cuadro*) · `travesía` (de lado a lado) | 3,6 · 1,2,4 · 5 |
+| **cabos** | `patas` (varios, paralelos, mismo sentido) · `abiertos` · `a ras` (mueren junto a otro) | 1,2,6 · 3,4 · 1,5 |
+| **trazo** | `quebrado` (ángulo vivo) · `ortogonal` (rectos largos) · `liso` (curva suave) | 1,2,6 · 5 · **3,4** |
+| **vibración** | `quieto` · `tembloroso` (*vibra*: quiebros pequeños a lo largo del tramo) | 5 · 1,2,3,4,6 |
 | **haz** | `par` (2 juntos) · `terna` (3) · `peine` (4+ engranados) | todas · 1,2 · 6 |
+
+**La vibración es la que más echo de menos en lo que hay hecho.** En cinco de las
+seis, un tramo largo no es recto: tiembla. Y no es el temblor de TRZS —allí respira
+la anchura— ni ruido por vértice: es el **filo**, quiebros pequeños y seguidos que
+recorren el tramo entero manteniendo la dirección. Mi `quiebro` (4–20°) apunta ahí
+pero es una moda entre tres, así que sale a rachas y no *a lo largo*. En la
+referencia la vibración no es un suceso: es la **textura del trazo**, constante en
+toda la obra, como la anchura y el canal. Probablemente sea una **tercera medida**
+del material, junto a `W` y `g`.
 
 Dos avisos sobre esa tabla:
 
