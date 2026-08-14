@@ -741,6 +741,9 @@ faltan      0 · 34%   1 · 48%   2 · 18%
 escalones   0 · 22%   1 · 55%   2 · 24%
 mancha      p05 16% · p50 26% · p95 40%
 flequillo   tres placas o más en el suelo de carne: 0,4% de las obras
+overall     common 40,0%  uncommon 35,2%  rare 15,0%  superrare 6,8%  legendary 3,1%
+            (el reparto de la casa es 40/35/15/7/3, y los umbrales son sus
+             percentiles medidos sobre esta misma muestra)
 huella      0 de 180 obras cambia a 760 / 2400 / 4200 px, en los tres formatos
 ms          ~30 por pieza a 520 px, con grano y veta
 ```
