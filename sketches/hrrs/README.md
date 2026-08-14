@@ -471,6 +471,54 @@ Dos avisos sobre esa tabla:
 - **`travesía` tampoco cabe hoy**: el margen en los cuatro lados (regla del campo)
   la prohíbe por construcción. Es la decisión que habría que reabrir si la 5 entra.
 
+## Nueve patrones que no están nombrados, y son reglas
+
+Lo de arriba ordena lo que el autor nombró. Esto es lo que además se ve en los
+cuadros y sirve como **regla generativa**. Ordenadas por cuánto cambiarían el
+resultado.
+
+1. **EL ÁNGULO DE HORQUILLA ES PEQUEÑO: 15–40°, nunca 90°.** Es el más importante
+   de la lista. Cuando el material se abre, el hijo sale **al bies suave** y los dos
+   se separan despacio. Una horquilla a 90° es una **T** —el encuentro de PTZD, la
+   grieta— y se lee como derivación; una a 20° se lee como un **delta**, como algo
+   que se desdobla. Ahí está literalmente la palabra *acompañamiento*: los dos
+   tramos salen del mismo sitio y tardan en despedirse.
+2. **EL CANAL ES MÍNIMO EN LA HORQUILLA Y SÓLO SE ABRE.** Esto reconcilia «van en
+   paralelo» con «se alejan», que parecían contradecirse: el canal vale `g` **en su
+   origen** y de ahí crece, nunca al revés. Un canal no es una franja de anchura
+   constante — es una **cuña que nace cerrada**. En las referencias 3 y 4 se ve
+   entero: nacen pegados en el nudo y se abren hasta perderse.
+3. **UN SOLO RECINTO GRANDE, no muchos ojos pequeños.** Las referencias 1, 2 y 6
+   tienen **uno**, y grande (a ojo, del 15 al 25 % del cuadro). Mi versión produce
+   seis o nueve ojos chicos, que es otra cosa: eso es una retícula, no un recinto.
+   El recinto es el **suceso mayor** de la pieza y compite con el nudo por ser el
+   sitio donde se entra a mirar.
+4. **UN POLO DENSO, y la escala del tramo va con él.** La topología no se reparte:
+   se **concentra** en una zona —el nudo, o el recinto— y el resto es viaje. Y los
+   tramos son **cortos dentro del polo y largos fuera**. Hoy la escala de racha es
+   global y ciega a eso; ahí se pierde la mitad del carácter.
+5. **LOS CABOS COMPARTEN DIRECCIÓN Y TERMINAN ESCALONADOS.** En 1, 2 y 6 todos los
+   cabos libres caen hacia el mismo lado —la obra tiene un «abajo»— pero **acaban a
+   alturas distintas**. Alineados serían un rastrillo; escalonados son patas.
+6. **W ES CONSTANTE Y EL HAZ NO ADELGAZA.** Toda «masa ancha» de las referencias es
+   en realidad **N cintas adyacentes**, no una cinta gorda partida por una ranura.
+   La horquilla, por tanto, **no reparte** material: emite una cinta nueva de la
+   misma anchura. Parece un detalle y decide la implementación entera.
+7. **LA OBRA TIENE SILUETA.** El conjunto se lee como una forma: cuadrada en la 6,
+   rombo diagonal en la 1, abanico horizontal en la 3 y la 4. No es una nube de
+   trazos con una densidad — tiene contorno. Mis piezas no tienen ninguna.
+8. **EL CANAL MUERE EN PUNTA.** Donde un canal se acaba, se cierra **en cuña**
+   porque las dos cintas convergen, no de golpe ni a escuadra. Es la firma visual
+   de que aquello fue una sola cosa que se abrió.
+9. **LA VIBRACIÓN TIENE LONGITUD DE ONDA PROPIA.** Y es del material, no del tramo:
+   en la 6 son seis u ocho quiebros por tramo de viaje; en la 3 y la 4, dos o tres
+   ondas largas. Constante dentro de una obra, distinta entre obras — o sea, un eje
+   **serial**, como la gubia.
+
+De las nueve, las tres primeras son las que explican por qué lo mío no se parece
+aunque cumpla todas las reglas escritas: **horquilla suave, canal en cuña y un
+recinto mayor.** Las otras seis afinan.
+
 ## Lo que esto rompe de lo que hay hecho
 
 Honestamente, y por orden de gravedad:
