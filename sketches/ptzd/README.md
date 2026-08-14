@@ -1,10 +1,15 @@
 # PTZD — *el bloque partido*
 
-**Estado: concepto. No hay `algo.js`, no hay harness, no hay página, no hay una
-sola pieza renderizada.** Esto es la propuesta escrita antes de escribir código —
-el paso que a `dtkrt/`, `eclps/` y `evol/` les faltó por escrito. Todos los
-números de aquí son **objetivos, no medidas**: cuando exista el grid de obras
-serán otros. El nombre es provisional.
+**Estado: nace aquí. Hay `algo.js` y harness; no hay página, no está en
+`data/works.json`, no está publicada.** Es una propuesta de sistema para mirar en
+el grid de obras y decidir si merece página, como lo fueron `dtkrt/`, `eclps/` y
+`evol/`. El nombre es provisional.
+
+Se escribió **la gramática antes que el código** —el paso que a las tres
+anteriores les faltó por escrito— y después el grid corrigió la gramática: dos
+reglas nuevas y cuatro defectos con nombre, todo ello abajo, en «Lo que el grid
+cambió». Los números de la tabla de tipos son **objetivos**; los de «Medido» son
+medidas.
 
 ---
 
@@ -130,10 +135,36 @@ abierto, no una explosión detenida.
    silencios de una partitura. Un bloque con los cortes repartidos a intervalos
    iguales no es una obra: es una muestra de material.
 
+9. **EL PULSO.** *(regla que puso el grid, no el papel)* Un canto de madera no es
+   una recta: la gubia tiembla, la fibra se rompe y el filo se va. Esa
+   irregularidad no es un defecto del taco — es lo que separa una talla de un
+   vector, y sin ella la familia entera se lee como un render. Pero **no es
+   ruido**: un temblor por vértice da un borde sucio, no una mano. Es una **onda**
+   —valores sembrados e interpolados suave—, así que el canto ondula despacio y
+   con su propia longitud.
+   Y va sobre la **geometría compartida**, no sobre cada cara al dibujar: el corte
+   que separa dos piezas es *una* polilínea, ondulada una sola vez, y las dos la
+   heredan. Si cada cara ondulase por su cuenta el hueco cambiaría de anchura y la
+   obra se leería **rasgada** en vez de cortada — la regla 3, rota. Por eso el
+   pulso entra al generar y no al pintar.
+   Y por eso mismo **el bloque no es un polígono exacto**: nace tendiendo al
+   cuadrado o al rectángulo (proporción de 0,82 a 1,18), con las cuatro esquinas
+   desviadas y los cantos ondulados. Tiende, y no llega.
+10. **LA QUE FALTA.** *(la otra que puso el grid)* La silueta de la referencia no
+   tiene mordisquitos: **le faltan placas enteras**. Y no hace falta inventarse un
+   contorno raro para conseguirlo — el bloque ya está partido, así que basta con
+   que alguna de las piezas que se soltaron **no esté**. Es la lectura más literal
+   del bloque partido y es lo que impide que el contorno sea un polígono
+   proporcional.
+   Sólo puede perderse una placa de la **orilla**: quitar una de dentro dejaría un
+   vacío rodeado de masa, y eso es el `calado` —territorio de EVOL—. Y la reserva
+   nunca se va: es contra ella contra lo que se lee todo lo demás.
+
 **Y de ahí, sin regla propia: la silueta.** Nadie la traza. Es lo que queda
-cuando los cortes han pasado por encima del canto (regla 2) y las piezas se han
-apartado (reglas 6 y 7). El cuadrado del principio no sobrevive a su propia
-rotura, y esa es la obra.
+cuando los cortes han pasado por encima del canto (regla 2), las piezas se han
+apartado (reglas 6 y 7), el pulso ha desecho la recta (regla 9) y alguna placa no
+ha vuelto (regla 10). El cuadrado del principio no sobrevive a su propia rotura, y
+esa es la obra.
 
 **Nada gira.** Rotar una pieza convierte el bloque partido en una explosión, y eso
 ya no es esto.
@@ -346,12 +377,105 @@ cartela:
   aurrekoaren kontra hiltzen da, eta hala hausteko ordena piezan bertan irakur
   daiteke.»
 
+## Lo que el grid cambió
+
+Seis pasadas mirando doce seeds a la vez. Cada número del `algo.js` que parece
+arbitrario tiene detrás una versión que se veía peor, y está anotado ahí:
+
+- **Puzzle.** La primera versión daba rachas del mismo tamaño en cualquier
+  dirección, y con giros de ±90° casi siempre el corte boxeaba sobre sí mismo y
+  recortaba rectángulos: un circuito impreso. Un corte **cruza**, así que va por
+  avances largos en su rumbo y escalones cortos a un costado — la escalera de la
+  referencia.
+- **Cordillera.** Con el rumbo ladeándose 45°, los avances —que son largos—
+  salían diagonales, y varios seguidos promedian a montaña. Es el mismo defecto
+  que EVOL ya se comió. El rumbo **nace y dobla a escuadra**; al bies sólo se va
+  en un escalón, que es corto y no llega a leerse como dirección. Y el rumbo se
+  redondea al par **más cercano** al entrar, porque si no un corte que entra por
+  una arista oblicua hereda rumbo diagonal y la cordillera vuelve por detrás.
+- **Papel pintado.** El reparto por área iguala los tamaños: todas las piezas del
+  mismo peso y ningún sitio donde mirar. De ahí **la reserva** — a partir del
+  segundo o tercer corte la masa mayor queda intacta y todo lo demás ocurre contra
+  ella. Es la regla 8 hecha de verdad, y sin ella la obra es un suelo de baldosas.
+  Sigue admitiendo sajaduras: abrir un bloque sin dividirlo es justo lo que puede
+  pasarle a un bloque entero.
+- **Esquina.** El foco de la cadencia con denominador pequeño ganaba siempre, así
+  que los cortes se agolpaban en un rincón y tres cuartos del bloque quedaban
+  intactos. Eso no es un silencio, es una pieza sin repartir. El foco **inclina,
+  no manda**.
+- **La sajadura que arranca fuera.** La retirada del canto se aplicaba al dibujar,
+  después de trazar las sajaduras, así que la pieza se recogía y el corte quedaba
+  empezando en el aire. Se aplica **antes**, y `retirar` conserva el número y el
+  orden de los vértices para que las clases de arista sigan valiendo.
+- **Retirar por rectas.** Desplazar cada arista y cortar las vecinas funciona con
+  un rectángulo y explota con un canto de doscientos vértices: dos aristas casi
+  paralelas se cortan en el infinito. Se hace **por vértice**, y sólo se mueve el
+  que tiene sus dos aristas de canto — donde el canto se encuentra con un corte el
+  vértice se queda, porque moverlo arrastraría el extremo del corte y el hueco
+  dejaría de medir la gubia.
+- **La rareza por máximo.** Con siete rasgos, casi cualquier obra encuentra uno
+  poco común y la familia entera sale rara: 6% common, 58% uncommon, 36% rare y
+  **cero** superrare o legendary. Un reparto donde nada es corriente y nada es
+  excepcional no dice nada — el mismo error que EVOL cometió con «desbocado». Pasa
+  a **probabilidad combinada**, y no en valor absoluto (el producto de seis
+  probabilidades es siempre diminuto y mete al 100% en el mismo cajón) sino como
+  razón contra **la obra más probable de la familia**.
+- **Serpiente.** El pulso a 1,25% del lado con onda de medio bloque hacía que los
+  cortes culebrearan: barro seco, no madera. A 0,8% con onda de 0,85 el borde
+  respira sin dejar de ser un corte. Y el canto ondula **más** que el corte
+  (×1,6): el filo del taco se hizo a pulso y el de dentro con la gubia apoyada.
+
+## Medido
+
+500 tiradas en cuadrado, sobre las paletas por defecto del motor:
+
+```
+tipo        arbol 38%  partido 29%  hendido 19%  astillado 14%
+gubia       fina 31%  media 46%  ancha 24%
+piezas      p10 2 · p50 4 · p90 8 · max 12
+            2:15% 3:20% 4:18% 5:14% 6:9% 7:9% 8:6% 9:5% 10:2% 11:2%
+sajaduras   p10 0 · p50 1 · p90 2
+hondura     p10 1 · p50 2 · p90 3 · max 4     (profundidad del árbol de fractura)
+mancha      p10 29,0%  p50 37,7%  p90 49,5%  max 61,6%
+papel crudo 32%
+overall     common 36%  uncommon 43%  rare 17%  superrare 4%  legendary <1%
+ms          ~6 por pieza a 300 px, incluido el grano
+```
+
+**Y la huella no se mueve con la resolución.** Es la afirmación que el documento
+hacía sin haberla comprobado, y la que EVOL aprendió por las malas: medir
+**elige** —el recuento de piezas descarta candidatos—, así que en píxeles la misma
+seed podría dar siete piezas en pantalla y ocho a 300 dpi. Generando en el campo
+normalizado: **60 de 60 huellas idénticas** a 760, 2400 y 4200 de lado corto, en
+cuadrado y en apaisado — tipo, gubia, piezas, sajaduras, cortes, hondura, mancha a
+seis decimales y los dos colores. Cero diferencias.
+
+Lo que **sigue mal**, y hay que decirlo: el 21% de las piezas no alcanza los
+cortes que su tipo declara. Con la reserva apartada queda menos superficie donde
+cortar y el área mínima de pieza rechaza particiones; manda lo medido, pero un
+21% es mucho — EVOL tenía un 1,8%. Es lo primero que hay que mirar en la
+siguiente pasada.
+
 ## Siguiente paso
 
-Portar esto a `sketches/ptzd/algo.js` + harness sobre `_template/`, y mirar el
-grid de obras. La parte con riesgo real de implementación es el punto 4 —las caras
-del grafo plano—; el resto es gramática. Hasta que no haya doce seeds en pantalla,
-todo lo de arriba son ganas.
+Está para mirar en el grid, que es donde se decide. Lo que falta:
+
+- **Las variantes `calado` y `gofrado` no están implementadas.** Están escritas y
+  no existen en el código.
+- **La veta tampoco:** el grano sigue siendo el isótropo del motor.
+- Bajar ese 21% de tipos incumplidos.
+- Y la de verdad: **si merece página.** Eso se decide viendo doce seeds a la vez,
+  no leyendo esto.
+
+```bash
+python -m http.server      # → http://localhost:8000/sketches/ptzd/
+```
+
+No aparece en el desplegable *Work* del laboratorio, porque ese desplegable lista
+las familias activas de `works.json` y PTZD no está ahí. Se llega por URL, que es
+lo correcto para una propuesta. Sí está en `GRADUATED`, así que un lote que la
+mezcle con otras obras pinta sus miniaturas. Los mandos propios: tipo, gubia,
+cortes, sajaduras y deriva.
 
 ## Fuentes
 
