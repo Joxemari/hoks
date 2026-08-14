@@ -33,11 +33,28 @@ versiones del algoritmo daría un patrón sobre una obra que ya no existe.
 |---|---|---|---|
 | 1ª | 700000– | `…-v1` | antes de las guardas del hilo, la rectitud y el casi |
 | 2ª | 710000– | `…-v2` | con ellas, y con los pesos ya movidos por la 1ª |
+| 3ª | — | — | pendiente: haría falta regenerar el artefacto sobre la 5ª revisión |
 
-Lo que dio la primera está en `../README.md`, en «Lo que el grid cambió». En
-resumen: dos señales independientes —menos placas y **ninguna sajadura**—, y la
-segunda explicada por un defecto formal que se arregló. La segunda vuelta juzga
-justamente eso.
+Lo que dieron las dos está en `../README.md`, en «Lo que el grid cambió». En
+resumen: la primera dio dos señales independientes —menos placas y **ninguna
+sajadura**—, y la segunda estaba explicada por un defecto formal que se arregló.
+
+**Y la segunda vuelta le dio la vuelta a la primera**, que es lo mejor que ha
+salido de aquí. Lo primero que dijo no está en ninguna columna: el rechazo cayó
+del **38% al 9%** —lotes en los que no gustaba ninguna de las cinco—, así que las
+guardas de la primera vuelta funcionaron. Y con los cortes malos ya arreglados, el
+ojo pidió lo contrario que antes: `arbol` +5 y `astillado` +3 frente a `hendido`
+−9, y 5–7 placas por encima de 2, cuando la primera vuelta había pedido menos de
+todo. La lectura simple que explica el bloque entero: **el rechazo de la primera
+no era a los cortes, era a los cortes malos**.
+
+Lo único que no dio la vuelta fue la sajadura: −18, más marcada. Dos vueltas
+seguidas diciendo lo mismo sobre un rasgo es lo más parecido a un dato que este
+instrumento produce.
+
+Y una tercera vuelta **juzgaría otra obra**: la quinta revisión cambió la
+gramática después de esto. Antes de volver a juzgar hay que regenerar el
+artefacto, o se estará midiendo el gusto sobre una familia que ya no existe.
 
 **Y ojo con la deriva.** Cada vuelta mueve los pesos hacia lo que gustó, así que
 la siguiente juzga una familia ya estrechada y volverá a pedir más de lo mismo.

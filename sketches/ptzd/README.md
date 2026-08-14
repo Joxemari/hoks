@@ -6,10 +6,12 @@ el grid de obras y decidir si merece página, como lo fueron `dtkrt/`, `eclps/` 
 `evol/`. El nombre es provisional.
 
 Se escribió **la gramática antes que el código** —el paso que a las tres
-anteriores les faltó por escrito— y después el grid corrigió la gramática, en dos
-revisiones: dos reglas nuevas y ocho defectos con nombre, todo ello abajo, en «Lo
-que el grid cambió». Los números de la tabla de tipos son **objetivos**; los de
-«Medido» son medidas.
+anteriores les faltó por escrito— y después el ojo corrigió la gramática, en
+cinco revisiones: tres reglas nuevas y una docena de defectos con nombre, todo
+ello abajo, en «Lo que el grid cambió». Las dos últimas vienen además con
+**medida** detrás: `entrenamiento/`, que registra la preferencia sobre 100 lotes
+de 5, y `verificacion/`, que cuenta los defectos sobre 600 obras. Los números de
+la tabla de tipos son **objetivos**; los de «Medido» son medidas.
 
 ---
 
@@ -85,7 +87,7 @@ Y una cosa que **no** hace, y que es la trampa entera de esta familia: las pieza
 no están giradas ni esparcidas. Siguen en su sitio. Lo que se ve es un bloque
 abierto, no una explosión detenida.
 
-## La gramática, en diez reglas
+## La gramática, en once reglas
 
 1. **UN BLOQUE, UNA TINTA — Y SI HAY MÁS, EL COLOR SIGUE A LA ROTURA.** El punto
    de partida es una masa, no una composición. Lo que **nunca** puede pasar es que
@@ -113,6 +115,8 @@ abierto, no una explosión detenida.
    herramientas distintas, cada una con su grosor—, así que **la gubia cambia de
    obra a obra y no cambia dentro de una**. Es un rasgo, y es serial: la misma
    gramática dicha con otro filo.
+   Y **la gubia no se sortea aparte: la elige el tipo**, porque el filo y el
+   número de trozos son la misma decisión (ver la regla 11 y la tabla de tipos).
    Es la diferencia con la incisión de TRZS, que es una **holgura calculada** —lo
    que hace falta para que dos hebras no se suelden— y por eso allí se deduce y
    aquí se declara.
@@ -132,6 +136,10 @@ abierto, no una explosión detenida.
    lo que dice es que ahí hubo una placa que estuvo a punto de soltarse y no se
    soltó. El vacío que produce es virtual —el de la placa que no llegó a existir—,
    así que su medida no es cuánto abre sino **cuánto le falta**.
+   Y tiene que **viajar por su placa**, no sólo por el bloque: el largo medido
+   contra el bloque no distingue entre un trazo de verdad en una placa grande y
+   entrar y pararse en una pequeña. Lo que se rechazaba por corto y lo que se
+   colaba por largo eran la misma cosa medida contra la referencia equivocada.
 6. **EL CORTE METE ESPACIO, NO QUITA MATERIA.** Ésta es la clave, y viene entera
    de él: en las *Gravitaciones* los papeles no se pegan, se mete espacio donde
    iría la cola. Vaciar la materia es llenar de espacio vacío. La consecuencia es
@@ -178,6 +186,26 @@ abierto, no una explosión detenida.
    Sólo puede perderse una placa de la **orilla**: quitar una de dentro dejaría un
    vacío rodeado de masa, y eso es el `calado` —territorio de EVOL—. Y la reserva
    nunca se va: es contra ella contra lo que se lee todo lo demás.
+
+11. **LO QUE QUEDA TIENE QUE SER MATERIA.** *(la que puso el ojo, dos veces)* Es
+   la contraria de la regla 6 y es la que la sostiene: si el corte mete espacio,
+   lo que no es espacio tiene que seguir siendo cuerpo. **Ninguna placa tiene
+   menos de 4,6 gubias de carne en ningún sitio** — ni una tira, ni una miga, ni
+   un pincho, ni la punta de una cuña, que es carne que se acaba. Los cuatro
+   defectos que el ojo señaló por separado en dos revisiones distintas eran el
+   mismo, y por eso los mide una sola regla.
+   Se comprueba así: **dos puntos del contorno están demasiado cerca para lo lejos
+   que están.** En recta hay menos que el suelo, y por el contorno hay más de 3,2
+   veces esa recta. La segunda condición es la que separa un defecto de una
+   esquina —donde el contorno se acerca a sí mismo por buenas razones— y lo hace
+   sin escala: la esquina a escuadra vale 1,41 pase lo que pase, la cuña de θ vale
+   1/sen(θ/2) y la tira de ancho *w* y largo *ℓ* vale 2ℓ/w. Un número dice a la
+   vez cuál es el ángulo más cerrado y cuál la tira más fina que se admiten.
+   Vale para el taco antes de cortarlo, para cada placa al cortarla y para la
+   retirada del canto después — que es lo único que puede desdecir a las otras
+   dos. **Y de aquí sale el techo de la gubia**: con el suelo puesto, un filo
+   gordo no deja nueve placas en el mismo taco, así que el filo y el número de
+   trozos dejan de ser dos decisiones.
 
 **Y de ahí, sin regla propia: la silueta.** Nadie la traza. Es lo que queda
 cuando los cortes han pasado por encima del canto (regla 2), las piezas se han
@@ -255,12 +283,22 @@ pero es de las cosas que el grid dice enseguida.
 
 ## Los tipos
 
-| tipo        | peso | cortes | piezas | sajaduras | profundidad |
-|-------------|------|--------|--------|-----------|-------------|
-| `hendido`   | 18 % | 2–3    | 2–3    | 1–2       | 1           |
-| `partido`   | 30 % | 3–4    | 4–6    | 0–1       | 2           |
-| `árbol`     | 38 % | 5–7    | 6–9    | 0–2       | 3–4         |
-| `astillado` | 14 % | 8–12   | 10–16  | 0–1       | 4–5         |
+| tipo        | peso | cortes | gubia (fina/media/ancha) | piezas medidas |
+|-------------|------|--------|--------------------------|----------------|
+| `hendido`   | 15 % | 1–2    | 18 / 44 / 38 %           | 2–3            |
+| `partido`   | 34 % | 3–4    | 36 / 52 / 12 %           | 3–5            |
+| `árbol`     | 33 % | 4–6    | 42 / 50 / 8 %            | 4–7            |
+| `astillado` | 18 % | 7–9    | 66 / 34 / 0 %            | 7–10           |
+
+Y sobre eso, **el techo de la gubia**: 9 cortes con la fina, 7 con la media, 3 con
+la ancha. Se recorta lo *pedido* y no lo obtenido, que no es lo mismo — así el
+tipo declara lo que la materia admite y el resultado lo cumple.
+
+**La gubia no se sortea aparte: la elige el tipo.** Con una gubia gorda se rompe
+en pocos trozos grandes; para astillar se coge el filo fino. Escribirlo aquí es
+escribir lo que ya decidía la materia — sorteándolas sueltas salía `astillado` con
+gubia ancha, que es un encargo imposible, y la obra terminaba con cinco placas
+llamándose astillado.
 
 `árbol` es el centro de la familia y es la referencia. `hendido` es el que enseña
 la sajadura como asunto propio: una masa más rayada que rota. `astillado` es raro
@@ -412,6 +450,8 @@ arbitrario tiene detrás una versión que se veía peor, y está anotado ahí:
   en un escalón, que es corto y no llega a leerse como dirección. Y el rumbo se
   redondea al par **más cercano** al entrar, porque si no un corte que entra por
   una arista oblicua hereda rumbo diagonal y la cordillera vuelve por detrás.
+  *(El escalón al bies terminó cayendo del todo en la quinta revisión: no dibujaba
+  él el triángulo, lo dibujaba el corte que entraba después por su arista.)*
 - **Papel pintado.** El reparto por área iguala los tamaños: todas las piezas del
   mismo peso y ningún sitio donde mirar. De ahí **la reserva** — a partir del
   segundo o tercer corte la masa mayor queda intacta y todo lo demás ocurre contra
@@ -549,8 +589,9 @@ que dejar algo**:
 - **EL HILO.** Un corte que camina pegado a un borde que ya existe no separa una
   placa: deja una tira de tinta que se lee como un pelo. Se mide la distancia del
   recorrido al borde de la pieza —saltándose las aristas por las que entra y
-  sale— y se exige 3,6 anchuras de gubia. Vale para los dos tipos de corte, y es
-  lo que mata los corredores de blancos casi paralelos.
+  sale— y se exige 3,6 anchuras de gubia *(4,6 desde la quinta revisión, para que
+  vaya con el suelo de carne)*. Vale para los dos tipos de corte, y es lo que mata
+  los corredores de blancos casi paralelos.
 - **LA RECTITUD.** Cuerda entre recorrido. Una V es una ida y una venida que
   dejan la misma masa que había, más ruido. 0,66 para la sajadura, 0,42 para el
   corte que suelta.
@@ -568,47 +609,131 @@ estrecha la obra. Se movió, no se obedeció.
 ocurre nunca. El valor sigue declarado por si se aflojan, pero hoy es un rasgo
 muerto.
 
+### Quinta revisión: la carne, y el filo que decide cuántos trozos
+
+Otra vez las dos cosas a la vez, y otra vez dijeron lo mismo.
+
+**La crítica formal, en dos frases:** «estos ángulos en triángulo no deben
+existir», y «estas líneas que se adentran sin llegar a ningún lado, de manera muy
+sutil, no me gustan — sí puedo tolerar las que hacen un trazo dentro».
+
+**La segunda vuelta del entrenamiento**, 100 lotes más con seeds nuevas, ya sobre
+las guardas de la cuarta revisión. Lo primero que dice no está en ninguna
+columna: **el rechazo cayó del 38% al 9%** —lotes en los que no gustaba ninguna
+de las cinco—, y las elegidas pasaron de 98 a 160. Y después:
+
+```
+tipo        arbol +5 · astillado +3 · partido −1 · hendido −9
+piezas      7 +12 · 5 +6 · 4 +3 · 2 −9
+sajaduras   0 +5 · 1 −18
+gubia       fina +7 · media −1 · ancha −9
+faltan      0 +5 · 2 −5      ·   hondura  3 +4 · 1 −7
+escalones · papel · rareza ≈ 0 · continuos (pulso, morfa, seguir) ≈ 0
+```
+
+**Dio la vuelta a la primera vuelta**, y eso es lo interesante. La primera pidió
+menos: `partido` +16 y el recuento alto hundido. La segunda, con los cortes malos
+ya arreglados, pide **más**: `arbol` y `astillado` arriba, `hendido` −9, 5–7
+placas por encima de 2. La lectura simple que explica el bloque entero es que el
+rechazo de la primera vuelta no era a los cortes sino a **los cortes malos**;
+quitados, el ojo quiere estructura. `hendido −9` y `piezas 2 −9` son el mismo
+hecho contado dos veces.
+
+Lo que **no** dio la vuelta es la sajadura: −18, más marcado que antes. Y coincide
+al pie de la letra con la crítica formal. Así que no se toca la idea —el *casi*
+sigue siendo lo que abre— pero sí lo que hacía falta para ganarse el sitio.
+
+Y `gubia ancha −9 / fina +7` es señal nueva, y resultó ser la punta de otra cosa.
+
+**Cinco cambios, y los cinco son el mismo:**
+
+- **EL BIES SE FUE.** Había un escalón a ±45°, la única fuente de segmentos
+  oblicuos del sistema. El triángulo no lo dibujaba él: lo dibujaba **el corte
+  siguiente**. Una arista al bies se convierte en el borde de una placa, y el
+  corte que entra por ella nace a escuadra —el rumbo es par siempre—, así que
+  **sale de ella a 45° y deja la cuña**. Por eso costó verlo: la causa y el efecto
+  estaban a dos cortes de distancia. A escuadra siempre, y no hay de dónde salga.
+  Se pierde el quiebro oblicuo de la referencia, y se pierde a sabiendas.
+- **EL GROSOR.** Ninguna placa tiene menos carne que 4,6 gubias en ningún sitio.
+  Se mide así: **dos puntos del contorno están demasiado cerca para lo lejos que
+  están** — en recta hay menos que el suelo, y por el contorno hay más de 3,2
+  veces esa recta. La segunda condición es la que separa un defecto de una
+  esquina, y lo hace sin escala: una esquina a escuadra vale 1,41 pase lo que
+  pase, una cuña de θ vale 1/sen(θ/2), y una tira o un pincho de ancho *w* y largo
+  *ℓ* valen 2ℓ/w. **Un solo número dice a la vez cuál es el ángulo más cerrado y
+  cuál la tira más fina que se admiten.** Con eso caen de una vez el hilo, la
+  tira, la miga y el triángulo, que eran cuatro nombres para «aquí no hay
+  materia». La esbeltez se queda —mide el promedio— pero ya no es la que decide.
+- **LA MISMA ADUANA PARA EL TACO Y PARA LA RETIRADA.** Con la partición limpia,
+  los defectos que quedaban salían de las obras de **un solo corte**: no podían
+  venir de ninguna guarda porque venían de antes de cortar. El contorno del taco
+  se mide igual y se vuelve a sortear si no pasa; el escalón de esquina sale de
+  las cuatro esquinas del taco y de cada una una vez (sorteando sobre la lista ya
+  crecida, el segundo mordisco podía morder lo que puso el primero, y dos
+  mordiscos encadenados dejan una pestaña); y **la retirada del canto sólo se
+  aplica si la placa sigue teniendo carne después**, porque llega cuando las
+  guardas ya han dicho que sí y es lo único que puede desdecirlas.
+- **LA SAJADURA VIAJA O NO ESTÁ.** Se sortea en el 22% de las obras en vez de en
+  el 50%, y además tiene que recorrer el 34% del lado del bloque **y el 42% del
+  diámetro de su propia placa**. Esto último era lo que faltaba: el largo contra
+  el bloque no distingue entre un trazo de verdad en una placa grande y entrar y
+  pararse en una pequeña — se medía contra la referencia equivocada. Queda en el
+  8% de las obras, y la que queda es la que hace el trazo.
+- **EL FILO DECIDE CUÁNTOS TROZOS.** Ésta salió de perseguir la anterior. Con el
+  suelo de carne puesto, una gubia del 3,3% **no deja nueve placas en el mismo
+  taco**: el 55% de las obras de gubia ancha no llegaba a los cortes de su tipo,
+  contra el 0% de las finas — y salían llamándose `astillado` con cinco placas.
+  No es un parche: **el filo y el número de trozos son la misma decisión**. Con
+  una gubia gorda se rompe en pocos trozos grandes; para astillar se coge el filo
+  fino. Así que la gubia la elige el tipo (y el reparto va hacia lo fino, que es
+  lo que midió el entrenamiento) y además pone un techo de cortes. Las obras
+  cortas pasaron del 20% al 1,5%, y la etiqueta del tipo dejó de mentir.
+
+**Y de aquí sale una batería**, `verificacion/`, porque las tres veces que se ha
+tocado esta gramática lo que costó no fue el arreglo sino enterarse de lo que el
+arreglo había estropeado. Mide cuñas sobre el píxel, el reparto contra lo
+declarado y la huella a tres resoluciones. Tiene su propio README.
+
 ## Medido
 
-500 tiradas en cuadrado, sobre las paletas por defecto del motor:
+600 tiradas, cuadrado y apaisado, sobre el catálogo real de paletas activas.
+Todo esto sale de `verificacion/`, no de la intuición:
 
 ```
-tipo        partido 38%  arbol 28%  hendido 20%  astillado 14%
-gubia       fina 31%  media 47%  ancha 22%
-tintas      una 83%  dos 15%  tres 3%
-piezas      p10 2 · p50 4 · p90 7 · max 10
-            2:18% 3:26% 4:18% 5:13% 6:8% 7:6% 8:4% 9:4% 10:2%
-sajaduras   0 · 76%   1 · 24%   (dos, ya nunca)
-faltan      0 · 34%   1 · 50%   2 · 17%
-escalones   0 · 22%   1 · 53%   2 · 26%
-mancha      p50 32,1%
-papel crudo 32%
-overall     common 43%  uncommon 30%  rare 14%  superrare 9%  legendary 4%
-tipo cumplido  99,2% de las piezas alcanza los cortes que declara
-ms          ~18 por pieza a 300 px, con grano y veta
+cuñas       1,0% de las obras tiene un ángulo visible por debajo de 62°
+            el más cerrado de las 600: 54,1° · ninguno por debajo de 45°
+            (antes de esta revisión: 20% de las obras, y los peores a 2°, 8°, 12°)
+            reparto del ángulo más cerrado por obra:
+            45–60° 5 · 60–75° 53 · 75–90° 455 · 90–105° 87
+cortos      1,5% no llega a los cortes que declara su tipo   (era el 20%)
+tipo        partido 34%  arbol 32%  astillado 19%  hendido 15%
+gubia       fina 41%  media 44%  ancha 16%
+tintas      una 82%  dos 15%  tres 3%
+piezas      p10 2 · p50 4 · p90 8 · max 10
+            2:14% 3:27% 4:18% 5:13% 6:10% 7:6% 8:8% 9:4% 10:1%
+sajaduras   0 · 92%   1 · 8%    (dos, ya nunca)
+faltan      0 · 32%   1 · 48%   2 · 20%
+escalones   0 · 23%   1 · 53%   2 · 24%
+overall     common 40,5%  uncommon 35%  rare 14,5%  superrare 7%  legendary 3%
+huella      0 de 120 obras cambia a 760 / 2400 / 4200 px, en los tres formatos
+ms          ~30 por pieza a 520 px, con grano y veta
 ```
 
-El coste por pieza subió de ~9 a ~18 ms con la guarda del hilo, que compara el
-recorrido contra todo el borde por cada candidato. Es geometría, así que **no
-crece con la resolución**: a 300 dpi el reloj lo sigue marcando el grano.
+El coste por pieza subió de ~18 a ~30 ms: el grosor compara el contorno consigo
+mismo por cada candidato, y hay siete candidatos por corte. Es geometría, así que
+**no crece con la resolución** — a 300 dpi el reloj lo sigue marcando el grano.
 
-Los cortes de la rareza **no salen de la intuición**: se midió la distribución
-real del cociente sobre 500 tiradas y se pusieron en los percentiles que reparte
-la casa. Es lo mismo que hizo EVOL después de que su primer rasgo etiquetara al
-88% de las piezas.
-
-**Y la huella no se mueve con la resolución.** Es la afirmación que el documento
+**La huella no se mueve con la resolución.** Es la afirmación que el documento
 hacía sin haberla comprobado, y la que EVOL aprendió por las malas: medir
-**elige** —el recuento de piezas descarta candidatos—, así que en píxeles la misma
-seed podría dar siete piezas en pantalla y ocho a 300 dpi. Generando en el campo
-normalizado: **60 de 60 huellas idénticas** a 760, 2400 y 4200 de lado corto, en
-cuadrado y en apaisado — tipo, gubia, piezas, sajaduras, cortes, hondura, mancha a
-seis decimales y los dos colores. Cero diferencias.
+**elige** —los mínimos descartan candidatos—, así que en píxeles la misma seed
+podría dar siete piezas en pantalla y ocho a 300 dpi. Generando en el campo
+normalizado: **cero diferencias** en 120 obras × 3 resoluciones × 3 formatos.
 
 Todas las frecuencias de arriba **realimentan la rareza**: los cortes de
 `common`→`legendary` se ponen en los percentiles de la distribución medida, no a
-ojo, y hay que volver a medirlos cada vez que se toque la gramática. Es lo que
-EVOL aprendió después de que su primer rasgo etiquetara al 88% de las piezas.
+ojo, y hay que volver a medirlos cada vez que se toque la gramática — la propia
+batería los imprime listos para pegar. Es lo que EVOL aprendió después de que su
+primer rasgo etiquetara al 88% de las piezas.
 
 ## Siguiente paso
 

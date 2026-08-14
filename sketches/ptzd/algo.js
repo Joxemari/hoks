@@ -60,27 +60,56 @@
   // distintas, cada una con su grosor. Así que el filo cambia de obra a obra y NO
   // cambia dentro de una. Es el eje serial de la familia: la misma gramática
   // dicha con otra voz. Fracción del lado del bloque.
+  // `p` NO es el peso del sorteo —eso lo pone cada tipo, abajo— sino la
+  // frecuencia MEDIDA de cada gubia en la familia, que es lo que la rareza
+  // necesita. Se vuelve a medir cada vez que se toquen los pesos de los tipos.
   const GUBIAS = [
-    { key: 'fina',  w: 0.0130, p: 0.28 },
-    { key: 'media', w: 0.0210, p: 0.50 },   // ~2%, que es lo que se mide en la referencia
-    { key: 'ancha', w: 0.0330, p: 0.22 },
+    { key: 'fina',  w: 0.0130, p: 0.41 },
+    { key: 'media', w: 0.0210, p: 0.44 },   // ~2%, que es lo que se mide en la referencia
+    { key: 'ancha', w: 0.0330, p: 0.16 },
   ];
 
   // ── Los cuatro tipos ───────────────────────────────────────────────────────
   // `cortes` son los que se INTENTAN; los que salen se cuentan al final, que es
   // la regla de método de TRZS y EVOL: el tipo declara y el resultado se comprueba.
+  /* LA GUBIA LA ELIGE EL TIPO, y no un sorteo aparte. Sorteándolas sueltas salía
+   * `astillado` con gubia ancha, que es un encargo imposible: con el suelo de
+   * carne puesto, una gubia de 3,3% no deja nueve placas en el mismo bloque, así
+   * que el corte noveno no encontraba dónde ir y la obra salía con cinco placas
+   * llamándose astillado. El 55% de las obras de gubia ancha no llegaba a los
+   * cortes de su tipo, contra el 0% de las finas.
+   *
+   * No es un parche: es que el filo y el número de trozos son la misma decisión.
+   * Con una gubia gorda se rompe en pocos trozos grandes; para astillar se coge
+   * el filo fino. Escribirlo aquí es escribir lo que ya decidía la materia, y de
+   * paso la etiqueta del tipo deja de mentir.
+   *
+   * Y el reparto va además hacia lo fino, que es lo que midió la 2ª vuelta del
+   * entrenamiento (fina +7, ancha −9). */
   const TIPOS = [
-    // Los pesos y los recuentos se movieron con el patrón medido en
-    // `entrenamiento/` sobre 100 lotes: `partido` fue el único tipo con sesgo
-    // positivo (+16) y el recuento alto se hundía (8 piezas, −21). Se mueve, pero
-    // NO se colapsa la familia en un tipo: parte del valor de una serie está en
-    // las tiradas que no gustan a la primera, y `astillado` es la que hace la
-    // pregunta del límite. Sigue saliendo, sólo que menos y con menos cortes.
-    { key: 'hendido',   p: 0.20, cortes: [1, 2], sajaduras: [0, 1] },
-    { key: 'partido',   p: 0.38, cortes: [3, 4], sajaduras: [0, 1] },
-    { key: 'arbol',     p: 0.28, cortes: [4, 6], sajaduras: [0, 1] },
-    { key: 'astillado', p: 0.14, cortes: [7, 9], sajaduras: [0, 1] },
+    // Los pesos se mueven con el patrón medido en `entrenamiento/`. La 2ª vuelta
+    // —ya con las guardas del hilo y del casi— dio la vuelta a la 1ª: pidió MÁS
+    // estructura, no menos (arbol +5, astillado +3, hendido −9, y 5–7 placas por
+    // encima de 2). Se lee como que el rechazo de la 1ª no era a los cortes sino
+    // a los cortes MALOS: arreglados, el ojo quiere más. Se mueve en esa
+    // dirección sin agotarla — dos vueltas afinan, diez producen una sola obra.
+    { key: 'hendido',   p: 0.15, cortes: [1, 2], sajaduras: [0, 1], gubias: [0.18, 0.44, 0.38] },
+    { key: 'partido',   p: 0.34, cortes: [3, 4], sajaduras: [0, 1], gubias: [0.36, 0.52, 0.12] },
+    { key: 'arbol',     p: 0.33, cortes: [4, 6], sajaduras: [0, 1], gubias: [0.42, 0.50, 0.08] },
+    { key: 'astillado', p: 0.18, cortes: [7, 9], sajaduras: [0, 1], gubias: [0.66, 0.34, 0.00] },
   ];
+
+  /* Y el techo lo pone la gubia, no el tipo. Los pesos de arriba hacen que el
+   * encargo imposible casi no salga; esto se ocupa del casi. Un bloque de este
+   * tamaño no admite más de estos cortes con cada filo — con el suelo de carne
+   * puesto, el corte de más no encuentra dónde ir.
+   *
+   * Se recorta lo PEDIDO y no lo obtenido, que no es lo mismo: así el tipo
+   * declara lo que la materia admite y el resultado lo cumple, en vez de declarar
+   * nueve, dar cinco y llamarse astillado igual. Es la regla de método de TRZS —
+   * el tipo declara, el resultado se comprueba— aplicada donde se estaba
+   * incumpliendo. */
+  const TECHO = { fina: 9, media: 7, ancha: 3 };
 
   const BLOQUE_MIN = 0.58, BLOQUE_MAX = 0.70;   // lado del bloque / lado corto del campo
 
@@ -92,7 +121,13 @@
   const ESCALON_MIN = 0.045, ESCALON_MAX = 0.16;  // tramo al costado / lado del bloque
   const TRAMOS_CORTE = [5, 11], TRAMOS_SAJA = [3, 5];
   const P_DOBLE_ESCALON = 0.24;  // dos escalones seguidos: la placa deja de ser una caja
-  const P_ESCALON_BIES = 0.16;   // el escalón sale al bies (±45°) en vez de a escuadra
+  /* EL BIES SE FUE. Hubo un escalón al bies (±45°) porque la referencia tiene
+   * quiebros oblicuos, y era la única fuente de segmentos a 45° del sistema. El
+   * problema es lo que hacía DESPUÉS: una arista al bies se convierte en el borde
+   * de una placa, y el corte siguiente que entra por ella nace a escuadra —el
+   * rumbo es par siempre— así que sale de ella a 45° y deja una cuña. El ángulo
+   * en triángulo no lo dibujaba el bies: lo dibujaba el corte que venía detrás,
+   * que es por lo que costó verlo. A escuadra siempre, y no hay de dónde salga. */
   const P_RUMBO_GIRA   = 0.16;   // el rumbo entero se ladea ±45° a mitad de camino
 
   // ── El pulso: la mano ──────────────────────────────────────────────────────
@@ -130,16 +165,33 @@
   // una mediana y un par pequeñas, que es lo que hace que haya dónde mirar.
   // Cuánto tiene que apartarse un corte de un borde que ya existe, en anchuras
   // de gubia, para que lo que quede en medio siga siendo materia y no un hilo.
-  const HILO_MIN = 3.6;
+  const HILO_MIN = 4.6;
+  /* NINGUNA PLACA TIENE MENOS CARNE QUE ESTO. `GROSOR_MIN` va en anchuras de
+   * gubia: la tira, el pincho o el hilo más fino que se admite. `GROSOR_VUELTA`
+   * es cuántas veces más largo tiene que ser el camino por el contorno que la
+   * recta para que eso cuente como defecto y no como esquina (ver `grosor`): con
+   * 3,2, el ángulo más cerrado que pasa es de unos 36°. La esquina a escuadra
+   * vale 1,41 y por eso no la roza nunca. */
+  const GROSOR_VUELTA = 3.2, GROSOR_MIN = 4.6;
   // Una sajadura tiene que VIAJAR: cuerda/recorrido mínima, y largo mínimo.
-  const RECTITUD_SAJA = 0.66, RECTITUD_CORTE = 0.42, SAJA_LARGO_MIN = 0.20;
+  const RECTITUD_SAJA = 0.66, RECTITUD_CORTE = 0.42, SAJA_LARGO_MIN = 0.34;
+  // Y tiene que viajar DENTRO DE SU PLACA, no sólo un trozo del bloque: por
+  // debajo de esta fracción del diámetro de la placa es un arañazo en el canto.
+  const SAJA_PIEZA_MIN = 0.42;
+  // Cuántas obras llevan sajadura. Iba al 50% —`rng.int(0,1)`— y el
+  // entrenamiento la puso en −18 en las dos vueltas: no es que sobre, es que
+  // sobraba tanta. Con las exigencias de arriba, la que queda es la que viaja.
+  const P_SAJADURA = 0.22;
   // Una sajadura APUNTA a otro borde y se queda corta: ni pega en él (sería un
   // corte que suelta) ni se muere en campo abierto (no diría nada). El aire que
   // le queda por delante, en anchuras de gubia.
   const SAJA_AIRE_MIN = 1.6, SAJA_AIRE_MAX = 5.5;
 
   const REPARTO_MIN = 0.10, REPARTO_MAX = 0.42;
-  const CANDIDATOS  = 4;
+  // Con la guarda del grosor, cuatro candidatos dejaban al 20% de las obras sin
+  // llegar a los cortes de su tipo — y un `astillado` con tres placas no es un
+  // astillado, es una etiqueta que miente. Se prueba más antes de rendirse.
+  const CANDIDATOS  = 7;
 
   // El mínimo se mide contra la PIEZA QUE SE CORTA y no contra el bloque entero:
   // con la reserva apartada queda poca superficie, y un mínimo absoluto rechazaba
@@ -225,11 +277,24 @@
      * propia. Así que al taco se le quita un escalón de una o dos esquinas antes
      * de empezar — la referencia tampoco cabe en un rectángulo, y no por lo que
      * le pasó al partirse sino por cómo estaba cortado el taco. */
-    for (let e = 0; e < escalones; e++) {
-      const i = rng.int(0, c.length - 1);
-      const P = c[(i - 1 + c.length) % c.length], C = c[i], N = c[(i + 1) % c.length];
-      const a = lerp2(C, P, rng.range(0.20, 0.46)), b = lerp2(C, N, rng.range(0.20, 0.46));
-      c = c.slice(0, i).concat([a, add(a, sub(b, C)), b], c.slice(i + 1));
+    // Los escalones salen de las CUATRO esquinas del taco, y de cada una una vez.
+    // Sorteando sobre la lista ya crecida, el segundo escalón podía morder un
+    // vértice que había puesto el primero: dos mordiscos encadenados en el mismo
+    // sitio dejan una pestaña estrecha, que es el defecto que las guardas
+    // persiguen dentro y que aquí entraba antes de empezar.
+    const muescas = [];
+    while (muescas.length < Math.min(escalones, 4)) {
+      const i = rng.int(0, 3);
+      if (muescas.indexOf(i) < 0) muescas.push(i);
+    }
+    if (muescas.length) {
+      const base = c; c = [];
+      for (let i = 0; i < 4; i++) {
+        const P = base[(i + 3) % 4], C = base[i], N = base[(i + 1) % 4];
+        if (muescas.indexOf(i) < 0) { c.push(C); continue; }
+        const a = lerp2(C, P, rng.range(0.20, 0.46)), b = lerp2(C, N, rng.range(0.20, 0.46));
+        c.push(a, add(a, sub(b, C)), b);
+      }
     }
 
     const wx = onda(rng, 12), wy = onda(rng, 12);
@@ -410,11 +475,9 @@
         d = rumbo;
         L = rng.range(AVANCE_MIN, AVANCE_MAX) * S * k;
       } else {
-        // El escalón sale a escuadra casi siempre y al bies de vez en cuando: el
-        // quiebro oblicuo de la referencia. Y cambia de costado, que es lo que
+        // El escalón sale a escuadra, y cambia de costado: eso último es lo que
         // impide que la escalera se convierta en una diagonal (la «cordillera»).
-        const g = rng.bool(P_ESCALON_BIES) ? (lado === 2 ? 1 : 7) : lado;
-        d = (rumbo + g) & 7;
+        d = (rumbo + lado) & 7;
         L = rng.range(ESCALON_MIN, ESCALON_MAX) * S * k;
         if (rng.bool(0.45)) lado = lado === 2 ? 6 : 2;
       }
@@ -529,6 +592,59 @@
     return 4 * Math.PI * Math.abs(area(poly)) / (per * per) >= min;
   }
   const ESBELTEZ_MIN = 0.16;
+
+  /* EL GROSOR: dos puntos del contorno están DEMASIADO CERCA PARA LO LEJOS QUE
+   * ESTÁN. Dos cosas a la vez, y ninguna vale sola:
+   *   · en línea recta hay menos que el suelo de carne — ahí no hay materia;
+   *   · por el contorno hay varias veces más — luego no es una esquina, que es
+   *     el sitio donde el contorno se acerca a sí mismo por buenas razones.
+   *
+   * Ese cociente entre el camino y la recta es lo único que separa una esquina
+   * de un defecto, y lo hace sin escala: una esquina a escuadra vale 1,41 pase
+   * lo que pase, una cuña de θ grados vale 1/sen(θ/2), y una tira o un pincho de
+   * ancho w y largo ℓ valen 2ℓ/w. Así que un solo número —cuántas veces más
+   * largo— dice a la vez cuál es el ángulo más cerrado y cuál la tira más fina
+   * que se admiten, y lo dice igual para un pincho de dos milímetros que para
+   * una tira que cruza el bloque.
+   *
+   * Hubo antes una ventana de arco en vez del cociente, y tenía un agujero por
+   * el que se colaba justo lo que había que cazar: un pincho más corto que media
+   * ventana tiene sus dos costados demasiado cerca EN EL CONTORNO, así que la
+   * pareja nunca se comparaba. La ventana protegía las esquinas y de paso
+   * escondía los pinchos, que son esquinas al revés.
+   *
+   * Y una sola medida acaba con cuatro defectos que el ojo había señalado por
+   * separado, porque los cuatro son el mismo: el hilo demasiado fino entre dos
+   * cortes, la tira sin sitio dentro, la miga suelta y el ángulo en triángulo —
+   * una cuña es carne que se acaba. Lo que la esbeltez medía en promedio (una
+   * tira larga sale mal de media) esto lo mide donde ocurre, que es lo que se ve. */
+  function remuestrea(poly, paso) {
+    const m = poly.length, out = [poly[0]];
+    let resto = paso;
+    for (let i = 0; i < m; i++) {
+      const a = poly[i], b = poly[(i + 1) % m];
+      let seg = len(sub(b, a));
+      if (seg < 1e-12) continue;
+      let t = 0;
+      while (seg - t >= resto) { t += resto; out.push(lerp2(a, b, t / seg)); resto = paso; }
+      resto -= seg - t;
+    }
+    return out.length >= 3 ? out : poly;
+  }
+  function grosor(poly, vuelta, paso) {
+    const q = remuestrea(poly, paso), m = q.length;
+    const acc = new Array(m + 1); acc[0] = 0;
+    for (let i = 0; i < m; i++) acc[i + 1] = acc[i] + len(sub(q[(i + 1) % m], q[i]));
+    const P = acc[m];
+    let mn = Infinity;
+    for (let i = 0; i < m; i++) for (let j = i + 1; j < m; j++) {
+      const e = len(sub(q[j], q[i]));
+      if (e >= mn) continue;
+      const d = acc[j] - acc[i], s = Math.min(d, P - d);
+      if (s > vuelta * e) mn = e;
+    }
+    return mn;
+  }
 
   /* LA VETA. Es la única familia donde la textura es CONTENIDO y no atmósfera:
    * no es el grano de película del motor —que simula la emulsión de una foto—
@@ -706,7 +822,7 @@
     const tipo = params.tipo ? (TIPOS.find(t => t.key === params.tipo) || TIPOS[2])
                              : rng.weighted(TIPOS.map(t => ({ ...t, prob: t.p })));
     const gubia = params.gubia ? (GUBIAS.find(g => g.key === params.gubia) || GUBIAS[1])
-                               : rng.weighted(GUBIAS.map(g => ({ ...g, prob: g.p })));
+                               : rng.weighted(GUBIAS.map((g, i) => ({ ...g, prob: tipo.gubias[i] })));
     const ladeo = rng.range(-LADEO_MAX, LADEO_MAX);
 
     /* MONOCROMO O POLÍCROMO. La regla 1 dice una masa, una tinta, y sigue siendo
@@ -744,7 +860,15 @@
     const by = Math.min(FH - bh - holg, Math.max(holg, (FH - bh) / 2 + rng.range(-0.035, 0.020) * FH));
     const escalones = params.escalones != null ? params.escalones
                     : rng.weighted([{ prob: 0.22, v: 0 }, { prob: 0.53, v: 1 }, { prob: 0.25, v: 2 }]).v;
-    const bloque = bloquePoly(rng, bx, by, bw, bh, pulso, morfa, S, escalones);
+    /* Y el taco pasa la misma aduana que las placas. Las obras de un solo corte
+     * seguían saliendo con una pestaña o un pico, y no podían venir de ninguna
+     * guarda: venían de antes de cortar. El suelo de carne no es una regla de la
+     * partición, es una regla de la materia — así que también vale para el bloque
+     * entero, que es la primera placa. */
+    let bloque = bloquePoly(rng, bx, by, bw, bh, pulso, morfa, S, escalones);
+    for (let t = 0; t < 10 &&
+         grosor(bloque, GROSOR_VUELTA, gubia.w * S * 0.8) < GROSOR_MIN * gubia.w * S; t++)
+      bloque = bloquePoly(rng, bx, by, bw, bh, pulso, morfa, S, escalones);
     const areaBloque = Math.abs(area(bloque));
 
     // El foco de la cadencia (regla 8): hacia dónde se agolpan los cortes.
@@ -754,8 +878,10 @@
     const sajaduras = [];
     const cortes = [];
 
-    const nCortes = params.cortes != null ? params.cortes : rng.int(tipo.cortes[0], tipo.cortes[1]);
-    const nSaj    = params.sajaduras != null ? params.sajaduras : rng.int(tipo.sajaduras[0], tipo.sajaduras[1]);
+    const nCortes = params.cortes != null ? params.cortes
+                  : Math.min(rng.int(tipo.cortes[0], tipo.cortes[1]), TECHO[gubia.key]);
+    const nSaj    = params.sajaduras != null ? params.sajaduras
+                  : (tipo.sajaduras[1] > 0 && rng.bool(P_SAJADURA) ? 1 : 0);
     const paso    = (params.deriva != null ? params.deriva : rng.range(DERIVA_MIN, DERIVA_MAX)) * gubia.w * S;
 
     // Cuándo se aparta la reserva: si es al primer corte se lleva media obra y
@@ -764,7 +890,7 @@
     const reservaTras = rng.int(1, 3);
     let reservaPuesta = false;
     let intentos = 0;
-    while (cortes.length < nCortes && intentos < nCortes * 30) {
+    while (cortes.length < nCortes && intentos < nCortes * 45) {
       intentos++;
 
       // LA RESERVA. Sin ella el reparto por área iguala los tamaños y la obra se
@@ -808,6 +934,10 @@
         if (Math.min(a0, a1) < Math.max(PIEZA_SUELO * areaBloque, PIEZA_MIN * (a0 + a1))) continue;
         if (!esbelta(par[0].poly, ESBELTEZ_MIN) || !esbelta(par[1].poly, ESBELTEZ_MIN)) continue;
         if (rectitud(cand.pts) < RECTITUD_CORTE) continue;
+        // Y las dos placas que salen tienen que tener carne en todas partes. Es
+        // la guarda que se come el triángulo, la tira y la miga de una vez.
+        if (grosor(par[0].poly, GROSOR_VUELTA, gubia.w * S * 0.8) < GROSOR_MIN * gubia.w * S) continue;
+        if (grosor(par[1].poly, GROSOR_VUELTA, gubia.w * S * 0.8) < GROSOR_MIN * gubia.w * S) continue;
         // Y no puede ir pegado a un borde que ya existe: entre los dos blancos
         // quedaría un hilo de tinta, y eso no es una placa.
         const mp = pc.poly.length, cerca = (a, b) => {
@@ -836,7 +966,13 @@
       const nueva = cortes.length < tintas.length - 1;
       piezas.push({ poly: madre.poly, kind: madre.kind, drift: pc.drift, hondura: pc.hondura, retiro: pc.retiro, tinta: pc.tinta });
       piezas.push({ poly: hija.poly,  kind: hija.kind,  drift: add(pc.drift, delta), hondura: pc.hondura + 1,
-                    retiro: rng.bool(0.3) ? 0 : rng.range(0.008, RETIRO_MAX) * S,
+                    // La retirada va después de las guardas, así que puede
+                    // comerse la carne que acaban de exigir: se le pone un tope
+                    // en función del suelo, y con gubia fina es el tope el que
+                    // manda. Sin él, un canto recogido 3% del bloque sobre una
+                    // placa de 3,8% deja justo la tira que el grosor rechazaba.
+                    retiro: rng.bool(0.3) ? 0
+                          : rng.range(0.008, Math.min(RETIRO_MAX, 0.35 * GROSOR_MIN * gubia.w)) * S,
                     tinta: nueva ? cortes.length + 1 : pc.tinta });
       cortes.push(cut);
     }
@@ -890,11 +1026,18 @@
     // sajadura empieza en el borde de su pieza, y si la pieza se recoge después
     // el corte arranca fuera de ella, flotando en el suelo. `retirar` conserva el
     // número de vértices y su orden, así que las clases de arista siguen valiendo.
-    for (const pc of piezas) pc.poly = retirar(pc.poly, pc.kind, pc.retiro);
+    // Y sólo se recoge el canto si la placa sigue teniendo carne después: la
+    // retirada llega cuando las guardas ya han dicho que sí, así que es lo único
+    // que puede desdecirlas. Si se la comería, la placa se queda con su canto.
+    for (const pc of piezas) {
+      const p2 = retirar(pc.poly, pc.kind, pc.retiro);
+      if (grosor(p2, GROSOR_VUELTA, gubia.w * S * 0.8) >= GROSOR_MIN * gubia.w * S) pc.poly = p2;
+      else pc.retiro = 0;
+    }
 
     // Las sajaduras: entran por el borde y se mueren dentro. No sueltan nada.
     let sInt = 0;
-    while (sajaduras.length < nSaj && sInt < nSaj * 14) {
+    while (sajaduras.length < nSaj && sInt < nSaj * 30) {
       sInt++;
       let tot = 0; const pesos = piezas.map(p => { const a = Math.abs(area(p.poly)); tot += a; return a; });
       let x = rng.next() * tot, idx = 0;
@@ -939,6 +1082,14 @@
       for (let i = 0; i < cut.pts.length - 1; i++) arco += len(sub(cut.pts[i + 1], cut.pts[i]));
       if (arco < SAJA_LARGO_MIN * S) continue;                  // que recorra
       if (rectitud(cut.pts) < RECTITUD_SAJA) continue;          // que no sea una V
+      /* Y que recorra SU PLACA. El largo contra el bloque no bastaba: en una
+       * placa grande, un tercio del bloque es un trazo de verdad, y en una
+       * pequeña es entrar y pararse. Lo que se rechazaba por corto y lo que se
+       * colaba por largo eran la misma cosa medida contra la referencia
+       * equivocada. Aquí la referencia es la placa que se abre. */
+      let dx = Infinity, dy = Infinity, DX = -Infinity, DY = -Infinity;
+      for (const p of pc.poly) { dx = Math.min(dx, p[0]); dy = Math.min(dy, p[1]); DX = Math.max(DX, p[0]); DY = Math.max(DY, p[1]); }
+      if (arco < SAJA_PIEZA_MIN * Math.hypot(DX - dx, DY - dy)) continue;
       const ms = pc.poly.length, cercaS = (a, b) => {
         const d = Math.abs(a - b) % ms; return Math.min(d, ms - d) <= 6;
       };
@@ -1033,14 +1184,14 @@
    *
    * Las frecuencias de abajo salen de esa misma medición, no de la intuición, y
    * hay que volver a medirlas cada vez que se toque la gramática. */
-  const F_PIEZAS = { 2: .180, 3: .260, 4: .183, 5: .132, 6: .083, 7: .062, 8: .040, 9: .040, 10: .020 };
-  // `sajaduras: 2` ya no ocurre: con las tres exigencias nuevas, una segunda
-  // sajadura casi nunca las pasa. El valor se deja en la tabla —por si se
-  // aflojan— pero hoy es un rasgo muerto, y el README lo dice.
-  const F_SAJA   = { 0: .755, 1: .245, 2: .002 };
-  const F_FALTA  = { 0: .335, 1: .495, 2: .170 };
-  const F_ESCAL  = { 0: .215, 1: .530, 2: .255 };
-  const F_TINTA  = { 1: .825, 2: .147, 3: .028 };
+  const F_PIEZAS = { 2: .135, 3: .268, 4: .180, 5: .130, 6: .103, 7: .062, 8: .077, 9: .035, 10: .010 };
+  // La sajadura pasó de una de cada cuatro a una de cada trece: se sortea menos
+  // (22%) y de las sorteadas sólo pasa la que viaja de verdad por su placa. Ya no
+  // es un rasgo frecuente sino un suceso, y la rareza lo dice.
+  const F_SAJA   = { 0: .918, 1: .082, 2: .002 };
+  const F_FALTA  = { 0: .323, 1: .480, 2: .197 };
+  const F_ESCAL  = { 0: .230, 1: .533, 2: .237 };
+  const F_TINTA  = { 1: .820, 2: .150, 3: .030 };
 
   function rar(p) { return p > 0.06 ? 'common' : p > 0.018 ? 'uncommon' : p > 0.005 ? 'rare' : p > 0.0012 ? 'superrare' : 'legendary'; }
 
@@ -1049,12 +1200,12 @@
   // obras en el mismo cajón. Lo que se compara es contra la obra MÁS PROBABLE de
   // la familia — cuánto se aparta ésta de la que más sale. Así la escala es
   // legible (1 = la más corriente posible) y no depende de cuántos rasgos haya.
-  const P_MAX = { tipo: 0.38, gubia: 0.473, pz: 0.26, sj: 0.755, papel: 0.685, pal: 0.12, fl: 0.495, es: 0.53, tn: 0.825 };
+  const P_MAX = { tipo: 0.34, gubia: 0.44, pz: 0.268, sj: 0.918, papel: 0.685, pal: 0.12, fl: 0.480, es: 0.533, tn: 0.820 };
   // Los cortes NO salen de la intuición: se midió la distribución real de `r`
   // sobre 500 tiradas y se pusieron en los percentiles que la casa reparte
   // (≈40/35/15/7/3). La paleta va aparte en el producto y sólo empuja hacia más
   // raro, así que el reparto medido queda algo por debajo de esos números.
-  function rarComb(r) { return r > 0.0855 ? 'common' : r > 0.0295 ? 'uncommon' : r > 0.0098 ? 'rare' : r > 0.0034 ? 'superrare' : 'legendary'; }
+  function rarComb(r) { return r > 0.0827 ? 'common' : r > 0.0192 ? 'uncommon' : r > 0.0055 ? 'rare' : r > 0.0018 ? 'superrare' : 'legendary'; }
 
   function traits(res) {
     const pTipo  = (TIPOS.find(t => t.key === res.tipo)  || { p: 0.25 }).p;
@@ -1085,7 +1236,10 @@
               Math.min(1, pPapel / P_MAX.papel) * Math.min(1, pPal / P_MAX.pal) *
               Math.min(1, pFl / P_MAX.fl) * Math.min(1, pEs / P_MAX.es) *
               Math.min(1, pTn / P_MAX.tn);
-    return { list, overall: rarComb(r) };
+    // `r` sale fuera a propósito: los umbrales de `rarComb` son percentiles de
+    // esta misma cifra, y sin ella la recalibración que el comentario de arriba
+    // exige no se puede hacer desde fuera. Se mide en `verificacion/`.
+    return { list, overall: rarComb(r), r };
   }
 
   (global.HOKS = global.HOKS || {}).PTZD = { render, traits, BG_GRADIENT, TIPOS, GUBIAS };

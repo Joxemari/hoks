@@ -61,6 +61,9 @@ sketches/
     entrenamiento/  ← el ojo, registrado: 100 lotes de 5, se eligen 2 de cada uno
                       y sale un patrón de preferencia sobre los rasgos. No se
                       publica; es instrumento. Ver su README
+    verificacion/   ← el defecto, contado: cuñas sobre el píxel, el reparto contra
+                      lo declarado y la huella a tres resoluciones. Lo que el
+                      entrenamiento no puede decir. Tampoco se publica
   hrrs/             ← SOLO CONCEPTO: la ley del encuentro esquivada — la cinta
                       no se cruza, se pone al lado. Sin algo.js todavía.
                       Ver su README
@@ -108,13 +111,22 @@ contra otros; las piezas que sueltan se apartan, alguna no vuelve, y la silueta 
 lo que queda. Si KRRTK **parte** el cuadrado, PTZD lo **rompe**: la subdivisión
 conoce el todo, y una grieta sólo conoce su punta.
 
-Escribir la gramática primero salió a cuenta y no fue gratis: el grid le añadió dos
+Escribir la gramática primero salió a cuenta y no fue gratis: el ojo le añadió tres
 reglas que el papel no vio —el **pulso** (sin irregularidad la familia se lee como
 un render, pero el temblor tiene que ir sobre la geometría COMPARTIDA o el hueco
-cambia de anchura y la obra se lee rasgada) y **la que falta** (a la silueta de la
-referencia no le sobran mordiscos: le faltan placas enteras)— y le tumbó cuatro
-defectos con nombre. Ver `ptzd/README.md` para las diez reglas, las influencias
-contrastadas de las que sale cada una, lo que el grid cambió y lo medido.
+cambia de anchura y la obra se lee rasgada), **la que falta** (a la silueta de la
+referencia no le sobran mordiscos: le faltan placas enteras) y **la carne** (lo que
+queda entre dos blancos tiene que seguir siendo cuerpo: el hilo, la tira, la miga y
+el ángulo en triángulo son cuatro nombres para el mismo defecto, así que los mide
+una sola regla)— y le tumbó una docena de defectos con nombre. Ver
+`ptzd/README.md` para las once reglas, las influencias contrastadas de las que sale
+cada una, lo que el grid cambió y lo medido.
+
+Y es la primera familia con **los dos instrumentos**: `entrenamiento/` mide el
+gusto y `verificacion/` mide el defecto, que no es lo mismo y no se sustituyen. El
+segundo salió del primero por las malas — la guarda que se comió las cuñas dejó al
+20% de las obras sin llegar a los cortes de su tipo, y eso no se ve mirando obras:
+se ve contando.
 
 ECLPS es también la primera familia que existe en **un solo formato**: `double`, dos
 pliegos apaisados uno al lado del otro (2√2:1). No es capricho ni límite técnico
