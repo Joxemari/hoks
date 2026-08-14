@@ -159,7 +159,9 @@ redeploy de Pages.
   del dibujo: se decide cruce a cruce, alternando encima y debajo como un diagrama
   de nudo, y el dibujo se parte en secciones ordenadas para que ese orden se pueda
   pintar en plano. Lo que separa las hebras no es un contorno: es una **incisión**,
-  el corte por donde se ve el suelo. Cinco tipos declarados (suelto, anudado,
+  el corte por donde se ve el suelo — y **el final de la cinta también es un
+  filo**: lleva su incisión aunque el remate sea a escuadra, porque si no se
+  suelda a lo que tenga delante. Cinco tipos declarados (suelto, anudado,
   trama, —raro— dos cintas entrelazadas y tres cintas, este último sólo en el
   laboratorio) que se comprueban sobre el resultado. La esquina puede salir viva
   o curva —una de cada cuatro—, y hay un **temblor** opcional del recorrido, que
