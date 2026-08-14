@@ -867,13 +867,6 @@
       nodes = relaxFolds(nodes, cfg);
       nodes = shrinkIntoFrame(nodes, width, cfg);
     }
-    // Y el último gesto es devolverle el material a los cabos que el solver se
-    // haya comido. Va al final a propósito: cualquier lazo posterior volvería a
-    // aplastarlos. Encoger después puede sacarlo del mínimo por un pelo, así que
-    // se estira, se encoge y se vuelve a estirar.
-    nodes = estirarCabos(nodes, width, cfg);
-    nodes = shrinkIntoFrame(nodes, width, cfg);
-    nodes = estirarCabos(nodes, width, cfg);
     // EL TEMBLOR VA AQUÍ, detrás de todos los lazos.
     // Se probó antes de ellos y después de sacarExtremos, y en los dos sitios
     // selfAvoid y relaxFolds se lo comían: a amplitud 1,0 —el ancho entero de
@@ -1086,6 +1079,7 @@
   // ------------------------------------------------------------
   function selfAvoid(nodes, width, cfg) {
     const dMin = cfg.avoidRatio * width;
+    const minL = cfg.minSegRatio * width;
     const n = nodes.length;
 
     // Descarte barato antes de medir. Dos segmentos cuyos CENTROS distan
@@ -1148,10 +1142,42 @@
           c.x -= dx; c.y -= dy; d.x -= dx; d.y -= dy;
         }
       }
+      // EL CABO NO SE APLASTA: ES MATERIAL, NO HOLGURA.
+      // Separar hebras empuja los dos segmentos de un par, y a un EXTREMO de
+      // cinta lo empuja contra su vecino. En medio del recorrido eso lo arregla
+      // enforceMaterial quitando el nodo; en un cabo no hay nodo que quitar sin
+      // acortar la cinta. Reponerlo AQUÍ, dentro del lazo, es lo que hace que
+      // las dos reglas negocien: la pasada siguiente vuelve a separar, y lo que
+      // cede es la otra hebra, que sí tiene por dónde. Reponerlo DESPUÉS del
+      // lazo, que fue el primer intento, no negocia nada: mete el cabo en la
+      // vecina y nadie lo comprueba — cuerpos solapados sin cruce de 0 de 200 a
+      // 53 de 200 con tres cintas.
+      mayor = max(mayor, reponerCabos(nodes, minL));
       if (mayor <= quieto) break;
     }
 
     return nodes;   // el ajuste al marco es una sola vez, al final de generate()
+  }
+
+  // Devuelve a cada extremo de cinta el largo que el material exige, en su
+  // propia dirección: la cinta no cambia de sitio ni de forma, sólo deja de
+  // estar cortada a hueso. Contesta cuánto ha tenido que mover, para que el
+  // lazo que la llama sepa si aún se está moviendo algo.
+  function reponerCabos(nodes, minL) {
+    const cabos = [[0, 1], [nodes.length - 1, nodes.length - 2]];
+    for (const s of _saltos) { cabos.push([s, s - 1]); cabos.push([s + 1, s + 2]); }
+    let mayor = 0;
+    for (const [fin, vec] of cabos) {
+      if (vec < 0 || vec >= nodes.length || fin < 0 || fin >= nodes.length) continue;
+      const d = PV.sub(nodes[fin].p, nodes[vec].p);
+      const l = d.mag();
+      if (l >= minL || l < 1e-9) continue;
+      d.normalize();
+      nodes[fin].p.x = nodes[vec].p.x + d.x * minL;
+      nodes[fin].p.y = nodes[vec].p.y + d.y * minL;
+      mayor = max(mayor, minL - l);
+    }
+    return mayor;
   }
 
   // ------------------------------------------------------------
@@ -1211,22 +1237,6 @@
   // salía con un tramo más corto que el material admite.
   // Se estira el cabo hasta el mínimo, en su propia dirección: la cinta no
   // cambia de sitio ni de forma, sólo deja de estar cortada a hueso.
-  function estirarCabos(nodes, width, cfg) {
-    const minL = cfg.minSegRatio * width * 1.08;
-    const cabos = [[0, 1], [nodes.length - 1, nodes.length - 2]];
-    for (const s of _saltos) { cabos.push([s, s - 1]); cabos.push([s + 1, s + 2]); }
-    for (const [fin, vec] of cabos) {
-      if (vec < 0 || vec >= nodes.length || fin < 0 || fin >= nodes.length) continue;
-      const d = PV.sub(nodes[fin].p, nodes[vec].p);
-      const l = d.mag();
-      if (l >= minL || l < 1e-9) continue;
-      d.normalize();
-      nodes[fin].p.x = nodes[vec].p.x + d.x * minL;
-      nodes[fin].p.y = nodes[vec].p.y + d.y * minL;
-    }
-    return nodes;
-  }
-
   function sacarExtremos(nodes, width, cfg) {
     let cx = 0, cy = 0;
     for (const n of nodes) { cx += n.p.x; cy += n.p.y; }
