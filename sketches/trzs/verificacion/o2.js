@@ -24,5 +24,7 @@ playwright().chromium.launch().then(async b=>{
   console.log(`  remates soldados a otra hebra : ${sold.length}/${out.length}` + (sold.length?'  '+sold.slice(0,4).map(o=>`#${o.seed}(${o.pegado}/${o.tot})`).join(' '):''));
   console.log(`  tinta pegada al borde         : ${bor.length}/${out.length}` + (bor.length?'  '+bor.slice(0,4).map(o=>`#${o.seed}(${o.borde}px)`).join(' '):''));
   console.log(`  discos que invaden la cinta   : ${sol.length}/${out.length}` + (sol.length?'  '+sol.slice(0,4).map(o=>`#${o.seed}(${(100*o.solape/o.area).toFixed(1)}%)`).join(' '):''));
-  console.log(`  discos ${nd}, en ojo del nudo ${oj}`);
+  for (const o of out) for (const R of (o.rayos||[])) console.log(`  #${o.seed} ${R}`);
+  console.log(`  discos ${nd}, en ojo del nudo ${oj}` +
+              `, cabos tapados por otra hebra ${out.reduce((a,o)=>a+(o.cubiertos||0),0)}`);
 });

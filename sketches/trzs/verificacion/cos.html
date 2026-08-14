@@ -28,7 +28,7 @@ window.costuras = (seed, pals, extra) => {
   // mixHex(fg, bg, 0.38): el color exacto de un pixel mezclado al 38%. Tomarlo
   // por tinta hacia que el filo antialias contara como tinta, y con ello
   // cualquier mezcla rodeada de filos pasaba por costura.
-  const dosCintas = c.salto != null && c.salto >= 0;
+  const dosCintas = (c.saltos || []).length > 0;   // dos tintas en cuanto hay un salto
   const cerca = (i,C,t) => Math.abs(d[i]-C[0])+Math.abs(d[i+1]-C[1])+Math.abs(d[i+2]-C[2]) < t;
   const esTinta = i => cerca(i,F,30) || (dosCintas && cerca(i,F2,30));
   const esFondo = i => cerca(i,B,30);
