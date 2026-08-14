@@ -1990,7 +1990,13 @@
     // Por eso sólo salía con esquina curva: ahí el remate es un disco entero de
     // radio W/2 y barre mucha más superficie que el triángulo del inglete. Con
     // esquina viva, 0 huecos de 634 cruces; con curva, 4.
-    const remateEn = (p, hacia, kC) => {
+    // OJO CON LA ANCHURA: el remate se dibuja con la de SU punto, no con la
+    // nominal. Con temblor la cinta puede ser ahí un 45% más fina, y un remate
+    // de anchura nominal sobresale por los lados y pisa incisiones vecinas —
+    // que es exactamente lo que hacía: 0 huecos de 321 cruces con el remate a
+    // escuadra (que no dibuja nada) y 17 de 634 con el remate rodando.
+    const remateEn = (p, hacia, kC, arco) => {
+      const wR = ruido ? anchoEn(arco) : width;
       if (cfg.ends !== "redondos" && cfg.ends !== "inglete") return;
       for (const pasada of ['halo', 'tinta']) {
         // La pasada de halo es la que separa el remate del suelo cuando la
@@ -2007,7 +2013,7 @@
         const crece = pasada === 'halo' ? gap : 0;
         ctx.fillStyle = pasada === 'halo' ? haloDe(kC) : tintaDe(kC);
         if (cfg.ends === "redondos") {
-          ctx.beginPath(); ctx.arc(p.x, p.y, width / 2 + crece, 0, TWO_PI); ctx.fill();
+          ctx.beginPath(); ctx.arc(p.x, p.y, wR / 2 + crece, 0, TWO_PI); ctx.fill();
           continue;
         }
         // INGLETE: UN SOLO CORTE AL BIES.
@@ -2021,9 +2027,9 @@
         if (!isFinite(d.x) || !isFinite(d.y) || (d.x === 0 && d.y === 0)) continue;
         const rr = new E.Rng((_semilla ^ 0x81E5 ^ (mapped.indexOf(p) * 0x9E3779B1)) >>> 0);
         const lado = rr.next() < 0.5 ? 1 : -1;
-        const largo = width * (0.35 + rr.next() * 0.55);
+        const largo = wR * (0.35 + rr.next() * 0.55);
         const n = V(-d.y * lado, d.x * lado);
-        const h = width / 2 + crece;
+        const h = wR / 2 + crece;
         // LA BASE DEL TRIANGULO ENTRA EN EL CUERPO, no se queda a ras de él.
         // A ras, el filo del triángulo y el del cuerpo comparten arista, y dos
         // figuras del mismo color que comparten arista NO suman cobertura 1:
@@ -2122,7 +2128,7 @@
 
       // El remate de esta seccion, si lo tiene: aqui y no al final.
       for (const [cp, chacia, cd] of cabos)
-        if (cd >= a - 1e-6 && cd <= b + 1e-6) remateEn(cp, chacia, cintaEnArco(cd));
+        if (cd >= a - 1e-6 && cd <= b + 1e-6) remateEn(cp, chacia, cintaEnArco(cd), cd);
     }
 
 
