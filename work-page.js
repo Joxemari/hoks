@@ -15,6 +15,10 @@
  *   <script>HOKSWORK.init('dtkrt');</script>
  *
  * Sin algo.js la obra sigue teniendo página: archivo y texto, sin lienzo vivo.
+ *
+ * Los cascarones (plls.html, dtkrt.html…) fijan su slug porque esas URLs
+ * estuvieron publicadas. work.html hace lo mismo con el slug del `?w=`, y por
+ * eso una familia recién activada ya tiene sección sin escribir un archivo.
  */
 (function (global) {
   'use strict';
@@ -167,5 +171,18 @@
     global.HOKS.loadPalettes().then(p => { palettes = p; draw(); }).catch(() => {});
   }
 
-  global.HOKSWORK = { init };
+  // work.html sin ?w= válido: no hay obra que enseñar. Se dice y se sale, en vez
+  // de dejar la página en blanco preguntándose qué ha pasado.
+  function missing() {
+    css();
+    const root = el('div', 'wk');
+    const head = el('div', 'wk-head');
+    head.appendChild(el('h1', 'wk-name', '—'));
+    head.appendChild(el('p', 'wk-text', 'No work named. <a href="index.html" style="color:#111;">Back to the grid</a>.'));
+    root.appendChild(head);
+    const foot = document.querySelector('footer');
+    if (foot) document.body.insertBefore(root, foot); else document.body.appendChild(root);
+  }
+
+  global.HOKSWORK = { init, missing };
 })(typeof window !== 'undefined' ? window : globalThis);

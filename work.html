@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="eu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hoks</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Courier New', Courier, monospace; background: #fff; color: #111;
+  min-height: 100vh; padding-top: 52px; }
+</style>
+</head>
+<body>
+<!-- Página de obra GENÉRICA: work.html?w=<slug>.
+     Las familias veteranas tienen su cascarón propio (plls.html, krrtk.html…)
+     porque esas URLs estuvieron publicadas y no se rompen. Una familia nueva no
+     arrastra esa historia, así que no tiene por qué esperar a que alguien
+     commitee un archivo de veinte líneas: se activa en el panel y ya tiene
+     sección. `page` en works.json decide cuál de las dos usa cada una.
+
+     Lo que enseña es lo mismo que el cascarón: archivo y narrativa. El generador
+     con panel, traits y lotes vive en el laboratorio (sketches/<slug>/). -->
+<script src="nav.js"></script>
+<script src="sketches/_engine.js?v=1"></script>
+<script src="work-page.js?v=1"></script>
+<script>
+// El slug viaja por URL, así que va a parar a un src: se acepta solo lo que un
+// slug puede ser. Sin esto, ?w=… sería una vía para colar rutas.
+const _q = new URLSearchParams(location.search).get('w') || '';
+const SLUG = /^[a-z0-9-]{1,24}$/.test(_q) ? _q : '';
+
+if (!SLUG) {
+  HOKSWORK.missing();
+} else {
+  // El algo.js solo existe si la obra está graduada. Si no está, la página
+  // sigue en pie —texto y piezas guardadas— y se queda sin lienzo vivo.
+  const s = document.createElement('script');
+  s.src = 'sketches/' + SLUG + '/algo.js?v=1';
+  s.onload = s.onerror = () => HOKSWORK.init(SLUG);
+  document.head.appendChild(s);
+}
+</script>
+</body>
+</html>
