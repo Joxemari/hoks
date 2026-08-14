@@ -1,5 +1,9 @@
 (function() {
-const FAVICON = `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><circle cx='50' cy='50' r='40' fill='%23111'/></svg>">`;
+// El favicon es la H de la marca — el trazo a pincel recortado en la barra, que es
+// donde la letra se reconoce. A 16 px la H entera seria un pelo vertical (es 1:6,6),
+// asi que lo que va aqui es esa ventana cuadrada. Data URI y no archivo: nav.js lo
+// inyecta desde paginas de cualquier profundidad, y una ruta relativa se rompe.
+const FAVICON = `<link rel="icon" type="image/png" href="data:image/png;base64,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">`;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // i18n — trilingüe EU / ES / EN. Se aloja aquí porque nav.js se carga (bloqueando
@@ -220,9 +224,15 @@ nav {
   padding: 0 2rem; height: 52px;
   background: #fff; border-bottom: 1px solid #e8e8e8;
 }
-.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #111; }
-.nav-logo-dot { width: 14px; height: 14px; border-radius: 50%; background: #111; flex-shrink: 0; }
-.nav-logo-name { font-family: 'Courier New', Courier, monospace; font-size: 12px; font-weight: 400; letter-spacing: 0.08em; color: #111; }
+.nav-logo { display: flex; align-items: center; text-decoration: none; color: #111; }
+/* La marca es una composición VERTICAL —la H alta y "oks" metido en su base—, así
+   que en una barra horizontal ocupa alto, no ancho: 40 px en los 52 de la barra,
+   que es donde el trazo aún se lee como palabra. Se sirve un archivo aparte
+   (logo-nav.png, 85×160) y no el original: el maestro pesa 204 KB y esto entra
+   en todas las páginas. width/height van en el HTML para que el hueco esté
+   reservado antes de que la imagen llegue. */
+.nav-logo img { display: block; height: 40px; width: auto; }
+@media (max-width: 600px) { .nav-logo img { height: 34px; } }
 .nav-links { display: flex; gap: 2.5rem; list-style: none; align-items: center; margin: 0; padding: 0; }
 @media (max-width: 600px) {
   .nav-links { gap: 1.2rem; }
@@ -309,9 +319,8 @@ window.HOKSNAV = { workHref };
 const nav = document.createElement('nav');
 nav.innerHTML = `
   <div style="display:flex;align-items:center;gap:10px;">
-    <a class="nav-logo" href="index.html">
-      <span class="nav-logo-dot"></span>
-      <span class="nav-logo-name">hoks</span>
+    <a class="nav-logo" href="index.html" aria-label="hoks">
+      <img src="logo-nav.png" width="85" height="160" alt="hoks">
     </a>
     <span id="nav-admin-badge" style="display:none;font-family:'Courier New',Courier,monospace;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:#c0392b;color:#fff;padding:2px 7px;border-radius:2px;cursor:pointer;" onclick="window.location.href='admin.html'">ADMIN</span>
   </div>

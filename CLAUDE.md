@@ -67,8 +67,8 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 
 ### Compartido
 
-- **`nav.js`** — Se incluye en todas las páginas. Inyecta `<nav>` (logo "hoks",
-  dropdown *Work*, About, Palettes), favicon SVG, footer (© hoks, contacto,
+- **`nav.js`** — Se incluye en todas las páginas. Inyecta `<nav>` (la marca,
+  dropdown *Work*, About, Palettes), favicon, footer (© hoks, contacto,
   Instagram si está en `site.json`) y badge ADMIN si hay sesión. **El dropdown
   se escribe desde `works.json`**, una entrada por familia activa en el orden del
   catálogo; la lista que hay en el archivo es solo el arranque, para que no
@@ -76,6 +76,21 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   a dónde lleva una familia, `page` o la genérica— porque la landing enlaza a lo
   mismo y dos reglas darían dos destinos. Aloja también el i18n
   (`window.HOKSI18N`, diccionarios EU/ES/EN).
+- **La marca** — `logo.png` (895×1432, con alfa) es el **original a pincel** y la
+  fuente de la que salen los demás; no lo usa ninguna página directamente porque
+  pesa 204 KB. Dos recortes lo explican todo, medidos sobre él por componentes
+  conexas: la **tinta** es `x114 y59 705×1330` (la marca sin sus márgenes) y la
+  **H** es `x114 y771 202×202`, la ventana cuadrada centrada en su barra
+  (y857–888). De ahí salen los tres:
+  · **`logo-nav.png`** (85×160) — el nav, a 40 px de alto (34 en móvil). Es una
+    composición vertical, así que en la barra ocupa alto y no ancho.
+  · **el favicon** — la **H sola**, recortada en una ventana cuadrada sobre su
+    barra: la H entera es 1:6,6 y a 16 px sería un pelo. Va como data URI dentro
+    de `nav.js`, no como archivo, porque el `<link>` se inyecta desde páginas de
+    cualquier profundidad y una ruta relativa se rompería.
+  · **`preview.png`** (1200×630) — la tarjeta al compartir: la marca centrada
+    sobre blanco. La leen `index.html` y `about.html` por og/twitter.
+  Si se rehace el logo, esos tres se regeneran de él; no se editan a mano.
 - **`palette-picker.js`** — Selector de paleta, **componente único** de toda la
   web y del laboratorio (`HOKSPAL.mount(host, {palettes, index, onChange})`).
   Cada opción muestra la paleta entera en una franja de color —elegir paleta es
