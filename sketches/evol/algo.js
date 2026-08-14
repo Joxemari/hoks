@@ -233,13 +233,13 @@
   //   muro   — casi maciza, y los ojos quedan como VANOS abiertos en la masa.
   //   nudo   — pocas hebras, muy gordas y concentradas: la masa se apelotona.
   const TIPOS = {
-    red:    { prob: 0.24, hebras: [[2, 3], [1, 2]], nivel: [1, 4], ramales: [2, 3], munones: [1, 3],
+    red:    { prob: 0.24, hebras: [[2, 3], [1, 2]], nivel: [1, 4], ramales: [2, 3], placas: [1, 3], munones: [1, 3],
               ojos: [1, 6],  mancha: [0.14, 0.29] },
-    trama:  { prob: 0.40, hebras: [[2, 3], [1, 2]], nivel: [2, 5], ramales: [3, 4], munones: [1, 3],
+    trama:  { prob: 0.40, hebras: [[2, 3], [1, 2]], nivel: [2, 5], ramales: [3, 4], placas: [2, 4], munones: [1, 3],
               ojos: [2, 10], mancha: [0.22, 0.40] },
-    muro:   { prob: 0.18, hebras: [[2, 3], [2, 3]], nivel: [4, 5], ramales: [2, 3], munones: [1, 2],
+    muro:   { prob: 0.18, hebras: [[2, 3], [2, 3]], nivel: [3, 5], ramales: [2, 3], placas: [2, 3], munones: [1, 2],
               ojos: [2, 9],  mancha: [0.32, 0.43] },
-    nudo:   { prob: 0.18, hebras: [[2, 2], [1, 1]], nivel: [3, 6], ramales: [3, 4], munones: [2, 3],
+    nudo:   { prob: 0.18, hebras: [[2, 2], [1, 1]], nivel: [3, 6], ramales: [3, 4], placas: [2, 4], munones: [2, 3],
               ojos: [1, 5],  mancha: [0.18, 0.35] },
   };
 ;
@@ -360,6 +360,56 @@
     return { I, D, M };
   }
 
+  // ── LA PLACA ────────────────────────────────────────────────────────────────
+  // El nudo no es un cruce engordado: es una PLACA. Y ésta es la limitación de fondo
+  // que arrastraba la familia — una hebra es un eje con una anchura, o sea un TUBO, y
+  // por mucho que la anchura module sigue siéndolo. De ahí que las piezas se leyeran
+  // como tuberías, grietas o calles por muchos trazos que se metieran: el defecto no
+  // era la cantidad, era que todo el vocabulario era tubular.
+  //
+  // En las referencias las masas no son tubos: son superficies recortadas, con
+  // protuberancias, entrantes y penínsulas, y los nudos son placas irregulares de las
+  // que SALEN los brazos. Donde la trama se acumula deja de ser hebra y se vuelve
+  // superficie — que además es lo que dice la obra: el material se junta y se hace
+  // materia.
+  //
+  // El polígono se recorre y, si la orientación no coincide con la de los
+  // cuadriláteros, se invierte: con 'nonzero' una placa al revés restaría en vez de
+  // sumar y abriría un agujero justo en el nudo.
+  function placa(rng, cx, cy, r) {
+    const n = rng.int(5, 9);
+    const pts = [];
+    let a = rng.range(0, Math.PI * 2);
+    for (let i = 0; i < n; i++) {
+      a += (Math.PI * 2 / n) * rng.range(0.55, 1.45);
+      const rr = r * rng.range(0.55, 1.35);
+      pts.push({ x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr });
+    }
+    let ar = 0;
+    for (let i = 0; i < n; i++) {
+      const q = pts[(i + 1) % n];
+      ar += pts[i].x * q.y - q.x * pts[i].y;
+    }
+    if (ar > 0) pts.reverse();
+    return { poly: pts };
+  }
+
+  function emitirPlaca(ctx, pl) {
+    const p = pl.poly;
+    ctx.moveTo(p[0].x, p[0].y);
+    for (let i = 1; i < p.length; i++) ctx.lineTo(p[i].x, p[i].y);
+    ctx.closePath();
+  }
+
+  function enPoly(p, x, y) {
+    let d = false;
+    for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+      if ((p[i].y > y) !== (p[j].y > y) &&
+          x < (p[j].x - p[i].x) * (y - p[i].y) / (p[j].y - p[i].y) + p[i].x) d = !d;
+    }
+    return d;
+  }
+
   // Emite el cuerpo como cuadriláteros consecutivos. Con filo, cada tramo se parte
   // en subtramos y los dos bordes se desplazan; sin filo (amp 0) sale exactamente el
   // polígono de antes, sin coste.
@@ -371,6 +421,7 @@
   // usan los dos. Si cada tramo desplazara el vértice con su propia normal, en cada
   // esquina se abriría una rendija por la que se vería el suelo.
   function emitir(ctx, ch, filo, sem, arco0) {
+    if (ch.poly) { emitirPlaca(ctx, ch); return; }
     if (ch.length < 2) return;
     const { I, D, M } = bordes(ch);
     const n = ch.length;
@@ -515,7 +566,7 @@
       if (dcolor(c, tinta) < 0.22) continue;
       if (otras.some(o => dcolor(o, c) < 0.24)) continue;   // dos tintas casi iguales son una
       otras.push(c);
-      if (otras.length === 2) break;
+      if (otras.length === 3) break;
     }
     return { suelo, tinta, otra: otras[0] || null, otras, inv, papel };
   }
@@ -834,6 +885,25 @@
     // Caja de cada tramo: sin ella esto es NX·NY·tramos y con 60 tramos en un A3
     // de rejilla fina ya se nota. Con caja, cada tramo solo mira sus celdas.
     for (const ch of cuerpos) {
+      if (ch.poly) {
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+        for (const v of ch.poly) {
+          const vx = v.x * k, vy = v.y * k;
+          if (vx < x0) x0 = vx; if (vx > x1) x1 = vx;
+          if (vy < y0) y0 = vy; if (vy > y1) y1 = vy;
+        }
+        const gx0 = max(0, Math.floor(x0 / paso)), gx1 = min(NX - 1, Math.ceil(x1 / paso));
+        const gy0 = max(0, Math.floor(y0 / paso)), gy1 = min(NY - 1, Math.ceil(y1 / paso));
+        const esc = ch.poly.map(v => ({ x: v.x * k, y: v.y * k }));
+        for (let gy = gy0; gy <= gy1; gy++) {
+          for (let gx = gx0; gx <= gx1; gx++) {
+            const c = gy * NX + gx;
+            if (dentro[c]) continue;
+            if (enPoly(esc, (gx + 0.5) * paso, (gy + 0.5) * paso)) dentro[c] = 1;
+          }
+        }
+        continue;
+      }
       for (let i = 0; i < ch.length - 1; i++) {
         const ax = ch[i].x * k, ay = ch[i].y * k, ahw = ch[i].hw * k;
         const bx = ch[i + 1].x * k, by = ch[i + 1].y * k, bhw = ch[i + 1].hw * k;
@@ -1200,6 +1270,34 @@
       }
     }
 
+    // LAS PLACAS, en los nudos más cargados. No en todos: una placa por cruce
+    // convierte la pieza en un rosario de bolas. Se ordenan los cruces por la masa que
+    // juntan —la suma de las anchuras de las dos hebras ahí— y se placan los de arriba.
+    // Así la superficie aparece donde de verdad se acumula el material, que es lo que
+    // pasa en las referencias: los nudos gordos son placas y los flojos siguen siendo
+    // un cruce.
+    const cand = [];
+    for (let i = 0; i < hilos.length; i++) {
+      for (let j = i + 1; j < hilos.length; j++) {
+        for (const c of cruces(hilos[i], hilos[j])) {
+          const wa = puntoEn(hilos[i], c.ta).hw, wb = puntoEn(hilos[j], c.tb).hw;
+          cand.push({ x: c.x, y: c.y, w: wa + wb });
+        }
+      }
+    }
+    cand.sort((a, b) => b.w - a.w);
+    const nP = params.placas != null ? params.placas : rng.int(t.placas[0], t.placas[1]);
+    const placas = [];
+    for (const c of cand) {
+      if (placas.length >= nP) break;
+      // Dos placas pegadas son una mancha, no dos nudos.
+      if (placas.some(q => hypot(q.cx - c.x, q.cy - c.y) < (q.r + c.w * 1.2))) continue;
+      const r = c.w * rng.range(1.15, 2.1);
+      const pl = placa(rng, c.x, c.y, r);
+      pl.cx = c.x; pl.cy = c.y; pl.r = r;
+      placas.push(pl); cuerpos.push(pl);
+    }
+
     // MUÑONES: salen de cualquier hebra, y solo desde masa.
     const todas = hilos;
     const nM = params.munones != null ? params.munones : rng.int(t.munones[0], t.munones[1]);
@@ -1221,7 +1319,8 @@
       if (v.lv < lvMin) lvMin = v.lv;
       if (v.lv > lvMax) lvMax = v.lv;
     }
-    return { cuerpos, chains: todas, k: nH + nV, nH, nV, ramales: rs.length, cruces: nCruces, munones, caida,
+    return { cuerpos, chains: todas, k: nH + nV, nH, nV, ramales: rs.length, cruces: nCruces,
+             placas: placas.length, munones, caida,
              grav, reserva: (grav === 'N' ? 'S' : 'N'), niveles, esc,
              ojos: med.ojos, mancha: med.mancha,
              modulacion: lvMax >= lvMin ? lvMax - lvMin : 0 };
@@ -1300,6 +1399,12 @@
     // otra plancha. El bucle sigue buscando la de abajo, pero midiendo las dos juntas.
     const puedeSobre = (rol.otras || []).length > 0 && !params.sinSobre;
     const hay = puedeSobre && rng.bool(params.sobre != null ? params.sobre : P_SOBRE);
+    // CAPAS. Una trama, o dos tejidas, o —forzándolo— tantas como tintas dé la paleta.
+    // Con muchas la obra se va a otro sitio: deja de haber figura y suelo y pasa a haber
+    // ALL-OVER, densidad pareja de borde a borde. Es un extremo legítimo de la misma
+    // gramática, no otra familia: las mismas hebras, los mismos nudos, el mismo tejido.
+    const nExtra = params.capas != null ? min(params.capas - 1, (rol.otras || []).length)
+                                        : (hay ? 1 : 0);
 
     // LOS DOS FOCOS SE DECIDEN JUNTOS, y separados. Sorteado cada uno por su cuenta,
     // los dos aprietes caían a veces en el mismo sitio: las dos tramas se amontonaban
@@ -1311,27 +1416,29 @@
       x: fw * rng.range(0.20, 0.80),
       y: (rng.bool(0.5) ? fh * rng.range(0.16, 0.46) : fh * rng.range(0.54, 0.84)),
     };
-    let focoB = null;
-    if (hay) {
-      const SEP = 0.42;                       // separación mínima, en lado corto
-      const a = rng.range(0, Math.PI * 2), r2 = SEP + rng.range(0, 0.22);
-      focoB = { x: clamp(focoA.x + Math.cos(a) * r2, fw * 0.12, fw * 0.88),
-                y: clamp(focoA.y + Math.sin(a) * r2, fh * 0.12, fh * 0.88) };
+    // Los focos de las capas extra se reparten en corona alrededor del primero: con
+    // dos, enfrentados; con más, en abanico. Es lo que evita que todas aprieten en el
+    // mismo sitio — con muchas capas eso sería una bola en el centro y un desierto
+    // alrededor, que es lo contrario del all-over.
+    const focos = [];
+    for (let k = 0; k < nExtra; k++) {
+      const a = rng.range(0, Math.PI * 2) + (Math.PI * 2 * k) / max(1, nExtra);
+      const r2 = 0.42 + rng.range(0, 0.22);
+      focos.push({ x: clamp(focoA.x + Math.cos(a) * r2, fw * 0.12, fw * 0.88),
+                   y: clamp(focoA.y + Math.sin(a) * r2, fh * 0.12, fh * 0.88) });
     }
-
-    const sobre = hay
-      // Con el tipo 'red' a secas no bastaba: el foco y el piso la dejaban casi tan
-      // gorda como la de abajo, y dos tramas gordas cruzándose son barro de dos
-      // colores. Se le baja la ESCALA del cuerpo, que es el mando que gobierna su
-      // techo de grosor — así es laxa por construcción y no por suerte del tipo.
-      ? tramar(new E.Rng((seed ^ 0x5B3C1A7) >>> 0), fw, fh, 'red', { cuerpo: 0.62, foco: focoB })
-      : null;
+    const capas = [];
+    for (let k = 0; k < nExtra; k++) {
+      capas.push(tramar(new E.Rng((seed ^ (0x5B3C1A7 * (k + 1))) >>> 0), fw, fh, 'red',
+                        { cuerpo: 0.62, foco: focos[k] }));
+    }
+    const sobre = capas[0] || null;
 
     let best = null, bestF = Infinity;
     for (let i = 0; i < REINTENTOS; i++) {
       const c = tramar(new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0), fw, fh, tipo,
                        Object.assign({ foco: focoA }, params),
-                       sobre ? sobre.cuerpos : null);
+                       capas.length ? [].concat.apply([], capas.map(c => c.cuerpos)) : null);
       const f = falta(c, t, !!sobre);
       if (f < bestF) { bestF = f; best = c; }
       if (f === 0) break;
@@ -1365,8 +1472,8 @@
     ctx.scale(S, S);   // del campo normalizado al pliego
     // La segunda tinta, cuando la hay, se lleva UNA hebra entera. No medio
     // cuerpo, no un degradado: un cuerpo. Es raro a propósito.
-    const nOtras = sobre ? 1 : 0;
-    const dos = !!sobre;
+    const nOtras = capas.length;
+    const dos = nOtras > 0;
 
     // La semilla del filo va por CUERPO (índice + seed), no por pieza: si todos
     // compartieran ruido, dos cuerpos paralelos ondularían a la vez y se leería el
@@ -1378,58 +1485,65 @@
       ctx.fill();
     };
 
-    // EL TEJIDO. Dos tramas no se apilan: se ENTRELAZAN. Una plancha entera encima de
+    // EL TEJIDO. Las tramas no se apilan: se ENTRELAZAN. Una plancha entera encima de
     // otra es un orden absoluto y se lee como tal —siempre gana la misma—, y eso no es
-    // tejer: es apilar. En un tejido la trama pasa por encima de la urdimbre y por
-    // debajo en el siguiente cruce, alternando. Que la familia se llame así y no lo
-    // hiciera era una contradicción.
+    // tejer, es apilar. En un tejido la trama pasa por encima de la urdimbre y por
+    // debajo en el siguiente cruce, alternando.
     //
     // Se resuelve sin plan de secciones —que es justo lo que EVOL se ahorró de TRZS—
-    // porque estas tintas son OPACAS: se pinta la de abajo, se pinta la de encima, y
-    // donde le toca ganar a la de abajo se repinta un PARCHE suyo, un tramo corto
-    // centrado en el cruce. El parche lleva su arco, así que el canto casa y no se ve
-    // junta ninguna. Sin incisión: la profundidad la dice qué tinta se ve, y ya.
-    const parches = [];
-    if (sobre) {
-      const A = best.chains, B = sobre.chains;
-      for (let ia = 0; ia < A.length; ia++) {
-        let turno = (seed >>> (ia % 24)) & 1;   // por dónde empieza a alternar cada hebra
-        const cs = [];
-        for (let ib = 0; ib < B.length; ib++) {
-          for (const c of cruces(A[ia], B[ib])) cs.push({ c, ib });
-        }
-        cs.sort((x, y) => x.c.ta - y.c.ta);     // alternar A LO LARGO de la hebra
-        for (const { c, ib } of cs) {
-          turno ^= 1;
-          if (!turno) continue;                  // este cruce lo gana la de encima
-          // El parche cubre el ancho de la hebra de encima más un margen, medido en
-          // parámetro de la de abajo: un parche corto deja asomar la otra tinta.
-          const wB = puntoEn(B[ib], c.tb).hw;
-          const p0 = puntoEn(A[ia], c.ta);
-          const paso = hypot(A[ia][min(A[ia].length - 1, Math.floor(c.ta) + 1)].x - A[ia][Math.floor(c.ta)].x,
-                             A[ia][min(A[ia].length - 1, Math.floor(c.ta) + 1)].y - A[ia][Math.floor(c.ta)].y) || 1e-6;
-          const d = (wB * 2.2 + p0.hw * 0.5) / paso;
-          const tr = tramoDe(A[ia], c.ta - d, c.ta + d);
-          if (tr) parches.push({ tr, i: best.cuerpos.indexOf(A[ia]) });
-        }
-      }
-    }
+    // porque estas tintas son OPACAS: se pinta una capa, se pinta la siguiente, y donde
+    // le toca ganar a la de abajo se repinta un PARCHE suyo, un tramo corto centrado en
+    // el cruce. El parche lleva su arco, así que el canto casa y no se ve junta ninguna.
+    // Sin incisión: la profundidad la dice qué tinta se ve, y ya.
+    const tinta = k => k === 0 ? rol.tinta : rol.otras[k - 1];
+    const sal = k => k === 0 ? 0 : (0x3F1B9C * k) >>> 0;
+    const todasCapas = [best].concat(capas);
 
-    pasada(best.cuerpos, rol.tinta, 0);
-    if (sobre) {
-      pasada(sobre.cuerpos, rol.otras[0], 0x3F1B9C);
-      if (parches.length) {
-        ctx.beginPath();
-        for (const p of parches) emitir(ctx, p.tr.ch, filo, (seed ^ (0x2545F491 * (p.i + 1))) >>> 0, p.tr.arco0);
-        ctx.fillStyle = rol.tinta;
-        ctx.fill();
+    const parchesDe = (abajo, arriba, kb) => {
+      const out = [];
+      for (let ia = 0; ia < abajo.chains.length; ia++) {
+        const A = abajo.chains[ia];
+        let turno = (seed >>> ((ia + kb) % 24)) & 1;
+        const cs = [];
+        for (const B of arriba.chains) for (const c of cruces(A, B)) cs.push({ c, B });
+        cs.sort((x, y) => x.c.ta - y.c.ta);
+        for (const { c, B } of cs) {
+          turno ^= 1;
+          if (!turno) continue;
+          const wB = puntoEn(B, c.tb).hw;
+          const i0 = Math.floor(c.ta), i1 = min(A.length - 1, i0 + 1);
+          const paso = hypot(A[i1].x - A[i0].x, A[i1].y - A[i0].y) || 1e-6;
+          const d = (wB * 2.2 + puntoEn(A, c.ta).hw * 0.5) / paso;
+          const tr = tramoDe(A, c.ta - d, c.ta + d);
+          if (tr) out.push({ tr, i: abajo.cuerpos.indexOf(A), kb });
+        }
       }
-    }
+      return out;
+    };
+
+    const pintar = () => {
+      for (let k = 0; k < todasCapas.length; k++) {
+        pasada(todasCapas[k].cuerpos, tinta(k), sal(k));
+        // Tras pintar esta capa, las de debajo recuperan los cruces que les tocan.
+        for (let j = 0; j < k; j++) {
+          const ps = parchesDe(todasCapas[j], todasCapas[k], j);
+          if (!ps.length) continue;
+          ctx.beginPath();
+          for (const p of ps) {
+            emitir(ctx, p.tr.ch, filo, (seed ^ (0x2545F491 * (p.i + 1)) ^ sal(j)) >>> 0, p.tr.arco0);
+          }
+          ctx.fillStyle = tinta(j);
+          ctx.fill();
+        }
+      }
+    };
+    pintar();
     ctx.restore();
 
     return { pal, rol, tipo, filo: filoName, bg, dos, nOtras, falta: bestF,
              field: cuad ? 'square' : 'sheet',
-             hebras: best.nH + '\u00d7' + best.nV, ramales: best.ramales, cruces: best.cruces, caida: best.caida,
+             hebras: best.nH + '\u00d7' + best.nV, ramales: best.ramales, cruces: best.cruces,
+             placas: best.placas, caida: best.caida,
              munones: best.munones,
              esc: best.esc,
              ojos: best.ojos, mancha: best.mancha, modulacion: best.modulacion,
@@ -1498,7 +1612,7 @@
       list: [
         { key: 'Palette', val: res.pal.name, colors: res.pal.colors, rarity: palR },
         { key: 'Type',    val: res.tipo, rarity: tipoR },
-        { key: 'Weave',   val: res.hebras + ' + ' + res.ramales + ' · ' + res.cruces + ' knots', rarity: 'common' },
+        { key: 'Weave',   val: res.hebras + ' + ' + res.ramales + 'r · ' + res.cruces + ' knots · ' + res.placas + ' plates', rarity: 'common' },
         { key: 'Voids',   val: ojosLbl + (n ? ' · ' + (areaOjos * 100).toFixed(1) + '%' : ''), rarity: ojosR },
         { key: 'Body',    val: cuerpoLbl + ' · ' + (mod + 1) + '/' + NIVELES, rarity: cuerpoR },
         { key: 'Ink',     val: manchaLbl + ' · ' + Math.round(m * 100) + '%', rarity: manchaR },

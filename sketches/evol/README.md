@@ -76,10 +76,26 @@ trama pesa más que tres bandas.
    **escalas**. Cada generación es menos de la mitad de larga que la anterior y baja de
    nivel, así que lo que se añade siempre es menor que lo que ya hay, y se lee como
    detalle de la masa en vez de como otra masa peleando por el sitio.
-3. **NUDOS.** Donde dos hebras se cruzan, la masa **engorda**. En la referencia el
-   encuentro no es la suma de dos anchuras: es una acumulación. En TRZS el cruce era
-   el problema entero —había que decidir quién pasa y abrir la incisión—; aquí es
-   donde la trama se hace una sola pieza.
+3. **NUDOS Y PLACAS.** Donde dos hebras se cruzan, la masa **engorda**: el encuentro no
+   es la suma de dos anchuras, es una acumulación. Y donde el nudo carga de verdad, deja
+   de ser un cruce engordado y se vuelve una **placa** — un polígono irregular del que
+   salen los brazos.
+
+   La placa arregla la limitación de fondo que arrastraba la familia: una hebra es un
+   eje con una anchura, o sea un **tubo**, y por mucho que la anchura module sigue
+   siéndolo. De ahí que las piezas se leyeran como tuberías, grietas o calles por muchos
+   trazos que se metieran — el defecto no era la cantidad, era que todo el vocabulario
+   era tubular. En las referencias las masas no son tubos: son superficies recortadas,
+   con protuberancias y entrantes. Donde la trama se acumula deja de ser hebra y se
+   vuelve superficie, que además es lo que dice la obra — el material se junta y se hace
+   materia.
+
+   No una placa por cruce, que convertiría la pieza en un rosario de bolas: se ordenan
+   los cruces por la masa que juntan y se placan los de arriba, y dos placas pegadas se
+   descartan porque son una mancha y no dos nudos.
+
+   En TRZS el cruce era el problema entero —decidir quién pasa y abrir la incisión—;
+   aquí es donde la trama se hace una sola pieza.
 4. **CUERPO.** La anchura va por **niveles discretos** y salta en los vértices: la
    masa engorda y adelgaza a escalones, no en rampa. Y hay **jerarquía**: una hebra es
    la protagonista y va arriba del rango, las demás caen abajo. Sin eso todas pesan
