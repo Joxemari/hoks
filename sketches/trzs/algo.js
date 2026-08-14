@@ -2366,7 +2366,12 @@
 
     const radios = [];
     for (let i = 0; i < cfg.dotsMax; i++) radios.push(width * rng.range(cfg.dotRMin, cfg.dotRMax));
-    const r = max(...radios);   // el hueco se reserva para el mayor
+    // El hueco se reserva para el mayor Y CON SU TEMBLOR: el contorno dibujado a
+    // mano se pasa del radio nominal hasta DISCO_MANO, así que reservar el
+    // nominal deja al disco tocando la cinta por un píxel. Salió 1 obra de 200
+    // en cuanto los discos dejaron de ser de compás.
+    const mano = 1 + (cfg.discoMano == null ? DISCO_MANO : cfg.discoMano);
+    const r = max(...radios) * mano;
     // Aire entre el borde de la cinta y el borde del disco.
     const aire = width * (0.5 + cfg.dotClear) + cfg.gapAbs * ALTO;
     const need = r + aire;
@@ -2447,7 +2452,7 @@
         // motas de medio radio que no se leen como disco sino como
         // suciedad, y aparecía una clase de tamaño que no existe en el
         // resto de la obra.
-        const rad = D[mejor] - aire;
+        const rad = (D[mejor] - aire) / mano;   // el ojo se mide con el temblor puesto
         if (rad >= width * cfg.dotRMin)
           ojos.push({ p: P[mejor], r: min(rad, width * cfg.dotRMax) });
       }

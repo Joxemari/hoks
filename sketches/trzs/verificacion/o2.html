@@ -217,8 +217,21 @@ window.otros = (seed, pals, extra) => {
 
   // ── 2. MARGEN ──────────────────────────────────────────────────────────
   // Ni un píxel de tinta pegado al borde del cuadro.
+  //
+  // Y AQUÍ LA PREGUNTA ES OTRA: en el borde del cuadro sólo puede haber suelo,
+  // así que lo que se busca es cualquier cosa que NO sea el suelo — tinta o
+  // halo, da igual, las dos delatan una cinta pegada al marco. Preguntando por
+  // la lista de cortes, en una obra fantasma el suelo no está en la lista
+  // (porque ahí el suelo es la tinta de una cinta) y el cuadro entero se leía
+  // como tinta: 196 obras de 200 con los 7.200 píxeles del marco marcados.
+  // El halo sí cuenta, y con eso el fantasma se mide de verdad: su cinta es
+  // invisible contra el suelo, pero su corte no.
+  const B0 = hex(c.colores.bg);
+  const esSuelo = (x,y) => { x=Math.round(x); y=Math.round(y);
+    if (x<0||y<0||x>=S||y>=S) return true;
+    return dCol(px, 4*(y*S+x), B0) < 40; };
   let borde = 0;
-  const mira = (x,y) => { if (!esFondo(x,y)) borde++; };
+  const mira = (x,y) => { if (!esSuelo(x,y)) borde++; };
   for (let i=0;i<S;i++){ mira(i,0); mira(i,1); mira(i,S-1); mira(i,S-2);
                          mira(0,i); mira(1,i); mira(S-1,i); mira(S-2,i); }
 
