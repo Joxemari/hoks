@@ -22,8 +22,29 @@ window.otros = (seed, pals, extra) => {
   const cS = lienzo(), xS = cS.getContext('2d');
   const gdots = c.cfg.dots; c.cfg.dots = 'no';
   T.renderComposition(xS, 0, 0, S, c, S, true, false);
-  c.cfg.dots = gdots;
   const pxS = xS.getImageData(0,0,S,S).data;
+  // ...y una TERCERA pasada SIN REMATES, que es sobre la que se sonda.
+  //
+  // El detector nació cuando la cinta acababa a escuadra: sondeaba desde el
+  // cabo hacia fuera y cualquier tinta era de otra hebra. Con inglete o remate
+  // redondo la primera tinta que encuentra es la SUYA, y marcaba 122 de 200
+  // obras. Restar la pasada sin remates para reconocerlos casi funciona, pero
+  // el borde del disco de la incisión deja píxeles de antialias que no son ni
+  // fondo ni remate y el sondeo se paraba en ellos.
+  //
+  // Así que la pregunta se hace donde se puede contestar limpia: ¿la CARA del
+  // cabo toca otra hebra sin incisión por medio? Eso se ve en la obra sin
+  // remates, que es la misma obra con todas sus hebras. Que el remate tampoco
+  // se suelde lo garantiza su halo —se pinta con los demás halos, así que
+  // cualquier hebra anterior queda cortada— y lo vigilan los detectores de
+  // huecos y de máscara, que sí miran el render de verdad: un remate que
+  // rellenara una incisión aparecería allí, que es justo como se cazó el de la
+  // esquina curva.
+  const gends = c.cfg.ends; c.cfg.ends = 'rectos';
+  const cN = lienzo(), xN = cN.getContext('2d');
+  T.renderComposition(xN, 0, 0, S, c, S, true, false);
+  c.cfg.ends = gends; c.cfg.dots = gdots;
+  const pxN = xN.getImageData(0,0,S,S).data;
   const esFondoS = (x,y) => { x=Math.round(x); y=Math.round(y);
     if (x<0||y<0||x>=S||y>=S) return true;
     const i=4*(y*S+x);
@@ -32,31 +53,156 @@ window.otros = (seed, pals, extra) => {
     if (x<0||y<0||x>=S||y>=S) return true;
     const i=4*(y*S+x);
     return Math.abs(px[i]-B[0])+Math.abs(px[i+1]-B[1])+Math.abs(px[i+2]-B[2]) < 40; };
+  const esFondoN = (x,y) => { x=Math.round(x); y=Math.round(y);
+    if (x<0||y<0||x>=S||y>=S) return true;
+    const i=4*(y*S+x);
+    return Math.abs(pxN[i]-B[0])+Math.abs(pxN[i+1]-B[1])+Math.abs(pxN[i+2]-B[2]) < 40; };
+
 
   // ── 1. REMATES SOLDADOS ────────────────────────────────────────────────
   // Cada punto del ancho del remate se mira hacia FUERA, en la dirección del
   // recorrido. Si a menos de gap+3 px hay tinta sin haber cruzado un solo
   // píxel de fondo, ese trozo de remate está pegado a otra hebra.
-  const ext = [{ p:m[0], d:T.PV.sub(m[0],m[1]).normalize() },
-               { p:m[m.length-1], d:T.PV.sub(m[m.length-1],m[m.length-2]).normalize() }];
+  // La anchura del sondeo es la REAL del cabo: con temblor la cinta puede ser
+  // ahí un 45% más fina y sondear a la nominal mide donde no hay borde.
+  const acumE = T.arcosDe(m), AN = r.anchoEn || (() => W);
+  // Las máscaras se rasterizan con la MISMA curva que el render: trazarTramo
+  // sigue la curva densa y renderComposition la deja en null al acabar, así que
+  // sin esto el detector dibuja el polígono y la máscara se aparta del cuerpo
+  // hasta un cuarto del tramo en cada codo.
+  T.setDensa(T.curvaDensa(m, acumE, Object.assign({}, c.cfg, { unidadAncho: W }),
+                          c.saltos || []));
+  // `lado` dice de qué lado del arco está SU sección: +1 la que empieza en el
+  // cabo, -1 la que acaba en él.
+  const ext = [{ p:m[0], d:T.PV.sub(m[0],m[1]).normalize(), a:acumE[0], lado:1 },
+               { p:m[m.length-1], d:T.PV.sub(m[m.length-1],m[m.length-2]).normalize(),
+                 a:acumE[m.length-1], lado:-1 }];
   // Cada salto son DOS remates mas: con dos cintas hay cuatro, con tres seis.
   for (const k of (c.saltos || [])) {
-    ext.push({ p:m[k],   d:T.PV.sub(m[k],m[k-1]).normalize() });
-    ext.push({ p:m[k+1], d:T.PV.sub(m[k+1],m[k+2]).normalize() });
+    ext.push({ p:m[k],   d:T.PV.sub(m[k],m[k-1]).normalize(),   a:acumE[k],   lado:-1 });
+    ext.push({ p:m[k+1], d:T.PV.sub(m[k+1],m[k+2]).normalize(), a:acumE[k+1], lado:1 });
   }
-  let pegado=0, tot=0;
+  // ¿ESTE CABO ESTÁ TAPADO POR UNA SECCIÓN POSTERIOR?
+  // Con varias cintas, un extremo puede acabar DEBAJO de otra hebra: la
+  // holgura de remates sólo está garantizada frente a las huellas de cruce, y
+  // ahí no hay cruce —el recorrido se acaba antes—. Ese cabo no se ve, así que
+  // no puede estar soldado a nada: el sondeo, en cambio, atraviesa la hebra que
+  // lo tapa y lo marcaba. Se cuenta aparte, con su nombre.
+  // Las secciones del plano vienen en PARÁMETRO (índice de vértice + fracción),
+  // no en arco: renderComposition las pasa con arcoDeParam y aquí hay que hacer
+  // lo mismo. Compararlas a pelo contra el arco no falla, encuentra -1 y calla.
+  const secs = c.plano.secciones.map(([a,b]) =>
+                 [T.arcoDeParam(m, acumE, a), T.arcoDeParam(m, acumE, b)]);
+  const ord = c.plano.orden;
+  const turno = {}; ord.forEach((s,k)=>{ turno[s]=k; });
+  const saltoAr = (c.saltos||[]).map(k=>[acumE[k],acumE[k+1]]);
+  const puntosDe = (a,b) => { const P=[T.puntoEnArco(m,acumE,a)];
+    for (let i=0;i<acumE.length;i++) if (acumE[i]>a && acumE[i]<b) P.push(m[i]);
+    P.push(T.puntoEnArco(m,acumE,b)); return P; };
+  // La sección de un cabo se busca POR EL LADO, no por contención: el arco del
+  // cabo es justo la frontera entre dos secciones —la suya y el tramo de salto,
+  // que no se pinta— y pedir que lo contenga devolvía -1 en cuanto el redondeo
+  // se pasaba un micrón. Un -1 no se nota: apaga la máscara y todo se lee como
+  // tinta ajena.
+  const seccionDe = (d, lado) => {
+    let best=-1, bd=Infinity;
+    for (let i=0;i<secs.length;i++) { const [a,b]=secs[i];
+      if (turno[i] === undefined) continue;
+      if (saltoAr.some(r=>a>=r[0]-1e-6 && b<=r[1]+1e-6)) continue;   // tramo de salto: no se pinta
+      const dist = lado > 0 ? Math.abs(a-d) : Math.abs(b-d);
+      if (dist < bd) { bd = dist; best = i; } }
+    return bd < W ? best : -1; };
+  // LA TINTA DE SU PROPIA SECCIÓN NO ES TINTA AJENA.
+  // Cuando el último tramo de la cinta es más corto que media anchura y llega
+  // en codo, el cuerpo del tramo ANTERIOR sobresale por delante del cabo: el
+  // extremo queda dentro de su propia esquina. Medido en una obra de tres
+  // cintas: último segmento de 8,7 px con anchura 35, y la sección se comía
+  // 10 px más allá del cabo. Eso no es una soldadura, es la esquina de uno
+  // mismo, y contarla marcaba 22 de 60 obras de tres cintas.
+  // La máscara se traza 3 px MÁS GORDA que la cinta: es otra rasterización del
+  // mismo trazo, así que su filo y el del render no coinciden píxel a píxel y
+  // el antialias del borde caía fuera de la máscara. El sondeo lo leía como
+  // tinta ajena en mitad de la propia (pXXXpppp). Tres píxeles no tapan una
+  // soldadura: si más allá sigue habiendo tinta, se marca igual.
+  const WF = r.anchoEn || W;
+  const WG = typeof WF === 'function' ? (d) => WF(d) + 3 : WF + 3;
+  const propiaDe = (p, d, lado) => {
+    const i = seccionDe(d, lado);
+    if (i < 0) return () => false;
+    const cO = lienzo(), xO = cO.getContext('2d');
+    xO.fillStyle='#000'; xO.fillRect(0,0,S,S);
+    T.trazarTramo(xO, m, acumE, secs[i][0], secs[i][1], WG, '#fff', c.cfg);
+    const R = Math.ceil(3*W)+8;
+    const x0 = Math.max(0, Math.round(p.x)-R), y0 = Math.max(0, Math.round(p.y)-R);
+    const w0 = Math.min(S-x0, 2*R), h0 = Math.min(S-y0, 2*R);
+    if (w0<=0 || h0<=0) return () => false;
+    const dd = xO.getImageData(x0,y0,w0,h0).data;
+    return (x,y) => { x=Math.round(x)-x0; y=Math.round(y)-y0;
+      if (x<0||y<0||x>=w0||y>=h0) return false;
+      return dd[4*(y*w0+x)] > 128; };
+  };
+  const tapado = (p, d, lado) => {
+    const i = seccionDe(d, lado); if (i < 0) return false;
+    for (let j=0;j<secs.length;j++) {
+      if (j===i || turno[j]===undefined || turno[j] <= turno[i]) continue;
+      if (saltoAr.some(r=>secs[j][0]>=r[0]-1e-6 && secs[j][1]<=r[1]+1e-6)) continue;
+      const P = puntosDe(secs[j][0], secs[j][1]);
+      for (let q=0;q<P.length-1;q++)
+        // Radio: media anchura MÁS el hueco. Un cabo dentro de la incisión de
+        // la hebra de arriba tampoco se ve, y ahí el sondeo arrancaba en fondo
+        // y se metía en la hebra que lo tapa.
+        if (T.pointSegDist(p, P[q], P[q+1]) < W*0.5 + gap + 1) return true;
+    }
+    return false; };
+
+  let pegado=0, tot=0, cubiertos=0; const rayos=[];
   for (const e of ext) {
+    if (tapado(e.p, e.a, e.lado)) { cubiertos++; continue; }
     if (!isFinite(e.d.x) || !isFinite(e.d.y) || (e.d.x===0&&e.d.y===0)) continue;
     const n = T.V(-e.d.y, e.d.x);
+    const wR = AN(e.a);
+    const propia = propiaDe(e.p, e.a, e.lado);
+    // Hasta dónde puede llegar el remate por delante del cabo: el disco redondo
+    // wR/2, y la punta del inglete como mucho sqrt((wR/2)² + (0.9·wR)²) ≈ 1,03
+    // wR. Más allá de eso, la tinta ya no es suya aunque el sondeo la vea.
+    const alcance = 1.5 * wR;
     for (let t=-0.48; t<=0.48; t+=0.02) {
-      const bx = e.p.x + n.x*W*t, by = e.p.y + n.y*W*t;
+      const bx = e.p.x + n.x*wR*t, by = e.p.y + n.y*wR*t;
       tot++;
-      let vioFondo=false, tocaTinta=false;
-      for (let s=1; s<=gap+3; s++) {
-        if (esFondoS(bx+e.d.x*s, by+e.d.y*s)) { vioFondo=true; break; }
-        if (s>=2) tocaTinta=true;
+      let vioFondo=false, tocaTinta=false, s=1;
+      // El filo del cuerpo se rasteriza IGUAL en las dos pasadas, así que su
+      // antialias sale con tinta en las dos y no entra en la resta. Ese píxel
+      // y medio no es tinta ajena: es el borde de la propia cinta, y contarlo
+      // como ajeno paraba el salto en s=1 y metía el sondeo dentro del propio
+      // remate (43 de 60 obras con inglete). Se le perdonan 2 px.
+      while (s <= 2 && !esFondoN(bx+e.d.x*s, by+e.d.y*s)) s++;
+      // Se salta mientras haya tinta PROPIA a menos de dos píxeles por delante:
+      // la máscara es otra rasterización y deja algún píxel suelto sin marcar
+      // en mitad del propio cuerpo (pppXpppp). Dos píxeles no tapan una
+      // soldadura, que sigue muchos más allá.
+      const propiaCerca = (q) => propia(bx+e.d.x*q, by+e.d.y*q) ||
+                                 propia(bx+e.d.x*(q+1), by+e.d.y*(q+1)) ||
+                                 propia(bx+e.d.x*(q+2), by+e.d.y*(q+2));
+      while (s <= alcance && propiaCerca(s)) s++;
+      const s0 = s;
+      for (; s < s0 + gap + 3; s++) {
+        if (esFondoN(bx+e.d.x*s, by+e.d.y*s)) { vioFondo=true; break; }
+        if (s>=s0+1) tocaTinta=true;
       }
-      if (!vioFondo && tocaTinta) pegado++;
+      if (!vioFondo && tocaTinta) {
+        pegado++;
+        // Con __dbg el detector no sólo cuenta: enseña el rayo. `.` fondo,
+        // `p` tinta de su propia sección, `X` tinta ajena. Sin esto, cada diagnóstico pedía reescribir el sondeo
+        // a mano en un script aparte, y el script se desincronizaba.
+        if (cfg.__dbg && rayos.length < 3) {
+          let L = '';
+          for (let q=0; q<=Math.min(60, s0+12); q++) {
+            const x=bx+e.d.x*q, y=by+e.d.y*q;
+            L += esFondoN(x,y) ? '.' : propia(x,y) ? 'p' : 'X';
+          }
+          rayos.push(`s0=${s0} wR=${wR.toFixed(1)} gap=${gap.toFixed(1)} ${L}`);
+        }
+      }
     }
   }
 
@@ -86,7 +232,8 @@ window.otros = (seed, pals, extra) => {
     const dd=xD.getImageData(0,0,S,S).data, rr=xR.getImageData(0,0,S,S).data;
     for (let i=0;i<dd.length;i+=4){ if (dd[i]<128) continue; area++; if (rr[i]>=128) solape++; }
   }
-  return { seed, pegado, tot, borde, solape, area, nDisc, enOjo,
+  T.setDensa(null);
+  return { seed, rayos, pegado, tot, cubiertos, borde, solape, area, nDisc, enOjo,
            tipo:c.tipo, cruces:c.cruces.length, secs:c.plano.secciones.length };
 };
 window.__ok = true;

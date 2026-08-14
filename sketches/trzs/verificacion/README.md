@@ -51,7 +51,7 @@ otra cosa.
 |---|---|---|
 | `hueco.js` | **huecos en la incisión**: tinta sólida donde tiene que haber fondo | `trzs_orden` (orden de pintado invertido) |
 | `m2.js` | la incisión por cobertura de máscara, medida por mitades | `trzs_orden`, `trzs_mitad` |
-| `o2.js` | remates soldados, tinta en el borde, discos que invaden la cinta | `trzs_margen`, `trzs_ojo`, `trzs_remate` |
+| `o2.js` | remates soldados, tinta en el borde, discos que invaden la cinta | `trzs_cara`, `trzs_margen`, `trzs_ojo`, `trzs_remate` |
 | `cos.js` | **costuras**: raya de 1 px dentro de la tinta | `trzs_costura` (el cuerpo vuelve a acabar a ras del halo) |
 | `det.js` | determinismo en cuatro condiciones | — |
 | `solape.js` | holgura geométrica entre hebras sin cruce | — |
@@ -61,11 +61,14 @@ otra cosa.
 hebra de arriba y, en cada punto donde debajo hay cuerpo de la otra, exige fondo.
 Cuenta píxeles de **tinta sólida** seguidos. Un hueco es un hueco.
 
-## Las siete trampas
+## Las once trampas
 
-Todas ellas dieron defectos **que no existían**, y las siete salieron por mirar la
+Todas ellas dieron defectos **que no existían**, y todas salieron por mirar la
 imagen en vez de creerse el número. Ninguna ocultó nada: el sesgo del detector
-mal hecho es inventar, no callar.
+mal hecho es inventar, no callar. Las cuatro últimas son de un detector que se
+quedó viejo: el sondeo de remates se escribió cuando la cinta acababa a
+escuadra, y cuando el remate pasó a tener forma dejó de medir lo que decía
+medir — sin avisar, porque un detector que se equivoca sigue dando un número.
 
 1. **Arco por parámetro.** `dir(s)` espera un parámetro de recorrido (índice de
    segmento + t), no una longitud de arco. Pasándole el arco, la normal sale a
@@ -92,7 +95,28 @@ mal hecho es inventar, no callar.
    cinta. Queda como falso positivo conocido: 3,5 px en 1 cruce de 2.597,
    inspeccionado a 11 aumentos y sin nada visible.
 
-Y una octava que no era del detector sino del que lo llamaba: `m2.js` espera la
+8. **La tinta propia leída como ajena.** El sondeo de remates busca tinta más
+   allá del cabo, y desde que el remate va en inglete o redondo la primera tinta
+   que hay ahí es la SUYA: 122 de 200 obras marcadas. Y no sólo el remate — con
+   el último tramo más corto que media anchura y en codo, el cuerpo del tramo
+   anterior sobresale por delante del cabo: el extremo queda dentro de su propia
+   esquina. El detector rasteriza aparte la sección del cabo y la reconoce.
+9. **La sección buscada en el espacio equivocado.** `plano.secciones` viene en
+   PARÁMETRO (índice de vértice + fracción); `renderComposition` lo pasa a arco
+   con `arcoDeParam`. Comparar el arco del cabo contra el parámetro no falla:
+   devuelve −1 y apaga la máscara en silencio, con lo que todo vuelve a leerse
+   como tinta ajena. Y buscarla por contención tampoco vale: el cabo es la
+   FRONTERA entre dos secciones. Se busca por el lado que le toca.
+10. **El filo entre dos rasterizaciones.** La máscara de la sección es otro
+   trazado del mismo camino, así que su borde y el del render no coinciden
+   píxel a píxel y el antialias caía fuera. La máscara va dilatada 3 px y se
+   toleran dos píxeles sueltos por delante.
+11. **El cabo enterrado.** Con varias cintas, un extremo puede acabar DEBAJO de
+   otra hebra: la holgura de remates sólo está garantizada frente a las huellas
+   de cruce, y ahí no hay cruce porque el recorrido se acaba antes. Ese cabo no
+   se ve, así que no puede estar soldado. Se cuenta aparte, con su nombre.
+
+Y una que no era del detector sino del que lo llamaba: `m2.js` espera la
 configuración en el **cuarto** argumento. Pasarle ahí el umbral hace que las ocho
 configuraciones corran como la de por defecto — y los números salen sospechosamente
 idénticos, que es la única pista.

@@ -70,7 +70,7 @@ window.medir = (seed, pals, extra, capa) => {
 
   // La máscara sale de la MISMA curva que el render, o todo saldría marcado
   // por una diferencia que no existe en la obra.
-  T.setDensa(T.curvaDensa(m, acum, c.cfg));
+  T.setDensa(T.curvaDensa(m, acum, c.cfg, c.saltos || []));
 
   const cE = lienzo(), xE = cE.getContext('2d');
   const res = [];

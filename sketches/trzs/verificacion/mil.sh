@@ -18,7 +18,7 @@ cd "$(dirname "$0")"
 BLOQUE="${1:-todo}"
 
 python3 mktest.py "" trzs_test.js >/dev/null || exit 1
-for r in orden mitad margen ojo remate costura; do
+for r in orden mitad margen ojo remate costura cara sueloigual; do
   python3 mktest.py $r trzs_$r.js >/dev/null || exit 1
 done
 
@@ -69,10 +69,19 @@ fi
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = remates ]; then
 echo
 echo "##### 4. REMATES, MARGEN Y DISCOS (200 x 5 = 1.000)"
-for c in '{}' '{"tipo":"trama"}' '{"tipo":"dos"}' '{"tipo":"tres"}' '{"tipo":"tres","aspecto":1.5}'; do
+# Aqui tambien se excluyen las fantasma: su halo NO es el color del suelo (es un
+# tono corrido, para separar del suelo una cinta del color del suelo), asi que
+# el sondeo no ve fondo por ningun lado y marca los cuatro cabos de la obra.
+for c in '{"fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}' '{"tipo":"tres","fantasma":"no"}' '{"tipo":"tres","aspecto":1.5,"fantasma":"no"}'; do
   node o2.js trzs_test.js 200 "$c" 2>&1 | sed -n '1,5p'; done
 echo "-- CONTROLES (deben disparar)"
-for r in margen ojo remate; do echo "  [$r]"; node o2.js trzs_$r.js 60 '{"fantasma":"no"}' 2>&1 | sed -n '2,4p'; done
+# `cara` es el control del sondeo de remates: quita la incision de la cara del
+# cabo y abre la holgura. `remate` (solo holgura) ya no dispara desde que la
+# cara lleva su corte, y se queda como comprobacion de que asi es.
+for r in cara margen ojo remate; do echo "  [$r]"
+  node o2.js trzs_$r.js 60 '{"fantasma":"no"}' 2>&1 | sed -n '2,4p'
+  [ $r = cara ] && node o2.js trzs_cara.js 60 '{"tipo":"dos","fantasma":"no"}' 2>&1 | sed -n '2p'
+done
 fi
 
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = resto ]; then

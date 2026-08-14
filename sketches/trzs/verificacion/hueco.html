@@ -78,7 +78,9 @@ window.huecos = (seed, pals, extra) => {
              finC: Math.min(total, !bF ? b+(bJ?pizca:caboEn(b)) : b) }; };
   const cual = d => { for (let i=0;i<secs.length;i++) if (d>=secs[i][0]-1e-6 && d<=secs[i][1]+1e-6) return i; return -1; };
 
-  const densa = T.curvaDensa(m, acum, c.cfg);
+  // Con los saltos: sin ellos la curva del detector redondea vértices que el
+  // render deja vivos, y las sondas se van del cuerpo.
+  const densa = T.curvaDensa(m, acum, c.cfg, c.saltos || []);
   T.setDensa(densa);
   // CON ESQUINAS CURVAS, EL DIBUJO NO VA POR EL POLIGONO.
   // trazarTramo usa la curva densa, pero puntoEnArco camina el poligono, y la

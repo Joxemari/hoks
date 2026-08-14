@@ -70,6 +70,26 @@ elif roto == 'costura':
     a = "    const sobra = max(E.unit(S, ALTO, REF), 1);"
     assert a in src
     src = src.replace(a, "    const sobra = 0;   // ROTO A PROPOSITO")
+elif roto == 'cara':
+    # Quita la incisión de la CARA del cabo: el halo del cuerpo se traza a
+    # hueso, así que sin ese disco el final de la cinta es el único filo de la
+    # obra sin corte y se suelda a lo que tenga delante. Es el control del
+    # bloque de remates: con la incisión puesta, el control de `remate`
+    # (holgura 0) ya casi no dispara —el disco corta igual— y un cero sin
+    # control no significa nada.
+    m3 = re.search(r'^( *)ctx\.beginPath\(\); ctx\.arc\(p\.x, p\.y, wR / 2 \+ gap, 0, TWO_PI\); ctx\.fill\(\);$',
+                   src, re.M)
+    assert m3, 'no encuentro el disco de la incision del cabo'
+    src = src.replace(m3.group(0), m3.group(1) + '/* ROTO A PROPOSITO: sin incision en la cara del cabo */')
+    # Y ademas se abre la holgura, como en `remate`: con la holgura normal los
+    # cabos casi nunca caen contra otra hebra, asi que quitar el disco solo no
+    # dispara. Roto = el cabo puede caer donde sea Y sin corte en la cara.
+    for a, b in [("    remateMin:    1.0,         // holgura",
+                  "    remateMin:    0,         // ROTO A PROPOSITO // holgura"),
+                 ("    reintentos:   5,",
+                  "    reintentos:   0,           // ROTO A PROPOSITO")]:
+        assert a in src
+        src = src.replace(a, b)
 elif roto == 'remate':
     # Abrir la puerta no basta: la selección puede seguir prefiriendo un tejido
     # con los remates holgados. Se abre la puerta Y se quitan los alternativos,
