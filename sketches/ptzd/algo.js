@@ -84,7 +84,8 @@
   // (el riesgo «puzzle» del README, y lo primero que salió al mirar el grid).
   const AVANCE_MIN  = 0.20, AVANCE_MAX  = 0.44;   // tramo en el rumbo / lado del bloque
   const ESCALON_MIN = 0.045, ESCALON_MAX = 0.16;  // tramo al costado / lado del bloque
-  const TRAMOS_CORTE = [4, 9], TRAMOS_SAJA = [3, 5];
+  const TRAMOS_CORTE = [5, 11], TRAMOS_SAJA = [3, 5];
+  const P_DOBLE_ESCALON = 0.24;  // dos escalones seguidos: la placa deja de ser una caja
   const P_ESCALON_BIES = 0.16;   // el escalón sale al bies (±45°) en vez de a escuadra
   const P_RUMBO_GIRA   = 0.16;   // el rumbo entero se ladea ±45° a mitad de camino
 
@@ -105,6 +106,24 @@
   const PASO_CANTO = 0.030, CANTO_PULSO = 1.60;  // el canto ondula más que el corte: se talló a pulso
   const ARRANQUE   = 0.075;                      // el pulso nace en cero sobre el borde
   const MORFA_MAX  = 0.055;                      // desvío de las esquinas / lado del bloque
+
+  // EL BLOQUE SIGUE EN PARTE AL PLIEGO. Midiéndolo sólo contra el lado corto, en
+  // apaisado sale el mismo bloque con más aire a los lados: el papel cambia y la
+  // masa no se entera. Siguiéndolo del todo sería la misma imagen estirada, que
+  // es justo lo que esta casa no hace. Así que se sigue A MEDIAS —el ancho crece
+  // una fracción de lo que crece el pliego— y como los cortes se siguen midiendo
+  // contra el lado del bloque, en el ancho de más CABEN MÁS: la obra se recompone
+  // en vez de deformarse, que es la regla de los formatos.
+  const SEGUIR_MIN = 0.45, SEGUIR_MAX = 0.85;
+  const AFILA      = 0.72;                       // dónde empieza a cerrarse la cuña de la sajadura
+
+  // UNA ROTURA NO PARTE POR LA MITAD. Un corte que deja dos mitades iguales es
+  // una división, no una fractura, y repetido da el suelo de baldosas. Se sortea
+  // un reparto DESEADO —bien lejos del 1:1— y de varios cortes candidatos se
+  // queda el que más se le acerca. De ahí la jerarquía de placas: una grande,
+  // una mediana y un par pequeñas, que es lo que hace que haya dónde mirar.
+  const REPARTO_MIN = 0.10, REPARTO_MAX = 0.42;
+  const CANDIDATOS  = 4;
 
   const PIEZA_MIN  = 0.032;                     // área mínima de pieza / área del bloque
   const DERIVA_MIN = 0.15, DERIVA_MAX = 0.50;   // paso de deriva, en anchuras de gubia
@@ -174,15 +193,30 @@
   /* El bloque. Tiende al cuadrado o al rectángulo y no lo es: las cuatro
    * esquinas se desvían —el taco no está escuadrado— y los cantos ondulan con el
    * pulso. La onda es periódica sobre el perímetro, así que cierra sin costura. */
-  function bloquePoly(rng, bx, by, bw, bh, pulso, morfa, S) {
-    const c = [[bx, by], [bx + bw, by], [bx + bw, by + bh], [bx, by + bh]]
+  function bloquePoly(rng, bx, by, bw, bh, pulso, morfa, S, escalones) {
+    let c = [[bx, by], [bx + bw, by], [bx + bw, by + bh], [bx, by + bh]]
       .map(p => add(p, [rng.range(-morfa, morfa) * bw, rng.range(-morfa, morfa) * bh]));
+
+    /* EL BLOQUE NO NACE RECTANGULAR. Con la silueta encomendada sólo a «la que
+     * falta», las obras de pocos cortes se quedaban en un rectángulo con una
+     * muesca: el envoltorio cuadrado seguía mandando y la masa no tenía forma
+     * propia. Así que al taco se le quita un escalón de una o dos esquinas antes
+     * de empezar — la referencia tampoco cabe en un rectángulo, y no por lo que
+     * le pasó al partirse sino por cómo estaba cortado el taco. */
+    for (let e = 0; e < escalones; e++) {
+      const i = rng.int(0, c.length - 1);
+      const P = c[(i - 1 + c.length) % c.length], C = c[i], N = c[(i + 1) % c.length];
+      const a = lerp2(C, P, rng.range(0.20, 0.46)), b = lerp2(C, N, rng.range(0.20, 0.46));
+      c = c.slice(0, i).concat([a, add(a, sub(b, C)), b], c.slice(i + 1));
+    }
+
     const wx = onda(rng, 12), wy = onda(rng, 12);
-    const per = c.reduce((s, p, i) => s + len(sub(c[(i + 1) % 4], p)), 0) || 1;
+    const m = c.length;
+    const per = c.reduce((s, p, i) => s + len(sub(c[(i + 1) % m], p)), 0) || 1;
     const out = [];
     let pos = 0;
-    for (let i = 0; i < 4; i++) {
-      const a = c[i], b = c[(i + 1) % 4], L = len(sub(b, a));
+    for (let i = 0; i < m; i++) {
+      const a = c[i], b = c[(i + 1) % m], L = len(sub(b, a));
       const pasos = Math.max(2, Math.round(L / (PASO_CANTO * S)));
       for (let k = 0; k < pasos; k++) {
         const t = k / pasos, p = lerp2(a, b, t), s = (pos + L * t) / per;
@@ -305,8 +339,10 @@
     let cur = p0, espina = p0, arco = 0;
     const runs = rng.int(tramos[0], tramos[1]);
     let lado = rng.bool(0.5) ? 2 : 6;
+    let tocaAvance = true;
     for (let r = 0; r < runs; r++) {
-      const avance = (r % 2 === 0);
+      const avance = tocaAvance;
+      tocaAvance = avance ? false : !rng.bool(P_DOBLE_ESCALON);
       let d, L;
       if (avance) {
         d = rumbo;
@@ -377,6 +413,48 @@
     }
     return Math.abs(area(out)) < Math.abs(area(poly)) * 0.35 ? poly : out;
   }
+
+  /* La sajadura no es una línea: es un hueco con forma. Trazarla como un trazo
+   * con remate redondo la convierte en un palito con bola — una marca DIBUJADA
+   * encima de la masa, que es justo lo que esta familia no hace: aquí el blanco
+   * nunca se dibuja, se quita.
+   *
+   * Una gubia que entra por el canto muerde a plena anchura y, al levantarla,
+   * el hueco se cierra en cuña. Así que la sajadura se construye como POLÍGONO:
+   * anchura de gubia durante los primeros dos tercios —la regla 3 no se negocia,
+   * el corte mide lo que mide la herramienta— y sólo el último tercio se afila
+   * hasta morir. Lo que se estrecha no es el corte: es el gesto de sacarla.
+   */
+  function cuna(pts, w, desde) {
+    const n = pts.length;
+    if (n < 2) return null;
+    const L = []; let tot = 0;
+    for (let i = 0; i < n; i++) { L.push(tot); if (i < n - 1) tot += len(sub(pts[i + 1], pts[i])); }
+    if (!(tot > 0)) return null;
+    const izq = [], der = [];
+    for (let i = 0; i < n; i++) {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+      const d = norm(sub(b, a)), nr = [-d[1], d[0]];
+      const t = L[i] / tot;
+      const k = t <= desde ? 1 : Math.max(0.18, 1 - (t - desde) / (1 - desde));
+      izq.push(add(pts[i], mul(nr,  w * k / 2)));
+      der.push(add(pts[i], mul(nr, -w * k / 2)));
+    }
+    return izq.concat(der.reverse());
+  }
+
+  /* El área no basta para aceptar una placa. Una tira larga y estrecha tiene
+   * área de sobra y se lee como un pelo, y tres seguidas son un flequillo — un
+   * bloque roto no produce eso. Se mide la ESBELTEZ por el cociente
+   * isoperimétrico (4πA/P²: 0,79 en un cuadrado, 0,14 en un rectángulo 1:20) y
+   * se rechaza la partición que deja una tira. */
+  function esbelta(poly, min) {
+    let per = 0;
+    for (let i = 0, m = poly.length; i < m; i++) per += len(sub(poly[(i + 1) % m], poly[i]));
+    if (!(per > 0)) return false;
+    return 4 * Math.PI * Math.abs(area(poly)) / (per * per) >= min;
+  }
+  const ESBELTEZ_MIN = 0.16;
 
   // ¿Cuánto del perímetro de una pieza es canto del bloque? Lo usa «la que
   // falta»: sólo se puede perder una placa que esté por fuera.
@@ -487,13 +565,19 @@
     // Tiende al cuadrado o al rectángulo, y no se queda en ninguno: la proporción
     // se abre de 0,82 a 1,18 y encima las esquinas se desvían. Un taco de madera
     // no está escuadrado, y un polígono exacto delata al vector.
-    const bw = S * rng.range(0.82, 1.18), bh = S * rng.range(0.82, 1.18);
+    const seguir = params.seguir != null ? params.seguir : rng.range(SEGUIR_MIN, SEGUIR_MAX);
+    const largo = Math.max(FW, FH) / Math.min(FW, FH);   // proporción NOMINAL del pliego
+    const estira = 1 + (largo - 1) * seguir;
+    let bw = S * rng.range(0.82, 1.18), bh = S * rng.range(0.82, 1.18);
+    if (FW >= FH) bw *= estira; else bh *= estira;
     const pulso = rng.range(PULSO_MIN, PULSO_MAX) * S;
     const morfa = rng.range(0.012, MORFA_MAX);
     const holg = pulso * CANTO_PULSO + morfa * Math.max(bw, bh) + 0.012;
     const bx = Math.min(FW - bw - holg, Math.max(holg, (FW - bw) / 2 + rng.range(-0.045, 0.045) * FW));
     const by = Math.min(FH - bh - holg, Math.max(holg, (FH - bh) / 2 + rng.range(-0.035, 0.020) * FH));
-    const bloque = bloquePoly(rng, bx, by, bw, bh, pulso, morfa, S);
+    const escalones = params.escalones != null ? params.escalones
+                    : rng.weighted([{ prob: 0.22, v: 0 }, { prob: 0.53, v: 1 }, { prob: 0.25, v: 2 }]).v;
+    const bloque = bloquePoly(rng, bx, by, bw, bh, pulso, morfa, S, escalones);
     const areaBloque = Math.abs(area(bloque));
 
     // El foco de la cadencia (regla 8): hacia dónde se agolpan los cortes.
@@ -513,7 +597,7 @@
     const reservaTras = rng.int(1, 3);
     let reservaPuesta = false;
     let intentos = 0;
-    while (cortes.length < nCortes && intentos < nCortes * 18) {
+    while (cortes.length < nCortes && intentos < nCortes * 30) {
       intentos++;
 
       // LA RESERVA. Sin ella el reparto por área iguala los tamaños y la obra se
@@ -539,16 +623,30 @@
       const pc = piezas[idx];
       if (pc.reserva) continue;
 
-      // Mientras haya canto se entra por el canto; después, por un corte
-      // anterior: eso es una rama, y es lo que hace que el blanco sea un árbol.
-      const ent = entrada(rng, pc, foco, cortes.length < 2 || rng.bool(0.45));
-      const cut = walk(rng, pc, ent.e, ent.t, S, TRAMOS_CORTE, ladeo, 1, pulso);
-      if (!cut.suelta) continue;
+      // De varios cortes candidatos se queda el que más se acerca al reparto
+      // deseado. No es afinar por afinar: un corte que deja dos mitades iguales
+      // es una división, y repetido devuelve el suelo de baldosas que la reserva
+      // ya vino a arreglar. Una rotura ARRANCA una placa.
+      const quiere = rng.range(REPARTO_MIN, REPARTO_MAX);
+      let mejor = null;
+      for (let c = 0; c < CANDIDATOS; c++) {
+        // Mientras haya canto se entra por el canto; después, por un corte
+        // anterior: eso es una rama, y es lo que hace que el blanco sea un árbol.
+        const ent = entrada(rng, pc, foco, cortes.length < 2 || rng.bool(0.45));
+        const cand = walk(rng, pc, ent.e, ent.t, S, TRAMOS_CORTE, ladeo, 1, pulso);
+        if (!cand.suelta) continue;
+        const par = split(pc.poly, pc.kind, cand);
+        const a0 = Math.abs(area(par[0].poly)), a1 = Math.abs(area(par[1].poly));
+        if (par[0].poly.length < 3 || par[1].poly.length < 3) continue;
+        if (Math.min(a0, a1) < PIEZA_MIN * areaBloque) continue;
+        if (!esbelta(par[0].poly, ESBELTEZ_MIN) || !esbelta(par[1].poly, ESBELTEZ_MIN)) continue;
+        const falla = Math.abs(Math.min(a0, a1) / Math.max(a0, a1) - quiere);
+        if (!mejor || falla < mejor.falla) mejor = { cut: cand, par, a0, a1, falla };
+      }
+      if (!mejor) continue;
 
-      const [A, B] = split(pc.poly, pc.kind, cut);
-      const aA = Math.abs(area(A.poly)), aB = Math.abs(area(B.poly));
-      if (A.poly.length < 3 || B.poly.length < 3) continue;
-      if (Math.min(aA, aB) < PIEZA_MIN * areaBloque) continue;
+      const cut = mejor.cut, [A, B] = mejor.par;
+      const aA = mejor.a0, aB = mejor.a1;
 
       // Reglas 6 y 7: la pieza pequeña es la que se soltó. La madre se queda —es
       // la costura— y la hija se aparta, arrastrando a las suyas. Si se quitara
@@ -575,16 +673,32 @@
      * no de aquí. Y la reserva nunca se va: es contra ella contra lo que se lee
      * todo lo demás. */
     const nFalta = params.faltan != null ? params.faltan
-                 : (piezas.length >= 4 ? rng.weighted([{ prob: 0.42, v: 0 }, { prob: 0.40, v: 1 }, { prob: 0.18, v: 2 }]).v : 0);
+                 : (piezas.length >= 3 ? rng.weighted([{ prob: 0.26, v: 0 }, { prob: 0.42, v: 1 }, { prob: 0.32, v: 2 }]).v : 0);
+
+    // Las cuatro esquinas del bloque de partida. Perder una placa de ENMEDIO de
+    // un costado deja el envoltorio cuadrado intacto —sigue leyéndose el
+    // rectángulo, sólo que mordido—; perder la de una esquina lo desmonta. Es la
+    // diferencia entre un cuadrado con una muesca y una masa con forma propia, y
+    // es lo que hace que la silueta deje de ser un polígono proporcional.
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const p of bloque) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); }
+    const esquinas = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+    const aEsquina = poly => {
+      let d = Infinity;
+      for (const e of esquinas) for (const v of poly) d = Math.min(d, len(sub(v, e)));
+      return d;
+    };
+
     let faltan = 0;
     for (let f = 0; f < nFalta; f++) {
       const cand = piezas
-        .map((p, i) => ({ i, o: orilla(p.poly, p.kind), a: Math.abs(area(p.poly)), p }))
-        .filter(c => !c.p.reserva && c.o > 0.30 && c.a < areaBloque * 0.30);
+        .map((p, i) => ({ i, o: orilla(p.poly, p.kind), a: Math.abs(area(p.poly)), e: aEsquina(p.poly), p }))
+        .filter(c => !c.p.reserva && c.o > 0.28 && c.a < areaBloque * 0.34);
       if (!cand.length || piezas.length <= 2) break;
-      // Se pierde antes una placa de fuera y pequeña, que es lo que se cae de un
-      // bloque roto; la grande de en medio no se cae sola.
-      let tot = 0; const w = cand.map(c => { const v = c.o / (0.04 + c.a / areaBloque); tot += v; return v; });
+      // Pesa por estar fuera, por ser pequeña —la grande de en medio no se cae
+      // sola— y sobre todo por tocar una esquina.
+      let tot = 0;
+      const w = cand.map(c => { const v = c.o / (0.05 + c.a / areaBloque) / (0.04 + c.e); tot += v; return v; });
       let x = rng.next() * tot, j = 0;
       while (j < cand.length - 1 && x > w[j]) { x -= w[j]; j++; }
       piezas.splice(cand[j].i, 1);
@@ -618,6 +732,21 @@
         aire = Math.min(aire, len(sub(fin, lerp2(a, b, t))));
       }
       if (aire < gubia.w * S * 1.6) continue;
+
+      // DOS SAJADURAS NO SE CRUZAN. Cruzándose forman un aspa o una cruz, y una
+      // cruz es un SIGNO: deja de ser un hueco en la masa y pasa a ser algo
+      // escrito encima. Es lo único de esta familia que puede leerse como
+      // símbolo, y por eso es lo único que se prohíbe a mano.
+      let choca = false;
+      for (const s of sajaduras) {
+        if (s.drift !== pc.drift) continue;
+        for (let i = 0; i < cut.pts.length - 1 && !choca; i++)
+          for (let j = 0; j < s.pts.length - 1 && !choca; j++)
+            if (cross(cut.pts[i], cut.pts[i + 1], s.pts[j], s.pts[j + 1])) choca = true;
+        if (choca) break;
+      }
+      if (choca) continue;
+
       sajaduras.push({ pts: cut.pts, drift: pc.drift });
     }
 
@@ -645,18 +774,20 @@
     }
 
     // Las sajaduras se pintan encima: son el único blanco que no es una frontera.
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = col.ground;
+    // Y van como POLÍGONO en cuña, no como trazo: un remate redondo las convierte
+    // en un palito con bola, y esta familia no dibuja el blanco — lo quita.
+    ctx.fillStyle = col.ground;
     for (const s of sajaduras) {
+      const poly = cuna(s.pts, gubia.w * S, AFILA);
+      if (!poly) continue;
       ctx.beginPath();
-      s.pts.forEach((p, i) => {
+      poly.forEach((p, i) => {
         const q = toPx(add(p, s.drift));
         if (i === 0) ctx.moveTo(q[0], q[1]); else ctx.lineTo(q[0], q[1]);
       });
-      ctx.stroke();
+      ctx.closePath();
+      ctx.fill();
     }
-    ctx.lineCap = 'butt';
 
     E.grain(ctx, W, H, [col.ink, col.ground], grainScale, u);
 
@@ -665,7 +796,7 @@
     return {
       pal, tipo: tipo.key, gubia: gubia.key, col,
       piezas: piezas.length, sajaduras: sajaduras.length, cortes: cortes.length,
-      faltan, pulso: +(pulso / S).toFixed(4), morfa: +morfa.toFixed(3),
+      faltan, escalones, seguir: +seguir.toFixed(2), pulso: +(pulso / S).toFixed(4), morfa: +morfa.toFixed(3),
       pedidos: nCortes,
       hondura: piezas.reduce((m, p) => Math.max(m, p.hondura), 0),
       mancha, crudo: !!col.crudo,
@@ -681,8 +812,10 @@
    *
    * Las frecuencias de abajo salen de esa misma medición, no de la intuición, y
    * hay que volver a medirlas cada vez que se toque la gramática. */
-  const F_PIEZAS = { 2: 0.12, 3: 0.12, 4: 0.19, 5: 0.16, 6: 0.14, 7: 0.12, 8: 0.07, 9: 0.06, 10: 0.02 };
-  const F_SAJA   = { 0: 0.36, 1: 0.42, 2: 0.22 };
+  const F_PIEZAS = { 2: 0.14, 3: 0.19, 4: 0.19, 5: 0.14, 6: 0.10, 7: 0.09, 8: 0.07, 9: 0.05, 10: 0.02, 11: 0.01 };
+  const F_SAJA   = { 0: 0.34, 1: 0.43, 2: 0.23 };
+  const F_FALTA  = { 0: 0.34, 1: 0.40, 2: 0.26 };
+  const F_ESCAL  = { 0: 0.22, 1: 0.53, 2: 0.25 };
 
   function rar(p) { return p > 0.06 ? 'common' : p > 0.018 ? 'uncommon' : p > 0.005 ? 'rare' : p > 0.0012 ? 'superrare' : 'legendary'; }
 
@@ -691,8 +824,12 @@
   // obras en el mismo cajón. Lo que se compara es contra la obra MÁS PROBABLE de
   // la familia — cuánto se aparta ésta de la que más sale. Así la escala es
   // legible (1 = la más corriente posible) y no depende de cuántos rasgos haya.
-  const P_MAX = { tipo: 0.38, gubia: 0.50, pz: 0.19, sj: 0.42, papel: 0.68, pal: 0.12 };
-  function rarComb(r) { return r > 0.30 ? 'common' : r > 0.10 ? 'uncommon' : r > 0.030 ? 'rare' : r > 0.008 ? 'superrare' : 'legendary'; }
+  const P_MAX = { tipo: 0.38, gubia: 0.50, pz: 0.19, sj: 0.43, papel: 0.68, pal: 0.12, fl: 0.40, es: 0.53 };
+  // Los cortes NO salen de la intuición: se midió la distribución real de `r`
+  // sobre 500 tiradas y se pusieron en los percentiles que la casa reparte
+  // (≈40/35/15/7/3). La paleta va aparte en el producto y sólo empuja hacia más
+  // raro, así que el reparto medido queda algo por debajo de esos números.
+  function rarComb(r) { return r > 0.165 ? 'common' : r > 0.071 ? 'uncommon' : r > 0.036 ? 'rare' : r > 0.018 ? 'superrare' : 'legendary'; }
 
   function traits(res) {
     const pTipo  = (TIPOS.find(t => t.key === res.tipo)  || { p: 0.25 }).p;
@@ -701,6 +838,8 @@
     const pSj    = F_SAJA[res.sajaduras] || 0.02;
     const pPapel = res.crudo ? 0.32 : 0.68;
     const pPal   = res.pal.prob || 0.05;
+    const pFl    = F_FALTA[res.faltan] || 0.02;
+    const pEs    = F_ESCAL[res.escalones] || 0.02;
 
     const list = [
       { key: 'Palette',  val: res.pal.name, colors: res.pal.colors, rarity: E.palRarity(pPal) },
@@ -708,13 +847,16 @@
       { key: 'Gubia',    val: res.gubia, rarity: rar(pGubia) },
       { key: 'Piezas',   val: String(res.piezas), rarity: rar(pPz) },
       { key: 'Sajadura', val: res.sajaduras ? String(res.sajaduras) : '—', rarity: rar(pSj) },
+      { key: 'Faltan',   val: res.faltan ? String(res.faltan) : '—', rarity: rar(pFl) },
+      { key: 'Escalones', val: String(res.escalones), rarity: rar(pEs) },
       { key: 'Hondura',  val: String(res.hondura), rarity: 'common' },
       { key: 'Mancha',   val: (res.mancha * 100).toFixed(1) + '%', rarity: 'common' },
       { key: 'Papel',    val: res.crudo ? 'crudo' : 'blanco', rarity: rar(pPapel) },
     ];
     const r = Math.min(1, pTipo / P_MAX.tipo) * Math.min(1, pGubia / P_MAX.gubia) *
               Math.min(1, pPz / P_MAX.pz) * Math.min(1, pSj / P_MAX.sj) *
-              Math.min(1, pPapel / P_MAX.papel) * Math.min(1, pPal / P_MAX.pal);
+              Math.min(1, pPapel / P_MAX.papel) * Math.min(1, pPal / P_MAX.pal) *
+              Math.min(1, pFl / P_MAX.fl) * Math.min(1, pEs / P_MAX.es);
     return { list, overall: rarComb(r) };
   }
 

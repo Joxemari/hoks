@@ -6,10 +6,10 @@ el grid de obras y decidir si merece página, como lo fueron `dtkrt/`, `eclps/` 
 `evol/`. El nombre es provisional.
 
 Se escribió **la gramática antes que el código** —el paso que a las tres
-anteriores les faltó por escrito— y después el grid corrigió la gramática: dos
-reglas nuevas y cuatro defectos con nombre, todo ello abajo, en «Lo que el grid
-cambió». Los números de la tabla de tipos son **objetivos**; los de «Medido» son
-medidas.
+anteriores les faltó por escrito— y después el grid corrigió la gramática, en dos
+revisiones: dos reglas nuevas y ocho defectos con nombre, todo ello abajo, en «Lo
+que el grid cambió». Los números de la tabla de tipos son **objetivos**; los de
+«Medido» son medidas.
 
 ---
 
@@ -85,7 +85,7 @@ Y una cosa que **no** hace, y que es la trampa entera de esta familia: las pieza
 no están giradas ni esparcidas. Siguen en su sitio. Lo que se ve es un bloque
 abierto, no una explosión detenida.
 
-## La gramática, en ocho reglas
+## La gramática, en diez reglas
 
 1. **UN BLOQUE, UNA TINTA.** El punto de partida es una masa, no una composición.
    Un color para lo que es materia y otro para el suelo. No hay un color por
@@ -425,6 +425,47 @@ arbitrario tiene detrás una versión que se veía peor, y está anotado ahí:
   respira sin dejar de ser un corte. Y el canto ondula **más** que el corte
   (×1,6): el filo del taco se hizo a pulso y el de dentro con la gubia apoyada.
 
+### Segunda revisión, con ojo de crítico
+
+El diagnóstico: en las piezas que fallaban, **el negro era un campo y el blanco un
+dibujo encima**. En la referencia el negro es un **cuerpo con peso** y el blanco es
+lo que su rotura deja ver. Cuatro cosas producían esa diferencia:
+
+- **El palito con bola.** La sajadura se trazaba como línea con remate redondo, y
+  un remate redondo la convierte en una **marca dibujada** sobre la masa — que es
+  exactamente lo que esta familia no hace. Ahora es un **polígono en cuña**: la
+  gubia muerde a plena anchura al entrar por el canto y sólo el último tercio se
+  cierra al levantarla. Lo que se estrecha no es el corte —la regla 3 no se
+  negocia— sino el gesto de sacar la herramienta.
+- **La rotura partía por la mitad.** Un corte que deja dos mitades iguales es una
+  **división**, no una fractura, y repetido devuelve el suelo de baldosas que la
+  reserva ya vino a arreglar. Ahora se sortea un reparto deseado bien lejos del
+  1:1 y de cuatro cortes candidatos gana el que más se le acerca. De ahí la
+  jerarquía —una placa grande, una mediana y un par pequeñas— que es lo que hace
+  que haya dónde mirar.
+- **El envoltorio cuadrado.** Con la silueta encomendada sólo a «la que falta»,
+  las obras de pocos cortes se quedaban en un rectángulo con una muesca: el
+  cuadrado seguía mandando. Dos arreglos. Uno, **al taco se le quita un escalón**
+  de una o dos esquinas antes de empezar — la referencia tampoco cabe en un
+  rectángulo, y no por lo que le pasó al partirse sino por cómo estaba cortado el
+  taco. Y dos, «la que falta» pasa a preferir las placas de **esquina**: perder
+  una de enmedio de un costado deja el rectángulo intacto, sólo que mordido;
+  perder la de una esquina lo desmonta.
+- **La cruz.** Dos sajaduras que se cruzan forman un aspa, y un aspa es un
+  **signo**: deja de ser un hueco en la masa y pasa a ser algo escrito encima. Es
+  lo único de esta familia que puede leerse como símbolo, y por eso es lo único
+  que se prohíbe a mano.
+
+Y dos de acabado: **el flequillo** —una tira larga y estrecha tiene área de sobra
+y se lee como un pelo, así que ahora se mide la esbeltez por el cociente
+isoperimétrico y se rechaza la partición que deja una tira— y **el bloque que
+ignoraba el pliego**: midiéndolo sólo contra el lado corto, en apaisado salía el
+mismo bloque con más aire a los lados, como si el papel cambiara y la masa no se
+enterara. Ahora **sigue a medias** al pliego (el ancho crece una fracción de lo
+que crece la hoja), y como los cortes se siguen midiendo contra el lado del
+bloque, en el ancho de más **caben más**: la obra se recompone en vez de
+deformarse, que es la regla de los formatos de la casa.
+
 ## Medido
 
 500 tiradas en cuadrado, sobre las paletas por defecto del motor:
@@ -432,15 +473,21 @@ arbitrario tiene detrás una versión que se veía peor, y está anotado ahí:
 ```
 tipo        arbol 38%  partido 29%  hendido 19%  astillado 14%
 gubia       fina 31%  media 46%  ancha 24%
-piezas      p10 2 · p50 4 · p90 8 · max 12
-            2:15% 3:20% 4:18% 5:14% 6:9% 7:9% 8:6% 9:5% 10:2% 11:2%
-sajaduras   p10 0 · p50 1 · p90 2
-hondura     p10 1 · p50 2 · p90 3 · max 4     (profundidad del árbol de fractura)
-mancha      p10 29,0%  p50 37,7%  p90 49,5%  max 61,6%
+piezas      p10 2 · p50 4 · p90 8 · max 11
+sajaduras   p10 0 · p50 1 · p90 2 · max 2
+faltan      p10 0 · p50 1 · p90 2            (placas que se soltaron y no están)
+escalones   p10 0 · p50 1 · p90 2            (esquinas quitadas al taco)
+hondura     p10 1 · p50 2 · p90 3            (profundidad del árbol de fractura)
+mancha      p10 25,1%  p50 32,7%  p90 44,0%  max 59,9%
 papel crudo 32%
-overall     common 36%  uncommon 43%  rare 17%  superrare 4%  legendary <1%
-ms          ~6 por pieza a 300 px, incluido el grano
+overall     common 40%  uncommon 35%  rare 15%  superrare 8%  legendary 2%
+ms          ~7 por pieza a 300 px, incluido el grano
 ```
+
+Los cortes de la rareza **no salen de la intuición**: se midió la distribución
+real del cociente sobre 500 tiradas y se pusieron en los percentiles que reparte
+la casa. Es lo mismo que hizo EVOL después de que su primer rasgo etiquetara al
+88% de las piezas.
 
 **Y la huella no se mueve con la resolución.** Es la afirmación que el documento
 hacía sin haberla comprobado, y la que EVOL aprendió por las malas: medir
@@ -450,11 +497,14 @@ normalizado: **60 de 60 huellas idénticas** a 760, 2400 y 4200 de lado corto, e
 cuadrado y en apaisado — tipo, gubia, piezas, sajaduras, cortes, hondura, mancha a
 seis decimales y los dos colores. Cero diferencias.
 
-Lo que **sigue mal**, y hay que decirlo: el 21% de las piezas no alcanza los
-cortes que su tipo declara. Con la reserva apartada queda menos superficie donde
-cortar y el área mínima de pieza rechaza particiones; manda lo medido, pero un
-21% es mucho — EVOL tenía un 1,8%. Es lo primero que hay que mirar en la
-siguiente pasada.
+Lo que **sigue mal**, y hay que decirlo: el **27%** de las piezas no alcanza los
+cortes que su tipo declara — y ha empeorado desde el 21% de la primera pasada,
+porque el reparto desigual y la guardia de esbeltez rechazan más particiones. Con
+la reserva apartada queda poca superficie donde cortar, y tanto el área mínima
+como la esbeltez se miden contra el bloque entero, así que dentro de una región
+pequeña casi nada las pasa. Subir los reintentos no lo arregla: hay que medir esos
+mínimos contra la **pieza que se corta** y no contra el bloque. Manda lo medido,
+pero un 27% es mucho — EVOL tenía un 1,8%. Es lo primero de la siguiente pasada.
 
 ## Siguiente paso
 
