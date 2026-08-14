@@ -2857,6 +2857,15 @@
     if (params.corner && params.corner !== 'auto') cfg.corner = params.corner;
     if (params.temblor != null && params.temblor !== 'auto') cfg.temblor = +params.temblor;
     if (params.ends && params.ends !== 'auto') cfg.ends = params.ends;
+    // PEDIR REMATE REDONDO ES PEDIR ESQUINA CURVA.
+    // El remate redondo es de la cinta curva y sólo de ella; con esquina viva
+    // generate() lo cambia por el inglete. Eso deja un mando que dice una cosa
+    // y hace otra sin avisar: el laboratorio ofrecía "Round" y salía "Mitre".
+    // Si la esquina está en auto —"que lo decida la obra"— la decide el remate,
+    // que es una petición explícita. Si el que llama ha fijado las dos, manda
+    // la regla y el rasgo lo dice: el panel enseña el remate EFECTIVO.
+    if (params.ends === 'redondos' && (!params.corner || params.corner === 'auto'))
+      cfg.corner = 'curvas';
     if (params.fantasma && params.fantasma !== 'auto') cfg.fantasma = params.fantasma;
     if (params.dots && params.dots !== 'auto') cfg.dots = params.dots;
     if (params.reintentos) cfg.reintentos = params.reintentos | 0;

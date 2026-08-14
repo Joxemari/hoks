@@ -48,6 +48,7 @@ window.medir = (seed, pals, extra, capa) => {
   const juntas = (c.plano.juntas||[]).map(j => T.arcoDeParam(m,acum,j));
   const esJunta = d => juntas.some(j => Math.abs(j-d) < 1e-6);
   const pizca = Math.max(HOKS.unit(S,S,900), W*0.15);
+  const sobra = Math.max(HOKS.unit(S,S,900), 1);
   const dir = s => { const i = cons(Math.floor(s),0,m.length-2);
     return T.PV.sub(m[i+1], m[i]).normalize(); };
   const caboEn = d => { let l = W*c.cfg.cabo;
@@ -66,8 +67,13 @@ window.medir = (seed, pals, extra, capa) => {
   const tramoDe = i => { const [a,b] = secs[i];
     const aJ = a>0 && esJunta(a), bJ = b<total && esJunta(b);
     const aF = esFin(a), bF = esFin(b);
-    return { iniC: Math.max(0, !aF ? a-(aJ?pizca:caboEn(a)) : a),
-             finC: Math.min(total, !bF ? b+(bJ?pizca:caboEn(b)) : b),
+    // EL `sobra` VA AQUI TAMBIEN. El cuerpo se dibuja pasandose un pixel del
+    // halo —es lo que cerro la costura de 1 px— y el detector no lo sabia: su
+    // mascara del cuerpo se quedaba corta y el anillo se comia esa pizca de
+    // tinta legitima. Cae siempre en el ULTIMO tramo del anillo, que es donde
+    // salian los 0,33 de cobertura sin que la imagen tuviera nada.
+    return { iniC: Math.max(0, !aF ? a-(aJ?pizca:caboEn(a)+sobra) : a),
+             finC: Math.min(total, !bF ? b+(bJ?pizca:caboEn(b)+sobra) : b),
              iniH: Math.max(0, !aF && !aJ ? a-caboEn(a) : a),
              finH: Math.min(total, !bF && !bJ ? b+caboEn(b) : b) }; };
   const cual = d => { for (let i=0;i<secs.length;i++) if (d>=secs[i][0]-1e-6 && d<=secs[i][1]+1e-6) return i; return -1; };
@@ -87,10 +93,24 @@ window.medir = (seed, pals, extra, capa) => {
     const iAr = cual(dAr); if (iAr < 0) continue;
     const tAr = tramoDe(iAr);
 
+    // EL ANILLO SE COME SUS DOS FILOS.
+    // La máscara es otra rasterización: su borde y el del render no coinciden
+    // píxel a píxel, y en los filos hay un píxel a medio cubrir que el umbral
+    // de 128 se queda entero. Por fuera ese píxel es la frontera entre la
+    // incisión y la tinta de la hebra de abajo —mezcla, y por tanto NO fondo—,
+    // y por dentro es el filo del propio cuerpo. Con el anillo a hueso, la
+    // máscara pedía fondo en el filo y lo contaba como hueco: 88 píxeles en una
+    // tira de 3×54 pegada al borde, con la incisión perfectamente dibujada al
+    // lado. Es la trampa 3, que hueco.js ya resolvía dilatando y ésta no.
+    // Se estrecha el anillo un píxel y medio por cada lado; le quedan dos
+    // píxeles de incisión, de sobra para medirla.
+    const AA = 0.75;
+    const WHm = r.anchoEn ? (d) => r.anchoEn(d) + gap*2 - AA*2 : W + gap*2 - AA*2;
+    const WFm = r.anchoEn ? (d) => r.anchoEn(d) + AA*2 : W + AA*2;
     xE.globalCompositeOperation='source-over';
     xE.fillStyle='#000'; xE.fillRect(0,0,S,S);
-    T.trazarTramo(xE, m, acum, tAr.iniH, tAr.finH, WH, '#fff', c.cfg, 'round');
-    T.trazarTramo(xE, m, acum, tAr.iniC, tAr.finC, WF, '#000', c.cfg);
+    T.trazarTramo(xE, m, acum, tAr.iniH, tAr.finH, WHm, '#fff', c.cfg, 'round');
+    T.trazarTramo(xE, m, acum, tAr.iniC, tAr.finC, WFm, '#000', c.cfg);
     xE.globalCompositeOperation='destination-in';
     const abajos = [cual(dAb-1e-4), cual(dAb+1e-4)].filter((v,i,a)=>v>=0&&a.indexOf(v)===i);
     const cU = lienzo(), xU = cU.getContext('2d');

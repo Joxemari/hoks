@@ -55,13 +55,12 @@ body { background: #fff; color: #111; height: 100vh; overflow: hidden; }
 </head>
 <body>
 <script src="nav.js"></script>
-<!-- DTKRT y ECLPS no se reimplementan aquí: las celdas demo usan el mismo
-     algo.js que producción y laboratorio. Las demás series siguen con su
-     versión reducida. -->
+<!-- Los algo.js de las familias graduadas NO se listan aquí: se piden solos,
+     uno por familia activa, cuando works.json dice cuáles son. Escritos a mano
+     eran una lista más que había que venir a tocar para que una familia nueva
+     saliera en la rejilla. Las familias veteranas conservan su reimplementación
+     reducida más abajo. -->
 <script src="sketches/_engine.js?v=1"></script>
-<script src="sketches/dtkrt/algo.js?v=1"></script>
-<script src="sketches/eclps/algo.js?v=1"></script>
-<script src="sketches/trzs/algo.js?v=1"></script>
 <style>
   /* Override nav.js defaults — landing needs fixed full-bleed layout */
   body { min-height: unset !important; display: block !important; overflow: hidden !important; }
@@ -221,33 +220,66 @@ function drawPLLSG(canvas,seed){
   applyGrain(ctx,W,H,colors);
 }
 
-// ── DRAW: DTKRT (fuente única — sketches/dtkrt/algo.js) ──────────────────────
-function drawDTKRT(canvas,seed){
-  HOKS.DTKRT.render(canvas.getContext('2d'),canvas.width,canvas.height,seed,
-    {palettes:PALETTES.filter(p=>p.active!==false)});
+// ── DEMOS ESCRITAS AQUÍ ──────────────────────────────────────────────────────
+// Solo las familias anteriores al algo.js compartido: su demo es una versión
+// reducida del algoritmo, con el look publicado (el que traía la G). Una
+// familia graduada NO entra en esta tabla — su celda usa el algo.js de verdad,
+// que se pide solo. Vaciarla es la dirección: cada entrada que se va es una
+// reimplementación menos que mantener a mano.
+const DEMOS = {plls:drawPLLSG,krrtk:drawKRRTKG,dtk:drawDTKG,bzrs:drawBZRS};
+
+// El lienzo de la celda va en la proporción de la OBRA, no en la de la rejilla
+// (que recorta con object-fit): una fila metida en un cuadrado deja de ser una
+// fila. Sale del formato que la familia declara en works.json; aquí solo se
+// apunta la excepción, que es PLLS —declara cuadrado y horizontal, y su demo
+// nació apaisada—.
+const CELL_BY_FORMAT = {square:[320,320], horizontal:[452,320], vertical:[320,452], double:[640,226]};
+const CRES = {plls:[566,400]};
+function cellRes(w) {
+  if (CRES[w.slug]) return CRES[w.slug];
+  const f = (Array.isArray(w.formats) && w.formats[0]) || 'square';
+  return CELL_BY_FORMAT[f] || CELL_BY_FORMAT.square;
 }
 
-// ── DRAW: ECLPS (fuente única — sketches/eclps/algo.js) ──────────────────────
-// La celda va en la proporción de la obra (2√2:1), no en la de la rejilla: una
-// fila metida en un cuadrado deja de ser una fila.
-function drawECLPS(canvas,seed){
-  HOKS.ECLPS.render(canvas.getContext('2d'),canvas.width,canvas.height,seed,
-    {palettes:PALETTES.filter(p=>p.active!==false)});
+// Sin red no hay catálogo, así que la rejilla cae a las familias que estaban
+// publicadas en el último despliegue — no a "todas las que existieron".
+const FALLBACK_WORKS = [
+  {slug:'plls', name:'PLLS', page:'plls.html',  formats:['square','horizontal']},
+  {slug:'krrtk',name:'KRRTK',page:'krrtk.html', formats:['square']},
+  {slug:'dtkrt',name:'DTKRT',page:'dtkrt.html', formats:['square']},
+  {slug:'eclps',name:'ECLPS',page:'eclps.html', formats:['double']},
+  {slug:'trzs', name:'TRZS', page:'trzs.html',  formats:['horizontal','square']},
+];
+
+// ── ALGO.JS BAJO DEMANDA ─────────────────────────────────────────────────────
+// Una familia graduada trae su algoritmo; la landing no tiene por qué llevar
+// una copia reducida. Se pide el archivo y, si no está (familia sin graduar),
+// esa familia se queda sin celdas demo — sus piezas guardadas siguen saliendo,
+// que son imágenes y no necesitan algoritmo.
+const _algos = {};
+function loadAlgo(slug) {
+  if (_algos[slug]) return _algos[slug];
+  const up = slug.toUpperCase();
+  if (window.HOKS && HOKS[up]) return (_algos[slug] = Promise.resolve(HOKS[up]));
+  return (_algos[slug] = new Promise(res => {
+    const s = document.createElement('script');
+    s.src = 'sketches/' + slug + '/algo.js?v=1';
+    s.onload  = () => res((window.HOKS && HOKS[up]) || null);
+    s.onerror = () => res(null);
+    document.head.appendChild(s);
+  }));
+}
+async function drawFnFor(slug) {
+  if (DEMOS[slug]) return DEMOS[slug];
+  const algo = await loadAlgo(slug);
+  if (!algo || typeof algo.render !== 'function') return null;
+  return (canvas, seed) => algo.render(canvas.getContext('2d'), canvas.width, canvas.height, seed,
+    {palettes: PALETTES.filter(p => p.active !== false)});
 }
 
-// ── DRAW: TRZS (fuente única — sketches/trzs/algo.js) ────────────────────────
-// La celda es apaisada porque la obra nace apaisada: la cinta atraviesa el
-// marco, y en un cuadrado pequeño el nudo se apelotona y deja de leerse.
-function drawTRZS(canvas,seed){
-  HOKS.TRZS.render(canvas.getContext('2d'),canvas.width,canvas.height,seed,
-    {palettes:PALETTES.filter(p=>p.active!==false)});
-}
-
-// La demo de cada familia es su look publicado, que es el que traía la G.
-const DRAWFNS = {plls:drawPLLSG,krrtk:drawKRRTKG,dtk:drawDTKG,bzrs:drawBZRS,dtkrt:drawDTKRT,eclps:drawECLPS,trzs:drawTRZS};
-const LABELS  = {plls:'PLLS',krrtk:'KRRTK',dtk:'DTK',bzrs:'BZRS',dtkrt:'DTKRT',eclps:'ECLPS',trzs:'TRZS'};
-const CRES    = {plls:[566,400],krrtk:[320,320],dtk:[320,320],bzrs:[320,320],dtkrt:[320,320],eclps:[640,226],trzs:[452,320]};
-const SERIES  = ['plls','krrtk','dtk','bzrs','dtkrt','eclps','trzs'];
+// Catálogo resuelto: slug → {name, page, res, draw}. Lo llena load().
+const FAM = {};
+function famList() { return Object.keys(FAM); }
 
 // ── GRID ─────────────────────────────────────────────────────────────────────
 const GAP=5, COLS=9, ROWS=10;
@@ -288,16 +320,6 @@ function updateCells(){
   });
 }
 
-function makeFallbackCell(type) {
-  // Generate a demo canvas when no saved works exist
-  const canvas = document.createElement('canvas');
-  const [cw,ch] = CRES[type];
-  canvas.width = cw; canvas.height = ch;
-  const seed = (Math.random() * 0xFFFFFFFF) >>> 0;
-  DRAWFNS[type](canvas, seed);
-  return { el: canvas, label: `${LABELS[type]} · demo`, idx: null };
-}
-
 function buildGrid(works) {
   board.innerHTML = ''; cellObjs = [];
 
@@ -306,13 +328,14 @@ function buildGrid(works) {
   const shuffled = [...works].sort(() => Math.random() - .5);
   const total = COLS * ROWS;
   const slots = [];
+  const drawable = famList().filter(s => FAM[s].draw);
 
   for (let i = 0; i < total; i++) {
     if (i < shuffled.length) {
       slots.push(shuffled[i]);
-    } else {
+    } else if (drawable.length) {
       // fallback: pick series cycling
-      const type = SERIES[i % SERIES.length];
+      const type = drawable[i % drawable.length];
       slots.push({ type, fallback: true, seed: (Math.random() * 0xFFFFFFFF) >>> 0, idx: null });
     }
   }
@@ -329,11 +352,12 @@ function buildGrid(works) {
     const inner = document.createElement('div');
     inner.className = 'cell-inner';
 
+    const fam = FAM[work.type] || {};
     if (work.fallback) {
       const canvas = document.createElement('canvas');
-      const [cw,ch] = CRES[work.type];
+      const [cw,ch] = fam.res || [320,320];
       canvas.width = cw; canvas.height = ch;
-      DRAWFNS[work.type](canvas, work.seed);
+      fam.draw(canvas, work.seed);
       inner.appendChild(canvas);
     } else {
       const img = new Image();
@@ -341,14 +365,15 @@ function buildGrid(works) {
       inner.appendChild(img);
     }
 
+    const label = fam.name || work.type.toUpperCase();
     const lbl = document.createElement('div');
     lbl.className = 'cell-label';
     if (work.fallback) {
-      lbl.textContent = `${LABELS[work.type]} · demo`;
+      lbl.textContent = `${label} · demo`;
     } else {
       const d = work.savedAt ? new Date(work.savedAt) : new Date();
       const dateStr = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'});
-      lbl.textContent = `${LABELS[work.type]} · #${work.seed} · ${dateStr}`;
+      lbl.textContent = `${label} · #${work.seed} · ${dateStr}`;
     }
     inner.appendChild(lbl);
     cell.appendChild(inner);
@@ -359,10 +384,11 @@ function buildGrid(works) {
 
     cell.addEventListener('click', () => {
       if (dragged) return;
-      const page = obj.type === 'plls' ? 'pills' : obj.type; // pllsg stays as pllsg
-      const url = obj.idx !== null
-        ? `${BASE}${page}.html?i=${obj.idx}`
-        : `${BASE}${page}.html`;
+      // A dónde lleva la celda lo dice works.json, y la regla es la del nav:
+      // página propia si la familia la tiene, genérica si no.
+      const page = HOKSNAV.workHref({ page: fam.page, slug: obj.type });
+      const url = obj.idx === null ? BASE + page
+        : BASE + page + (page.indexOf('?') < 0 ? '?' : '&') + 'i=' + obj.idx;
       window.location.href = url;
     });
 
@@ -391,31 +417,39 @@ function buildGrid(works) {
 // ── LOAD REAL WORKS ───────────────────────────────────────────────────────────
 const TOTAL = 90; // 9 cols × 10 rows
 const PER_SERIES = 13; // up to 13 saved works per series
-const SLUG_MAP = { pills:'plls', krrtk:'krrtk', dtk:'dtk', bzrs:'bzrs', krrtkg:'krrtkg', dtkg:'dtkg', pllsg:'pllsg', dtkrt:'dtkrt', eclps:'eclps' };
 
 async function load() {
-  // 1. Read works.json — filter to active families only
-  let activeSeries = SERIES; // fallback: show all
+  // 1. El catálogo lo pone works.json: activar una familia en el panel tiene
+  //    que bastar para que salga aquí. Antes esta lista se cruzaba con una
+  //    SERIES escrita en el archivo, así que una familia nueva quedaba fuera
+  //    aunque estuviese activa — activarla no la traía a la rejilla.
+  let catalogue = FALLBACK_WORKS;
   try {
     const worksData = await fetch(RAW + 'works.json?t=' + Date.now()).then(r => r.ok ? r.json() : null);
-    if (Array.isArray(worksData) && worksData.length) {
-      const filtered = worksData
-        .filter(w => w.active)
-        .map(w => SLUG_MAP[w.slug] || w.slug)
-        .filter(s => SERIES.includes(s));
-      if (filtered.length) activeSeries = filtered;
+    if (Array.isArray(worksData)) {
+      const live = worksData.filter(w => w && w.active && w.slug);
+      if (live.length) catalogue = live;
     }
   } catch(e) {}
 
-  // 2. Fetch saved works for active families
-  const fetches = activeSeries.map(type =>
+  // 2. Resolver cada familia: cómo se dibuja su demo y a qué proporción. La
+  //    que no sepa dibujarse (sin graduar y sin demo escrita) se queda igual en
+  //    el catálogo: sus piezas guardadas son imágenes y salen sin algoritmo.
+  await Promise.all(catalogue.map(async w => {
+    FAM[w.slug] = { name: w.name || w.slug.toUpperCase(), page: w.page, res: cellRes(w),
+                    draw: await drawFnFor(w.slug) };
+  }));
+  const series = famList();
+
+  // 3. Fetch saved works for active families
+  const fetches = series.map(type =>
     fetch(RAW + type + '.json?t=' + Date.now())
       .then(r => r.ok ? r.json() : []).catch(() => [])
-      .then(items => items.map((item, idx) => ({ ...item, type, idx })))
+      .then(items => Array.isArray(items) ? items.map((item, idx) => ({ ...item, type, idx })) : [])
   );
   const results = await Promise.all(fetches);
 
-  // 3. Up to PER_SERIES per family, shuffled
+  // 4. Up to PER_SERIES per family, shuffled
   const real = [];
   results.forEach(items => {
     const shuffled = [...items].sort(() => Math.random() - .5);
@@ -423,11 +457,12 @@ async function load() {
   });
   real.sort(() => Math.random() - .5);
 
-  // 4. Pad to TOTAL with fallbacks (active families only)
+  // 5. Pad to TOTAL with fallbacks (active families only)
+  const drawable = series.filter(s => FAM[s].draw);
   const all = [...real];
   let si = 0;
-  while (all.length < TOTAL) {
-    all.push({ type: activeSeries[si % activeSeries.length], fallback: true, seed: (Math.random() * 0xFFFFFFFF) >>> 0, idx: null });
+  while (drawable.length && all.length < TOTAL) {
+    all.push({ type: drawable[si % drawable.length], fallback: true, seed: (Math.random() * 0xFFFFFFFF) >>> 0, idx: null });
     si++;
   }
 

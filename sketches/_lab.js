@@ -79,19 +79,28 @@
 
     loadWorks()
       .then(data => {
-        if (!Array.isArray(data) || !data.length) return;
-        // Solo las ACTIVAS: el laboratorio es la mesa de trabajo, no el archivo.
-        // Una familia retirada no debe estorbar la lista — se sigue pudiendo
-        // abrir por URL (../<slug>/) mientras tenga su algo.js.
-        const works = data.filter(w => GRADUATED.includes(w.slug) && w.active !== false);
-        // La obra abierta se queda en la lista aunque esté retirada: si no, el
-        // selector mostraría otra cosa distinta de lo que hay en pantalla.
+        const list = Array.isArray(data) ? data : [];
+        // TODAS las graduadas, publicadas o no. `active` decide qué enseña la
+        // WEB, no qué se puede abrir en la mesa: esconder aquí lo inactivo era
+        // esconder justamente el trabajo en curso —una familia que aún no tiene
+        // ficha, o una retirada que se está rehaciendo— y obligaba a llegar a
+        // ella tecleando la URL. El orden es el de GRADUATED, no el de
+        // works.json, para que la lista no se recoloque cuando llega la red.
+        const byslug = new Map(list.filter(w => w && w.slug).map(w => [w.slug, w]));
+        const works = GRADUATED.map(slug => {
+          const w = byslug.get(slug);
+          const name = (w && w.name) || slug.toUpperCase();
+          // Marcada la que no está publicada: el laboratorio enseña las dos
+          // cosas, así que tiene que decir cuál es cuál.
+          return { slug, name: w && w.active ? name : name + ' · (fuera de la web)' };
+        });
+        // La obra abierta se queda en la lista aunque no esté graduada: si no,
+        // el selector mostraría otra cosa distinta de lo que hay en pantalla.
         if (!works.some(w => w.slug === currentSlug)) {
-          const me = data.find(w => w.slug === currentSlug);
-          works.unshift(me ? { ...me, name: me.name + ' · (retirada)' }
-                           : { slug: currentSlug, name: currentSlug.toUpperCase() });
+          const me = byslug.get(currentSlug);
+          works.unshift({ slug: currentSlug, name: (me && me.name) || currentSlug.toUpperCase() });
         }
-        if (works.length) fill(works);
+        fill(works);
       })
       .catch(() => {});
 
