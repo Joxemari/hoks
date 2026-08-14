@@ -53,6 +53,9 @@ sketches/
   evol/             ← EN PRUEBAS: la ley del encuentro invertida. Ver su README
   ptzd/             ← EN PRUEBAS: el bloque partido. La gramática se escribió
                       ANTES que el código, y el grid la corrigió. Ver su README
+    entrenamiento/  ← el ojo, registrado: 100 lotes de 5, se eligen 2 de cada uno
+                      y sale un patrón de preferencia sobre los rasgos. No se
+                      publica; es instrumento. Ver su README
   trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
     verificacion/   ← los detectores del halo y sus controles rotos a propósito.
                       No se publica: se ejecuta a mano cuando alguien toca el

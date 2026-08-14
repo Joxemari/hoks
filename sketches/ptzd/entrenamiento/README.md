@@ -1,0 +1,86 @@
+# ptzd/entrenamiento — el ojo, registrado
+
+**No se publica.** Vive aquí por lo mismo que `trzs/verificacion/`: es
+instrumento, no obra. La web no lo enlaza, no aparece en el desplegable del
+laboratorio y no escribe nada en `data/`.
+
+```bash
+python -m http.server    # → http://localhost:8000/sketches/ptzd/entrenamiento/
+```
+
+## Para qué
+
+El grid de obras ya sirve para decidir, pero **no deja registro**: mirar doce
+seeds y quedarse con dos es exactamente el trabajo, y al cerrar la pestaña ese
+trabajo se ha perdido. Esto es lo mismo hecho a propósito y anotado: **100 lotes
+de 5 obras**, de cada uno se eligen las dos que más gustan —o una, o ninguna— y
+de ahí sale un patrón de preferencia sobre los rasgos.
+
+Lo que se busca no es una nota por obra: es **qué rasgos del sistema tiran del
+ojo**. Con eso se pueden mover los pesos de la gramática con un motivo, en vez de
+con una intuición — que es todo lo que ha habido hasta ahora.
+
+## Las dos decisiones de método
+
+Sin estas dos, el ejercicio produce un número que parece un dato y no lo es.
+
+**1. Se juzga a ciegas.** Ni tipo, ni gubia, ni seed, ni traits a la vista. Leer
+«astillado» debajo de una imagen deja de ser juzgarla, y el patrón que saldría
+sería el de las etiquetas y no el del ojo. Se registra todo; no se enseña nada.
+
+**2. La comparación es dentro del lote.** Lo que se mide no es «qué porcentaje de
+las astilladas gustan» sobre el total — eso depende de con qué les tocó competir.
+Se mide, lote a lote, si un rasgo sale elegido **más de lo que su presencia en ese
+lote hacía esperar**. Ésa es la columna `sesgo`, en puntos porcentuales: cero es
+indiferente. La columna `tasa` está para mirarla al lado, pero se la lleva la
+composición del muestreo, así que no decide.
+
+## Y una advertencia que hay que tener delante
+
+Con once rasgos categóricos, cuatro continuos y unos cientos de obras, **algo va a
+parecer un patrón por puro azar**. Vale lo que salga grande, repetido y con muchas
+vistas; no lo que salga primero en la tabla. Las filas con menos de 20 apariciones
+salen en gris y con `?` justamente para que no se lean como conclusión.
+
+**Y mide compañía, no causa.** Los rasgos de esta familia van juntos: `hendido`
+trae pocas piezas y hondura 1; más tintas trae más rareza. Si el ojo pide una
+cosa, se encienden en la tabla todas las que vienen con ella. Está comprobado a
+propósito — se sembró una preferencia falsa por `hendido` y por más de una tinta,
+y el análisis las sacó con +47 y +47, dejó en cero lo que no se había sembrado
+(gubia, papel, paleta) **y encendió además `piezas 2`, `hondura 1` y `rare`, que
+nadie había pedido**. Son el cortejo de lo sembrado. Así que lo que hay que buscar
+es **la causa más simple que explique el bloque entero**, no leer fila por fila.
+
+Y lo que sale de aquí es una **preferencia**, no una verdad sobre la familia. Si
+el ojo pide siempre lo mismo, mover los pesos hacia ahí estrecha la obra: parte
+del valor de una serie está en las tiradas que no gustan a la primera. Lo que este
+instrumento da es el dato; qué hacer con él es decisión de autor.
+
+## Cómo se usa
+
+| tecla | acción |
+|-------|--------|
+| `1`–`5` | marcar / desmarcar una obra (dos como mucho; la tercera empuja a la primera) |
+| `0` | ninguna me gusta — el lote se descarta entero |
+| `enter` | pasar al siguiente lote |
+| `retroceso` | volver al lote anterior y corregir |
+| `p` | ver el patrón a mitad de camino |
+
+El avance se guarda solo en `localStorage`: se puede cerrar y volver. Un lote
+descartado entero **no informa** y queda fuera del cálculo, pero se registra: que
+un lote no dé ninguna es un dato sobre el lote.
+
+Al final —o pulsando `p`— salen las tablas, un **JSON descargable** con la huella
+completa de las 500 obras y sus elegidas, y un **resumen copiable** para pegar
+donde haga falta.
+
+## Qué hacer con el resultado
+
+Los pesos que este dato puede mover, por orden de lo que costaría cambiarlos:
+
+- los de `TIPOS` y `GUBIAS`, que hoy son una intuición sin medir detrás;
+- los de `faltan`, `escalones` y `tintas`, que se pusieron a ojo en su pasada;
+- los rangos de `PULSO`, `MORFA`, `SEGUIR` y `REPARTO`, si la mediana de lo
+  elegido cae claramente a un lado;
+- y, si el sesgo apunta ahí, las **frecuencias de la rareza** — que hoy se miden
+  sobre lo que el algoritmo produce y no sobre lo que se elegiría.
