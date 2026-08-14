@@ -273,53 +273,13 @@
   // Así el stream del RNG no depende de lo que salga, y el reparto puede volver a
   // calcularse con otra bandera sin mover ni un vértice — que es lo que necesita el
   // acoplamiento de la inversión (ver render).
-  function dadosColor(rng) { return { inv: rng.bool(P_INV), crudo: rng.bool(0.5) }; }
-
-  function rolesFor(colors, dd) {
-    const uniq = colors.filter((c, i) => colors.indexOf(c) === i);
-    if (uniq.length < 2) return { suelo: uniq[0] || '#e8e2d0', tinta: '#111111', otra: null, inv: false, papel: 'blanco' };
-
-    let a = uniq[0], b = uniq[1], best = -1;
-    for (let i = 0; i < uniq.length; i++) {
-      for (let j = i + 1; j < uniq.length; j++) {
-        const d = dcolor(uniq[i], uniq[j]);
-        if (d > best) { best = d; a = uniq[i]; b = uniq[j]; }
-      }
-    }
-    const claro = E.luma(a) >= E.luma(b) ? a : b;
-    const oscuro = claro === a ? b : a;
-    // La inversión —tinta clara sobre suelo oscuro— existe y es minoría. No es un
-    // negativo: es la otra manera de que el vacío tenga borde.
-    const inv = dd.inv;
-    const tinta = inv ? claro : oscuro;
-    let suelo = inv ? oscuro : claro;
-
-    // EL PAPEL. Elegir el par más distante lleva SIEMPRE al blanco, y el blanco no
-    // es el único suelo posible: la referencia de esta familia está sobre papel
-    // crudo —un tono medio y cálido— y ahí la masa negra pesa distinto, porque el
-    // suelo deja de ser ausencia de tinta y se vuelve material. Si la paleta tiene
-    // un tono medio que aguante el contraste, se usa la mitad de las veces. No es
-    // un ajuste: es qué papel se compra.
-    let papel = 'blanco';
-    if (!inv) {
-      const crudos = uniq.filter(c => c !== tinta && E.luma(c) >= 0.52 && E.luma(c) <= 0.93
-                                      && dcolor(c, tinta) > 0.42);
-      if (crudos.length && dd.crudo) {
-        // El más oscuro de los crudos: es el que más se aleja del blanco, que es
-        // justo lo que se busca al pedir papel.
-        suelo = crudos.sort((x, y) => E.luma(x) - E.luma(y))[0];
-        papel = 'crudo';
-      }
-    }
-
-    // Segunda tinta: un cuerpo entero en otro color. Tiene que sostenerse solo
-    // —contraste contra el suelo Y diferencia con la primera tinta—, si no se lee
-    // como un error de registro en la impresión.
-    const resto = uniq.filter(c => c !== suelo && c !== tinta);
-    const otra = resto.find(c => dcolor(c, suelo) > 0.34 && dcolor(c, tinta) > 0.30) || null;
-    return { suelo, tinta, otra, inv, papel };
-  }
-
+  // La politica de color vive en el MOTOR desde que HRRS la pidio: es la tercera
+  // familia que necesita dos colores y renunciar al resto, y `ptzd/README.md` ya
+  // habia dejado dicho que a la tercera se sube. Aqui se llama, no se copia — el
+  // bug historico de PLLS fue exactamente esto ocho veces.
+  //
+  // Verificado al portarlo: mismo orden de tiradas (bool(P_INV), bool(0,5)) y
+  // misma logica, asi que la imagen no se mueve. Ver evol/README.md.
   const P_INV = 0.16;        // tinta clara sobre suelo oscuro
   // Y el acoplamiento: una masa LEVE invertida no es un negativo, es un arañazo.
   // Medido sobre 500 tiradas —la mancha va de 14,4% (p10) a 28,6% (p90)— por debajo
@@ -328,10 +288,6 @@
   // DESPUÉS de medir, así que corrige el color sin mover el dibujo.
   const INV_MIN_MANCHA = 0.18;
 
-  function dcolor(a, b) {
-    const x = E.hexToRgb(a), y = E.hexToRgb(b);
-    return (abs(x[0] - y[0]) + abs(x[1] - y[1]) + abs(x[2] - y[2])) / 765;
-  }
 
   // El grosor de una cadena, por rachas. Devuelve los niveles, no las anchuras:
   // el nivel es lo que se lee en el trait (cuánta escala ha recorrido la pieza).
@@ -850,8 +806,8 @@
 
     const pal = (opts.locked && palettes[opts.lockedIdx]) ? palettes[opts.lockedIdx] : rng.weighted(palettes);
     const colors = pal.colors;
-    const dd = dadosColor(rng);
-    let rol = rolesFor(colors, dd);
+    const dd = E.inkDice(rng, P_INV);
+    let rol = E.inkRoles(colors, dd);
 
     // 1. El campo. Con 'square' la obra se compone cuadrada y se centra: el
     //    pliego y el campo son dos decisiones.
@@ -892,7 +848,7 @@
     //    pinta DESPUÉS de tramar porque la decisión de invertir depende de cuánta
     //    masa hay, y eso no se sabe hasta medirla. El dibujo no se mueve: el
     //    reparto de color se recalcula con la misma tirada.
-    if (rol.inv && best.mancha < INV_MIN_MANCHA) rol = rolesFor(colors, { inv: false, crudo: dd.crudo });
+    if (rol.inv && best.mancha < INV_MIN_MANCHA) rol = E.inkRoles(colors, { inv: false, crudo: dd.crudo });
 
     const bg = E.pickBg(seed, params, BG_GRADIENT);
     if (bg === 'gradient') {

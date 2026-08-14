@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hrrs · lab — hoks</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --ink:#111; --ink3:#bbb; --border:#e8e8e8; --surface:#f7f7f7; --f:'Courier New',Courier,monospace; }
+  body { font-family: var(--f); background: #fff; color: var(--ink); display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+  .panel { border-right: 1px solid var(--border); padding: 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; }
+  .lab-title { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+  .lab-title small { display:block; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; text-transform:none; }
+  .group { display: flex; flex-direction: column; gap: 6px; }
+  .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); }
+  input[type=range] { width: 100%; accent-color: var(--ink); cursor: pointer; }
+  input[type=number], input[type=text], select { font-family: var(--f); font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 2px; width: 100%; }
+  .hintline { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
+  button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
+  button:hover { opacity: 0.78; }
+  #seed { text-align:center; letter-spacing:0.06em; }
+  .stage { display: flex; flex-direction: column; align-items: safe center; justify-content: center; justify-content: safe center; gap: 10px; padding: 1.5rem; background: var(--surface); overflow: auto; }
+  #single { max-width: min(100%, calc((100vh - 120px) * 1.414)); max-height: calc(100vh - 120px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
+  .sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 1180px; }
+  .sheet canvas { width: 100%; outline: 1px solid rgba(0,0,0,0.1); cursor: pointer; display:block; }
+  .sheet figcaption { padding: 3px 2px; font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
+  .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .traits { font-size: 10px; display:flex; flex-direction:column; gap:4px; }
+  .traits .t { display:flex; justify-content:space-between; gap:6px; }
+  .traits .k { color: var(--ink3); text-transform: uppercase; font-size: 9px; letter-spacing:0.06em; }
+  .traits .v { font-weight: 700; }
+  .dots { display:inline-flex; gap:2px; vertical-align:middle; margin-right:5px; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; border:0.5px solid rgba(0,0,0,0.1); }
+</style>
+</head>
+<body>
+  <aside class="panel">
+    <div class="lab-title">hoks · lab<small>hrrs · el acompañamiento · itzulera</small></div>
+    <div class="group">
+      <span class="lbl">Work</span>
+      <div id="workPicker"></div>
+    </div>
+    <div class="group">
+      <span class="lbl">Format</span>
+      <select id="fmt"></select>
+      <span class="hintline">en cuadrado el recorrido se pliega sobre sí mismo y en
+        apaisado viaja: cada proporción es otra obra, no la misma girada</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Field</span>
+      <select id="field">
+        <option value="sheet">▣ Llena el pliego</option>
+        <option value="square">□ Campo cuadrado</option>
+      </select>
+      <span class="hintline">el pliego y el campo son dos decisiones: un cuadrado puede ir sobre un DIN</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Seed</span>
+      <input type="text" id="seed" value="0" inputmode="numeric" spellcheck="false">
+      <button id="rnd">↻ Nueva seed (espacio)</button>
+      <span class="hintline">se puede teclear una seed para volver a ella · ← → recorren vecinas</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Palette · <span id="palCount">…</span></span>
+      <div id="palPicker"></div>
+      <span class="hintline">incluye activas e inactivas</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Background</span>
+      <select id="bg">
+        <option value="auto">Auto (lo propio de la obra)</option>
+        <option value="solid">Solid</option>
+        <option value="gradient">Gradient</option>
+      </select>
+      <span class="hintline">el suelo es PLANO: la mitad de la obra es vacío y el
+        vacío tiene que ser papel. El degradado está para mirarlo, no para publicarlo</span>
+      <div id="bgAuto">
+        <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
+          · plano <span id="bgPS">—</span></span>
+        <input type="range" id="bgP" min="0" max="100" step="5" value="0">
+        <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre</span>
+      </div>
+    </div>
+    <div class="group">
+      <span class="lbl">Grain</span>
+      <select id="grain">
+        <option value="1">Con grano</option>
+        <option value="0">Sin grano</option>
+      </select>
+      <span class="hintline">o lo hay o no lo hay: media dosis de grano no es una decisión</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Type</span>
+      <select id="tipo">
+        <option value="">Aleatorio (por peso)</option>
+        <option value="suelto">suelto · el recorrido casi desnudo</option>
+        <option value="plegado">plegado · el centro de la familia</option>
+        <option value="acompanado">acompañado · muchas voces al lado</option>
+        <option value="trenza">trenza · el suelo en minoría</option>
+      </select>
+      <span class="hintline">el tipo DECLARA ojos, dispersión y ocupación; luego se
+        comprueba sobre el dibujo y se queda el candidato que menos se sale</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Cintas · <span id="ciV">auto</span></span>
+      <input type="range" id="ci" min="0" max="24" step="1" value="0">
+      <span class="hintline">0 = lo que pida el tipo · hebras que conviven sin tocarse</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Pliegues · <span id="plV">auto</span></span>
+      <input type="range" id="pl" min="-1" max="14" step="1" value="-1">
+      <span class="hintline">horquillas declaradas · −1 = auto · son la fuente del acompañamiento</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Gubia (anchura) · <span id="anV">auto</span></span>
+      <input type="range" id="an" min="0" max="1" step="0.02" value="0">
+      <span class="hintline">0 = auto · escala el techo de la cinta (0,058 del lado corto)</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Canal · <span id="caV">auto</span></span>
+      <input type="range" id="ca" min="0" max="0.4" step="0.01" value="0">
+      <span class="hintline">0 = auto · el suelo entre dos vueltas, en fracción de la anchura (~1/5)</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Reserva</span>
+      <select id="reserva">
+        <option value="1">Con reserva</option>
+        <option value="0">Sin reserva</option>
+      </select>
+      <span class="hintline">la esquina por la que no pasa nada, y por la que se lee todo lo demás</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Batch</span>
+      <div id="batchPanel"></div>
+    </div>
+    <div class="group">
+      <button id="save">↓ Save PNG (s)</button>
+      <button class="ghost" id="cartela">↓ Cartela A5 (c)</button>
+      <button class="ghost" id="sheet">▦ Grid de obras (g)</button>
+      <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
+      <div id="wallLink"></div>
+    </div>
+    <div class="group"><span class="lbl">Traits</span><div class="traits" id="traits"></div></div>
+  </aside>
+
+  <main class="stage">
+    <canvas id="single" width="1000" height="1000"></canvas>
+    <div class="sheet" id="sheetGrid" style="display:none"></div>
+    <span class="hint" id="status">—</span>
+  </main>
+
+<script src="../../palette-picker.js?v=6"></script>
+<script src="../../usage.js?v=6"></script>
+<script src="../_lab.js?v=6"></script>
+<script src="../_batch.js?v=6"></script>
+<script src="../_cartela.js?v=6"></script>
+<script src="../_engine.js?v=6"></script>
+<script src="./algo.js?v=6"></script>
+<script>
+const WORK = HOKS.HRRS;
+const BASE = 1000, SHEET_BASE = 300;   // lado corto: hoja y grid de obras
+const SHEET_N = 12;
+// La referencia es casi cuadrada, y en cuadrado el recorrido se pliega sobre sí
+// mismo — que es de lo que va la obra.
+let FORMAT = 'square';
+// No hay botón de girar la vista, y es una decisión: en las obras de retículo
+// vertical y horizontal son la misma obra girada, así que girar sirve para
+// juzgarla de pie. Aquí el recorrido ELIGE por dónde atraviesa el campo, y la
+// proporción cambia cuántas hebras caben: girar daría una obra que no existe.
+const ROT = false;
+let lastPalName = '', lastPalColors = [];
+let W, H, SHEET_W, SHEET_H;
+function applyFormat() {
+  HOKSLAB.formatControls(FORMAT, false);
+  const d = HOKS.fmtDims(FORMAT, BASE);       W = d.W; H = d.H;
+  const t = HOKS.fmtDims(FORMAT, SHEET_BASE); SHEET_W = t.W; SHEET_H = t.H;
+  single.width = ROT ? H : W; single.height = ROT ? W : H;
+}
+
+const single = document.getElementById('single');
+const sctx = single.getContext('2d');
+let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
+let seed = HOKSLAB.initialSeed();
+let sheetMode = false;
+const $ = id => document.getElementById(id);
+
+function params() {
+  return {
+    field:      $('field').value,
+    bg:         $('bg').value,
+    bgProbs:  { gradient: parseInt($('bgP').value, 10) },
+    grainScale: parseFloat($('grain').value),
+    tipo:       $('tipo').value || null,
+    cintas:     parseInt($('ci').value, 10) || 0,
+    // −1 es 'auto' y tiene que llegar como null, no como −1: el algoritmo mira
+    // `!= null`, así que un −1 sería una petición de cero pliegues.
+    pliegues:   auto($('pl').value),
+    ancho:      parseFloat($('an').value) || 0,
+    canal:      parseFloat($('ca').value) || 0,
+    reserva:    parseInt($('reserva').value, 10),
+  };
+}
+function auto(v) { const n = parseInt(v, 10); return n < 0 ? null : n; }
+let palPicker = null;
+function palOpts() { return palPicker ? palPicker.opts() : { palettes: PALETTES }; }
+
+let batch = null;
+const SLUG = 'hrrs';
+function recipeFor(s) {
+  const c = document.createElement('canvas'); c.width = c.height = 8;
+  let palName = null;
+  try { const r = WORK.render(c.getContext('2d'), 8, 8, s >>> 0, { ...palOpts(), params: params() }); palName = r && r.pal && r.pal.name; } catch (e) {}
+  return { work: SLUG, seed: s >>> 0, format: FORMAT, base: BASE, params: params(),
+           palSel: palPicker ? palPicker.selection : 'auto', palName };
+}
+
+function paint(ctx, cw, ch, s, o) { return WORK.render(ctx, cw, ch, s, o); }
+
+function renderSingle() {
+  $('seed').value = seed;
+  try {
+    const res = paint(sctx, single.width, single.height, seed >>> 0, { ...palOpts(), params: params() });
+    lastPalName = res && res.pal ? res.pal.name : '';
+    lastPalColors = res && res.pal ? res.pal.colors : [];
+    // `falta` se enseña porque un 0 y un 1,4 son dos cosas distintas: sin verlo
+    // no se distingue una pieza que cumple de una que es lo menos malo del seed.
+    const oj = res.ojos.length ? res.ojos.slice(0, 4).map(o => (o * 100).toFixed(1) + '%').join(' ') : '—';
+    $('status').textContent = `seed #${seed} · ${res.tipo} · ${res.cintas} cintas · `
+      + `${res.pliegues} pliegues · ${res.pasillos} pasillos (${res.largoPas.toFixed(0)}W) · `
+      + `ojos ${res.ojos.length} (${oj}) · tinta ${Math.round(res.ocupacion * 100)}% · falta ${res.falta.toFixed(2)}`;
+    drawTraits(WORK.traits(res));
+  } catch (e) { $('status').textContent = '⚠ ' + e.message; console.error(e); }
+}
+function drawTraits(t) {
+  $('traits').innerHTML = t.list.map(x => `
+    <div class="t"><span class="k">${x.key}</span>
+    <span class="v">${x.colors ? `<span class="dots">${x.colors.slice(0,6).map(c=>`<span class="dot" style="background:${c}"></span>`).join('')}</span>` : ''}${x.val}</span></div>`).join('') +
+    `<div class="t" style="margin-top:4px;border-top:1px solid var(--border);padding-top:5px;"><span class="k">Overall</span><span class="v">${t.overall}</span></div>`;
+}
+function renderSheet() {
+  const grid = $('sheetGrid'); grid.innerHTML = '';
+  const base = seed >>> 0;
+  for (let i = 0; i < SHEET_N; i++) {
+    const s = (base + i * 0x9E3779B1) >>> 0;
+    const c = document.createElement('canvas');
+    c.width = ROT ? SHEET_H : SHEET_W; c.height = ROT ? SHEET_W : SHEET_H;
+    try { paint(c.getContext('2d'), c.width, c.height, s, { ...palOpts(), params: params() }); } catch (e) {}
+    const fig = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = '#' + s;
+    fig.style.position = 'relative';
+    fig.appendChild(c); fig.appendChild(cap);
+    c.addEventListener('click', () => { seed = s; setSheet(false); });
+    if (batch) batch.attach(fig, s);
+    grid.appendChild(fig);
+  }
+}
+let VIEW = 'single';
+function setView(v) {
+  if (v === 'batch' && !(batch && batch.open)) {
+    $('status').textContent = 'No hay lote abierto — elige uno o crea otro con + en el panel';
+    return;
+  }
+  VIEW = v; sheetMode = (v === 'sheet');
+  $('single').style.display = v === 'single' ? 'block' : 'none';
+  $('sheetGrid').style.display = v === 'single' ? 'none' : 'grid';
+  $('sheet').textContent = v === 'sheet' ? '▦ Vista única (g)' : '▦ Grid de obras (g)';
+  $('batchView').textContent = v === 'batch' ? '▦ Vista única (b)' : '▦ Ver el lote (b)';
+  if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; }
+  else if (v === 'batch') { $('sheetGrid').innerHTML = ''; $('status').textContent = batch.renderFull($('sheetGrid')); }
+  else renderSingle();
+}
+function setSheet(on) { setView(on ? 'sheet' : 'single'); }
+function refresh() { if (VIEW === 'batch') { $('status').textContent = batch.renderFull($('sheetGrid')); } else sheetMode ? renderSheet() : renderSingle(); }
+function populateSelect() {
+  $('palCount').textContent = PALETTES.length;
+  if (palPicker) palPicker.setPalettes(PALETTES);
+  else palPicker = HOKSLAB.mountPalettePicker($('palPicker'), { palettes: PALETTES, onChange: refresh });
+}
+
+$('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
+$('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
+$('field').onchange = refresh;
+$('tipo').onchange = refresh;
+$('reserva').onchange = refresh;
+$('ci').oninput = () => { $('ciV').textContent = $('ci').value === '0' ? 'auto' : $('ci').value; refresh(); };
+$('pl').oninput = () => { $('plV').textContent = $('pl').value === '-1' ? 'auto' : $('pl').value; refresh(); };
+$('an').oninput = () => { $('anV').textContent = parseFloat($('an').value) === 0 ? 'auto' : '×' + parseFloat($('an').value).toFixed(2); refresh(); };
+$('ca').oninput = () => { $('caV').textContent = parseFloat($('ca').value) === 0 ? 'auto' : '1/' + Math.round(1 / parseFloat($('ca').value)); refresh(); };
+$('bg').onchange = () => { syncBgAuto(); refresh(); };
+function syncBgAuto() {
+  const auto = $('bg').value === 'auto', p = parseInt($('bgP').value, 10);
+  $('bgAuto').style.display = auto ? '' : 'none';
+  $('bgPV').textContent = p + '%'; $('bgPS').textContent = (100 - p) + '%';
+}
+$('bgP').value = (WORK.BG_GRADIENT != null ? WORK.BG_GRADIENT : 50);
+$('bgP').oninput = () => { syncBgAuto(); refresh(); };
+syncBgAuto();
+
+$('grain').onchange = refresh;
+$('cartela').onclick = () => {
+  if (VIEW !== 'single') setView('single');
+  $('status').textContent = 'cartela A5…';
+  HOKSCARTELA.download({
+    work: SLUG, seed: seed >>> 0, format: FORMAT, field: $('field').value,
+    sheet: (batch && batch.sheet) ? batch.sheet() : HOKS.DEFAULT_SHEET,
+    palette: lastPalName || '—', palColors: lastPalColors, thumb: single,
+    year: new Date().getFullYear(),
+  }).then(() => { $('status').textContent = 'cartela A5 · 148×210 mm · 300 dpi'; })
+    .catch(e => { $('status').textContent = '⚠ ' + e.message; });
+};
+$('sheet').onclick = () => setView(VIEW === 'sheet' ? 'single' : 'sheet');
+$('batchView').onclick = () => setView(VIEW === 'batch' ? 'single' : 'batch');
+$('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `hrrs_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'Space') { e.preventDefault(); seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); }
+  else if (e.key === 'ArrowRight') { seed = (seed + 1) >>> 0; refresh(); }
+  else if (e.key === 'ArrowLeft') { seed = (seed - 1) >>> 0; refresh(); }
+  else if (e.key === 'c' || e.key === 'C') $('cartela').click();
+  else if (e.key === 's' || e.key === 'S') $('save').click();
+  else if (e.key === 'g' || e.key === 'G') setView(VIEW === 'sheet' ? 'single' : 'sheet');
+  else if (e.key === 'b' || e.key === 'B') setView(VIEW === 'batch' ? 'single' : 'batch');
+  else if (e.key === 'a' || e.key === 'A') { if (batch) batch.add(seed); }
+});
+
+populateSelect();
+const fmtSel = HOKSLAB.mountFormatSelect($('fmt'), SLUG, {
+  fallback: WORK.FORMATS,
+  onChange: f => { FORMAT = f; applyFormat(); refresh(); },
+});
+FORMAT = $('fmt').value;
+$('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
+HOKSLAB.mountWallLink($('wallLink'), () => ({
+  work: SLUG, seed: seed >>> 0, format: FORMAT, params: params(),
+  palSel: palPicker ? palPicker.selection : 'auto',
+}));
+HOKSLAB.mountWorkPicker($('workPicker'), SLUG, () => seed);
+batch = HOKSBATCH.mount($('batchPanel'), {
+  work: SLUG, getRecipe: recipeFor, getPalettes: () => PALETTES, getSeed: () => seed,
+  toast: m => { $('status').textContent = m; },
+});
+HOKSLAB.loadAlgos(() => batch.refresh());
+applyFormat();
+renderSingle();
+HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});
+</script>
+</body>
+</html>
