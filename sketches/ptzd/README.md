@@ -124,6 +124,14 @@ abierto, no una explosión detenida.
    corte **suelta** una pieza. El que agota su recorrido dentro de la masa es una
    **sajadura**: abre y no divide. Una sajadura no es un corte fallido — es el
    único sitio donde se ve que el blanco es una herramienta y no una frontera.
+   **Y una sajadura no crea un espacio interior: crea un CASI.** Ésta era la
+   pregunta de verdad —¿tienen las líneas que crear espacios?— y la primera
+   respuesta programada, «que muera dentro», no valía: un corte que entra y se
+   para en campo abierto no abre nada y se lee como una línea *dibujada* encima de
+   la masa. Una sajadura apunta a otro corte o a un canto y **se queda corta**, y
+   lo que dice es que ahí hubo una placa que estuvo a punto de soltarse y no se
+   soltó. El vacío que produce es virtual —el de la placa que no llegó a existir—,
+   así que su medida no es cuánto abre sino **cuánto le falta**.
 6. **EL CORTE METE ESPACIO, NO QUITA MATERIA.** Ésta es la clave, y viene entera
    de él: en las *Gravitaciones* los papeles no se pegan, se mete espacio donde
    iría la cola. Vaciar la materia es llenar de espacio vacío. La consecuencia es
@@ -509,25 +517,80 @@ placas, lo que queda deja de leerse como un bloque roto y pasa a ser dos objetos
 sueltos— y **la segunda tinta no puede parecerse al suelo**, ni en color ni en
 lado del valor.
 
+### Cuarta revisión: lo que dijo el ojo, y el hilo
+
+Aquí pasaron dos cosas a la vez, desde los dos lados, y dijeron lo mismo.
+
+**Por un lado, la crítica formal:** líneas demasiado juntas que no forman ningún
+espacio de interés; ángulos en V que van y vienen sin abrir nada; y sobre todo
+**hilos de materia demasiado finos** entre dos blancos. El problema nunca fue que
+el hueco resultante fuera pequeño —un hueco pequeño puede ser bueno— sino que lo
+que quedaba de tinta ya no se leía como materia.
+
+**Por otro, el entrenamiento:** 100 lotes de 5, juzgados a ciegas. Dos señales, y
+se comprobó que son **independientes** —controlando una, la otra aguanta—:
+
+```
+tipo        partido +16 · hendido −0 · astillado −7 · arbol −11
+piezas      3–4 +11 · 8 −21          (monótona a la baja desde 4)
+sajaduras   0 +15 · 1 −5 · 2 −18     (y negativa en TODAS las franjas de piezas:
+                                      con 2–3 placas, sin sajadura +32, con dos −13)
+gubia · faltan · escalones · tintas · paleta   ≈ 0   (ninguna preferencia)
+```
+
+Que `sajaduras` siga en negativo **dentro** de cada franja de recuento de placas
+es lo que prueba que no es el cortejo de otro rasgo: la sajadura, tal como estaba,
+restaba siempre — incluso en `hendido`, que es el tipo cuya identidad era llevar
+una. Y la razón la dio la crítica: entraba, no abría nada y volvía.
+
+Tres guardas nuevas, y las tres dicen lo mismo de otra manera — **un corte tiene
+que dejar algo**:
+
+- **EL HILO.** Un corte que camina pegado a un borde que ya existe no separa una
+  placa: deja una tira de tinta que se lee como un pelo. Se mide la distancia del
+  recorrido al borde de la pieza —saltándose las aristas por las que entra y
+  sale— y se exige 3,6 anchuras de gubia. Vale para los dos tipos de corte, y es
+  lo que mata los corredores de blancos casi paralelos.
+- **LA RECTITUD.** Cuerda entre recorrido. Una V es una ida y una venida que
+  dejan la misma masa que había, más ruido. 0,66 para la sajadura, 0,42 para el
+  corte que suelta.
+- **EL CASI.** La sajadura tiene que morir entre 1,6 y 5,5 gubias de otro borde:
+  ni pegada a él —sería un corte que suelta— ni a media hoja, donde no señala
+  nada.
+
+Y los pesos se movieron con el patrón: `partido` de 0,30 a 0,38, `arbol` de 0,38
+a 0,28 y con menos cortes (4–6), `astillado` con 7–9. **No se colapsa la familia
+en un tipo**: `astillado` sigue saliendo porque es la que hace la pregunta del
+límite, y el propio instrumento avisa de que mover los pesos hacia la preferencia
+estrecha la obra. Se movió, no se obedeció.
+
+**Efecto colateral que hay que decir:** con las tres guardas, `sajaduras: 2` ya no
+ocurre nunca. El valor sigue declarado por si se aflojan, pero hoy es un rasgo
+muerto.
+
 ## Medido
 
 500 tiradas en cuadrado, sobre las paletas por defecto del motor:
 
 ```
-tipo        arbol 38%  partido 29%  hendido 19%  astillado 14%
-gubia       fina 31%  media 46%  ancha 24%
-tintas      una 79%  dos 18%  tres 3%
-piezas      p10 2 · p50 5 · p90 9 · max 12
-sajaduras   p10 0 · p50 1 · p90 2 · max 2
-faltan      p10 0 · p50 1 · p90 2            (placas que se soltaron y no están)
-escalones   p10 0 · p50 1 · p90 2            (esquinas quitadas al taco)
-hondura     p10 1 · p50 2 · p90 3            (profundidad del árbol de fractura)
-mancha      p10 24,6%  p50 32,2%  p90 43,4%  max 58,2%
+tipo        partido 38%  arbol 28%  hendido 20%  astillado 14%
+gubia       fina 31%  media 47%  ancha 22%
+tintas      una 83%  dos 15%  tres 3%
+piezas      p10 2 · p50 4 · p90 7 · max 10
+            2:18% 3:26% 4:18% 5:13% 6:8% 7:6% 8:4% 9:4% 10:2%
+sajaduras   0 · 76%   1 · 24%   (dos, ya nunca)
+faltan      0 · 34%   1 · 50%   2 · 17%
+escalones   0 · 22%   1 · 53%   2 · 26%
+mancha      p50 32,1%
 papel crudo 32%
-overall     common 40%  uncommon 35%  rare 15%  superrare 7%  legendary 3%
-tipo cumplido  98,4% de las piezas alcanza los cortes que declara
-ms          ~9 por pieza a 300 px, incluidos el grano y la veta
+overall     common 43%  uncommon 30%  rare 14%  superrare 9%  legendary 4%
+tipo cumplido  99,2% de las piezas alcanza los cortes que declara
+ms          ~18 por pieza a 300 px, con grano y veta
 ```
+
+El coste por pieza subió de ~9 a ~18 ms con la guarda del hilo, que compara el
+recorrido contra todo el borde por cada candidato. Es geometría, así que **no
+crece con la resolución**: a 300 dpi el reloj lo sigue marcando el grano.
 
 Los cortes de la rareza **no salen de la intuición**: se midió la distribución
 real del cociente sobre 500 tiradas y se pusieron en los percentiles que reparte

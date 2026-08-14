@@ -70,10 +70,16 @@
   // `cortes` son los que se INTENTAN; los que salen se cuentan al final, que es
   // la regla de método de TRZS y EVOL: el tipo declara y el resultado se comprueba.
   const TIPOS = [
-    { key: 'hendido',   p: 0.18, cortes: [1, 2],  sajaduras: [1, 2] },
-    { key: 'partido',   p: 0.30, cortes: [3, 4],  sajaduras: [0, 1] },
-    { key: 'arbol',     p: 0.38, cortes: [5, 8],  sajaduras: [0, 2] },
-    { key: 'astillado', p: 0.14, cortes: [8, 11], sajaduras: [0, 1] },
+    // Los pesos y los recuentos se movieron con el patrón medido en
+    // `entrenamiento/` sobre 100 lotes: `partido` fue el único tipo con sesgo
+    // positivo (+16) y el recuento alto se hundía (8 piezas, −21). Se mueve, pero
+    // NO se colapsa la familia en un tipo: parte del valor de una serie está en
+    // las tiradas que no gustan a la primera, y `astillado` es la que hace la
+    // pregunta del límite. Sigue saliendo, sólo que menos y con menos cortes.
+    { key: 'hendido',   p: 0.20, cortes: [1, 2], sajaduras: [0, 1] },
+    { key: 'partido',   p: 0.38, cortes: [3, 4], sajaduras: [0, 1] },
+    { key: 'arbol',     p: 0.28, cortes: [4, 6], sajaduras: [0, 1] },
+    { key: 'astillado', p: 0.14, cortes: [7, 9], sajaduras: [0, 1] },
   ];
 
   const BLOQUE_MIN = 0.58, BLOQUE_MAX = 0.70;   // lado del bloque / lado corto del campo
@@ -122,6 +128,16 @@
   // un reparto DESEADO —bien lejos del 1:1— y de varios cortes candidatos se
   // queda el que más se le acerca. De ahí la jerarquía de placas: una grande,
   // una mediana y un par pequeñas, que es lo que hace que haya dónde mirar.
+  // Cuánto tiene que apartarse un corte de un borde que ya existe, en anchuras
+  // de gubia, para que lo que quede en medio siga siendo materia y no un hilo.
+  const HILO_MIN = 3.6;
+  // Una sajadura tiene que VIAJAR: cuerda/recorrido mínima, y largo mínimo.
+  const RECTITUD_SAJA = 0.66, RECTITUD_CORTE = 0.42, SAJA_LARGO_MIN = 0.20;
+  // Una sajadura APUNTA a otro borde y se queda corta: ni pega en él (sería un
+  // corte que suelta) ni se muere en campo abierto (no diría nada). El aire que
+  // le queda por delante, en anchuras de gubia.
+  const SAJA_AIRE_MIN = 1.6, SAJA_AIRE_MAX = 5.5;
+
   const REPARTO_MIN = 0.10, REPARTO_MAX = 0.42;
   const CANDIDATOS  = 4;
 
@@ -231,6 +247,46 @@
       pos += L;
     }
     return out;
+  }
+
+  // Distancia de un punto al segmento a→b.
+  function distSeg(p, a, b) {
+    const ab = sub(b, a), l2 = ab[0] * ab[0] + ab[1] * ab[1];
+    if (l2 < 1e-18) return len(sub(p, a));
+    let t = ((p[0] - a[0]) * ab[0] + (p[1] - a[1]) * ab[1]) / l2;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    return len(sub(p, lerp2(a, b, t)));
+  }
+
+  /* EL HILO. Un corte que camina pegado a un borde que ya existe no separa una
+   * placa: deja una TIRA DE MATERIA demasiado fina entre los dos blancos. El
+   * problema no es que el hueco resultante sea pequeño —un hueco pequeño puede
+   * ser bueno— sino que lo que queda de tinta ya no se lee como materia, se lee
+   * como un pelo. Y dos blancos casi paralelos no dicen nada: no abren espacio,
+   * sólo hacen ruido.
+   *
+   * Se mide la distancia del recorrido al borde de la pieza, saltándose las
+   * aristas por las que el corte entra y sale —a ésas las toca por definición— y
+   * los primeros y últimos pasos. */
+  function hilo(poly, pts, evita) {
+    let mn = Infinity;
+    const m = poly.length, salto = 3;
+    for (let k = salto; k < pts.length - salto; k++)
+      for (let i = 0; i < m; i++) {
+        if (evita(i)) continue;
+        const d = distSeg(pts[k], poly[i], poly[(i + 1) % m]);
+        if (d < mn) mn = d;
+      }
+    return mn;
+  }
+  /* LA RECTITUD. Cuerda entre recorrido. Un corte que entra y se vuelve sobre sí
+   * mismo dibuja una V, y una V no abre nada: es una ida y una venida que dejan
+   * la misma masa que había, más ruido. Una sajadura sólo abre el bloque si
+   * VIAJA — si no, es un arañazo con forma de ángulo. */
+  function rectitud(pts) {
+    let arco = 0;
+    for (let i = 0; i < pts.length - 1; i++) arco += len(sub(pts[i + 1], pts[i]));
+    return arco > 1e-9 ? len(sub(pts[pts.length - 1], pts[0])) / arco : 0;
   }
 
   // Intersección de a→b con c→d. Devuelve {t,u} o null.
@@ -751,6 +807,14 @@
         if (par[0].poly.length < 3 || par[1].poly.length < 3) continue;
         if (Math.min(a0, a1) < Math.max(PIEZA_SUELO * areaBloque, PIEZA_MIN * (a0 + a1))) continue;
         if (!esbelta(par[0].poly, ESBELTEZ_MIN) || !esbelta(par[1].poly, ESBELTEZ_MIN)) continue;
+        if (rectitud(cand.pts) < RECTITUD_CORTE) continue;
+        // Y no puede ir pegado a un borde que ya existe: entre los dos blancos
+        // quedaría un hilo de tinta, y eso no es una placa.
+        const mp = pc.poly.length, cerca = (a, b) => {
+          const d = Math.abs(a - b) % mp; return Math.min(d, mp - d) <= 6;
+        };
+        if (hilo(pc.poly, cand.pts, i => cerca(i, cand.inEdge) || cerca(i, cand.outEdge))
+            < HILO_MIN * gubia.w * S) continue;
         const falla = Math.abs(Math.min(a0, a1) / Math.max(a0, a1) - quiere);
         if (!mejor || falla < mejor.falla) mejor = { cut: cand, par, a0, a1, falla };
       }
@@ -839,16 +903,46 @@
       const ent = entrada(rng, pc, foco, rng.bool(0.6));
       const cut = walk(rng, pc, ent.e, ent.t, S, TRAMOS_SAJA, ladeo, rng.range(0.45, 1.0), pulso);
       if (cut.suelta) continue;
-      // Una sajadura que muere a un pelo del borde no es una sajadura: es un corte
-      // que no llegó. Se exige aire por delante.
+      /* QUÉ ABRE UNA SAJADURA. Ésta era la pregunta de verdad, y la respuesta que
+       * estaba programada —«que muera dentro»— no valía: un corte que entra y se
+       * para en campo abierto no genera ningún espacio, y se lee como una línea
+       * dibujada encima de la masa.
+       *
+       * Una sajadura NO crea un espacio interior. Crea un CASI: apunta a otro
+       * corte o a un canto y se queda corta, y lo que dice es que ahí hubo una
+       * placa que estuvo a punto de soltarse y no se soltó. El vacío que produce
+       * es virtual —el de la placa que no llegó a existir—, y por eso su medida
+       * no es cuánto abre sino CUÁNTO LE FALTA.
+       *
+       * Ni pega en el borde (entonces sería un corte que suelta) ni se muere a
+       * media hoja (entonces no señala nada). Entre gubia y media y cinco. */
       const fin = cut.pts[cut.pts.length - 1];
+      const mf = pc.poly.length, cercaF = b => {
+        const d = Math.abs(ent.e - b) % mf; return Math.min(d, mf - d) <= 6;
+      };
       let aire = Infinity;
-      for (let i = 0, m = pc.poly.length; i < m; i++) {
-        const a = pc.poly[i], b = pc.poly[(i + 1) % m], ab = sub(b, a);
-        const t = Math.max(0, Math.min(1, (ab[0] * (fin[0] - a[0]) + ab[1] * (fin[1] - a[1])) / (ab[0] * ab[0] + ab[1] * ab[1] || 1)));
-        aire = Math.min(aire, len(sub(fin, lerp2(a, b, t))));
+      for (let i = 0; i < mf; i++) {
+        if (cercaF(i)) continue;   // el canto por el que entró no cuenta
+        aire = Math.min(aire, distSeg(fin, pc.poly[i], pc.poly[(i + 1) % mf]));
       }
-      if (aire < gubia.w * S * 1.6) continue;
+      if (!(aire >= gubia.w * S * SAJA_AIRE_MIN && aire <= gubia.w * S * SAJA_AIRE_MAX)) continue;
+
+      /* Y aquí es donde la sajadura se gana el sitio o no lo tiene. El
+       * entrenamiento la puso en negativo en TODAS las franjas de recuento de
+       * placas —con 2 o 3 piezas, sin sajadura +32 y con dos −13—, así que no es
+       * el arrastre de otro rasgo: la sajadura, tal como estaba, restaba
+       * siempre. Y la razón es formal: entraba, no abría nada y volvía.
+       *
+       * Tres exigencias, y las tres dicen lo mismo de otra manera: una sajadura
+       * es un corte que ABRE, no una línea que entra. */
+      let arco = 0;
+      for (let i = 0; i < cut.pts.length - 1; i++) arco += len(sub(cut.pts[i + 1], cut.pts[i]));
+      if (arco < SAJA_LARGO_MIN * S) continue;                  // que recorra
+      if (rectitud(cut.pts) < RECTITUD_SAJA) continue;          // que no sea una V
+      const ms = pc.poly.length, cercaS = (a, b) => {
+        const d = Math.abs(a - b) % ms; return Math.min(d, ms - d) <= 6;
+      };
+      if (hilo(pc.poly, cut.pts, i => cercaS(i, ent.e)) < HILO_MIN * gubia.w * S) continue;
 
       // DOS SAJADURAS NO SE CRUZAN. Cruzándose forman un aspa o una cruz, y una
       // cruz es un SIGNO: deja de ser un hueco en la masa y pasa a ser algo
@@ -939,11 +1033,14 @@
    *
    * Las frecuencias de abajo salen de esa misma medición, no de la intuición, y
    * hay que volver a medirlas cada vez que se toque la gramática. */
-  const F_PIEZAS = { 2: .160, 3: .206, 4: .110, 5: .090, 6: .092, 7: .086, 8: .110, 9: .074, 10: .036, 11: .026, 12: .010 };
-  const F_SAJA   = { 0: .364, 1: .426, 2: .210 };
-  const F_FALTA  = { 0: .348, 1: .468, 2: .184 };
-  const F_ESCAL  = { 0: .212, 1: .532, 2: .256 };
-  const F_TINTA  = { 1: .790, 2: .176, 3: .034 };
+  const F_PIEZAS = { 2: .180, 3: .260, 4: .183, 5: .132, 6: .083, 7: .062, 8: .040, 9: .040, 10: .020 };
+  // `sajaduras: 2` ya no ocurre: con las tres exigencias nuevas, una segunda
+  // sajadura casi nunca las pasa. El valor se deja en la tabla —por si se
+  // aflojan— pero hoy es un rasgo muerto, y el README lo dice.
+  const F_SAJA   = { 0: .755, 1: .245, 2: .002 };
+  const F_FALTA  = { 0: .335, 1: .495, 2: .170 };
+  const F_ESCAL  = { 0: .215, 1: .530, 2: .255 };
+  const F_TINTA  = { 1: .825, 2: .147, 3: .028 };
 
   function rar(p) { return p > 0.06 ? 'common' : p > 0.018 ? 'uncommon' : p > 0.005 ? 'rare' : p > 0.0012 ? 'superrare' : 'legendary'; }
 
@@ -952,7 +1049,7 @@
   // obras en el mismo cajón. Lo que se compara es contra la obra MÁS PROBABLE de
   // la familia — cuánto se aparta ésta de la que más sale. Así la escala es
   // legible (1 = la más corriente posible) y no depende de cuántos rasgos haya.
-  const P_MAX = { tipo: 0.38, gubia: 0.50, pz: 0.206, sj: 0.426, papel: 0.68, pal: 0.12, fl: 0.468, es: 0.532, tn: 0.79 };
+  const P_MAX = { tipo: 0.38, gubia: 0.473, pz: 0.26, sj: 0.755, papel: 0.685, pal: 0.12, fl: 0.495, es: 0.53, tn: 0.825 };
   // Los cortes NO salen de la intuición: se midió la distribución real de `r`
   // sobre 500 tiradas y se pusieron en los percentiles que la casa reparte
   // (≈40/35/15/7/3). La paleta va aparte en el producto y sólo empuja hacia más
