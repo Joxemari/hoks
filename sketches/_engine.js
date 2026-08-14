@@ -133,6 +133,78 @@
     ctx.putImageData(id, 0, 0);
   }
 
+  // ── Roles de tinta: dos colores, y se renuncia al resto ─────────────────────
+  // Las paletas de hoks son listas planas: no declaran suelo ni tinta. Las
+  // familias de masa (EVOL, HRRS, y PTZD cuando exista) necesitan DOS colores y
+  // renuncian a los demás — un cuerpo de tres colores deja de ser un cuerpo.
+  //
+  // Esto vivía en `evol/algo.js`. Sube aquí porque HRRS es la TERCERA familia que
+  // lo pide, y `ptzd/README.md` ya lo dejó dicho: «No se copia: se sube a
+  // _engine.js. Es la segunda familia que lo pide; la tercera ya sería tarde». El
+  // bug histórico de PLLS —acabados invisibles durante meses, ocho copias
+  // inline— es exactamente esto.
+  //
+  // La pareja se elige por DISTANCIA DE COLOR, no por luminancia. Con luminancia,
+  // las series Itten (cuatro colores entre 0,31 y 0,44 de luma) daban rojo sobre
+  // rojo: son contrastes de TONO, y ahí el ojo lee la figura perfectamente aunque
+  // el valor sea el mismo. Elegido el par, la luminancia sí decide quién es suelo
+  // — el claro, salvo inversión.
+  function dcolor(a, b) {
+    const x = hexToRgb(a), y = hexToRgb(b);
+    return (Math.abs(x[0] - y[0]) + Math.abs(x[1] - y[1]) + Math.abs(x[2] - y[2])) / 765;
+  }
+
+  // Las DOS decisiones de color se tiran aparte del reparto, y SIEMPRE las dos.
+  // Así el stream del RNG no depende de lo que salga, y el reparto puede volver a
+  // calcularse con otra bandera sin mover ni un vértice — que es lo que necesita
+  // el acoplamiento de la inversión de EVOL.
+  function inkDice(rng, pInv) { return { inv: rng.bool(pInv), crudo: rng.bool(0.5) }; }
+
+  function inkRoles(colors, dd) {
+    const uniq = colors.filter((c, i) => colors.indexOf(c) === i);
+    if (uniq.length < 2) return { suelo: uniq[0] || '#e8e2d0', tinta: '#111111', otra: null, inv: false, papel: 'blanco' };
+
+    let a = uniq[0], b = uniq[1], best = -1;
+    for (let i = 0; i < uniq.length; i++) {
+      for (let j = i + 1; j < uniq.length; j++) {
+        const d = dcolor(uniq[i], uniq[j]);
+        if (d > best) { best = d; a = uniq[i]; b = uniq[j]; }
+      }
+    }
+    const claro = luma(a) >= luma(b) ? a : b;
+    const oscuro = claro === a ? b : a;
+    // La inversión —tinta clara sobre suelo oscuro— existe y es minoría. No es un
+    // negativo: es la otra manera de que el vacío tenga borde.
+    const inv = dd.inv;
+    const tinta = inv ? claro : oscuro;
+    let suelo = inv ? oscuro : claro;
+
+    // EL PAPEL. Elegir el par más distante lleva SIEMPRE al blanco, y el blanco no
+    // es el único suelo posible: las referencias de estas familias están sobre
+    // papel crudo —un tono medio y cálido— y ahí la masa negra pesa distinto,
+    // porque el suelo deja de ser ausencia de tinta y se vuelve material. Si la
+    // paleta tiene un tono medio que aguante el contraste, se usa la mitad de las
+    // veces. No es un ajuste: es qué papel se compra.
+    let papel = 'blanco';
+    if (!inv) {
+      const crudos = uniq.filter(c => c !== tinta && luma(c) >= 0.52 && luma(c) <= 0.93
+                                      && dcolor(c, tinta) > 0.42);
+      if (crudos.length && dd.crudo) {
+        // El más oscuro de los crudos: es el que más se aleja del blanco, que es
+        // justo lo que se busca al pedir papel.
+        suelo = crudos.sort((x, y) => luma(x) - luma(y))[0];
+        papel = 'crudo';
+      }
+    }
+
+    // Segunda tinta: un cuerpo entero en otro color. Tiene que sostenerse solo
+    // —contraste contra el suelo Y diferencia con la primera tinta—, si no se lee
+    // como un error de registro en la impresión.
+    const resto = uniq.filter(c => c !== suelo && c !== tinta);
+    const otra = resto.find(c => dcolor(c, suelo) > 0.34 && dcolor(c, tinta) > 0.30) || null;
+    return { suelo, tinta, otra, inv, papel };
+  }
+
   // ── Paletas: probabilidad ponderada por edad (lo reciente pesa más) ─────────
   function ageWeight(created) {
     if (!created || created < 1e12) return 4;
@@ -453,6 +525,7 @@
   global.HOKS = {
     Rng, hexToRgb, luma, lerpColor, softLight,
     drawMeshGradient, bakeGrain, applyGrain, grain, bgMode, pickBg, hash01, fieldMode, fieldGrid, FIELD_MARGIN,
+    dcolor, inkDice, inkRoles,
     ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
     FORMATS, ALL_FORMATS, formatsFor, SHEETS, SHEET_IDS, sheetIdsFor, WALL_SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,
     fmtDims, previewDims, printDims, nominalAspect, unit, mountFormat, exportPrint,
