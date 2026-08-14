@@ -93,10 +93,10 @@
     // encima de 2). Se lee como que el rechazo de la 1ª no era a los cortes sino
     // a los cortes MALOS: arreglados, el ojo quiere más. Se mueve en esa
     // dirección sin agotarla — dos vueltas afinan, diez producen una sola obra.
-    { key: 'hendido',   p: 0.15, cortes: [1, 2], sajaduras: [0, 1], gubias: [0.18, 0.44, 0.38] },
-    { key: 'partido',   p: 0.34, cortes: [3, 4], sajaduras: [0, 1], gubias: [0.36, 0.52, 0.12] },
-    { key: 'arbol',     p: 0.33, cortes: [4, 6], sajaduras: [0, 1], gubias: [0.42, 0.50, 0.08] },
-    { key: 'astillado', p: 0.18, cortes: [7, 9], sajaduras: [0, 1], gubias: [0.66, 0.34, 0.00] },
+    { key: 'hendido',   p: 0.15, cortes: [1, 2], sajaduras: [0, 1], gubias: { fina: 0.18, media: 0.44, ancha: 0.38 } },
+    { key: 'partido',   p: 0.34, cortes: [3, 4], sajaduras: [0, 1], gubias: { fina: 0.36, media: 0.52, ancha: 0.12 } },
+    { key: 'arbol',     p: 0.33, cortes: [4, 6], sajaduras: [0, 1], gubias: { fina: 0.42, media: 0.50, ancha: 0.08 } },
+    { key: 'astillado', p: 0.18, cortes: [7, 9], sajaduras: [0, 1], gubias: { fina: 0.66, media: 0.34, ancha: 0.00 } },
   ];
 
   /* Y el techo lo pone la gubia, no el tipo. Los pesos de arriba hacen que el
@@ -822,7 +822,7 @@
     const tipo = params.tipo ? (TIPOS.find(t => t.key === params.tipo) || TIPOS[2])
                              : rng.weighted(TIPOS.map(t => ({ ...t, prob: t.p })));
     const gubia = params.gubia ? (GUBIAS.find(g => g.key === params.gubia) || GUBIAS[1])
-                               : rng.weighted(GUBIAS.map((g, i) => ({ ...g, prob: tipo.gubias[i] })));
+                               : rng.weighted(GUBIAS.map(g => ({ ...g, prob: tipo.gubias[g.key] })));
     const ladeo = rng.range(-LADEO_MAX, LADEO_MAX);
 
     /* MONOCROMO O POLÍCROMO. La regla 1 dice una masa, una tinta, y sigue siendo
@@ -1032,7 +1032,6 @@
     for (const pc of piezas) {
       const p2 = retirar(pc.poly, pc.kind, pc.retiro);
       if (grosor(p2, GROSOR_VUELTA, gubia.w * S * 0.8) >= GROSOR_MIN * gubia.w * S) pc.poly = p2;
-      else pc.retiro = 0;
     }
 
     // Las sajaduras: entran por el borde y se mueren dentro. No sueltan nada.

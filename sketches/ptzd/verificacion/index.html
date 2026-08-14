@@ -28,7 +28,7 @@
 toque la gramática. No es una galería: aquí no se mira, se mide.</p>
 
 <p>
-  <label>obras por bloque <input id="n" type="number" value="120" min="20" max="800"></label>
+  <label>obras por bloque <input id="n" type="number" value="120" min="20" max="2000"></label>
   <button id="go">Medir</button>
   <span id="estado" class="esperando"></span>
 </p>
@@ -72,6 +72,7 @@ toque la gramática. No es una galería: aquí no se mira, se mide.</p>
   const $ = id => document.getElementById(id);
   const esperar = () => new Promise(r => setTimeout(r, 0));
   let PALS = null;
+  const S0 = +(new URLSearchParams(location.search).get('s0') || 900000);
 
   /* Las paletas de verdad, o esto no mide nada. `HOKS.loadPalettes()` cae al
    * catálogo mínimo embebido cuando no hay red, y con una sola paleta el reparto
@@ -143,7 +144,7 @@ toque la gramática. No es una galería: aquí no se mira, se mide.</p>
     const hist = {}, malas = [];
     let n = 0;
     for (const fmt of ['square', 'horizontal']) for (let i = 0; i < N; i++) {
-      const seed = 900000 + i, L = lienzo(fmt, 760);
+      const seed = S0 + i, L = lienzo(fmt, 760);
       const r = pinta(L.ctx, L.W, L.H, seed, { grainScale: 0, veta: 0 });
       const a = peorAngulo(L.ctx, L.W, L.H, r.col.ground, 0.64);
       suelta(L.cv); n++;
@@ -172,7 +173,7 @@ toque la gramática. No es una galería: aquí no se mira, se mide.</p>
     let n = 0, cortos = 0;
     for (const fmt of ['square', 'horizontal']) for (let i = 0; i < N; i++) {
       const L = lienzo(fmt, 520);
-      const r = pinta(L.ctx, L.W, L.H, 900000 + i, { grainScale: 0 });
+      const r = pinta(L.ctx, L.W, L.H, S0 + i, { grainScale: 0 });
       suelta(L.cv); n++;
       add('tipo', r.tipo); add('gubia', r.gubia); add('piezas', r.piezas);
       add('sajaduras', r.sajaduras); add('faltan', r.faltan); add('escalones', r.escalones);
@@ -210,11 +211,11 @@ toque la gramática. No es una galería: aquí no se mira, se mide.</p>
       const hs = [];
       for (const lado of lados) {
         const L = lienzo(fmt, lado);
-        hs.push(huella(pinta(L.ctx, L.W, L.H, 900000 + i, { grainScale: 0 })));
+        hs.push(huella(pinta(L.ctx, L.W, L.H, S0 + i, { grainScale: 0 })));
         suelta(L.cv);
       }
       n++;
-      if (hs.some(h => h !== hs[0])) malas.push({ fmt, seed: 900000 + i, hs });
+      if (hs.some(h => h !== hs[0])) malas.push({ fmt, seed: S0 + i, hs });
       await esperar();
     }
     return {
@@ -227,13 +228,18 @@ toque la gramática. No es una galería: aquí no se mira, se mide.</p>
 
   // ── Orquesta ─────────────────────────────────────────────────────────────
   async function medir() {
-    const N = Math.max(20, Math.min(800, +$('n').value || 120));
+    const N = Math.max(20, Math.min(2000, +$('n').value || 120));
     $('go').disabled = true;
     await palettes();
     const pasos = [
       ['r1', 'cuñas',   () => cunas(N)],
       ['r2', 'reparto', () => reparto(Math.max(N, 200))],
-      ['r3', 'huella',  () => invariancia(Math.min(N, 40))],
+      // La huella se queda en 60 por formato pase lo que pase: es la pregunta más
+      // cara —tres renders por obra, uno de ellos a 4200 px, y el grano del motor
+      // recorre el lienzo entero aunque esté apagado— y a la vez la más
+      // estructural. Con 180 obras y cero diferencias ya está contestada; con
+      // 2000 tardaría horas y diría lo mismo.
+      ['r3', 'huella',  () => invariancia(Math.min(N, 60))],
     ];
     for (const [id, nombre, fn] of pasos) {
       $('estado').textContent = 'midiendo ' + nombre + '…';

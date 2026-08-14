@@ -391,6 +391,13 @@ Declarar sin comprobar es lo que ya falló dos veces en esta casa:
 - **Muestrario.** Cortes a intervalos iguales: la regla 8 incumplida. Es el riesgo
   más difícil de ver, porque cada pieza suelta parece correcta y sólo el grid lo
   enseña.
+- **Flequillo.** Tres tiras seguidas del ancho mínimo. No es el mosaico —las
+  placas pueden ser pocas— es que la carne se acaba en una franja. La regla 11 le
+  pone suelo a cada tira por separado, pero **no cuenta cuántas van juntas**: eso
+  sigue sin medirse y es lo que hay que mirar en el grid.
+- **La etiqueta que miente.** Un `astillado` con cuatro placas. No es un defecto
+  de la imagen —puede ser buena— es que la rareza se calcula sobre lo declarado.
+  Se mide en `verificacion/` como *cortos*, y por eso la gubia pone techo.
 
 ## Decisiones abiertas
 
