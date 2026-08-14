@@ -30,8 +30,8 @@ done
 # Las obras FANTASMA se excluyen a mano: su cinta es del color del suelo y los
 # detectores que comparan tinta contra fondo no pueden medirlas por
 # construccion. Tienen su propio control (sueloigual) y se miran aparte.
-CFGS=('{"fantasma":"no"}' '{"tipo":"suelto","fantasma":"no"}' '{"tipo":"anudado","fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}' '{"tipo":"tres","fantasma":"no"}' '{"corner":"curvas","fantasma":"no"}' '{"ends":"inglete","fantasma":"no"}' '{"temblor":0.2,"fantasma":"no"}' '{"temblor":0.35,"corner":"curvas","fantasma":"no"}' '{"aspecto":1.5,"fantasma":"no"}' '{"tipo":"tres","aspecto":1.5,"fantasma":"no"}' '{"paralelo":"si","fantasma":"no"}')
-POR=77   # 13 configuraciones x 77 = 1.001, mas las cuatro tandas de 250
+CFGS=('{"fantasma":"no"}' '{"tipo":"suelto","fantasma":"no"}' '{"tipo":"anudado","fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}' '{"tipo":"tres","fantasma":"no"}' '{"corner":"curvas","fantasma":"no"}' '{"ends":"inglete","fantasma":"no"}' '{"temblor":0.2,"fantasma":"no"}' '{"temblor":0.35,"corner":"curvas","fantasma":"no"}' '{"aspecto":1.5,"fantasma":"no"}' '{"tipo":"tres","aspecto":1.5,"fantasma":"no"}')
+POR=85   # 12 configuraciones x 85 = 1.020, mas las cuatro tandas de 250
 
 res() { python3 -c "
 import sys,json,re; d=json.load(sys.stdin)
@@ -72,7 +72,7 @@ echo "##### 4. REMATES, MARGEN Y DISCOS (200 x 5 = 1.000)"
 # Aqui tambien se excluyen las fantasma: su halo NO es el color del suelo (es un
 # tono corrido, para separar del suelo una cinta del color del suelo), asi que
 # el sondeo no ve fondo por ningun lado y marca los cuatro cabos de la obra.
-for c in '{"fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}' '{"tipo":"tres","fantasma":"no"}' '{"paralelo":"si","fantasma":"no"}'; do
+for c in '{"fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}' '{"tipo":"tres","fantasma":"no"}' '{"tipo":"tres","aspecto":1.5,"fantasma":"no"}'; do
   node o2.js trzs_test.js 200 "$c" 2>&1 | sed -n '1,5p'; done
 echo "-- CONTROLES (deben disparar)"
 # `cara` es el control del sondeo de remates: quita la incision de la cara del
@@ -89,7 +89,7 @@ echo
 echo "##### 5. DETERMINISMO"; node det.js
 echo
 echo "##### 6. HOLGURA GEOMETRICA entre hebras sin cruce (200 x 5 = 1.000)"
-for c in '{}' '{"tipo":"trama"}' '{"tipo":"dos"}' '{"tipo":"tres"}' '{"paralelo":"si"}'; do
+for c in '{}' '{"tipo":"trama"}' '{"tipo":"dos"}' '{"tipo":"tres"}' '{"temblor":0.12}'; do
   node solape.js 200 0 "$c" 2>&1 | sed -n '2,3p'; done
 fi
 

@@ -30,22 +30,12 @@ window.solapes = (seed, pals, extra) => {
   for (const q of c.cruces) conCruce.add(Math.floor(q.arriba)+'-'+Math.floor(q.abajo)),
                             conCruce.add(Math.floor(q.abajo)+'-'+Math.floor(q.arriba));
   const saltos = new Set(c.saltos || []);
-  // EL PARALELO DECLARADO NO ES UN SOLAPE.
-  // Dos hebras que van juntas a propósito están a una incisión, o sea muy por
-  // debajo del mínimo que este detector exige — y con razón, porque para
-  // cualquier otro par esa distancia es un defecto. La diferencia es que éste
-  // está DECLARADO en la obra, igual que los saltos: por eso el paralelo se
-  // declara y no se encuentra, y por eso esta línea puede escribirse sin abrir
-  // la puerta a nada más. Un par pegado sin declarar sigue siendo un defecto.
-  const pares = new Set();
-  for (const q of (c.paralelos || [])) { pares.add(q[0]+'-'+q[1]); pares.add(q[1]+'-'+q[0]); }
   let peor = Infinity, cuenta = 0; const casos = [];
   for (let i=0;i<last;i++){
     if (saltos.has(i)) continue;
     for (let j=i+2;j<last;j++){
       if (saltos.has(j)) continue;
       if (conCruce.has(i+'-'+j)) continue;
-      if (pares.has(i+'-'+j)) continue;
       const d = segSeg(p[i],p[i+1],p[j],p[j+1]) / W;
       if (d < peor) peor = d;
       if (d < 1.0) { cuenta++; if (casos.length<3) casos.push({i,j,d:+d.toFixed(2)}); }

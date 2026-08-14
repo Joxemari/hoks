@@ -46,10 +46,6 @@
   // reventaba— pero resuelto es de lo mejor que da la familia, así que se
   // busca a propósito. Improbable: es lo que lo hace valioso.
   const FANTASMA_PROB = 0.035;
-  // Cada cuánto la cinta se encuentra consigo misma y NO se cruza: va al lado.
-  // Empieza en uno de cada cinco, que es donde la figura se reconoce sin
-  // convertirse en la obra.
-  const PARALELO_PROB = 0.20;
 
   // ── Aritmética ────────────────────────────────────────────────────────────
   // Los nombres cortos son los de p5 a propósito: el algoritmo viene de ahí y
@@ -377,27 +373,6 @@
   // funciones que ya tienen su firma hecha. El dibujo es síncrono: se pone
   // al empezar el tejido y se quita al acabar.
   let _saltos = [];
-  // EL PARALELO: LA OTRA MITAD DE LA REGLA DEL ENCUENTRO.
-  //
-  // Cuando una cinta se vuelve a encontrar consigo misma sólo sabía hacer una
-  // cosa: cruzarse, una por encima y la incisión separándolas. Puede hacer la
-  // otra — no cruzarse e ir al lado, con la misma incisión entre las dos. Es la
-  // figura del dibujo de Chillida que la abrió: la banda que se dobla y vuelve
-  // pegada a sí misma.
-  //
-  // No sale sola, y no puede salir: `selfAvoid` exige 1,36 anchuras entre
-  // hebras que no se cruzan y empuja hasta conseguirlo; el paralelo está a una
-  // incisión, o sea a 0,05. Por eso se DECLARA — como el tipo o la esquina— en
-  // vez de encontrarse. Declararlo no es burocracia: es lo único que distingue
-  // un paralelo buscado de dos hebras que se han quedado pegadas por un fallo
-  // del solver, y sin esa distinción no se puede seguir midiendo el segundo.
-  //
-  // Guarda pares de ÍNDICES DE TRAMO, en la misma lista de nodos que `_saltos`.
-  let _paralelos = [];
-  const esParalelo = (i, j) => {
-    for (const q of _paralelos) if ((q[0] === i && q[1] === j) || (q[0] === j && q[1] === i)) return true;
-    return false;
-  };
 
   const esSalto = (i) => _saltos.indexOf(i) >= 0;
   // El índice de cinta de un nodo: cuántos saltos han quedado atrás.
@@ -485,15 +460,6 @@
     // ángulos vivos es de otra obra: si alguien lo pide sobre esquina recta, se
     // le da el corte al bies, que es el remate que esa cinta sí admite.
     if (cfg.ends === "redondos" && cfg.corner !== "curvas") cfg.ends = "inglete";
-
-    // EL PARALELO, con su propio azar como la esquina y el remate. Se lee por
-    // valor y no con `!!`, por lo mismo que el fantasma: quien llama a
-    // generate() directamente usa el vocabulario del laboratorio y `!!"no"` es
-    // true. Ese error ya costó la esquina una vez y el fantasma otra.
-    const pq = cfg.paralelo;
-    cfg.paralelo = (pq === true || pq === 'si') ? true
-                 : (pq === false || pq === 'no') ? false
-                 : new E.Rng((seed ^ 0x9A2A11) >>> 0).next() < PARALELO_PROB;
 
     reseed(seed);
 
@@ -588,7 +554,6 @@
         reseed(seed ^ 0xA17E ^ (k * 0x9E3779B1));
         const t = tejer(family, v, cfg);
         t.saltos = _saltos.slice();
-        t.paralelos = _paralelos.slice();
         t.ang = minAnguloCruce(t.nodes);
         t.nudo = buildKnot(t.nodes.map(n => n.p), t.width);
         t.ciclos = t.nudo.plano.ciclos;
@@ -680,7 +645,6 @@
           for (let v = pedidas; v >= max(cfg.vueltasMin, cfg.cintas || 1); v--) {
             reseed(seed ^ 0xA17E ^ (k * 0x9E3779B1));
             const t = tejer(F, v, cfg);
-            t.paralelos = _paralelos.slice();
             t.saltos = _saltos.slice();
             t.ang = minAnguloCruce(t.nodes);
             t.nudo = buildKnot(t.nodes.map(n => n.p), t.width);
@@ -719,7 +683,6 @@
     // aunque las otras dos sí se entrelacen.
     let entrelazada = null;
     const saltos = intento.saltos || [];
-    const paralelos = intento.paralelos || [];
     if (saltos.length) {
       const cinta = (s) => { let k = 0; for (const x of saltos) if (s > x + 0.5) k++; return k; };
       const gana = new Array(saltos.length + 1).fill(0);
@@ -731,7 +694,7 @@
       entrelazada = gana.every(v => v > 0);
     }
 
-    return { seed, tipo, pal, entrelazada, saltos, paralelos, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, family2: intento.family2, conserva: intento.conserva, volteos: intento.volteos, width, colores, cfg };
+    return { seed, tipo, pal, entrelazada, saltos, family: familiaFinal, rescatada: familiaFinal !== family, vueltas, pedidas, sep: intento.sep, remate: intento.remate, seg: intento.seg, points, cuts, order, depth, cruces, plano, crossings, ciclos: intento.ciclos, family2: intento.family2, conserva: intento.conserva, volteos: intento.volteos, width, colores, cfg };
   }
 
   // ------------------------------------------------------------
@@ -855,7 +818,6 @@
       }
       nodes = trozos[0];
       _saltos = [];
-      _paralelos = [];
       for (let k = 1; k < trozos.length; k++) {
         // el salto es el ÍNDICE DEL ÚLTIMO NODO de la cinta anterior: el
         // segmento que va de ahí al siguiente es el que no se dibuja.
@@ -864,7 +826,6 @@
       }
     } else {
       _saltos = [];
-      _paralelos = [];
       nodes = buildPath(anchors, anchors.length + floor(rng.range(2, 7)), cfg);
     }
 
@@ -883,14 +844,6 @@
       nodes = relaxFolds(nodes, cfg);
       nodes = selfAvoid(nodes, width, cfg);
       width = constrain(anchura * medianSeg(nodes), cfg.widthMin, cfg.widthMax);
-    }
-
-    // AQUÍ SE DECLARA EL PARALELO, y no antes: el recorrido ya está asentado,
-    // así que el par elegido es el que seguirá estándolo al final. Después
-    // quedan doce pasadas de selfAvoid para juntarlo y sostenerlo.
-    if (cfg.paralelo) {
-      const par = eligeParalelo(nodes, width, cfg);
-      if (par) _paralelos = [par];
     }
 
     // Encoger es lo último de cada fase: cualquier reajuste posterior
@@ -939,20 +892,6 @@
                          holguraReal(nodes) / cfg.holguraMin,   // canal de verdad, no un pelo
                          segPercentil(nodes, 0.15) / 1.05);
     width = constrain(admitida, cfg.widthMin, cfg.widthMax);
-
-    // ¿HA LLEGADO? Un paralelo declarado y no conseguido no es un paralelo: si
-    // el solver no ha podido juntarlos —porque en medio había otra hebra que
-    // también tiene derecho a su holgura— el par se queda lejos y no hay figura
-    // que mirar. Se retira la declaración, y con ella la excepción: dejarla
-    // puesta cegaría al detector de solapes en un par que no la necesita, que
-    // es exactamente el precio que no se quiere pagar por esto.
-    // Se comprueba AQUÍ, con la anchura ya definitiva: la de los lazos todavía
-    // podía bajar después, y medido contra la otra el filtro no retiraba nada.
-    if (_paralelos.length) {
-      const [pi, pj] = _paralelos[0];
-      const dPar2 = segDist(nodes[pi].p, nodes[pi+1].p, nodes[pj].p, nodes[pj+1].p);
-      if (dPar2 > width * 1.25 + cfg.gapAbs) _paralelos = [];
-    }
 
     // El temblor NO va aquí. Se probó moviendo el recorrido —en tres sitios
     // distintos del pipeline— y el resultado fue siempre el mismo callejón:
@@ -1141,11 +1080,6 @@
   function selfAvoid(nodes, width, cfg) {
     const dMin = cfg.avoidRatio * width;
     const minL = cfg.minSegRatio * width;
-    // La distancia del paralelo: cuerpo con cuerpo, separados por la incisión.
-    // El halo de la que se pinte después mide justo esa incisión más allá de su
-    // borde, así que el canal que queda a la vista ES la incisión, ni más ni
-    // menos — la misma que separa a dos hebras que se cruzan.
-    const dPar = width + cfg.gapAbs;
     const n = nodes.length;
 
     // Descarte barato antes de medir. Dos segmentos cuyos CENTROS distan
@@ -1179,24 +1113,17 @@
       for (let i = 0; i < n - 1; i++) {
         for (let j = i + 2; j < n - 1; j++) {
           if (esSalto(i) || esSalto(j)) continue;
-          // EL PAR DECLARADO PARALELO TIENE SU PROPIA DISTANCIA, y la fuerza va
-          // en los dos sentidos: si está lejos TIRA, si está cerca empuja. Los
-          // demás pares sólo saben empujar, porque para ellos alejarse siempre
-          // es mejor; para éste, alejarse deshace la figura.
-          const esPar = esParalelo(i, j);
-          const objetivo = esPar ? dPar : dMin;
           const a = nodes[i].p, b = nodes[i+1].p, c = nodes[j].p, d = nodes[j+1].p;
           const mdx = (a.x + b.x - c.x - d.x) / 2, mdy = (a.y + b.y - c.y - d.y) / 2;
-          const alcance = objetivo + (esPar ? 6 * width : 0)
+          const alcance = dMin
             + (Math.hypot(b.x - a.x, b.y - a.y) + Math.hypot(d.x - c.x, d.y - c.y)) / 2;
           if (mdx*mdx + mdy*mdy > alcance*alcance) continue;
           if (segIntersect(a, b, c, d)) continue;          // cruce legítimo
           const gap = segDist(a, b, c, d);
-          if (gap < 1e-9) continue;
-          if (!esPar && gap >= objetivo) continue;
+          if (gap >= dMin || gap < 1e-9) continue;
 
-          const push = (objetivo - gap) * 0.18;
-          if (abs(push) > mayor) mayor = abs(push);
+          const push = (dMin - gap) * 0.18;
+          if (push > mayor) mayor = push;
 
           // Empujar según los puntos MÁS PRÓXIMOS, no según los puntos
           // medios: cuando una hebra se posa encima de otra los medios
@@ -1310,61 +1237,6 @@
   // salía con un tramo más corto que el material admite.
   // Se estira el cabo hasta el mínimo, en su propia dirección: la cinta no
   // cambia de sitio ni de forma, sólo deja de estar cortada a hueso.
-  // ELEGIR EL PAR QUE VA A IR JUNTO.
-  //
-  // Se busca sobre la geometría YA ASENTADA —después del primer lazo de
-  // restricciones—, porque antes el recorrido todavía se está moviendo y el par
-  // elegido no sería el mismo al final. A esas alturas `selfAvoid` ya ha
-  // separado todo a 1,36 anchuras o más, así que ningún par está cerca: lo que
-  // se busca no es proximidad, es PARALELISMO — dos tramos que ya van en la
-  // misma dirección y se solapan a lo largo. Acercarlos es entonces un gesto
-  // corto, de tres décimas de anchura, y la composición no se entera.
-  //
-  // Condiciones, todas necesarias y ninguna estética:
-  //   · ni saltos ni tramos contiguos (j >= i+2): un salto no es cinta y dos
-  //     tramos seguidos comparten vértice, así que "ir juntos" no significa nada
-  //   · que no se corten: si se cortan es un cruce, y el cruce ya tiene su regla
-  //   · ángulo < 18°, en cualquiera de los dos sentidos: la cinta puede volver
-  //     de frente o del revés y las dos leen igual
-  //   · los dos tramos largos (>= 1,6 anchuras) y SOLAPADOS al proyectar uno
-  //     sobre otro: dos tramos alineados punta con punta también son paralelos
-  //     y no se leen como paralelo, se leen como una recta
-  //   · a menos de 3 anchuras: más lejos, juntarlos sí movería la obra
-  //
-  // Gana el de más solape, y a igualdad el más paralelo.
-  function eligeParalelo(nodes, width, cfg) {
-    const n = nodes.length;
-    const largoMin = 1.6 * width, lejos = 3.0 * width;
-    let mejor = null, mejorPunt = 0;
-    for (let i = 0; i < n - 1; i++) {
-      if (esSalto(i)) continue;
-      const a = nodes[i].p, b = nodes[i+1].p;
-      const la = PV.dist(a, b);
-      if (la < largoMin) continue;
-      const ux = (b.x - a.x) / la, uy = (b.y - a.y) / la;
-      for (let j = i + 2; j < n - 1; j++) {
-        if (esSalto(j)) continue;
-        const c = nodes[j].p, d = nodes[j+1].p;
-        const lb = PV.dist(c, d);
-        if (lb < largoMin) continue;
-        if (segIntersect(a, b, c, d)) continue;
-        const sep = segDist(a, b, c, d);
-        if (sep > lejos) continue;
-        const vx = (d.x - c.x) / lb, vy = (d.y - c.y) / lb;
-        const cosang = abs(ux * vx + uy * vy);
-        if (cosang < 0.951) continue;                 // 18 grados
-        // solape: cuánto del tramo j cae dentro del tramo i al proyectarlo
-        const t0 = (c.x - a.x) * ux + (c.y - a.y) * uy;
-        const t1 = (d.x - a.x) * ux + (d.y - a.y) * uy;
-        const solape = min(max(t0, t1), la) - max(min(t0, t1), 0);
-        if (solape < largoMin) continue;
-        const punt = solape * cosang;
-        if (punt > mejorPunt) { mejorPunt = punt; mejor = [i, j]; }
-      }
-    }
-    return mejor;
-  }
-
   function sacarExtremos(nodes, width, cfg) {
     let cx = 0, cy = 0;
     for (const n of nodes) { cx += n.p.x; cy += n.p.y; }
@@ -1435,14 +1307,11 @@
 
   // Distancia mínima real entre hebras que NO se cruzan. Los cruces se
   // excluyen: ahí el solape es la obra, no el defecto.
-  // OJO: de aquí sale la ANCHURA de la cinta. El par declarado paralelo se
-  // salta, y no por comodidad: si contara, el canal de una incisión mandaría
-  // adelgazar la cinta a 0,72 de lo pedido y el paralelo se comería la obra.
   function holguraReal(nodes) {
     let d = Infinity;
     for (let i = 0; i < nodes.length - 1; i++) {
       for (let j = i + 2; j < nodes.length - 1; j++) {
-        if (esSalto(i) || esSalto(j) || esParalelo(i, j)) continue;
+        if (esSalto(i) || esSalto(j)) continue;
         const a = nodes[i].p, b = nodes[i+1].p, c = nodes[j].p, e = nodes[j+1].p;
         if (segIntersect(a, b, c, e)) continue;
         d = min(d, segDist(a, b, c, e));
@@ -2073,7 +1942,6 @@
     // extremo no lleva cabo ni alarga el halo: si lo llevara, el remate de una
     // cinta se metería en el hueco de la otra.
     _saltos = (comp.saltos || []).slice();
-    _paralelos = (comp.paralelos || []).slice();
     const saltoArcs = _saltos.map(s => [acum[s], acum[s + 1]]);
     const esFinal = (d) => d <= 1e-6 || d >= total - 1e-6 ||
       saltoArcs.some(r => abs(d - r[0]) < 1e-6 || abs(d - r[1]) < 1e-6);
@@ -2371,7 +2239,7 @@
 
     if (cfg.dots === "encima") drawDots(ctx, mapped, width, comp, ox, oy, S, ALTO);
 
-    _densa = null; _saltos = []; _paralelos = [];
+    _densa = null; _saltos = [];
     // `anchoEn` sale fuera A PROPÓSITO: con el temblor, la anchura ya no es un
     // número y un detector que sonde a la nominal mide donde el borde no está.
     // Costó 135 falsos positivos de 158 cruces enterarse.
@@ -2999,7 +2867,6 @@
     if (params.ends === 'redondos' && (!params.corner || params.corner === 'auto'))
       cfg.corner = 'curvas';
     if (params.fantasma && params.fantasma !== 'auto') cfg.fantasma = params.fantasma;
-    if (params.paralelo && params.paralelo !== 'auto') cfg.paralelo = params.paralelo;
     if (params.dots && params.dots !== 'auto') cfg.dots = params.dots;
     if (params.reintentos) cfg.reintentos = params.reintentos | 0;
 
@@ -3049,7 +2916,6 @@
       cruces: comp.cruces.length, vueltas: comp.vueltas,
       esquinas: comp.cfg.corner, trazo: comp.cfg.trazo, temblor: comp.cfg.temblor || 0,
       fantasma: !!comp.colores.fantasma,
-      paralelo: (comp.paralelos || []).length > 0,
       remate: comp.cfg.ends, tresTintas: !!(comp.colores.fg3 && (comp.saltos||[]).length >= 2),
       cintas: (comp.saltos || []).length + 1,
       secciones: comp.plano.secciones.length, volteos: comp.volteos,
@@ -3079,12 +2945,6 @@
       // rareza tiene que decir la probabilidad de verdad o no dice nada.
       { key: 'Corners', val: res.esquinas === 'curvas' ? 'Round' : 'Sharp',
         rarity: res.esquinas === 'curvas' ? 'uncommon' : 'common' },
-      // EL PARALELO: la cinta que se encuentra consigo misma y no se cruza.
-      // Uno de cada cinco lo pide, pero sólo lo consigue el que encuentra dos
-      // tramos ya paralelos y puede juntarlos sin quitarle la holgura a nadie:
-      // por eso la rareza sale de la frecuencia MEDIDA, no de la pedida.
-      { key: 'Parallel', val: res.paralelo ? 'Yes' : 'No',
-        rarity: res.paralelo ? 'rare' : 'common' },
       // El remate: escuadra, inglete o medio disco. El redondo va atado a la
       // esquina curva, así que su rareza es la de la esquina.
       { key: 'Ends', val: res.remate === 'redondos' ? 'Round' : res.remate === 'inglete' ? 'Mitre' : 'Square',

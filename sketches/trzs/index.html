@@ -145,17 +145,6 @@
         Con una sola cinta, la obra entera es un dibujo de incisiones</span>
     </div>
     <div class="group">
-      <span class="lbl">Parallel</span>
-      <select id="paralelo">
-        <option value="auto">Auto (20% de las obras)</option>
-        <option value="no">Nunca · toda hebra que se encuentra, se cruza</option>
-        <option value="si">Siempre · un tramo vuelve pegado a sí mismo</option>
-      </select>
-      <span class="hintline">la otra mitad de la regla del encuentro: dos hebras pueden cruzarse
-        —una encima— o ir al lado, separadas por la misma incisión. Se declara un par de tramos
-        y se sostiene; no puede salir por azar, porque la evitación lo prohíbe</span>
-    </div>
-    <div class="group">
       <span class="lbl">Shake</span>
       <select id="temblor">
         <option value="auto">Auto (sin temblor)</option>
@@ -245,7 +234,6 @@ function params() {
     corner:     $('corner').value,
     ends:       $('ends').value,
     fantasma:   $('fantasma').value,
-    paralelo:   $('paralelo').value,
     temblor:    $('temblor').value,
     dots:       $('dots').value,
   };
