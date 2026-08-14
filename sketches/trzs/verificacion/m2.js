@@ -20,12 +20,19 @@ playwright().chromium.launch().then(async b=>{
   for(let i=0;i<N;i++){const s=(i*2654435761)%1000000007;
     out.push(await p.evaluate(([pl,s,e,c])=>window.medir(s,pl,e,c),[pals,s,EXTRA,CAPA]));}
   await b.close();
+  // DECIDE EL AGREGADO, y el peor tramo se imprime al lado como dato.
+  // Se probo decidir por el peor —que es lo que pedia el comentario de
+  // m2.html— y dispara donde no hay nada: 3,2% "a medias" y 1,2% "sin corte"
+  // en configuraciones donde hueco.js, que no tiene umbrales y cuenta rachas
+  // de tinta solida, da CERO sobre 2.000 obras. Un tramo del anillo se recorta
+  // contra el borde de la banda y su 0,39 no es un hueco, es el corte de la
+  // banda. El agregado es el criterio calibrado; el peor, la pista para mirar.
   let n=0,sanos=0,med=0,nul=0; const casos=[];
   for(const r of out) for(const x of r.resultados){ n++;
     const a=x.cob1>=U, bb=x.cob2>=U;
     if(a&&bb) sanos++;
-    else if(!a&&!bb){ nul++; casos.push(`#${r.seed} x${x.k} ${x.ang}° SIN CORTE (${x.cob1}/${x.cob2})`); }
-    else { med++; casos.push(`#${r.seed} x${x.k} ${x.ang}° A MEDIAS (${x.cob1}/${x.cob2})`); } }
+    else if(!a&&!bb){ nul++; casos.push(`#${r.seed} x${x.k} ${x.ang}° SIN CORTE (${x.cob1}/${x.cob2}, peor ${x.peor1}/${x.peor2})`); }
+    else { med++; casos.push(`#${r.seed} x${x.k} ${x.ang}° A MEDIAS (${x.cob1}/${x.cob2}, peor ${x.peor1}/${x.peor2})`); } }
   console.log(`[${SRC}${CAPA?' · CAPA':''}] ${out.length} obras · ${n} cruces · ${JSON.stringify(EXTRA)}`);
   console.log(`  sanos ${sanos}   a medias ${med} (${n?(100*med/n).toFixed(1):0}%)   sin corte ${nul} (${n?(100*nul/n).toFixed(1):0}%)`);
   console.log(`  obras sin tejido limpio: ${out.filter(r=>!r.limpio).length}/${out.length} · cruces/obra ${(n/out.length).toFixed(2)}`);

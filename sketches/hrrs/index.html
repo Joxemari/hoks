@@ -3,34 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TRZS · lab — hoks</title>
+<title>hrrs · lab — hoks</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root { --ink:#111; --ink3:#bbb; --border:#e8e8e8; --surface:#f7f7f7; --f:'Courier New',Courier,monospace; }
   body { font-family: var(--f); background: #fff; color: var(--ink); display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
   .panel { border-right: 1px solid var(--border); padding: 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; }
   .lab-title { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
-  .lab-title small { display:block; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; }
+  .lab-title small { display:block; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; text-transform:none; }
   .group { display: flex; flex-direction: column; gap: 6px; }
   .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); }
-  .row { display:flex; align-items:center; gap:6px; }
   input[type=range] { width: 100%; accent-color: var(--ink); cursor: pointer; }
-  input[type=number], select { font-family: var(--f); font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 2px; width: 100%; }
-  .val { font-size: 11px; font-weight: 700; min-width: 30px; text-align: right; color: var(--ink3); }
+  input[type=number], input[type=text], select { font-family: var(--f); font-size: 11px; padding: 5px 7px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 2px; width: 100%; }
   .hintline { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
   button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
   button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
   button:hover { opacity: 0.78; }
   #seed { text-align:center; letter-spacing:0.06em; }
-  /* justify-content:center centra, pero si el contenido NO cabe reparte el
-     desbordamiento a los dos lados y la parte de arriba queda fuera de alcance:
-     el scroll no llega. `safe center` centra solo mientras quepa y, cuando no,
-     se comporta como flex-start. Se deja el center suelto de reserva para
-     navegadores que no entiendan la palabra clave. Se nota con la hoja de
-     contactos en vertical, que es más alta que la pantalla. */
   .stage { display: flex; flex-direction: column; align-items: safe center; justify-content: center; justify-content: safe center; gap: 10px; padding: 1.5rem; background: var(--surface); overflow: auto; }
   #single { max-width: min(100%, calc((100vh - 120px) * 1.414)); max-height: calc(100vh - 120px); outline: 1px solid rgba(0,0,0,0.12); display:block; }
-  .sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 980px; }
+  .sheet { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: 1180px; }
   .sheet canvas { width: 100%; outline: 1px solid rgba(0,0,0,0.1); cursor: pointer; display:block; }
   .sheet figcaption { padding: 3px 2px; font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; }
   .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase; }
@@ -44,7 +36,7 @@
 </head>
 <body>
   <aside class="panel">
-    <div class="lab-title">hoks · lab<small>aquí se genera y aquí se elige</small></div>
+    <div class="lab-title">hoks · lab<small>hrrs · el acompañamiento · itzulera</small></div>
     <div class="group">
       <span class="lbl">Work</span>
       <div id="workPicker"></div>
@@ -52,9 +44,8 @@
     <div class="group">
       <span class="lbl">Format</span>
       <select id="fmt"></select>
-      <button class="ghost" id="rot">⟲ Ver de pie (r)</button>
-      <span class="hintline">vertical y horizontal son la misma obra girada:
-        se genera en horizontal y el giro es de la vista, no del archivo</span>
+      <span class="hintline">en cuadrado el recorrido se pliega sobre sí mismo y en
+        apaisado viaja: cada proporción es otra obra, no la misma girada</span>
     </div>
     <div class="group">
       <span class="lbl">Field</span>
@@ -82,15 +73,13 @@
         <option value="solid">Solid</option>
         <option value="gradient">Gradient</option>
       </select>
-      <span class="hintline">transversal: es lo que separaba a KRT de KRTG</span>
+      <span class="hintline">el suelo es PLANO: la mitad de la obra es vacío y el
+        vacío tiene que ser papel. El degradado está para mirarlo, no para publicarlo</span>
       <div id="bgAuto">
         <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
           · plano <span id="bgPS">—</span></span>
-        <input type="range" id="bgP" min="0" max="100" step="5" value="30">
-        <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre.
-          Es una petición, no una orden: el degradado se hace con los colores que NO son tinta, y
-          si a la paleta no le quedan dos, el suelo sale plano. Medido, un 30 aquí da un 21 de
-          degradado de verdad</span>
+        <input type="range" id="bgP" min="0" max="100" step="5" value="0">
+        <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre</span>
       </div>
     </div>
     <div class="group">
@@ -104,68 +93,42 @@
     <div class="group">
       <span class="lbl">Type</span>
       <select id="tipo">
-        <option value="auto">Auto (por peso: 55/22/20/3)</option>
-        <option value="suelto">Loose · 1 pasada, trazo gordo, 0–1 cruces</option>
-        <option value="anudado">Knotted · 2 pasadas, 2–3 cruces</option>
-        <option value="trama">Weave · 3 pasadas, trazo fino, 4+ cruces</option>
-        <option value="dos">Two ribbons · dos cintas entrelazadas</option>
-        <option value="tres">Three ribbons · tres cintas, trazo fino</option>
+        <option value="">Aleatorio (por peso)</option>
+        <option value="suelto">suelto · el recorrido casi desnudo</option>
+        <option value="plegado">plegado · el centro de la familia</option>
+        <option value="acompanado">acompañado · muchas voces al lado</option>
+        <option value="trenza">trenza · el suelo en minoría</option>
       </select>
-      <span class="hintline">el tipo declara recorrido y grosor; los cruces salen de ahí y luego se comprueban</span>
+      <span class="hintline">el tipo DECLARA ojos, dispersión y ocupación; luego se
+        comprueba sobre el dibujo y se queda el candidato que menos se sale</span>
     </div>
     <div class="group">
-      <span class="lbl">Corners</span>
-      <select id="corner">
-        <option value="auto">Auto</option>
-        <option value="rectas">Sharp · ángulo vivo, junta a inglete</option>
-        <option value="curvas">Round · redondeo hasta medio tramo</option>
-      </select>
-      <span class="hintline">con recto y curvo basta: un tercer modo se probó y sobraba</span>
+      <span class="lbl">Cintas · <span id="ciV">auto</span></span>
+      <input type="range" id="ci" min="0" max="24" step="1" value="0">
+      <span class="hintline">0 = lo que pida el tipo · hebras que conviven sin tocarse</span>
     </div>
     <div class="group">
-      <span class="lbl">Ends</span>
-      <select id="ends">
-        <option value="auto">Auto (redondo si la esquina es curva)</option>
-        <option value="rectos">Square · corte de sierra</option>
-        <option value="inglete">Mitre · corte a 45º, en punta</option>
-        <option value="redondos">Round · disco (pone la esquina curva)</option>
-      </select>
-      <span class="hintline">el remate a escuadra y el inglete son cortes de la misma pletina; el redondo
-        es de la cinta curva y sólo de ella, así que pedirlo pone la esquina en curva —salvo
-        que la esquina esté fijada a mano, y entonces manda ella y sale inglete</span>
+      <span class="lbl">Pliegues · <span id="plV">auto</span></span>
+      <input type="range" id="pl" min="-1" max="14" step="1" value="-1">
+      <span class="hintline">horquillas declaradas · −1 = auto · son la fuente del acompañamiento</span>
     </div>
     <div class="group">
-      <span class="lbl">Ghost ribbon</span>
-      <select id="fantasma">
-        <option value="auto">Auto (3,5% de las obras)</option>
-        <option value="no">Nunca</option>
-        <option value="si">Siempre · la última cinta, del color del suelo</option>
-      </select>
-      <span class="hintline">no se ve como cinta: se ve como el corte que la separa del suelo.
-        Con una sola cinta, la obra entera es un dibujo de incisiones</span>
+      <span class="lbl">Gubia (anchura) · <span id="anV">auto</span></span>
+      <input type="range" id="an" min="0" max="1" step="0.02" value="0">
+      <span class="hintline">0 = auto · escala el techo de la cinta (0,058 del lado corto)</span>
     </div>
     <div class="group">
-      <span class="lbl">Shake</span>
-      <select id="temblor">
-        <option value="auto">Auto (sin temblor)</option>
-        <option value="0">Ninguno · corte de máquina</option>
-        <option value="0.12">Poco · 0,12</option>
-        <option value="0.25">Medio · 0,25</option>
-        <option value="0.40">Mucho · 0,40</option>
-      </select>
-      <span class="hintline">el eje no se mueve: lo que respira es el ancho, así que la composición
-        es la misma y sólo cambia el filo. El tope es 0,45, y es la holgura entre hebras
-        quien lo pone</span>
+      <span class="lbl">Canal · <span id="caV">auto</span></span>
+      <input type="range" id="ca" min="0" max="0.4" step="0.01" value="0">
+      <span class="hintline">0 = auto · el suelo entre dos vueltas, en fracción de la anchura (~1/5)</span>
     </div>
     <div class="group">
-      <span class="lbl">Discs</span>
-      <select id="dots">
-        <option value="auto">Auto (debajo)</option>
-        <option value="bajo">Debajo de la cinta</option>
-        <option value="encima">Encima de la cinta</option>
-        <option value="no">Sin discos</option>
+      <span class="lbl">Reserva</span>
+      <select id="reserva">
+        <option value="1">Con reserva</option>
+        <option value="0">Sin reserva</option>
       </select>
-      <span class="hintline">buscan los ojos del nudo; al de un ojo lo dimensiona el ojo, no el azar</span>
+      <span class="hintline">la esquina por la que no pasa nada, y por la que se lee todo lo demás</span>
     </div>
     <div class="group">
       <span class="lbl">Batch</span>
@@ -176,43 +139,41 @@
       <button class="ghost" id="cartela">↓ Cartela A5 (c)</button>
       <button class="ghost" id="sheet">▦ Grid de obras (g)</button>
       <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
-      <!-- El muro es una VISTA, no un parámetro: se va a su página y no engorda
-           el panel con mandos que no cambian la obra, solo cómo se mira. -->
       <div id="wallLink"></div>
     </div>
     <div class="group"><span class="lbl">Traits</span><div class="traits" id="traits"></div></div>
   </aside>
 
   <main class="stage">
-    <!-- La salida del grid esta DONDE ESTAS, junto a la obra, y no en el panel:
-         entrar en una pieza desde el grid y no ver por donde volver es quedarse
-         encerrado en un sitio del que si hay puerta. -->
-    <button class="ghost" id="volver" style="display:none;align-self:flex-start">&larr; Volver al grid (g)</button>
     <canvas id="single" width="1000" height="1000"></canvas>
     <div class="sheet" id="sheetGrid" style="display:none"></div>
     <span class="hint" id="status">—</span>
   </main>
 
-<script src="../../palette-picker.js"></script>
-<script src="../../usage.js"></script>
-<script src="../_lab.js"></script>
-<script src="../_batch.js"></script>
-<script src="../_cartela.js"></script>
-<script src="../_engine.js"></script>
-<script src="./algo.js"></script>
+<script src="../../palette-picker.js?v=6"></script>
+<script src="../../usage.js?v=6"></script>
+<script src="../_lab.js?v=6"></script>
+<script src="../_batch.js?v=6"></script>
+<script src="../_cartela.js?v=6"></script>
+<script src="../_engine.js?v=6"></script>
+<script src="./algo.js?v=6"></script>
 <script>
-const WORK = HOKS.TRZS;
-const BASE = 900, SHEET_BASE = 300;   // lado corto: hoja y hoja de contactos
-                                      // 900 = el REF del algoritmo
+const WORK = HOKS.HRRS;
+const BASE = 1000, SHEET_BASE = 300;   // lado corto: hoja y grid de obras
 const SHEET_N = 12;
-let FORMAT = 'horizontal';
-let ROT = false;              // girar la VISTA, no la obra
-let lastPalName = '', lastPalColors = [];   // la paleta del último render, para la cartela
+// La referencia es casi cuadrada, y en cuadrado el recorrido se pliega sobre sí
+// mismo — que es de lo que va la obra.
+let FORMAT = 'square';
+// No hay botón de girar la vista, y es una decisión: en las obras de retículo
+// vertical y horizontal son la misma obra girada, así que girar sirve para
+// juzgarla de pie. Aquí el recorrido ELIGE por dónde atraviesa el campo, y la
+// proporción cambia cuántas hebras caben: girar daría una obra que no existe.
+const ROT = false;
+let lastPalName = '', lastPalColors = [];
 let W, H, SHEET_W, SHEET_H;
-// El formato es del ALGORITMO, no del lienzo: se le pasan W y H y él se adapta.
 function applyFormat() {
-  ROT = HOKSLAB.formatControls(FORMAT, ROT);   // girar y campo, solo en horizontal
-  const d = HOKS.fmtDims(FORMAT, BASE);      W = d.W; H = d.H;
+  HOKSLAB.formatControls(FORMAT, false);
+  const d = HOKS.fmtDims(FORMAT, BASE);       W = d.W; H = d.H;
   const t = HOKS.fmtDims(FORMAT, SHEET_BASE); SHEET_W = t.W; SHEET_H = t.H;
   single.width = ROT ? H : W; single.height = ROT ? W : H;
 }
@@ -230,22 +191,22 @@ function params() {
     bg:         $('bg').value,
     bgProbs:  { gradient: parseInt($('bgP').value, 10) },
     grainScale: parseFloat($('grain').value),
-    tipo:       $('tipo').value,
-    corner:     $('corner').value,
-    ends:       $('ends').value,
-    fantasma:   $('fantasma').value,
-    temblor:    $('temblor').value,
-    dots:       $('dots').value,
+    tipo:       $('tipo').value || null,
+    cintas:     parseInt($('ci').value, 10) || 0,
+    // −1 es 'auto' y tiene que llegar como null, no como −1: el algoritmo mira
+    // `!= null`, así que un −1 sería una petición de cero pliegues.
+    pliegues:   auto($('pl').value),
+    ancho:      parseFloat($('an').value) || 0,
+    canal:      parseFloat($('ca').value) || 0,
+    reserva:    parseInt($('reserva').value, 10),
   };
 }
+function auto(v) { const n = parseInt(v, 10); return n < 0 ? null : n; }
 let palPicker = null;
 function palOpts() { return palPicker ? palPicker.opts() : { palettes: PALETTES }; }
 
 let batch = null;
-const SLUG = 'trzs';
-// La receta ES la pieza: seed + params + paleta + FORMATO (la proporción cambia
-// la composición, no solo el recorte). El nombre de la paleta se resuelve con un
-// render de 8px —el stream del RNG no depende del tamaño— para detectar deriva.
+const SLUG = 'hrrs';
 function recipeFor(s) {
   const c = document.createElement('canvas'); c.width = c.height = 8;
   let palName = null;
@@ -254,27 +215,20 @@ function recipeFor(s) {
            palSel: palPicker ? palPicker.selection : 'auto', palName };
 }
 
-// ── Giro de la VISTA ────────────────────────────────────────────────────────
-// Vertical y horizontal son la misma obra girada, así que no se genera en
-// vertical: se genera en horizontal y, para juzgarla de pie, se gira lo que se
-// mira. La obra y el archivo de impresión siguen siendo horizontales.
-function paint(ctx, cw, ch, s, o) {
-  if (!ROT) return WORK.render(ctx, cw, ch, s, o);
-  const off = document.createElement('canvas'); off.width = ch; off.height = cw;
-  const res = WORK.render(off.getContext('2d'), ch, cw, s, o);
-  ctx.save(); ctx.translate(cw / 2, ch / 2); ctx.rotate(Math.PI / 2);
-  ctx.drawImage(off, -off.width / 2, -off.height / 2); ctx.restore();
-  return res;
-}
+function paint(ctx, cw, ch, s, o) { return WORK.render(ctx, cw, ch, s, o); }
 
 function renderSingle() {
   $('seed').value = seed;
   try {
     const res = paint(sctx, single.width, single.height, seed >>> 0, { ...palOpts(), params: params() });
-    // La cartela necesita la paleta que SALIÓ, no la que pidiera la receta.
     lastPalName = res && res.pal ? res.pal.name : '';
     lastPalColors = res && res.pal ? res.pal.colors : [];
-    $('status').textContent = `seed #${seed}`;
+    // `falta` se enseña porque un 0 y un 1,4 son dos cosas distintas: sin verlo
+    // no se distingue una pieza que cumple de una que es lo menos malo del seed.
+    const oj = res.ojos.length ? res.ojos.slice(0, 4).map(o => (o * 100).toFixed(1) + '%').join(' ') : '—';
+    $('status').textContent = `seed #${seed} · ${res.tipo} · ${res.cintas} cintas · `
+      + `${res.pliegues} pliegues · ${res.pasillos} pasillos (${res.largoPas.toFixed(0)}W) · `
+      + `ojos ${res.ojos.length} (${oj}) · tinta ${Math.round(res.ocupacion * 100)}% · falta ${res.falta.toFixed(2)}`;
     drawTraits(WORK.traits(res));
   } catch (e) { $('status').textContent = '⚠ ' + e.message; console.error(e); }
 }
@@ -287,10 +241,6 @@ function drawTraits(t) {
 function renderSheet() {
   const grid = $('sheetGrid'); grid.innerHTML = '';
   const base = seed >>> 0;
-  // El campo de la seed se actualizaba SOLO en vista unica, asi que en el grid
-  // se quedaba mostrando una seed vieja que no era la del grid que estabas
-  // mirando. El grid sale de esta seed: que se vea.
-  $('seed').value = base;
   for (let i = 0; i < SHEET_N; i++) {
     const s = (base + i * 0x9E3779B1) >>> 0;
     const c = document.createElement('canvas');
@@ -299,23 +249,13 @@ function renderSheet() {
     const fig = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = '#' + s;
     fig.style.position = 'relative';
     fig.appendChild(c); fig.appendChild(cap);
-    c.addEventListener('click', () => { gridSeed = base; seed = s; setSheet(false); });
-    // Apartar es un gesto de aquí, y el gesto lo pone el panel de lotes: el "+"
-    // para la mano rápida, el botón derecho para elegir a qué lote va.
+    c.addEventListener('click', () => { seed = s; setSheet(false); });
     if (batch) batch.attach(fig, s);
     grid.appendChild(fig);
   }
 }
-// Tres modos de mirar, en el mismo sitio: la pieza, doce variaciones de su
-// seed, y el lote entero — que es lo que de verdad se publica.
-let VIEW = 'single';                 // 'single' | 'sheet' | 'batch'
-// De que seed salio el grid. Volver tiene que devolverte al MISMO grid: el grid
-// se deriva de la seed, asi que sin guardarla, despues de mover la seed el boton
-// te llevaba a otro conjunto de obras y "volver" dejaba de significar volver.
-let gridSeed = null;
+let VIEW = 'single';
 function setView(v) {
-  // Sin lote no hay nada que enseñar, y cambiar de vista solo escondería la
-  // pieza para dejar un hueco gris. Se queda donde está y lo dice.
   if (v === 'batch' && !(batch && batch.open)) {
     $('status').textContent = 'No hay lote abierto — elige uno o crea otro con + en el panel';
     return;
@@ -323,7 +263,6 @@ function setView(v) {
   VIEW = v; sheetMode = (v === 'sheet');
   $('single').style.display = v === 'single' ? 'block' : 'none';
   $('sheetGrid').style.display = v === 'single' ? 'none' : 'grid';
-  $('volver').style.display = (v === 'single' && gridSeed !== null) ? 'block' : 'none';
   $('sheet').textContent = v === 'sheet' ? '▦ Vista única (g)' : '▦ Grid de obras (g)';
   $('batchView').textContent = v === 'batch' ? '▦ Vista única (b)' : '▦ Ver el lote (b)';
   if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; }
@@ -340,14 +279,14 @@ function populateSelect() {
 
 $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh(); };
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
-$('tipo').onchange = refresh;
-$('corner').onchange = refresh;
-$('dots').onchange = refresh;
-$('rot').onclick = () => { ROT = !ROT; applyFormat(); refresh(); };   // la etiqueta la pone formatControls
 $('field').onchange = refresh;
+$('tipo').onchange = refresh;
+$('reserva').onchange = refresh;
+$('ci').oninput = () => { $('ciV').textContent = $('ci').value === '0' ? 'auto' : $('ci').value; refresh(); };
+$('pl').oninput = () => { $('plV').textContent = $('pl').value === '-1' ? 'auto' : $('pl').value; refresh(); };
+$('an').oninput = () => { $('anV').textContent = parseFloat($('an').value) === 0 ? 'auto' : '×' + parseFloat($('an').value).toFixed(2); refresh(); };
+$('ca').oninput = () => { $('caV').textContent = parseFloat($('ca').value) === 0 ? 'auto' : '1/' + Math.round(1 / parseFloat($('ca').value)); refresh(); };
 $('bg').onchange = () => { syncBgAuto(); refresh(); };
-// El % de degradado solo manda cuando el fondo va en 'auto': si lo fuerzas a
-// plano o a degradado, el peso sobra y se esconde en vez de mentir.
 function syncBgAuto() {
   const auto = $('bg').value === 'auto', p = parseInt($('bgP').value, 10);
   $('bgAuto').style.display = auto ? '' : 'none';
@@ -360,9 +299,6 @@ syncBgAuto();
 $('grain').onchange = refresh;
 $('cartela').onclick = () => {
   if (VIEW !== 'single') setView('single');
-  // La cartela sale de la MISMA receta que la pieza: si no coincidiera con lo
-  // que cuelga en la pared, no serviría para nada. El pliego lo dice el panel
-  // del lote, que es donde se elige el papel.
   $('status').textContent = 'cartela A5…';
   HOKSCARTELA.download({
     work: SLUG, seed: seed >>> 0, format: FORMAT, field: $('field').value,
@@ -373,9 +309,8 @@ $('cartela').onclick = () => {
     .catch(e => { $('status').textContent = '⚠ ' + e.message; });
 };
 $('sheet').onclick = () => setView(VIEW === 'sheet' ? 'single' : 'sheet');
-$('volver').onclick = () => { if (gridSeed !== null) seed = gridSeed; gridSeed = null; setView('sheet'); };
 $('batchView').onclick = () => setView(VIEW === 'batch' ? 'single' : 'batch');
-$('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `${SLUG}_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
+$('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `hrrs_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
 
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
@@ -383,36 +318,28 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'ArrowRight') { seed = (seed + 1) >>> 0; refresh(); }
   else if (e.key === 'ArrowLeft') { seed = (seed - 1) >>> 0; refresh(); }
   else if (e.key === 'c' || e.key === 'C') $('cartela').click();
-  else if (e.key === 'r' || e.key === 'R') $('rot').click();
   else if (e.key === 's' || e.key === 'S') $('save').click();
   else if (e.key === 'g' || e.key === 'G') setView(VIEW === 'sheet' ? 'single' : 'sheet');
   else if (e.key === 'b' || e.key === 'B') setView(VIEW === 'batch' ? 'single' : 'batch');
   else if (e.key === 'a' || e.key === 'A') { if (batch) batch.add(seed); }
 });
 
-// Init: pinta YA con fallback, luego trae TODAS las paletas.
 populateSelect();
-// Los formatos los ofrece la OBRA, no el panel: unos existen en cuadrado y en
-// horizontal, y otros —una fila— solo en uno. El algo.js trae lo suyo y
-// works.json lo puede cambiar desde admin sin tocar código.
 const fmtSel = HOKSLAB.mountFormatSelect($('fmt'), SLUG, {
   fallback: WORK.FORMATS,
   onChange: f => { FORMAT = f; applyFormat(); refresh(); },
 });
 FORMAT = $('fmt').value;
 $('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
-// El muro recibe la receta por URL. Se pasa sin resolver el nombre de la paleta
-// (que exige un render de 8px): al muro le basta con volver a pintarla.
 HOKSLAB.mountWallLink($('wallLink'), () => ({
   work: SLUG, seed: seed >>> 0, format: FORMAT, params: params(),
   palSel: palPicker ? palPicker.selection : 'auto',
 }));
-HOKSLAB.mountWorkPicker($('workPicker'), 'trzs', () => seed);
+HOKSLAB.mountWorkPicker($('workPicker'), SLUG, () => seed);
 batch = HOKSBATCH.mount($('batchPanel'), {
   work: SLUG, getRecipe: recipeFor, getPalettes: () => PALETTES, getSeed: () => seed,
   toast: m => { $('status').textContent = m; },
 });
-// Un lote puede mezclar obras: para pintar su tira hacen falta todos los algos.
 HOKSLAB.loadAlgos(() => batch.refresh());
 applyFormat();
 renderSingle();

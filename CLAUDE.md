@@ -21,9 +21,12 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
 
 - **`index.html`** — Landing. Rejilla 9×10 arrastrable (drag/pan, perspectiva 3D
   al hover). Carga obras guardadas reales desde `data/*.json` y rellena los
-  huecos con *demos* dibujadas en vivo. Filtra a las familias `active` según
-  `data/works.json`. Reimplementa los algoritmos de dibujo de cada serie (versión
-  reducida) para las celdas demo.
+  huecos con *demos* dibujadas en vivo. **El catálogo lo pone `works.json`**: una
+  familia `active` sale aquí sin tocar código —la landing le pide su
+  `sketches/<slug>/algo.js` cuando hace falta, y saca nombre, destino y
+  proporción de celda de su ficha—. Solo las familias anteriores al algo.js
+  compartido (PLLS, KRRTK, DTK, BZRS) conservan aquí una reimplementación
+  reducida para su demo; esa tabla está para vaciarse, no para crecer.
 - **Páginas de obra** — **archivo, no herramienta**. Las graduadas
   (`plls.html`, `krrtk.html`, `dtk.html`, `dtkrt.html`) son cascarones de 20
   líneas que cargan `work-page.js`: nombre, narrativa (`description` de
@@ -31,7 +34,11 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   **lienzo vivo mudo** que se regenera al clic — sin panel, sin traits, sin
   rareza, sin guardar. La rareza es lenguaje de edición: describe la
   improbabilidad de una tirada que nadie posee, así que vive en el laboratorio.
-  Las heredadas (`bzrs.html`) siguen con
+  Una familia **sin cascarón propio** no se queda sin sección: cae a
+  **`work.html?w=<slug>`**, la misma página genérica, que carga el algo.js por su
+  slug. El campo `page` de `works.json` decide cuál usa cada una — las veteranas
+  lo tienen porque sus URLs estuvieron publicadas; una familia nueva no lo lleva
+  y por eso activarla basta. Las heredadas (`bzrs.html`) siguen con
   su generador inline **congelado**: son inactivas y su algoritmo aún no está
   graduado, así que ahí sí quedan Generate, formato/pliego, Save (que además
   apunta la paleta en `data/palette-usage.json`, ver `usage.js`) y Download.
@@ -53,14 +60,22 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   (`works.json`), contenido (`site.json`) y el token de GitHub. Escribe
   commiteando directamente a `main` por la Contents API. En cada familia
   graduada muestra un enlace **Lab** (`sketches/<slug>/`), solo visible desde el
-  panel. El dropdown *Work* del nav lista solo las familias `active`.
+  panel y presente también en las apagadas —el lab las abre igual—. El check
+  *Active* de cada familia es el interruptor de la web entera: al marcarlo, la
+  obra aparece en la landing, en el dropdown *Work* y con su sección, sin tocar
+  código.
 
 ### Compartido
 
 - **`nav.js`** — Se incluye en todas las páginas. Inyecta `<nav>` (logo "hoks",
-  dropdown *Work* con las 8 series, About, Palettes), favicon SVG, footer
-  (© hoks, contacto, Instagram si está en `site.json`) y badge ADMIN si hay
-  sesión. Aloja también el i18n (`window.HOKSI18N`, diccionarios EU/ES/EN).
+  dropdown *Work*, About, Palettes), favicon SVG, footer (© hoks, contacto,
+  Instagram si está en `site.json`) y badge ADMIN si hay sesión. **El dropdown
+  se escribe desde `works.json`**, una entrada por familia activa en el orden del
+  catálogo; la lista que hay en el archivo es solo el arranque, para que no
+  parpadee y para sobrevivir sin red. Exporta `HOKSNAV.workHref(w)` —la regla de
+  a dónde lleva una familia, `page` o la genérica— porque la landing enlaza a lo
+  mismo y dos reglas darían dos destinos. Aloja también el i18n
+  (`window.HOKSI18N`, diccionarios EU/ES/EN).
 - **`palette-picker.js`** — Selector de paleta, **componente único** de toda la
   web y del laboratorio (`HOKSPAL.mount(host, {palettes, index, onChange})`).
   Cada opción muestra la paleta entera en una franja de color —elegir paleta es
@@ -69,7 +84,9 @@ llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
   `<div id="palPicker">`. Antes esto estaba copiado en 8 páginas con 3 variantes
   distintas: si tocas el desplegable, tócalo aquí.
 - **`work-page.js`** — La página de obra graduada, una sola vez: narrativa,
-  piezas elegidas y lienzo vivo mudo.
+  piezas elegidas y lienzo vivo mudo. La usan los cascarones (`HOKSWORK.init`) y
+  `work.html`, que es el mismo cascarón sin obra fija: lee el slug del `?w=`,
+  pide su algo.js y llama a lo mismo.
 - **`usage.js`** — Registro de uso de paletas (`data/palette-usage.json`).
   `HOKSUSAGE.load()` / `.counts()` los lee (palettes.html, solo con sesión
   admin); `.recordMany()` añade filas al **publicar un lote** desde el
@@ -117,12 +134,15 @@ no por ruta relativa. Esto permite que un cambio de datos aparezca sin esperar e
 redeploy de Pages.
 
 - **`works.json`** — Registro de familias: `id, name, slug, active, description,
-  page, canvas`. El flag `active` decide qué series aparecen en la landing y en
-  el dropdown *Work* del nav — y también en el selector de obra del laboratorio,
-  que filtra por `active !== false`: por eso una familia no puede estar en el lab
-  general sin estar activa. Hoy activas: **plls, krrtk, dtkrt y trzs**. La landing
-  reimplementa el algoritmo de cada serie salvo DTKRT y TRZS, que consumen su
-  `algo.js` real.
+  page, canvas, formats`. **`active` es el único interruptor de la web**: decide
+  qué familias salen en la landing, en el dropdown *Work* del nav y con sección
+  propia. **No decide nada en el laboratorio**, que abre *todas* las graduadas
+  —publicadas o no— y marca `· (fuera de la web)` las que no lo están: el lab es
+  la mesa de trabajo, y esconder lo inactivo escondía justo el trabajo en curso.
+  Activar una familia es, por tanto, un clic en el panel y nada más: ni tocar
+  `nav.js`, ni la landing, ni escribir un `<slug>.html`. Hoy activas: **plls,
+  krrtk, dtkrt, eclps y trzs**. Lo que sí hace falta antes es que la obra esté en
+  el registro (**+ Add Family**) y graduada, o saldrá sin celdas demo.
 - **`palettes.json`** — Paletas con `colors`, `active`, `tags`, `notes`. Mezcla
   sets de Roni Kaufman (color_pals) y series Itten (contraste complementario).
 - **`site.json`** — `aboutText`, `footerEmail`, `footerInstagram`.
@@ -159,10 +179,16 @@ redeploy de Pages.
   del dibujo: se decide cruce a cruce, alternando encima y debajo como un diagrama
   de nudo, y el dibujo se parte en secciones ordenadas para que ese orden se pueda
   pintar en plano. Lo que separa las hebras no es un contorno: es una **incisión**,
-  el corte por donde se ve el suelo. Cuatro tipos declarados (suelto, anudado,
-  trama y —raro— dos cintas entrelazadas) que se comprueban sobre el resultado.
-  Graduada desde p5 (`sketches/iterations2/`), con el porte verificado idéntico al
-  píxel.
+  el corte por donde se ve el suelo — y **el final de la cinta también es un
+  filo**: lleva su incisión aunque el remate sea a escuadra, porque si no se
+  suelda a lo que tenga delante. Cinco tipos declarados (suelto, anudado,
+  trama, —raro— dos cintas entrelazadas y tres cintas, este último sólo en el
+  laboratorio) que se comprueban sobre el resultado. La esquina puede salir viva
+  o curva —una de cada cuatro—, y hay un **temblor** opcional del recorrido, que
+  entra antes de analizar el nudo para que la incisión siga cayendo donde el
+  análisis dice. Graduada desde p5 (`sketches/iterations2/`), con el porte
+  verificado idéntico al píxel y una batería propia en `sketches/trzs/verificacion/`
+  (`mil.sh`: mil obras por bloque, cada bloque con su control roto a propósito).
 - **Variantes "G"** (KRRTK/DTK/PLLS): añaden **mesh gradient** de fondo
   (interpolación bilineal de 4 esquinas, `drawMeshGradient`) y **grano de film**
   por soft-light (`bakeGrain`/`applyGrain`).

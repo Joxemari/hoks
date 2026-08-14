@@ -33,6 +33,10 @@ window.medir = (seed, pals, extra, capa) => {
     r = T.renderComposition(xA, 0, 0, S, c, S, true, false);
   }
   const W = r.width, gap = r.gap, m = r.mapped;
+  // La anchura REAL: con temblor no es un numero. Las mascaras tienen que
+  // levantarse con la misma anchura con la que se dibujo, o miden otra cosa.
+  const WF = r.anchoEn || W;
+  const WH = r.anchoEn ? (d) => r.anchoEn(d) + gap*2 : W + gap*2;
   const acum = T.arcosDe(m), total = acum[acum.length-1];
   const dA = xA.getImageData(0,0,S,S).data;
 
@@ -44,6 +48,7 @@ window.medir = (seed, pals, extra, capa) => {
   const juntas = (c.plano.juntas||[]).map(j => T.arcoDeParam(m,acum,j));
   const esJunta = d => juntas.some(j => Math.abs(j-d) < 1e-6);
   const pizca = Math.max(HOKS.unit(S,S,900), W*0.15);
+  const sobra = Math.max(HOKS.unit(S,S,900), 1);
   const dir = s => { const i = cons(Math.floor(s),0,m.length-2);
     return T.PV.sub(m[i+1], m[i]).normalize(); };
   const caboEn = d => { let l = W*c.cfg.cabo;
@@ -51,21 +56,31 @@ window.medir = (seed, pals, extra, capa) => {
       const sen = Math.max(Math.abs(Math.sin(dir(cr.abajo).angleBetween(dir(cr.arriba)))), 0.18);
       l = Math.max(l, (W/2)/sen*c.cfg.caboMargen); }
     return l; };
-  const salto = c.salto != null && c.salto >= 0 ? [acum[c.salto], acum[c.salto+1]] : null;
+  const saltos = (c.saltos || []).map(k => [acum[k], acum[k+1]]);
+  // TODOS los saltos, no el primero. Con tres cintas hay dos, y quedarse con
+  // uno deja el segundo par de cabos leido como junta: el tramo se alarga con
+  // su cabo, la mascara pide incision donde no hay cinta dibujada y el cruce
+  // sale "sin corte". Uno de 363 cruces en el tipo `tres` — el algoritmo hace
+  // rato que trabaja con la lista entera (`esFinal`), y esto se quedo atras.
   const esFin = d => d <= 1e-6 || d >= total-1e-6 ||
-    (salto && (Math.abs(d-salto[0])<1e-6 || Math.abs(d-salto[1])<1e-6));
+    saltos.some(s => Math.abs(d-s[0])<1e-6 || Math.abs(d-s[1])<1e-6);
   const tramoDe = i => { const [a,b] = secs[i];
     const aJ = a>0 && esJunta(a), bJ = b<total && esJunta(b);
     const aF = esFin(a), bF = esFin(b);
-    return { iniC: Math.max(0, !aF ? a-(aJ?pizca:caboEn(a)) : a),
-             finC: Math.min(total, !bF ? b+(bJ?pizca:caboEn(b)) : b),
+    // EL `sobra` VA AQUI TAMBIEN. El cuerpo se dibuja pasandose un pixel del
+    // halo —es lo que cerro la costura de 1 px— y el detector no lo sabia: su
+    // mascara del cuerpo se quedaba corta y el anillo se comia esa pizca de
+    // tinta legitima. Cae siempre en el ULTIMO tramo del anillo, que es donde
+    // salian los 0,33 de cobertura sin que la imagen tuviera nada.
+    return { iniC: Math.max(0, !aF ? a-(aJ?pizca:caboEn(a)+sobra) : a),
+             finC: Math.min(total, !bF ? b+(bJ?pizca:caboEn(b)+sobra) : b),
              iniH: Math.max(0, !aF && !aJ ? a-caboEn(a) : a),
              finH: Math.min(total, !bF && !bJ ? b+caboEn(b) : b) }; };
   const cual = d => { for (let i=0;i<secs.length;i++) if (d>=secs[i][0]-1e-6 && d<=secs[i][1]+1e-6) return i; return -1; };
 
   // La máscara sale de la MISMA curva que el render, o todo saldría marcado
   // por una diferencia que no existe en la obra.
-  T.setDensa(T.curvaDensa(m, acum, c.cfg));
+  T.setDensa(T.curvaDensa(m, acum, c.cfg, c.saltos || []));
 
   const cE = lienzo(), xE = cE.getContext('2d');
   const res = [];
@@ -78,15 +93,29 @@ window.medir = (seed, pals, extra, capa) => {
     const iAr = cual(dAr); if (iAr < 0) continue;
     const tAr = tramoDe(iAr);
 
+    // EL ANILLO SE COME SUS DOS FILOS.
+    // La máscara es otra rasterización: su borde y el del render no coinciden
+    // píxel a píxel, y en los filos hay un píxel a medio cubrir que el umbral
+    // de 128 se queda entero. Por fuera ese píxel es la frontera entre la
+    // incisión y la tinta de la hebra de abajo —mezcla, y por tanto NO fondo—,
+    // y por dentro es el filo del propio cuerpo. Con el anillo a hueso, la
+    // máscara pedía fondo en el filo y lo contaba como hueco: 88 píxeles en una
+    // tira de 3×54 pegada al borde, con la incisión perfectamente dibujada al
+    // lado. Es la trampa 3, que hueco.js ya resolvía dilatando y ésta no.
+    // Se estrecha el anillo un píxel y medio por cada lado; le quedan dos
+    // píxeles de incisión, de sobra para medirla.
+    const AA = 0.75;
+    const WHm = r.anchoEn ? (d) => r.anchoEn(d) + gap*2 - AA*2 : W + gap*2 - AA*2;
+    const WFm = r.anchoEn ? (d) => r.anchoEn(d) + AA*2 : W + AA*2;
     xE.globalCompositeOperation='source-over';
     xE.fillStyle='#000'; xE.fillRect(0,0,S,S);
-    T.trazarTramo(xE, m, acum, tAr.iniH, tAr.finH, W+gap*2, '#fff', c.cfg, 'round');
-    T.trazarTramo(xE, m, acum, tAr.iniC, tAr.finC, W, '#000', c.cfg);
+    T.trazarTramo(xE, m, acum, tAr.iniH, tAr.finH, WHm, '#fff', c.cfg, 'round');
+    T.trazarTramo(xE, m, acum, tAr.iniC, tAr.finC, WFm, '#000', c.cfg);
     xE.globalCompositeOperation='destination-in';
     const abajos = [cual(dAb-1e-4), cual(dAb+1e-4)].filter((v,i,a)=>v>=0&&a.indexOf(v)===i);
     const cU = lienzo(), xU = cU.getContext('2d');
     xU.fillStyle='#000'; xU.fillRect(0,0,S,S);
-    for (const iu of abajos){ const t=tramoDe(iu); T.trazarTramo(xU,m,acum,t.iniC,t.finC,W,'#fff',c.cfg); }
+    for (const iu of abajos){ const t=tramoDe(iu); T.trazarTramo(xU,m,acum,t.iniC,t.finC,WF,'#fff',c.cfg); }
     xE.drawImage(cU,0,0);
     xE.beginPath(); xE.arc(P.x,P.y, alc*1.6+gap*3, 0, Math.PI*2);
     xE.fillStyle='#fff'; xE.fill();

@@ -319,17 +319,27 @@ modulación, gravedad, reserva y colores— sale **idéntica**, cero diferencias
 
 ## Color: la trama admite más de una tinta
 
-Las paletas de hoks son listas planas: no declaran suelo ni tinta. EVOL elige el par
-por **distancia de color**, no por luminancia: con luminancia, las series Itten (cuatro
-colores entre 0,31 y 0,44 de luma) daban rojo sobre rojo, porque son contrastes de
-**tono** y ahí el ojo lee la figura perfectamente aunque el valor sea el mismo. Elegido
-el par, la luminancia decide quién es suelo.
+**La política de color vive en el motor**, no aquí. Nació en esta familia, y subió a
+`_engine.js` cuando HRRS fue la tercera que la pedía — el bug histórico de PLLS
+(acabados invisibles durante meses, ocho copias inline) es exactamente lo que pasa
+cuando no se sube. Aquí se llama `E.inkDice` y `E.inkRoles`, y no se copia.
 
-Y **el papel**: elegir el par más distante lleva siempre al blanco, y el blanco no es
-el único suelo posible. Si la paleta tiene un tono medio y cálido que aguante el
-contraste, se usa la mitad de las veces. Sobre papel crudo la masa pesa distinto,
-porque el suelo deja de ser ausencia de tinta y se vuelve material. No es un ajuste
-del laboratorio: es qué papel se compra.
+Lo que hace: las paletas de hoks son listas planas, no declaran suelo ni tinta, así que
+el par se elige por **distancia de color** y no por luminancia — con luminancia, las
+series Itten (cuatro colores entre 0,31 y 0,44 de luma) daban rojo sobre rojo, porque
+son contrastes de **tono** y ahí el ojo lee la figura perfectamente aunque el valor sea
+el mismo. Elegido el par, la luminancia decide quién es suelo. Y **el papel**: elegir el
+par más distante lleva siempre al blanco, y si la paleta tiene un tono medio y cálido
+que aguante el contraste se usa la mitad de las veces, porque sobre papel crudo el suelo
+deja de ser ausencia de tinta y se vuelve material.
+
+Al reunir las ramas, lo que EVOL necesitaba de más **subió con ella**: `inkRoles`
+devuelve también `otras`, la lista de tintas extra que piden las familias que superponen
+capas enteras. Va aparte de `otra` y con umbrales más flojos, porque `otra` es un cuerpo
+suelto dentro de la masa principal —si se parece, se lee como error de registro— y una
+capa entera se sostiene por su propio recorrido. Y `otra` se quedó **intacta**:
+reaprovecharla habría movido la imagen de las familias que ya la usan, y eso no se hace
+al subir algo al motor.
 
 **Dos tramas se tejen.** No es una hebra teñida: es **otra trama entera**, con sus
 hebras, sus ramales, su foco y su tinta. La diferencia importa y es conceptual — una

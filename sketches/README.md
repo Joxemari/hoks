@@ -17,8 +17,11 @@ sola fuente de código por obra. Normalmente la opera Claude, no tú.
 3. **Validar** — abres el harness, pulsas `g` y miras el **grid de obras**:
    12 seeds a la vez. Ahí es donde tu ojo decide — variaciones feas, repetitivas
    o rotas se ven en la distribución, nunca en una pieza suelta.
-4. **Publicar** — la página de producción (`/<obra>.html`) consume el mismo
-   `algo.js`. Push a `main` y está en la web.
+4. **Publicar** — marcar *Active* en el panel. Con eso la obra entra en la
+   landing, en el dropdown *Work* y tiene sección: la página genérica
+   (`work.html?w=<obra>`) consume el mismo `algo.js`. Un cascarón propio
+   (`/<obra>.html`) es opcional y se apunta en `page`; las veteranas lo tienen
+   porque sus URLs estuvieron publicadas.
 
 Tú tocas los pasos 1 y 3. El 2 y el 4 son mecánicos: delégalos.
 
@@ -37,7 +40,9 @@ sketches/
                       Una sola fuente: arréglalo aquí una vez.
   _lab.js           ← piezas comunes del harness: selector de obra (salta de
                       familia conservando la seed) y selector de paleta sobre
-                      ../../palette-picker.js. Lista GRADUATED de obras.
+                      ../../palette-picker.js. Lista GRADUATED de obras: las
+                      abre TODAS, publicadas o no — `active` es cosa de la web,
+                      no de la mesa. Las apagadas van marcadas.
   _batch.js         ← lotes: la selección se hace aquí, sobre la hoja de
                       contactos. Un lote es una lista de RECETAS
                       (obra + seed + params), no de imágenes.
@@ -48,9 +53,13 @@ sketches/
   plls/            ← graduada (algo.js + harness)
   krrtk/           ← graduada (porte fiel, verificado op-a-op)
   dtk/             ← graduada (porte fiel, verificado op-a-op)
-  dtkrt/            ← EN PRUEBAS: familia nueva, aún sin página de producción
-  eclps/             ← EN PRUEBAS: iteración horizontal, aún sin página de producción
+  dtkrt/            ← publicada: la primera familia que nació aquí
+  eclps/             ← publicada: la fila, con su pliego doble
   evol/             ← EN PRUEBAS: la ley del encuentro invertida. Ver su README
+  ptzd/             ← SOLO CONCEPTO: el bloque partido. Aún no hay algo.js.
+  hrrs/             ← EN PRUEBAS: la ley del encuentro esquivada — la cinta no se
+                      cruza, se pone al lado. Con algo.js, harness y batería
+                      propia. Ver su README y su verificacion/
   trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
     verificacion/   ← los detectores del halo y sus controles rotos a propósito.
                       No se publica: se ejecuta a mano cuando alguien toca el
@@ -88,6 +97,42 @@ direcciones que se cruzan y se sueldan, y el ojo es la celda que dejan al cruzar
 —cuadrangular, como los de la referencia, y no el huso que daba un lazo—. Ver
 `evol/README.md` para el concepto, el filo (el canto vivo, que no toca la anatomía) y
 las decisiones que quedan abiertas.
+
+`hrrs/` es la tercera respuesta a la pregunta de TRZS —¿qué pasa cuando la cinta se
+encuentra consigo misma?—, y la única que contesta **no se encuentra**: llega hasta
+donde iba a tocarse y se pone al lado. TRZS **cruza** (una hebra por encima y la
+incisión entre las dos), EVOL **suelda** (un cuerpo y el suelo atrapado en forma de
+ojo), HRRS **acompaña**: entre las dos vueltas queda el suelo, en una franja del
+mismo grosor en toda la obra.
+
+Sin profundidad no hay halo, ni plan de secciones, ni orden de pintado: **un solo
+`stroke()`**. Lo que en TRZS son 2.344 líneas y en EVOL 975, aquí son 700, y toda la
+complejidad se va al recorrido — que es lo que queda cuando quitas la profundidad y
+no hay nada detrás de lo que esconderse.
+
+La regla que la gobierna es NEGATIVA y es una sola: dos tramos que no comparten
+vértice están a `W + g` o más. Y no se persigue con un relajador —`selfAvoid` no se
+porta— sino que se cumple por construcción: el recorrido no crece hacia donde no
+cabe. De ahí sale gratis el cabo, que deja de decidirse: la cinta se acaba donde ya
+no cabe.
+
+Verificada con su propia batería (`hrrs/verificacion/`): 996 obras, 2.008.529 pares
+no contiguos, **cero** por debajo del canal, y cada detector con su control roto a
+propósito. Uno de esos controles comprueba una afirmación del algoritmo y no un
+detector: que el **bisel** es lo que hace suficiente a la regla — con inglete, el
+pico de una esquina cruza el canal y suelda la obra.
+
+No está en `works.json` ni publicada. Ver `hrrs/README.md`.
+
+`ptzd/` es el quinto, y es distinto de los tres anteriores en una cosa: **por
+ahora sólo es concepto**. No hay `algo.js`, no hay harness, no hay una sola pieza
+renderizada — está escrita la gramática antes que el código, que es el paso que a
+`dtkrt/`, `eclps/` y `evol/` les faltó por escrito. El bloque nace cuadrado y unos
+cortes de anchura constante entran por los cantos, se ramifican y mueren unos
+contra otros; las piezas que sueltan se apartan, y la silueta es lo que queda. Si
+KRRTK **parte** el cuadrado, PTZD lo **rompe**: la subdivisión conoce el todo, y
+una grieta sólo conoce su punta. Ver `ptzd/README.md` para las ocho reglas, las
+influencias contrastadas de las que sale cada una y lo que habrá que medir.
 
 ECLPS es también la primera familia que existe en **un solo formato**: `double`, dos
 pliegos apaisados uno al lado del otro (2√2:1). No es capricho ni límite técnico
@@ -136,9 +181,73 @@ alargar el halo de las dos en la junta, reducir la pizca del solape, y —descar
 midiendo— que hubiera cuerpos solapados sin cruce registrado.
 
 Los detectores que encontraron todo eso están commiteados en
-`trzs/verificacion/`, con sus controles rotos a propósito y las siete trampas que
+`trzs/verificacion/`, con sus controles rotos a propósito y las once trampas que
 dieron defectos inexistentes. Se ejecutan a mano cuando alguien toca el dibujo de
 la cinta.
+
+**Y el final de la cinta también lleva incisión.** El halo del cuerpo se traza
+con cabo a hueso, así que se acaba justo donde se acaba la cinta: la cara del
+final era el único filo de la obra sin corte, y cuando caía contra otra hebra las
+dos tintas se tocaban y se leían como una sola pieza. La holgura sólo está
+garantizada frente a las huellas de cruce, no frente a una vecina que pasa de
+largo, así que el caso no era raro: 22 de 60 obras de tres cintas y 13 de 60 de
+dos. El remate en inglete o redondo llevaba el mismo problema, y ahí el halo ya
+se había intentado una vez y se retiró porque traía de vuelta la costura de 1 px.
+No era el halo: era el ORDEN. Se pintaba detrás de la tinta del cuerpo, y ahora
+va con los demás halos.
+
+**Y el salto no es una esquina.** La curva redondeaba todos los vértices
+interiores, y el vértice de un salto es el final de una cinta y el principio de
+otra: redondeándolo, el final se doblaba hacia la cinta siguiente y el remate
+—que va al vértice— caía fuera del cuerpo. Tampoco es un tramo para la mediana
+de la que sale la anchura: un brinco que mide media obra inflaba la mediana y
+dejaba la cinta más ancha de lo que su recorrido admite.
+
+**Y el cabo no se aplasta: es material, no holgura.** Separar hebras empuja los
+dos segmentos de cada par, y a un extremo de cinta lo empuja contra su vecino.
+En medio del recorrido eso lo arregla `enforceMaterial` quitando el nodo; en un
+cabo no hay nodo que quitar sin acortar la cinta. Con una cinta hay dos extremos
+y no se nota; con tres hay seis, y **una de cada cuatro obras** salía con un
+tramo más corto que el material admite. Reponerlo al final del solver no
+funciona —mete el cabo en la vecina, y los cuerpos solapados sin cruce pasaron de
+0 a 53 de 200—; reponerlo DENTRO de las pasadas de `selfAvoid` sí, porque la
+pasada siguiente vuelve a separar y lo que cede es la otra hebra. Con eso el
+tejido de tres cintas pasa de 29 obras sucias de 100 a 2, y de 1.546 a 977 ms.
+
+**Y la costura de 1 px, que se quedó abierta al graduar, ya está cerrada.** Era
+el filo del cabo: el halo y el cuerpo acababan en el mismo arco y el remate va a
+ras, así que en los píxeles que ese filo parte por la mitad el halo se llevaba
+una fracción de tinta que el cuerpo no devolvía entera. Basta con que el cuerpo
+pase del halo un píxel. Los cuatro arreglos que habían fallado antes atacaban la
+junta; no era la junta.
+
+Lo que sí sigue abierto son dos defectos **que ya estaban** y que no se veían
+porque la batería medía 50 obras por configuración: remates soldados a otra
+hebra (~2 %) e incisiones a medias en apaisado (3 de 2.653 cruces). A un 2 %,
+cero de cincuenta es lo más probable que puede pasar — la muestra era el
+defecto. De ahí `mil.sh`, que mide mil.
+
+### Lo que la cinta sabe hacer y no se veía
+
+Tres mandos que existían a medias o no existían:
+
+- **La esquina curva la tira ahora la obra.** El default era `rectas` a secas, así
+  que la variante curva no salía nunca sola: ni en un lote, ni en la landing, ni
+  en la galería, sólo eligiéndola a mano en el laboratorio. Un rasgo que vale lo
+  mismo en todas las obras no es un rasgo. Sale una de cada cuatro, con su propio
+  azar para no correr el stream principal y dejar igual todo lo ya visto.
+- **El temblor** (`params.temblor`), portado de la "vibración opcional" del sketch
+  de p5 con dos diferencias: entra *dentro* de `tejer`, antes de analizar el nudo
+  —en p5 movía los puntos ya mapeados, después, así que la incisión dejaba de
+  caer donde el análisis creía— y su ruido va sembrado, porque el de p5 no
+  llamaba a `noiseSeed` y todas las obras temblaban exactamente igual. Va detrás
+  de los lazos de restricción: probado antes, `selfAvoid` y `relaxFolds` se lo
+  comían enteros incluso a amplitud 1,0.
+- **Tres cintas** (`tipo: "tres"`). El salto pasó de escalar a lista y `esSalto()`
+  siguió siendo la única puerta, así que de los 39 sitios que lo tocaban sólo
+  cambiaron los que contaban uno. Cada cinta se lleva una pasada, y el suelo de
+  vueltas ahora respeta eso: antes el bucle bajaba las vueltas hasta que el
+  tejido validaba, y con eso un tipo de tres cintas devolvía dos.
 
 Cada obra expone el mismo contrato:
 
@@ -268,8 +377,13 @@ Los sliders son de exploración: producción usa siempre los defaults.
    `FORMAT` de partida de la obra.
 3. Verificar: `node --check`, y si reemplaza un motor existente, prueba de
    equivalencia (log de operaciones de canvas idéntico para N seeds).
-4. En la página de producción: cargar `_engine.js` + `algo.js` y delegar
-   `draw()` en `HOKS.<OBRA>.render/traits`. Nada de motor inline.
+4. Añadir el slug a `GRADUATED` — en `_lab.js` **y** en `admin.html`, que es un
+   panel autónomo y lleva su propia copia. Con eso ya se abre en el laboratorio
+   y aparece en su selector de obra, esté publicada o no.
+5. La página de producción no hay que escribirla: `work.html?w=<obra>` carga
+   `_engine.js` + el `algo.js` del slug y delega en `HOKS.<OBRA>.render`. Solo si
+   la obra merece URL propia se escribe el cascarón de veinte líneas y se apunta
+   en `page`. Nada de motor inline, en cualquier caso.
 
 Nada está publicado hasta el push a `main`; se puede probar y revertir sin
 miedo (ver CLAUDE.md).

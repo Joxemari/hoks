@@ -456,7 +456,15 @@ async function saveWorks() {
 
 
 // Familias graduadas al laboratorio de fuente única (sketches/<slug>/).
-const GRADUATED = ['plls','krrtk','dtk','dtkrt','eclps','trzs','evol'];
+// El laboratorio las abre TODAS, activas o no: `active` decide la web, no la
+// mesa de trabajo. Por eso el enlace Lab sale aquí aunque la familia esté
+// apagada — es justo cuando hace falta.
+const GRADUATED = ['plls','krrtk','dtk','dtkrt','eclps','trzs','evol','hrrs'];
+// Dónde vive la sección de una familia. Sin `page` no hay página propia y la
+// obra cae a la genérica (work.html?w=<slug>), así que activar basta para que
+// tenga sección. Copia de la regla de nav.js: admin.html es un panel autónomo y
+// no carga scripts del sitio — al cambiarla, tocar las dos.
+function workHref(w) { return w.page || ('work.html?w=' + encodeURIComponent(w.slug)); }
 function renderWorks() {
   const el = $('works-count');
   if (el) el.textContent = works.length;
@@ -471,13 +479,13 @@ function renderWorks() {
       <div class="work-card-header">
         <div style="flex:1;">
           <div style="font-size:12px;font-weight:700;letter-spacing:0.06em;">${esc(w.name)} <span style="font-size:9px;color:var(--ink3);font-weight:400;">${esc(w.slug)}</span></div>
-          <div style="font-size:9px;color:var(--ink3);margin-top:2px;">${esc(w.canvas||'')} &middot; ${esc(w.page||'')}</div>
+          <div style="font-size:9px;color:var(--ink3);margin-top:2px;">${esc(w.canvas||'')} &middot; ${esc(workHref(w))}</div>
         </div>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;">
           <input type="checkbox" ${w.active?'checked':''} onchange="toggleWork(${i},this.checked)"> Active
         </label>
         ${GRADUATED.includes(w.slug)?`<a href="sketches/${esc(w.slug)}/" target="_blank" style="font-family:var(--f);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);text-decoration:none;border:1px solid var(--border-dark);border-radius:2px;padding:5px 10px;">&#9638; Lab</a>`:''}
-        <a href="${esc(w.page||w.slug+'.html')}" target="_blank" style="font-family:var(--f);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);text-decoration:none;border:1px solid var(--border-dark);border-radius:2px;padding:5px 10px;">&#8599; Open</a>
+        <a href="${esc(workHref(w))}" target="_blank" style="font-family:var(--f);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink);text-decoration:none;border:1px solid var(--border-dark);border-radius:2px;padding:5px 10px;">&#8599; Open</a>
         <button onclick="deleteWork(${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:14px;padding:0 4px;" title="Delete">&times;</button>
       </div>
       <div class="work-card-body">
@@ -557,7 +565,10 @@ function openAddWorkModal() {
   const name = prompt('Family name (e.g. BZRSG):'); if (!name) return;
   const slug = prompt('Slug (e.g. bzrsg):'); if (!slug) return;
   const canvasSize = prompt('Canvas size:', '600x600');
-  works.push({id:slug, name:name.toUpperCase(), slug, active:false, description:'', page:slug+'.html', canvas:canvasSize||'600x600', formats:['square','horizontal'], created:Date.now()});
+  // Sin `page`: una familia nueva no tiene página propia, y no hace falta que la
+  // tenga. Cae a work.html?w=<slug>, así que activarla ya le da sección y sitio
+  // en la landing. Se le pone `page` el día que se le escriba un cascarón.
+  works.push({id:slug, name:name.toUpperCase(), slug, active:false, description:'', canvas:canvasSize||'600x600', formats:['square','horizontal'], created:Date.now()});
   saveWorks();
   renderWorks();
   toast('Family added — graduate it in the Lab, then activate when ready');
