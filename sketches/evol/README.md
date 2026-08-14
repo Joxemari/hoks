@@ -233,12 +233,25 @@ Dos cosas costaron:
   dibujados — y encima competían con los ojos, que son los huecos que sí significan
   algo.
 
-Lo que sí resolvió la superficie fue una línea, no una textura: **el grano es del
-papel, y la tinta lo tapa.** El motor aplica el grano a todo el lienzo por igual, así
-que la masa y el suelo salían del mismo material y solo cambiaba el color. En una
-hoja impresa el diente lo tiene el papel y donde hay carga queda cubierto. Se repinta
-el cuerpo por encima del grano al 55%: el suelo conserva su grano entero y la tinta
-queda casi lisa. No añade ninguna forma, que era la condición.
+Y la superficie acabó siendo una cuestión de **orden**, no de textura. El motor aplica
+el grano a todo el lienzo por igual, así que masa y suelo salían del mismo material y
+solo cambiaba el color.
+
+El primer arreglo repintaba la masa **por encima** del grano al 55%, y funcionó mientras
+hubo una sola tinta. Con dos tramas se rompió, y de una manera que enseña algo: **una
+opacidad parcial aplicada en capas nunca reproduce un opaco.** Donde una trama tapaba a
+la otra, el repintado daba las dos manos y salía un color intermedio que no está en la
+paleta — se veía como transparencia, y estas tintas no lo son. Se intentó recortar con
+`evenodd` y tampoco: `emitir` deja los cuadriláteros solaparse a propósito porque con
+`nonzero` solaparse es **sumar**, y bajo `evenodd` esos mismos solapes se **cancelan**,
+así que el recorte salía agujereado justo donde la masa es más espesa. La regla de
+relleno no es un detalle del pintado: es parte de cómo está construido el cuerpo.
+
+La solución era mucho más simple, y además es la literal: **el grano se aplica al papel,
+y luego se imprime.** Se pinta el suelo, se le echa el grano, y la tinta va encima
+opaca. El papel conserva su diente entero, la masa queda plana, y no hay ninguna mano
+que pueda superponerse con otra — la familia entera de fallos desaparece por orden, no
+por parche.
 
 Verificado **por píxeles**, no solo por los valores devueltos —que del contorno no
 dicen nada—: el mismo seed a 400 y a 1200 de lado corto, reducido el grande al tamaño
@@ -283,41 +296,36 @@ contraste, se usa la mitad de las veces. Sobre papel crudo la masa pesa distinto
 porque el suelo deja de ser ausencia de tinta y se vuelve material. No es un ajuste
 del laboratorio: es qué papel se compra.
 
-**La trama de encima.** No es una hebra teñida: es **otra trama entera**, con sus
-hebras, sus ramales, su foco y su tinta. La diferencia importa y es conceptual, no de
-grado — una hebra teñida de esta misma trama está **soldada** a las demás por los
-nudos, así que es la misma masa de otro color y no hay tensión ninguna. Dos tramas no
-se sueldan: se **superponen**, porque no se conocen. Cada una cruza el pliego a su
-manera y se encuentran donde se encuentran.
+**Dos tramas se tejen.** No es una hebra teñida: es **otra trama entera**, con sus
+hebras, sus ramales, su foco y su tinta. La diferencia importa y es conceptual — una
+hebra teñida de esta misma trama está **soldada** a las demás por los nudos, así que es
+la misma masa de otro color y no hay tensión ninguna.
 
-Con eso la regla queda dicha del todo: **la soldadura solo ocurre dentro de una
-trama.** Entre tramas hay pasada y registro, que es como se imprime de verdad. Y ahí
-reaparece un encima y un debajo — la única profundidad que esta obra admite, y no la
-decide el dibujo: la decide el orden de las planchas.
+Y tampoco se apilan. Una plancha entera encima de otra es un orden absoluto y se lee
+como tal: siempre gana la misma. Eso no es tejer, es apilar. En un tejido la trama pasa
+por encima de la urdimbre y por debajo en el siguiente cruce, **alternando** — que la
+familia se llame así y no lo hiciera era una contradicción. Así que la alternancia va a
+lo largo de cada hebra, cruce a cruce.
 
-Sale en una de cada cuatro piezas. La de encima va siempre laxa: dos tramas gordas se
-tapan la una a la otra y lo que queda es barro de dos colores. La tensión la da que una
-atraviese a la otra, no que compitan por el sitio.
+Con eso la regla queda dicha del todo: **dentro de una trama, soldadura; entre dos
+tramas, tejido.** Y ahí reaparece un encima y un debajo, pero sin incisión: la
+profundidad la dice qué tinta se ve, y nada más. Es el reverso exacto de TRZS, donde
+todo el aparato existe para que el corte entre las dos hebras se vea.
 
-Y dos cosas que costaron, las dos por medir la pieza completa y no media:
+Se resuelve **sin plan de secciones** —que es justo lo que EVOL se ahorró de TRZS—
+porque estas tintas son opacas: se pinta la de abajo, se pinta la de encima, y donde le
+toca ganar a la de abajo se repinta un **parche** suyo, un tramo corto centrado en el
+cruce. El parche lleva el arco que le corresponde dentro de su hebra, así que el canto
+del filo casa y no se ve junta ninguna. Sale en una de cada cuatro piezas, y la de
+encima va siempre laxa: dos tramas gordas se tapan la una a la otra y queda barro de dos
+colores. La tensión la da que una atraviese a la otra, no que compitan por el sitio.
 
-- **Los ojos se multiplican, no se suman.** Cada hebra de encima parte en dos las
-  celdas que cruza, así que el conteo se va por encima del triple. Hubo que ampliar el
-  techo declarado por el tipo —si no, cada pieza de dos tramas salía con una falta
-  enorme y el bucle elegía por un criterio imposible de cumplir— y normalizar la rareza
-  del ojo **dentro de su clase**: doce ojos en una pieza de dos tramas es lo corriente,
-  y sin normalizar la rareza acababa midiendo el número de planchas.
-- **El solape no puede recibir dos manos.** Repintando las dos tramas al 55% una detrás
-  de otra, la zona de cruce se llevaba las dos y salía un color intermedio que no está
-  en la paleta: se veía como una transparencia, y estas tintas no son transparentes.
-  El arreglo obvio —recortar la de abajo con `evenodd` y un rectángulo exterior— **no
-  funciona**, y el motivo merece quedar escrito: `emitir` deja los cuadriláteros
-  solaparse a propósito porque con `nonzero` solaparse es sumar, y bajo `evenodd` esos
-  mismos solapes se cancelan, así que el recorte salía agujereado justo donde la masa
-  es más espesa. La regla de relleno no es un detalle del pintado: es parte de cómo
-  está construido el cuerpo. Con dos tramas el aliso se aplica **solo a la de encima**,
-  que es la última pasada — ningún píxel recibe dos manos, y se sostiene por lo
-  material: la plancha de encima imprime sobre tinta seca y cubre más.
+**Los ojos se multiplican, no se suman.** Cada hebra de encima parte en dos las celdas
+que cruza, así que el conteo se va por encima del triple. Hubo que ampliar el techo
+declarado por el tipo —si no, cada pieza de dos tramas salía con una falta enorme y el
+bucle elegía por un criterio imposible de cumplir— y normalizar la rareza del ojo
+**dentro de su clase**: doce ojos en una pieza de dos tramas es lo corriente, y sin
+normalizar la rareza acababa midiendo el número de planchas.
 
 ## Medido
 

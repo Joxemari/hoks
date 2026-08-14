@@ -144,16 +144,27 @@
   const FILO_NAMES = Object.keys(FILOS);
 
   // EL GRANO ES DEL PAPEL, Y LA TINTA LO TAPA. Ésta es la parte de superficie, y
-  // resultó ser una línea, no una textura: el motor aplica el grano a todo el
-  // lienzo por igual, así que la masa y el suelo salían del MISMO material, solo
-  // que de distinto color. En una hoja impresa no es así — el diente lo tiene el
-  // papel, y donde hay carga queda cubierto. Se repinta el cuerpo por encima del
-  // grano con esta opacidad: el suelo conserva su grano entero y la tinta queda
-  // casi lisa. No añade ninguna forma, que es la condición — el primer intento
-  // metió vetas de suelo dentro de la masa y se leían como agujeros dibujados,
-  // porque una veta que engorda en el centro y se afila en las puntas tiene forma
-  // de almendra, y esa forma no la hace un pincel: la hace quien la dibuja.
-  const ALISO = 0.55;
+  // acabó siendo una cuestión de ORDEN, no de textura: el motor aplica el grano a todo
+  // el lienzo por igual, así que masa y suelo salían del mismo material y solo cambiaba
+  // el color. En una hoja impresa el diente lo tiene el papel y donde hay carga queda
+  // cubierto.
+  //
+  // El primer arreglo repintaba la masa POR ENCIMA del grano al 55%, y funcionaba
+  // mientras hubo una sola tinta. Con dos tramas se rompió, y de una manera que enseña
+  // algo: una opacidad parcial aplicada en capas NUNCA reproduce un opaco. Donde una
+  // trama tapaba a la otra, el repintado daba las dos manos y salía un color intermedio
+  // que no está en la paleta — se veía como transparencia, y estas tintas no lo son. Se
+  // intentó recortar con 'evenodd' y tampoco: 'emitir' deja los cuadriláteros solaparse
+  // a propósito porque con 'nonzero' solaparse es sumar, y bajo 'evenodd' esos mismos
+  // solapes se CANCELAN, así que el recorte salía agujereado justo donde la masa es más
+  // espesa. La regla de relleno no es un detalle del pintado: es parte de cómo está
+  // construido el cuerpo.
+  //
+  // La solución era mucho más simple y además es la literal: EL GRANO SE APLICA AL
+  // PAPEL, Y LUEGO SE IMPRIME. Se pinta el suelo, se le echa el grano, y la tinta va
+  // encima opaca. El papel conserva su diente entero, la masa queda plana, y no hay
+  // ninguna mano que se pueda superponer con otra — la familia entera de fallos
+  // desaparece por orden, no por parche.
 
   const MITER = 2.4;         // tope del inglete: por encima, el pico es una astilla
   const SESGO_MAX = 0.34;    // asimetría del cuerpo respecto a su eje
@@ -349,7 +360,7 @@
   // dirección de la bisectriz, no con la normal de ninguno de los dos tramos— y lo
   // usan los dos. Si cada tramo desplazara el vértice con su propia normal, en cada
   // esquina se abriría una rendija por la que se vería el suelo.
-  function emitir(ctx, ch, filo, sem) {
+  function emitir(ctx, ch, filo, sem, arco0) {
     if (ch.length < 2) return;
     const { I, D, M } = bordes(ch);
     const n = ch.length;
@@ -369,7 +380,12 @@
     const semI = (sem ^ 0x1F35C) >>> 0, semD = (sem ^ 0x7A21B) >>> 0;
     // Arco acumulado sobre el EJE, en unidades de lado corto: es la coordenada del
     // ruido, así que el filo no depende ni del número de vértices ni del tamaño.
+    // El arco arranca donde se le diga: un TRAMO suelto de una hebra tiene que
+    // evaluar el ruido del filo con el arco que le toca dentro de su hebra entera. Si
+    // empezara en cero, el canto del parche no casaría con el del resto y se vería un
+    // escalón justo donde se supone que no hay junta.
     const arco = new Float64Array(n);
+    arco[0] = arco0 || 0;
     for (let i = 1; i < n; i++) {
       arco[i] = arco[i - 1] + hypot(ch[i].x - ch[i - 1].x, ch[i].y - ch[i - 1].y);
     }
@@ -877,6 +893,34 @@
     return { x: ch[i].x + (ch[i + 1].x - ch[i].x) * f, y: ch[i].y + (ch[i + 1].y - ch[i].y) * f, i, f };
   }
 
+  // Un punto de la cadena en el parámetro t, con TODO lo suyo interpolado: si el
+  // parche no llevara la misma anchura y el mismo sesgo que la hebra en ese punto, se
+  // vería como un remiendo de otro grosor.
+  function puntoEn(ch, t) {
+    const i = clamp(Math.floor(t), 0, ch.length - 2), f = clamp(t - i, 0, 1);
+    const a = ch[i], b = ch[i + 1];
+    return {
+      x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f,
+      hw: a.hw + (b.hw - a.hw) * f, lv: f < 0.5 ? a.lv : b.lv,
+      sesgo: (a.sesgo || 0) + ((b.sesgo || 0) - (a.sesgo || 0)) * f, corte: 0,
+    };
+  }
+
+  // El tramo de una hebra entre dos parámetros, con el arco al que empieza.
+  function tramoDe(ch, t0, t1) {
+    t0 = max(0, t0); t1 = min(ch.length - 1, t1);
+    if (t1 - t0 < 1e-4) return null;
+    const out = [puntoEn(ch, t0)];
+    for (let i = Math.ceil(t0 + 1e-9); i <= Math.floor(t1 - 1e-9); i++) out.push(ch[i]);
+    out.push(puntoEn(ch, t1));
+    if (out.length < 2) return null;
+    let arco0 = 0;
+    const e = Math.floor(t0);
+    for (let i = 1; i <= e; i++) arco0 += hypot(ch[i].x - ch[i - 1].x, ch[i].y - ch[i - 1].y);
+    arco0 += hypot(out[0].x - ch[e].x, out[0].y - ch[e].y);
+    return { ch: out, arco0 };
+  }
+
   // Los CRUCES entre dos hebras. En TRZS un cruce era el problema entero —había que
   // decidir quién pasa por encima y abrir la incisión—; aquí es lo contrario: el
   // cruce es donde la trama se hace una sola pieza. Y hay que encontrarlos igual,
@@ -936,9 +980,15 @@
     const a = madre[i], b = madre[i + 1], q = madre[i - 1];
     const dx = b.x - q.x, dy = b.y - q.y, m = hypot(dx, dy) || 1e-9;
     const lado = rng.bool(0.5) ? 1 : -1;
-    // Sale casi perpendicular a la madre: es lo que hace celda. Saliendo en diagonal
-    // se pone en paralelo a las otras hebras y no cierra nada.
-    let ang = Math.atan2(dy / m, dx / m) + lado * (Math.PI / 2) + rng.range(-0.45, 0.45);
+    // El ángulo de salida es BIMODAL, no un jitter alrededor de la perpendicular. La
+    // perpendicular es lo que hace celda, así que sigue siendo la mayoría — pero con
+    // solo eso salían cruces en T demasiado limpias y repetidas, y en las referencias
+    // los brazos arrancan en ángulos variados: unos se van casi de canto y se
+    // despegan de la madre poco a poco. Ese arranque oblicuo es el que da los ángulos
+    // agudos de masa que la T nunca produce.
+    const abre = rng.bool(0.62) ? rng.range(-0.38, 0.38)
+                                : (rng.bool(0.5) ? 1 : -1) * rng.range(0.60, 1.15);
+    let ang = Math.atan2(dy / m, dx / m) + lado * (Math.PI / 2) + abre;
     const nv = rng.int(4, 8);
     const largo = min(W, H) * rng.range(0.22, 0.62);
     const lv = grosores(rng, nv + 1, lo, hi);
@@ -1208,6 +1258,9 @@
       ctx.fillRect(0, 0, W, H);
     }
 
+    // El grano, sobre el PAPEL y antes de imprimir.
+    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
+
     // 4. El cuerpo. UNA sola llamada a fill(): la soldadura no se dibuja, es la
     //    consecuencia de que todo esté en el mismo trazado. Ahí es donde esta
     //    obra se separa de TRZS — no hay orden de pintado porque no hay
@@ -1223,51 +1276,61 @@
     // La semilla del filo va por CUERPO (índice + seed), no por pieza: si todos
     // compartieran ruido, dos cuerpos paralelos ondularían a la vez y se leería el
     // patrón en vez del pincel.
-    // Una pasada por trama, y el orden es el de la impresión: la de encima tapa en los
-    // cruces. Ahí vuelve a haber un encima y un debajo — la única profundidad que esta
-    // obra admite, y no la decide el dibujo, la decide el orden de las planchas.
     const pasada = (cs, col, sal) => {
       ctx.beginPath();
       cs.forEach((ch, i) => emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (i + 1)) ^ sal) >>> 0));
       ctx.fillStyle = col;
       ctx.fill();
     };
-    pasada(best.cuerpos, rol.tinta, 0);
-    if (sobre) pasada(sobre.cuerpos, rol.otras[0], 0x3F1B9C);
-    ctx.restore();
 
-    // 5. Grano: el papel. unit lo mantiene del mismo tamaño físico a 300 dpi.
-    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
-
-    // 6. Y la tinta, por encima del grano, tapando el diente del papel.
-    if (grainScale > 0 && ALISO > 0) {
-      ctx.save();
-      ctx.globalAlpha = ALISO;
-      ctx.translate(ox, 0);
-      ctx.scale(S, S);
-      // OJO con el solape, que costó dos intentos.
-      //
-      // Repintando las dos tramas al 55% una detrás de otra, la zona de cruce se lleva
-      // las dos manos y sale un color intermedio que no está en la paleta: se veía
-      // como una transparencia, y estas tintas no son transparentes.
-      //
-      // El arreglo obvio —recortar la de abajo por fuera de la de encima con 'evenodd'
-      // y un rectángulo exterior— NO funciona, y el motivo merece quedar escrito:
-      // 'emitir' construye un cuadrilátero por tramo y los deja SOLAPARSE a propósito,
-      // porque con 'nonzero' solaparse es sumar. Bajo 'evenodd' esos mismos solapes se
-      // CANCELAN, así que el recorte salía agujereado justo donde la masa es más
-      // espesa. La regla de relleno no es un detalle del pintado: es parte de cómo
-      // está construido el cuerpo, y no se puede cambiar al vuelo.
-      //
-      // Así que con dos tramas el aliso se aplica SOLO a la de encima, que es la última
-      // pasada. Ningún píxel recibe dos manos y no hay mezcla en ningún sitio. Y se
-      // sostiene por lo material: la plancha de encima imprime sobre tinta ya seca y
-      // cubre más, así que es la que tapa el diente del papel. La de abajo conserva su
-      // grano, y esa diferencia entre las dos pasadas es del oficio, no un defecto.
-      if (sobre) pasada(sobre.cuerpos, rol.otras[0], 0x3F1B9C);
-      else pasada(best.cuerpos, rol.tinta, 0);
-      ctx.restore();
+    // EL TEJIDO. Dos tramas no se apilan: se ENTRELAZAN. Una plancha entera encima de
+    // otra es un orden absoluto y se lee como tal —siempre gana la misma—, y eso no es
+    // tejer: es apilar. En un tejido la trama pasa por encima de la urdimbre y por
+    // debajo en el siguiente cruce, alternando. Que la familia se llame así y no lo
+    // hiciera era una contradicción.
+    //
+    // Se resuelve sin plan de secciones —que es justo lo que EVOL se ahorró de TRZS—
+    // porque estas tintas son OPACAS: se pinta la de abajo, se pinta la de encima, y
+    // donde le toca ganar a la de abajo se repinta un PARCHE suyo, un tramo corto
+    // centrado en el cruce. El parche lleva su arco, así que el canto casa y no se ve
+    // junta ninguna. Sin incisión: la profundidad la dice qué tinta se ve, y ya.
+    const parches = [];
+    if (sobre) {
+      const A = best.chains, B = sobre.chains;
+      for (let ia = 0; ia < A.length; ia++) {
+        let turno = (seed >>> (ia % 24)) & 1;   // por dónde empieza a alternar cada hebra
+        const cs = [];
+        for (let ib = 0; ib < B.length; ib++) {
+          for (const c of cruces(A[ia], B[ib])) cs.push({ c, ib });
+        }
+        cs.sort((x, y) => x.c.ta - y.c.ta);     // alternar A LO LARGO de la hebra
+        for (const { c, ib } of cs) {
+          turno ^= 1;
+          if (!turno) continue;                  // este cruce lo gana la de encima
+          // El parche cubre el ancho de la hebra de encima más un margen, medido en
+          // parámetro de la de abajo: un parche corto deja asomar la otra tinta.
+          const wB = puntoEn(B[ib], c.tb).hw;
+          const p0 = puntoEn(A[ia], c.ta);
+          const paso = hypot(A[ia][min(A[ia].length - 1, Math.floor(c.ta) + 1)].x - A[ia][Math.floor(c.ta)].x,
+                             A[ia][min(A[ia].length - 1, Math.floor(c.ta) + 1)].y - A[ia][Math.floor(c.ta)].y) || 1e-6;
+          const d = (wB * 2.2 + p0.hw * 0.5) / paso;
+          const tr = tramoDe(A[ia], c.ta - d, c.ta + d);
+          if (tr) parches.push({ tr, i: best.cuerpos.indexOf(A[ia]) });
+        }
+      }
     }
+
+    pasada(best.cuerpos, rol.tinta, 0);
+    if (sobre) {
+      pasada(sobre.cuerpos, rol.otras[0], 0x3F1B9C);
+      if (parches.length) {
+        ctx.beginPath();
+        for (const p of parches) emitir(ctx, p.tr.ch, filo, (seed ^ (0x2545F491 * (p.i + 1))) >>> 0, p.tr.arco0);
+        ctx.fillStyle = rol.tinta;
+        ctx.fill();
+      }
+    }
+    ctx.restore();
 
     return { pal, rol, tipo, filo: filoName, bg, dos, nOtras, falta: bestF,
              field: cuad ? 'square' : 'sheet',
