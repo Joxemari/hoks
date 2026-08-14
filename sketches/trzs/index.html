@@ -87,7 +87,10 @@
         <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
           · plano <span id="bgPS">—</span></span>
         <input type="range" id="bgP" min="0" max="100" step="5" value="30">
-        <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre</span>
+        <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre.
+          Es una petición, no una orden: el degradado se hace con los colores que NO son tinta, y
+          si a la paleta no le quedan dos, el suelo sale plano. Medido, un 30 aquí da un 21 de
+          degradado de verdad</span>
       </div>
     </div>
     <div class="group">
@@ -125,10 +128,11 @@
         <option value="auto">Auto (redondo si la esquina es curva)</option>
         <option value="rectos">Square · corte de sierra</option>
         <option value="inglete">Mitre · corte a 45º, en punta</option>
-        <option value="redondos">Round · medio disco</option>
+        <option value="redondos">Round · disco (pone la esquina curva)</option>
       </select>
       <span class="hintline">el remate a escuadra y el inglete son cortes de la misma pletina; el redondo
-        pide esquina curva</span>
+        es de la cinta curva y sólo de ella, así que pedirlo pone la esquina en curva —salvo
+        que la esquina esté fijada a mano, y entonces manda ella y sale inglete</span>
     </div>
     <div class="group">
       <span class="lbl">Ghost ribbon</span>
@@ -139,6 +143,17 @@
       </select>
       <span class="hintline">no se ve como cinta: se ve como el corte que la separa del suelo.
         Con una sola cinta, la obra entera es un dibujo de incisiones</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Parallel</span>
+      <select id="paralelo">
+        <option value="auto">Auto (20% de las obras)</option>
+        <option value="no">Nunca · toda hebra que se encuentra, se cruza</option>
+        <option value="si">Siempre · un tramo vuelve pegado a sí mismo</option>
+      </select>
+      <span class="hintline">la otra mitad de la regla del encuentro: dos hebras pueden cruzarse
+        —una encima— o ir al lado, separadas por la misma incisión. Se declara un par de tramos
+        y se sostiene; no puede salir por azar, porque la evitación lo prohíbe</span>
     </div>
     <div class="group">
       <span class="lbl">Shake</span>
@@ -230,6 +245,7 @@ function params() {
     corner:     $('corner').value,
     ends:       $('ends').value,
     fantasma:   $('fantasma').value,
+    paralelo:   $('paralelo').value,
     temblor:    $('temblor').value,
     dots:       $('dots').value,
   };
