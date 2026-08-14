@@ -75,9 +75,14 @@ trama pesa más que tres bandas.
    masa engorda y adelgaza a escalones, no en rampa. Y hay **jerarquía**: una hebra es
    la protagonista y va arriba del rango, las demás caen abajo. Sin eso todas pesan
    igual y la trama vuelve a leerse como retícula.
-5. **GRAVEDAD.** Las hebras no se reparten a partes iguales: se apiñan hacia un lado y
-   lo que queda enfrente es la **reserva**. Y el reparto lleva desorden — con el paso
-   exacto sale una red de calles: un plano, no un gesto.
+5. **FOCO Y GRAVEDAD.** La trama no se reparte por igual: se **aprieta** en un sitio y
+   se deshilacha al alejarse — en la referencia la red es gorda en una zona y hacia los
+   extremos los brazos viajan adelgazando hasta ser casi hilo. El foco baja el nivel de
+   cada tramo con la distancia, así que actúa sobre la escala y no sobre la anchura: el
+   cuerpo sigue moviéndose a escalones. Los ramales nacen cerca de él, porque el ramaje
+   es lo que espesa la zona apretada. Y las hebras se apiñan hacia un lado: lo que
+   queda enfrente es la **reserva**. El mismo peso en todas partes es lo que delata una
+   retícula, aunque las hebras estén torcidas.
 
 Y la regla de método, heredada de TRZS: el tipo **declara** cuántos ojos y cuánta
 mancha, y luego se **comprueba sobre el resultado**. *Declarar sin comprobar es lo que
@@ -264,24 +269,35 @@ resoluciones (760, 2400 y 4200 de lado corto): la huella completa —tipo, estra
 puentes, lazos, muñones, escala, ojos con su área a seis decimales, mancha,
 modulación, gravedad, reserva y colores— sale **idéntica**, cero diferencias.
 
-## Color: dos, y se renuncia al resto
+## Color: la trama admite más de una tinta
 
-Las paletas de hoks son listas planas: no declaran suelo ni tinta. EVOL necesita
-**dos** colores y renuncia a los demás. Es una decisión, no una limitación — un
-cuerpo de tres colores deja de ser un cuerpo.
+Las paletas de hoks son listas planas: no declaran suelo ni tinta. EVOL elige el par
+por **distancia de color**, no por luminancia: con luminancia, las series Itten (cuatro
+colores entre 0,31 y 0,44 de luma) daban rojo sobre rojo, porque son contrastes de
+**tono** y ahí el ojo lee la figura perfectamente aunque el valor sea el mismo. Elegido
+el par, la luminancia decide quién es suelo.
 
-La pareja se elige por **distancia de color**, no por luminancia: con luminancia,
-las series Itten (cuatro colores entre 0,31 y 0,44 de luma) daban rojo sobre rojo,
-porque son contrastes de **tono** y ahí el ojo lee la figura perfectamente aunque el
-valor sea el mismo. Elegido el par, la luminancia decide quién es suelo.
-
-Y **el papel**: elegir el par más distante lleva siempre al blanco, y el blanco no
-es el único suelo posible. Si la paleta tiene un tono medio y cálido que aguante el
+Y **el papel**: elegir el par más distante lleva siempre al blanco, y el blanco no es
+el único suelo posible. Si la paleta tiene un tono medio y cálido que aguante el
 contraste, se usa la mitad de las veces. Sobre papel crudo la masa pesa distinto,
 porque el suelo deja de ser ausencia de tinta y se vuelve material. No es un ajuste
 del laboratorio: es qué papel se compra.
 
-Dos tintas —un estrato entero en otro color— existen y son el 4% de las piezas.
+**Las otras tintas.** Con estratos esto era una rareza testimonial del 4%: una banda
+más, en otro color. En una trama pesa muchísimo más, porque una hebra teñida
+**atraviesa** la pieza, se cruza con las demás y se lee de lado a lado. Así que deja de
+ser una anécdota y pasa a ser una decisión: tres de cada diez piezas llevan una segunda
+tinta, y una de cada cuatro de ésas, una tercera.
+
+Se reparten entre las hebras **pasantes**, nunca entre los ramales: una hebra de color
+que cruza se lee entera, y un ramal de color se lee como una mancha suelta. Cada tinta
+tiene que sostenerse sola —contraste contra el suelo y diferencia con las que ya
+están—, si no se lee como un error de registro. Y dos tintas casi iguales se descartan:
+son una.
+
+Cada tinta es **su pasada**, y el orden es el de la impresión: la última tapa en los
+cruces. Ahí vuelve a haber un encima y un debajo — la única profundidad que esta obra
+admite, y no la decide el dibujo, la decide el orden de las tintas.
 
 ## Medido
 

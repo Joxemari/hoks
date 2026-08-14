@@ -473,15 +473,33 @@
       }
     }
 
-    // Segunda tinta: un cuerpo entero en otro color. Tiene que sostenerse solo
-    // —contraste contra el suelo Y diferencia con la primera tinta—, si no se lee
-    // como un error de registro en la impresión.
-    const resto = uniq.filter(c => c !== suelo && c !== tinta);
-    const otra = resto.find(c => dcolor(c, suelo) > 0.34 && dcolor(c, tinta) > 0.30) || null;
-    return { suelo, tinta, otra, inv, papel };
+    // LAS OTRAS TINTAS. En una trama esto pesa mucho más que en los estratos: una
+    // hebra entera en otro color atraviesa la pieza, se cruza con las demás y se lee
+    // de lado a lado. Es lo que le da carácter, y por eso deja de ser una rareza
+    // testimonial del 4% para ser una decisión de la pieza.
+    //
+    // Cada una tiene que sostenerse sola —contraste contra el suelo Y diferencia con
+    // las que ya están—, si no se lee como un error de registro en la impresión. Y se
+    // ordenan por distancia a la primera tinta: la que más se separa entra antes.
+    const resto = uniq.filter(c => c !== suelo && c !== tinta)
+      .filter(c => dcolor(c, suelo) > 0.30)
+      .sort((a, b) => dcolor(b, tinta) - dcolor(a, tinta));
+    const otras = [];
+    for (const c of resto) {
+      if (dcolor(c, tinta) < 0.26) continue;
+      if (otras.some(o => dcolor(o, c) < 0.24)) continue;   // dos tintas casi iguales son una
+      otras.push(c);
+      if (otras.length === 2) break;
+    }
+    return { suelo, tinta, otra: otras[0] || null, otras, inv, papel };
   }
 
   const P_INV = 0.16;        // tinta clara sobre suelo oscuro
+  // Sube del 0,14 de la versión de estratos: una hebra de color que ATRAVIESA la
+  // trama se lee de lado a lado, mientras que en los estratos era una banda más. Lo
+  // que allí era una rareza testimonial aquí es carácter, así que pasa a salir en
+  // tres de cada diez piezas — y en una de cada cuatro de ésas, con dos tintas más.
+  const P_DOS = 0.30, P_TRES = 0.26;
   // Y el acoplamiento: una masa LEVE invertida no es un negativo, es un arañazo.
   // Medido sobre 500 tiradas —la mancha va de 14,4% (p10) a 28,6% (p90)— por debajo
   // del 18% la tinta clara sobre suelo oscuro se lee como una raya en una plancha,
@@ -893,9 +911,15 @@
   //
   // Y puede cruzar otras hebras por el camino: entonces suelda y encierra celdas
   // nuevas. Un ramal es tan hebra como las demás, solo que más corto.
-  function ramal(rng, madre, S, niveles, lo, hi, W, H) {
+  function ramal(rng, madre, S, niveles, lo, hi, W, H, foco) {
     if (madre.length < 3) return null;
-    const i = rng.int(1, madre.length - 2);
+    let i = rng.int(1, madre.length - 2);
+    if (foco) {
+      const j = rng.int(1, madre.length - 2);
+      const dj = hypot(madre[j].x - foco.x, madre[j].y - foco.y);
+      const di = hypot(madre[i].x - foco.x, madre[i].y - foco.y);
+      if (dj < di) i = j;
+    }
     const a = madre[i], b = madre[i + 1], q = madre[i - 1];
     const dx = b.x - q.x, dy = b.y - q.y, m = hypot(dx, dy) || 1e-9;
     const lado = rng.bool(0.5) ? 1 : -1;
@@ -991,15 +1015,42 @@
       vs.push(ch); cuerpos.push(ch);
     }
 
+    // EL FOCO. La trama no se reparte por igual: se APRIETA en un sitio y se
+    // deshilacha al alejarse. En la referencia se ve sin medir nada — la red es gorda
+    // en una zona y hacia los extremos los brazos viajan adelgazando hasta ser casi
+    // hilo. Sin esto, las hebras mantienen su grosor de borde a borde y la pieza se
+    // lee como un plano de calles: el mismo peso en todas partes es lo que delata una
+    // retícula, aunque las hebras estén torcidas.
+    //
+    // Se aplica sobre el NIVEL, no sobre la anchura: así el cuerpo sigue moviéndose a
+    // escalones —que es la materia de esta familia— y lo que cambia es en qué peldaño
+    // de la escala está cada tramo.
+    const foco = {
+      x: W * rng.range(0.22, 0.78),
+      y: grav === 'N' ? H * rng.range(0.16, 0.46) : H * rng.range(0.54, 0.84),
+    };
+    const R = hypot(W, H) * 0.5;
+    const caida = params.caida != null ? params.caida : rng.range(1.4, 3.2);
+    for (const ch of hs.concat(vs)) {
+      for (const v of ch) {
+        if (v.lv == null) continue;
+        const d = hypot(v.x - foco.x, v.y - foco.y) / R;
+        const lv = clamp(Math.round(v.lv - caida * d), 0, NIVELES - 1);
+        v.lv = lv; v.hw = niveles[lv] / 2;
+      }
+    }
+
     // LOS RAMALES, antes de los nudos: son hebras de pleno derecho, así que sus cruces
-    // también anudan.
+    // también anudan. Y nacen CERCA DEL FOCO — se sortean dos candidatos y gana el más
+    // cercano—, porque el ramaje es lo que espesa la zona apretada; repartidos por
+    // todo el pliego deshacen el foco que se acaba de establecer.
     const nR = params.ramales != null ? params.ramales : rng.int(t.ramales[0], t.ramales[1]);
     const rs = [];
     for (let n = 0; n < nR; n++) {
       const pool = hs.concat(vs, rs);
       const md = pool[rng.int(0, pool.length - 1)];
       const w = ventana(rng.int(0, total - 1));
-      const r = ramal(rng, md, S, niveles, w[0], w[1], W, H);
+      const r = ramal(rng, md, S, niveles, w[0], w[1], W, H, foco);
       if (r) { rs.push(r); cuerpos.push(r); }
     }
 
@@ -1034,7 +1085,7 @@
       if (v.lv < lvMin) lvMin = v.lv;
       if (v.lv > lvMax) lvMax = v.lv;
     }
-    return { cuerpos, chains: todas, k: nH + nV, nH, nV, ramales: rs.length, cruces: nCruces, munones,
+    return { cuerpos, chains: todas, k: nH + nV, nH, nV, ramales: rs.length, cruces: nCruces, munones, caida,
              grav, reserva: (grav === 'N' ? 'S' : 'N'), niveles, esc,
              ojos: med.ojos, mancha: med.mancha,
              modulacion: lvMax >= lvMin ? lvMax - lvMin : 0 };
@@ -1135,25 +1186,37 @@
     ctx.scale(S, S);   // del campo normalizado al pliego
     // La segunda tinta, cuando la hay, se lleva UNA hebra entera. No medio
     // cuerpo, no un degradado: un cuerpo. Es raro a propósito.
-    const dos = rol.otra && rng.bool(0.14) && best.chains.length > 1;
-    const jOtra = dos ? rng.int(0, best.chains.length - 1) : -1;
-    const suyos = dos ? new Set([best.chains[jOtra]]) : null;
+    // Se reparten hebras a las otras tintas. Se eligen entre las PASANTES —las que
+    // cruzan el pliego— y no entre los ramales: una hebra de color que atraviesa se
+    // lee entera, y un ramal de color se lee como una mancha suelta.
+    const pasantes = best.chains.slice(0, best.nH + best.nV);
+    const disp = (rol.otras || []).slice(0, max(0, pasantes.length - 1));
+    let nOtras = 0;
+    if (disp.length) nOtras = rng.bool(P_DOS) ? (disp.length > 1 && rng.bool(P_TRES) ? 2 : 1) : 0;
+    const teñidas = new Map();
+    const libres = pasantes.slice();
+    for (let k = 0; k < nOtras && libres.length > 1; k++) {
+      teñidas.set(libres.splice(rng.int(0, libres.length - 1), 1)[0], disp[k]);
+    }
+    const dos = nOtras > 0;
 
     // La semilla del filo va por CUERPO (índice + seed), no por pieza: si todos
     // compartieran ruido, dos cuerpos paralelos ondularían a la vez y se leería el
     // patrón en vez del pincel.
     ctx.beginPath();
     best.cuerpos.forEach((ch, i) => {
-      if (!dos || !suyos.has(ch)) emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
+      if (!teñidas.has(ch)) emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
     });
     ctx.fillStyle = rol.tinta;
     ctx.fill();
 
-    if (dos) {
+    // Cada tinta, su pasada. El orden es el de la impresión: la última tapa en los
+    // cruces, y ahí vuelve a haber un encima y un debajo — la única profundidad que
+    // esta obra admite, y no la decide el dibujo, la decide el orden de las tintas.
+    for (const [ch, col] of teñidas) {
       ctx.beginPath();
-      const i = best.cuerpos.indexOf(best.chains[jOtra]);
-      emitir(ctx, best.chains[jOtra], filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
-      ctx.fillStyle = rol.otra;
+      emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (best.cuerpos.indexOf(ch) + 1))) >>> 0);
+      ctx.fillStyle = col;
       ctx.fill();
     }
     ctx.restore();
@@ -1169,23 +1232,22 @@
       ctx.scale(S, S);
       ctx.beginPath();
       best.cuerpos.forEach((ch, i) => {
-        if (!dos || !suyos.has(ch)) emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
+        if (!teñidas.has(ch)) emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
       });
       ctx.fillStyle = rol.tinta;
       ctx.fill();
-      if (dos) {
+      for (const [ch, col] of teñidas) {
         ctx.beginPath();
-        const i = best.cuerpos.indexOf(best.chains[jOtra]);
-        emitir(ctx, best.chains[jOtra], filo, (seed ^ (0x2545F491 * (i + 1))) >>> 0);
-        ctx.fillStyle = rol.otra;
+        emitir(ctx, ch, filo, (seed ^ (0x2545F491 * (best.cuerpos.indexOf(ch) + 1))) >>> 0);
+        ctx.fillStyle = col;
         ctx.fill();
       }
       ctx.restore();
     }
 
-    return { pal, rol, tipo, filo: filoName, bg, dos, falta: bestF,
+    return { pal, rol, tipo, filo: filoName, bg, dos, nOtras, falta: bestF,
              field: cuad ? 'square' : 'sheet',
-             hebras: best.nH + '\u00d7' + best.nV, ramales: best.ramales, cruces: best.cruces,
+             hebras: best.nH + '\u00d7' + best.nV, ramales: best.ramales, cruces: best.cruces, caida: best.caida,
              munones: best.munones,
              esc: best.esc,
              ojos: best.ojos, mancha: best.mancha, modulacion: best.modulacion,
@@ -1224,8 +1286,9 @@
     // Solo 'isla' es rara: 'estrato' y 'ramificado' salen uno de cada cuatro, que
     // es corriente. La rareza del tipo se la lleva el que asedia el suelo.
     const tipoR = res.tipo === 'isla' ? 'rare' : 'common';
-    const tintaR = res.dos ? 'rare' : res.rol.inv ? 'uncommon' : 'common';
-    const tintaLbl = (res.dos ? 'Dos tintas' : 'Una tinta') + (res.rol.inv ? ' · invertida' : '');
+    const tintaR = res.nOtras === 2 ? 'rare' : res.nOtras === 1 ? 'uncommon' : res.rol.inv ? 'uncommon' : 'common';
+    const tintaLbl = (res.nOtras === 2 ? 'Tres tintas' : res.nOtras === 1 ? 'Dos tintas' : 'Una tinta')
+                   + (res.rol.inv ? ' · invertida' : '');
     const papelLbl = res.rol.inv ? 'Oscuro' : res.rol.papel === 'crudo' ? 'Crudo' : 'Blanco';
 
     // El filo NO entra en la rareza global, y es a propósito: es con qué está hecha

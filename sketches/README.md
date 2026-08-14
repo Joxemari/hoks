@@ -89,10 +89,6 @@ direcciones que se cruzan y se sueldan, y el ojo es la celda que dejan al cruzar
 `evol/README.md` para el concepto, el filo (el canto vivo, que no toca la anatomía) y
 las decisiones que quedan abiertas.
 
-`chlld/` es la tercera propuesta viva, y todavía solo un **prototipo**: partición del
-plano por fronteras compartidas, sin tipos ni traits. Ahí no se traza nada — el pliego
-se parte, y la masa se decide bajando por el árbol de la partición. Ver su README.
-
 ECLPS es también la primera familia que existe en **un solo formato**: `double`, dos
 pliegos apaisados uno al lado del otro (2√2:1). No es capricho ni límite técnico
 —la obra se compone igual en cuadrado— es que una fila necesita recorrido: en
