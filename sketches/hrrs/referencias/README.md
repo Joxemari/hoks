@@ -22,6 +22,28 @@ familia, **todas menos una** salieron de poner las dos cosas juntas y contar:
 
 Ninguna de esas cuatro se ve razonando. Las cuatro se ven con una regla encima.
 
+## Medir, que es lo que de verdad decide
+
+```
+python3 referencias/traza.py referencias/ref01.webp        # una referencia
+node verificacion/hoja.js /tmp/x.png 8 4 900               # y obra propia al lado
+python3 referencias/traza.py /tmp/mia.png                  # medida con la MISMA regla
+```
+
+`traza.py` saca del píxel el esqueleto, la anchura de banda (moda del doble de la
+transformada de distancia, no la media: la media la hunden los cabos), el canal, los
+cabos y los nudos. Se le puede pasar una obra propia, y ahí está el valor: la
+comparación deja de ser de impresiones.
+
+Dos avisos sobre sus números:
+
+- El **canal** se mide como suelo ESTRECHO, no como suelo encerrado. La primera
+  versión buscaba componentes de fondo que no tocaran el borde y daba cero en cuatro
+  de las seis — porque cuando las dos bandas de un canal se salen del cuadro, el canal
+  desemboca fuera. Justo las referencias con más travesías eran las que no medían.
+- Las cifras absolutas llevan sesgo del umbral y de la resolución. Lo que vale es la
+  **diferencia** entre las dos columnas, medida igual.
+
 ## Cómo
 
 ```

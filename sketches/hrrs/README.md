@@ -1152,6 +1152,44 @@ cascotes. En las referencias los elementos pequeños **mueren contra el cuerpo**
 cabos, no acompañamientos. Por debajo de medio lado corto, la baraja cambia y manda
 `caboCuerpo`.
 
+## Transcribir en vez de describir: el mismo instrumento en los dos lados
+
+El primer intento de réplica fue por el mal camino y el autor lo dijo en tres
+palabras: *«no se parecen en nada»*. Escribí recetas «parecidas» y comparé a ojo, que
+es exactamente el vicio que este README lleva nueve vueltas documentando.
+
+`referencias/traza.py` hace lo contrario: saca del **píxel** la geometría real —el
+esqueleto, la anchura de banda, el canal, los cabos, los nudos— y la devuelve en
+números. Y lo importante es que se le puede pasar **una obra mía**, así que por
+primera vez la comparación es con la misma regla en las dos manos.
+
+```
+                        referencias   HRRS hoy   qué dice
+anchura / lado corto       0,052       0,081     me pasé al ensanchar: 1,6× de más
+canal / anchura            0,205       0,367     mi pelo es casi el doble de ancho
+tinta                      24,4 %      33,6 %    pinto un tercio más
+nudos                      42,5        33        menos encuentros
+cabos                      30          19        LA MITAD: sus bandas terminan mucho más
+largo mediano              0,341       0,282     mis tramos son más cortos
+largo máximo               1,099       0,824     no tengo el brazo que cruza la hoja
+giros por banda            2,08        0,915     mis tramos van demasiado rectos
+un giro cada …             3,5 W       6,7 W     la mitad de ritmo
+```
+
+Tres cosas de esa tabla no las habría visto mirando, y una contradice lo que hice en
+la vuelta anterior:
+
+1. **La banda se me fue de ancho.** Medí «1/8 del pliego» en el cartel y subí el rango
+   entero; pero el cartel es el caso extremo (0,114) y las otras cinco están en 0,032
+   a 0,052. La mediana es **0,052** y yo estoy en 0,081. Corregir midiendo una sola
+   referencia es cómo se llega aquí.
+2. **Tengo la mitad de cabos que ellos.** No es que mis bandas sean largas: es que son
+   **pocas y continuas**, y las suyas se cortan, mueren y vuelven a empezar. Un cabo
+   es un suceso y ellos tienen el doble.
+3. **El ritmo efectivo es la mitad del declarado.** Está puesto en un giro cada 3,4
+   anchuras y sale uno cada 6,7. Entre nudo y nudo mis tramos van rectos, y el
+   detector de garabatos —que cuenta por trazo, no por tramo— no lo ve.
+
 ## El ejercicio de réplica, y lo que delata
 
 Lo propuso el autor y es el mejor instrumento que tiene esta familia, porque es
