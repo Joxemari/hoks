@@ -181,6 +181,68 @@ def ejesDe(mask, W, minLargo=1.2, dpTol=0.05):
     return out
 
 
+def respetaCanal(bandas, g, tolAng=32.0):
+    """Que dos bandas que SE ACOMPANAN no se toquen. Es la regla de la casa, leyendo.
+
+    Aqui esta el techo de las dos obras que resisten: la incision se cierra AL
+    EXTRAER, no al ajustar. En el cartel mide 4 px sobre una banda de 68 —0,06
+    anchuras— asi que basta un error de dos pixeles en la anchura de cualquiera de
+    las dos vecinas para soldarlas, y entonces el ajuste ya no tiene canal que
+    defender.
+
+    La familia tiene una regla para exactamente esto y no la estaba usando para leer:
+    entre dos ejes a distancia d, el blanco mide d - (w1+w2)/2, y tiene que quedar al
+    menos el pelo. Asi que se recorta la anchura hasta que quepa.
+
+    Con una salvedad, que es la misma de siempre: en un CRUCE los dos ejes se juntan
+    hasta cero y ahi no hay canal que guardar —se funden a proposito—. Se distingue
+    por el angulo, igual que en el algoritmo: si los dos tramos son casi paralelos se
+    acompanan y hay que respetar el pelo; si se cruzan, no.
+
+    ── PROBADO Y NO SIRVE, Y ESO SENALA DONDE ESTA EL FALLO ─────────────────────
+
+    Medido: no abre ni una incision. La litografia sigue en 1 componente de 7 y la
+    cuadrada en 3 de 14, con recorte global (que ademas hunde el acierto de 92 % a
+    72 %) y con recorte por vertice (que cuesta 4 puntos y tampoco abre nada).
+
+    Y que no sirva es informativo: si estrechar las bandas no abre el canal, es que
+    LOS EJES YA PASAN POR DONDE VA LA INCISION. O sea que el fallo no es de anchura
+    sino del recorrido — `bandas()` esta cruzando el pelo en algun nudo y volviendo
+    por el otro lado, que es justo la figura que el analisis llamo «el pelo empieza y
+    acaba dentro del negro»: donde la incision muere dentro de la tinta, sus dos
+    costados se encuentran y el esqueleto hace una Y. Atravesarla de largo produce un
+    eje en horquilla que RELLENA la ranura.
+
+    Se queda escrita, sin usar, porque descartarla es lo que localiza el sitio.
+    # POR VERTICE, no por banda. Recortando la banda entera con su punto mas
+    # estrecho se repite el error de la «anchura declarada»: un solo encuentro
+    # apretado adelgaza medio metro de banda y el acierto se hunde —92 % a 72 % en la
+    # litografia—. El pelo se abre DONDE hace falta y en ningun otro sitio.
+    import itertools
+    topes = [list(h) for _, h in bandas]
+    n = len(bandas)
+    for i, j in itertools.combinations(range(n), 2):
+        pi, hi = bandas[i]; pj, hj = bandas[j]
+        for a in range(len(pi) - 1):
+            axm = (pi[a][0]+pi[a+1][0])/2; aym = (pi[a][1]+pi[a+1][1])/2
+            ta = math.atan2(pi[a+1][1]-pi[a][1], pi[a+1][0]-pi[a][0])
+            for b2 in range(len(pj) - 1):
+                bxm = (pj[b2][0]+pj[b2+1][0])/2; bym = (pj[b2][1]+pj[b2+1][1])/2
+                d = math.hypot(axm-bxm, aym-bym)
+                if d > (hi[a] + hj[b2]) * 1.6 + g:
+                    continue
+                tb = math.atan2(pj[b2+1][1]-pj[b2][1], pj[b2+1][0]-pj[b2][0])
+                ang = abs(((math.degrees(ta - tb) + 90) % 180) - 90)
+                if ang > tolAng:
+                    continue                     # se cruzan: no hay canal que guardar
+                cabe = max((d - g) / 2.0, hi[a] * 0.70)
+                for k in (a, a+1):
+                    topes[i][k] = min(topes[i][k], cabe)
+                for k in (b2, b2+1):
+                    topes[j][k] = min(topes[j][k], cabe)
+    return [(p, topes[k]) for k, (p, h) in enumerate(bandas)]
+
+
 # ── El ajuste ──────────────────────────────────────────────────────────────────
 def ajustar(A, W, vueltas=6, verbose=True, peso=8.0):
     """Parte de los ejes del original y corrige por residuo hasta que no baje mas."""

@@ -1600,6 +1600,43 @@ banda de 68**, o sea 0,06 anchuras. Reproducirla exige acertar el eje Y la anchu
 las dos bandas vecinas con menos de dos píxeles de error a la vez. Ahí es donde está el
 techo hoy, y no en el objetivo.
 
+### Aplicar la regla de la casa a la lectura: probado, y no sirve — que es el dato
+
+Si la incisión se cierra al extraer, lo evidente es extraer con la regla puesta:
+`respetaCanal()` en `encaje.py` recorta la anchura de dos ejes que **se acompañan**
+hasta que el blanco entre ellos vuelva a medir el pelo, saltándose los pares cuyas
+tangentes difieren más de 32° porque eso es un **cruce** y ahí la fusión es lo buscado.
+Es la misma distinción de ángulo que usa el algoritmo para generar.
+
+No abre ni una incisión:
+
+```
+trazado inicial, recorte GLOBAL          orig   sin    con
+  ref04, la litografía                     2     1       2   (92,1 % → 72,0 %)
+  ref05                                    7     1       1   (85,5 % → 77,4 %)
+  ref06, la cuadrada                      14     3       3   (82,4 % =)
+  ref01                                    8     7       7   (91,3 % =)
+
+recorte POR VÉRTICE, g = 0,06 W / 0,12 W
+  ref04  1 comp (88,4 % / 87,7 %)   ref05  1 comp (84,6 % / 84,4 %)
+```
+
+El recorte global además repite el error de la «anchura declarada» —un solo encuentro
+apretado adelgaza media banda y hunde el acierto veinte puntos—; por vértice cuesta
+cuatro y tampoco abre nada.
+
+**Y que no sirva es lo informativo.** Si estrechar las bandas no abre el canal, es que
+**los ejes ya pasan por donde va la incisión**: el fallo no es de anchura sino de
+recorrido. `bandas()` cruza el pelo en un nudo y vuelve por el otro lado — que es
+exactamente la figura que el análisis nombró hace tres vueltas y dejó sin implementar,
+**«el pelo empieza y acaba dentro del negro»**: donde la incisión muere dentro de la
+tinta sus dos costados se encuentran, el esqueleto hace una **Y**, y atravesarla de
+largo produce un eje en horquilla que rellena la ranura.
+
+La función se queda escrita y sin usar, con la medida en su docstring, porque
+descartarla es lo que localiza el sitio. Lo siguiente no es pesar mejor: es **no
+atravesar esa Y**.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas
