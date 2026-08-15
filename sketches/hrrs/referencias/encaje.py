@@ -39,7 +39,11 @@ def poligono(pts, h):
     return izq + der[::-1]
 
 
-def pinta(bandas, shape, ss=3):
+SS = 3          # el dibujo de VERDAD, sobremuestreado como el canvas
+SS_BUSCA = 1    # y el de la busqueda, barato: nueve veces mas pixeles no se pagan
+
+
+def pinta(bandas, shape, ss=SS):
     """El mismo dibujo que `banda()`, y la palabra «mismo» costo tres puntos.
 
     La primera version pintaba UN poligono por banda, igual que el contorno que
@@ -167,6 +171,35 @@ def ejesDe(mask, W, minLargo=1.2, dpTol=0.05, perfil=True):
     mask = remove_small_holes(remove_small_objects(mask, int(max(16, (W*0.7)**2))), 24)
     if not mask.any():
         return []
+    # UN AGUJERO CERRADO QUE NO ES UNA INCISION NO PARTE UN TRAZO.
+    #
+    # En el cartel, la firma en blanco casi corta la barra de abajo en dos: el esqueleto
+    # se rompe ahi, los trozos caen por cortos y la banda sale con un muñon. Era el 49 %
+    # de toda la tinta que le faltaba a esa replica.
+    #
+    # Pero taparlos todos no vale: en la litografia los agujeros cerrados SI son
+    # incisiones —de las que mueren dentro de la tinta por los dos lados— y taparlas las
+    # borra (medido: 94,2 % -> 93,5 %). La diferencia se ve midiendolos, y es la regla de
+    # la casa: UNA INCISION MIDE g. Los cinco de la litografia miden 0,6 a 1,0 canales;
+    # los dos del cartel, 1,8 y 3,0. Es un hueco ancho, asi que el umbral —un canal y
+    # medio— cae en medio de un vacio y no en una nube de puntos.
+    #
+    # Se tapan solo los anchos, y para las DOS cosas: el esqueleto (para que no trocee)
+    # y la anchura (para que no pellizque). Los estrechos siguen mandando en el filo.
+    fondo = ~mask
+    dtf = ndimage.distance_transform_edt(fondo)
+    esqF = skeletonize(fondo)
+    v = 2 * dtf[esqF]; v = v[(v > 1) & (v < W)]
+    g = float(np.median(v)) if len(v) >= 20 else W * 0.2
+    hoyos = ndimage.binary_fill_holes(mask) & ~mask
+    if hoyos.any():
+        lab, nl = ndimage.label(hoyos)
+        tapa = np.zeros_like(mask)
+        for k in range(1, nl + 1):
+            m = lab == k
+            if 2 * ndimage.distance_transform_edt(m).max() > g * 1.5:
+                tapa |= m
+        mask = mask | tapa
     dt = ndimage.distance_transform_edt(mask)
     esq = skeletonize(mask)
     if not esq.any():
@@ -339,10 +372,17 @@ def respetaCanal(bandas, g, tolAng=32.0):
 
 # ── El ajuste ──────────────────────────────────────────────────────────────────
 def ajustar(A, W, vueltas=6, verbose=True, peso=8.0):
-    """Parte de los ejes del original y corrige por residuo hasta que no baje mas."""
+    """Parte de los ejes del original y corrige por residuo hasta que no baje mas.
+
+    LA BUSQUEDA VA A UN PIXEL Y EL PULIDO A TRES, y esa division no es pereza. El
+    sobremuestreado cuesta nueve veces mas y aqui se hacen miles de evaluaciones; lo
+    que compra —el convenio de filo del canvas— es medio pixel de anchura, o sea
+    ANCHURA, no recorrido. Asi que la geometria se busca barata y el filo se ajusta
+    despues, sobre el patron bueno. Medido: pulir la anchura a 3x sube de 95,9 % a
+    96,8 % por `componer`, y un ajuste entero a 3x tardaria horas para lo mismo."""
     w = pesoCanal(A, W, peso) if peso else None
     bandas = ejesDe(A, W)
-    B = pinta(bandas, A.shape)
+    B = pinta(bandas, A.shape, ss=SS_BUSCA)
     d = dif(A, B, w)
     if verbose:
         print(f"    inicio        {d:.1%}  ({len(bandas)} bandas)")
@@ -357,10 +397,10 @@ def ajustar(A, W, vueltas=6, verbose=True, peso=8.0):
         nuevas = ejesDe(falta, W, minLargo=1.0)
         if nuevas:
             cand = bandas + nuevas
-            dc = dif(A, pinta(cand, A.shape), w)
+            dc = dif(A, pinta(cand, A.shape, ss=SS_BUSCA), w)
             if dc < d - 1e-4:
                 bandas, d, mejoro = cand, dc, True
-                B = pinta(bandas, A.shape)
+                B = pinta(bandas, A.shape, ss=SS_BUSCA)
                 if verbose:
                     print(f"    +{len(nuevas):<3} bandas   {d:.1%}")
 
@@ -371,14 +411,14 @@ def ajustar(A, W, vueltas=6, verbose=True, peso=8.0):
         quitadas = 0
         while i < len(bandas):
             sin = bandas[:i] + bandas[i+1:]
-            ds = dif(A, pinta(sin, A.shape), w)
+            ds = dif(A, pinta(sin, A.shape, ss=SS_BUSCA), w)
             if ds < d - 1e-4:
                 bandas, d = sin, ds
                 quitadas += 1; mejoro = True
             else:
                 i += 1
         if quitadas:
-            B = pinta(bandas, A.shape)
+            B = pinta(bandas, A.shape, ss=SS_BUSCA)
             if verbose:
                 print(f"    -{quitadas:<3} bandas   {d:.1%}")
 
@@ -390,12 +430,12 @@ def ajustar(A, W, vueltas=6, verbose=True, peso=8.0):
             mejorH, mejorD = h, d
             for f in (0.90, 0.95, 1.05, 1.10):
                 pr = bandas[:i] + [(pts, [x*f for x in h])] + bandas[i+1:]
-                dp2 = dif(A, pinta(pr, A.shape), w)
+                dp2 = dif(A, pinta(pr, A.shape, ss=SS_BUSCA), w)
                 if dp2 < mejorD - 1e-5:
                     mejorD, mejorH = dp2, [x*f for x in h]
             if mejorH is not h:
                 bandas[i] = (pts, mejorH); d = mejorD; mejoro = True
-        B = pinta(bandas, A.shape)
+        B = pinta(bandas, A.shape, ss=SS_BUSCA)
         if verbose:
             print(f"    anchuras      {d:.1%}")
 
@@ -418,12 +458,12 @@ def ajustar(A, W, vueltas=6, verbose=True, peso=8.0):
                     for f in (0.94, 1.06):
                         nh = list(h); nh[k] = min(max(h[k]*f, b0*0.92), b0*1.08)
                         pr = bandas[:i] + [(pts, nh)] + bandas[i+1:]
-                        dd = dif(A, pinta(pr, A.shape), w)
+                        dd = dif(A, pinta(pr, A.shape, ss=SS_BUSCA), w)
                         if dd < mejorD - 1e-6:
                             mejorD, mejorH = dd, nh
                     if mejorH is not None:
                         bandas[i] = (pts, mejorH); h = mejorH; d = mejorD; mejoro = True
-            B = pinta(bandas, A.shape)
+            B = pinta(bandas, A.shape, ss=SS_BUSCA)
             if verbose:
                 print(f"    anchura/vert  {d:.1%}")
 
@@ -448,7 +488,7 @@ def ajustar(A, W, vueltas=6, verbose=True, peso=8.0):
                             qh.append(h[k])
                     q.append(pts[k+1]); qh.append(h[k+1])
                 nb.append((q, qh))
-            dn = dif(A, pinta(nb, A.shape), w)
+            dn = dif(A, pinta(nb, A.shape, ss=SS_BUSCA), w)
             # se acepta AUNQUE EMPEORE un poco: partir un tramo mueve el bisel y
             # cuesta unas centesimas, pero le da al descenso por donde doblar y lo
             # devuelve con creces. Exigiendo que no empeorase, el paso no se activaba
@@ -469,7 +509,7 @@ def ajustar(A, W, vueltas=6, verbose=True, peso=8.0):
                         q = list(pts)
                         q[k] = (pts[k][0]+dx, pts[k][1]+dy)
                         pr = bandas[:i] + [(q, h)] + bandas[i+1:]
-                        dd = dif(A, pinta(pr, A.shape), w)
+                        dd = dif(A, pinta(pr, A.shape, ss=SS_BUSCA), w)
                         if dd < mejorD - 1e-6:
                             mejorD, mejorP = dd, q
                     if mejorP is not None:
@@ -477,7 +517,7 @@ def ajustar(A, W, vueltas=6, verbose=True, peso=8.0):
                         movidos += 1; mejoro = True
             if verbose and movidos:
                 print(f"    vertices ±{delta:<4}{d:.1%}  ({movidos} movidos)")
-        B = pinta(bandas, A.shape)
+        B = pinta(bandas, A.shape, ss=SS_BUSCA)
 
         if not mejoro:
             break

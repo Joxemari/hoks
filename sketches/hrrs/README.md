@@ -1715,6 +1715,32 @@ con el umbral movido) está en 0,1–1,0 %: o sea que el 98 % es alcanzable en p
 hay que ganarlo ahí, con pasos de anchura y posición más finos que los 0,25 px de este
 pulido.
 
+### Un agujero cerrado que no es una incisión no parte un trazo
+
+Lo que quedaba mal en el cartel se veía de un vistazo en la hoja de comparación: **un
+bloque rojo entero en la barra de abajo**, casi cuatro de los cinco puntos que le
+faltaban. La firma en blanco casi corta la barra en dos, el esqueleto se rompe ahí, los
+trozos caen por cortos y la banda sale con un muñón.
+
+Pero taparlos todos no vale: en la litografía los agujeros cerrados **sí** son
+incisiones —de las que mueren dentro de la tinta por los dos lados— y taparlas las
+borra (medido: 94,2 % → 93,5 %).
+
+La diferencia se ve midiéndolos, y es la regla de la casa: **una incisión mide `g`**.
+
+| | ancho de cada agujero, en canales |
+|---|---|
+| ref04, la litografía | 0,9 · 1,0 · 0,6 · 0,6 · 0,9 |
+| ref05, el cartel | **1,8 · 3,0** |
+
+Un hueco de verdad entre los dos grupos, así que el umbral —canal y medio— cae en el
+vacío y no en una nube de puntos. Se tapan sólo los anchos, y para las dos cosas: el
+esqueleto (para que no trocee) y la anchura (para que no pellizque). Los estrechos
+siguen mandando en el filo.
+
+Medido sobre el trazado inicial: el cartel pasa de **89,1 % a 92,5 %** y la litografía
+**no pierde nada**.
+
 ### Cinco de las seis están en el suelo del método, y se puede decir con un número
 
 Quitando una franja de píxel y medio a cada lado del filo, el acierto es **100,0 %** en
