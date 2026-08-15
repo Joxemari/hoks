@@ -38,7 +38,7 @@ versiones del algoritmo daría un patrón sobre una obra que ya no existe.
 |---|---|---|---|
 | 1ª | 700000– | `…-v1` | antes de las guardas del hilo, la rectitud y el casi |
 | 2ª | 710000– | `…-v2` | con ellas, y con los pesos ya movidos por la 1ª |
-| 3ª | 720000– | `…-v3` | 40 lotes, sobre la 5ª revisión y ya con las seeds mezcladas |
+| 3ª | 720000– | `…-v3` | 40 lotes, sobre la 5ª revisión y ya con las seeds mezcladas ✔ |
 
 Lo que dieron las dos está en `../README.md`, en «Lo que el grid cambió». En
 resumen: la primera dio dos señales independientes —menos placas y **ninguna
@@ -60,6 +60,52 @@ instrumento produce.
 Y una tercera vuelta **juzgaría otra obra**: la quinta revisión cambió la
 gramática después de esto. Antes de volver a juzgar hay que regenerar el
 artefacto, o se estará midiendo el gusto sobre una familia que ya no existe.
+
+## Lo que dio la 3ª vuelta
+
+40 lotes · 200 obras · 76 elegidas · **cero lotes descartados**. Ése es el primer
+dato y no está en ninguna columna: el rechazo fue 38% → 9% → **0%**. En los 40
+lotes hubo siempre algo que salvar, que es lo que las guardas de la 5ª revisión
+tenían que conseguir.
+
+```
+GUBIA      fina +13 (n83) · media −7 · ancha −14 (n28)
+TIPO       astillado +9 (n46) · arbol −2 · hendido −3 · partido −4
+PIEZAS     8 +14? · 7 +12 (n22) · 4 −8 · 2 −6
+FALTAN     1 +8 (n91) · 0 −11 (n70)
+HONDURA    3 +3 · 2 +2 · 1 −11 (n35)
+SAJADURAS  1 −37? (n15)
+ESCALONES  2 +7 (n46)
+RAREZA     ≈ 0
+PALETA     Poet +23 · Science +16 · Troll −0 · Homage −8 · Itten I −24
+CONTINUOS  mancha −3,8
+```
+
+**La gubia fina es lo único sólido**, y es la tercera vuelta seguida diciéndolo
+(+7, luego +13, ahora con n=83 contra 28). Si hay que mover un peso con motivo,
+es ése. Lo demás confirma la dirección de la 2ª sin añadir nada: más estructura
+—`astillado`, 7–8 placas, hondura 3— y menos bloque entero. Y una **inversión**:
+`faltan 1 +8 / faltan 0 −11`, cuando la 2ª vuelta prefería que no faltara ninguna.
+La sajadura vuelve a salir negativa, cuarta vez, pero con n=15 no manda.
+
+Con 40 lotes casi todas las filas van en gris, y así hay que leerlas. Sirvió para
+lo que 40 lotes sirven: confirmar dirección y ver caer el rechazo a cero.
+
+## ⚠ El artefacto juzga con CINCO paletas, no con quince
+
+Lo sacó el análisis de la 3ª vuelta: en el JSON exportado **no aparece ni una
+paleta que no esté en `HOKS.DEFAULTS`**. La razón es que un artefacto publicado
+vive tras una CSP que bloquea cualquier host externo, así que `loadPalettes()` no
+llega a `raw.githubusercontent` y cae al catálogo mínimo embebido.
+
+No invalida nada de lo geométrico —el tipo, la gubia, las placas y los cortes no
+dependen del catálogo— pero sí acota la columna PALETA: dice qué gusta **de esas
+cinco**, no del catálogo. Y explica de paso por qué la 3ª vuelta enseñó tantos
+amarillos: `Science` es amarillo y negro, y `Poet` y `Homage` traen amarillo.
+
+Para que hable del catálogo hay que **empotrar las quince dentro del artefacto**
+al generarlo, igual que se empotran el motor y el algoritmo. El gemelo de `sketches/`
+no tiene el problema: ahí la red funciona.
 
 ## La seed se mezcla, y las dos primeras vueltas no lo hacían
 
