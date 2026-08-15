@@ -660,36 +660,60 @@
    * es contenido, allí sería una avería.
    */
   const VETA_PASO = 3.2, VETA_ALFA = 0.115;
-  function veta(ctx, ctxPts, rng, ink, ground, W, H, u, fuerza) {
+  /* LA FIBRA ES UNA Y LAS TINTAS SON VARIAS, y eso son dos cosas distintas que
+   * antes iban juntas y mal. Las rayas se sorteaban una vez sobre TODAS las
+   * placas y se teñían desde la tinta principal, así que sobre una placa de la
+   * segunda tinta —un amarillo, pongamos— caían rayas casi negras: no se leían
+   * como fibra sino como SUCIEDAD. El taco es uno, pero cada placa se entintó por
+   * su lado, y la fibra sólo puede verse en el color con el que esa placa está
+   * entintada.
+   *
+   * Así que la fibra se sortea UNA vez —el tablón no se entera de por dónde se
+   * partió, y la raya tiene que seguir de una placa a la siguiente— y se pinta
+   * una pasada por tinta, recortada contra sus placas y teñida con la suya. */
+  function veta(ctx, grupos, rng, ground, W, H, u, fuerza) {
     if (!(fuerza > 0)) return;
-    ctx.save();
-    ctx.beginPath();
-    for (const poly of ctxPts) {
-      poly.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])));
-      ctx.closePath();
-    }
-    ctx.clip();
     const paso = Math.max(1.4, VETA_PASO * u);
-    const claro = E.lerpColor(ink, ground, 0.26), oscuro = E.lerpColor(ink, ground, -0.16);
-    ctx.lineCap = 'butt';
     // El paso NO es constante: a intervalos iguales la veta bandea y se lee como
     // una trama de impresión, no como fibra. La madera va a rachas.
-    for (let y = -paso; y < H + paso; y += paso * rng.range(0.55, 1.8)) {
+    const rayas = [];
+    for (let y = -paso; y < H + paso; ) {
       const largo = rng.range(0.25, 1.0) * W, x0 = rng.range(-0.15, 0.9) * W;
-      ctx.strokeStyle = rng.bool(0.62) ? claro : oscuro;
-      ctx.globalAlpha = VETA_ALFA * fuerza * rng.range(0.35, 1.6);
-      ctx.lineWidth = paso * rng.range(0.30, 0.85);
-      ctx.beginPath();
+      const clara = rng.bool(0.62);
+      const alfa = VETA_ALFA * fuerza * rng.range(0.35, 1.6);
+      const ancho = paso * rng.range(0.30, 0.85);
       // La fibra no es una regla: se desvía un pelo a lo largo del tablón.
-      const n = 4, dy = paso * 0.55;
-      for (let k = 0; k <= n; k++) {
-        const x = x0 + largo * k / n, yy = y + rng.range(-dy, dy);
-        if (k === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
-      }
-      ctx.stroke();
+      const n = 4, dy = paso * 0.55, pts = [];
+      for (let k = 0; k <= n; k++) pts.push([x0 + largo * k / n, y + rng.range(-dy, dy)]);
+      rayas.push({ clara, alfa, ancho, pts });
+      y += paso * rng.range(0.55, 1.8);
     }
-    ctx.globalAlpha = 1;
-    ctx.restore();
+    ctx.lineCap = 'butt';
+    for (const g of grupos) {
+      if (!g.caras.length) continue;
+      ctx.save();
+      ctx.beginPath();
+      for (const poly of g.caras) {
+        poly.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])));
+        ctx.closePath();
+      }
+      ctx.clip();
+      // Hacia el papel y hacia el negro, no «hacia el otro lado del papel»: la
+      // extrapolación se salía de gama con cualquier tinta saturada y devolvía un
+      // rgb() con un canal negativo, que el navegador descarta en silencio — la
+      // raya se pintaba entonces con el color de la anterior.
+      const claro = E.lerpColor(g.tinta, ground, 0.26), oscuro = E.lerpColor(g.tinta, '#000000', 0.16);
+      for (const r of rayas) {
+        ctx.strokeStyle = r.clara ? claro : oscuro;
+        ctx.globalAlpha = r.alfa;
+        ctx.lineWidth = r.ancho;
+        ctx.beginPath();
+        r.pts.forEach((p, k) => (k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
   }
 
   // ¿Cuánto del perímetro de una pieza es canto del bloque? Lo usa «la que
@@ -1131,7 +1155,12 @@
       ctx.fill();
     });
 
-    veta(ctx, caras, new E.Rng(seed ^ 0x7E7A), col.ink, col.ground, W, H, u, fuerzaVeta);
+    // Una pasada de fibra por tinta, con SUS placas: ver `veta`.
+    const grupos = tintas.map((t, k) => ({
+      tinta: t,
+      caras: caras.filter((_, i) => piezas[i].tinta % tintas.length === k),
+    }));
+    veta(ctx, grupos, new E.Rng(seed ^ 0x7E7A), col.ground, W, H, u, fuerzaVeta);
 
     // Regla 3: la anchura sale de un lineWidth. Cada placa se come SU mitad del
     // corte repasando su propio contorno con el color del suelo, así que dos

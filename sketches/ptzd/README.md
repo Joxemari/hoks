@@ -398,6 +398,16 @@ Declarar sin comprobar es lo que ya falló dos veces en esta casa:
 - **La etiqueta que miente.** Un `astillado` con cuatro placas. No es un defecto
   de la imagen —puede ser buena— es que la rareza se calcula sobre lo declarado.
   Se mide en `verificacion/` como *cortos*, y por eso la gubia pone techo.
+- **La fibra prestada.** *(vista, no medida, y ya arreglada)* La veta se sorteaba
+  una vez sobre todas las placas y se teñía desde la tinta principal, así que
+  sobre una placa de la segunda tinta —un amarillo— caían rayas casi negras y no
+  se leían como fibra sino como **suciedad**. El taco es uno, pero cada placa se
+  entintó por su lado: la fibra se sortea una vez —tiene que seguir de una placa
+  a la siguiente— y se pinta una pasada por tinta, recortada contra sus placas y
+  teñida con la suya. De paso se cayó un fallo silencioso: la raya oscura salía
+  de extrapolar la tinta al otro lado del papel, lo que con cualquier tinta
+  saturada devolvía un `rgb()` con un canal negativo — el navegador lo descarta
+  sin decir nada y la raya se pintaba con el color de la anterior.
 - **La punta afeitada.** *(la que la medida sobre 2000 sacó, y que ninguna guarda
   geométrica puede ver)* Cada placa repasa **su propio** contorno con el color del
   suelo, así que la forma que se ve de una placa no es su polígono: es su polígono
