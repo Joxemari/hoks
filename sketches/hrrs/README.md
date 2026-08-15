@@ -1354,6 +1354,48 @@ mediana      23 %     17,5 %
    Estaba midiendo el pie del cartel, no el dibujo. El filtro tiene que aplicarse a los
    dos lados.
 
+### El evaluador independiente, y lo que desmiente
+
+Con el bucle montado, un agente evaluador midió por su cuenta las seis réplicas —sin
+tocar el repositorio— con instrucciones de decir si la métrica premiaba algo indebido.
+Volvió con tres correcciones, y las tres van contra lo que yo venía diciendo.
+
+**1. La réplica no trocea: SUELDA.** Llevo tres vueltas diciendo «los trazos se
+rompen». Medido, es al revés: el original tiene **más** componentes de tinta que la
+réplica, no menos —11 → 4, 7 → 2, y en la cuadrada **14 → 1**—. Lo que hace la réplica
+es fundir en un bloque lo que el original tiene separado por la incisión. El defecto
+era el contrario del que yo nombraba, y el número lo dice sin ambigüedad.
+
+**2. La anchura ya está bien en las seis** (≤ 5 % de error, 4,3 % el peor). Donde falla
+es en **canal** y en **topología**. O sea que el trabajo de las últimas vueltas sobre
+el grosor está hecho, y seguir ahí no da nada.
+
+**3. La métrica de área premia lo que no debe, y de tres maneras medidas.** La sospecha
+era mía pero los números son suyos:
+
+- **Engorde.** Dilatando la réplica, la cuadrada baja de 34,4 % a 27,8 % con bandas un
+  48 % más gruesas: se pueden comprar 6,6 puntos de «parecido» empeorando la obra.
+- **El área es ciega al canal, y esto es lo grave.** Soldar todas las incisiones de un
+  original contra sí mismo cuesta entre **1,3 % y 9,9 %** de diferencia — sobre un
+  recorrido útil de 65 puntos, la característica central de la obra vale entre uno y
+  diez. Caso flagrante: la réplica **mejor puntuada** por área (13,0 %) es la que tiene
+  **el peor canal de las seis** — 7× más ancho que el original.
+- **Favorece las bandas gruesas.** `xor/union ≈ 2ε/W`, así que el mismo error de dibujo
+  puntúa mejor cuanto más gorda sea la banda. En desplazamiento de borde real, la
+  litografía (18,3 %) y la enmarcada (33,4 %) tienen prácticamente el mismo error.
+
+Y dio una **escala**, que era lo que le faltaba al número para significar algo: dos
+originales distintos entre sí dan 69–85 %; un original contra sí mismo **girado 2°** da
+15–36 %. Así que **13 % es el suelo del método** y 34 % es del orden de girar la pieza
+entera cinco grados.
+
+**Y una cuarta cosa, que es sobre el barrido y no sobre la obra:** midió que las
+réplicas dibujan con **menos vértices y tramos más largos** que el original (0,74·W
+contra 1,95·W de longitud mediana de tramo). El eje se estaba simplificando de más — y
+mi barrido eligió el valor más fino… **de los que yo le ofrecí**. Un barrido sólo puede
+decirte cuál de los que le das es mejor, nunca que el rango estaba mal puesto. Es la
+misma trampa de la constante que nadie varía, disfrazada de optimización.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas
