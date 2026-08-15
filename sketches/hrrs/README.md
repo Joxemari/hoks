@@ -1552,6 +1552,54 @@ cae dentro del margen del convenio, no del dibujo.
 
 
 
+### Las paralelas, las uniones y el margen: pesar el canal en el objetivo
+
+El área es ciega al canal —una incisión de un pelo son cuatro píxeles de fondo— así que
+cerrarla no cuesta casi nada y el ajuste la cerraba sin enterarse. Se arregla **en el
+objetivo, no en el dibujo**: los píxeles que en el original son fondo ESTRECHO —el suelo
+entre dos bandas, y sólo ése— pesan ocho veces más.
+
+```
+ref   acierto  comp o→r   canal o→r    constancia o→r
+r1     97,1 %    8 → 8    0,30 → 0,30    0,77 → 0,74
+r2     97,1 %   11 → 12   0,26 → 0,26    0,72 → 0,69
+r3     95,8 %    7 → 7    0,62 → 0,66    0,32 → 0,31
+r4     97,4 %    2 → 1    0,11 → 0,45    0,55 → 0,17
+r5     95,9 %    7 → 3    0,06 → 0,17    0,57 → 0,29
+r6     94,3 %   14 → 14   0,23 → 0,31    0,56 → 0,19
+```
+
+**En tres de las seis el canal sale exacto**, y en la cuadrada —que llegó a estar en
+14 → 1— la topología queda **14 → 14**. El área baja 1,3 puntos al conseguirlo: el precio
+que el evaluador había predicho, cobrado y verificado.
+
+Un error propio por el camino, y de los instructivos: al ensanchar el peso hasta el filo
+de las dos bandas —para que abrir de más costara igual que cerrar— dilataba
+**proporcionalmente a la anchura**, y con bandas de 78 px eso son 27 px de dilatación.
+Eso no marca el filo del canal: **inunda media obra y diluye el peso hasta dejarlo en
+nada**. El canal empeoró (0,11 → 0,54) mientras el área subía. Va en píxeles absolutos y
+pequeño, que es lo que la cosa es: un hilo y sus dos bordes.
+
+### Y las dos que resisten: la incisión se cierra AL EXTRAER, no al ajustar
+
+En la litografía y en el cartel el ajuste no puede defender el canal **porque cuando
+llega ya no existe**: la litografía tiene 7 componentes y el trazado inicial da **1**,
+antes de ajustar nada. Ningún peso en el objetivo arregla eso — no hay nada que pesar.
+
+Descartadas, cada una con su medida:
+
+- **El umbral de tapar agujeros** (`remove_small_holes` a `W²`, que con W=68 son 4.600 px
+  y sí tapaba incisiones). Corregido a un valor absoluto pequeño; los recuentos no
+  cambian.
+- **La anchura inflada por los cruces** — leerla sólo fuera de ellos no mueve el
+  recuento.
+- **La resolución** — a 1.786 px en vez de 1.200 sale lo mismo (7 → 1).
+
+Lo que queda medido y es el dato duro: en el cartel **la incisión mide 4 px sobre una
+banda de 68**, o sea 0,06 anchuras. Reproducirla exige acertar el eje Y la anchura de
+las dos bandas vecinas con menos de dos píxeles de error a la vez. Ahí es donde está el
+techo hoy, y no en el objetivo.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas

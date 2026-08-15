@@ -77,13 +77,62 @@ def pinta(bandas, shape):
     return np.asarray(im, dtype=bool)
 
 
-def dif(A, B):
-    return (A ^ B).sum() / max(1, (A | B).sum())
+def dif(A, B, w=None):
+    x = A ^ B; u = A | B
+    if w is None:
+        return x.sum() / max(1, u.sum())
+    return float((w * x).sum()) / max(1e-9, float((w * u).sum()))
+
+
+def pesoCanal(A, W, peso=8.0):
+    """El mapa de pesos que hace que el ajuste VEA la incision.
+
+    El area es ciega al canal: una incision de un pelo son cuatro pixeles de fondo,
+    asi que cerrarla no cuesta casi nada y el ajuste la cierra sin enterarse — es lo
+    que el evaluador midio (soldar todas las incisiones de un original contra si
+    mismo cuesta entre 1,3 y 9,9 %) y lo que el autor lleva viendo desde el principio
+    en las paralelas y las uniones.
+    #
+    Se arregla en el OBJETIVO, no en el dibujo: los pixeles que en el original son
+    fondo ESTRECHO —el suelo entre dos bandas, y solo ese— pesan ocho veces mas. Con
+    eso, cerrar un canal deja de salir gratis y el ajuste lo defiende solo. El resto
+    de la hoja pesa uno, asi que el blanco de alrededor no manda."""
+    fondo = ~A
+    dtf = ndimage.distance_transform_edt(fondo)
+    canal = fondo & (2 * dtf < W)          # suelo mas fino que una banda: eso es canal
+    # Y SE ENSANCHA EL PESO HASTA EL FILO DE LAS DOS BANDAS, no solo el hueco.
+    #
+    # Pesando unicamente el fondo del canal, se castiga CERRARLO pero no ABRIRLO: si
+    # la replica deja el hueco mas ancho, los pixeles de mas son tinta del original
+    # que no esta, y esos caian fuera de la zona pesada. Medido: en las dos obras de
+    # banda ancha el canal salia 3-4 veces mas gordo que el original (0,11 -> 0,45 y
+    # 0,06 -> 0,17) mientras el area marcaba 97 % — porque una banda un pelo mas fina
+    # casi no cuesta area, y el canal doblado si se ve.
+    #
+    # Ensanchando el peso un tercio de anchura a cada lado entran tambien los dos
+    # filos, asi que abrir de mas cuesta igual que cerrar. El margen se defiende por
+    # los dos lados o no se defiende.
+    # DOS PIXELES, FIJOS, y no una fraccion de la anchura. Con bandas de 78 px un
+    # tercio de anchura son 27 px de dilatacion: eso no marca el filo del canal, INUNDA
+    # media obra y diluye el peso hasta dejarlo en nada. Medido, con la version
+    # proporcional el canal empeoraba (0,11 -> 0,54) mientras el area subia. Lo que hay
+    # que pesar es el hilo y sus dos bordes, que son dos pixeles a cada lado.
+    canal = ndimage.binary_dilation(canal, iterations=2)
+    w = np.ones(A.shape, np.float32)
+    w[canal] = peso
+    return w
 
 
 # ── Sacar ejes de una mascara cualquiera (el original, o un residuo) ───────────
 def ejesDe(mask, W, minLargo=1.2, dpTol=0.05):
-    mask = remove_small_holes(remove_small_objects(mask, int(max(16, (W*0.7)**2))), int(W*W))
+    # OJO CON EL UMBRAL DE AGUJEROS: tapaba huecos de hasta W*W pixeles, y con bandas
+    # de 68 px eso son 4.600 — o sea que TAPABA LAS INCISIONES antes de trazar nada.
+    # Se veia en el numero: la litografia tiene 7 componentes y el trazado inicial
+    # daba 1, asi que el ajuste no podia defender un canal que ya no existia cuando
+    # llegaba. Ningun peso en el objetivo arregla eso; no habia nada que pesar.
+    #
+    # El umbral es para MOTAS del escaneo, asi que va en pixeles absolutos y pequeno.
+    mask = remove_small_holes(remove_small_objects(mask, int(max(16, (W*0.7)**2))), 24)
     if not mask.any():
         return []
     dt = ndimage.distance_transform_edt(mask)
@@ -104,7 +153,16 @@ def ejesDe(mask, W, minLargo=1.2, dpTol=0.05):
             crudo.append(float(dt[yy, xx]))
         k = int(W * 0.6)
         limpio = crudo[k:-k] if len(crudo) > 2*k+4 else crudo
-        base = float(G['moda'](np.asarray(limpio), 0.5)) or float(np.median(crudo)) or W/2
+        # LA ANCHURA SE LEE FUERA DE LOS CRUCES. En una obra llena de cruces la mayor
+        # parte del eje pasa por dentro de una mancha de dos bandas, donde la distancia
+        # medial vale mucho mas que media banda: la moda se va hacia arriba, cada banda
+        # se dibuja gorda y AL DIBUJARLAS SE COMEN LA INCISION de al lado. Se veia en
+        # el numero: la litografia tiene 7 componentes y el trazado inicial daba 1,
+        # antes de ajustar nada. Ningun peso en el objetivo arregla eso — no habia
+        # canal que defender, se cerraba al dibujar.
+        fino = [v for v in limpio if 2*v <= W * 1.15]
+        base = (float(G['moda'](np.asarray(fino or limpio), 0.5))
+                or float(np.median(crudo)) or W/2)
         # el cabo, hasta donde haya tinta
         def hasta(p0, p1, hmax):
             dx, dy = p0[0]-p1[0], p0[1]-p1[1]
@@ -124,11 +182,12 @@ def ejesDe(mask, W, minLargo=1.2, dpTol=0.05):
 
 
 # ── El ajuste ──────────────────────────────────────────────────────────────────
-def ajustar(A, W, vueltas=6, verbose=True):
+def ajustar(A, W, vueltas=6, verbose=True, peso=8.0):
     """Parte de los ejes del original y corrige por residuo hasta que no baje mas."""
+    w = pesoCanal(A, W, peso) if peso else None
     bandas = ejesDe(A, W)
     B = pinta(bandas, A.shape)
-    d = dif(A, B)
+    d = dif(A, B, w)
     if verbose:
         print(f"    inicio        {d:.1%}  ({len(bandas)} bandas)")
 
@@ -142,7 +201,7 @@ def ajustar(A, W, vueltas=6, verbose=True):
         nuevas = ejesDe(falta, W, minLargo=1.0)
         if nuevas:
             cand = bandas + nuevas
-            dc = dif(A, pinta(cand, A.shape))
+            dc = dif(A, pinta(cand, A.shape), w)
             if dc < d - 1e-4:
                 bandas, d, mejoro = cand, dc, True
                 B = pinta(bandas, A.shape)
@@ -156,7 +215,7 @@ def ajustar(A, W, vueltas=6, verbose=True):
         quitadas = 0
         while i < len(bandas):
             sin = bandas[:i] + bandas[i+1:]
-            ds = dif(A, pinta(sin, A.shape))
+            ds = dif(A, pinta(sin, A.shape), w)
             if ds < d - 1e-4:
                 bandas, d = sin, ds
                 quitadas += 1; mejoro = True
@@ -175,7 +234,7 @@ def ajustar(A, W, vueltas=6, verbose=True):
             mejorH, mejorD = h, d
             for f in (0.90, 0.95, 1.05, 1.10):
                 pr = bandas[:i] + [(pts, [x*f for x in h])] + bandas[i+1:]
-                dp2 = dif(A, pinta(pr, A.shape))
+                dp2 = dif(A, pinta(pr, A.shape), w)
                 if dp2 < mejorD - 1e-5:
                     mejorD, mejorH = dp2, [x*f for x in h]
             if mejorH is not h:
@@ -203,7 +262,7 @@ def ajustar(A, W, vueltas=6, verbose=True):
                     for f in (0.94, 1.06):
                         nh = list(h); nh[k] = min(max(h[k]*f, b0*0.92), b0*1.08)
                         pr = bandas[:i] + [(pts, nh)] + bandas[i+1:]
-                        dd = dif(A, pinta(pr, A.shape))
+                        dd = dif(A, pinta(pr, A.shape), w)
                         if dd < mejorD - 1e-6:
                             mejorD, mejorH = dd, nh
                     if mejorH is not None:
@@ -233,7 +292,7 @@ def ajustar(A, W, vueltas=6, verbose=True):
                             qh.append(h[k])
                     q.append(pts[k+1]); qh.append(h[k+1])
                 nb.append((q, qh))
-            dn = dif(A, pinta(nb, A.shape))
+            dn = dif(A, pinta(nb, A.shape), w)
             # se acepta AUNQUE EMPEORE un poco: partir un tramo mueve el bisel y
             # cuesta unas centesimas, pero le da al descenso por donde doblar y lo
             # devuelve con creces. Exigiendo que no empeorase, el paso no se activaba
@@ -254,7 +313,7 @@ def ajustar(A, W, vueltas=6, verbose=True):
                         q = list(pts)
                         q[k] = (pts[k][0]+dx, pts[k][1]+dy)
                         pr = bandas[:i] + [(q, h)] + bandas[i+1:]
-                        dd = dif(A, pinta(pr, A.shape))
+                        dd = dif(A, pinta(pr, A.shape), w)
                         if dd < mejorD - 1e-6:
                             mejorD, mejorP = dd, q
                     if mejorP is not None:
