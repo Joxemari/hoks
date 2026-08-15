@@ -73,7 +73,33 @@
   // subir el umbral del detector de garabatos (de 6 a 9 de media), y eso hay que
   // decirlo claro: el umbral se mueve porque la FUENTE dice otra cosa, no porque
   // estorbara. Un detector que se afloja para que pase la obra ya no mide nada.
-  const QUIEBROS = [2, 7];
+  // Y NO ES UNA CUENTA POR TRAZO, ES UN RITMO. Medido en las dos imágenes en alta:
+  // en el cartel las bandas largas giran cada dos anchuras y pico; en el grabado, las
+  // patas —que miden ocho anchuras— llevan tres quiebros, o sea uno cada 2,7. La
+  // frecuencia es la misma en los trazos largos y en los cortos, porque es una
+  // propiedad DEL MATERIAL: la gubia gira cada tanto, mida lo que mida el corte.
+  //
+  // Con una cuenta fija por trazo pasaba lo contrario de lo que hace falta: el
+  // protagonista salía con 5-9 quiebros en dos lados de hoja (demasiado simple para
+  // su largo) y los trazos cortos con 0-3 en un palmo (demasiado rectos). Medido:
+  // mediana 2 quiebros por trazo con [2,7] declarado, y la mitad de los trazos con
+  // dos vértices — o sea, rectas.
+  // RECALIBRADO, y con la cuenta hecha en las dos imagenes en alta: la banda que
+  // entra por la izquierda en el cartel recorre unas cuarenta anchuras y gira seis
+  // veces —una cada 6,7—; el contorno del recinto en el grabado recorre unas treinta
+  // y gira diez —una cada 3—. A 2,0-3,6 salian escaleras: la obra zigzagueaba entera
+  // y perdia los tramos rectos largos, que son la mitad del caracter.
+  //
+  // Y hay DOS ESCALAS que no hay que confundir: los quiebros grandes (22-118 grados)
+  // son decisiones y van espaciados; el temblor y la deriva son la mano y van
+  // seguidos. Al contar «muchos quiebros» en el grabado estaba contando la mano y
+  // metiendola en el sitio de las decisiones.
+  const PASO = [3.5, 7.5];                 // una vuelta grande cada tantas anchuras
+  // El tope es UNA RED, no un mando: a 16 estaba mordiendo en obra sana —un
+  // protagonista de 2,4 con la gubia fina pide 25— y de paso dejaba el control de
+  // garabatos sin poder disparar, porque por mucho que se rompiera el ritmo el
+  // recuento chocaba con el tope. Un tope que muerde es un parámetro escondido.
+  const QUIEBROS = [1, 40];                // la red, no el reparto
   // EL PLAN DE LONGITUDES, y es lo que le faltaba a la obra para tener interés.
   //
   // Declarar un rango y tirar de él da trazos TODOS IGUALES, y una hoja donde todo
@@ -100,7 +126,10 @@
   // trazo puede medir más que el pliego y salirse — que es lo que hace en las
   // referencias: el brazo largo no termina, se va.
   const PROTA = [1.45, 2.40];               // lo que se le PIDE, × lado corto
-  const CAIDA = [0.76, 0.91];               // cada trazo respecto al anterior
+  // La caída era demasiado suave: con 0,76-0,91 el segundo trazo mide casi lo que el
+  // primero y la hoja sale de piezas medianas. En las referencias hay UNO que cruza y
+  // los demás son claramente menores — el salto es franco.
+  const CAIDA = [0.58, 0.78];               // cada trazo respecto al anterior
   // Y un SUELO de longitud: un trazo más corto que esto no es un trazo, es una
   // pizca. Salían al desplazar un trozo muy corto para el `paralelo`, y una hoja
   // con pizcas se lee como confeti — que es justo el defecto que costó la primera
@@ -574,14 +603,20 @@
     return out;
   }
 
+  // Cuántas vueltas da un corte de este largo. El ritmo es del material.
+  function quiebrosPara(rng, largo, W) {
+    const paso = W * rng.range(PASO[0], PASO[1]);
+    return clamp(Math.round(largo / paso), QUIEBROS[0], QUIEBROS[1]);
+  }
+
   // ── Colocar un trazo cumpliendo una relación ────────────────────────────────
   // Devuelve los puntos, o null si no cabe. La relación se DECLARA y aquí se
   // construye la geometría que la cumple — no se espera a que salga sola.
   function colocar(rng, ctx, rel, obj, largoRel, sangra, sep) {
     const { D, W } = ctx;
     const S = min(ctx.fw, ctx.fh);
-    const nq = rng.int(QUIEBROS[0], QUIEBROS[1]);
     const largo = S * largoRel;
+    const nq = quiebrosPara(rng, largo, ctx.W);
 
     if (rel === 'paralelo' && obj) {
       // EL ACOMPAÑAMIENTO ES DE UNA SECCIÓN, NO DEL TRAZO. Es lo que el autor vio
@@ -642,8 +677,12 @@
       // lo que sobra se reparte entre lo que viene ANTES y lo que sigue DESPUÉS
       const fPre = rng.range(0, 1);
       const dIn = dirEn(medio, 0), dOut = dirEn(medio, medio.length - 2);
-      let pts = medio;
-      // si hay segunda sección, el puente la engancha y no hay tramo libre detrás
+      let pts = medio, dOut2 = null;
+      // si hay segunda sección, el puente la engancha — y DESPUÉS sigue habiendo
+      // tramo libre. Que aquí se devolviera el trazo ya cerrado era la causa de que
+      // los trazos salieran simples: casi la mitad de ellos eran copia + puente +
+      // copia, sin un solo metro andado por su cuenta. El detector lo cantaba y yo
+      // no lo estaba leyendo — mediana 2,4 quiebros por trazo con [2,7] declarado.
       if (pts2) {
         // se engancha por el extremo que caiga más cerca, y si hace falta al revés
         const fin = pts[pts.length - 1];
@@ -652,21 +691,21 @@
         if (d1 < d0) pts2.reverse();
         const pu = puente(rng, fin, dOut, pts2[0], dirEn(pts2, 0), ctx.vib, D, ctx.orto);
         pts = pts.concat(pu.slice(1), pts2.slice(1));
-        return pts;
+        dOut2 = dirEn(pts2, pts2.length - 2);
       }
-      const Lpost = sobra * (1 - fPre);
+      const Lpost = (pts2 ? largo * rng.range(0.12, 0.34) : sobra * (1 - fPre));
       if (Lpost > ctx.S * 0.03) {
-        const p = medio[medio.length - 1];
-        const post = trazar(rng, p.x, p.y, dOut + rng.range(-14, 14), Lpost,
-                            max(1, nq), ctx.vib, D, ctx.orto);
+        const p = pts[pts.length - 1];
+        const post = trazar(rng, p.x, p.y, (dOut2 != null ? dOut2 : dOut) + rng.range(-14, 14), Lpost,
+                            quiebrosPara(rng, Lpost, ctx.W), ctx.vib, D, ctx.orto);
         pts = pts.concat(post.slice(1));
       }
-      const Lpre = sobra * fPre;
+      const Lpre = pts2 ? largo * rng.range(0.10, 0.30) : sobra * fPre;
       if (Lpre > ctx.S * 0.03) {
         // se traza hacia atrás desde el arranque y se le da la vuelta
         const p = medio[0];
         const pre = trazar(rng, p.x, p.y, dIn + 180 + rng.range(-14, 14), Lpre,
-                           max(1, nq), ctx.vib, D, ctx.orto);
+                           quiebrosPara(rng, Lpre, ctx.W), ctx.vib, D, ctx.orto);
         pre.reverse();
         pts = pre.slice(0, -1).concat(pts);
       }
@@ -963,7 +1002,7 @@
         // ESCALONADAS: cada pata mide distinto, y bastante
         const L = largoRef * rng.range(PATA_LARGO[0], PATA_LARGO[1]);
         let pts = trazar(rng, x0, y0, caida + rng.range(-14, 14), ctx.S * L,
-                         rng.int(1, 3), ctx.vib, ctx.D, ctx.orto);
+                         quiebrosPara(rng, ctx.S * L, ctx.W), ctx.vib, ctx.D, ctx.orto);
         pts = cortarAlVolver(pts, ctx);
         pts = recortar(pts, ctx, false, false);
         if (!pts || largoDe(pts) < ctx.S * LARGO_MIN) continue;
@@ -993,7 +1032,7 @@
       const dir = a + 90 + rng.range(-24, 24);
       const largo = R * rng.range(1.15, 2.1);
       for (let t = 0; t < COLOCA; t++) {
-        const nq = rng.int(1, 3);
+        const nq = quiebrosPara(rng, largo, ctx.W);
         let pts = trazar(rng, px - Math.cos(dir * RAD) * largo * 0.5,
                          py - Math.sin(dir * RAD) * largo * 0.5, dir, largo, nq, ctx.vib, ctx.D, ctx.orto);
         // el cerco también CRECE hasta donde cabe: ahora se pone después del
@@ -1148,7 +1187,10 @@
     //
     // No es un margen más grande: es un encuadre descentrado, y el vacío que deja
     // no es simétrico. El blanco que sobra es material, igual que el canal.
-    const zw = rng.range(ZONA[0], ZONA[1]), zh = rng.range(ZONA[0], ZONA[1]);
+    // la zona también: banda gorda pide más papel para el mismo dibujo
+    const zEsc = clamp(0.86 + 0.30 * ((W / S) / 0.065 - 1), 0.8, 1.25);
+    const zw = clamp(rng.range(ZONA[0], ZONA[1]) * zEsc, 0.4, 1),
+          zh = clamp(rng.range(ZONA[0], ZONA[1]) * zEsc, 0.4, 1);
     const zx = rng.range(0, 1 - zw), zy = rng.range(0, 1 - zh);
     const gubAmp = params.gubia != null ? params.gubia
                  : (rng.bool(P_GUBIA) ? rng.range(GUB_AMP[0], GUB_AMP[1]) : 0);
@@ -1164,15 +1206,38 @@
       vib: vibra ? { amp: rng.range(VIB_AMP[0], VIB_AMP[1]), onda: W * rng.range(VIB_ONDA[0], VIB_ONDA[1]) } : null,
     };
 
-    const N = params.trazos ? params.trazos : rng.int(t.n[0], t.n[1]);
+    // LA ANCHURA MANDA SOBRE LO DEMÁS, y esto faltaba. Al subir la banda al doble, la
+    // misma cuenta de trazos no cabe: cada uno ocupa 1,7 veces más suelo, el canal
+    // `D = W+g` crece con ella, y `recortar` empieza a comerse los trazos por detrás
+    // — medido, mediana de 2 quiebros por trazo con [2,7] pedido. Los trazos no
+    // salían simples por falta de quiebros declarados: salían simples porque se
+    // quedaban a medias.
+    //
+    // Y en la fuente la relación está: la referencia de banda más gorda (el cartel)
+    // tiene SEIS bandas y mucho aire; la de banda más fina (el grabado del recinto)
+    // tiene nueve apretadas. La anchura y la cuenta no son dos decisiones, son una.
+    const escala = (W / S) / 0.065;
+    let N = params.trazos ? params.trazos : rng.int(t.n[0], t.n[1]);
+    if (!params.trazos) N = clamp(Math.round(N / Math.pow(escala, 0.85)), 3, 10);
     const relCount = {};
     for (const r of RELS) relCount[r] = 0;
     const pesos = RELS.filter(r => t.w[r] > 0).map(r => ({ n: r, prob: t.w[r] }));
+    // la baraja de los cortos: el cabo manda y el acompañamiento casi desaparece
+    const CORTOS = { paralelo: 0.10, abanico: 0.10, tangencia: 0.14,
+                     continua: 0.20, caboCabo: 0.20, caboCuerpo: 0.26 };
+    const pesosCortos = RELS.filter(r => CORTOS[r] > 0).map(r => ({ n: r, prob: CORTOS[r] }));
     // Cada trazo se pide AMBICIOSO y se recorta donde deja de caber, en vez de
     // rechazarse entero. Los reintentos son de SITIO —dónde y contra quién— y ya no
     // de longitud: la longitud sale del dibujo.
     const poner = (L, forzarSangre) => {
-      const rel = ctx.trazos.length === 0 ? 'suelto' : rng.weighted(pesos).n;
+      // LA RELACIÓN DEPENDE DEL TAMAÑO. Un trazo largo puede acompañar a otro un buen
+      // tramo; uno corto no —no da de sí— así que si se le pide `paralelo` sale una
+      // piedrecita paralela a nada, y la hoja se llena de cascotes sueltos. En las
+      // referencias los elementos pequeños MUEREN CONTRA el cuerpo: son cabos, no
+      // acompañamientos. Así que por debajo de medio lado corto la baraja cambia.
+      const corto = L < 0.5;
+      const baraja = ctx.trazos.length === 0 ? null : (corto ? pesosCortos : pesos);
+      const rel = baraja ? rng.weighted(baraja).n : 'suelto';
       // SANGRAR y CRUZAR son propiedades DEL TRAZO, así que se deciden una vez y no
       // en cada intento. Sorteándolas dentro del bucle, los intentos que cruzan
       // caben mejor —tienen menos restricción— y como se elige el más largo, ganaban
@@ -1260,14 +1325,23 @@
     // mantiene; con el plan declarado de antemano, salían todos pegados a él.
     const c0 = rng.range(CAIDA[0], CAIDA[1]);
     let L = (real || PROTA[0]) * c0;
-    for (let idx = 1 + cerco; idx < N; idx++) {
+    const hayPatas = rng.bool(P_PATAS);
+    const tope = hayPatas ? max(2 + cerco, N - rng.int(PATAS[0], PATAS[1])) : N;
+    for (let idx = 1 + cerco; idx < tope; idx++) {
       poner(max(L, LARGO_MIN * 1.2));
       L *= c0 * rng.range(0.92, 1.14);
     }
 
-    // LAS PATAS, al final: cuelgan del cuerpo ya hecho.
+    // LAS PATAS, al final: cuelgan del cuerpo ya hecho. Y SALEN DE N, no se suman —
+    // es el mismo error de contabilidad que ya se pago con el cerco, reintroducido
+    // por la puerta de al lado: un `recinto` que declaraba 8 dibujaba 11. Cada vez
+    // que se anade una figura nueva hay que decidir de donde sale su cuenta.
     let patas = 0;
-    if (rng.bool(P_PATAS)) patas = colgar(rng, ctx, rng.int(PATAS[0], PATAS[1]), real || 0.7);
+    if (hayPatas) {
+      const hueco = max(0, N - ctx.trazos.length);
+      const nP = min(rng.int(PATAS[0], PATAS[1]), hueco);
+      if (nP > 0) patas = colgar(rng, ctx, nP, real || 0.7);
+    }
 
     holguras(ctx);
     const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };

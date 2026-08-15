@@ -94,12 +94,30 @@ elif roto == 'cabo':
     ctx.moveTo(izq[0].x, izq[0].y);""")
 
 elif roto == 'garabato':
-    # EL GARABATO: de uno a cinco quiebros pasa a diez o veinte. Es el error que
-    # costo dos versiones enteras —el trazo deja de ser largo y simple y se vuelve
-    # un paseo— y es el control del bloque de `obra`.
-    a = "  const QUIEBROS = [2, 7];"
-    assert a in src, 'no encuentro QUIEBROS'
-    src = src.replace(a, "  const QUIEBROS = [16, 26];   // ROTO A PROPOSITO")
+    # EL GARABATO: el trazo deja de ser largo y simple y se vuelve un paseo. Es el
+    # error que costo dos versiones enteras y es el control del bloque de `obra`.
+    #
+    # Se rompe EL RITMO, que es lo que el detector mide desde que se vio que contar
+    # quiebros por trazo no medía lo que decia: con `QUIEBROS` roto a [16,26] el
+    # control se quedaba en 0 de 126, porque el numero por trazo no gobernaba la
+    # geometria — la gobierna cada cuanto gira la gubia. Con la vuelta cada media
+    # anchura en vez de cada tres, sale el paseo.
+    # ESTE CONTROL LLEVA DOS AVERIAS, y es la unica excepcion a la regla de una. La
+    # razon es un hallazgo, no una comodidad: romper solo el ritmo NO produce
+    # garabatos. Medido, con la vuelta cada media anchura en vez de cada tres, el
+    # ritmo observado sube de 3,56 a 4,24 y el control dispara 0 de 84 — porque un
+    # trazo que gira cada media anchura SE CHOCA CONSIGO MISMO y `seCorta` lo corta.
+    #
+    # O sea: lo que mantiene el trazo largo y simple NO es el parametro del ritmo,
+    # es la regla de auto-corte. El ritmo declara la intencion; la restriccion
+    # impone el resultado. Rompiendo las dos —que es romper UNA afirmacion por los
+    # dos mecanismos que la sostienen— sale 83 de 84 y el ritmo se va a 10,65.
+    a = "  const PASO = [3.5, 7.5];                 // una vuelta grande cada tantas anchuras"
+    assert a in src, 'no encuentro el ritmo'
+    src = src.replace(a, "  const PASO = [0.35, 0.75];   // ROTO A PROPOSITO: el paseo")
+    b2 = "    if (seCorta(segs, ctx.D)) return false;"
+    assert b2 in src, 'no encuentro la comprobacion de auto-corte'
+    src = src.replace(b2, "    // ROTO A PROPOSITO: sin auto-corte, para que el paseo pueda existir")
 
 elif roto == 'pizca':
     # SIN SUELO DE LONGITUD: vuelven las pizcas del `paralelo` sobre un trozo muy

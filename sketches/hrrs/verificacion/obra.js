@@ -70,8 +70,19 @@ function medir({ seed, fmt, params, base }) {
   // tramo se subdivide en muchos puntos con desvios de tres grados, y contarlos
   // como quiebros marcaba de garabato una obra que va limpia. Se cuenta lo que
   // cambia la direccion mas de 15 grados.
+  // EL RITMO, no la cuenta. Contar quiebros POR TRAZO no medía lo que decía medir:
+  // un trazo de dos lados de hoja con cinco quiebros es casi una recta y salía bien,
+  // y uno de un palmo con cinco es un garabato y salía igual. Ademas dejaba el
+  // control en CERO de 126 —romper `QUIEBROS` apenas movia la media— porque el
+  // numero por trazo no gobernaba la geometria.
+  //
+  // Lo que hay que medir es cada cuanto gira, en anchuras de banda. Medido en las dos
+  // referencias en alta: una vuelta grande cada 3 anchuras en el grabado y cada 6,7
+  // en el cartel, igual en las bandas largas que en las cortas, porque es una
+  // propiedad del material y no del trazo. OJO con confundir escalas: el temblor y la
+  // deriva son la mano y van seguidos; esto cuenta DECISIONES, no la mano.
   const QUIEBRO_MIN = 15;
-  let quiebros = 0, pizcas = 0, cortoMin = Infinity;
+  let quiebros = 0, pizcas = 0, cortoMin = Infinity, largoTot = 0;
   for (const pts of g.cintas) {
     for (let i = 1; i < pts.length - 1; i++) {
       const a = Math.atan2(pts[i].y - pts[i-1].y, pts[i].x - pts[i-1].x);
@@ -82,10 +93,12 @@ function medir({ seed, fmt, params, base }) {
     }
     let L = 0;
     for (let i = 0; i < pts.length - 1; i++) L += Math.hypot(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y);
+    largoTot += L;
     if (L < 0.20 * Math.min(g.fw, g.fh)) pizcas++;
     if (L < cortoMin) cortoMin = L;
   }
-  const qm = g.cintas.length ? quiebros / g.cintas.length : 0;
+  // quiebros por cada DIEZ anchuras de trazo. Sano ~3,5 (uno cada 2,8 W).
+  const qm = largoTot > 0 ? quiebros * 10 * g.W / largoTot : 0;
 
   // CADENCIA: coeficiente de variacion de las longitudes de tramo.
   const largos = [];
@@ -126,9 +139,9 @@ function medir({ seed, fmt, params, base }) {
   console.log(`  margen (fraccion del lado corto, >0 sano): min ${P('margen').min}  p50 ${P('margen').p50}`);
   console.log(`  OBRAS CON UN TRAZO ESCAPADO (fuera sin declararlo): ${fuera.length} de ${ok.length}`);
   console.log(`  sangrados declarados: ${ok.reduce((a, r) => a + r.sangrados, 0)} trazos`);
-  console.log(`  quiebros por trazo (2..7 sano): p50 ${P('quiebros').p50}  max ${P('quiebros').max}`);
-  const garab = ok.filter(r => r.quiebros > 9);
-  console.log(`  OBRAS-GARABATO (>9 quiebros de media): ${garab.length} de ${ok.length}`);
+  console.log(`  ritmo: quiebros por 10 anchuras de trazo (~1,9 sano): p50 ${P('quiebros').p50}  max ${P('quiebros').max}`);
+  const garab = ok.filter(r => r.quiebros > 4.5);
+  console.log(`  OBRAS-GARABATO (mas de 4,5 por 10 anchuras): ${garab.length} de ${ok.length}`);
   const piz = ok.filter(r => r.pizcas > 0);
   console.log(`  OBRAS CON PIZCAS (trazo < 0,20 del lado corto): ${piz.length} de ${ok.length}`);
   console.log(`  cadencia (CV de longitudes): p50 ${P('cadencia').p50}  min ${P('cadencia').min}`);

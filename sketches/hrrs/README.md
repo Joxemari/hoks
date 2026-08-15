@@ -1091,6 +1091,67 @@ De las ocho vueltas que lleva esto, **siete salieron de poner las dos imágenes 
 y medir**: el canal, los quiebros, la anchura de banda, el número de trazos. Las
 cuatro estaban mal, las cuatro eran medibles, y ninguna se veía razonando.
 
+## Novena vuelta: el ritmo es del material, y quién sostiene «largo y simple»
+
+Reauditando contra las dos imágenes en alta salieron dos cosas, y la segunda es la
+más importante que ha aparecido en toda la familia.
+
+### Los quiebros no son una cuenta, son un ritmo
+
+Medido por trazo: el protagonista salía con 5–9 quiebros en **dos lados de hoja** —
+demasiado recto para su largo— y los trazos cortos con 0–3 en un palmo — demasiado
+rectos también. Mediana **2 quiebros por trazo** con `[2,7]` declarado, y la mitad de
+los trazos con dos vértices: o sea, rectas.
+
+La causa es que `nq` era una cuenta **por trazo**, y la frecuencia con que gira una
+gubia no depende de lo largo que sea el corte. En las dos referencias la frecuencia
+es la misma en las bandas largas y en las patas cortas: **una vuelta grande cada 3
+anchuras** en el grabado y **cada 6,7** en el cartel. Es del material.
+
+Al pasarlo a ritmo me pasé al otro lado —2,0–3,6 anchuras daba escaleras, la obra
+zigzagueaba entera y perdía los tramos rectos largos— y hubo que recalibrar a
+3,5–7,5. **Y hay dos escalas que no hay que confundir**: los quiebros grandes
+(22–118°) son decisiones y van espaciados; el temblor y la deriva son la mano y van
+seguidos. Al contar «muchos quiebros» en el grabado estaba contando la mano y
+metiéndola en el sitio de las decisiones.
+
+El detector cambia con ello: mide **quiebros por diez anchuras de trazo**, no por
+trazo. Contar por trazo no medía lo que decía — un trazo de dos lados de hoja con
+cinco quiebros es casi una recta y salía bien; uno de un palmo con cinco es un
+garabato y salía igual.
+
+### Y el hallazgo: «largo y simple» no lo sostiene el ritmo, lo sostiene el auto-corte
+
+El control de garabatos **dejó de disparar** (0 de 126) y perseguirlo dio con algo
+que no sabía. Rompiendo el ritmo a una vuelta cada media anchura, el ritmo *observado*
+sube de 3,56 a sólo 4,24 y no dispara. La razón: **un trazo que gira cada media
+anchura se choca consigo mismo, y `seCorta` lo corta**. El garabato no puede existir.
+
+O sea: el parámetro del ritmo declara la intención; **la regla de auto-corte impone el
+resultado**. Son dos mecanismos sosteniendo una misma afirmación, y por eso el control
+de `garabato` lleva —única excepción— **dos averías**: rompiendo las dos sale 83 de 84
+y el ritmo observado se va a 10,65. Está escrito en `mktest.py` con los números.
+
+De paso apareció un **tope que mordía**: `QUIEBROS` limitaba a 16 y un protagonista de
+2,4 con la gubia fina pide 25, así que estaba gobernando en silencio *y* dejando el
+control sin poder disparar. Un tope que muerde es un parámetro escondido; ahora es una
+red a 40.
+
+### Y el mismo error de contabilidad, otra vez
+
+Las patas se **sumaban** a `n` en vez de salir de `n`: un `recinto` que declaraba 8
+dibujaba 11. Es exactamente lo que ya se pagó con el cerco, reintroducido por la
+puerta de al lado en cuanto se añadió una figura nueva. Queda dicho como regla: **cada
+vez que se añade una figura, hay que decidir de dónde sale su cuenta.**
+
+### La relación depende del tamaño
+
+Un trazo largo puede acompañar a otro un buen tramo; uno corto no da de sí, así que si
+se le pide `paralelo` sale una piedrecita paralela a nada y la hoja se llena de
+cascotes. En las referencias los elementos pequeños **mueren contra el cuerpo**: son
+cabos, no acompañamientos. Por debajo de medio lado corto, la baraja cambia y manda
+`caboCuerpo`.
+
 ## Tres trampas nuevas, pagadas en esta vuelta
 
 1. **El sangrado leído como defecto.** El detector de margen marcaba 20 obras
