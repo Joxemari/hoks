@@ -729,29 +729,31 @@ declarado y la huella a tres resoluciones. Tiene su propio README.
 Todo esto sale de `verificacion/`, no de la intuición:
 
 ```
-cuñas       0,1% de las obras tiene un ángulo por debajo de 45° — hay una en 1200
-            1,5% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
+cuñas       0,1% de las obras tiene un ángulo por debajo de 45° — dos en 2000, y
+            las dos son «la punta afeitada», que está entre los riesgos y que
+            ninguna guarda geométrica puede ver
+            1,4% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
             reparto se amontona y baila entre bloques (0,9% y 2,4% sin tocar nada)
-            (antes de esta revisión: 20% de las obras, y los peores a 2°, 8°, 12°)
+            (antes de la 5ª revisión: 20% de las obras, y los peores a 2°, 8°, 12°)
             reparto del ángulo más cerrado por obra:
-            15–30° 1 · 45–60° 12 · 60–75° 106 · 75–90° 901 · 90–105° 180
-            y las peores tiran a gubia ancha: es «la punta afeitada», que está
-            entre los riesgos y que no puede ver ninguna guarda geométrica
+            15–30° 1 · 30–45° 1 · 45–60° 19 · 60–75° 176 · 75–90° 1523 · 90–105° 280
 cortos      0,8% no llega a los cortes que declara su tipo   (era el 20%)
-soldadas    0 · dos placas nunca se tocan, comprobado sobre 1200
+soldadas    0 · dos placas nunca se tocan
 recortadas  0 · ninguna obra toca el borde del pliego
-tipo        arbol 34%  partido 32%  astillado 17%  hendido 17%
-gubia       fina 40%  media 47%  ancha 13%
-tintas      una 90%  dos 8%  tres 1,5%   ← el sorteo pide 74/20/6: la regla del
+contraste   distancia de color tinta/suelo: min 140 · p50 254 · cero por debajo de
+            110, que es el suelo que el propio algoritmo le exige al papel crudo
+tipo        arbol 35%  partido 31%  astillado 17%  hendido 16%
+gubia       fina 40%  media 46%  ancha 14%
+tintas      una 89%  dos 9%  tres 1,5%   ← el sorteo pide 74/20/6: la regla del
             mismo lado del suelo tumba dos de cada tres segundas tintas
 piezas      p10 2 · p50 4 · p90 7 · max 10
-            2:15% 3:24% 4:17% 5:16% 6:12% 7:8% 8:4% 9:3% 10:1%
+            2:14% 3:24% 4:18% 5:16% 6:11% 7:8% 8:5% 9:3% 10:1%
 sajaduras   0 · 92%   1 · 8%    (dos, ya nunca)
-faltan      0 · 34%   1 · 48%   2 · 18%
-escalones   0 · 22%   1 · 55%   2 · 24%
+faltan      0 · 33%   1 · 49%   2 · 18%
+escalones   0 · 21%   1 · 54%   2 · 24%
 mancha      p05 16% · p50 26% · p95 40%
 flequillo   tres placas o más en el suelo de carne: 0,4% de las obras
-overall     common 40,0%  uncommon 35,2%  rare 15,0%  superrare 6,8%  legendary 3,1%
+overall     common 41,3%  uncommon 34,8%  rare 14,5%  superrare 7,0%  legendary 2,4%
             (el reparto de la casa es 40/35/15/7/3, y los umbrales son sus
              percentiles medidos sobre esta misma muestra)
 huella      0 de 180 obras cambia a 760 / 2400 / 4200 px, en los tres formatos

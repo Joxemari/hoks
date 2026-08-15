@@ -1240,7 +1240,7 @@
   // sobre 500 tiradas y se pusieron en los percentiles que la casa reparte
   // (≈40/35/15/7/3). La paleta va aparte en el producto y sólo empuja hacia más
   // raro, así que el reparto medido queda algo por debajo de esos números.
-  function rarComb(r) { return r > 0.0953 ? 'common' : r > 0.0213 ? 'uncommon' : r > 0.0075 ? 'rare' : r > 0.0028 ? 'superrare' : 'legendary'; }
+  function rarComb(r) { return r > 0.0950 ? 'common' : r > 0.0207 ? 'uncommon' : r > 0.0072 ? 'rare' : r > 0.0023 ? 'superrare' : 'legendary'; }
 
   function traits(res) {
     const pTipo  = (TIPOS.find(t => t.key === res.tipo)  || { p: 0.25 }).p;
