@@ -199,6 +199,11 @@
   const SEP_OBRA = [1.0, 1.20];            // el pelo de ESTA obra, en canales D
   const SEP_SUELTO = [4.5, 11];            // el primer trazo no tiene con quién
   const RELLENO_MAX = 2.2;                 // techo del relleno de esquina, × W
+  // El cruce: cuántos trazos de una obra pueden atravesar a otro, y con qué ángulo
+  // mínimo. Pocos —en el cartel de Múnich hay dos— porque un cruce es un suceso.
+  const P_CRUZA = 0.26;
+  const P_DOBLE = 0.45;                    // acompañar a DOS, no a uno: la malla
+  const CRUCE_MIN = 38;                    // grados: por debajo, la cuña se afila
 
   // ── Los tipos ───────────────────────────────────────────────────────────────
   // Un tipo es un REPARTO DE RELACIONES y un número de trazos. Nada más: no hay
@@ -501,6 +506,30 @@
     return { x: pts[n - 1].x, y: pts[n - 1].y, dir: dirEn(pts, n - 2) };
   }
 
+  // EL PUENTE: el tramo libre que lleva de una sección acompañada a la siguiente.
+  // Sale por donde venía y entra por donde toca, con un codo en medio — no es un
+  // segmento recto, que se leería como una grapa.
+  function puente(rng, a, dirA, b, dirB, vib, D) {
+    const d = hypot(b.x - a.x, b.y - a.y);
+    if (d < 1e-9) return [a];
+    const s = d * rng.range(0.24, 0.44);
+    const p1 = { x: a.x + Math.cos(dirA * RAD) * s, y: a.y + Math.sin(dirA * RAD) * s };
+    const p2 = { x: b.x - Math.cos(dirB * RAD) * s, y: b.y - Math.sin(dirB * RAD) * s };
+    // se recorre el codo con `trazar` por tramos, para que herede temblor y deriva
+    const out = [a];
+    const tramo = (de, a2) => {
+      const L = hypot(a2.x - de.x, a2.y - de.y);
+      if (L < 1e-9) return;
+      const dir = Math.atan2(a2.y - de.y, a2.x - de.x) / RAD;
+      const q = trazar(rng, de.x, de.y, dir, L, 0, vib, D);
+      // el temblor desvía el final: se reengancha al punto pedido
+      q[q.length - 1] = a2;
+      for (let i = 1; i < q.length; i++) out.push(q[i]);
+    };
+    tramo(a, p1); tramo(p1, p2); tramo(p2, b);
+    return out;
+  }
+
   // ── Colocar un trazo cumpliendo una relación ────────────────────────────────
   // Devuelve los puntos, o null si no cabe. La relación se DECLARA y aquí se
   // construye la geometría que la cumple — no se espera a que salga sola.
@@ -546,12 +575,41 @@
       // hace que el haz se lea como una cosa y no como tres parejas.
       const medio = desplazar(sub, sep, rng.bool(0.5) ? 1 : -1);
       if (medio.length < 2) return null;
-      const sobra = max(0, largo - largoDe(medio));
-      if (sobra < ctx.S * 0.04) return medio;
+      // LA SEGUNDA SECCIÓN. Un trazo que acompaña a UNO deja el grafo de relaciones
+      // en árbol: N trazos, N−1 parejas, y la hoja se lee pobre por mucho que cada
+      // pareja esté bien resuelta. En las referencias el grafo es una MALLA — cada
+      // banda toca a varias— y eso es lo que hace el cuerpo. Así que un trazo puede
+      // acompañar a uno, cruzar la hoja por un puente, y acompañar a OTRO.
+      let pts2 = null;
+      if (ctx.trazos.length >= 2 && rng.bool(P_DOBLE)) {
+        const otros = ctx.trazos.filter(t => t.pts !== obj);
+        const o2 = otros[rng.int(0, otros.length - 1)];
+        const Lo2 = largoDe(o2.pts);
+        const fr2 = clamp(largo * rng.range(0.22, 0.45) / (Lo2 || 1), 0.14, 1);
+        const a2 = rng.range(0, max(0, 1 - fr2));
+        const sub2 = trozo(o2.pts, a2, min(a2 + fr2, 1));
+        if (sub2.length >= 2) {
+          const m2 = desplazar(sub2, sep, rng.bool(0.5) ? 1 : -1);
+          if (m2.length >= 2) pts2 = m2;
+        }
+      }
+      const sobra = max(0, largo - largoDe(medio) - (pts2 ? largoDe(pts2) : 0));
+      if (!pts2 && sobra < ctx.S * 0.04) return medio;
       // lo que sobra se reparte entre lo que viene ANTES y lo que sigue DESPUÉS
       const fPre = rng.range(0, 1);
       const dIn = dirEn(medio, 0), dOut = dirEn(medio, medio.length - 2);
       let pts = medio;
+      // si hay segunda sección, el puente la engancha y no hay tramo libre detrás
+      if (pts2) {
+        // se engancha por el extremo que caiga más cerca, y si hace falta al revés
+        const fin = pts[pts.length - 1];
+        const d0 = hypot(pts2[0].x - fin.x, pts2[0].y - fin.y);
+        const d1 = hypot(pts2[pts2.length - 1].x - fin.x, pts2[pts2.length - 1].y - fin.y);
+        if (d1 < d0) pts2.reverse();
+        const pu = puente(rng, fin, dOut, pts2[0], dirEn(pts2, 0), ctx.vib, D);
+        pts = pts.concat(pu.slice(1), pts2.slice(1));
+        return pts;
+      }
       const Lpost = sobra * (1 - fPre);
       if (Lpost > ctx.S * 0.03) {
         const p = medio[medio.length - 1];
@@ -644,7 +702,37 @@
   // cabe tampoco— y por eso se puede buscar el punto exacto donde deja de caber.
   // La regla de lo visible NO es monótona (un trazo más largo se ve más), así que
   // se comprueba aparte, una vez, al final.
-  function cabeDuro(pts, ctx, sangra) {
+  // ¿Cuánto se acercan dos tramos, y es legal? La regla vieja era «nunca por debajo
+  // de D». La nueva la dijo el autor mirando el cartel: «a veces se superponen».
+  //
+  // Y reformulada es MÁS SIMPLE que la vieja, no más laxa. Entre dos ejes a
+  // distancia `d`, el blanco que queda mide `d − W`. O sea:
+  //
+  //     d ≥ D  →  queda el pelo entero (g o más).      LEGAL
+  //     d ≤ W  →  no queda blanco: se funden en negro.  LEGAL
+  //     W < d < D  →  queda una RENDIJA más fina que el pelo.  PROHIBIDO
+  //
+  // Lo que se prohíbe no es tocarse: es la rendija. Un blanco más fino que el canal
+  // no es una incisión, es suciedad — y es lo único que en las seis no aparece
+  // nunca. La regla pasa de «no se tocan» a «el blanco es o el pelo, o nada».
+  //
+  // Con una salvedad: al cruzar, dos ejes pasan por fuerza por la franja prohibida
+  // en el camino de D a W. Si el cruce es transversal eso dura un suspiro; si es casi
+  // paralelo, deja una cuña blanca larga que se va afilando, que es justo lo feo. Por
+  // eso el cruce exige ángulo.
+  function bandaMala(A, B, ctx) {
+    const d = segSegDist(A, B);
+    if (d >= ctx.D - 1e-9) return false;          // el pelo entero
+    if (d <= ctx.W) return false;                 // fundidos: no hay blanco
+    return true;                                  // rendija
+  }
+  function anguloEntre(A, B) {
+    const a1 = Math.atan2(A[3] - A[1], A[2] - A[0]), a2 = Math.atan2(B[3] - B[1], B[2] - B[0]);
+    let d = abs((a1 - a2) / RAD) % 180;
+    return d > 90 ? 180 - d : d;
+  }
+
+  function cabeDuro(pts, ctx, sangra, cruza) {
     const h = ctx.W / 2, m = ctx.mg + h;
     // SANGRE mide el FILO DE LA TINTA, no el eje: si no, un trazo de gubia ancha
     // se pasa media anchura mas de lo declarado y el detector lo canta.
@@ -654,7 +742,15 @@
     }
     const segs = segsDe(pts);
     if (seCorta(segs, ctx.D)) return false;
-    for (const t of ctx.trazos) if (distTrazos(segs, t.segs) < ctx.D - 1e-9) return false;
+    for (const t of ctx.trazos) {
+      if (distTrazos(segs, t.segs) >= ctx.D - 1e-9) continue;   // el caso corriente
+      // hay acercamiento: o es un cruce declarado y legal, o no cabe
+      if (!cruza) return false;
+      for (const A of segs) for (const B of t.segs) {
+        if (!bandaMala(A, B, ctx)) continue;
+        if (anguloEntre(A, B) < CRUCE_MIN) return false;
+      }
+    }
     return true;
   }
 
@@ -681,8 +777,8 @@
     return dentro >= ctx.S * LARGO_MIN;
   }
 
-  function cabe(pts, ctx, sangra) {
-    return cabeDuro(pts, ctx, sangra) && bastaVisto(pts, ctx, sangra);
+  function cabe(pts, ctx, sangra, cruza) {
+    return cabeDuro(pts, ctx, sangra, cruza) && bastaVisto(pts, ctx, sangra);
   }
 
   // EL QUE SALE, NO VUELVE. Es del autor y es una decisión, no una consecuencia:
@@ -734,13 +830,13 @@
   // libre—, cortar siempre por delante mataba el trazo entero cuando lo que no
   // cabía era su arranque, y con él se perdía la sección acompañada, que es la que
   // vale.
-  function recortar(pts, ctx, sangra) {
-    if (cabeDuro(pts, ctx, sangra)) return pts;
+  function recortar(pts, ctx, sangra, cruza) {
+    if (cabeDuro(pts, ctx, sangra, cruza)) return pts;
     const busca = (p) => {
       let lo = 0, hi = largoDe(p);
       for (let k = 0; k < 15; k++) {
         const mid = (lo + hi) / 2;
-        if (cabeDuro(prefijo(p, mid), ctx, sangra)) lo = mid; else hi = mid;
+        if (cabeDuro(prefijo(p, mid), ctx, sangra, cruza)) lo = mid; else hi = mid;
       }
       return lo;
     };
@@ -799,7 +895,7 @@
         // el cerco también CRECE hasta donde cabe: ahora se pone después del
         // protagonista, así que casi siempre tiene que ceder algo contra él, y
         // rechazarlo entero dejaba recintos de dos cuerdas.
-        pts = recortar(pts, ctx, false);
+        pts = recortar(pts, ctx, false, false);
         if (pts && largoDe(pts) >= ctx.S * LARGO_MIN) {
           ctx.trazos.push({ pts, segs: segsDe(pts), rel: 'cerco', gubia: gubiaDe(rng, ctx) });
           recentrar(ctx);
@@ -969,7 +1065,13 @@
     // de longitud: la longitud sale del dibujo.
     const poner = (L) => {
       const rel = ctx.trazos.length === 0 ? 'suelto' : rng.weighted(pesos).n;
-      let mejor = null, mejorL = 0, mejorS = false;
+      // SANGRAR y CRUZAR son propiedades DEL TRAZO, así que se deciden una vez y no
+      // en cada intento. Sorteándolas dentro del bucle, los intentos que cruzan
+      // caben mejor —tienen menos restricción— y como se elige el más largo, ganaban
+      // casi siempre: salían obras con cruces por todas partes. En la referencia un
+      // cruce es un suceso, no la norma.
+      const sangra = rng.bool(ctx.pSangra), cruza = rng.bool(P_CRUZA);
+      let mejor = null, mejorL = 0;
       for (let k = 0; k < COLOCA; k++) {
         // CONTRA QUIÉN: encadenado, no al azar. Eligiendo un trazo cualquiera de
         // los ya puestos, cada uno se relacionaba con otro distinto y la hoja salía
@@ -982,7 +1084,6 @@
         const obj = !ctx.trazos.length ? null
           : (rng.bool(0.68) ? ctx.trazos[ctx.trazos.length - 1]
                             : ctx.trazos[rng.int(0, ctx.trazos.length - 1)]).pts;
-        const sangra = rng.bool(ctx.pSangra);
         // LA SEPARACIÓN ES DEL GRUPO. Si este trazo se engancha al último y el
         // último ya iba acompañando, es el MISMO haz: se hereda su canal. Si abre
         // grupo, se sortea uno nuevo. Sorteándolo por trazo, un peine de cuatro
@@ -991,7 +1092,7 @@
         let pts = colocar(rng, ctx, rel, obj, L, sangra, ctx.sep);
         if (!pts || pts.length < 2) continue;
         pts = cortarAlVolver(pts, ctx);
-        pts = recortar(pts, ctx, sangra);
+        pts = recortar(pts, ctx, sangra, cruza);
         if (!pts || pts.length < 2) continue;
         if (!bastaVisto(pts, ctx, sangra)) continue;
         const Lr = largoDe(pts);
@@ -999,11 +1100,11 @@
         // se queda el intento MÁS LARGO, no el primero que cabe: con el recorte,
         // el primero que cabe cabe siempre, y quedarse con él es volver a dejar
         // que el azar del sitio elija la longitud.
-        if (Lr > mejorL) { mejor = pts; mejorL = Lr; mejorS = sangra; }
+        if (Lr > mejorL) { mejor = pts; mejorL = Lr; }
         if (Lr > L * ctx.S * 0.92) break;   // ya es lo que se pedía: no busques más
       }
       if (!mejor) return 0;
-      ctx.trazos.push({ pts: mejor, segs: segsDe(mejor), rel, sangra: mejorS, gubia: gubiaDe(rng, ctx) });
+      ctx.trazos.push({ pts: mejor, segs: segsDe(mejor), rel, sangra, cruza, gubia: gubiaDe(rng, ctx) });
       recentrar(ctx);
       relCount[rel]++;
       return mejorL / ctx.S;
@@ -1152,6 +1253,7 @@
              ojos: best.ojos, ocupacion: best.ocupacion, esq: 0,
              geo: { cintas: best.trazos.map(x => x.pts), sangra: best.trazos.map(x => !!x.sangra),
                     relleno: best.trazos.map(x => x.relleno || null),
+                    cruza: best.trazos.map(x => !!x.cruza), CRUCE_MIN,
                     SANGRE, MARGEN, W: best.W, g: best.g, D: best.D,
                     S, ox, fw, fh, veto: null } };
   }

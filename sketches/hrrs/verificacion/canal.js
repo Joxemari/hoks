@@ -55,20 +55,35 @@ function medir({ seed, fmt, params, base }) {
                     pSeg(B.ax, B.ay, A.ax, A.ay, A.bx, A.by), pSeg(B.bx, B.by, A.ax, A.ay, A.bx, A.by));
   };
 
-  let peor = Infinity, pares = 0, malos = 0, solapes = 0, donde = null;
+  let peor = Infinity, pares = 0, malos = 0, solapes = 0, cruces = 0, donde = null;
   for (let i = 0; i < segs.length; i++) {
     for (let j = i + 1; j < segs.length; j++) {
       const A = segs[i], B = segs[j];
       if (A.c === B.c && Math.abs(A.i - B.i) <= 1) continue;   // vecinos: comparten vertice
       pares++;
-      const u = ssd(A, B) / D;
+      const dd = ssd(A, B), u = dd / D;
+      // LA REGLA, EN SU FORMA NUEVA. Entre dos ejes a distancia d el blanco mide
+      // d - W, asi que:
+      //     d >= D    -> queda el pelo entero.          LEGAL
+      //     d <= W    -> se funden, no hay blanco.      LEGAL
+      //     W < d < D -> RENDIJA mas fina que el pelo.  PROHIBIDA, salvo de paso en
+      //                  un cruce, y un cruce tiene angulo.
+      // Lo que se prohibe no es tocarse: es la rendija.
+      //
       // 1e-6 es COMA FLOTANTE, no un umbral. El brazo del pliegue mide D/sen(phi)
-      // exactos y una voz que nace al lado se pone a D exactos, asi que su par sale
-      // en 0,999999999 y sin esto el detector marca como defecto justo la figura
-      // que la obra existe para producir. La regla sigue siendo 1,0.
-      if (u < 1 - 1e-6) { malos++; if (!donde) donde = [A.c, A.i, B.c, B.i]; }
-      if (ssd(A, B) < g.W * (1 - 1e-6)) solapes++;            // tintas SOLAPADAS: eso ya es un toque
-      if (u < peor) peor = u;
+      // exactos y un acompanamiento se pone a D exactos, asi que su par sale en
+      // 0,999999999 y sin esto el detector marca como defecto justo la figura que la
+      // obra existe para producir.
+      if (dd <= g.W * (1 + 1e-6)) {
+        solapes++;                                             // fundidos: legal
+      } else if (u < 1 - 1e-6) {
+        const a1 = Math.atan2(A.by - A.ay, A.bx - A.ax), a2 = Math.atan2(B.by - B.ay, B.bx - B.ax);
+        let ang = Math.abs((a1 - a2) * 180 / Math.PI) % 180;
+        if (ang > 90) ang = 180 - ang;
+        if (ang < (g.CRUCE_MIN || 38) - 1e-6) { malos++; if (!donde) donde = [A.c, A.i, B.c, B.i]; }
+        else cruces++;
+      }
+      if (u < peor && dd > g.W) peor = u;
     }
   }
   // ── LA HOLGURA DECLARADA ────────────────────────────────────────────────────
@@ -99,7 +114,7 @@ function medir({ seed, fmt, params, base }) {
     }
   }
 
-  return { seed, pares, malos, solapes, peor: +peor.toFixed(4), donde,
+  return { seed, pares, malos, solapes, cruces, peor: +peor.toFixed(4), donde,
            holgMalos, holgPeor: +holgPeor.toFixed(4),
            cintas: res.cintas, tipo: res.tipo, vert: res.vert };
 }
@@ -118,8 +133,10 @@ function medir({ seed, fmt, params, base }) {
   console.log(`\ncanal · ${algo} · ${ok.length} obras · ${pares} pares no contiguos`);
   console.log(`  separacion minima, en canales D=W+g (1,000 = la regla):`);
   console.log(`  min ${st.min}  p50 ${st.p50}  max ${st.max}`);
-  console.log(`  OBRAS QUE INCUMPLEN: ${malas.length} de ${ok.length}`);
-  console.log(`  obras con TINTAS SOLAPADAS: ${sol.length} de ${ok.length}`);
+  console.log(`  OBRAS CON RENDIJA (blanco mas fino que el pelo): ${malas.length} de ${ok.length}`);
+  console.log(`  pares FUNDIDOS (legal, es el cruce): ${ok.reduce((a, r) => a + r.solapes, 0)}` +
+              `  ·  pares en el paso del cruce: ${ok.reduce((a, r) => a + r.cruces, 0)}`);
+  console.log(`  obras con algun cruce: ${sol.length} de ${ok.length}`);
   const holg = ok.filter(r => r.holgMalos > 0);
   console.log(`  OBRAS CON UNA HOLGURA QUE SE COME EL PELO: ${holg.length} de ${ok.length}` +
               `  (peor exceso ${stats(ok.map(r => r.holgPeor)).max} canales)`);

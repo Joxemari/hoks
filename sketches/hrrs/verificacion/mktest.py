@@ -16,9 +16,9 @@ if roto == 'duro':
     # LA RESTRICCION DURA, BAJADA. Con 0,72·D los trazos se acercan mas que la
     # anchura, asi que las tintas se solapan y el canal desaparece. Control de
     # `canal` y de `toque`.
-    a = "    for (const t of ctx.trazos) if (distTrazos(segs, t.segs) < ctx.D - 1e-9) return false;"
+    a = "      if (distTrazos(segs, t.segs) >= ctx.D - 1e-9) continue;   // el caso corriente"
     assert a in src, 'no encuentro la restriccion dura entre trazos'
-    src = src.replace(a, "    for (const t of ctx.trazos) if (distTrazos(segs, t.segs) < ctx.D * 0.72) return false;   // ROTO A PROPOSITO")
+    src = src.replace(a, "      if (distTrazos(segs, t.segs) >= ctx.D * 0.72) continue;   // ROTO A PROPOSITO")
 
 elif roto == 'corta':
     # EL TRAZO SE CORTA A SI MISMO. Un trazo con giros cerrados puede cruzarse, y
@@ -45,6 +45,14 @@ elif roto == 'miter':
     a = "          if (r <= lim + 1e-9 && r > h[i + 1] * 1.02) {"
     assert a in src, 'no encuentro el tope del relleno de esquina'
     src = src.replace(a, "          if (r > h[i + 1] * 1.02) {   // ROTO A PROPOSITO: relleno sin tope")
+
+elif roto == 'rendija':
+    # LA RENDIJA. Control de la regla nueva: entre dos bandas el blanco es o el pelo
+    # entero o nada, nunca una rendija mas fina que el pelo. Rota, un trazo que cruza
+    # puede quedarse a media distancia y dejar la cuna sucia.
+    a = "    if (d <= ctx.W) return false;                 // fundidos: no hay blanco"
+    assert a in src, 'no encuentro la banda prohibida'
+    src = src.replace(a, "    if (d <= ctx.D) return false;   // ROTO A PROPOSITO: la rendija pasa")
 
 elif roto == 'holgura':
     # LA CUENTA DE LA HOLGURA, ROTA. Es el control de la otra mitad: que lo que el

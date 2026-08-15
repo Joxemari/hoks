@@ -1001,6 +1001,54 @@ que es lo que se ve sucio. Queda sin hacer a propósito: es el cambio que más t
 invariante y merece una vuelta entera con la batería en verde de partida, no ir
 encima de otros cinco cambios.
 
+## Séptima vuelta: la malla, y el blanco que es o el pelo o nada
+
+*«Las composiciones me siguen pareciendo pobres, hay poca relación entre trazos.»*
+La causa se dice en una frase: **el grafo de relaciones era un árbol y el de las
+referencias es una malla.** Cada trazo se colocaba cumpliendo **una** relación con
+**uno**, así que N trazos daban N−1 parejas. En las seis, cada banda toca a varias, y
+eso es lo que hace el cuerpo. Dos cosas lo abren.
+
+### Un trazo acompaña a dos
+
+Acompaña a A en una sección, cruza la hoja por un **puente** con codo —que hereda el
+temblor y la deriva, no es un segmento recto— y acompaña a B en otra. Eso deja ciclos
+en el grafo, no ramas.
+
+### La superposición, que SIMPLIFICA la regla
+
+*«A veces se superponen.»* Entre dos ejes a distancia `d`, el blanco mide `d − W`:
+
+```
+d ≥ D      → queda el pelo entero            LEGAL
+d ≤ W      → se funden, no hay blanco        LEGAL
+W < d < D  → RENDIJA más fina que el pelo    PROHIBIDO
+```
+
+**Lo que se prohíbe no es tocarse: es la rendija.** Un blanco más fino que el canal no
+es una incisión, es suciedad — y es lo único que en las seis no aparece nunca. La
+regla pasa de «no se tocan» a «el blanco es o el pelo, o nada», que además es más
+corta de enunciar y más fácil de comprobar.
+
+La única salvedad es que al cruzar hay que pasar por fuerza por la franja prohibida en
+el camino de `D` a `W`. Si el cruce es transversal dura un suspiro; si es casi
+paralelo deja una cuña que se va afilando, que es justo lo feo. Por eso el cruce exige
+**ángulo** (38°).
+
+### La trampa: una propiedad del trazo sorteada en el intento
+
+El primer intento daba **cruces en 42 obras de 42**, cuando en el cartel de Múnich hay
+dos. La causa no era la probabilidad: era **dónde se sorteaba**. `cruza` se decidía
+dentro del bucle de intentos, y como un intento que puede cruzar tiene menos
+restricción, cabe mejor, y de todos los intentos se elige **el más largo** — así que
+los que cruzaban ganaban casi siempre. La probabilidad declarada era 0,34 y la
+efectiva casi 1.
+
+Sacándolo del bucle —es una propiedad **del trazo**, no del intento— pasó a 17 de 42.
+El sangrado tenía exactamente el mismo error y se arregló igual. Es una trampa nueva y
+merece nombre: **un parámetro sorteado dentro de un bucle de selección no vale lo que
+dice valer, vale lo que el criterio de selección prefiera.**
+
 ## Tres trampas nuevas, pagadas en esta vuelta
 
 1. **El sangrado leído como defecto.** El detector de margen marcaba 20 obras
