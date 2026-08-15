@@ -124,7 +124,17 @@ def pesoCanal(A, W, peso=8.0):
 
 
 # ── Sacar ejes de una mascara cualquiera (el original, o un residuo) ───────────
-TOPE = True   # A/B: capar la anchura por la moda de la banda, o dejarla llegar
+# EL TOPE POR LA MODA, QUITADO. Lo dijo la imagen antes que la medida: en el cartel
+# el rojo -la tinta que falta- estaba en los FILOS EXTERIORES de las bandas anchas.
+# Capar por la moda de la banda deja corta a toda banda mas ancha que la moda de la
+# obra, o sea que la masa del cruce no se rellena. Y el tope estaba puesto para que
+# los cruces no se comieran la incision, cosa que ya resuelve el perfil por vertice.
+#
+# Medido, trazado inicial: el acierto sube en las seis (mediana 90,2 % -> 91,5 %) y la
+# tinta que falta baja casi a la mitad (5,7-11,0 % -> 3,9-8,7 %). Y con el ajuste
+# completo gana donde importa: la litografia sale por fin 2 -> 2 componentes (era
+# 2 -> 1), el cartel 3 -> 4, y la cuadrada 96,9 % -> 97,3 %.
+TOPE = False
 
 
 def ejesDe(mask, W, minLargo=1.2, dpTol=0.05, perfil=True):
