@@ -1,14 +1,17 @@
 # EVOL — *hutsunea*
 
-**Estado: nació aquí y está ACTIVA.** Empezó como propuesta para mirar en el grid,
-igual que `dtkrt/` y `eclps/`, y ha pasado a `data/works.json` con `active: true`.
-Eso arrastra cuatro sitios, no uno —el desplegable del lab es solo el último—:
-`evol.html` (el cascarón de `work-page.js`; sin él el nav enlazaría a un 404),
-`data/evol.json` (la galería, de momento vacía), y la landing, que consume su
-`algo.js` real como DTKRT, ECLPS y TRZS. El nombre sigue siendo provisional.
+**Estado: en el laboratorio, DESACTIVADA.** Está entera en el repo —algo, harness,
+`evol.html` y su galería vacía— pero con `active: false` en `data/works.json`, así que
+no sale en la landing ni en el dropdown *Work*. Tiene todavía mucho que mejorar, y no
+se publica hasta que esté.
 
-Todavía no hay obra guardada: la galería está vacía hasta que se publique un lote
-desde el laboratorio.
+Desactivarla la saca también del **selector de obra del laboratorio**, que filtra por
+`active !== false`. No es un efecto secundario que haya que arreglar: es la regla de la
+casa —el lab lista lo que está vivo— y se llega igual por URL, `sketches/evol/`, que es
+lo correcto para una familia en obras. El check *Active* del panel la devuelve a la web
+en un clic cuando toque, sin tocar código.
+
+El nombre sigue siendo provisional.
 
 ---
 
