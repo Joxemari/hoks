@@ -108,10 +108,17 @@ function medir({ seed, fmt, params, base }) {
   const paso1 = Math.max(2, Math.floor(250 / Math.max(1, n)));
   for (let k = 0; k < n; k++) {
     const pts = geo.cintas[k], rel = geo.relleno[k];
-    if (halo > 0) {
+    const cr = geo.cruces ? geo.cruces[k] : null;
+    if (halo > 0 && cr && cr.length) {
+      const R = geo.W * (geo.RCRUCE || 1.6);
+      lx.save();
+      lx.beginPath();
+      for (const P of cr) { lx.moveTo(P.x + R, P.y); lx.arc(P.x, P.y, R, 0, 2 * Math.PI); }
+      lx.clip();
       lx.globalCompositeOperation = 'destination-out';
       lx.beginPath(); HOKS.HRRS.banda(lx, pts, geo.W, geo.gubia[k], rel, null, halo);
       lx.fill();
+      lx.restore();
     }
     lx.globalCompositeOperation = 'source-over';
     lx.fillStyle = 'rgb(' + paso1 * (k + 1) + ',0,0)';

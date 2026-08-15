@@ -125,21 +125,28 @@
   // antes de que se viera. Desde que el sangrado es de verdad (ver más abajo) el
   // trazo puede medir más que el pliego y salirse — que es lo que hace en las
   // referencias: el brazo largo no termina, se va.
-  const PROTA = [1.70, 2.80];               // lo que se le PIDE, × lado corto
+  const PROTA = [2.05, 3.20];               // lo que se le PIDE, × lado corto
   // La caída era demasiado suave: con 0,76-0,91 el segundo trazo mide casi lo que el
   // primero y la hoja sale de piezas medianas. En las referencias hay UNO que cruza y
   // los demás son claramente menores — el salto es franco.
-  const CAIDA = [0.80, 0.92];               // cada trazo respecto al anterior
+  const CAIDA = [0.62, 0.82];               // cada trazo respecto al anterior
   // LA ESCALERA, MEDIDA CONTRA LAS REFERENCIAS Y NO ELEGIDA. Con el mismo trazador
   // por los dos lados, las seis ponen 6,9 lados de linea y 0,25 de tinta sobre la
   // hoja; la familia ponia 4,0 y 0,16. No es que se acompañen menos —eso esta clavado,
   // 0,52 contra 0,50— ni que haya menos trazos —18 bandas contra 19—: es que hay
   // MENOS LINEA, y por eso la hoja se lee vacia al lado de un Chillida.
   //
-  // Con esta escalera son 5,5 y 0,19. Y no da para mas: subiendo PROTA a [2,0 3,2] la
-  // linea BAJA a 5,41, o sea que el techo ya no esta en lo que se pide sino en lo que
-  // la composicion admite. Ahi es donde sigue el trabajo, y queda dicho para que 5,5
-  // no se lea como el objetivo: el objetivo es 6,9.
+  // PERO LA LINEA NO SE COMPRA APLANANDO LA ESCALERA, y esto me costo una vuelta.
+  // Persiguiendo esos 6,9 subi CAIDA a [0,80 0,92] y la linea subio, si — y la hoja se
+  // rompio. Con esa caida todos los trazos miden casi lo mismo: no hay protagonista,
+  // y sin protagonista la obra es confeti. El autor lo vio de un vistazo y tenia razon.
+  //
+  // La linea se compra por PROTA, que alarga al que manda sin tocar la forma de la
+  // escalera. [2,05 3,20] con CAIDA [0,62 0,82] da la misma linea que la escalera plana
+  // —4,1 lados— con la jerarquia intacta.
+  //
+  // Y queda dicho para que 4,1 no se lea como el objetivo: el objetivo son los 6,9 de
+  // las referencias, y la diferencia no se cierra con esta constante.
   // Y un SUELO de longitud: un trazo más corto que esto no es un trazo, es una
   // pizca. Salían al desplazar un trozo muy corto para el `paralelo`, y una hoja
   // con pizcas se lee como confeti — que es justo el defecto que costó la primera
@@ -265,6 +272,16 @@
   // debajo de este número no hay solape que valga y el candidato se rechaza —el
   // reintento lo aparta y sale paralelo—; por encima, tiene que ser un cruce entero.
   const SOLAPE_MIN = 0.35;
+  // El radio del disco de la incision, en anchuras. Lo usa el dibujo Y la regla, y tiene
+  // que ser EL MISMO numero: la regla autoriza el acercamiento exactamente donde el
+  // corte llega. Si se separan, o la regla deja pasar tinta que el corte no abre, o el
+  // corte muerde donde no hacia falta.
+  //
+  // 2,2 y no menos: a 1,6 quedaban pares de tinta a 0,20 g. Y no mas, porque a 3,0 la
+  // medida no mejora — o sea que 2,2 no es un ajuste, es la cuenta: con el angulo
+  // minimo de cruce (38°) el solape de dos bandas llega a 0,81 anchuras del corte, y
+  // el corte tiene que pasar de ahi.
+  const RCRUCE_G = 2.2;
   const SEP_SUELTO = [4.5, 11];            // el primer trazo no tiene con quién
   const RELLENO_MAX = 2.2;                 // techo del relleno de esquina, × W
   // El cruce: cuántos trazos de una obra pueden atravesar a otro, y con qué ángulo
@@ -341,6 +358,14 @@
     const d1 = o(ax, ay, bx, by, cx, cy), d2 = o(ax, ay, bx, by, dx, dy);
     const d3 = o(cx, cy, dx, dy, ax, ay), d4 = o(cx, cy, dx, dy, bx, by);
     return ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0));
+  }
+  function corteDe(a, b) {
+    if (!cruzan(a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3])) return null;
+    const r1 = a[2] - a[0], r2 = a[3] - a[1], s1 = b[2] - b[0], s2 = b[3] - b[1];
+    const den = r1 * s2 - r2 * s1;
+    if (abs(den) < 1e-12) return null;
+    const t = ((b[0] - a[0]) * s2 - (b[1] - a[1]) * s1) / den;
+    return { x: a[0] + t * r1, y: a[1] + t * r2 };
   }
   function segSegDist(a, b) {
     if (cruzan(a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3])) return 0;
@@ -924,13 +949,28 @@
   //     suyos. Un remate que muere dentro de otra banda no es un cruce, es un trazo
   //     que se acabó donde no se le veía.
   function cruceEntero(pts, segs, otro, ctx) {
-    let hay = false;
+    const P = [];
     for (const a of segs) for (const b of otro.segs) {
-      if (!cruzan(a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3])) continue;
+      const c = corteDe(a, b);
+      if (!c) continue;
       if (anguloEntre(a, b) < CRUCE_MIN) return false;   // rasante: eso es arrimarse
-      hay = true;
+      P.push(c);
     }
-    if (!hay) return false;                              // se meten pero no se cruzan
+    if (!P.length) return false;                         // se meten pero no se cruzan
+    // Y NO BASTA CON QUE SE CRUCEN EN ALGUN SITIO. Sin esto, dos trazos que se cruzan
+    // una vez quedaban autorizados a rozarse en cualquier otro punto de su recorrido
+    // —el minimo global es cero por el cruce, asi que la comprobacion pasaba entera— y
+    // ahi la incision no llega: se pinta en un disco alrededor del cruce, no por todo
+    // el trazo. Medido: dejaba pares de tinta a 0,14 g. Cada acercamiento tiene que
+    // estar en SU cruce o no valer.
+    const R = ctx.W * RCRUCE_G;
+    for (const a of segs) for (const b of otro.segs) {
+      if (segSegDist(a, b) >= ctx.D - 1e-9) continue;
+      const mx = (a[0] + a[2] + b[0] + b[2]) / 4, my = (a[1] + a[3] + b[1] + b[3]) / 4;
+      let cerca = false;
+      for (const c of P) if (hypot(c.x - mx, c.y - my) <= R) { cerca = true; break; }
+      if (!cerca) return false;
+    }
     const enterrado = (p, sg) => {
       let d = Infinity;
       for (const b of sg) d = min(d, pointSegDist(p.x, p.y, b[0], b[1], b[2], b[3]));
@@ -1596,6 +1636,28 @@
     // blanco mide g; si no llegan a tocarse, mide su hueco MÁS g. Nunca menos de g, y
     // eso es lo que hay que poder medir sobre el píxel.
     const halo = params.halo != null ? params.halo * best.W : best.g;
+    // DÓNDE va la incisión: sólo en los CRUCES, no a lo largo de todo el trazo.
+    //
+    // Cortando el halo por todo el contorno se estropea justo lo que funcionaba. Dos
+    // trazos que se acompañan están a `sep = D·[1,00–1,20]`, o sea que su canal YA mide
+    // g o más; el segundo, al pintarse, le comía otro g al primero — el canal se
+    // duplicaba y la banda de abajo salía adelgazada. La medida decía que el canal
+    // seguía ancho y yo lo leía como «faltan contactos»; era esto.
+    //
+    // Y la regla del solape ya garantiza lo demás: o están a D o más —y entonces el
+    // canal existe solo— o se cruzan enteros, y ahí sí hace falta el corte. Así que la
+    // incisión se recorta a un disco alrededor de cada cruce. De paso sale la figura
+    // que las referencias tienen y que el análisis llevaba nombrada sin implementar:
+    // el pelo empieza y acaba DENTRO del negro.
+    const RCRUCE = RCRUCE_G;
+    const cruces = best.trazos.map(() => []);
+    for (let k = 0; k < best.trazos.length; k++)
+      for (let j = 0; j < k; j++)
+        for (const a of best.trazos[k].segs)
+          for (const b of best.trazos[j].segs) {
+            const P = corteDe(a, b);
+            if (P) cruces[k].push(P);
+          }
     ctx.save();
     ctx.translate(ox, 0);
     ctx.scale(S, S);
@@ -1605,10 +1667,19 @@
       const cx = capa.getContext('2d');
       cx.translate(ox, 0); cx.scale(S, S);
       cx.fillStyle = rol.tinta;
-      for (const tr of best.trazos) {
-        cx.globalCompositeOperation = 'destination-out';
-        cx.beginPath(); banda(cx, tr.pts, best.W, tr.gubia, tr.relleno, null, halo);
-        cx.fill();
+      const R = best.W * RCRUCE;
+      for (let k = 0; k < best.trazos.length; k++) {
+        const tr = best.trazos[k];
+        if (cruces[k].length) {
+          cx.save();
+          cx.beginPath();
+          for (const P of cruces[k]) { cx.moveTo(P.x + R, P.y); cx.arc(P.x, P.y, R, 0, 2 * Math.PI); }
+          cx.clip();
+          cx.globalCompositeOperation = 'destination-out';
+          cx.beginPath(); banda(cx, tr.pts, best.W, tr.gubia, tr.relleno, null, halo);
+          cx.fill();
+          cx.restore();
+        }
         cx.globalCompositeOperation = 'source-over';
         cx.beginPath(); banda(cx, tr.pts, best.W, tr.gubia, tr.relleno);
         cx.fill();
@@ -1638,7 +1709,7 @@
              geo: { cintas: best.trazos.map(x => x.pts), sangra: best.trazos.map(x => !!x.sangra),
                     relleno: best.trazos.map(x => x.relleno || null),
                     cruza: best.trazos.map(x => !!x.cruza), CRUCE_MIN,
-                    gubia: best.trazos.map(x => x.gubia || 0),
+                    gubia: best.trazos.map(x => x.gubia || 0), cruces, RCRUCE,
                     SANGRE, MARGEN, W: best.W, g: best.g, D: best.D,
                     S, ox, fw, fh, veto: null } };
   }

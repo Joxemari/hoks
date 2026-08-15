@@ -1771,6 +1771,46 @@ Dos hipótesis mías, muertas por medida en esta vuelta:
 - **Que fuera culpa del halo.** Sin halo la línea es 3,79 y con halo 3,72, con los
   mismos quiebros. El trazo ya salía corto antes.
 
+### Y entonces se rompió. Dos cosas, y las dos mías
+
+El autor lo vio de un vistazo: *se ha jodido; ni se aproximan a lo de antes, que
+estaban cerca*. Tenía razón las dos veces.
+
+**La primera: la incisión no va a lo largo del trazo, va en el cruce.** Cortando el
+halo por todo el contorno se destroza justo lo que funcionaba. Dos trazos que se
+acompañan están a `sep = D·[1,00–1,20]`, o sea que su canal **ya** mide g o más; el
+segundo, al pintarse, le comía otro g al primero — el canal se duplicaba y la banda de
+abajo salía adelgazada. Yo leía el canal ancho como «faltan contactos» y era esto.
+
+Y la regla del solape ya cubre lo demás: o están a D o más —y el canal existe solo— o
+se cruzan enteros, y ahí sí hace falta el corte. Así que la incisión se recorta a un
+disco alrededor de cada cruce. De propina sale la figura que las referencias tienen y
+que este README llevaba nombrada sin implementar: **el pelo empieza y acaba dentro del
+negro**.
+
+Eso destapó un agujero en mi propia regla: dos trazos que se cruzan **en un sitio**
+quedaban autorizados a rozarse en cualquier otro, porque el mínimo global es cero por
+el cruce y la comprobación pasaba entera. Ahí el corte no llega. Ahora cada
+acercamiento tiene que estar en **su** cruce. Y el radio del disco es el mismo número
+en el dibujo y en la regla —2,2 anchuras— porque si se separan, o la regla deja pasar
+tinta que el corte no abre, o el corte muerde donde no hacía falta. 2,2 no es un ajuste:
+con el ángulo mínimo de cruce el solape de dos bandas llega a 0,81 anchuras del corte,
+y a 3,0 la medida ya no mejora.
+
+**La segunda: la línea no se compra aplanando la escalera.** Persiguiendo los 6,9 lados
+subí `CAIDA` a [0,80 0,92]. La línea subió, sí — y la hoja se rompió: con esa caída
+todos los trazos miden casi lo mismo, no hay protagonista, y sin protagonista la obra
+es confeti. Comprar el número aplanando la jerarquía es pagar con lo único que hacía
+que la composición se leyera.
+
+Se compra por `PROTA`, que alarga al que manda sin tocar la forma de la escalera:
+[2,05 3,20] con `CAIDA` [0,62 0,82] da **la misma línea que la escalera plana** —4,1
+lados— con la jerarquía intacta.
+
+La lección, que es la de siempre y esta vez la pagué en la imagen y no en la medida:
+**un número medido de las referencias es un objetivo, no una instrucción.** 6,9 lados
+de línea es cierto; «sube CAIDA hasta que salgan» no se sigue de ahí.
+
 ### Y una regla que las referencias cumplen y la familia no: el suelo no se encierra
 
 Las seis tienen **cero ojos** — cero suelo encerrado por la tinta (la enmarcada tiene
