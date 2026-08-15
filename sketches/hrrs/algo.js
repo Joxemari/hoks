@@ -372,11 +372,17 @@
   // girando φ, recorriendo D/sen(φ) y girando 180−φ del mismo lado, se sale
   // antiparalelo a exactamente D. Esa fórmula ya estaba escrita en este README como
   // consecuencia de la regla 3; lo que faltaba era usarla.
-  function trazar(rng, x, y, dir, largo, nq, vib, D, orto) {
-    const n = nq + 1;
+  // `guion` es la partitura escrita a mano: `{ pesos:[…], giros:[{mag, lado, pliega}] }`.
+  // Cuando viene, manda sobre el sorteo — y sólo sobre el sorteo: el pliegue se sigue
+  // construyendo con la misma fórmula, el temblor y la deriva siguen siendo los
+  // mismos, y la banda se dibuja igual. Es lo que permite REPLICAR una referencia con
+  // esta gramática en vez de describirla con palabras (ver `referencias/`).
+  function trazar(rng, x, y, dir, largo, nq, vib, D, orto, guion) {
+    const n = (guion && guion.giros ? guion.giros.length + 1 : nq + 1);
     const pesos = [];
     let tot = 0;
-    for (let i = 0; i < n; i++) { const w = rng.range(PESO_TRAMO[0], PESO_TRAMO[1]); pesos.push(w); tot += w; }
+    if (guion && guion.pesos) { for (const w of guion.pesos) { pesos.push(w); tot += w; } }
+    else for (let i = 0; i < n; i++) { const w = rng.range(PESO_TRAMO[0], PESO_TRAMO[1]); pesos.push(w); tot += w; }
     const pts = [{ x, y }];
     let cx = x, cy = y, cd = dir, lado = rng.bool(0.5) ? 1 : -1;
     let der = 0;                            // la deriva acumulada del tramo en curso
@@ -397,7 +403,17 @@
         avanza(L, cd);
       }
       if (i < n - 1) {
-        if (orto) {
+        const gi = guion && guion.giros && guion.giros[i];
+        if (gi) {
+          if (gi.pliega) {
+            const phi = gi.mag;
+            cd += gi.lado * phi;
+            avanza(D * 1.02 / Math.sin(phi * RAD), cd);
+            cd += gi.lado * (180 - phi);
+          } else {
+            cd += gi.lado * gi.mag;
+          }
+        } else if (orto) {
           // a escuadra, y de vez en cuando media vuelta: la retícula del cartel
           if (rng.bool(0.72)) lado = -lado;
           cd += lado * (rng.bool(0.16) ? 180 - rng.range(0, ORTO_ERR) : 90 + rng.range(-ORTO_ERR, ORTO_ERR));
@@ -1466,6 +1482,82 @@
                     S, ox, fw, fh, veto: null } };
   }
 
+  // ── Componer a mano ─────────────────────────────────────────────────────────
+  // La misma familia con la partitura escrita en vez de sorteada. NO es una puerta
+  // trasera para los detectores —siguen midiendo `geo`, lo mismo que siempre— sino
+  // la manera de hacer el ejercicio que pidió el autor: replicar cada referencia
+  // CON ESTA GRAMÁTICA. Si una referencia no se deja escribir con estos movimientos,
+  // el hallazgo es sobre la gramática, no sobre la referencia.
+  //
+  // La receta habla el vocabulario de la familia y nada más:
+  //   { suelto:[x,y,dir], largo, giros:[…] }      un recorrido libre
+  //   { paralelo:k, a, b, lado }                  desplazamiento de un trozo del k
+  //   { continua:k, cabo, giro, largo, giros:[…] } el cabo nace del cabo del k
+  //   { pata:k, f, dir, largo, giros:[…] }        cuelga del costado del k
+  // Coordenadas en el CAMPO NORMALIZADO (lado corto = 1), como todo lo demás.
+  function componer(ctx, W, H, receta, opts) {
+    opts = opts || {};
+    const palettes = opts.palettes || E.normalizePalettes(E.DEFAULTS);
+    const seed = receta.seed || 1;
+    const rng = new E.Rng(seed);
+    const pal = opts.locked && palettes[opts.lockedIdx] ? palettes[opts.lockedIdx] : rng.weighted(palettes);
+    const colors = pal.colors;
+    const rol = E.inkRoles(colors, E.inkDice(rng, P_INV));
+
+    const S = min(W, H), cuad = E.fieldMode(opts.params || {}) === 'square';
+    const AW = cuad ? S : W, ox = (W - AW) / 2;
+    const q = E.nominalAspect(max(AW, H), min(AW, H));
+    const fw = AW >= H ? q : 1, fh = AW >= H ? 1 : q;
+
+    const Wb = min(fw, fh) * (receta.ancho || 0.065);
+    const gam = receta.canal || 0.11, g = Wb * gam, D = Wb + g;
+    const vib = receta.vibra === 0 ? null
+              : { amp: receta.vibAmp || 4.2, onda: Wb * (receta.vibOnda || 1.8) };
+    const cx2 = { fw, fh, S: min(fw, fh), W: Wb, g, D, mg: 0, trazos: [], sep: D * (receta.sep || 1.0), vib };
+
+    for (const r of receta.trazos) {
+      let pts = null;
+      const gu = { giros: r.giros || [], pesos: r.pesos };
+      if (r.paralelo != null) {
+        const o = cx2.trazos[r.paralelo].pts;
+        const sub = trozo(o, r.a, r.b);
+        pts = desplazar(sub, cx2.sep * (r.canales || 1), r.lado);
+      } else if (r.continua != null) {
+        const o = cx2.trazos[r.continua].pts;
+        const p = puntoEn(o, r.cabo ? 1 : 0);
+        const sigue = (r.cabo ? p.dir : p.dir + 180) + (r.giro || 0);
+        pts = trazar(rng, p.x + Math.cos(sigue * RAD) * cx2.sep, p.y + Math.sin(sigue * RAD) * cx2.sep,
+                     sigue, cx2.S * r.largo, 0, vib, D, false, gu);
+      } else if (r.pata != null) {
+        const o = cx2.trazos[r.pata].pts;
+        const p = puntoEn(o, r.f);
+        pts = trazar(rng, p.x + Math.cos(r.dir * RAD) * cx2.sep, p.y + Math.sin(r.dir * RAD) * cx2.sep,
+                     r.dir, cx2.S * r.largo, 0, vib, D, false, gu);
+      } else {
+        pts = trazar(rng, r.suelto[0] * fw, r.suelto[1] * fh, r.suelto[2],
+                     cx2.S * r.largo, 0, vib, D, false, gu);
+      }
+      cx2.trazos.push({ pts, segs: segsDe(pts), rel: 'receta',
+                        gubia: receta.gubia === 0 ? null : gubiaDe(rng, { gubAmp: receta.gubia || 0.09 }) });
+    }
+    holguras(cx2);
+
+    ctx.fillStyle = rol.suelo; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.translate(ox, 0); ctx.scale(S, S);
+    ctx.beginPath();
+    for (const tr of cx2.trazos) banda(ctx, tr.pts, Wb, tr.gubia, tr.relleno);
+    ctx.fillStyle = rol.tinta; ctx.fill();
+    ctx.restore();
+    if (receta.grano !== 0) E.grain(ctx, W, H, colors, receta.grano == null ? 1 : receta.grano, E.unit(W, H, REF));
+
+    const med = medir(cx2.trazos, Wb, fw, fh);
+    return { pal, rol, cintas: cx2.trazos.length, ojos: med.ojos, ocupacion: med.ocupacion,
+             geo: { cintas: cx2.trazos.map(x => x.pts), sangra: cx2.trazos.map(() => true),
+                    relleno: cx2.trazos.map(x => x.relleno || null),
+                    cruza: cx2.trazos.map(() => true), CRUCE_MIN,
+                    SANGRE, MARGEN, W: Wb, g, D, S, ox, fw, fh, veto: null } };
+  }
+
   const P_INV = 0.14;
 
   // ── Traits ──────────────────────────────────────────────────────────────────
@@ -1508,5 +1600,5 @@
   }
 
   const FORMATS = ['square', 'horizontal'];
-  (global.HOKS = global.HOKS || {}).HRRS = { render, traits, TIPOS, RELS, BG_GRADIENT, FORMATS };
+  (global.HOKS = global.HOKS || {}).HRRS = { render, componer, traits, TIPOS, RELS, BG_GRADIENT, FORMATS };
 })(typeof window !== 'undefined' ? window : globalThis);

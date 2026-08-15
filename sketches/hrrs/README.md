@@ -1152,6 +1152,71 @@ cascotes. En las referencias los elementos pequeños **mueren contra el cuerpo**
 cabos, no acompañamientos. Por debajo de medio lado corto, la baraja cambia y manda
 `caboCuerpo`.
 
+## El ejercicio de réplica, y lo que delata
+
+Lo propuso el autor y es el mejor instrumento que tiene esta familia, porque es
+**falsable**: describir una referencia con palabras siempre sale bien; escribirla con
+los movimientos propios sólo sale bien si los movimientos dan para ello.
+
+`referencias/replica.js` escribe las seis referencias como **partituras en el
+vocabulario de la casa** —`suelto`, `paralelo`, `continua`, `pata`, y los giros con
+`pliega` para el pliegue— y las dibuja con el mismo `banda()`, el mismo canal y el
+mismo grano que la obra generada. Para eso `algo.js` expone `componer()`, que
+comparte el camino de dibujo entero con `render()`. **No es una puerta trasera para
+los detectores**: siguen midiendo `geo`, lo mismo que siempre. Es al revés — la
+réplica se somete a la regla dura igual que una obra.
+
+### Lo primero que salió: las seis incumplen
+
+```
+firmada    6 rendijas · la peor a 0,902 canales
+gris       3           ·           0,901
+enmarcada  1           ·           0,899
+gruesa     5           ·           0,916
+múnich     2           ·           0,942
+cuadrada   1           ·           0,911
+```
+
+Y hay que leerlo con cuidado antes de tocar nada. A 0,90·D con `g = 0,11·W` el blanco
+que queda es **cero**: no son rendijas anchas, son bandas que casi se funden. Todas
+salen en el mismo sitio — donde un cabo **muere a lo largo del costado de otra
+banda**. O sea que no es que la regla esté mal: es que **no tengo un movimiento que
+garantice el pelo en ese tramo**. `caboCuerpo` arranca a un pelo y luego el recorrido
+se va, así que el pelo sale aproximado. El pliegue tuvo ese mismo problema y se
+resolvió por construcción —girar φ, recorrer `D/sen φ`— y esto pide lo mismo.
+
+### Lo segundo, y es más gordo: dónde empieza el pelo
+
+Puestas las doce imágenes en dos columnas, la diferencia que salta no es de forma:
+**en las referencias el pelo empieza y acaba DENTRO del negro.** No es una banda al
+lado de otra con el blanco entre ellas de punta a punta; es una banda cuyo cabo
+**muere metido en la silueta de la masa**, y entonces la incisión aparece, recorre un
+trecho y se acaba en mitad de la tinta.
+
+Eso explica de una vez dos cosas que llevaban vueltas resistiéndose:
+
+- por qué las referencias se leen como **un cuerpo** y las mías como piezas juntas: el
+  cabo enterrado no se ve, así que el ojo no encuentra dónde empieza cada banda;
+- por qué mi `paralelo` se sigue leyendo como «dos rayas»: mis dos bandas empiezan y
+  acaban a la vista, con sus cuatro cabos visibles.
+
+Y ahora **es expresable**, que antes no lo era: con la regla vieja («nunca por debajo
+de `D`») un cabo enterrado era ilegal por definición. Con la regla nueva —el blanco es
+o el pelo o nada— superponerse es legal, así que el movimiento cabe. Está sin hacer y
+es el siguiente.
+
+### Lo tercero: dos referencias no se dejaron escribir
+
+La **firmada** salió un anillo cerrado, y la referencia es un recinto ABIERTO con un
+cuerpo colgando. Escribí un `suelto` de cinco giros donde había que usar `cercar` —
+varias bandas que casi cierran—, y ese error de transcripción es en sí mismo el
+hallazgo: **un recorrido largo con muchos giros da un anillo, no un recinto.** La
+diferencia entre las dos cosas es de cuántos cuerpos, no de cuántos giros.
+
+La **gruesa** se perdió del todo: seis bandas que convergen a un nudo con el pelo
+donde se aparean, y salieron tres líneas cruzándose. Mi `abanico` abre desde un punto;
+esto es lo contrario —**convergen** hacia uno— y no tengo el movimiento inverso.
+
 ## Tres trampas nuevas, pagadas en esta vuelta
 
 1. **El sangrado leído como defecto.** El detector de margen marcaba 20 obras
