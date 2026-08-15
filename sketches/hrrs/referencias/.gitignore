@@ -1,7 +1,18 @@
-# Las referencias NO se commitean: son obra de terceros y este repo es publico
-# (GitHub Pages sirve la raiz). Se dejan aqui para poder mirarlas al lado de una
-# hoja de contactos, y se quedan en local.
-!replica.js
-*
-!.gitignore
-!README.md
+# Las IMAGENES de referencia no se commitean: son obra de terceros y este repo es
+# publico (GitHub Pages sirve la raiz). Se dejan aqui para poder mirarlas al lado de
+# una hoja de contactos, y se quedan en local.
+#
+# El codigo SI. Esto ya fallo una vez: la regla era «todo fuera menos tres ficheros
+# concretos», y los trazadores (traza.py, traza2.py) nacieron despues, cayeron dentro
+# del asterisco y estuvieron sin subir sin que nadie lo notara — `git status` salia
+# limpio, que es la peor manera de perder trabajo. Ahora se excluyen las EXTENSIONES
+# de imagen, que es lo que de verdad no puede subirse, en vez de excluirlo todo.
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.gif
+*.tif
+*.tiff
+*.pdf
+*.json
