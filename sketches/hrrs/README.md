@@ -1637,6 +1637,87 @@ La función se queda escrita y sin usar, con la medida en su docstring, porque
 descartarla es lo que localiza el sitio. Lo siguiente no es pesar mejor: es **no
 atravesar esa Y**.
 
+### La soldadura, resuelta: la anchura era un número y tenía que ser un perfil
+
+La horquilla era mentira. Medido sobre los píxeles de canal que la réplica cierra:
+**el 0,0 % tiene un eje encima**. Lo que hay en el 80–94 % de ellos es que la banda
+está dibujada más ancha que la tinta que hay ahí de verdad — el cartel pone 33 px
+donde el original mide 14, la cuadrada 15 donde mide 5.
+
+La causa es de un sitio concreto: a cada banda se le daba **un solo número** de
+anchura, su moda. Donde el original adelgaza, la réplica no adelgazaba, y se comía la
+incisión de al lado. Ahora cada vértice lleva la distancia medial de su sitio,
+**capada por la moda** — la regla de la gubia de la casa, la que sólo resta, que de
+paso devuelve los cruces a su anchura.
+
+Y se lee **cruda**, sin suavizar, que salió al revés de lo que razoné. Había puesto un
+máximo corrido de 0,35 W «para deshacer el hundimiento de la esquina», acordándome de
+que medir la anchura en los vértices la sacaba fina. Pero aquel error era otro: era
+sacar *un* número para toda la banda a base de muestras de esquina. Aquí el máximo
+corrido lo único que hacía era **rellenar los estrechamientos con la anchura de al
+lado**, o sea la avería que veníamos persiguiendo.
+
+Y una segunda corrección del mismo sitio: el largo mínimo se medía **antes** de alargar
+los cabos, así que descartaba trazos que dibujados miden anchura y media. En la
+cuadrada eran siete bandas de veintinueve, y devolverlas vale 6,5 puntos. La
+alternativa —bajar el umbral— volvía a pedir el extremo de la rejilla: a 0,0 seguía
+subiendo, que es la trampa de siempre.
+
+Resultado, ya con el ajuste completo:
+
+| | antes | ahora | comp | canal o→r | constancia o→r |
+|---|---|---|---|---|---|
+| r1 | 97,1 % | 97,9 % | 8 → 8 | 0,30 → 0,30 | 0,77 → **0,77** |
+| r2 | 97,1 % | 97,6 % | 11 → **11** | 0,26 → 0,26 | 0,72 → 0,70 |
+| r3 | 95,8 % | 97,2 % | 7 → 7 | 0,62 → 0,63 | 0,32 → 0,31 |
+| r4 | 97,4 % | **98,3 %** | 2 → 1 | 0,11 → 0,29 | 0,55 → 0,15 |
+| r5 | 95,9 % | 95,3 % | 7 → 3 | 0,06 → 0,24 | 0,57 → 0,21 |
+| r6 | 94,3 % | 96,9 % | 14 → **14** | 0,23 → 0,25 | 0,56 → **0,49** |
+
+Mediana 96,5 % → **97,4 %**. Sin canje: suben a la vez el acierto, el número de
+incisiones, la anchura del canal y su constancia.
+
+### Cinco de las seis están en el suelo del método, y se puede decir con un número
+
+Quitando una franja de píxel y medio a cada lado del filo, el acierto es **100,0 %** en
+r1 y 99,4–99,8 % en r2, r3, r4 y r6. El 97 % de la discrepancia de r1 cae a un píxel del
+borde. O sea que en cinco de las seis **no queda dibujo mal**: queda el convenio del
+filo — mi banda tiene arista poligonal y el original tiene tinta sobre papel.
+
+La única con error de verdad es **r5**: sólo el 45 % de su discrepancia está a un píxel
+del filo, el p95 se va a 10,8 px, y quitando la franja se queda en 97,5 %.
+
+Dos maneras de comprar ese 2 % restante, las dos medidas y las dos descartadas:
+
+- **Leer a más resolución.** A 1.800 px el acierto sube entre 0,1 y 4,8 puntos… pero es
+  aritmética, no dibujo: el residuo es una piel de un píxel, así que al escalar por *k*
+  el error cae como 1/*k* solo. Predicho para r1: 92,2 % → 94,8 %; medido 93,4 %, o sea
+  que en términos reales **empeora**. Sólo r5 gana algo de verdad (+0,6). El hallazgo de
+  la vuelta anterior —«la resolución no cambia nada»— sigue en pie, y ahora con la
+  cuenta al lado.
+- **Simplificar menos el eje.** Bajar DP de 0,05 a 0,01 da entre 0,1 y 0,2 puntos en
+  cinco de las seis. Sólo r5 gana un punto entero, y a cambio la cadencia del tramo
+  cae de 0,88 a 0,36 anchuras contra 0,74–0,91 del original: eso ya no es trazar.
+
+### La medida vuelve a la familia: el margen sale del doble de ancho y la mitad de constante
+
+El instrumento que se construyó para las réplicas se pasó por sesenta obras generadas,
+la misma medida en los dos lados:
+
+| | referencias | familia (60 obras) |
+|---|---|---|
+| canal (en anchuras) | 0,24 | **0,46** |
+| constancia | 0,56 | **0,26** |
+
+Es la queja del autor con número: *los márgenes entre trazos paralelizados no son
+constantes*. Y no es que esté mal declarado — la obra elige **un** canal
+(`sep = D·[1,00–1,20]`, `g = W·[0,08–0,16]`), o sea de 0,08 a 0,39 anchuras, justo el
+rango de las referencias. Lo que sale no es lo que se pide.
+
+Los dos primeros sospechosos **no lo explican**: apagando la gubia la constancia va de
+0,25 a 0,27, apagando la vibración a 0,35, y apagando las dos vuelve a 0,26 — con 40
+obras por caso esas diferencias no se sostienen. Queda abierto y con instrumento.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas

@@ -124,6 +124,9 @@ def pesoCanal(A, W, peso=8.0):
 
 
 # ── Sacar ejes de una mascara cualquiera (el original, o un residuo) ───────────
+TOPE = True   # A/B: capar la anchura por la moda de la banda, o dejarla llegar
+
+
 def ejesDe(mask, W, minLargo=1.2, dpTol=0.05, perfil=True):
     # OJO CON EL UMBRAL DE AGUJEROS: tapaba huecos de hasta W*W pixeles, y con bandas
     # de 68 px eso son 4.600 — o sea que TAPABA LAS INCISIONES antes de trazar nada.
@@ -217,8 +220,12 @@ def ejesDe(mask, W, minLargo=1.2, dpTol=0.05, perfil=True):
         # vez, o sea que no hay canje: era anchura de mas y punto. Suavizar con mediana
         # (0,08, 0,15 y 0,35 W) da exactamente lo mismo que no suavizar, asi que no se
         # suaviza: no hay motivo medido para hacerlo.
-        hs = [float(min(crudo[i], base)) if i is not None else base
-              for i in enCam] if perfil else [base] * len(sp)
+        if not perfil:
+            hs = [base] * len(sp)
+        elif TOPE:
+            hs = [float(min(crudo[i], base)) if i is not None else base for i in enCam]
+        else:
+            hs = [float(crudo[i]) if i is not None else base for i in enCam]
         sp = [hasta(sp[0], sp[1], base*1.4)] + sp[1:-1] + [hasta(sp[-1], sp[-2], base*1.4)]
         # EL LARGO MINIMO SE MIDE AQUI, sobre la banda tal y como se dibuja, y no antes
         # de alargar los cabos. Es la misma cifra de siempre —1,2 anchuras— puesta en el
