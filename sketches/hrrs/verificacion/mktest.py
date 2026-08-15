@@ -29,32 +29,30 @@ elif roto == 'corta':
     src = src.replace(a, "    // ROTO A PROPOSITO: sin comprobar el auto-corte")
 
 elif roto == 'miter':
-    # EL BISEL, DESHECHO. Comprueba una AFIRMACION del algo.js: que el bisel es lo
-    # que hace suficiente la distancia minima.
+    # EL BISEL, DESHECHO. Comprueba una AFIRMACION del algo.js: que la tinta no se
+    # sale de lo que el margen deja libre.
     #
-    # Ya no es `ctx.lineJoin`: desde que la banda se rellena en vez de trazarse, el
-    # bisel es la construccion de DOS PUNTOS POR VERTICE de `banda()`. Aqui se
-    # sustituye por el punto de la bisectriz, que es literalmente el inglete — el
-    # pico se va a h/cos(0/2) del vertice y cruza el canal.
-    a = """    for (let i = 0; i < n - 1; i++) {
-      izq.push({ x: pts[i].x + nx[i] * h[i],         y: pts[i].y + ny[i] * h[i] });
-      izq.push({ x: pts[i + 1].x + nx[i] * h[i + 1], y: pts[i + 1].y + ny[i] * h[i + 1] });
-      der.push({ x: pts[i].x - nx[i] * h[i],         y: pts[i].y - ny[i] * h[i] });
-      der.push({ x: pts[i + 1].x - nx[i] * h[i + 1], y: pts[i + 1].y - ny[i] * h[i + 1] });
-    }"""
-    assert a in src, 'no encuentro la construccion del bisel en banda()'
-    src = src.replace(a, """    for (let i = 0; i < n; i++) {   // ROTO A PROPOSITO: inglete en vez de bisel
-      let mx, my, esc = 1;
-      if (i === 0) { mx = nx[0]; my = ny[0]; }
-      else if (i === n - 1) { mx = nx[n - 2]; my = ny[n - 2]; }
-      else {
-        const sx = nx[i - 1] + nx[i], sy = ny[i - 1] + ny[i], mm = Math.hypot(sx, sy);
-        if (mm < 1e-6) { mx = nx[i]; my = ny[i]; }
-        else { mx = sx / mm; my = sy / mm; esc = Math.min(10, 1 / Math.max(mx * nx[i] + my * ny[i], 1e-3)); }
-      }
-      izq.push({ x: pts[i].x + mx * h[i] * esc, y: pts[i].y + my * h[i] * esc });
-      der.push({ x: pts[i].x - mx * h[i] * esc, y: pts[i].y - my * h[i] * esc });
-    }""")
+    # Ya no es `ctx.lineJoin` ni la construccion de dos puntos por vertice: desde que
+    # la esquina se RELLENA hasta la holgura, lo que sujeta la regla es esa cuenta.
+    # Se rompe ahi y en un solo sitio —la holgura pasa a ser infinita— asi que la
+    # esquina se llena hasta el inglete entero se coma lo que se coma. Es la misma
+    # averia de siempre contada donde ahora vive.
+    # OJO: hay que romper EL DIBUJO, no la cuenta. `toque.js` comprueba que la tinta
+    # obedece al plan que el algoritmo DECLARA en `geo.relleno`; si se rompe la cuenta,
+    # el plan roto sale declarado, la tinta lo obedece y el control no dispara —
+    # medido, 1 de 28. Que el plan no se coma el canal de nadie es otra afirmacion y
+    # tiene su propio control (`holgura`, sobre la geometria, en `canal.js`).
+    a = "          if (r <= lim + 1e-9 && r > h[i + 1] * 1.02) {"
+    assert a in src, 'no encuentro el tope del relleno de esquina'
+    src = src.replace(a, "          if (r > h[i + 1] * 1.02) {   // ROTO A PROPOSITO: relleno sin tope")
+
+elif roto == 'holgura':
+    # LA CUENTA DE LA HOLGURA, ROTA. Es el control de la otra mitad: que lo que el
+    # algoritmo se permite rellenar nunca se coma el pelo de otro trazo. Se comprueba
+    # sobre la GEOMETRIA en `canal.js`, no sobre el pixel.
+    a = "        out.push(clamp(d - h0 - ctx.g, h0, techo));"
+    assert a in src, 'no encuentro el calculo de la holgura'
+    src = src.replace(a, "        out.push(techo);   // ROTO A PROPOSITO: sin mirar quien hay al lado")
 
 elif roto == 'margen':
     a = "  const MARGEN = 0.055;"
@@ -113,9 +111,9 @@ elif roto == 'pizca':
     # linea que ya no existe —`str.replace` no falla cuando no encuentra nada, asi
     # que la averia se habia quedado a medias sin avisar. Por eso lleva `assert`,
     # como las demas.
-    b = "      const fr = clamp(largo / (Lo || 1), 0.22, 1);"
-    assert b in src, 'no encuentro el trozo minimo del paralelo'
-    src = src.replace(b, "      const fr = clamp(largo / (Lo || 1), 0.03, 1);   // ROTO A PROPOSITO")
+    b = "      const fr = clamp(acomp / (Lo || 1), 0.16, 1);"
+    assert b in src, 'no encuentro el trozo minimo del acompanamiento'
+    src = src.replace(b, "      const fr = clamp(acomp / (Lo || 1), 0.02, 1);   // ROTO A PROPOSITO")
 
 elif roto:
     raise SystemExit('averia desconocida: ' + roto)

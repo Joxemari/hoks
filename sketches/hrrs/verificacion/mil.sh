@@ -54,10 +54,10 @@ corre() {  # corre <detector> <algo> <n> <base> <configs> <etiqueta>
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = canal ]; then
   linea "canal · la regla 3 exacta sobre la geometria · $N obras"
   corre canal.js hrrs_test.js "$N" 760 ""
-  for r in duro corta; do
+  for r in duro corta holgura; do
     build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
-    node canal.js "t_$r.js" 120 760 "" 2>/dev/null | grep -E "INCUMPLEN|SOLAPADAS|^  min"
+    node canal.js "t_$r.js" 120 760 "" 2>/dev/null | grep -E "INCUMPLEN|SOLAPADAS|PELO|^  min"
   done
 fi
 

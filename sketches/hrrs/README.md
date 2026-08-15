@@ -924,6 +924,83 @@ siempre por delante mataba el trazo entero cuando lo que no cabía era su arranq
 libre — y con él se perdía la sección acompañada, que es la que vale. Ahora prueba
 por los dos extremos y se queda con el que salva más trazo.
 
+## Sexta vuelta: el blanco es una incisión, no un hueco
+
+El autor mandó un **detalle a resolución alta** del cartel de Múnich con una frase:
+*«ojo a cómo rellena los huecos en las curvas, donde el constraint es mantener el
+margen fijo y rellenar el resto».*
+
+No es un ajuste: es otra manera de entender qué se está dibujando. En el original el
+blanco entre dos bandas **no es el hueco que queda entre dos objetos** — es una
+**incisión de anchura fija**, y el negro ocupa todo lo demás. Por eso la banda de
+fuera de una curva sale más gorda. Lo constante es el **margen**, no la anchura.
+
+Yo tenía la lógica al revés —anchura fija, margen variable— y por eso mis esquinas
+salían *recortadas* justo donde la referencia las llena. Ahora es una cuenta por
+vértice: si el eje ajeno más cercano está a `d`, mi tinta puede llegar a
+`d − W/2 − g`. Con `d = D` sale exactamente `W/2` —el bisel de siempre, junto al
+canal— y con la hoja vacía alrededor sale el inglete entero y la esquina se rellena.
+**La regla no se afloja: se aplica donde de verdad está, que es entre tintas y no
+entre ejes.**
+
+### Y eso partió en dos una afirmación que era una
+
+Antes, «la tinta es la geometría» era una sola cosa y se comprobaba en un sitio.
+Ahora son dos, y necesitan **dos controles rotos distintos**:
+
+1. **La tinta obedece al plan** — se comprueba sobre el píxel (`toque.js`), contra el
+   relleno que el algoritmo **declara** en `geo.relleno`.
+2. **El plan no se come el pelo de nadie** — se comprueba sobre la geometría
+   (`canal.js`), vértice a vértice.
+
+Y el primer intento de romperlo **no disparaba**: 1 de 28. Rompía la *cuenta*, así
+que el plan roto salía declarado, la tinta lo obedecía y el detector daba el visto
+bueno. Un control que mide el resultado contra una declaración tiene que romper el
+resultado, no la declaración. Con la avería en el sitio correcto, `miter` dispara
+38/56 y el control nuevo `holgura` —que rompe la cuenta— 126/126 en el otro detector.
+
+### El canal es uno solo por obra
+
+*«El margen entre trazos, cuando se paralelicen o terminen una contra otra, será
+constante dentro de una misma obra.»* No es del grupo ni del trazo: es del material,
+como la anchura. Un cuadro con dos blancos distintos tiene dos materiales, y eso no
+pasa en ninguna de las seis.
+
+### La deriva, que no es el temblor
+
+*«El trazo tiene que ser más manual, nunca recto ni demasiado digital.»* Resultó que
+el temblor no bastaba, y por una razón concreta: **el temblor es del filo** —zumba y
+vuelve— así que a distancia se lee como textura *sobre una recta*. Lo que faltaba es
+del recorrido: un tramo largo **se va yendo**. Es un paseo aleatorio lento con
+memoria, y la dirección que gana se queda para el tramo siguiente.
+
+Al meterla hubo que bajar el temblor de 7,5° a 6,0°, y **no es una decisión
+estética**: las dos juntas no pueden pasar de 15° entre puntos consecutivos, o el
+detector de garabatos empieza a marcar obra limpia. `2×6,0 + 2×1,4 = 14,8`. Lo que se
+gana por un lado se paga por el otro.
+
+### Medido
+
+```
+canal   994 obras · 0 incumplen · 0 holguras que se comen el pelo · mínimo 1,000
+                       controles: duro 119/126 · corta 124/126 · holgura 126/126
+toque   252 obras · 0 fuera del plan · 0 más allá del cabo
+                       controles: miter 38/56 · cabo 56/56
+obra    994 obras · 0 escapados · 0 garabatos · 0 pizcas
+                       controles: margen 97/126 · garabato 19/126 · pizca 39/126
+det      56 obras · determinismo 56/56 · misma huella a 760/2400/4200 56/56
+```
+
+### Lo que queda de esta vuelta, y no está hecho
+
+*«A veces se superponen.»* Es cierto y se ve en el cartel: la banda vertical cruza la
+horizontal y se funden en una sola mancha, sin pelo por medio. Eso **cambia la regla
+dura**, que hoy es «nunca se tocan». La forma que le veo es: el blanco entre dos
+bandas es **o el pelo, o nada** — lo prohibido es un blanco *más fino* que el pelo,
+que es lo que se ve sucio. Queda sin hacer a propósito: es el cambio que más toca el
+invariante y merece una vuelta entera con la batería en verde de partida, no ir
+encima de otros cinco cambios.
+
 ## Tres trampas nuevas, pagadas en esta vuelta
 
 1. **El sangrado leído como defecto.** El detector de margen marcaba 20 obras

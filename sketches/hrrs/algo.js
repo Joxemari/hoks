@@ -119,8 +119,21 @@
   // justo por debajo; subiéndolo, la obra limpia empieza a contarse de garabato y el
   // detector deja de medir lo que dice medir. Lo que sí sube es el SUELO.
   const P_VIBRA = 0.86;
-  const VIB_AMP = [4.0, 7.5];              // grados por subdivisión
+  const VIB_AMP = [3.5, 6.0];              // grados por subdivisión
   const VIB_ONDA = [1.1, 2.6];             // × W · más fino: el filo, no la onda
+  // Y LA DERIVA, que es otra cosa. El temblor es del filo —zumba y vuelve—; la
+  // deriva es del recorrido: un tramo largo no va recto, se va yendo. «Nunca recto
+  // ni demasiado digital» es esto y no el temblor, porque el temblor a distancia se
+  // lee como textura y el tramo sigue siendo una recta. Es un paseo aleatorio lento
+  // de la dirección, con memoria.
+  //
+  // El techo de las dos juntas es ARITMÉTICO: dos subdivisiones seguidas con desvío
+  // contrario se separan hasta 2·VIB_AMP, y `obra.js` cuenta como quiebro todo giro
+  // de más de 15°. 2×6,0 + 2×1,4 = 14,8. Por eso VIB_AMP baja de 7,5 a 6,0 al entrar
+  // la deriva: lo que se gana por un lado se paga por el otro, y el detector tiene
+  // que seguir midiendo lo que dice.
+  const DERIVA = 1.4;                      // grados por subdivisión, acumulativos
+  const DERIVA_MAX = 26;                   // cuánto se puede ir en total
 
   // LA GUBIA no tiene una anchura sola. Varía poco y despacio a lo largo del corte,
   // y esa variación es la mitad de que parezca hecho a mano. Es del material, así
@@ -165,9 +178,6 @@
   //              seis: «no hay ningún trazo totalmente independiente». Un trazo
   //              suelto no es una relación pobre, es un trazo que sobra.
   const RELS = ['paralelo', 'abanico', 'tangencia', 'continua', 'caboCabo', 'caboCuerpo', 'suelto'];
-  // Las dos que hacen HAZ: son las que heredan el canal del grupo. Un cabo o una
-  // tangencia no continúan un haz, lo tocan.
-  const ACOMPANA = { paralelo: 1, abanico: 1 };
   // A qué distancia se considera cumplida cada relación, en canales D.
   //
   // MEDIDO SOBRE LAS SEIS REFERENCIAS, y esto era el error grande: cuando dos
@@ -181,10 +191,14 @@
   // El resto baja por lo mismo: un cabo que muere junto a otra banda muere PEGADO
   // —a un pelo— y no a tres canales. Lo único que sigue lejos es `suelto`, que es
   // la separación buscada y el contraste que hace legible lo demás.
-  const SEP_PAR = [1.0, 1.15];             // paralelo: el pelo, y poco más
-  const SEP_TAN = [1.0, 1.35];             // tangencia: el mínimo puntual
-  const SEP_CABO = [1.0, 2.0];             // cabo contra cabo o cuerpo
-  const SEP_SUELTO = [4.5, 11];            // suelto: lejos
+  // Y ES UNA SOLA MEDIDA POR OBRA. Lo dijo el autor mirando el cartel de Múnich: «el
+  // margen entre trazos, cuando se paralelicen o terminen una contra otra, será
+  // constante dentro de una misma obra». No es del grupo ni del trazo: es del
+  // material, como la anchura. Un cuadro con dos blancos distintos tiene dos
+  // materiales, y eso no pasa en ninguna de las seis.
+  const SEP_OBRA = [1.0, 1.20];            // el pelo de ESTA obra, en canales D
+  const SEP_SUELTO = [4.5, 11];            // el primer trazo no tiene con quién
+  const RELLENO_MAX = 2.2;                 // techo del relleno de esquina, × W
 
   // ── Los tipos ───────────────────────────────────────────────────────────────
   // Un tipo es un REPARTO DE RELACIONES y un número de trazos. Nada más: no hay
@@ -291,15 +305,20 @@
     for (let i = 0; i < n; i++) { const w = rng.range(PESO_TRAMO[0], PESO_TRAMO[1]); pesos.push(w); tot += w; }
     const pts = [{ x, y }];
     let cx = x, cy = y, cd = dir, lado = rng.bool(0.5) ? 1 : -1;
+    let der = 0;                            // la deriva acumulada del tramo en curso
     const avanza = (L, ang) => { cx += Math.cos(ang * RAD) * L; cy += Math.sin(ang * RAD) * L; pts.push({ x: cx, y: cy }); };
     for (let i = 0; i < n; i++) {
       const L = largo * pesos[i] / tot;
       if (vib) {
-        // el filo tiembla: subdivisiones cortas con desvío alterno, así que el
-        // tramo sigue yendo recto en conjunto
+        // el filo TIEMBLA (zumba y vuelve) y el recorrido DERIVA (se va yendo). Son
+        // dos cosas distintas y hacen falta las dos: sin la segunda, un tramo largo
+        // es una recta con textura.
         const k = max(1, Math.round(L / vib.onda));
-        for (let j = 0; j < k; j++)
-          avanza(L / k, cd + (rng.bool(0.5) ? 1 : -1) * rng.range(vib.amp * 0.35, vib.amp));
+        for (let j = 0; j < k; j++) {
+          der = clamp(der + rng.range(-DERIVA, DERIVA), -DERIVA_MAX, DERIVA_MAX);
+          avanza(L / k, cd + der + (rng.bool(0.5) ? 1 : -1) * rng.range(vib.amp * 0.35, vib.amp));
+        }
+        cd += der; der = 0;   // la deriva se queda: el tramo siguiente sale de donde llegó
       } else {
         avanza(L, cd);
       }
@@ -342,7 +361,40 @@
     const a = Math.sin(u * gub.f1 + gub.p1), b = Math.sin(u * gub.f2 + gub.p2);
     return W * (1 - gub.amp * (0.5 + 0.25 * (a + b)));   // 0 … amp por debajo de W
   }
-  function banda(ctx, pts, W, gub) {
+  // CUÁNTO PUEDE RELLENAR CADA VÉRTICE. Es la lectura del detalle que mandó el
+  // autor: en el original, el blanco entre dos bandas es una INCISIÓN de anchura
+  // fija y el negro rellena todo lo demás. Por eso la banda de fuera de una curva
+  // sale más gorda: lo que se mantiene constante es el MARGEN, no la anchura.
+  //
+  // Aquí eso se traduce en una cuenta por vértice: si el eje ajeno más cercano está
+  // a `d`, mi tinta puede llegar a `d − W/2 − g` sin comerse el pelo de nadie. Con
+  // `d = D = W+g` sale exactamente W/2, que es el bisel de siempre; con la hoja
+  // vacía alrededor, sale el inglete entero y la esquina se rellena. La regla no se
+  // afloja: se aplica donde de verdad está, que es entre TINTAS y no entre ejes.
+  function holguras(ctx) {
+    const h0 = ctx.W / 2, techo = ctx.W * RELLENO_MAX;
+    for (let k = 0; k < ctx.trazos.length; k++) {
+      const tr = ctx.trazos[k], out = [];
+      for (let i = 0; i < tr.pts.length; i++) {
+        const p = tr.pts[i];
+        let d = Infinity;
+        for (let j = 0; j < ctx.trazos.length; j++) {
+          const o = ctx.trazos[j];
+          for (let m = 0; m < o.segs.length; m++) {
+            // los tramos vecinos del propio trazo no cuentan: son el codo
+            if (j === k && m >= i - 2 && m <= i + 1) continue;
+            const q = o.segs[m];
+            const t2 = pointSegDist(p.x, p.y, q[0], q[1], q[2], q[3]);
+            if (t2 < d) d = t2;
+          }
+        }
+        out.push(clamp(d - h0 - ctx.g, h0, techo));
+      }
+      tr.relleno = out;
+    }
+  }
+
+  function banda(ctx, pts, W, gub, relleno) {
     const n = pts.length;
     if (n < 2) return;
     const nx = [], ny = [], L = [];
@@ -362,6 +414,25 @@
       izq.push({ x: pts[i + 1].x + nx[i] * h[i + 1], y: pts[i + 1].y + ny[i] * h[i + 1] });
       der.push({ x: pts[i].x - nx[i] * h[i],         y: pts[i].y - ny[i] * h[i] });
       der.push({ x: pts[i + 1].x - nx[i] * h[i + 1], y: pts[i + 1].y - ny[i] * h[i + 1] });
+      // EL RELLENO DE LA ESQUINA, en el vértice i+1 y sólo por FUERA del giro: se
+      // mete el punto del inglete si cabe en la holgura que se calculó. Si no cabe,
+      // no se mete y queda el bisel — que es el caso de siempre, junto al canal.
+      if (i < n - 2 && relleno) {
+        const sx = nx[i] + nx[i + 1], sy = ny[i] + ny[i + 1], mm = hypot(sx, sy);
+        if (mm > 1e-6) {
+          const mx = sx / mm, my = sy / mm;
+          const cos = max(mx * nx[i] + my * ny[i], 1e-3);
+          const r = h[i + 1] / cos;
+          const lim = relleno[i + 1] || h[i + 1];
+          // el inglete sale por el lado CONVEXO; el otro lado es el interior del
+          // codo y ahí no hay nada que rellenar
+          const cruz = nx[i] * ny[i + 1] - ny[i] * nx[i + 1];
+          if (r <= lim + 1e-9 && r > h[i + 1] * 1.02) {
+            if (cruz < 0) izq.push({ x: pts[i + 1].x + mx * r, y: pts[i + 1].y + my * r });
+            else          der.push({ x: pts[i + 1].x - mx * r, y: pts[i + 1].y - my * r });
+          }
+        }
+      }
     }
     ctx.moveTo(izq[0].x, izq[0].y);
     for (let i = 1; i < izq.length; i++) ctx.lineTo(izq[i].x, izq[i].y);
@@ -433,7 +504,7 @@
   // ── Colocar un trazo cumpliendo una relación ────────────────────────────────
   // Devuelve los puntos, o null si no cabe. La relación se DECLARA y aquí se
   // construye la geometría que la cumple — no se espera a que salga sola.
-  function colocar(rng, ctx, rel, obj, largoRel, sangra, sepGrupo) {
+  function colocar(rng, ctx, rel, obj, largoRel, sangra, sep) {
     const { D, W } = ctx;
     const S = min(ctx.fw, ctx.fh);
     const nq = rng.int(QUIEBROS[0], QUIEBROS[1]);
@@ -473,7 +544,7 @@
       // LA SEPARACIÓN ES DEL GRUPO, no del trazo. La pone `poner` y aquí sólo se
       // usa: dentro de un haz, los tres o cuatro canales son EL MISMO, y es lo que
       // hace que el haz se lea como una cosa y no como tres parejas.
-      const medio = desplazar(sub, sepGrupo, rng.bool(0.5) ? 1 : -1);
+      const medio = desplazar(sub, sep, rng.bool(0.5) ? 1 : -1);
       if (medio.length < 2) return null;
       const sobra = max(0, largo - largoDe(medio));
       if (sobra < ctx.S * 0.04) return medio;
@@ -506,7 +577,6 @@
       const f = rng.bool(0.5) ? rng.range(0, 0.18) : rng.range(0.82, 1);
       const p = puntoEn(obj, f);
       const lado = rng.bool(0.5) ? 1 : -1;
-      const sep = sepGrupo;
       const nrm = p.dir + 90 * lado;
       return trazar(rng, p.x + Math.cos(nrm * RAD) * sep, p.y + Math.sin(nrm * RAD) * sep,
                     p.dir + lado * rng.range(7, 26), largo, nq, ctx.vib, D);
@@ -516,7 +586,7 @@
       // de paso se pone a la distancia del canal. Lo contrario de paralelo.
       const p = puntoEn(obj, rng.range(0.15, 0.85));
       const lado = rng.bool(0.5) ? 1 : -1;
-      const sep = D * rng.range(SEP_TAN[0], SEP_TAN[1]);
+      const sep = ctx.sep;
       const nrm = p.dir + 90 * lado;
       const cx = p.x + Math.cos(nrm * RAD) * sep, cy = p.y + Math.sin(nrm * RAD) * sep;
       const ang = p.dir + rng.range(22, 58) * (rng.bool(0.5) ? 1 : -1);
@@ -538,7 +608,7 @@
       const p = puntoEn(obj, alFinal ? 1 : 0);
       // hacia donde apunta el otro EN ESE CABO, no una dirección cualquiera
       const sigue = alFinal ? p.dir : p.dir + 180;
-      const sep = D * rng.range(1.0, 1.5);
+      const sep = ctx.sep;
       const x0 = p.x + Math.cos(sigue * RAD) * sep, y0 = p.y + Math.sin(sigue * RAD) * sep;
       return trazar(rng, x0, y0, sigue + rng.range(-34, 34), largo, nq, ctx.vib, D);
     }
@@ -547,7 +617,7 @@
       // tocarlo. El cabo es un suceso de la composición, no un resto.
       const f = rel === 'caboCabo' ? (rng.bool(0.5) ? 0 : 1) : rng.range(0.2, 0.8);
       const p = puntoEn(obj, f);
-      const sep = D * rng.range(SEP_CABO[0], SEP_CABO[1]);
+      const sep = ctx.sep;
       const hacia = rng.range(0, 360);
       const x0 = p.x + Math.cos(hacia * RAD) * sep, y0 = p.y + Math.sin(hacia * RAD) * sep;
       // sale ALEJÁNDOSE, si no se echa encima
@@ -884,6 +954,8 @@
                  : (rng.bool(P_GUBIA) ? rng.range(GUB_AMP[0], GUB_AMP[1]) : 0);
     const ctx = {
       fw, fh, S, W, g, D, mg: S * MARGEN, trazos: [], pSangra, gubAmp,
+      // el pelo de ESTA obra: uno solo, para paralelos y para cabos
+      sep: D * rng.range(SEP_OBRA[0], SEP_OBRA[1]),
       zona: { x0: zx * fw, y0: zy * fh, x1: (zx + zw) * fw, y1: (zy + zh) * fh },
       vib: vibra ? { amp: rng.range(VIB_AMP[0], VIB_AMP[1]), onda: W * rng.range(VIB_ONDA[0], VIB_ONDA[1]) } : null,
     };
@@ -897,7 +969,7 @@
     // de longitud: la longitud sale del dibujo.
     const poner = (L) => {
       const rel = ctx.trazos.length === 0 ? 'suelto' : rng.weighted(pesos).n;
-      let mejor = null, mejorL = 0, mejorS = false, mejorSep = ctx.D;
+      let mejor = null, mejorL = 0, mejorS = false;
       for (let k = 0; k < COLOCA; k++) {
         // CONTRA QUIÉN: encadenado, no al azar. Eligiendo un trazo cualquiera de
         // los ya puestos, cada uno se relacionaba con otro distinto y la hoja salía
@@ -916,10 +988,7 @@
         // grupo, se sortea uno nuevo. Sorteándolo por trazo, un peine de cuatro
         // salía con cuatro blancos distintos y se leía como cuatro parejas sueltas
         // en vez de como un cuerpo abierto — que es justo lo que da la cohesión.
-        const alUltimo = obj && obj === ctx.trazos[ctx.trazos.length - 1].pts;
-        const sigue = alUltimo && ctx.sepGrupo && ACOMPANA[ctx.ultRel];
-        const sep = sigue ? ctx.sepGrupo : ctx.D * rng.range(SEP_PAR[0], SEP_PAR[1]);
-        let pts = colocar(rng, ctx, rel, obj, L, sangra, sep);
+        let pts = colocar(rng, ctx, rel, obj, L, sangra, ctx.sep);
         if (!pts || pts.length < 2) continue;
         pts = cortarAlVolver(pts, ctx);
         pts = recortar(pts, ctx, sangra);
@@ -930,14 +999,13 @@
         // se queda el intento MÁS LARGO, no el primero que cabe: con el recorte,
         // el primero que cabe cabe siempre, y quedarse con él es volver a dejar
         // que el azar del sitio elija la longitud.
-        if (Lr > mejorL) { mejor = pts; mejorL = Lr; mejorS = sangra; mejorSep = sep; }
+        if (Lr > mejorL) { mejor = pts; mejorL = Lr; mejorS = sangra; }
         if (Lr > L * ctx.S * 0.92) break;   // ya es lo que se pedía: no busques más
       }
       if (!mejor) return 0;
       ctx.trazos.push({ pts: mejor, segs: segsDe(mejor), rel, sangra: mejorS, gubia: gubiaDe(rng, ctx) });
       recentrar(ctx);
       relCount[rel]++;
-      ctx.sepGrupo = mejorSep; ctx.ultRel = rel;
       return mejorL / ctx.S;
     };
 
@@ -966,6 +1034,7 @@
       L *= c0 * rng.range(0.92, 1.14);
     }
 
+    holguras(ctx);
     const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };
     const pas = pasillos(ctx.trazos, W, D);
     let vert = 0, quiebros = 0;
@@ -1065,7 +1134,7 @@
     ctx.translate(ox, 0);
     ctx.scale(S, S);
     ctx.beginPath();
-    for (const tr of best.trazos) banda(ctx, tr.pts, best.W, tr.gubia);
+    for (const tr of best.trazos) banda(ctx, tr.pts, best.W, tr.gubia, tr.relleno);
     ctx.fillStyle = rol.tinta;
     ctx.fill();
     ctx.restore();
@@ -1082,6 +1151,7 @@
              anchoRel: best.W / min(fw, fh), gam: best.g / best.W,
              ojos: best.ojos, ocupacion: best.ocupacion, esq: 0,
              geo: { cintas: best.trazos.map(x => x.pts), sangra: best.trazos.map(x => !!x.sangra),
+                    relleno: best.trazos.map(x => x.relleno || null),
                     SANGRE, MARGEN, W: best.W, g: best.g, D: best.D,
                     S, ox, fw, fh, veto: null } };
   }

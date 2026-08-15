@@ -71,7 +71,36 @@ function medir({ seed, fmt, params, base }) {
       if (u < peor) peor = u;
     }
   }
+  // ── LA HOLGURA DECLARADA ────────────────────────────────────────────────────
+  // El algoritmo se permite RELLENAR la esquina mas alla de W/2, y declara cuanto en
+  // `geo.relleno`. Que la tinta obedezca a ese plan lo comprueba `toque.js` sobre el
+  // pixel; lo que se comprueba AQUI es que el plan mismo sea legal — que lo que un
+  // vertice se permite rellenar nunca se coma el pelo de otro trazo.
+  //
+  // La cuenta: si el eje ajeno mas cercano a un vertice esta a `d`, mi tinta puede
+  // llegar a `d - W/2 - g` y no mas, porque el otro llega a W/2 hacia mi y entre los
+  // dos tiene que quedar `g`. Sin control, este numero seria palabra del algoritmo
+  // sobre si mismo: su control es `holgura`.
+  let holgMalos = 0, holgPeor = 0;
+  const rell = g.relleno || [];
+  for (let c = 0; c < g.cintas.length; c++) {
+    const r = rell[c]; if (!r) continue;
+    const pts = g.cintas[c];
+    for (let i = 0; i < pts.length; i++) {
+      let d = Infinity;
+      for (const B of segs) {
+        if (B.c === c && B.i >= i - 2 && B.i <= i + 1) continue;
+        const t2 = pSeg(pts[i].x, pts[i].y, B.ax, B.ay, B.bx, B.by);
+        if (t2 < d) d = t2;
+      }
+      const tope = Math.max(g.W / 2, d - g.W / 2 - g.g);
+      const exceso = (r[i] - tope) / D;
+      if (exceso > 1e-6) { holgMalos++; if (exceso > holgPeor) holgPeor = exceso; }
+    }
+  }
+
   return { seed, pares, malos, solapes, peor: +peor.toFixed(4), donde,
+           holgMalos, holgPeor: +holgPeor.toFixed(4),
            cintas: res.cintas, tipo: res.tipo, vert: res.vert };
 }
 
@@ -91,6 +120,9 @@ function medir({ seed, fmt, params, base }) {
   console.log(`  min ${st.min}  p50 ${st.p50}  max ${st.max}`);
   console.log(`  OBRAS QUE INCUMPLEN: ${malas.length} de ${ok.length}`);
   console.log(`  obras con TINTAS SOLAPADAS: ${sol.length} de ${ok.length}`);
+  const holg = ok.filter(r => r.holgMalos > 0);
+  console.log(`  OBRAS CON UNA HOLGURA QUE SE COME EL PELO: ${holg.length} de ${ok.length}` +
+              `  (peor exceso ${stats(ok.map(r => r.holgPeor)).max} canales)`);
   const porCfg = {};
   for (const r of ok) { porCfg[r.cfg] = porCfg[r.cfg] || { n: 0, mal: 0, min: 9 };
     porCfg[r.cfg].n++; if (r.malos) porCfg[r.cfg].mal++;
@@ -98,5 +130,5 @@ function medir({ seed, fmt, params, base }) {
   for (const k of Object.keys(porCfg))
     console.log(`    ${k.padEnd(12)} ${porCfg[k].mal}/${porCfg[k].n}  min ${porCfg[k].min.toFixed(3)}`);
   malas.slice(0, 6).forEach(r => console.log(`    ✗ #${r.seed} ${r.cfg} ${r.tipo} · ${r.malos} pares · min ${r.peor} · ${JSON.stringify(r.donde)}`));
-  process.exit(malas.length ? 1 : 0);
+  process.exit((malas.length || holg.length) ? 1 : 0);
 })();
