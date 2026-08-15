@@ -269,6 +269,7 @@ nav {
 }
 .nav-lang button:hover { color: #111; }
 .nav-lang button.active { color: #111; }
+.nav-work-dropdown li a .nav-em { display: inline-block; width: 18px; margin-right: 8px; font-size: 13px; line-height: 1; vertical-align: -1px; }
 .site-footer {
   padding: 1.2rem 2rem; border-top: 1px solid #e8e8e8;
   display: flex; align-items: center; justify-content: space-between;
@@ -321,11 +322,12 @@ nav.innerHTML = `
       <!-- Lista de arranque: la de verdad la escribe works.json unas líneas más
            abajo. Esta se queda si no hay red, y evita el hueco mientras llega. -->
       <ul class="nav-work-dropdown" id="nav-work-dropdown">
-        <li data-slug="plls"><a href="plls.html"${path==='plls.html'?' class="active"':''}>PLLS</a></li>
-        <li data-slug="krrtk"><a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}>KRRTK</a></li>
-        <li data-slug="dtkrt"><a href="dtkrt.html"${path==='dtkrt.html'?' class="active"':''}>DTKRT</a></li>
-        <li data-slug="eclps"><a href="eclps.html"${path==='eclps.html'?' class="active"':''}>ECLPS</a></li>
-        <li data-slug="trzs"><a href="trzs.html"${path==='trzs.html'?' class="active"':''}>TRZS</a></li>
+        <li data-slug="plls"><a href="plls.html"${path==='plls.html'?' class="active"':''}><span class="nav-em">💊</span>PLLS</a></li>
+        <li data-slug="krrtk"><a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}><span class="nav-em">🟥</span>KRRTK</a></li>
+        <li data-slug="dtkrt"><a href="dtkrt.html"${path==='dtkrt.html'?' class="active"':''}><span class="nav-em">🔵</span>DTKRT</a></li>
+        <li data-slug="eclps"><a href="eclps.html"${path==='eclps.html'?' class="active"':''}><span class="nav-em">🌑</span>ECLPS</a></li>
+        <li data-slug="trzs"><a href="trzs.html"${path==='trzs.html'?' class="active"':''}><span class="nav-em">🪢</span>TRZS</a></li>
+
       </ul>
     </li>
     <li><a href="about.html"${isAbout?' class="active"':''} data-i18n="nav.about">About</a></li>
