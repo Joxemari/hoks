@@ -1718,6 +1718,70 @@ Los dos primeros sospechosos **no lo explican**: apagando la gubia la constancia
 0,25 a 0,27, apagando la vibración a 0,35, y apagando las dos vuelve a 0,26 — con 40
 obras por caso esas diferencias no se sostienen. Queda abierto y con instrumento.
 
+### El solape es binario, y el número estaba escrito del revés
+
+El autor lo dijo así: *el solape sólo tiene que ser como un quiebro completo, o sea que
+lo pase por encima siempre; si no, se paralelizarán*. O los trazos se apartan y se
+acompañan, o uno pasa por encima del otro entero. Lo de en medio —el roce, dos bandas
+que se muerden un poco— no se lee como decisión sino como una paralelización fallida.
+
+Y el fallo estaba en el código, literal: **`distTrazos` devuelve cero cuando dos ejes
+se cruzan de verdad**, así que el suelo que yo había puesto —«que no se acerquen más de
+0,55 W»— rechazaba *todos* los cruces y dejaba pasar sólo los roces. Exactamente al
+revés de lo que hacía falta.
+
+Ahora se mide cuánto se meten, en anchuras (0 rozarse, 1 coincidir): por debajo de 0,35
+se rechaza, y por encima tiene que ser un **cruce entero**, que son tres condiciones
+diciendo lo mismo — los ejes se cortan de verdad, el ángulo no es rasante, y ningún
+cabo (ni el mío ni el suyo) muere enterrado dentro del otro trazo.
+
+Medido con `pelo.js`: el canal visible mínimo pasa de **0,286 g a 0,892 g**, y de 14
+obras por debajo de g a 6 — las seis por medio píxel de rejilla. Y la cuña que se
+saltaba el canal era un roce: se fue con ellos, sin tocarla.
+
+### La valoración contra las seis, con el mismo trazador por los dos lados
+
+| | referencias | familia |
+|---|---|---|
+| bandas | 19 | 18 |
+| W / lado | 0,05 | 0,05 |
+| acompañamiento | 0,50 | 0,55 |
+| **línea total (lados)** | **6,9** | 4,1 → 5,2 |
+| **tinta** | **0,25** | 0,16 → 0,17 |
+
+Lo que *no* falla, y yo habría jurado que sí: **el acompañamiento**. Mirando la hoja
+diría que mis trazos van cada uno a lo suyo, y la medida dice 0,55 contra 0,50. El
+número de trazos también está clavado, y la anchura de banda también.
+
+Lo que falla es **densidad**: hay un tercio menos de línea sobre la hoja, y por eso se
+lee vacía al lado de un Chillida. La escalera se subió a `PROTA [1,70 2,80]` y
+`CAIDA [0,80 0,92]` —y el objetivo son las referencias, no un gusto— pero **satura**:
+subiendo `PROTA` a [2,0 3,2] la línea *baja* a 5,41. O sea que el techo ya no está en lo
+que se pide sino en lo que la composición admite, y ahí es donde sigue el trabajo.
+
+Dos hipótesis mías, muertas por medida en esta vuelta:
+
+- **Que `recortar` se comiera los trazos.** El 64 % de los cabos muere contra otro
+  trazo, y parecía la explicación. Pero `caboCabo` y `caboCuerpo` son relaciones
+  *declaradas*: ese test no distingue recorte de intención. Y al cambiar la búsqueda
+  binaria por un barrido de fuera hacia dentro, el número se movió de 63,9 % a 65,4 %:
+  nada. (El cambio se queda porque el predicado de verdad **no es monótono** con el
+  solape binario —a medio cruzar no cabe y cruzado entero sí— y una binaria supone que
+  lo es. Pero no compró línea, y eso hay que decirlo.)
+- **Que fuera culpa del halo.** Sin halo la línea es 3,79 y con halo 3,72, con los
+  mismos quiebros. El trazo ya salía corto antes.
+
+### Y una regla que las referencias cumplen y la familia no: el suelo no se encierra
+
+Las seis tienen **cero ojos** — cero suelo encerrado por la tinta (la enmarcada tiene
+tres, y suman el 1 % de su tinta). El blanco siempre drena hacia fuera. Es coherente
+con lo que la incisión es: un corte por donde se ve el suelo, no un ojal.
+
+La familia llega a **9 ojos** en su p90. Es la diferencia estructural más limpia que ha
+salido en toda la comparación, va en la dirección contraria a la que yo buscaba, y es
+justo el rasgo que este README lleva desde el principio anotado como *medido pero sin
+control que dispare*. Ahora tiene contra qué compararse.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas

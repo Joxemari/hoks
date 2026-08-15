@@ -125,11 +125,21 @@
   // antes de que se viera. Desde que el sangrado es de verdad (ver más abajo) el
   // trazo puede medir más que el pliego y salirse — que es lo que hace en las
   // referencias: el brazo largo no termina, se va.
-  const PROTA = [1.45, 2.40];               // lo que se le PIDE, × lado corto
+  const PROTA = [1.70, 2.80];               // lo que se le PIDE, × lado corto
   // La caída era demasiado suave: con 0,76-0,91 el segundo trazo mide casi lo que el
   // primero y la hoja sale de piezas medianas. En las referencias hay UNO que cruza y
   // los demás son claramente menores — el salto es franco.
-  const CAIDA = [0.58, 0.78];               // cada trazo respecto al anterior
+  const CAIDA = [0.80, 0.92];               // cada trazo respecto al anterior
+  // LA ESCALERA, MEDIDA CONTRA LAS REFERENCIAS Y NO ELEGIDA. Con el mismo trazador
+  // por los dos lados, las seis ponen 6,9 lados de linea y 0,25 de tinta sobre la
+  // hoja; la familia ponia 4,0 y 0,16. No es que se acompañen menos —eso esta clavado,
+  // 0,52 contra 0,50— ni que haya menos trazos —18 bandas contra 19—: es que hay
+  // MENOS LINEA, y por eso la hoja se lee vacia al lado de un Chillida.
+  //
+  // Con esta escalera son 5,5 y 0,19. Y no da para mas: subiendo PROTA a [2,0 3,2] la
+  // linea BAJA a 5,41, o sea que el techo ya no esta en lo que se pide sino en lo que
+  // la composicion admite. Ahi es donde sigue el trabajo, y queda dicho para que 5,5
+  // no se lea como el objetivo: el objetivo es 6,9.
   // Y un SUELO de longitud: un trazo más corto que esto no es un trazo, es una
   // pizca. Salían al desplazar un trozo muy corto para el `paralelo`, y una hoja
   // con pizcas se lee como confeti — que es justo el defecto que costó la primera
@@ -1050,13 +1060,29 @@
   // vale.
   function recortar(pts, ctx, sangra, cruza) {
     if (cabeDuro(pts, ctx, sangra, cruza)) return pts;
+    // NO ES MONOTONO, y por eso esto no puede ser una busqueda binaria.
+    //
+    // Con el solape binario, un trazo A MEDIO CRUZAR no cabe y el mismo trazo cruzado
+    // ENTERO si. O sea que «lo que cabe» ya no es un intervalo desde cero: la binaria
+    // asume que si cabe un trozo cabe cualquiera mas corto, y con esa suposicion se
+    // para SIEMPRE justo antes del primer cruce, amputandole al trazo todo lo que
+    // venia detras.
+    //
+    // Medido: el 64 % de los cabos moria contra otro trazo —recortado— y solo el 28 %
+    // llegaba al aire; la hoja se quedaba en 4,1 lados de linea contra los 6,9 de las
+    // referencias. La mitad del dibujo se perdia en esta suposicion.
+    //
+    // Se busca de fuera hacia dentro y se coge la primera que cabe, que es la mas
+    // larga. Sin halo el predicado si es monotono y esto da exactamente lo mismo, asi
+    // que no hay dos comportamientos: hay uno que ya no supone de mas.
+    const PASOS = 24;
     const busca = (p) => {
-      let lo = 0, hi = largoDe(p);
-      for (let k = 0; k < 15; k++) {
-        const mid = (lo + hi) / 2;
-        if (cabeDuro(prefijo(p, mid), ctx, sangra, cruza)) lo = mid; else hi = mid;
+      const L = largoDe(p);
+      for (let k = PASOS; k >= 1; k--) {
+        const t = L * k / PASOS;
+        if (cabeDuro(prefijo(p, t), ctx, sangra, cruza)) return t;
       }
-      return lo;
+      return 0;
     };
     const aDelante = busca(pts);
     const rev = pts.slice().reverse();
