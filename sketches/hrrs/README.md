@@ -1715,6 +1715,48 @@ con el umbral movido) está en 0,1–1,0 %: o sea que el 98 % es alcanzable en p
 hay que ganarlo ahí, con pasos de anchura y posición más finos que los 0,25 px de este
 pulido.
 
+### Dónde está el suelo, por fin con una cifra: el filo se desvía 0,013 anchuras
+
+Siete hipótesis seguidas sobre el residuo, todas medidas y todas muertas — y las cinco
+últimas **añadían tinta** en algún sitio, lo cual ya era el aviso. Por orden:
+
+1. el relleno de codo (barrido de bisel puro a inglete entero: el bisel gana o empata
+   en cuatro de las seis);
+2. ensanchar la anchura en el vértice del codo (92,1 % → 92,3 %, y cuesta incisiones);
+3. llevar el vértice del codo al cruce de las dos rectas, porque el eje medial
+   redondea la esquina (91,0–92,1 %: peor o igual);
+4. alargar más el cabo (tope 1,4 → 2,0 → 2,8: peor);
+5. parar el cabo mirando los dos costados y no sólo el eje (peor);
+6. rematar el cabo en oblicuo en vez de a escuadra (peor);
+7. un desplazamiento global del filo, medido ya en el canvas (+0,08 px: igual).
+
+Lo que la medida dice cuando se le pregunta bien: **la mediana del desvío entre el filo
+de la réplica y el del original es 0,00 px en las seis**, sin sesgo y sin depender de la
+orientación del borde (0°, 45° y 90° dan lo mismo). Entre el 92 % y el 99 % del contorno
+está a un píxel o menos.
+
+Y el desvío medio, escrito en anchuras de banda:
+
+| | acierto | W (px) | desvío del filo | en anchuras |
+|---|---|---|---|---|
+| r1 | 97,9 % | 24 | 0,26 px | 0,011 |
+| r2 | 97,0 % | 24 | 0,34 px | 0,014 |
+| r3 | 97,4 % | 30 | 0,41 px | 0,014 |
+| r4 | 98,2 % | 40 | 0,40 px | 0,010 |
+| r5 | 96,8 % | 68 | 0,97 px | 0,014 |
+| r6 | 97,1 % | 32 | 0,39 px | 0,012 |
+
+**0,010 a 0,014 en las seis, con bandas de 24 a 68 píxeles.** Constante en anchuras y no
+en píxeles: no es la rejilla, es la técnica — el temblor de una poligonal con un vértice
+cada 0,85 anchuras contra un filo dibujado a mano. Bajarlo pide más vértices, y eso ya
+está medido: hunde la cadencia del tramo de 0,88 a 0,36 anchuras, o sea calcar.
+
+De ahí sale algo que conviene tener claro antes de perseguir un número: **con el desvío
+fijo, el acierto lo decide cuánto perímetro tiene cada obra por unidad de tinta.** r1
+tiene el doble de perímetro relativo que r4 y por eso saca 97,9 % en vez de 98,2 %
+haciendo exactamente lo mismo de bien. Pedir «98 % en las seis» es pedir que las seis
+tengan la misma filigrana.
+
 ### Un agujero cerrado que no es una incisión no parte un trazo
 
 Lo que quedaba mal en el cartel se veía de un vistazo en la hoja de comparación: **un
