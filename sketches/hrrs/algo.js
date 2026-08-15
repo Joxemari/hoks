@@ -246,9 +246,15 @@
   // material, como la anchura. Un cuadro con dos blancos distintos tiene dos
   // materiales, y eso no pasa en ninguna de las seis.
   const SEP_OBRA = [1.0, 1.20];            // el pelo de ESTA obra, en canales D
-  // CON HALO, dos trazos SI pueden solaparse. Lo único que hay que impedir es que uno
-  // desaparezca debajo del otro, así que los ejes no se acercan más de esto (× W).
-  const SOLAPE = 0.55;
+  // EL SOLAPE NO ES UN CONTINUO: SON DOS LECTURAS. O los trazos se apartan y se
+  // paralelizan, o uno pasa por encima del otro ENTERO. Lo de en medio —el roce, dos
+  // bandas que se muerden un poco— no se lee como decisión: se lee como una
+  // paralelización que salió mal, y es lo que el autor venía viendo.
+  //
+  // Así que se mide cuánto se meten, en anchuras: 0 es rozarse y 1 es coincidir. Por
+  // debajo de este número no hay solape que valga y el candidato se rechaza —el
+  // reintento lo aparta y sale paralelo—; por encima, tiene que ser un cruce entero.
+  const SOLAPE_MIN = 0.35;
   const SEP_SUELTO = [4.5, 11];            // el primer trazo no tiene con quién
   const RELLENO_MAX = 2.2;                 // techo del relleno de esquina, × W
   // El cruce: cuántos trazos de una obra pueden atravesar a otro, y con qué ángulo
@@ -898,6 +904,34 @@
     return false;
   }
 
+  // ¿Es esto un CRUCE ENTERO, o dos trazos arrimándose? Tres condiciones, y las tres
+  // dicen lo mismo con distintas palabras: que uno pase por encima del otro y salga
+  // por el otro lado.
+  //
+  //   · los ejes se cortan de verdad (no se rozan las bandas: se cortan las líneas);
+  //   · el ángulo no es rasante, o sea que se lee como cruce y no como paralelo;
+  //   · y ningún cabo se queda ENTERRADO dentro del otro trazo — ni los míos ni los
+  //     suyos. Un remate que muere dentro de otra banda no es un cruce, es un trazo
+  //     que se acabó donde no se le veía.
+  function cruceEntero(pts, segs, otro, ctx) {
+    let hay = false;
+    for (const a of segs) for (const b of otro.segs) {
+      if (!cruzan(a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3])) continue;
+      if (anguloEntre(a, b) < CRUCE_MIN) return false;   // rasante: eso es arrimarse
+      hay = true;
+    }
+    if (!hay) return false;                              // se meten pero no se cruzan
+    const enterrado = (p, sg) => {
+      let d = Infinity;
+      for (const b of sg) d = min(d, pointSegDist(p.x, p.y, b[0], b[1], b[2], b[3]));
+      return d < ctx.W;
+    };
+    if (enterrado(pts[0], otro.segs) || enterrado(pts[pts.length - 1], otro.segs)) return false;
+    const q = otro.pts;
+    if (q && (enterrado(q[0], segs) || enterrado(q[q.length - 1], segs))) return false;
+    return true;
+  }
+
   function cabeDuro(pts, ctx, sangra, cruza) {
     const h = ctx.W / 2, m = ctx.mg + h;
     // SANGRE mide el FILO DE LA TINTA, no el eje: si no, un trazo de gubia ancha
@@ -912,9 +946,19 @@
       const dd = distTrazos(segs, t.segs);
       if (dd >= ctx.D - 1e-9) continue;                         // el caso corriente
       // CON HALO no hay rendija que temer: el canal se fabrica al pintar, así que un
-      // acercamiento deja de ser un defecto y pasa a ser composición. Lo único que
-      // sigue prohibido es que un trazo se meta DEBAJO de otro y desaparezca.
-      if (ctx.halo > 0) { if (dd >= ctx.W * SOLAPE) continue; return false; }
+      // acercamiento deja de ser un defecto y pasa a ser composición. Pero tiene que
+      // ser una de las DOS lecturas, no un término medio.
+      //
+      // Ojo con el número: `distTrazos` devuelve CERO cuando dos ejes se cruzan de
+      // verdad, así que un umbral del tipo «que no se acerquen más de 0,55 W»
+      // rechaza TODOS los cruces y deja pasar sólo los roces. Es exactamente al
+      // revés de lo que hace falta, y era lo que estaba escrito.
+      if (ctx.halo > 0) {
+        const met = 1 - dd / ctx.W;               // cuánto se meten: 0 rozarse, 1 coincidir
+        if (met < SOLAPE_MIN) return false;       // roce o rendija: que se aparte
+        if (!cruceEntero(pts, segs, t, ctx)) return false;
+        continue;
+      }
       // hay acercamiento: o es un cruce declarado y legal, o no cabe
       if (!cruza) return false;
       for (let ia = 0; ia < segs.length; ia++) for (const B of t.segs) {
