@@ -1211,6 +1211,36 @@ Lo que sí era cierto es la corrección del **cabo**: el eje medial de un rectá
 queda a media anchura de su lado corto, así que todas las bandas salían cortas por los
 dos extremos. Eso solo vale +6 puntos.
 
+### La métrica me llevó al sitio equivocado, y por cómo estaba muestreada
+
+El autor miró la réplica en detalle: *«los márgenes entre trazos paralelizados no son
+constantes, los trazos se rompen, a veces el final se arista/estrecha»*. Las tres
+cosas son **un solo defecto** —reconstruir con la anchura medida en cada punto—: en un
+cabo la distancia medial cae a cero y la banda acaba en punta; en un codo baja y la
+banda se estrangula; y donde acompaña a otra, el canal hereda esa variación y deja de
+ser constante.
+
+Pero yo ya había probado la anchura constante y **la medida decía que era peor** (64 %
+contra 81 %). Así que o el ojo se equivocaba o la medida estaba mal. Estaba mal la
+medida, y el motivo da vergüenza de lo simple: **la anchura se muestreaba en los
+vértices de la poligonal, que son exactamente las esquinas.** En una esquina el disco
+máximo no cabe, así que la distancia medial siempre baja ahí. La anchura constante
+salía sistemáticamente flaca, la réplica perdía tinta por todas partes, y el número
+«demostraba» que la variable era mejor.
+
+Midiendo sobre el **eje denso** en vez de sobre los vértices —y recortando media
+anchura por cada punta, que también hunden la cola— se da la vuelta:
+
+```
+anchura CONSTANTE   68,1 %
+anchura medida      63,0 %
+```
+
+Es la segunda vez en esta familia que una medida apunta al revés por **cómo está
+muestreada**, no por lo que mide. La primera fue el canal, que se buscaba sólo en el
+suelo atrapado. Conviene anotarlo como patrón: cuando el ojo y el número se
+contradicen, sospechar del muestreo antes que del ojo.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas
