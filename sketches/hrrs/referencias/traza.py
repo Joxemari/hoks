@@ -279,7 +279,18 @@ ALARGA = 0.5
 # histograma y toda la reconstruccion se mueve—. Las dos salen del mismo barrido, y
 # olvidar aplicarlas fue lo que hizo que el ajuste global saliera peor que el mejor
 # por referencia: cuatro mandos medidos y solo dos puestos.
-DP_TOL = 0.18
+# 0,05 y no menos, y por una razon que no es la diferencia de pixel. Bajando de ahi
+# la diferencia ya no mejora —y en dos referencias empeora— pero sobre todo el TRAMO
+# se vuelve mas corto que el del original: a 0,05 la longitud mediana de tramo del eje
+# sale 0,81–0,93 anchuras, que es justo lo que el evaluador midio en los originales
+# (0,74–0,91). A 0,02 baja a 0,51–0,71, o sea que la replica dibuja mas fino que la
+# obra: eso ya no es trazar, es calcar pixeles.
+#
+# Importa que sean DOS criterios y que coincidan. Minimizar area a secas empuja hacia
+# el calco —siempre se parece mas si copias mas puntos— y la unica manera de saber
+# donde parar es tener una medida de FORMA al lado. Aqui las dos dan lo mismo, asi que
+# el valor no es un ajuste: es la cadencia del original.
+DP_TOL = 0.05
 LADO = 1200
 
 

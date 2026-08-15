@@ -1396,6 +1396,39 @@ mi barrido eligió el valor más fino… **de los que yo le ofrecí**. Un barrid
 decirte cuál de los que le das es mejor, nunca que el rango estaba mal puesto. Es la
 misma trampa de la constante que nadie varía, disfrazada de optimización.
 
+### Dónde parar de afinar, y por qué no lo dice la diferencia
+
+Con la rejilla reabierta, las seis volvieron a elegir el valor **más fino que les
+ofrecí**. Bajar más era la tentación obvia, y es donde este ejercicio se rompe: **minimizar
+área a secas empuja hacia el calco** — siempre se parece más si copias más puntos—, así
+que el óptimo de área no puede decidir cuándo parar.
+
+Lo que lo decide es una medida de **forma** al lado. El evaluador midió la cadencia del
+original: longitud mediana de tramo, **0,74–0,91 anchuras**. Y la réplica, barrida:
+
+```
+simplificación   0,02    0,05    0,10    0,18    0,28
+tramo / W        0,51–0,71  0,81–0,93  1,25–1,80  1,69–2,46  2,12–2,58
+diferencia       igual o peor   la mejor   peor    peor      peor
+```
+
+A **0,05** la réplica tiene la cadencia del original y además la diferencia mínima. Que
+coincidan **dos criterios independientes** es lo que convierte el valor en un hallazgo y
+no en un ajuste: a 0,02 la diferencia ya no mejora y el tramo baja a 0,51 — la réplica
+dibujaría **más fino que la obra**, que es exactamente el calco.
+
+```
+r1 12,6 %   r2 14,7 %   r3 34,2 %   r4 11,5 %   r5 17,0 %   r6 21,9 %
+mediana 15,8 %   ·   suelo del método 13 %   ·   dos obras distintas 69–85 %
+```
+
+Tres de las seis están **en el suelo del método**, o sea que su diferencia ya es ruido de
+binarizado y registro, no error de trazo. Las otras tres tienen nombre: la enmarcada
+(34 %) es la de bandas **curvas** contra una banda poligonal; la cuadrada (22 %) es la
+**ortogonal estricta** —60 % de su contorno a menos de 5° de un eje, contra 50 % de la
+réplica— y además la que más suelda; y la litografía (17 %) es inestable según el ajuste,
+que es un defecto del trazador y no de la obra.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas
