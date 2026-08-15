@@ -1677,6 +1677,44 @@ Resultado, ya con el ajuste completo:
 Mediana 96,5 % → **97,4 %**. Sin canje: suben a la vez el acierto, el número de
 incisiones, la anchura del canal y su constancia.
 
+### El 97,4 % era mentira: me estaba midiendo con mi propia regla
+
+El autor no se lo tragó — *estoy seguro de que no estás al 98 %* — y tenía razón. El
+número que venía dando salía de `pinta()`, el rasterizador de numpy que existe para
+poder iterar. **La comprobación que cuenta es pasar la receta por `componer()` en el
+navegador**, y esa no la había vuelto a hacer desde que se tocó `banda()`.
+
+Hecha: mediana **95,9 %**, no 97,4 %. Punto por punto: 96,0 / 95,2 / 96,2 / 97,5 /
+94,7 / 95,7.
+
+Y las dos construcciones **sí son la misma forma**: el 97–100 % de la discrepancia
+entre los dos rasterizadores está a un píxel del filo, p95 = 1,0 px. Lo que pasa es que
+el canvas **antialiasa** y `pinta()` no, así que el canvas sale medio píxel más fino en
+todo el contorno. Y como el ajuste optimiza contra `pinta()`, heredaba su convenio:
+**un ajuste siempre se parece más a su propio patrón de medida**.
+
+No se arregla desplazando el filo —corregirlo en +0,2/+0,4 px sólo devuelve 0,3 puntos,
+95,9 → 96,2— así que se arregla el patrón: `pinta()` dibuja a 3× y baja con umbral de
+media cobertura. Con eso los dos coinciden al 98,8–99,5 % (antes 96,7–98,8) y numpy
+predice el canvas con medio punto de error. Reajustando la anchura contra ese patrón,
+por `componer()`:
+
+| | acierto | ≤1 px del filo | sin esa franja |
+|---|---|---|---|
+| r1 | 97,4 % | 97 % | **100,0 %** |
+| r2 | 96,5 % | 90 % | 99,6 % |
+| r3 | 97,1 % | 92 % | 99,8 % |
+| r4 | **98,0 %** | 87 % | 99,8 % |
+| r5 | 95,1 % | 46 % | 97,3 % |
+| r6 | 96,6 % | 88 % | 99,6 % |
+
+**Mediana 96,8 %.** Una llega al 98 % pedido y las demás no. El residuo sigue siendo
+una piel de un píxel —87–97 % de la discrepancia en cinco de las seis— así que lo que
+falta no es composición sino filo, y el suelo del método (el original contra sí mismo
+con el umbral movido) está en 0,1–1,0 %: o sea que el 98 % es alcanzable en principio y
+hay que ganarlo ahí, con pasos de anchura y posición más finos que los 0,25 px de este
+pulido.
+
 ### Cinco de las seis están en el suelo del método, y se puede decir con un número
 
 Quitando una franja de píxel y medio a cada lado del filo, el acierto es **100,0 %** en
