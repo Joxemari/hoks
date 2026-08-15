@@ -124,7 +124,7 @@ def pesoCanal(A, W, peso=8.0):
 
 
 # ── Sacar ejes de una mascara cualquiera (el original, o un residuo) ───────────
-def ejesDe(mask, W, minLargo=1.2, dpTol=0.05):
+def ejesDe(mask, W, minLargo=1.2, dpTol=0.05, perfil=True):
     # OJO CON EL UMBRAL DE AGUJEROS: tapaba huecos de hasta W*W pixeles, y con bandas
     # de 68 px eso son 4.600 — o sea que TAPABA LAS INCISIONES antes de trazar nada.
     # Se veia en el numero: la litografia tiene 7 componentes y el trazado inicial
@@ -144,9 +144,11 @@ def ejesDe(mask, W, minLargo=1.2, dpTol=0.05):
         sp = G['simplificar'](cam, max(1.0, W * dpTol))
         if len(sp) < 2:
             continue
-        L = sum(math.hypot(sp[i+1][0]-sp[i][0], sp[i+1][1]-sp[i][1]) for i in range(len(sp)-1))
-        if L < W * minLargo:
-            continue
+        # de cada vertice, su sitio en el eje denso (para leer ahi la anchura)
+        donde = {}
+        for i, (yy, xx) in enumerate(cam):
+            donde.setdefault((float(xx), float(yy)), i)
+        enCam = [donde.get((p[0], p[1])) for p in sp]
         crudo = []
         for yy0, xx0 in cam:
             yy = min(mask.shape[0]-1, max(0, int(yy0))); xx = min(mask.shape[1]-1, max(0, int(xx0)))
@@ -176,8 +178,63 @@ def ejesDe(mask, W, minLargo=1.2, dpTol=0.05):
                     break
                 a += paso
             return (p0[0]+dx*a, p0[1]+dy*a)
+        # LA ANCHURA ES UN PERFIL, NO UN NUMERO. Y ES LA CAUSA DE LA SOLDADURA.
+        #
+        # Medido sobre los pixeles de canal que la replica cierra: en el 80-94 % de
+        # ellos la banda esta dibujada MAS ANCHA que la tinta que hay ahi de verdad
+        # —el cartel pone 33 px donde el original mide 14, la cuadrada 15 donde mide
+        # 5—. No es que el eje pase por el canal (medido: 0,0 % de los soldados tiene
+        # eje encima) ni que sobre anchura en general: es que a la banda entera se le
+        # daba UN modo, y donde el original adelgaza, la replica no adelgaza y se come
+        # la incision de al lado.
+        #
+        # El perfil va CAPADO por el modo, nunca por encima. Es la regla de la gubia
+        # de la casa —el temblor de anchura solo resta— y aqui ademas resuelve los
+        # cruces: dentro de una mancha de dos bandas la distancia medial se dispara, y
+        # el tope la devuelve a la anchura de la banda.
+        #
+        # Y SE LEE CRUDA, en el vertice, sin suavizar. Esto salio al reves de lo que
+        # razone y la medida es tajante.
+        #
+        # Habia puesto un maximo corrido de 0,35 W «para deshacer el hundimiento de la
+        # esquina», acordandome de que medir la anchura en los vertices la sacaba fina.
+        # Pero aquel error era de otra cosa: era sacar UN numero para toda la banda a
+        # base de muestras de esquina. Aqui cada vertice lleva su anchura, y el maximo
+        # corrido lo unico que hace es RELLENAR LOS ESTRECHAMIENTOS con la anchura de
+        # al lado — justo la averia que veniamos persiguiendo.
+        #
+        # Barrido de operadores sobre las seis, componentes y acierto del trazado
+        # inicial (el original entre parentesis):
+        #
+        #             modo       max 0,35 W     max 0,15 W        cruda
+        #   r1 ( 8)   7c 91,3 %   7c 91,4 %      8c 91,5 %      8c 91,7 %
+        #   r2 (11)   4c 88,9 %   4c 89,2 %      9c 89,8 %     11c 90,1 %
+        #   r4 ( 2)   1c 92,1 %   1c 92,3 %      1c 92,4 %      2c 92,2 %
+        #   r5 ( 7)   1c 85,5 %   1c 85,9 %      1c 86,2 %      2c 86,2 %
+        #   r6 (14)   3c 82,4 %   3c 82,6 %      4c 83,2 %      8c 83,5 %
+        #
+        # Cuanto menos se suaviza, mas incisiones sobreviven — y el acierto SUBE a la
+        # vez, o sea que no hay canje: era anchura de mas y punto. Suavizar con mediana
+        # (0,08, 0,15 y 0,35 W) da exactamente lo mismo que no suavizar, asi que no se
+        # suaviza: no hay motivo medido para hacerlo.
+        hs = [float(min(crudo[i], base)) if i is not None else base
+              for i in enCam] if perfil else [base] * len(sp)
         sp = [hasta(sp[0], sp[1], base*1.4)] + sp[1:-1] + [hasta(sp[-1], sp[-2], base*1.4)]
-        out.append((sp, [base]*len(sp)))
+        # EL LARGO MINIMO SE MIDE AQUI, sobre la banda tal y como se dibuja, y no antes
+        # de alargar los cabos. Es la misma cifra de siempre —1,2 anchuras— puesta en el
+        # sitio correcto, y no un mando nuevo: medida arriba, descartaba trazos que
+        # despues del alargue miden mas de anchura y media. En la cuadrada eran SIETE
+        # bandas de veintinueve, y devolverlas vale 6,5 puntos de acierto (83,5 % ->
+        # 90,0 %) ademas de acercar el canal (0,35 -> 0,31 contra 0,23 del original).
+        #
+        # La alternativa era bajar el umbral, y el barrido volvia a pedir el extremo de
+        # la rejilla —a 0,0 seguia subiendo—, que es la trampa de siempre: siempre se
+        # parece mas si copias mas trozos. Medirlo donde toca da mas acierto que bajarlo
+        # a la mitad (90,2 % de mediana contra 90,0 %) sin admitir ni una mota.
+        L = sum(math.hypot(sp[i+1][0]-sp[i][0], sp[i+1][1]-sp[i][1]) for i in range(len(sp)-1))
+        if L < W * minLargo:
+            continue
+        out.append((sp, hs))
     return out
 
 
