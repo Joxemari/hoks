@@ -1490,6 +1490,12 @@
     //
     // Va en una capa aparte y se corta con `destination-out` en vez de pintar el
     // color del suelo, porque con fondo de degradado el suelo no es un color.
+    //
+    // El corte se extiende UN CANAL ENTERO más allá del filo, no medio. Con medio, dos
+    // trazos solapados quedaban a g/2 y el invariante se caía justo donde tenía que
+    // valer. Con uno entero queda garantizado por los dos lados: si se solapan, el
+    // blanco mide g; si no llegan a tocarse, mide su hueco MÁS g. Nunca menos de g, y
+    // eso es lo que hay que poder medir sobre el píxel.
     const halo = params.halo != null ? params.halo * best.W : best.g;
     ctx.save();
     ctx.translate(ox, 0);
@@ -1502,7 +1508,7 @@
       cx.fillStyle = rol.tinta;
       for (const tr of best.trazos) {
         cx.globalCompositeOperation = 'destination-out';
-        cx.beginPath(); banda(cx, tr.pts, best.W, tr.gubia, tr.relleno, null, halo / 2);
+        cx.beginPath(); banda(cx, tr.pts, best.W, tr.gubia, tr.relleno, null, halo);
         cx.fill();
         cx.globalCompositeOperation = 'source-over';
         cx.beginPath(); banda(cx, tr.pts, best.W, tr.gubia, tr.relleno);
