@@ -624,10 +624,49 @@ Y los controles, todos disparando: `duro` 63/120 · `corta` 36/120 · `miter` 47
 Distribución sobre 996: tipos `haz` 34% · `tendido` 26% · `recinto` 23% ·
 `disperso` 17%; ojos p50 2, pasillos p50 2 con 11,7 anchuras, ocupación p50 8,8%.
 
-**`falta = 0` sólo en 553 de 996** (máximo 2,1), y es lo más flojo del estado
-actual: la hoja no admite todos los trazos que el tipo pide cuando son largos, así
-que se queda con menos. Manda el candidato que menos incumple, como en el resto de
-la casa, pero el número está para mirarlo.
+## El plan de longitudes: lo que le faltaba para tener interés
+
+Primer juicio del autor sobre la tercera vuelta: *«a todas y cada una de las
+iteraciones les falta un poco de interés, y creo que la solución global puede ser
+la longitud»*. Medido antes de tocar el mando, y la medida dijo que sí y además
+por qué:
+
+```
+declarado 0,44 … 1,15      colocado  min 0,20  p50 0,46  p90 0,76
+reparto dentro de una obra (largo/mediano)    p50 1,36
+obras con algun trazo que cruza la hoja       38 de 300
+```
+
+**La mediana colocada caía en el suelo de lo declarado.** No es que los trazos se
+declararan cortos: es que los largos **no llegaban a colocarse**. Sesgo de
+supervivencia — el filtro de la restricción rechaza al largo y acepta al corto, así
+que la distribución la elegía el filtro y no la gramática. Y el reparto en 1,36
+significa que todos median casi lo mismo: el «papel pintado» de EVOL, una hoja
+donde todo pesa igual y no hay dónde mirar.
+
+Se arregla con **tres cosas a la vez**, y ninguna sola habría bastado:
+
+1. **Se planifica la jerarquía**: un protagonista que cruza la hoja (1,10–1,60 del
+   lado corto) y una caída geométrica hasta el suelo.
+2. **Se coloca de mayor a menor**: el protagonista entra con la hoja vacía, que es
+   la única manera de que quepa.
+3. **Un trazo que no cabe CEDE longitud antes de rendirse** (×0,88), así el largo
+   declarado aterriza tan largo como pueda en vez de ser sustituido por otro corto
+   cualquiera.
+
+```
+                          antes        después
+mediana colocada          0,46         0,45
+p90                       0,76         0,90   (máx 1,55)
+reparto largo/mediano     1,36         1,59   (p90 2,59)
+obras que cruzan la hoja  38/300       113/300
+acompañamiento p50        11,7 W       27 W
+ocupación p50             8,8%         13,2%
+falta = 0                 55%          92%
+```
+
+Que `falta` suba del 55% al 92% es consecuencia del punto 3, no de haber aflojado
+lo declarado: los trazos se colocan de verdad en vez de perderse.
 
 ## Tres trampas nuevas, pagadas en esta vuelta
 

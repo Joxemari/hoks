@@ -51,7 +51,24 @@
   // De uno a cinco quiebros en todo el recorrido. No es una preferencia: es lo
   // que separa un trazo de un garabato, y era la mitad del no-parecido.
   const QUIEBROS = [1, 5];
-  const LARGO = [0.44, 1.15];               // recorrido total, × lado corto
+  // EL PLAN DE LONGITUDES, y es lo que le faltaba a la obra para tener interés.
+  //
+  // Declarar un rango y tirar de él da trazos TODOS IGUALES, y una hoja donde todo
+  // pesa lo mismo no tiene dónde mirarse — es el «papel pintado» de EVOL. En las
+  // referencias hay un trazo que cruza la hoja entera y otros cortos al lado.
+  //
+  // Y medido, el rango ni siquiera se cumplía: declarado 0,44…1,15, la mediana
+  // COLOCADA salía 0,46 —el suelo— porque los trazos largos no caben y los cortos
+  // sí, así que el filtro de la restricción escogía por mí. Sesgo de supervivencia.
+  //
+  // Se arregla con tres cosas juntas: se planifica la jerarquía (un protagonista
+  // que cruza y una caída geométrica), se colocan DE MAYOR A MENOR (el
+  // protagonista entra con la hoja vacía) y, si uno no cabe, se ACORTA antes de
+  // rendirse — así el largo declarado aterriza tan largo como pueda en vez de ser
+  // sustituido por otro corto cualquiera.
+  const PROTA = [1.10, 1.60];               // el que cruza la hoja, × lado corto
+  const CAIDA = [0.76, 0.91];               // cada trazo respecto al anterior
+  const ACORTA = 0.88;                      // cuánto cede un trazo que no cabe
   // Y un SUELO de longitud: un trazo más corto que esto no es un trazo, es una
   // pizca. Salían al desplazar un trozo muy corto para el `paralelo`, y una hoja
   // con pizcas se lee como confeti — que es justo el defecto que costó la primera
@@ -277,17 +294,21 @@
   // ── Colocar un trazo cumpliendo una relación ────────────────────────────────
   // Devuelve los puntos, o null si no cabe. La relación se DECLARA y aquí se
   // construye la geometría que la cumple — no se espera a que salga sola.
-  function colocar(rng, ctx, rel, obj) {
+  function colocar(rng, ctx, rel, obj, largoRel) {
     const { D, W } = ctx;
     const S = min(ctx.fw, ctx.fh);
     const nq = rng.int(QUIEBROS[0], QUIEBROS[1]);
-    const largo = S * rng.range(LARGO[0], LARGO[1]);
+    const largo = S * largoRel;
 
     if (rel === 'paralelo' && obj) {
       // Por DESPLAZAMIENTO de un trozo del otro: es la única forma de que el
       // canal sea constante. El trozo puede ser corto (acompaña un rato) o casi
       // entero (acompaña todo el recorrido).
-      const a = rng.range(0, 0.45), b = a + rng.range(0.48, 1 - a);
+      // el trozo se dimensiona al largo PEDIDO, no a una fracción al azar: si no,
+      // el `paralelo` se salta el plan de longitudes por completo
+      const Lo = largoDe(obj);
+      const fr = clamp(largo / (Lo || 1), 0.22, 1);
+      const a = rng.range(0, max(0, 1 - fr)), b = a + fr;
       const sub = trozo(obj, a, min(b, 1));
       if (sub.length < 2) return null;
       const sep = D * rng.range(SEP_PAR[0], SEP_PAR[1]);
@@ -516,6 +537,11 @@
     };
 
     const N = params.trazos ? params.trazos : rng.int(t.n[0], t.n[1]);
+    // La jerarquía, declarada: protagonista y caída geométrica.
+    const plan = [];
+    { let L = rng.range(PROTA[0], PROTA[1]);
+      const c = rng.range(CAIDA[0], CAIDA[1]);
+      for (let i = 0; i < N; i++) { plan.push(max(L, LARGO_MIN * 1.2)); L *= c * rng.range(0.92, 1.14); } }
     // EL CERCO primero: es lo que organiza el cuadro, y lo demás se cuelga de él.
     const nC = params.cerco != null ? params.cerco : rng.int(t.cerco[0], t.cerco[1]);
     let cerco = 0;
@@ -525,21 +551,23 @@
     const relCount = {};
     for (const r of RELS) relCount[r] = 0;
     const pesos = RELS.map(r => ({ n: r, prob: t.w[r] }));
-    while (ctx.trazos.length < N) {
-      const primero = ctx.trazos.length === 0;
-      const rel = primero ? 'suelto' : rng.weighted(pesos).n;
-      let puesto = false;
+    // DE MAYOR A MENOR: el protagonista se coloca con la hoja vacía, que es la
+    // única manera de que quepa. Colocando al azar, el largo nunca entraba.
+    for (let idx = 0; idx < plan.length; idx++) {
+      const rel = ctx.trazos.length === 0 ? 'suelto' : rng.weighted(pesos).n;
+      let puesto = false, L = plan[idx];
       for (let k = 0; k < COLOCA && !puesto; k++) {
         const obj = ctx.trazos.length ? ctx.trazos[rng.int(0, ctx.trazos.length - 1)].pts : null;
         const sangra = rng.bool(P_SANGRA);
-        const pts = colocar(rng, ctx, rel, obj);
+        const pts = colocar(rng, ctx, rel, obj, L);
+        // si no cabe, CEDE longitud antes de rendirse
+        if (k % 3 === 2) L = max(L * ACORTA, LARGO_MIN * 1.1);
         if (!pts || pts.length < 2) continue;
         if (largoDe(pts) < ctx.S * LARGO_MIN) continue;
         if (!cabe(pts, ctx, sangra)) continue;
         ctx.trazos.push({ pts, segs: segsDe(pts), rel, sangra });
         relCount[rel]++; puesto = true;
       }
-      if (!puesto) break;   // no cabe nadie más: la hoja está llena
     }
 
     const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };
