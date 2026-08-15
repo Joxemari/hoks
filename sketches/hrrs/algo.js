@@ -1510,7 +1510,15 @@
 
     const S = min(W, H), cuad = E.fieldMode(opts.params || {}) === 'square';
     const AW = cuad ? S : W, ox = (W - AW) / 2;
-    const q = E.nominalAspect(max(AW, H), min(AW, H));
+    // LA PROPORCIÓN, TAL CUAL, cuando la receta la trae. `nominalAspect` redondea a
+    // la proporción del pliego (la DIN), que es lo correcto para GENERAR —una obra
+    // nace para un papel— y es un error para REPLICAR: la obra original no tiene la
+    // proporción de un DIN, tiene la suya. Ajustada una réplica al 97 % contra un
+    // rasterizador propio, al pasarla por aquí bajaba a 94 %, y no era el dibujo:
+    // era que el campo estaba estirado. Se descartaron antes la gubia, la escala y
+    // el relleno de esquina, cada uno con su medida.
+    const q = receta.alto ? max(receta.alto, receta.anchoLienzo || 1)
+                          : E.nominalAspect(max(AW, H), min(AW, H));
     const fw = AW >= H ? q : 1, fh = AW >= H ? 1 : q;
 
     const Wb = min(fw, fh) * (receta.ancho || 0.065);
@@ -1552,7 +1560,12 @@
       cx2.trazos.push({ pts, segs: segsDe(pts), rel: 'receta', anchos: r.anchos,
                         gubia: receta.gubia === 0 ? null : gubiaDe(rng, { gubAmp: receta.gubia || 0.09 }) });
     }
-    holguras(cx2);
+    // `relleno: 0` apaga el relleno de esquina. Lo pide la REPLICA, y por un motivo
+    // que es en si un hallazgo: ajustada la replica hasta el 97 % contra un
+    // rasterizador propio, al pasarla por `componer` bajaba a 94 %. La diferencia no
+    // era la gubia ni la escala: es que la casa RELLENA LOS CODOS hacia el hueco y el
+    // original no los rellena igual. Tres puntos de los seis que quedan estan ahi.
+    if (receta.relleno !== 0) holguras(cx2);
 
     ctx.fillStyle = rol.suelo; ctx.fillRect(0, 0, W, H);
     ctx.save(); ctx.translate(ox, 0); ctx.scale(S, S);

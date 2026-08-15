@@ -1477,6 +1477,67 @@ nudo siguiendo la dirección más parecida. Si en un nudo elige mal, el eje resu
 **corta de una banda a la vecina cruzando la incisión** — y entonces la banda dibujada la
 tapa. Es la única de las cinco que no está medida, y es la siguiente.
 
+### El ajuste iterativo: de 86 % a 97 % de acierto
+
+*«Deberías replicar cada una con un éxito del +95 % para sacar conclusiones»*, y luego
+*«me gustaría subirlo al 98 %»*. Tiene razón en las dos cosas: con réplicas al 86 % no
+se puede concluir nada sobre la técnica, porque no se sabe si lo que falla es la
+técnica o la lectura.
+
+Trazar de una pasada tiene un techo: cada error de lectura se paga entero y no hay
+manera de enterarse. `referencias/encaje.py` hace lo contrario, un **ajuste**: se parte
+de los ejes leídos y se corrige por RESIDUO —lo que falta y lo que sobra— con cuatro
+movimientos: añadir bandas donde queda tinta sin cubrir, quitar las que el trazador se
+inventó, afinar la anchura de cada una, y bajar cada vértice por descenso. Para que sea
+posible, el dibujo se rasteriza en numpy con la misma construcción de bisel que
+`banda()`: sacar el navegador del bucle es lo que permite hacer miles de renders en vez
+de veinte.
+
+```
+              acierto   comp o→r   suelo
+r1             97,5 %     8 → 8     0,7 %
+r2             97,3 %    11 → 11    0,3 %
+r3             96,8 %     7 → 7     1,0 %
+r4             97,7 %     2 → 2     0,4 %
+r5             96,9 %     7 → 4     0,1 %
+r6             95,9 %    14 → 13    0,3 %
+mediana        97,1 %
+```
+
+**Y la soldadura se arregló sola.** Es lo que más dice de todo esto: la topología pasa
+de 14 → 1 a **14 → 13**, y no la arreglé buscándola. Salió de dejar que el ajuste quitara
+las bandas inventadas y añadiera las que el trazado no vio. Llevaba tres vueltas
+persiguiendo esa soldadura causa por causa; lo que la deshizo fue cambiar de método,
+no encontrar la causa.
+
+Dos cosas fueron las que separaron el 96 % del 97,5 %:
+
+- **Forzar la inserción de vértices.** El eje simplificado no puede seguir el temblor
+  del original: entre dos vértices va recto y la obra no. Partiendo los tramos (196 →
+  373 vértices) el descenso tiene por dónde doblar. Lo tenía condicionado a que no
+  empeorase — y partir un tramo empeora unas centésimas ANTES de que el descenso lo
+  recupere, así que el paso no se activaba nunca.
+- **Anchura vértice a vértice, acotada a ±8 %.** Sin cota vuelve el defecto que el autor
+  señaló —cabo en punta, codo estrangulado— porque el ajuste, si le dejas, adelgaza
+  donde le conviene.
+
+**Y el suelo real es 0,1–1,0 %**, medido comparando cada original contra sí mismo con el
+umbral movido un 4 %. O sea que el 98 % que pide el autor es alcanzable y lo que queda
+por cerrar es error de verdad, no grano de papel.
+
+### Lo que NO está resuelto: dos medidas que no son la misma medida
+
+Ajustada al 97,1 % contra el rasterizador propio, la misma réplica pasada por
+`componer` y vuelta a medir da **94 %**. Tres puntos de diferencia entre dos maneras de
+mirar lo mismo, y **no está localizado**. Descartados, cada uno con su medida: la gubia
+(0,3 puntos), el relleno de esquina (ninguno), la proporción nominal contra la real
+(ninguno) y la escala de render (ninguno).
+
+Lo que queda por comprobar, y es lo más probable: **no son la misma medida**. La primera
+compara en sitio; la segunda recorta, re-umbraliza, filtra por material, reescala y
+re-registra — y cada uno de esos pasos tiene su propia pérdida. Hasta saberlo, el 97 %
+sólo vale contra el rasterizador y **no se puede afirmar del renderizador publicado**.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas
