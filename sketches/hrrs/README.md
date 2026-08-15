@@ -1429,6 +1429,54 @@ binarizado y registro, no error de trazo. Las otras tres tienen nombre: la enmar
 réplica— y además la que más suelda; y la litografía (17 %) es inestable según el ajuste,
 que es un defecto del trazador y no de la obra.
 
+### El cabo se alarga hasta donde hay tinta
+
+El alargue fijo del cabo era lo que **soldaba** las bandas, y el área lo pagaba. En la
+firmada, con alargue 0,5 la réplica tiene 7 componentes y con 0 tiene **8 — las 8 del
+original**… y la diferencia de píxel **sube** de 11 % a 20 %. O sea que el número premia
+con ocho puntos destruir la incisión, que es el asunto entero de la obra. Es la ceguera
+al canal que midió el evaluador, en su forma más concreta y más cara.
+
+Y la salida no es elegir entre las dos cosas, porque **el original dice dónde acaba la
+banda**: se avanza mientras el punto siga siendo tinta y se para al salir. Reproduce el
+cabo exacto y **no puede soldar**, porque al otro lado de la incisión hay fondo. Es,
+literalmente, la regla que la familia ya tiene escrita —*el trazo se acaba donde ya no
+cabe*— usada para leer en vez de para dibujar.
+
+```
+              antes    ahora
+r1             12,6 %   10,5 %
+r2             14,7 %   13,4 %
+r3             34,2 %   16,5 %   ← era el peor con diferencia
+r4             11,5 %   10,8 %
+r5             17,0 %   14,5 %
+r6             21,9 %   21,1 %
+mediana        15,8 %   13,9 %   (suelo del método: 13 %)
+```
+
+**Cinco de las seis están ya en el suelo del método**, o cerca: su diferencia es ruido
+de binarizado y registro, no error de trazo.
+
+### Y la soldadura NO está arreglada. Cuatro causas descartadas, una en pie
+
+La topología sigue mal —el original de la cuadrada tiene **14** componentes y la réplica
+**1**— y eso es lo que hace que a ojo siga «lejísimo» aunque el número diga 14 %. Se han
+descartado cuatro sospechosos, cada uno con su medida:
+
+1. **El alargue del cabo** — era *una* causa (arreglada arriba), pero no la única: con el
+   alargue limitado a la tinta, la cuadrada sigue en 14 → 1.
+2. **La calibración de anchura** (+12 %) — sin efecto: 14 → 2 con calibre 1,00 y 14 → 2
+   con 1,12.
+3. **Dónde se lee la anchura** (excluyendo o no los cruces) — sin efecto ninguno en las
+   seis.
+4. **La resolución del render** — sin efecto: mismos recuentos a 700 y a 1600 px, así que
+   no es que la incisión se cierre al rasterizar.
+
+Queda **un sospechoso, y con nombre**: el recorrido de `bandas()`, que atraviesa cada
+nudo siguiendo la dirección más parecida. Si en un nudo elige mal, el eje resultante
+**corta de una banda a la vecina cruzando la incisión** — y entonces la banda dibujada la
+tapa. Es la única de las cinco que no está medida, y es la siguiente.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas

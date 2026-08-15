@@ -273,7 +273,7 @@ CRUCE_LIM = 0
 CALIBRE = 1.12
 # Cuanto se alarga el cabo, en semianchuras. El eje medial de un rectangulo se queda
 # a media anchura de su lado corto; media es lo que sale mejor en cuatro de las seis.
-ALARGA = 0.5
+ALARGA = 1.4   # TECHO del alargue, no el alargue: se para antes si se acaba la tinta
 # Cuanto se simplifica el eje, en anchuras. Y a que resolucion se lee: no es un
 # detalle de rendimiento —a 900 px la moda de la anchura cae en otro escalon del
 # histograma y toda la reconstruccion se mueve—. Las dos salen del mismo barrido, y
@@ -492,9 +492,35 @@ def analizar(ruta):
         # Alargando los dos extremos por igual, las dos referencias mas cruzadas
         # empeoraban mientras las dos mas limpias mejoraban — el promedio tapaba que
         # eran dos efectos contrarios.
+        # EL CABO SE ALARGA HASTA DONDE HAY TINTA, NI UN PASO MAS.
+        #
+        # Alargarlo una fraccion fija era lo que SOLDABA las bandas, y el area lo
+        # pagaba: en la firmada, con alargue 0,5 la replica tiene 7 componentes y con
+        # 0 tiene 8 —las 8 del original— pero la diferencia de pixel SUBE de 11 % a
+        # 20 %. O sea que el numero premia con ocho puntos destruir la incision, que
+        # es el asunto entero de la obra. Es la ceguera al canal que midio el
+        # evaluador, en su forma mas concreta.
+        #
+        # Y la salida no es elegir entre las dos cosas: el original dice donde acaba
+        # la banda. Se avanza mientras el punto siga siendo tinta y se para al salir.
+        # Reproduce el cabo exacto y NO PUEDE soldar, porque lo que hay al otro lado
+        # de la incision es fondo. Es, literalmente, la regla que la familia ya tiene
+        # escrita —el trazo se acaba donde ya no cabe— usada para leer.
+        def hastaElFilo(p0, p1, hmax):
+            dx, dy = p0[0] - p1[0], p0[1] - p1[1]
+            m = math.hypot(dx, dy) or 1e-9
+            dx, dy = dx / m, dy / m
+            paso, avanzado = 0.5, 0.0
+            while avanzado + paso <= hmax:
+                x = p0[0] + dx * (avanzado + paso); y = p0[1] + dy * (avanzado + paso)
+                yy = int(round(y)); xx = int(round(x))
+                if not (0 <= yy < H and 0 <= xx < W and tinta[yy, xx]):
+                    break
+                avanzado += paso
+            return (p0[0] + dx * avanzado, p0[1] + dy * avanzado)
         if len(sp) >= 2:
-            p0 = alarga(sp[0], sp[1], base * ALARGA) if (cabo0 or not SOLO_CABOS) else sp[0]
-            p1 = alarga(sp[-1], sp[-2], base * ALARGA) if (cabo1 or not SOLO_CABOS) else sp[-1]
+            p0 = hastaElFilo(sp[0], sp[1], base * ALARGA)
+            p1 = hastaElFilo(sp[-1], sp[-2], base * ALARGA)
             sp = [p0] + sp[1:-1] + [p1]
         if an is None:
             an = []
