@@ -890,6 +890,40 @@ det      56 obras · determinismo 56/56 · misma huella a 760/2400/4200 56/56
 pasillo declarado. No es un defecto —`falta` es el criterio de triaje, no una regla—
 pero está anotado porque es el número que hay que vigilar si sigue bajando.
 
+## Quinta vuelta: la relación es de una SECCIÓN, no del trazo
+
+Última corrección del autor, y tiene una consecuencia estructural que no había
+visto:
+
+> *«Casi todas las líneas se paralelizan en algún momento, en alguna sección. A
+> veces tienes una totalmente horizontal, pero que da contra otra que viene
+> vertical; otra se paraleliza en algún tramo. No hay ningún trazo totalmente
+> independiente. Esto lo que consigue es generar un cuerpo en la zona de mayor
+> intersección.»*
+
+Hasta aquí, un `paralelo` era **entero** el desplazamiento de otro: dos rayas
+gemelas de punta a punta. Eso se lee como una pareja, nunca como un cuerpo — y
+explica por qué la hoja seguía saliendo repartida por mucho que se concentrara la
+zona. Ahora un trazo se compone de **tres partes**: viene libre, **acompaña un
+tramo**, y sigue por su cuenta. Un mismo trazo entra en el nudo, lo recorre pegado a
+otro y sale por el otro lado a hacer otra cosa, que es exactamente la horizontal que
+da contra la vertical.
+
+**Y `suelto` sale de la baraja.** Se reserva para el primer trazo, que no tiene con
+quién relacionarse. Un trazo suelto no es una relación pobre: es un trazo que sobra.
+
+**El cuerpo, por realimentación y no por declaración.** Hay un `nucleo` —el centro de
+gravedad de lo ya puesto— y cuando un trazo va a acompañar no elige un trozo
+cualquiera del otro sino **el que cae más cerca del bulto**. Cuanto más se acompaña
+ahí, más ahí cae lo siguiente. La zona de mayor intersección no está escrita en
+ningún sitio: sólo hay que dejar que se forme. Declararla habría sido poner el
+resultado en la premisa, que es lo que esta familia lleva cuatro vueltas evitando.
+
+**Y obligó a arreglar `recortar`.** Con el trazo compuesto de tres partes, cortar
+siempre por delante mataba el trazo entero cuando lo que no cabía era su arranque
+libre — y con él se perdía la sección acompañada, que es la que vale. Ahora prueba
+por los dos extremos y se queda con el que salva más trazo.
+
 ## Tres trampas nuevas, pagadas en esta vuelta
 
 1. **El sangrado leído como defecto.** El detector de margen marcaba 20 obras

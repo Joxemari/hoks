@@ -160,7 +160,10 @@
   //              dirección: el ojo lee una línea sola, y son dos.
   //   caboCabo   dos extremos se buscan sin tocarse.
   //   caboCuerpo un extremo muere junto al costado de otro.
-  //   suelto     lejos de todo. La separación también es una relación.
+  //   suelto     lejos de todo. YA NO SE SORTEA: se reserva para el primer trazo,
+  //              que no tiene con quién relacionarse. Lo dijo el autor mirando las
+  //              seis: «no hay ningún trazo totalmente independiente». Un trazo
+  //              suelto no es una relación pobre, es un trazo que sobra.
   const RELS = ['paralelo', 'abanico', 'tangencia', 'continua', 'caboCabo', 'caboCuerpo', 'suelto'];
   // Las dos que hacen HAZ: son las que heredan el canal del grupo. Un cabo o una
   // tangencia no continúan un haz, lo tocan.
@@ -197,16 +200,16 @@
   const TIPOS = {
     // Refs 3 y 4: pocos trazos largos, tendidos, mucho paralelo y mucho aire.
     tendido: { prob: 0.26, n: [3, 5], cerco: [0, 0],
-               w: { paralelo: 0.30, abanico: 0.22, tangencia: 0.07, continua: 0.20, caboCabo: 0.08, caboCuerpo: 0.05, suelto: 0.08 } },
+               w: { paralelo: 0.42, abanico: 0.20, tangencia: 0.06, continua: 0.20, caboCabo: 0.07, caboCuerpo: 0.05 } },
     // Refs 1 y 2: un cerco y trazos que lo acompañan.
     recinto: { prob: 0.30, n: [5, 8], cerco: [3, 4],
-               w: { paralelo: 0.26, abanico: 0.12, tangencia: 0.08, continua: 0.18, caboCabo: 0.15, caboCuerpo: 0.15, suelto: 0.06 } },
+               w: { paralelo: 0.36, abanico: 0.11, tangencia: 0.06, continua: 0.17, caboCabo: 0.15, caboCuerpo: 0.15 } },
     // Ref 6: denso, muchos paralelos cortos engranados.
     haz:     { prob: 0.28, n: [5, 8], cerco: [0, 3],
-               w: { paralelo: 0.38, abanico: 0.20, tangencia: 0.08, continua: 0.16, caboCabo: 0.07, caboCuerpo: 0.07, suelto: 0.04 } },
+               w: { paralelo: 0.50, abanico: 0.18, tangencia: 0.05, continua: 0.14, caboCabo: 0.06, caboCuerpo: 0.07 } },
     // El examen duro: pocos trazos y mucha separación. Sin relación no hay obra.
     disperso:{ prob: 0.16, n: [3, 5], cerco: [0, 0],
-               w: { paralelo: 0.18, abanico: 0.13, tangencia: 0.18, continua: 0.15, caboCabo: 0.13, caboCuerpo: 0.09, suelto: 0.14 } },
+               w: { paralelo: 0.30, abanico: 0.14, tangencia: 0.16, continua: 0.16, caboCabo: 0.15, caboCuerpo: 0.09 } },
   };
   const TIPO_NAMES = Object.keys(TIPOS);
 
@@ -437,20 +440,64 @@
     const largo = S * largoRel;
 
     if (rel === 'paralelo' && obj) {
-      // Por DESPLAZAMIENTO de un trozo del otro: es la única forma de que el
-      // canal sea constante. El trozo puede ser corto (acompaña un rato) o casi
-      // entero (acompaña todo el recorrido).
-      // el trozo se dimensiona al largo PEDIDO, no a una fracción al azar: si no,
-      // el `paralelo` se salta el plan de longitudes por completo
+      // EL ACOMPAÑAMIENTO ES DE UNA SECCIÓN, NO DEL TRAZO. Es lo que el autor vio
+      // al final y explica por qué la hoja seguía sin ser un cuerpo: «casi todas
+      // las líneas se paralelizan en algún momento, en alguna sección; a veces una
+      // horizontal que da contra otra vertical; no hay ningún trazo totalmente
+      // independiente, y eso genera un cuerpo en la zona de mayor intersección».
+      //
+      // Hasta aquí, un trazo `paralelo` era ENTERO el desplazamiento de otro: dos
+      // rayas gemelas de punta a punta. Se lee como una pareja, no como un cuerpo.
+      // Ahora el trazo se compone de tres partes —viene libre, ACOMPAÑA un tramo, y
+      // sigue libre por su cuenta— así que un mismo trazo puede entrar en el nudo,
+      // recorrerlo pegado a otro y salir por el otro lado a hacer otra cosa.
       const Lo = largoDe(obj);
-      const fr = clamp(largo / (Lo || 1), 0.22, 1);
-      const a = rng.range(0, max(0, 1 - fr)), b = a + fr;
-      const sub = trozo(obj, a, min(b, 1));
+      // el tramo acompañado es una PARTE del largo pedido, no todo
+      const acomp = largo * rng.range(0.30, 0.72);
+      const fr = clamp(acomp / (Lo || 1), 0.16, 1);
+      // y se busca donde está el CUERPO: el trozo del otro más cercano al núcleo,
+      // que es como se amontonan los acompañamientos en vez de repartirse.
+      const c = ctx.nucleo, aMax = max(0, 1 - fr);
+      let a = rng.range(0, aMax);
+      if (c && aMax > 0) {
+        let mejor = a, dMin = Infinity;
+        for (let k = 0; k <= 6; k++) {
+          const t = aMax * k / 6, p = puntoEn(obj, t + fr / 2);
+          const d = hypot(p.x - c.x, p.y - c.y);
+          if (d < dMin) { dMin = d; mejor = t; }
+        }
+        a = clamp(mejor + rng.range(-0.08, 0.08), 0, aMax);
+      }
+      const sub = trozo(obj, a, min(a + fr, 1));
       if (sub.length < 2) return null;
       // LA SEPARACIÓN ES DEL GRUPO, no del trazo. La pone `poner` y aquí sólo se
       // usa: dentro de un haz, los tres o cuatro canales son EL MISMO, y es lo que
       // hace que el haz se lea como una cosa y no como tres parejas.
-      return desplazar(sub, sepGrupo, rng.bool(0.5) ? 1 : -1);
+      const medio = desplazar(sub, sepGrupo, rng.bool(0.5) ? 1 : -1);
+      if (medio.length < 2) return null;
+      const sobra = max(0, largo - largoDe(medio));
+      if (sobra < ctx.S * 0.04) return medio;
+      // lo que sobra se reparte entre lo que viene ANTES y lo que sigue DESPUÉS
+      const fPre = rng.range(0, 1);
+      const dIn = dirEn(medio, 0), dOut = dirEn(medio, medio.length - 2);
+      let pts = medio;
+      const Lpost = sobra * (1 - fPre);
+      if (Lpost > ctx.S * 0.03) {
+        const p = medio[medio.length - 1];
+        const post = trazar(rng, p.x, p.y, dOut + rng.range(-14, 14), Lpost,
+                            max(0, nq - 1), ctx.vib, D);
+        pts = pts.concat(post.slice(1));
+      }
+      const Lpre = sobra * fPre;
+      if (Lpre > ctx.S * 0.03) {
+        // se traza hacia atrás desde el arranque y se le da la vuelta
+        const p = medio[0];
+        const pre = trazar(rng, p.x, p.y, dIn + 180 + rng.range(-14, 14), Lpre,
+                           max(0, nq - 1), ctx.vib, D);
+        pre.reverse();
+        pts = pre.slice(0, -1).concat(pts);
+      }
+      return pts;
     }
     if (rel === 'abanico' && obj) {
       // Arrancan cerca y se abren: mismo punto de partida ±poco, dirección ±poco.
@@ -611,15 +658,40 @@
   // el que más veces choca, era el que más veces se perdía. Ahora se pide un trazo
   // ambicioso y se recorta EXACTAMENTE donde deja de caber, que es la regla que la
   // familia ya tenía escrita: el trazo se acaba donde ya no cabe.
+  //
+  // Y se prueba POR LOS DOS EXTREMOS, quedándose con el que salva más trazo. Desde
+  // que un `paralelo` se compone de tres partes —viene libre, acompaña, sigue
+  // libre—, cortar siempre por delante mataba el trazo entero cuando lo que no
+  // cabía era su arranque, y con él se perdía la sección acompañada, que es la que
+  // vale.
   function recortar(pts, ctx, sangra) {
     if (cabeDuro(pts, ctx, sangra)) return pts;
-    let lo = 0, hi = largoDe(pts);
-    for (let k = 0; k < 15; k++) {
-      const mid = (lo + hi) / 2;
-      if (cabeDuro(prefijo(pts, mid), ctx, sangra)) lo = mid; else hi = mid;
-    }
-    if (lo < ctx.S * LARGO_MIN) return null;
-    return prefijo(pts, lo);
+    const busca = (p) => {
+      let lo = 0, hi = largoDe(p);
+      for (let k = 0; k < 15; k++) {
+        const mid = (lo + hi) / 2;
+        if (cabeDuro(prefijo(p, mid), ctx, sangra)) lo = mid; else hi = mid;
+      }
+      return lo;
+    };
+    const aDelante = busca(pts);
+    const rev = pts.slice().reverse();
+    const aDetras = busca(rev);
+    const L = max(aDelante, aDetras);
+    if (L < ctx.S * LARGO_MIN) return null;
+    return aDelante >= aDetras ? prefijo(pts, aDelante)
+                               : prefijo(rev, aDetras).reverse();
+  }
+
+  // EL NÚCLEO: dónde está el cuerpo ahora mismo. Es el centro de gravedad de lo ya
+  // puesto, y sirve para elegir CONTRA QUÉ TROZO se acompaña — no contra uno al
+  // azar, sino contra el que cae más cerca del bulto. Es realimentación: cuanto más
+  // se acompaña ahí, más ahí cae lo siguiente, y de eso sale «la zona de mayor
+  // intersección» sin declararla en ningún sitio. Sólo hay que dejar que se forme.
+  function recentrar(ctx) {
+    let sx = 0, sy = 0, n = 0;
+    for (const t of ctx.trazos) for (const p of t.pts) { sx += p.x; sy += p.y; n++; }
+    ctx.nucleo = n ? { x: sx / n, y: sy / n } : null;
   }
 
   // La gubia de UN trazo: misma amplitud que el resto de la obra (es la misma
@@ -660,6 +732,7 @@
         pts = recortar(pts, ctx, false);
         if (pts && largoDe(pts) >= ctx.S * LARGO_MIN) {
           ctx.trazos.push({ pts, segs: segsDe(pts), rel: 'cerco', gubia: gubiaDe(rng, ctx) });
+          recentrar(ctx);
           puestos++; break;
         }
       }
@@ -818,7 +891,7 @@
     const N = params.trazos ? params.trazos : rng.int(t.n[0], t.n[1]);
     const relCount = {};
     for (const r of RELS) relCount[r] = 0;
-    const pesos = RELS.map(r => ({ n: r, prob: t.w[r] }));
+    const pesos = RELS.filter(r => t.w[r] > 0).map(r => ({ n: r, prob: t.w[r] }));
     // Cada trazo se pide AMBICIOSO y se recorta donde deja de caber, en vez de
     // rechazarse entero. Los reintentos son de SITIO —dónde y contra quién— y ya no
     // de longitud: la longitud sale del dibujo.
@@ -862,6 +935,7 @@
       }
       if (!mejor) return 0;
       ctx.trazos.push({ pts: mejor, segs: segsDe(mejor), rel, sangra: mejorS, gubia: gubiaDe(rng, ctx) });
+      recentrar(ctx);
       relCount[rel]++;
       ctx.sepGrupo = mejorSep; ctx.ultRel = rel;
       return mejorL / ctx.S;
