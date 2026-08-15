@@ -12,7 +12,7 @@ Hay además un **gemelo publicado como artefacto**, con el motor y el algoritmo
 metidos dentro del propio HTML, para juzgar sin levantar un servidor:
 <https://claude.ai/code/artifact/a46643c5-5add-43b5-87e5-95036d9f971f>
 
-Va por la **2ª vuelta**. Es el mismo instrumento con una diferencia obligada:
+Va por la **3ª vuelta**, de 40 lotes. Es el mismo instrumento con una diferencia obligada:
 allí el entorno bloquea la descarga de ficheros, así que los juicios salen al
 **portapapeles y a un cuadro de texto** en vez de a un `.json`. Los dos guardan en `localStorage`, pero **cada uno
 en el suyo**: son almacenamientos distintos y el avance no se comparte. Se elige
@@ -21,6 +21,11 @@ uno y se termina en él.
 Y si se toca `algo.js`, el artefacto **no se entera**: lleva su copia congelada
 dentro. Hay que volver a generarlo para que juzgue la obra de ahora — y conviene,
 porque juzgar una versión vieja produce un patrón sobre una obra que ya no existe.
+Se regenera empalmando: el motor y la interfaz del artefacto anterior se
+conservan tal cual, y lo único que se sustituye es el bloque del algoritmo (entre
+su `<script>` y su `</script>`), con los `</script` de dentro escapados. Se
+**actualiza en su sitio**, no se publica uno nuevo: dejar vivo el de la vuelta
+anterior es dejar puesta la trampa.
 
 ## Las vueltas
 
@@ -33,7 +38,7 @@ versiones del algoritmo daría un patrón sobre una obra que ya no existe.
 |---|---|---|---|
 | 1ª | 700000– | `…-v1` | antes de las guardas del hilo, la rectitud y el casi |
 | 2ª | 710000– | `…-v2` | con ellas, y con los pesos ya movidos por la 1ª |
-| 3ª | 720000– | `…-v3` | pendiente: la 5ª revisión, y ya con las seeds mezcladas |
+| 3ª | 720000– | `…-v3` | 40 lotes, sobre la 5ª revisión y ya con las seeds mezcladas |
 
 Lo que dieron las dos está en `../README.md`, en «Lo que el grid cambió». En
 resumen: la primera dio dos señales independientes —menos placas y **ninguna
@@ -89,9 +94,17 @@ no sabe parar — eso es decisión de autor.
 
 El grid de obras ya sirve para decidir, pero **no deja registro**: mirar doce
 seeds y quedarse con dos es exactamente el trabajo, y al cerrar la pestaña ese
-trabajo se ha perdido. Esto es lo mismo hecho a propósito y anotado: **100 lotes
-de 5 obras**, de cada uno se eligen las dos que más gustan —o una, o ninguna— y
-de ahí sale un patrón de preferencia sobre los rasgos.
+trabajo se ha perdido. Esto es lo mismo hecho a propósito y anotado: **lotes de 5
+obras**, de cada uno se eligen las dos que más gustan —o una, o ninguna— y de ahí
+sale un patrón de preferencia sobre los rasgos.
+
+**Cuántos lotes cambia lo que se puede leer.** Las dos primeras vueltas fueron de
+100 —500 obras vistas, unas 130 elegidas— y ahí una fila con veinte apariciones ya
+significaba algo. La 3ª va de **40**: 200 obras y unas 65 elegidas, así que casi
+ninguna fila llegará al mínimo y saldrán casi todas en gris. Eso **no lo invalida**
+— sirve para lo que 40 lotes sirven: ver si la dirección general ha cambiado
+después de la 5ª revisión, y si el rechazo sigue bajando. Para volver a mover
+pesos hace falta una vuelta larga.
 
 Lo que se busca no es una nota por obra: es **qué rasgos del sistema tiran del
 ojo**. Con eso se pueden mover los pesos de la gramática con un motivo, en vez de
