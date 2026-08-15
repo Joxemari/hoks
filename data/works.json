@@ -123,5 +123,22 @@
       "eu": "Gainetik eta azpitik ez dira bi geruza: ibilbideari jarraituz txandakatzen dira.\nGurutzagune bakoitzetik bi aldiz igarotzen da, eta bigarrenak lehenaren kontrakoa dio.",
       "en": "Over and under are not two layers: they alternate as the line is walked.\nEvery crossing is passed twice, and the second pass says the opposite of the first."
     }
+  },
+  {
+    "id": "ptzd",
+    "name": "PTZD",
+    "slug": "ptzd",
+    "active": false,
+    "description": "A block that tends to a square without being one, broken by cuts of a single constant width. They enter at an edge, branch, and die against one another — never crossing, so the white is a tree and not a lattice. The plates they release move aside, because the cut inserts space instead of removing matter. Nobody draws the outline: it is what survives the breaking.",
+    "canvas": "square · horizontal (DIN)",
+    "formats": [
+      "square",
+      "horizontal"
+    ],
+    "created": 1786795200000,
+    "cartela": {
+      "es": "El corte no quita materia: mete espacio. Por eso las placas se apartan.\nY por eso la silueta no la traza nadie — es lo que queda cuando el bloque ha dejado de ser uno.",
+      "en": "The cut does not remove matter: it inserts space. That is why the plates move apart.\nAnd why nobody draws the outline — it is what is left when the block has stopped being one."
+    }
   }
 ]

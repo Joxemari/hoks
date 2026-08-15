@@ -1,9 +1,14 @@
 # PTZD — *el bloque partido*
 
-**Estado: nace aquí. Hay `algo.js` y harness; no hay página, no está en
-`data/works.json`, no está publicada.** Es una propuesta de sistema para mirar en
-el grid de obras y decidir si merece página, como lo fueron `dtkrt/`, `eclps/` y
-`evol/`. El nombre es provisional.
+**Estado: registrada e INACTIVA.** Está en `data/works.json` con `active: false`,
+que es donde están también `dtk` y `bzrs`: existe para el panel y para el
+laboratorio, y **no aparece en la web** — ni en la portada, ni en el desplegable
+*Work*, ni con sección. Activarla es marcar la casilla en el panel, y entonces
+cae en `work.html?w=ptzd`, la página genérica, porque no tiene `page` propia. Lo
+que hace falta antes de eso es **publicar un lote**: sin obra en `data/ptzd.json`
+la sección sale vacía y la portada la rellena con demos.
+
+El nombre es provisional.
 
 Se escribió **la gramática antes que el código** —el paso que a las tres
 anteriores les faltó por escrito— y después el ojo corrigió la gramática, en
