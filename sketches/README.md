@@ -56,6 +56,9 @@ sketches/
   dtkrt/            ← publicada: la primera familia que nació aquí
   eclps/             ← publicada: la fila, con su pliego doble
   evol/             ← EN PRUEBAS: la ley del encuentro invertida. Ver su README
+  hrrs/             ← EN PRUEBAS: la ley del encuentro esquivada — la cinta no se
+                      cruza, se pone al lado. Con algo.js, harness y batería
+                      propia. Ver su README y su verificacion/
   ptzd/             ← EN PRUEBAS: el bloque partido. La gramática se escribió
                       ANTES que el código, y el grid la corrigió. Ver su README
     entrenamiento/  ← el ojo, registrado: 100 lotes de 5, se eligen 2 de cada uno
@@ -64,9 +67,6 @@ sketches/
     verificacion/   ← el defecto, contado: cuñas sobre el píxel, el reparto contra
                       lo declarado y la huella a tres resoluciones. Lo que el
                       entrenamiento no puede decir. Tampoco se publica
-  hrrs/             ← SOLO CONCEPTO: la ley del encuentro esquivada — la cinta
-                      no se cruza, se pone al lado. Sin algo.js todavía.
-                      Ver su README
   trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
     verificacion/   ← los detectores del halo y sus controles rotos a propósito.
                       No se publica: se ejecuta a mano cuando alguien toca el
@@ -99,11 +99,43 @@ vacío. Lo que sí hereda entero es el método: el tipo declara cuántos ojos qu
 luego **se comprueban** sobre el dibujo, por campo de distancias e inundación desde
 el borde — el mismo mapa de vacíos con el que TRZS coloca sus discos.
 
-No está en `works.json` ni publicada. Ver `evol/README.md` para el concepto, las
-nueve pasadas que costó y las decisiones que quedan abiertas (el nombre, entre
-ellas).
+Registrada en `works.json` y **apagada** — se quedó en el laboratorio. Reformulada
+desde los estratos a **la trama**: hebras en dos
+direcciones que se cruzan y se sueldan, y el ojo es la celda que dejan al cruzarse
+—cuadrangular, como los de la referencia, y no el huso que daba un lazo—. Ver
+`evol/README.md` para el concepto, el filo (el canto vivo, que no toca la anatomía) y
+las decisiones que quedan abiertas.
 
-`ptzd/` es el cuarto, y es distinto de los tres anteriores en el método: **la
+`hrrs/` es la tercera respuesta a la pregunta de TRZS —¿qué pasa cuando la cinta se
+encuentra consigo misma?—, y la única que contesta **no se encuentra**: llega hasta
+donde iba a tocarse y se pone al lado. TRZS **cruza** (una hebra por encima y la
+incisión entre las dos), EVOL **suelda** (un cuerpo y el suelo atrapado en forma de
+ojo), HRRS **acompaña**: entre las dos vueltas queda el suelo, en una franja del
+mismo grosor en toda la obra.
+
+Sin profundidad no hay halo, ni plan de secciones, ni orden de pintado: **un solo
+`stroke()`**. Lo que en TRZS son 2.344 líneas y en EVOL 975, aquí son 700, y toda la
+complejidad se va al recorrido — que es lo que queda cuando quitas la profundidad y
+no hay nada detrás de lo que esconderse.
+
+La regla que la gobierna es NEGATIVA y es una sola: dos tramos que no comparten
+vértice están a `W + g` o más. Y no se persigue con un relajador —`selfAvoid` no se
+porta— sino que se cumple por construcción: el recorrido no crece hacia donde no
+cabe. De ahí sale gratis el cabo, que deja de decidirse: la cinta se acaba donde ya
+no cabe.
+
+Verificada con su propia batería (`hrrs/verificacion/`): 996 obras, 2.008.529 pares
+no contiguos, **cero** por debajo del canal, y cada detector con su control roto a
+propósito. Uno de esos controles comprueba una afirmación del algoritmo y no un
+detector: que el **bisel** es lo que hace suficiente a la regla — con inglete, el
+pico de una esquina cruza el canal y suelda la obra.
+
+No está en `works.json` ni publicada. Ver `hrrs/README.md`.
+
+Y `ptzd/` sí está en `works.json`, con `active: false`: registrada para el panel y
+para el laboratorio, y fuera de la web hasta que se marque la casilla.
+
+`ptzd/` es el quinto, y es distinto de los cuatro anteriores en el método: **la
 gramática se escribió antes que el código**, que es el paso que a `dtkrt/`,
 `eclps/` y `evol/` les faltó por escrito. El bloque tiende al cuadrado sin serlo, y
 unos cortes de anchura constante entran por los cantos, se ramifican y mueren unos

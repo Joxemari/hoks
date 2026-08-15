@@ -1,11 +1,17 @@
 # HRRS — *itzulera*
 
-**Estado: nace aquí. No hay `algo.js`, no hay harness, no está en
-`data/works.json`, no tiene página.** Esto es sólo el análisis y la gramática,
-escritos para que otra sesión pueda empezar a construir sin volver a derivarlos.
-El nombre es provisional: *harresiak*, las murallas, porque el dibujo se lee como
-el plano de un recinto. Alternativas si no convence: **BDK** (*bideak*, los
-caminos) o **MGK** (*mugak*, los límites).
+**Estado: construida y verificada. Hay `algo.js` y harness (`../hrrs/`), está en
+`GRADUATED`, y NO está en `data/works.json` ni tiene página** — es una propuesta
+de sistema para mirar en el grid de obras y decidir si merece página, como lo
+fueron `dtkrt/`, `eclps/` y `evol/` antes que ella. El nombre sigue siendo
+provisional: *harresiak*, las murallas, porque el dibujo se lee como el plano de un
+recinto. Alternativas si no convence: **BDK** (*bideak*, los caminos) o **MGK**
+(*mugak*, los límites).
+
+> Lo que sigue hasta «Lo construido» es el análisis y la gramática tal y como se
+> escribieron **antes** del código, sin retocar. Lo que se decidió mirando, lo que
+> costó y lo que se midió está al final, y en dos sitios se contradice con lo de
+> arriba — dicho en su sitio y con el motivo.
 
 ---
 
@@ -192,6 +198,187 @@ Los que se ven venir:
 El de **toque** es el que importa y es el único sin umbrales, como `hueco.js` en
 TRZS: si nada se solapa, cualquier píxel de cinta con cinta al lado sin suelo por
 medio es un defecto, y no hay nada que interpretar.
+
+## Lo construido
+
+```
+hrrs/
+  algo.js              ← el algoritmo, fuente única
+  index.html           ← el harness (mandos: tipo, cintas, pliegues, gubia, canal, reserva)
+  verificacion/        ← los detectores y sus controles rotos. Ver su README
+```
+
+Registrada en `GRADUATED` (`_lab.js` y `admin.html`), así que un lote la puede
+mezclar con otras obras. **No** está en `works.json`: se llega por URL, `../hrrs/`.
+
+Y una cosa que no es de HRRS y sale de aquí: la política de color de dos tintas
+—el par por distancia de color, la luminancia decidiendo el suelo, el papel crudo—
+**subió a `_engine.js`** como `E.inkDice` / `E.inkRoles`. Era lo que `ptzd/README.md`
+tenía escrito («no se copia: se sube; es la segunda familia que lo pide, la tercera
+ya sería tarde») y HRRS es la tercera. EVOL se portó a llamarla y se comprobó
+**idéntica al píxel**: 80 de 80, dos formatos × cinco tipos × ocho seeds.
+
+## La primera pregunta, decidida mirando: **el pliegue se declara**
+
+Se montó lo mínimo para ver doce obras a la vez y se compararon las dos versiones
+sobre las mismas seeds: una con la primitiva del pliegue quitada del todo —el
+acompañamiento sólo puede emerger de la restricción dura más la preferencia por
+la cercanía— y otra con el pliegue declarado.
+
+Y lo que dice el grid no es lo que este README suponía («emergente es más bonito;
+declarado es más gobernable»). **Emergente no es más bonito: es otra familia.** La
+cinta sale en lazos amplios que vuelven sobre sí mismos, y al volver caen a la
+distancia que sea — de un canal a cinco. Eso incumple la regla 1, que dice que la
+obra tiene **dos medidas y sólo dos**: un hueco que puede medir cualquier cosa no
+es un canal, es un espacio. Y con lazos grandes y vacío dentro, la obra se va al
+territorio de EVOL, que es exactamente lo que la tabla de más arriba dice que no
+tiene que pasar.
+
+Declarado, el canal mide `g` **allí donde importa**, y salen las vueltas paralelas
+largas de la observación 3. Medido: mediana de 8 pasillos por obra y 18,6 anchuras
+de acompañamiento; con el pliegue quitado, 5 pasillos y casi nada de recorrido en
+paralelo.
+
+Se quedan además los candidatos de pliegue con peso bajo (0,04) cuando la obra no
+ha pedido plegarse: así el pliegue también aparece donde no se le llamó, que es lo
+que el planteamiento emergente tenía de bueno.
+
+## Y una segunda decisión, ésta contra lo que este README proponía
+
+El paso 2 de «Cómo se construiría» decía reusar `selfAvoid` de TRZS. **No se
+porta.** Un relajador *empuja* pares de segmentos hasta la distancia mínima, o sea
+que trabaja sobre un recorrido que ya está mal y lo corrige — y corrigiendo mueve
+todo lo demás, que en TRZS costó una tanda entera de cabos aplastados. Aquí la
+restricción es **constructiva**: el recorrido no crece hacia donde no cabe, así que
+nunca hay nada que arreglar. No hay solver, no hay pasadas, no hay convergencia.
+
+Y tiene un premio que no se veía venir: **el cabo deja de ser una decisión.** La
+cinta se acaba donde ya no cabe, y eso es la regla 4 saliendo gratis de la regla 3.
+
+## Los ojos de HRRS no son los de EVOL, y hay un teorema por medio
+
+Una cinta **abierta** de anchura constante no puede encerrar suelo: el complemento
+de un arco engrosado es conexo por mucho que se pliegue, y con varias cintas que no
+se tocan sigue siéndolo. Así que aquí **no hay ojos cerrados**, y no por falta de
+ganas.
+
+El ojo grande de la referencia no está cerrado: está **cerrado para la cinta**. Se
+sale de él por el canal, y por el canal la cinta no cabe. De ahí la definición, que
+no lleva ni un umbral inventado:
+
+> **Un ojo es el suelo donde la cinta ya no cabe.**
+
+Se calcula como alcance de un disco de radio `W/2` —el material— desde el borde del
+cuadro: suelo a `W/2` o más de la tinta, inundado desde el borde, dilatado en `W/2`;
+lo que queda sin alcanzar, por componentes. Es **la misma regla que acaba un cabo**,
+así que el ojo y el cabo son el mismo suceso visto por los dos lados. Y el margen
+de la regla del campo se gana el sueldo: garantiza que el anillo del borde está
+libre, así que el agua siempre tiene por dónde entrar.
+
+## Lo que costó, y por qué está escrito en el código
+
+Seis pasadas mirando el grid. Cada número que parece arbitrario tiene detrás una
+versión que se veía peor:
+
+- **Glifo.** Cinta gorda y recorrido corto: la obra se lee como una letra gruesa.
+  Lo que hace a esta familia no es la cinta, es cuánto recorrido cabe en ella. El
+  techo de la gubia baja de 0,072 a 0,058 del lado corto.
+- **Ahogo.** Con tramos de hasta cuatro décimas del campo, un recorrido que no se
+  puede tocar se encierra en seis tramos y se muere: mediana de **14 vértices con
+  un tope de 90**, o sea que el tope no existía y lo que decidía la obra era el
+  ahogo. Tramos más cortos, y el recorrido vive.
+- **Una constante que no se variaba.** `INTENTOS = 26` era código muerto: sólo se
+  generaban 6 candidatos, uno por dirección de giro, así que `min(cands, INTENTOS)`
+  valía siempre 6. Ahora de cada giro se prueban **tres longitudes**, que es lo que
+  le deja colarse por un sitio estrecho en vez de darse por acabada.
+- **El pliegue que mataba la cinta.** Cuando la obra quería plegarse se generaban
+  *sólo* candidatos de pliegue, y un pliegue casi nunca cabe cuando la cinta va
+  apretada — que es justo cuando más falta hace seguir. La voluntad de plegar
+  **pesa**, no excluye.
+- **Garabato.** El paseo se metía en su propia zona densa y se ahogaba, porque el
+  sitio más cercano es siempre el que ya está ocupado. Con un peso por la **holgura**
+  del sitio donde cae el tramo, la cinta viaja.
+- **Esqueleto.** Pero sólo con holgura las hebras salen repartidas por la hoja con
+  mucho suelo suelto entre ellas. En la referencia van **cerca** unas de otras casi
+  en todas partes, y lo que hay entre ellas es canal, no campo. De ahí la **franja
+  del acompañamiento**: el peso premia caer a entre uno y dos canales y medio. Es
+  la regla 3 leída por el otro lado — no sólo «no te toques», también «no te vayas».
+- **Nervioso.** Con dos modas de giro (recto y bies) la cinta gira fuerte en cada
+  vértice. Faltaba la tercera: el **quiebro**, de cuatro a veinte grados. Es lo que
+  da las tiradas largas de la referencia, lo que la hace parecer cortada a mano — y
+  lo que deja **vivir** al acompañamiento, porque una vuelta que gira fuerte al
+  primer vértice se despide del pasillo enseguida.
+- **Ovillo en una diagonal.** El recorrido vagabundeaba alrededor de un punto y
+  dejaba cuatro márgenes muertos que no eran la reserva (ocupación del 6 al 11% con
+  un techo declarado del 24%), porque una deriva hacia un punto fijo deja de tirar
+  en cuanto se llega a él. Ahora hay una **ruta**: hitos que se van dejando atrás.
+- **La puerta equivocada.** Con muchas cintas, un arranque que cae en un rincón ya
+  cerrado da una cinta de dos tramos. Se prueban cuatro arranques y se queda el más
+  largo. Probar dónde entrar no es corregir el recorrido —el recorrido no se toca—,
+  es elegir la puerta.
+
+## El bisel: lo único que hace **suficiente** a la regla 3
+
+Parecía un detalle de dibujo y es lo contrario. Con `lineJoin: miter`, el pico de
+un giro sale `W/2/sen(α)` del vértice —0,707 W en un giro recto, más al bies— y la
+regla 3 sólo garantiza `W/2 + g = 0,67 W` de aire alrededor de un vértice: **una
+esquina puede cruzar el canal y soldar la obra por donde menos se mira.** Con
+`bevel` toda la tinta cae dentro de `W/2` del eje, y entonces «los ejes a `W+g`»
+equivale exactamente a «las tintas a `g`».
+
+No es una creencia: es el control `miter` de la batería, que dispara **10 de 10**.
+Y de paso el bisel es lo que hace el filo — una esquina cortada.
+
+El cabo a escuadra, en cambio, resultó ser **sólo** gramática (regla 5): un cabo
+redondo es un semidisco centrado en el vértice del eje, así que cae *dentro* de la
+suma de Minkowski y no rompe el canal. Se mide aparte, con su propio control.
+
+## Medido
+
+Batería completa sobre el algoritmo publicado. Los detalles, las trampas y los
+controles están en `verificacion/README.md`.
+
+```
+canal (regla 3)   996 obras · 2.008.529 pares no contiguos · 0 incumplen
+                  separacion minima 1,000 exacta en las doce configuraciones
+                  tintas solapadas: 0 de 996
+toque             0 de 252 con tinta fuera de la geometria (exceso maximo 0,00)
+                  0 de 252 con tinta mas alla del cabo
+margen            0 de 996 fuera del cuadro · minimo 0,055 exacto
+determinismo      60/60 identico al pixel · 60/60 con la paleta fijada
+resolucion        60/60 misma huella a 760 / 2400 / 4200 de lado corto
+```
+
+Distribución de la familia, 400 tiradas con los pesos de los tipos (sin forzar):
+
+```
+tipos       plegado 37%  acompanado 28%  suelto 21%  trenza 15%
+ojos        p50 6 · p90 10 · max 16
+pasillos    p50 8 · acompanamiento p50 16,6 anchuras
+ocupacion   p10 8,0%  p50 21,4%  max 33,5%
+cadencia    CV de longitudes p50 0,59 (con la rejilla rota, 0,30)
+falta = 0   400 de 400
+```
+
+Sobre las doce configuraciones juntas `falta = 0` en **993 de 996**: con seeds
+difíciles ningún candidato cumple lo que su tipo declara y manda el que menos
+incumple (máximo 0,26). Por eso `falta` es un número y no un sí/no.
+
+## Lo que queda abierto
+
+- **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
+  triaje que la regla 6 pide, y se mide — pero **no tiene control que dispare**: la
+  rejilla da 9 obras-laberinto de 120 contra 6 de 120 del sano. Así que esos números
+  son descriptivos y la regla 6 sigue siendo una decisión del ojo en el grid. Dicho
+  aquí para que el cero de al lado no se lea como si estuviera comprobado.
+- **El temblor de gubia** de la observación 1 no está. Sigue pudiendo esperar, y
+  añadirlo ahora sería una constante más que nadie varía.
+- **Las tres vueltas en paralelo** salen de dos pliegues seguidos y están medidas
+  como pasillos, pero no hay un rasgo que cuente *cuántas vueltas* corren juntas.
+  Sería el rasgo más propio de la familia.
+- **El nombre**, que es tuyo.
+- **Y la de verdad:** si esto merece página. Eso se decide viendo doce seeds a la
+  vez, no leyendo esto.
 
 ## Lo que ya está medido, del intento dentro de TRZS
 
