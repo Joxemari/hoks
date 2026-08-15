@@ -186,7 +186,17 @@ redeploy de Pages.
   laboratorio) que se comprueban sobre el resultado. La esquina puede salir viva
   o curva —una de cada cuatro—, y hay un **temblor** opcional del recorrido, que
   entra antes de analizar el nudo para que la incisión siga cayendo donde el
-  análisis dice. Graduada desde p5 (`sketches/iterations2/`), con el porte
+  análisis dice. **El contraste de la cinta contra el suelo es un dial, no una
+  constante**: cogiendo siempre el color más lejano, la misma pareja gana en todas
+  las tiradas y quince paletas se leen como cuatro, así que una de cada cuatro
+  baja del extremo — y en el otro tope está el **fantasma**, una cinta del color
+  exacto del suelo (3,5%) que no se ve como cinta sino como el corte que la
+  separa. Ahí el halo se pinta con **el color de la paleta más lejano al suelo**,
+  nunca con un tono fabricado hacia el blanco o el negro: si la cinta va a ser del
+  color del suelo, lo que la dibuja tiene que ser lo más lejos que la paleta
+  llegue. Ese sorteo va con **azar derivado del seed**, como la esquina y el
+  remate, para que una decisión de color no corra la geometría de las obras ya
+  vistas. Graduada desde p5 (`sketches/iterations2/`), con el porte
   verificado idéntico al píxel y una batería propia en `sketches/trzs/verificacion/`
   (`mil.sh`: mil obras por bloque, cada bloque con su control roto a propósito).
 - **Variantes "G"** (KRRTK/DTK/PLLS): añaden **mesh gradient** de fondo

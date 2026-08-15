@@ -60,9 +60,9 @@ elif roto == 'sueloigual':
     # halo aparece a lo largo de todo el cuerpo, porque por la vía normal el
     # caso no se alcanza — y un arreglo que no se puede ver disparar no está
     # comprobado, está escrito.
-    a = "    return { bg, fg, fg2, fg3, dot, dots };"
+    a = "    return { bg, fg, fg2, fg3, dot, dots, filo };"
     assert a in src
-    src = src.replace(a, "    return { bg, fg, fg2: bg, fg3, dot, dots };   // ROTO A PROPOSITO")
+    src = src.replace(a, "    return { bg, fg, fg2: bg, fg3, dot, dots, filo };   // ROTO A PROPOSITO")
 elif roto == 'costura':
     # El cuerpo vuelve a acabar a ras del halo, que es de donde salía la raya
     # de 1 px. Es el control del bloque de costuras: sin él, su cero no dice
