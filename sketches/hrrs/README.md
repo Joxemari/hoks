@@ -1152,6 +1152,56 @@ cascotes. En las referencias los elementos pequeños **mueren contra el cuerpo**
 cabos, no acompañamientos. Por debajo de medio lado corto, la baraja cambia y manda
 `caboCuerpo`.
 
+## La réplica exacta como fuente de verdad
+
+Lo pidió el autor en una frase que cambia el orden de todo: *«quiero replicarlos al
+100% y validar eso como source de cualquier otra cosa»*. O sea: la técnica no se
+juzga por si las obras generadas «se parecen», sino por si es capaz de **reconstruir
+las referencias**. Lo primero es falsable y lo segundo no.
+
+El circuito es de dos piezas:
+
+1. **`referencias/traza.py`** saca del píxel la geometría real: umbral, esqueleto, y
+   —lo importante— el esqueleto recorrido **como bandas y no como ramas**. Una rama va
+   de suceso a suceso, así que una banda que pasa por debajo de otras sale troceada en
+   cuatro; para replicar hay que atravesar cada nudo **siguiendo recto**. Devuelve, por
+   banda, la poligonal y la **semianchura en cada vértice**.
+2. **`componer({eje, anchos})`** en `algo.js` dibuja esas poligonales con la técnica de
+   la casa: la banda con su bisel, el canal, el grano. Nada más.
+
+Lo que quede distinto entre réplica y original **ya no es de composición: es de
+técnica**. Por eso vale como fuente de verdad.
+
+### Medido, por solape de píxel
+
+```
+            IoU      sobra   falta
+ref01      73,6 %    13,8 %  16,3 %
+ref02      67,7 %    17,7 %  20,2 %
+ref03      46,8 %    36,8 %  36,0 %
+ref04      84,3 %     4,6 %  11,9 %
+ref05      37,7 %    78,4 %  32,7 %
+ref06      78,1 %     7,1 %  16,3 %
+                     mediana  70,7 %
+```
+
+Y las dos que fallan dicen exactamente qué falta, porque fallan de maneras opuestas:
+
+- **ref05, el cartel: 78 % de tinta DE SOBRA.** Es la única con bandas de anchura
+  grande y constante que **cruzan el pliego entero**. El trazado las recupera, pero al
+  reconstruirlas con la semianchura del esqueleto los cruces se engordan: donde tres
+  bandas anchas se superponen, el eje medial se desplaza y la distancia al fondo crece.
+  La lección es sobre la técnica: **una banda ancha no se puede describir por su eje**
+  cuando se cruza con otra. Hace falta llevar la anchura DECLARADA, no medida.
+- **ref03, la enmarcada: 37 % de sobra y 36 % de falta a la vez.** Es la de bandas
+  **curvas**. Mi banda es una poligonal con bisel, así que en una curva larga o sobra
+  en la parte exterior o falta en la interior — y aquí pasan las dos. Es la primera vez
+  que el «no hacemos curvas» sale con un número al lado.
+
+Las cuatro que sí replican pasan de **68 % a 84 %**, y lo que les falta es casi todo
+el mismo residuo: el borde. El original tiene filo de tinta sobre papel y la réplica
+tiene una arista poligonal.
+
 ## Transcribir en vez de describir: el mismo instrumento en los dos lados
 
 El primer intento de réplica fue por el mal camino y el autor lo dijo en tres

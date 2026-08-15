@@ -488,7 +488,10 @@
     }
   }
 
-  function banda(ctx, pts, W, gub, relleno) {
+  // `anchos` (opcional) son las SEMIANCHURAS por vértice, en unidades de campo.
+  // Sólo las usa la réplica: el original no tiene una anchura sola, y reconstruirlo
+  // con la modal suelda las bandas que van a un pelo.
+  function banda(ctx, pts, W, gub, relleno, anchos) {
     const n = pts.length;
     if (n < 2) return;
     const nx = [], ny = [], L = [];
@@ -500,7 +503,8 @@
     }
     // media anchura en cada vértice, por longitud de arco recorrida
     const h = [];
-    { let acc = 0;
+    if (anchos && anchos.length === n) { for (const a2 of anchos) h.push(a2); }
+    else { let acc = 0;
       for (let i = 0; i < n; i++) { h.push(anchoEn(tot > 0 ? acc / tot : 0, W, gub) / 2); if (i < n - 1) acc += L[i]; } }
     const izq = [], der = [];
     for (let i = 0; i < n - 1; i++) {
@@ -1510,6 +1514,7 @@
     const fw = AW >= H ? q : 1, fh = AW >= H ? 1 : q;
 
     const Wb = min(fw, fh) * (receta.ancho || 0.065);
+    void fw; void fh;
     const gam = receta.canal || 0.11, g = Wb * gam, D = Wb + g;
     const vib = receta.vibra === 0 ? null
               : { amp: receta.vibAmp || 4.2, onda: Wb * (receta.vibOnda || 1.8) };
@@ -1518,7 +1523,14 @@
     for (const r of receta.trazos) {
       let pts = null;
       const gu = { giros: r.giros || [], pesos: r.pesos };
-      if (r.paralelo != null) {
+      if (r.eje) {
+        // EL EJE DADO. Es la réplica exacta: la poligonal viene trazada del píxel de
+        // una referencia (`referencias/traza.py`) y aquí sólo se le pone encima la
+        // técnica de la casa — la banda con su bisel, la gubia y el canal. Lo que
+        // quede distinto entre la réplica y el original ya no es de composición: es
+        // de TÉCNICA, y por eso esto vale como fuente de verdad.
+        pts = r.eje.map(q => ({ x: q[0], y: q[1] }));
+      } else if (r.paralelo != null) {
         const o = cx2.trazos[r.paralelo].pts;
         const sub = trozo(o, r.a, r.b);
         pts = desplazar(sub, cx2.sep * (r.canales || 1), r.lado);
@@ -1537,7 +1549,7 @@
         pts = trazar(rng, r.suelto[0] * fw, r.suelto[1] * fh, r.suelto[2],
                      cx2.S * r.largo, 0, vib, D, false, gu);
       }
-      cx2.trazos.push({ pts, segs: segsDe(pts), rel: 'receta',
+      cx2.trazos.push({ pts, segs: segsDe(pts), rel: 'receta', anchos: r.anchos,
                         gubia: receta.gubia === 0 ? null : gubiaDe(rng, { gubAmp: receta.gubia || 0.09 }) });
     }
     holguras(cx2);
@@ -1545,7 +1557,7 @@
     ctx.fillStyle = rol.suelo; ctx.fillRect(0, 0, W, H);
     ctx.save(); ctx.translate(ox, 0); ctx.scale(S, S);
     ctx.beginPath();
-    for (const tr of cx2.trazos) banda(ctx, tr.pts, Wb, tr.gubia, tr.relleno);
+    for (const tr of cx2.trazos) banda(ctx, tr.pts, Wb, tr.gubia, tr.relleno, tr.anchos);
     ctx.fillStyle = rol.tinta; ctx.fill();
     ctx.restore();
     if (receta.grano !== 0) E.grain(ctx, W, H, colors, receta.grano == null ? 1 : receta.grano, E.unit(W, H, REF));
