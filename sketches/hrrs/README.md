@@ -1754,9 +1754,26 @@ por debajo de un cierto ancho. Un canal **cortado** —la incisión, sustractiva
 propia anchura— no hereda ninguno. Es exactamente lo que el halo hace en `render`, y se
 añadió hoy por otro motivo; la réplica lo justifica por su cuenta.
 
-Lo que falta para llevarlo también a la réplica es leer del original **dónde** están las
-incisiones con precisión: `componer` ya acepta `receta.cortes`, pero la extracción de
-hoy es basta y muerde la banda. Ese es el sitio.
+Y llevarlo a la réplica **no se puede a esta resolución**, que también es un resultado.
+`componer` acepta `receta.cortes` y se afinó la lectura de las incisiones en tres sitios
+—comprobar que hay tinta a los dos lados por la normal del propio canal (con el
+gradiente de la distancia no vale: en la cresta es cero, y el filtro rechazaba las 23 de
+23), simplificar diez veces más fino porque una incisión no es un trazo y no tiene
+cadencia que respetar, y darle a cada vértice la anchura **mínima** de su tramo y no la
+del vértice—. Con eso el exceso baja de verdad: en el cartel de 1,2 % a 0,6 %.
+
+Pero la tinta que falta sube más, y se midió por qué: **el corte pisa tinta del original
+en el 7–12 % de su propia área**, que es exactamente la falta que añade. No es un fallo
+de la lectura: un corte tan ancho como el canal apoya su filo antialiaseado sobre los
+píxeles de tinta de al lado, y el canal mide 4–7 píxeles. Estrechándolo deja de morder y
+deja de quitar exceso a la vez — el barrido converge a no cortar.
+
+O sea: **a 1200 px la incisión no se puede reproducir como marca propia, porque su
+anchura es del orden del error de rasterizado.** No es que la técnica no la tenga: es que
+el patrón de medida no la resuelve. La predicción —que a doble resolución el corte sí
+pague— queda sin comprobar: `recortar` usa un margen de 12 px absolutos, así que el
+recorte a 2400 no es la misma región física y la receta no encaja. Arreglarlo es
+alinear el recorte, no cambiar nada de la técnica.
 
 ### Dónde está el suelo, por fin con una cifra: el filo se desvía 0,013 anchuras
 
