@@ -136,6 +136,17 @@
       <span class="hintline">0 = auto · escala el techo de la masa (0,150 del lado corto)</span>
     </div>
     <div class="group">
+      <span class="lbl">Filo</span>
+      <select id="filo">
+        <option value="">Aleatorio (por peso)</option>
+        <option value="cortado">cortado · el canto exacto</option>
+        <option value="pincel">pincel · el canto vivo</option>
+        <option value="seco">seco · con mordidas</option>
+      </select>
+      <span class="hintline">es la herramienta, no el tejido: cambiar de filo no mueve
+        la composición ni la rareza — el ojo se mide sobre el eje, no sobre el contorno</span>
+    </div>
+    <div class="group">
       <span class="lbl">Gravedad</span>
       <select id="grav">
         <option value="">Aleatoria</option>
@@ -214,6 +225,7 @@ function params() {
     munones:    auto($('mu').value),
     cuerpo:     parseFloat($('cp').value) || 0,
     gravedad:   $('grav').value || null,
+    filo:       $('filo').value || null,
   };
 }
 function auto(v) { const n = parseInt(v, 10); return n < 0 ? null : n; }
@@ -250,7 +262,7 @@ function renderSingle() {
     const oj = res.ojos.length ? res.ojos.map(o => (o * 100).toFixed(1) + '%').join(' ') : '—';
     $('status').textContent = `seed #${seed} · ${res.tipo} · ${res.estratos} estratos · `
       + `${res.puentes}p ${res.lazos}l ${res.munones}m · ojos ${res.ojos.length} (${oj}) · `
-      + `tinta ${Math.round(res.mancha * 100)}% · falta ${res.falta.toFixed(2)}`;
+      + `tinta ${Math.round(res.mancha * 100)}% · ${res.filo} · falta ${res.falta.toFixed(2)}`;
     drawTraits(WORK.traits(res));
   } catch (e) { $('status').textContent = '⚠ ' + e.message; console.error(e); }
 }
@@ -307,6 +319,7 @@ $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; 
 $('field').onchange = refresh;
 $('tipo').onchange = refresh;
 $('grav').onchange = refresh;
+$('filo').onchange = refresh;
 $('est').oninput = () => { $('estV').textContent = $('est').value === '0' ? 'auto' : $('est').value; refresh(); };
 $('pt').oninput  = () => { $('ptV').textContent  = $('pt').value === '-1' ? 'auto' : $('pt').value; refresh(); };
 $('lz').oninput  = () => { $('lzV').textContent  = $('lz').value === '-1' ? 'auto' : $('lz').value; refresh(); };

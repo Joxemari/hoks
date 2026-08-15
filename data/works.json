@@ -123,5 +123,23 @@
       "eu": "Gainetik eta azpitik ez dira bi geruza: ibilbideari jarraituz txandakatzen dira.\nGurutzagune bakoitzetik bi aldiz igarotzen da, eta bigarrenak lehenaren kontrakoa dio.",
       "en": "Over and under are not two layers: they alternate as the line is walked.\nEvery crossing is passed twice, and the second pass says the opposite of the first."
     }
+  },
+  {
+    "id": "evol",
+    "name": "EVOL",
+    "slug": "evol",
+    "active": true,
+    "description": "Two bodies meet and weld. There is no over and no under, no incision: one single mass. And the ground, which in the crossing passed between, is here trapped — it survives only where the mass closes around it. It stops being a line and becomes an island with an edge. That is an eye, and the eyes are the work: the void is not what is left over, it is what the mass is there to define.",
+    "page": "evol.html",
+    "canvas": "square · horizontal (DIN)",
+    "formats": [
+      "square",
+      "horizontal"
+    ],
+    "created": 1786665600000,
+    "cartela": {
+      "eu": "Bi gorputz elkartu eta bat egiten dute: ez dago gainetik, ez azpitik.\nLurra masak inguratzen duen tokian bakarrik bizirik: hutsunea ez da soberakina, mugatzeko dagoena baizik.",
+      "en": "Two bodies meet and weld: there is no over and no under.\nThe ground survives only where the mass closes around it — the void is not what is left over, it is what is there to be bounded."
+    }
   }
 ]

@@ -202,7 +202,25 @@
     // como un error de registro en la impresión.
     const resto = uniq.filter(c => c !== suelo && c !== tinta);
     const otra = resto.find(c => dcolor(c, suelo) > 0.34 && dcolor(c, tinta) > 0.30) || null;
-    return { suelo, tinta, otra, inv, papel };
+
+    // Y la LISTA de tintas extra, para las familias que superponen capas enteras en
+    // vez de teñir un cuerpo: EVOL teje hasta cuatro tramas, cada una con su tinta.
+    //
+    // Va aparte de 'otra' y con umbrales más flojos a propósito. 'otra' pide mucho
+    // contraste porque es UN cuerpo suelto dentro de la masa principal y, si se
+    // parece, se lee como un error de registro. Una capa entera no tiene ese
+    // problema: se sostiene por su propio recorrido, así que admite tintas más
+    // cercanas. Tocar 'otra' para reaprovecharla habría movido la imagen de las
+    // familias que ya la usan, y eso no se hace al subir algo al motor.
+    const otras = [];
+    for (const c of resto.filter(c => dcolor(c, suelo) > 0.24)
+                         .sort((x, y) => dcolor(y, tinta) - dcolor(x, tinta))) {
+      if (dcolor(c, tinta) < 0.22) continue;
+      if (otras.some(q => dcolor(q, c) < 0.24)) continue;   // dos tintas casi iguales son una
+      otras.push(c);
+      if (otras.length === 3) break;
+    }
+    return { suelo, tinta, otra, otras, inv, papel };
   }
 
   // ── Paletas: probabilidad ponderada por edad (lo reciente pesa más) ─────────

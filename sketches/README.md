@@ -92,9 +92,11 @@ vacío. Lo que sí hereda entero es el método: el tipo declara cuántos ojos qu
 luego **se comprueban** sobre el dibujo, por campo de distancias e inundación desde
 el borde — el mismo mapa de vacíos con el que TRZS coloca sus discos.
 
-No está en `works.json` ni publicada. Ver `evol/README.md` para el concepto, las
-nueve pasadas que costó y las decisiones que quedan abiertas (el nombre, entre
-ellas).
+Activa en `works.json`. Reformulada desde los estratos a **la trama**: hebras en dos
+direcciones que se cruzan y se sueldan, y el ojo es la celda que dejan al cruzarse
+—cuadrangular, como los de la referencia, y no el huso que daba un lazo—. Ver
+`evol/README.md` para el concepto, el filo (el canto vivo, que no toca la anatomía) y
+las decisiones que quedan abiertas.
 
 `hrrs/` es la tercera respuesta a la pregunta de TRZS —¿qué pasa cuando la cinta se
 encuentra consigo misma?—, y la única que contesta **no se encuentra**: llega hasta

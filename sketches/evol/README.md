@@ -1,77 +1,146 @@
 # EVOL — *hutsunea*
 
-**Estado: nace aquí. No está en `data/works.json`, no tiene página, no está
-publicada.** Es una propuesta de sistema para mirar en el grid de obras y decidir
-si merece página, como lo fueron `dtkrt/` y `eclps/` antes que ella. El nombre es
-provisional.
+**Estado: nació aquí y está ACTIVA.** Empezó como propuesta para mirar en el grid,
+igual que `dtkrt/` y `eclps/`, y ha pasado a `data/works.json` con `active: true`.
+Eso arrastra cuatro sitios, no uno —el desplegable del lab es solo el último—:
+`evol.html` (el cascarón de `work-page.js`; sin él el nav enlazaría a un 404),
+`data/evol.json` (la galería, de momento vacía), y la landing, que consume su
+`algo.js` real como DTKRT, ECLPS y TRZS. El nombre sigue siendo provisional.
+
+Todavía no hay obra guardada: la galería está vacía hasta que se publique un lote
+desde el laboratorio.
 
 ---
 
 ## La idea, en una frase
 
-**TRZS es el cruce. EVOL es la soldadura.**
+**TRZS es el cruce. EVOL es el nudo.**
 
-En TRZS dos hebras se encuentran y **pasan**: una por encima, otra por debajo, y
-el suelo aparece entre ellas como una **incisión** — una línea, un corte que las
-mantiene separadas. La profundidad se decide cruce a cruce, como un diagrama de
-nudo, y toda la máquina de esa obra existe para que ese corte se vea.
+En TRZS dos hebras se encuentran y **pasan**: una por encima, otra por debajo, y el
+suelo aparece entre ellas como una **incisión** — una línea que las mantiene
+separadas. Toda la máquina de esa obra existe para que ese corte se vea.
 
-En EVOL dos cuerpos se encuentran y se **funden**. No hay encima ni debajo, no hay
-incisión, no hay diagrama de nudo. Un solo cuerpo. Y el suelo, que en TRZS pasaba
-**entre**, aquí queda **atrapado**: sobrevive solo donde la masa se cierra a su
-alrededor. Deja de ser una línea y se vuelve una isla con borde.
+En EVOL se **sueldan**. No hay encima ni debajo, no hay incisión, no hay diagrama de
+nudo: donde se cruzan, la masa se acumula y se hace una sola pieza. Y lo que queda
+encerrado entre cuatro hebras es una **celda** de suelo con borde por los cuatro
+lados. Eso es un **ojo**, y los ojos son la obra: el vacío no es lo que sobra, es lo
+que la trama está ahí para definir.
 
-Eso es un **ojo**, y los ojos son la obra. El vacío no es lo que sobra: es lo que
-la masa está ahí para definir. La misma técnica —una cinta que recorre el marco—
-con la ley del encuentro invertida da la otra mitad del asunto: si TRZS trata de
-cómo dos cosas se separan sin dejar de tocarse, EVOL trata de cómo dejan de ser
-dos.
+De ahí el subtítulo. *Hutsune* es el hueco — palabra de Chillida, de un escultor de
+Donostia que se pasó la vida diciendo que no trabajaba el hierro sino el espacio que
+el hierro deja. La continuidad con **Elena Asins** no solo sigue: se refuerza, porque
+una trama es una retícula que ha perdido la regla — el sistema sigue ahí, pero el paso
+ya no es constante y las hebras no llegan todas al otro lado.
 
-De ahí el subtítulo. *Hutsune* es el hueco, el vacío — y es palabra de Chillida,
-título suyo, de un escultor de Donostia que se pasó la vida diciendo que no
-trabajaba el hierro sino el espacio que el hierro deja. La continuidad con
-**Elena Asins** sigue donde estaba: el sistema, la serie, la regla que produce la
-forma. Chillida entra por la otra puerta, la de que el material solo está para
-poner un borde al vacío.
+## Por qué la trama, y no los estratos
+
+La primera versión de esta familia iba por **estratos**: bandas casi horizontales que
+cruzaban el pliego, unidas por puentes, y los ojos salían de **lazos** — una rama que
+sale del tronco y vuelve. Funcionaba, y estaba medida, pero se quedaba corta, y
+mirando cuatro referencias juntas se ve exactamente por qué:
+
+**Los huecos de Chillida son cuadrangulares.** Compactos, de cuatro a seis lados,
+esquinas casi rectas, proporción de habitación. Un lazo no puede dar eso: una rama que
+sale y vuelve encierra un **huso**, gordo en el centro y afilado en las puntas. Y ese
+huso se lee como dibujado, porque la forma la pone el trazo y no el encuentro.
+
+Sus huecos son cuadrangulares porque son **celdas**: lo que dejan cuatro hebras al
+cruzarse. En una de las referencias eso se ve sin interpretar nada — dos trazos de
+pincel horizontales cruzados con dos verticales, y los huecos son las cuatro celdas.
+Otra es lo mismo con la tinta mucho más gorda. La tercera es esa trama estirada y laxa,
+con los brazos viajando y adelgazando. Y la cuarta es la trama casi maciza, donde los
+huecos ya no son celdas sino **vanos** abiertos en la masa.
+
+Así que la familia se reformula sobre eso: **hebras en dos direcciones que se cruzan y
+se sueldan**. El ojo deja de dibujarse de ninguna manera — es la consecuencia
+geométrica de que cuatro hebras se encuentren. Y la cobertura sube sola, porque una
+trama pesa más que tres bandas.
 
 ## La gramática, en cinco reglas
 
-1. **ESTRATOS.** La masa no divaga por el cuadro: recorre bandas casi horizontales
-   que lo cruzan. Cada estrato **entra por un borde** — la obra es el corte de algo
-   más grande, no una figura centrada en su hoja.
-2. **CUERPO.** La anchura no es constante. Ahí es donde se separa de TRZS, donde el
-   grosor **es** el material y no cambia nunca. Aquí va por **niveles discretos** y
-   salta de uno a otro en los vértices: la masa engorda y adelgaza a escalones, no
-   en rampa. De ahí el contorno facetado, y de ahí que en una misma pieza convivan
-   el pelo y el bloque.
-3. **SOLDADURA.** Los estratos se unen por **puentes**, y un cuerpo se cierra sobre
-   sí mismo por **lazos** — una rama que sale y vuelve al tronco. Ni una cosa ni la
-   otra tapa nada: suma. Y lo que queda encerrado es el ojo. **El ojo no se dibuja,
-   se deja.**
-4. **MUÑONES.** Ramas cortas que salen y mueren a corte vivo, oblicuo. No cierran
-   nada: rompen la silueta. Un cuerpo sin muñones se lee como un tubo.
-5. **GRAVEDAD.** El peso es asimétrico y hay una **reserva**: una esquina por la que
-   no pasa nada, y por la que se lee todo lo demás. Chillida titula *Gravitaciones*
-   a una serie entera; el peso cae hacia un lado y la hoja se lee por lo que queda
-   libre.
+1. **HEBRAS.** Recorren el pliego en dos direcciones. Las **pasantes** entran y salen
+   por los bordes — la obra es el corte de algo más grande, no una figura centrada en
+   su hoja. La hebra no sabe hacia dónde va: se genera en un eje y se gira, así que las
+   dos direcciones salen de la misma gramática.
+2. **RAMALES, Y SU RAMAJE.** Hebras que **no** cruzan: nacen sobre otra, salen casi
+   perpendiculares y mueren dentro, a corte vivo. Son lo que separa una red de una
+   retícula — sin ellas las celdas salen grandes, limpias y todas parecidas, un plano de
+   calles.
 
-Y una regla de método, heredada tal cual de TRZS: el tipo **declara** cuántos ojos
-y cuánta mancha quiere, y luego se **comprueba sobre el resultado**. *Declarar sin
-comprobar es lo que ya falló con las familias de TRZS.* Aquí importa más que allí,
-porque el ojo declarado y el ojo medido no son el mismo: la masa engorda y se come
-sus propios huecos. Lo que cuenta es el medido.
+   Y un ramal es una hebra de pleno derecho, así que tiene **sus** ramales. Ahí está la
+   diferencia entre una rejilla de seis elementos y lo que hacen las referencias: con
+   hebras y ramales de un solo orden, todas las piezas salían del mismo tamaño de suceso
+   y las celdas todas parecidas. Miradas de cerca, las referencias tienen un tronco muy
+   gordo, ramas medianas, ramitas finas y celdas de todos los tamaños a la vez. Eso no
+   se consigue metiendo más trazos del mismo tamaño —eso es ruido—: se consigue metiendo
+   **escalas**. Cada generación es menos de la mitad de larga que la anterior y baja de
+   nivel, así que lo que se añade siempre es menor que lo que ya hay, y se lee como
+   detalle de la masa en vez de como otra masa peleando por el sitio.
+3. **NUDOS Y PLACAS.** Donde dos hebras se cruzan, la masa **engorda**: el encuentro no
+   es la suma de dos anchuras, es una acumulación. Y donde el nudo carga de verdad, deja
+   de ser un cruce engordado y se vuelve una **placa** — un polígono irregular del que
+   salen los brazos.
+
+   La placa arregla la limitación de fondo que arrastraba la familia: una hebra es un
+   eje con una anchura, o sea un **tubo**, y por mucho que la anchura module sigue
+   siéndolo. De ahí que las piezas se leyeran como tuberías, grietas o calles por muchos
+   trazos que se metieran — el defecto no era la cantidad, era que todo el vocabulario
+   era tubular. En las referencias las masas no son tubos: son superficies recortadas,
+   con protuberancias y entrantes. Donde la trama se acumula deja de ser hebra y se
+   vuelve superficie, que además es lo que dice la obra — el material se junta y se hace
+   materia.
+
+   No una placa por cruce, que convertiría la pieza en un rosario de bolas: se ordenan
+   los cruces por la masa que juntan y se placan los de arriba, y dos placas pegadas se
+   descartan porque son una mancha y no dos nudos.
+
+   En TRZS el cruce era el problema entero —decidir quién pasa y abrir la incisión—;
+   aquí es donde la trama se hace una sola pieza.
+4. **CUERPO.** La anchura va por **niveles discretos** y salta en los vértices: la
+   masa engorda y adelgaza a escalones, no en rampa. Y hay **jerarquía**: una hebra es
+   la protagonista y va arriba del rango, las demás caen abajo. Sin eso todas pesan
+   igual y la trama vuelve a leerse como retícula.
+5. **FOCO Y GRAVEDAD.** La trama no se reparte por igual: se **aprieta** en un sitio y
+   se deshilacha al alejarse — en la referencia la red es gorda en una zona y hacia los
+   extremos los brazos viajan adelgazando hasta ser casi hilo. El foco baja el nivel de
+   cada tramo con la distancia, así que actúa sobre la escala y no sobre la anchura: el
+   cuerpo sigue moviéndose a escalones. Los ramales nacen cerca de él, porque el ramaje
+   es lo que espesa la zona apretada. Y las hebras se apiñan hacia un lado: lo que
+   queda enfrente es la **reserva**. El mismo peso en todas partes es lo que delata una
+   retícula, aunque las hebras estén torcidas.
+
+   El foco tiene **tope y suelo**, y los dos por lo mismo. Sin suelo, las hebras
+   llegaban al nivel 0 en cuanto se alejaban un poco y la pieza se leía como un mapa de
+   **grietas**: hilos de dos píxeles sobre el fondo, no masa. Pero con un suelo plano
+   para todas, el foco dejaba la pieza en dos o tres niveles vecinos y salía un
+   **craquelado** —celdas separadas por hilos del mismo grosor, como barro seco—, que
+   es el defecto contrario y la misma causa: sin contraste de grosor dentro de la pieza
+   no hay nada que mirar. El suelo lo pone la **jerarquía**: la protagonista aguanta el
+   adelgazamiento y las demás no, así que lejos del foco siguen conviviendo el bloque y
+   el hilo.
+
+Y la regla de método, heredada de TRZS: el tipo **declara** cuántos ojos y cuánta
+mancha, y luego se **comprueba sobre el resultado**. *Declarar sin comprobar es lo que
+ya falló con las familias de TRZS.* Aquí importa doble, porque el ojo declarado y el
+medido no son el mismo: la masa engorda en los nudos y se come sus propias celdas.
+Además la familia exige que la trama **trame**: sin dos cruces no hay celdas y no hay
+ojos — son dos hebras paralelas y ya.
 
 ## Los cuatro tipos
 
-| tipo         | peso | estratos | puentes | lazos | muñones | ojos medidos | mancha  |
-|--------------|------|----------|---------|-------|---------|--------------|---------|
-| `estrato`    | 22%  | 1–2      | 0       | 1–2   | 1–3     | 0–2          | 5–20%   |
-| `soldado`    | 42%  | 2–3      | 1–3     | 1–3   | 2–5     | 1–4          | 9–28%   |
-| `ramificado` | 24%  | 2–3      | 0–1     | 0–1   | 4–8     | 0–1          | 7–25%   |
-| `isla`       | 12%  | 3–4      | 2–4     | 3–6   | 3–6     | 3–12         | 21–37%  |
+Cada uno es una de las cuatro referencias, y por eso son cuatro y no tres o cinco.
 
-`soldado` es el centro de la familia. `isla` es rara a propósito: la masa asedia el
-suelo hasta que el vacío queda en minoría y figura y fondo se cambian el sitio.
+| tipo    | peso | hebras | ramales | nivel | ojos medidos | mancha  |
+|---------|------|--------|---------|-------|--------------|---------|
+| `red`   | 24%  | 2–3 × 1–2 | 2–4  | 1–4   | 1–4          | 10–24%  |
+| `trama` | 40%  | 2–3 × 1–2 | 3–6  | 2–5   | 2–8          | 20–38%  |
+| `muro`  | 18%  | 2–3 × 2–3 | 2–4  | 4–5   | 2–7          | 32–43%  |
+| `nudo`  | 18%  | 2 × 1     | 3–5  | 3–6   | 1–3          | 16–32%  |
+
+`red` es la trama laxa y estirada: hebras finas, celdas grandes, mucho aire. `trama` es
+el centro. `muro` va casi maciza y ahí los ojos dejan de ser celdas y se leen como
+**vanos**. `nudo` tiene pocas hebras y muy gordas: la masa se apelotona y el pliego
+respira alrededor.
 
 ## Lo que se hereda y lo que se abandona
 
@@ -162,6 +231,68 @@ tiene detrás una versión que se veía peor, y está anotado ahí:
   al borde de arriba dejando tres cuartos de hoja vacíos. Eso no es una reserva, es
   una pieza sin centro. Con `k = 1` la gravedad no se aplica.
 
+## El filo y la superficie
+
+La forma estaba bien y la marca no existía: el borde era un polígono exacto, y eso
+es lo que delataba el dibujo como vectorial. Una masa de tinta sobre papel no tiene
+el canto recto — lo tiene vivo, porque el pelo del pincel y el diente del papel se
+pelean por el último milímetro.
+
+El borde se subdivide y se desplaza con un ruido **coherente** a lo largo del
+recorrido. Coherente es la palabra: con ruido por punto sale un serrucho, que es
+suciedad, no pincel. Tres octavas y cada borde con su semilla, porque el canto de un
+pincel no es simétrico respecto a su eje. Tres filos: `cortado` (el canto exacto, que
+se queda porque la serigrafía corta así y porque conviene poder comparar), `pincel`
+(el centro de la familia) y `seco` (con mordidas, el salto por falta de carga).
+
+**El filo no toca la anatomía.** `medir` trabaja sobre el eje y la media anchura, no
+sobre el contorno dibujado, así que cambiar de pincel no mueve ni un ojo ni un punto
+de mancha — ni, por tanto, la rareza. Cambia la piel, no el esqueleto. Por eso `Edge`
+es el único trait que no entra en el cálculo de rareza: describe la herramienta, no
+lo que salió en la tirada.
+
+Dos cosas costaron:
+
+- **La octava de la mano.** El primer intento llevaba una octava lenta y gorda —«la
+  ondulación de la mano»— y estaba mal planteada: esa ondulación YA ESTÁ en la
+  geometría, son los vértices. Puesta otra vez en el filo, la masa engordaba y
+  adelgazaba a lo largo del recorrido, o sea que el filo invadía la FORMA, que es lo
+  único que no debe tocar. Y se comía las esquinas de cincel, que son lo mejor del
+  dibujo. Al filo le toca el pelo y el diente: nada por encima de 17 px de onda en
+  una hoja de 760. El paso de subdivisión baja a 0,0015 por muestreo — un subtramo de
+  0,006 no puede dibujar una onda de 0,006, y la octava fina salía como un moaré.
+- **Las almendras.** Para la superficie se probaron VETAS: rayas de suelo dentro de
+  la masa, pegadas al canto, imitando el salto del pincel. Se descartaron. Una veta
+  que engorda en el centro y se afila en las puntas tiene forma de almendra, y esa
+  forma no la hace un pincel: la hace quien la dibuja. Se leían como agujeros
+  dibujados — y encima competían con los ojos, que son los huecos que sí significan
+  algo.
+
+Y la superficie acabó siendo una cuestión de **orden**, no de textura. El motor aplica
+el grano a todo el lienzo por igual, así que masa y suelo salían del mismo material y
+solo cambiaba el color.
+
+El primer arreglo repintaba la masa **por encima** del grano al 55%, y funcionó mientras
+hubo una sola tinta. Con dos tramas se rompió, y de una manera que enseña algo: **una
+opacidad parcial aplicada en capas nunca reproduce un opaco.** Donde una trama tapaba a
+la otra, el repintado daba las dos manos y salía un color intermedio que no está en la
+paleta — se veía como transparencia, y estas tintas no lo son. Se intentó recortar con
+`evenodd` y tampoco: `emitir` deja los cuadriláteros solaparse a propósito porque con
+`nonzero` solaparse es **sumar**, y bajo `evenodd` esos mismos solapes se **cancelan**,
+así que el recorte salía agujereado justo donde la masa es más espesa. La regla de
+relleno no es un detalle del pintado: es parte de cómo está construido el cuerpo.
+
+La solución era mucho más simple, y además es la literal: **el grano se aplica al papel,
+y luego se imprime.** Se pinta el suelo, se le echa el grano, y la tinta va encima
+opaca. El papel conserva su diente entero, la masa queda plana, y no hay ninguna mano
+que pueda superponerse con otra — la familia entera de fallos desaparece por orden, no
+por parche.
+
+Verificado **por píxeles**, no solo por los valores devueltos —que del contorno no
+dicen nada—: el mismo seed a 400 y a 1200 de lado corto, reducido el grande al tamaño
+del pequeño, discrepa un 0,00% en cuadrado y un 0,03% en horizontal, y ese resto es
+el remuestreo del propio canto.
+
 ## Deriva: cuando medir cambia el dibujo
 
 El error más serio de todos, y el último en aparecer, porque solo se ve comparando
@@ -186,40 +317,110 @@ resoluciones (760, 2400 y 4200 de lado corto): la huella completa —tipo, estra
 puentes, lazos, muñones, escala, ojos con su área a seis decimales, mancha,
 modulación, gravedad, reserva y colores— sale **idéntica**, cero diferencias.
 
-## Color: dos, y se renuncia al resto
+## Color: la trama admite más de una tinta
 
-Las paletas de hoks son listas planas: no declaran suelo ni tinta. EVOL necesita
-**dos** colores y renuncia a los demás. Es una decisión, no una limitación — un
-cuerpo de tres colores deja de ser un cuerpo.
+**La política de color vive en el motor**, no aquí. Nació en esta familia, y subió a
+`_engine.js` cuando HRRS fue la tercera que la pedía — el bug histórico de PLLS
+(acabados invisibles durante meses, ocho copias inline) es exactamente lo que pasa
+cuando no se sube. Aquí se llama `E.inkDice` y `E.inkRoles`, y no se copia.
 
-La pareja se elige por **distancia de color**, no por luminancia: con luminancia,
-las series Itten (cuatro colores entre 0,31 y 0,44 de luma) daban rojo sobre rojo,
-porque son contrastes de **tono** y ahí el ojo lee la figura perfectamente aunque el
-valor sea el mismo. Elegido el par, la luminancia decide quién es suelo.
+Lo que hace: las paletas de hoks son listas planas, no declaran suelo ni tinta, así que
+el par se elige por **distancia de color** y no por luminancia — con luminancia, las
+series Itten (cuatro colores entre 0,31 y 0,44 de luma) daban rojo sobre rojo, porque
+son contrastes de **tono** y ahí el ojo lee la figura perfectamente aunque el valor sea
+el mismo. Elegido el par, la luminancia decide quién es suelo. Y **el papel**: elegir el
+par más distante lleva siempre al blanco, y si la paleta tiene un tono medio y cálido
+que aguante el contraste se usa la mitad de las veces, porque sobre papel crudo el suelo
+deja de ser ausencia de tinta y se vuelve material.
 
-Y **el papel**: elegir el par más distante lleva siempre al blanco, y el blanco no
-es el único suelo posible. Si la paleta tiene un tono medio y cálido que aguante el
-contraste, se usa la mitad de las veces. Sobre papel crudo la masa pesa distinto,
-porque el suelo deja de ser ausencia de tinta y se vuelve material. No es un ajuste
-del laboratorio: es qué papel se compra.
+Al reunir las ramas, lo que EVOL necesitaba de más **subió con ella**: `inkRoles`
+devuelve también `otras`, la lista de tintas extra que piden las familias que superponen
+capas enteras. Va aparte de `otra` y con umbrales más flojos, porque `otra` es un cuerpo
+suelto dentro de la masa principal —si se parece, se lee como error de registro— y una
+capa entera se sostiene por su propio recorrido. Y `otra` se quedó **intacta**:
+reaprovecharla habría movido la imagen de las familias que ya la usan, y eso no se hace
+al subir algo al motor.
 
-Dos tintas —un estrato entero en otro color— existen y son el 4% de las piezas.
+**Dos tramas se tejen.** No es una hebra teñida: es **otra trama entera**, con sus
+hebras, sus ramales, su foco y su tinta. La diferencia importa y es conceptual — una
+hebra teñida de esta misma trama está **soldada** a las demás por los nudos, así que es
+la misma masa de otro color y no hay tensión ninguna.
+
+Y tampoco se apilan. Una plancha entera encima de otra es un orden absoluto y se lee
+como tal: siempre gana la misma. Eso no es tejer, es apilar. En un tejido la trama pasa
+por encima de la urdimbre y por debajo en el siguiente cruce, **alternando** — que la
+familia se llame así y no lo hiciera era una contradicción. Así que la alternancia va a
+lo largo de cada hebra, cruce a cruce.
+
+Con eso la regla queda dicha del todo: **dentro de una trama, soldadura; entre dos
+tramas, tejido.** Y ahí reaparece un encima y un debajo, pero sin incisión: la
+profundidad la dice qué tinta se ve, y nada más. Es el reverso exacto de TRZS, donde
+todo el aparato existe para que el corte entre las dos hebras se vea.
+
+Se resuelve **sin plan de secciones** —que es justo lo que EVOL se ahorró de TRZS—
+porque estas tintas son opacas: se pinta la de abajo, se pinta la de encima, y donde le
+toca ganar a la de abajo se repinta un **parche** suyo, un tramo corto centrado en el
+cruce. El parche lleva el arco que le corresponde dentro de su hebra, así que el canto
+del filo casa y no se ve junta ninguna. Sale en una de cada cuatro piezas, y la de
+encima va siempre laxa: dos tramas gordas se tapan la una a la otra y queda barro de dos
+colores. La tensión la da que una atraviese a la otra, no que compitan por el sitio.
+
+**Los focos se deciden juntos, y separados.** Sorteado cada uno por su cuenta, los dos
+aprietes caían a veces en el mismo sitio: las dos tramas se amontonaban ahí y el tejido
+dejaba de leerse, porque para ver que una hebra pasa por encima y luego por debajo hay
+que poder seguirla, y eso solo se puede donde no hay barullo. Separados, las tramas se
+**encuentran** en una zona y se **sueltan** en otra, que es justo la tensión que se
+busca.
+
+**Un ojo tiene que verse para ser un ojo.** El umbral sube de 0,00035 a 0,0011 del
+pliego, y el motivo es la trama: con hebras que se cruzan —y más con dos— aparecen
+muchísimas celdas minúsculas en los nudos, y con el umbral viejo todas contaban. El
+rasgo acababa diciendo «once ojos» de una pieza en la que se ven tres, porque las otras
+ocho miden menos que la anchura de la hebra que las cierra.
+
+**Los ojos se multiplican, no se suman.** Cada hebra de encima parte en dos las celdas
+que cruza, así que el conteo se va por encima del triple. Hubo que ampliar el techo
+declarado por el tipo —si no, cada pieza de dos tramas salía con una falta enorme y el
+bucle elegía por un criterio imposible de cumplir— y normalizar la rareza del ojo
+**dentro de su clase**: doce ojos en una pieza de dos tramas es lo corriente, y sin
+normalizar la rareza acababa midiendo el número de planchas.
 
 ## Medido
 
-500 tiradas en cuadrado, sobre las 15 paletas activas:
+Sobre las paletas activas, en cuadrado:
 
 ```
-tipo        soldado 42%  ramificado 24%  estrato 22%  isla 12%
-ojos        media 2,1 · p50 2 · p90 4 · max 11
-            0:16% 1:31% 2:21% 3:13% 4:10% 5-7:8% 8+:2%
-mancha      p10 14,4%  p50 22,1%  p90 28,6%  max 36,8%
-modulación  2:6% 3:8% 4:12% 5:33% 6:42%   (niveles recorridos por la pieza)
-falta = 0   98,2% de las piezas cumplen lo que su tipo declara (max 0,45)
-papel       crudo 25%  ·  invertida 12%  ·  dos tintas 4%
-overall     common 39%  uncommon 40%  rare 10%  superrare 6%  legendary 5%
-ms          ~50 por pieza a 760 px, incluido el grano
+tipo        trama 41%  red 23%  nudo 19%  muro 17%
+ojos        media 2,9 · p50 3 · p90 5 · max 8
+            1:17% 2:27% 3:27% 4:19% 5-6:8% 7+:2%
+ciegas      0,0%  ← ninguna pieza deja de cerrar algo
+cruces      media 14 · p10 10 · p90 19
+mancha      p10 20,3%  p50 33,0%  p90 45,6%
+ramales     media 9,1 · p90 15     cruces media 29 · p90 43
+ojos        media 4,1 · p50 3 · p90 10   (la cola larga es de las piezas tejidas)
+ciegas      0,0%
+area de ojo p50 8,7% del pliego · p90 21,0%
+mancha      p50 31%  p90 41%
+            muro p50 42%  ·  nudo 33%  ·  trama 31%  ·  red 22%
+falta = 0   90% de las piezas cumplen lo que su tipo declara (max 0,42)
+tejidas     24% de las piezas
+overall     uncommon 51%  common 35%  rare 14%
+ms          ~200 por pieza a 700 px
 ```
+
+El **área de ojo** es el dato que faltaba: casi el 9% del pliego es vacío con borde por
+los cuatro lados. Contar ojos sin mirar cuánto miden no dice gran cosa — es lo que llevó
+a subir el umbral.
+
+**Cero piezas ciegas** es el dato que justifica la reformulación entera. Con estratos y
+lazos, el 16% de las piezas no encerraba nada: el ojo era un accidente que salía o no
+salía. Con hebras que se cruzan es una consecuencia geométrica — si hay trama, hay
+celdas. Y por eso lo raro se ha dado la vuelta: ya no es tener pocos ojos, es tener
+muchos.
+
+La mancha sube del 22% al 33% de mediana, y no es un efecto secundario: una trama pesa
+más que tres bandas, y las referencias son gordas. Los cortes de los traits están
+recalibrados contra esta distribución, no contra la anterior.
 
 Las piezas que no cumplen (1,8%) se quedan: con seeds difíciles no hay ningún
 candidato bueno, y entonces manda **el que menos incumple** — no el primero. Por eso
