@@ -37,7 +37,7 @@ echo "-- CONTROLES"
 for r in margen ojo remate; do echo "  [$r]"; node o2.js trzs_$r.js 30 '{}' 2>&1 | sed -n '2,4p'; done
 echo
 echo "##### 4. COSTURAS (artefacto de 1px conocido; se registra el nivel)"
-for c in '{}' '{"tipo":"trama"}' '{"tipo":"dos"}'; do echo -n "  $c "; node cos.js trzs_test.js 50 "$c" 2>&1 | sed -n 2p; done
+for c in '{"fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}'; do echo -n "  $c "; node cos.js trzs_test.js 50 "$c" 2>&1 | sed -n 2p; done
 echo
 echo "##### 5. DETERMINISMO"; node det.js
 echo
