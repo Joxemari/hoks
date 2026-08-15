@@ -61,6 +61,41 @@ otra cosa.
 hebra de arriba y, en cada punto donde debajo hay cuerpo de la otra, exige fondo.
 Cuenta píxeles de **tinta sólida** seguidos. Un hueco es un hueco.
 
+## El punto ciego del fantasma
+
+**Ninguno de estos detectores comprueba una obra fantasma, y conviene decirlo en
+voz alta porque durante un tiempo pareció que sí.**
+
+Una cinta fantasma es del color exacto del suelo: no se dibuja con masa, se dibuja
+con su incisión. Por eso su halo no va en color de fondo sino en `filo`, el color
+de la paleta más lejano al suelo — y en casi todas las paletas **`filo` es el mismo
+hex que `fg`**, la cinta. Ahí, dentro de la incisión, hay tinta a propósito.
+
+Eso deja a `hueco.js` sin nada que medir: el halo haciendo su trabajo y un hueco de
+verdad son el mismo color, y ningún test de píxel los separa. Se probó a enseñarle
+el caso —excusar los píxeles de `filo` en obras fantasma— y el resultado fue peor
+que el problema: los falsos positivos bajaron de 146 a 0, **y el control roto dejó
+de disparar también**. Un detector que no puede fallar no está midiendo.
+
+Así que las obras fantasma se **excluyen**, en `mil.sh` y desde ahora también en
+`todo.sh`, que las medía y por tanto reportaba 146 falsos de 172 cruces desde que
+el halo pasó a ser un color puro de la paleta. Excluir no es comprobar: es
+reconocer que aquí no hay comprobación.
+
+Y hay una pista falsa que costó un rato: esto **no** empezó cuando se metió el
+fantasma. Empezó cuando su halo dejó de fabricarse mezclando el fondo hacia el
+negro o el blanco. Una mezcla cae en la clase `mezcla` de `hueco.html`, que el
+detector ya ignoraba por ser filo de antialias, así que el caso pasaba **por
+accidente, no por diseño**.
+
+Lo que cerraría el punto ciego, cuando toque: que `hueco.js` sepa **de qué cinta**
+es la sección que pasa por encima, y excuse `filo` sólo cuando esa sección es la
+fantasma. Entonces las demás cintas de la obra volverían a medirse y el control
+volvería a disparar. No es un cambio de umbral, es pasar el índice de cinta hasta
+el bucle. Mientras tanto, el fantasma se mira a ojo — y `mktest.py` sigue
+construyendo el control `sueloigual`, que **`mil.sh` nunca llega a ejecutar**: eso
+también está pendiente.
+
 ## Las once trampas
 
 Todas ellas dieron defectos **que no existían**, y todas salieron por mirar la
