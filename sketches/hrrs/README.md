@@ -1175,15 +1175,52 @@ técnica**. Por eso vale como fuente de verdad.
 ### Medido, por solape de píxel
 
 ```
-            IoU      sobra   falta
-ref01      73,6 %    13,8 %  16,3 %
-ref02      67,7 %    17,7 %  20,2 %
-ref03      46,8 %    36,8 %  36,0 %
-ref04      84,3 %     4,6 %  11,9 %
-ref05      37,7 %    78,4 %  32,7 %
-ref06      78,1 %     7,1 %  16,3 %
-                     mediana  70,7 %
+ref01  83 %    ref02  78 %    ref03  53 %
+ref04  90 %    ref05  32 %    ref06  76 %      mediana 76,7 %
 ```
+
+### Y las dos decisiones de la reconstrucción salieron al revés de lo razonado
+
+El autor miró la primera réplica y dijo lo que se veía: *«la unión de trazos, los
+márgenes, las juntas, los solapes… está francamente mal»*. Tenía razón, y yo tenía
+razonada la causa: en un cruce la semianchura medial se dispara, así que había que
+sustituirla por la **anchura declarada** de la banda. Lo implementé, lo medí, y **bajó**
+de 70,7 % a 67,7 %. La segunda idea —no alargar los extremos que mueren en un nudo—
+lo dejó en 58,2 %.
+
+Barrido de las cuatro combinaciones, que es lo que había que hacer desde el principio:
+
+```
+anchura medida  + alargar todos los cabos   76,7 %   ← la buena
+anchura declarada + alargar todos           67,7 %
+anchura medida  + alargar sólo cabos        65,1 %
+anchura declarada + alargar sólo cabos      58,2 %
+```
+
+Las dos hipótesis eran falsas, y por el mismo motivo de fondo:
+
+- **La anchura medida no es un artefacto.** Donde dos bandas se cruzan, la mancha de
+  verdad **es** ancha, porque es la unión de las dos. Declarar la anchura QUITA tinta
+  que el original tiene.
+- **Los extremos que mueren en un nudo también hay que alargarlos.** El reagrupado de
+  ramas en bandas no siempre atraviesa el nudo, así que muchos extremos etiquetados
+  «nudo» son el final de una banda que sí sigue por debajo, y no alargarlos deja el
+  hueco a la vista.
+
+Lo que sí era cierto es la corrección del **cabo**: el eje medial de un rectángulo se
+queda a media anchura de su lado corto, así que todas las bandas salían cortas por los
+dos extremos. Eso solo vale +6 puntos.
+
+### Lo que queda mal, y ya con nombre
+
+- **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas
+  con muchos cruces, y ahí la reconstrucción por eje medial se dispara de verdad: el
+  eje se desplaza dentro de la mancha del cruce y la banda sale al doble. **Una banda
+  ancha no se puede describir por su eje cuando se cruza con otra** — y la solución no
+  es declarar la anchura (medido: peor), sino separar las bandas ANTES de medir.
+- **ref03, la enmarcada: 53 %.** Es la de bandas curvas. Mi banda es poligonal con
+  bisel, así que en una curva larga sobra por fuera y falta por dentro a la vez. Es la
+  primera vez que el «no hacemos curvas» tiene un número al lado.
 
 Y las dos que fallan dicen exactamente qué falta, porque fallan de maneras opuestas:
 
