@@ -1715,6 +1715,49 @@ con el umbral movido) está en 0,1–1,0 %: o sea que el 98 % es alcanzable en p
 hay que ganarlo ahí, con pasos de anchura y posición más finos que los 0,25 px de este
 pulido.
 
+### r5, y por qué es la última: su pelo es de 4 px y mi temblor de 0,97
+
+El 100 % de la tinta que sobra, en las seis, es **canal del original que la réplica
+tapa**. Ni un píxel de exceso es otra cosa. Y sin embargo:
+
+- estrechar la banda que lo tapa **nunca** mejora — ni en una de las seis, ni con ningún
+  paso, ni con el canal pesado a 8, 25 o 60. O sea que la banda **no está gorda**;
+- **cortar** la incisión sí quita el exceso (0,8 % → 0,3 % de tinta) pero cuesta más en
+  tinta que falta, y al estrechar el corte el resultado converge otra vez a no cortar.
+
+Las dos cosas juntas dicen lo mismo: **el exceso y la falta son los mismos píxeles
+vistos por los dos lados.** No es que sobre tinta en un sitio y falte en otro: es un
+filo desplazado una fracción de píxel, y moverlo cambia de qué lado se cuenta.
+
+Y de ahí sale por fin lo que separa a r5:
+
+| | W (px) | canal (px) | canal/W | temblor del filo | temblor/canal |
+|---|---|---|---|---|---|
+| r1 | 24 | 7,2 | 0,30 | 0,26 px | 0,04 |
+| r2 | 24 | 6,3 | 0,26 | 0,34 px | 0,05 |
+| r3 | 30 | 18,7 | 0,62 | 0,41 px | 0,02 |
+| r4 | 40 | 4,5 | 0,11 | 0,40 px | 0,09 |
+| **r5** | **68** | **4,0** | **0,06** | **0,97 px** | **0,24** |
+| r6 | 32 | 7,2 | 0,23 | 0,39 px | 0,05 |
+
+**El canal es casi constante en píxeles —4 a 7 en cinco de las seis— mientras la banda
+va de 24 a 68.** O sea que la incisión no es una fracción de la banda: es una anchura
+física, la del gubia. Y el temblor del filo sí escala con la banda (0,013 W). En r5 la
+banda es la más ancha, así que el temblor es el mayor (0,97 px), y el canal es el más
+estrecho (4 px): el temblor vale el 24 % del canal, de tres a doce veces más que en
+ninguna otra. Por eso se le cierran los pelos, y por eso no se arregla con nada de lo
+anterior.
+
+**La consecuencia para la técnica es directa y ya está implementada:** un canal dejado
+como *hueco entre dos filos* hereda el temblor de los dos, así que no se puede sostener
+por debajo de un cierto ancho. Un canal **cortado** —la incisión, sustractiva, con su
+propia anchura— no hereda ninguno. Es exactamente lo que el halo hace en `render`, y se
+añadió hoy por otro motivo; la réplica lo justifica por su cuenta.
+
+Lo que falta para llevarlo también a la réplica es leer del original **dónde** están las
+incisiones con precisión: `componer` ya acepta `receta.cortes`, pero la extracción de
+hoy es basta y muerde la banda. Ese es el sitio.
+
 ### Dónde está el suelo, por fin con una cifra: el filo se desvía 0,013 anchuras
 
 Siete hipótesis seguidas sobre el residuo, todas medidas y todas muertas — y las cinco

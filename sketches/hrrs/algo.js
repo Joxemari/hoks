@@ -1828,6 +1828,23 @@
     ctx.beginPath();
     for (const tr of cx2.trazos) banda(ctx, tr.pts, Wb, tr.gubia, tr.relleno, tr.anchos);
     ctx.fillStyle = rol.tinta; ctx.fill();
+    // LAS INCISIONES. El pelo blanco de un original NO es un hueco entre dos bandas:
+    // es un CORTE hecho encima. Se vio midiendo: el 100 % de la tinta que le sobra a
+    // la replica, en las seis referencias, es canal del original que la replica tapa —
+    // y estrechar la banda que lo tapa NUNCA mejora, en ninguna de las seis y con
+    // ningun paso, o sea que la banda no esta gorda. Estan bien las dos y el blanco de
+    // en medio se quita despues.
+    //
+    // Es la incision de la casa, la misma que `render` fabrica con el halo, aqui
+    // llegando por receta porque la replica sabe donde estan: se leen del original.
+    if (receta.cortes && receta.cortes.length) {
+      ctx.beginPath();
+      for (const c of receta.cortes) {
+        const pts = c.eje.map(q => ({ x: q[0], y: q[1] }));
+        banda(ctx, pts, Wb, null, null, c.anchos);
+      }
+      ctx.fillStyle = rol.suelo; ctx.fill();
+    }
     ctx.restore();
     if (receta.grano !== 0) E.grain(ctx, W, H, colors, receta.grano == null ? 1 : receta.grano, E.unit(W, H, REF));
 
