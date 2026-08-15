@@ -1268,6 +1268,41 @@ arista larga, y sólo entonces buscar parejas.
 Así que el mejor resultado sigue siendo el del esqueleto con anchura constante, y
 queda dicho: **traza2 está subido sin funcionar, a propósito, con el fallo escrito.**
 
+### El eje no vale dentro de un cruce
+
+El esqueleto es fiable donde hay **una** banda y mentiroso donde hay dos: en un cruce
+el eje medial no es el eje de ninguna de las dos, es la bisectriz de la mancha que
+forman juntas. Se desvía, hace codos que no existen y arrastra la banda fuera de su
+recta — y **eso** es lo que rompe el margen con la vecina y ensucia el solape.
+
+Se distingue por el grosor: donde el material mide más que `W`, no es banda, es cruce.
+Esos vértices se tiran y el eje pasa **recto** por debajo, que es lo que la banda hace
+de verdad. La conectividad la sigue dando el esqueleto, que para eso sí sirve; la
+geometría la da sólo el tramo limpio.
+
+A ojo es lo más limpio que ha salido: los trazos son continuos, la anchura no se
+estrangula en los codos y el margen entre paralelas se mantiene. **Y el IoU baja** —
+de 76,7 % a 60,8 %.
+
+### Y por eso el IoU deja de ser el criterio
+
+Tres veces seguidas el solape de píxel ha premiado lo que el ojo rechaza, y ya no es
+casualidad: **el IoU mide cuánta tinta coincide, no si el objeto está bien hecho.** Una
+réplica que engorda en los cruces cubre más área y puntúa mejor que una de bandas
+limpias; una banda que se estrangula en cada codo pierde poca área y no se entera.
+
+Lo que hay que medir son los tres defectos que el autor nombró, que además son
+exactamente las tres constantes de la familia:
+
+- **anchura**: coeficiente de variación del grosor a lo largo de cada banda — en el
+  original es casi cero;
+- **canal**: variación del blanco entre dos bandas que se acompañan — en el original es
+  constante;
+- **continuidad**: cuántas bandas por trazo, o cuánto se parte lo que debería ser uno.
+
+Está sin hacer, y es lo siguiente. Hasta entonces el número de solape se queda como
+está —informativo— y **no** como criterio.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas

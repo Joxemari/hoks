@@ -326,6 +326,25 @@ def analizar(ruta):
         # estan hinchados, y se admite solo una variacion pequena alrededor de ella.
         # Es la misma regla que el generador ya cumple —la gubia varia poco y solo
         # hacia abajo— aplicada a la lectura.
+        # DENTRO DE UN CRUCE EL EJE NO VALE, Y SE TIRA.
+        #
+        # El esqueleto es fiable donde hay UNA banda y mentiroso donde hay dos: en un
+        # cruce el eje medial no es el eje de ninguna de las dos, es la bisectriz de
+        # la mancha que forman juntas, asi que se desvia, hace codos que no existen y
+        # arrastra la banda fuera de su recta. Eso es lo que rompe el margen con la
+        # vecina y ensucia el solape.
+        #
+        # Se distingue por el GROSOR: donde el material mide mas que W, no es banda,
+        # es cruce. Esos vertices se quitan y el eje pasa RECTO por debajo — que es lo
+        # que la banda hace de verdad. La conectividad la sigue dando el esqueleto,
+        # que para eso si sirve; la geometria la da el tramo limpio.
+        def grosorEn(x, y):
+            yy = min(H - 1, max(0, int(round(y)))); xx = min(W - 1, max(0, int(round(x))))
+            return 2 * float(dt[yy, xx])
+        if len(sp) > 2:
+            lim = anchoPx * 1.22
+            sp = [sp[0]] + [q for q in sp[1:-1] if grosorEn(q[0], q[1]) <= lim] + [sp[-1]]
+
         # SE MIDE SOBRE EL EJE DENSO, NO SOBRE LOS VERTICES. Y esto era un error de
         # bulto: los vertices de la poligonal simplificada son EXACTAMENTE las
         # esquinas, y en una esquina la distancia medial baja siempre —el disco
@@ -341,6 +360,8 @@ def analizar(ruta):
         # media anchura por cada punta antes de leer la moda
         k = int(anchoPx * 0.6)
         limpio = crudo[k:-k] if len(crudo) > 2 * k + 4 else crudo
+        # y sin los puntos de cruce, que inflan la moda igual que inflaban el eje
+        limpio = [v for v in limpio if 2 * v <= anchoPx * 1.22] or limpio
         # Y se lee con la MEDIANA DE LOS NO HINCHADOS, no con un percentil bajo.
         # Probe el percentil 30 pensando que en una banda muy cruzada mas de la mitad
         # de los vertices estarian hinchados; medido, sale peor en las seis (IoU
