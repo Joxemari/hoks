@@ -214,6 +214,7 @@ def respetaCanal(bandas, g, tolAng=32.0):
     eje en horquilla que RELLENA la ranura.
 
     Se queda escrita, sin usar, porque descartarla es lo que localiza el sitio.
+    """
     # POR VERTICE, no por banda. Recortando la banda entera con su punto mas
     # estrecho se repite el error de la «anchura declarada»: un solo encuentro
     # apretado adelgaza medio metro de banda y el acierto se hunde —92 % a 72 % en la
