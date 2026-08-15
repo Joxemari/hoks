@@ -1241,6 +1241,33 @@ muestreada**, no por lo que mide. La primera fue el canal, que se buscaba sólo 
 suelo atrapado. Conviene anotarlo como patrón: cuando el ojo y el número se
 contradicen, sospechar del muestreo antes que del ojo.
 
+### «Cada línea son trazos, no píxeles rellenados»
+
+El autor puso el dedo en el modelo, no en el resultado: *«ten en cuenta que cada línea
+son trazos, no píxeles rellenados; la línea continua horizontal no se dibuja»*.
+
+Y es cierto: **reconstruir desde el esqueleto del ráster es pensar en píxeles.** El
+esqueleto de dos bandas cruzadas no son sus dos ejes — en el cruce se parte, se
+desplaza y saca ramas que no existen. De ahí los tres defectos que se fueron señalando
+uno a uno (los trazos se rompen, los márgenes no se respetan, el solape está mal) y de
+ahí que el cartel, que es casi todo cruces de bandas anchas, saliera una aberración.
+
+El modelo correcto es el objeto: **una banda es un trazo de anchura constante, o sea
+dos aristas paralelas a distancia W.** Se busca eso —`referencias/traza2.py`— y el
+cruce deja de ser un problema: los dos costados **exteriores** de cada banda siguen
+ahí, sin enterarse de que otra pasa por encima. El esqueleto no puede saber eso; las
+aristas sí.
+
+**Y todavía no funciona.** Sale peor que el esqueleto: las bandas se trocean. La causa
+está localizada y escrita en el fichero — cada costado se parte en varios tramos al
+simplificar el contorno, el emparejado los cruza todos con todos, y una sola banda
+produce una nube de piezas de eje solapadas que el encadenado no sabe coser. El
+arreglo va **antes** de emparejar: fundir los tramos colineales de cada costado en una
+arista larga, y sólo entonces buscar parejas.
+
+Así que el mejor resultado sigue siendo el del esqueleto con anchura constante, y
+queda dicho: **traza2 está subido sin funcionar, a propósito, con el fallo escrito.**
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas
