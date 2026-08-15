@@ -39,7 +39,7 @@ def poligono(pts, h):
     return izq + der[::-1]
 
 
-def pinta(bandas, shape):
+def pinta(bandas, shape, ss=3):
     """El mismo dibujo que `banda()`, y la palabra «mismo» costo tres puntos.
 
     La primera version pintaba UN poligono por banda, igual que el contorno que
@@ -53,8 +53,23 @@ def pinta(bandas, shape):
     Se arregla no autointersecando: cada tramo es su cuadrilatero y cada vertice su
     triangulo de bisel, todos convexos y pintados por separado. Asi las dos reglas de
     relleno dan lo mismo."""
-    im = Image.new('1', (shape[1], shape[0]), 0)
+    # Y SE DIBUJA SOBREMUESTREADO, porque el canvas ANTIALIASA y esto no.
+    #
+    # Sin esto los dos rasterizadores coinciden solo un 96,7-98,8 %, y toda la
+    # discrepancia esta a un pixel del filo: es la misma forma con otro convenio de
+    # borde. Suena a nada y no lo es — el ajuste optimiza contra ESTE dibujo, asi que
+    # heredaba su convenio y el numero salia halagado: 97,4 % de mediana en numpy
+    # contra 95,9 % pasando la receta por `componer`. Un ajuste siempre se parece mas a
+    # su propio patron de medida, y por eso el patron tiene que ser el de verdad.
+    #
+    # Se dibuja a ss veces y se baja con umbral de media cobertura, que es lo que hace
+    # el canvas. No es exacto —el canvas tiene su propia regla de cobertura— pero es la
+    # misma clase de convenio en vez de dos clases distintas.
+    im = Image.new('1', (shape[1] * ss, shape[0] * ss), 0)
     d = ImageDraw.Draw(im)
+    if ss != 1:
+        bandas = [([(x * ss, y * ss) for x, y in pts], [v * ss for v in h])
+                  for pts, h in bandas]
     for pts, h in bandas:
         n = len(pts)
         if n < 2:
@@ -74,7 +89,11 @@ def pinta(bandas, shape):
                 d.polygon([(pts[i][0], pts[i][1]),
                            (pts[i][0] + sg*nx[i-1]*h[i], pts[i][1] + sg*ny[i-1]*h[i]),
                            (pts[i][0] + sg*nx[i]*h[i],   pts[i][1] + sg*ny[i]*h[i])], fill=1)
-    return np.asarray(im, dtype=bool)
+    a = np.asarray(im, dtype=np.uint8)
+    if ss == 1:
+        return a.astype(bool)
+    a = a.reshape(shape[0], ss, shape[1], ss).mean(axis=(1, 3))
+    return a >= 0.5
 
 
 def dif(A, B, w=None):
