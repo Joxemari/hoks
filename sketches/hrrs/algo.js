@@ -500,8 +500,24 @@
     // un filo — si sólo se ensancharan los costados, el remate se soldaría a lo que
     // tuviera delante, que es la lección que TRZS ya tenía escrita.
     mas = mas || 0;
-    let n = pts.length;
+    const n = pts.length;
     if (n < 2) return;
+    // LA ANCHURA SE MIDE ANTES DE ALARGAR. La gubia es funcion de la fraccion de arco
+    // recorrida, asi que si se alarga el cabo primero, la fraccion se desplaza y el
+    // perfil del CORTE deja de caer donde cae el de la TINTA. Con la gubia al maximo
+    // eso son 0,015 anchuras de descuadre, que con canales de 0,12 son la cuarta parte
+    // del canal — medido, dejaba pares de trazos a 0,29 g, y salia en las vibradas
+    // porque son las que mas arco tienen. El corte tiene que ser LA MISMA forma.
+    let hBase = null;
+    if (mas > 0 && !anchos) {
+      let t0 = 0; const Ls = [];
+      for (let i = 0; i < n - 1; i++) {
+        const dx = pts[i + 1].x - pts[i].x, dy = pts[i + 1].y - pts[i].y;
+        const m = hypot(dx, dy) || 1e-9; Ls.push(m); t0 += m;
+      }
+      hBase = []; let acc = 0;
+      for (let i = 0; i < n; i++) { hBase.push(anchoEn(t0 > 0 ? acc / t0 : 0, W, gub) / 2); if (i < n - 1) acc += Ls[i]; }
+    }
     if (mas > 0) {
       const alarga = (a, b) => {
         const dx = a.x - b.x, dy = a.y - b.y, m = hypot(dx, dy) || 1e-9;
@@ -519,6 +535,7 @@
     // media anchura en cada vértice, por longitud de arco recorrida
     const h = [];
     if (anchos && anchos.length === n) { for (const a2 of anchos) h.push(a2 + mas); }
+    else if (hBase) { for (const a2 of hBase) h.push(a2 + mas); }
     else { let acc = 0;
       for (let i = 0; i < n; i++) { h.push(anchoEn(tot > 0 ? acc / tot : 0, W, gub) / 2 + mas); if (i < n - 1) acc += L[i]; } }
     const izq = [], der = [];
@@ -536,11 +553,23 @@
           const mx = sx / mm, my = sy / mm;
           const cos = max(mx * nx[i] + my * ny[i], 1e-3);
           const r = h[i + 1] / cos;
-          const lim = relleno[i + 1] || h[i + 1];
+          // EL INGLETE SE DECIDE CON LA GEOMETRIA DE LA TINTA, y el corte lo copia.
+          //
+          // Sin esto el corte rechaza el inglete que la tinta si mete: `r` crece con
+          // `mas` mas deprisa que el limite, asi que hay codos donde la punta de la
+          // tinta asoma por encima del canal. Es la trampa del inglete de siempre,
+          // colandose esta vez por la puerta del halo — medida: dejaba pares de trazos
+          // a 0,29 g en vez de a g.
+          //
+          // Asi que la decision se toma UNA vez, con la banda sin ensanchar, y el
+          // corte mete su punta en el mismo sitio, un `mas` mas lejos. El corte es la
+          // misma forma, no otra forma parecida.
+          const hIn = h[i + 1] - mas;
+          const lim = relleno[i + 1] || hIn;
           // el inglete sale por el lado CONVEXO; el otro lado es el interior del
           // codo y ahí no hay nada que rellenar
           const cruz = nx[i] * ny[i + 1] - ny[i] * nx[i + 1];
-          if (r <= lim + 1e-9 && r > h[i + 1] * 1.02) {
+          if (hIn / cos <= lim + 1e-9 && hIn / cos > hIn * 1.02) {
             if (cruz < 0) izq.push({ x: pts[i + 1].x + mx * r, y: pts[i + 1].y + my * r });
             else          der.push({ x: pts[i + 1].x - mx * r, y: pts[i + 1].y - my * r });
           }
@@ -1539,6 +1568,7 @@
              geo: { cintas: best.trazos.map(x => x.pts), sangra: best.trazos.map(x => !!x.sangra),
                     relleno: best.trazos.map(x => x.relleno || null),
                     cruza: best.trazos.map(x => !!x.cruza), CRUCE_MIN,
+                    gubia: best.trazos.map(x => x.gubia || 0),
                     SANGRE, MARGEN, W: best.W, g: best.g, D: best.D,
                     S, ox, fw, fh, veto: null } };
   }
@@ -1682,5 +1712,8 @@
   }
 
   const FORMATS = ['square', 'horizontal'];
-  (global.HOKS = global.HOKS || {}).HRRS = { render, componer, traits, TIPOS, RELS, BG_GRADIENT, FORMATS };
+  // `banda` sale fuera para el DETECTOR, no para dibujar. `pelo.js` tiene que pintar
+  // cada trazo con su etiqueta y con los mismos cortes que la obra publicada, y un
+  // detector que reimplementa el dibujo mide su copia, no el dibujo.
+  (global.HOKS = global.HOKS || {}).HRRS = { render, componer, traits, TIPOS, RELS, BG_GRADIENT, FORMATS, banda };
 })(typeof window !== 'undefined' ? window : globalThis);
