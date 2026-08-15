@@ -141,5 +141,22 @@
       "eu": "Bi gorputz elkartu eta bat egiten dute: ez dago gainetik, ez azpitik.\nLurra masak inguratzen duen tokian bakarrik bizirik: hutsunea ez da soberakina, mugatzeko dagoena baizik.",
       "en": "Two bodies meet and weld: there is no over and no under.\nThe ground survives only where the mass closes around it — the void is not what is left over, it is what is there to be bounded."
     }
+  },
+  {
+    "id": "ptzd",
+    "name": "PTZD",
+    "slug": "ptzd",
+    "active": false,
+    "description": "A block that tends to a square without being one, broken by cuts of a single constant width. They enter at an edge, branch, and die against one another — never crossing, so the white is a tree and not a lattice. The plates they release move aside, because the cut inserts space instead of removing matter. Nobody draws the outline: it is what survives the breaking.",
+    "canvas": "square · horizontal (DIN)",
+    "formats": [
+      "square",
+      "horizontal"
+    ],
+    "created": 1786795200000,
+    "cartela": {
+      "es": "El corte no quita materia: mete espacio. Por eso las placas se apartan.\nY por eso la silueta no la traza nadie — es lo que queda cuando el bloque ha dejado de ser uno.",
+      "en": "The cut does not remove matter: it inserts space. That is why the plates move apart.\nAnd why nobody draws the outline — it is what is left when the block has stopped being one."
+    }
   }
 ]

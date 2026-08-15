@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ptzd · entrenamiento — hoks</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --ink:#111; --ink3:#bbb; --border:#e8e8e8; --surface:#f7f7f7; --f:'Courier New',Courier,monospace; }
+  body { font-family: var(--f); background:#fff; color:var(--ink); padding:1.4rem 1.6rem 3rem; }
+  header { display:flex; align-items:baseline; gap:1.2rem; flex-wrap:wrap; margin-bottom:1rem; }
+  h1 { font-size:12px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; }
+  .sub { font-size:9px; color:var(--ink3); letter-spacing:0.1em; }
+  .barra { height:2px; background:var(--border); margin:0.9rem 0 1.2rem; }
+  .barra i { display:block; height:100%; background:var(--ink); width:0; transition:width .2s; }
+  .fila { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+  .obra { position:relative; cursor:pointer; border:2px solid transparent; transition:border-color .1s; }
+  .obra canvas { width:100%; height:auto; display:block; outline:1px solid rgba(0,0,0,0.10); }
+  .obra:hover { border-color:var(--ink3); }
+  .obra.on { border-color:var(--ink); }
+  .obra .n { position:absolute; top:5px; left:5px; font-size:9px; font-weight:700; letter-spacing:0.1em;
+             background:#fff; border:1px solid var(--border); padding:1px 5px; }
+  .obra.on .n { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .mandos { display:flex; gap:8px; align-items:center; margin-top:1.1rem; flex-wrap:wrap; }
+  button { font-family:var(--f); font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
+           border:1px solid var(--ink); background:var(--ink); color:#fff; border-radius:2px; padding:9px 14px; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--ink); border-color:var(--border); }
+  button:disabled { opacity:.35; cursor:default; }
+  button:hover:not(:disabled) { opacity:.78; }
+  .nota { font-size:9px; color:var(--ink3); letter-spacing:0.05em; line-height:1.7; margin-top:1rem; max-width:70ch; }
+  table { border-collapse:collapse; font-size:11px; margin-top:1rem; }
+  th, td { text-align:left; padding:4px 12px 4px 0; border-bottom:1px solid var(--border); white-space:nowrap; }
+  th { font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink3); font-weight:700; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .flojo { color:var(--ink3); }
+  h2 { font-size:10px; letter-spacing:0.14em; text-transform:uppercase; margin:1.8rem 0 .2rem; }
+  #panel { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ptzd · entrenamiento</h1>
+  <span class="sub" id="cabecera">—</span>
+</header>
+<div class="barra"><i id="prog"></i></div>
+
+<div id="juicio">
+  <div class="fila" id="fila"></div>
+  <div class="mandos">
+    <button id="siguiente">Siguiente lote (enter)</button>
+    <button class="ghost" id="ninguno">No me gusta ninguno (0)</button>
+    <button class="ghost" id="atras">← Atrás</button>
+    <span class="sub" id="estado">—</span>
+  </div>
+  <p class="nota">
+    Elige <b>las dos que más te gusten</b> — o una, o ninguna. <b>1</b>–<b>5</b> para marcar,
+    <b>0</b> para descartar el lote entero, <b>enter</b> para pasar.
+    Va <b>a ciegas a propósito</b>: no hay etiquetas ni seeds a la vista, porque leer «astillado»
+    debajo de una imagen deja de ser juzgarla. Se registra todo; no se enseña nada.
+    El avance se guarda solo: puedes cerrar y volver.
+  </p>
+</div>
+
+<div id="panel">
+  <div class="mandos">
+    <button class="ghost" id="volver">← Seguir juzgando</button>
+    <button class="ghost" id="bajar">↓ Descargar juicios (JSON)</button>
+    <button class="ghost" id="copiar">⧉ Copiar resumen</button>
+    <button class="ghost" id="borrar">Borrar todo</button>
+  </div>
+  <div id="analisis"></div>
+</div>
+
+<script src="../../_engine.js?v=6"></script>
+<script src="../algo.js?v=6"></script>
+<script>
+/* ENTRENAMIENTO — no se publica. Vive aquí por lo mismo que trzs/verificacion:
+ * es instrumento, no obra. La web no lo enlaza y no aparece en el laboratorio.
+ *
+ * Qué hace: 40 lotes de 5 obras. De cada lote se eligen las dos que más gustan
+ * —o una, o ninguna—, y de ahí sale un patrón de preferencia sobre los rasgos.
+ *
+ * CUARTA VUELTA. Cada vuelta lleva seeds nuevas y clave de almacenamiento nueva,
+ * y las dos cosas por el mismo motivo: volver a juzgar las MISMAS obras no sería
+ * una muestra, sería un re-test contaminado por el recuerdo — y mezclar los
+ * juicios de dos versiones del algoritmo daría un patrón sobre una obra que no
+ * existe. Las anteriores siguen guardadas bajo su clave, intactas. Ésta empieza
+ * de cero porque cambia el color: hasta la 3ª se juzgó con las cinco paletas de
+ * emergencia del motor, y desde aquí se juzga con el catálogo (ver abajo).
+ *
+ * Dos decisiones de método, que son lo que hace que esto sirva de algo:
+ *
+ *   1. A CIEGAS. Ni traits, ni tipo, ni seed a la vista mientras se juzga. Saber
+ *      que una pieza es `astillado` antes de mirarla contamina el juicio, y el
+ *      patrón que saldría sería el de las etiquetas, no el del ojo.
+ *
+ *   2. LA COMPARACIÓN ES DENTRO DEL LOTE. Lo que se mide no es «qué porcentaje
+ *      de las astilladas gustan» sobre el total —eso depende de con qué les tocó
+ *      competir— sino, lote a lote, si un rasgo sale elegido más de lo que su
+ *      presencia en ESE lote hacía esperar. Así el número no se lo lleva la
+ *      composición del muestreo.
+ */
+const LOTES = 40, POR_LOTE = 5, SEED0 = 730000, LADO = 300;
+const CLAVE = 'hoks-ptzd-entrenamiento-v4';
+
+const $ = id => document.getElementById(id);
+const D = HOKS.fmtDims('square', LADO);
+
+/* EL CATÁLOGO DE VERDAD, Y CONGELADO. Dos cosas, y las dos hacen falta.
+ *
+ * La primera: aquí se juzgaba con `HOKS.DEFAULTS`, las cinco paletas embebidas
+ * que el motor lleva de emergencia. Se veía en el JSON de la 3ª vuelta, donde no
+ * aparece ninguna otra. Eso no es lo que la obra va a ser: en la web y en el
+ * laboratorio las familias usan el catálogo, así que el ojo estaba entrenándose
+ * sobre un mundo de color que no existe. Se lee del `data/` del propio
+ * repositorio —ruta relativa, no red, para que el gemelo empotrado pueda hacer lo
+ * mismo—, y sólo las activas, que es lo que la web publica.
+ *
+ * La segunda: los pesos se CONGELAN a una fecha. `ageWeight` del motor mira
+ * `Date.now()` para dar más probabilidad a lo reciente, así que la paleta que le
+ * toca a una seed cambia con el calendario — y un instrumento cuyas obras se
+ * mueven solas no es un instrumento: la 3ª vuelta sólo se pudo reanalizar porque
+ * las cinco de emergencia pesan igual entre sí y no envejecen. Con una fecha fija
+ * el sorteo es reproducible para siempre, y si el catálogo cambia, cambia la
+ * vuelta — que es correcto y se ve.
+ */
+const PESOS_A = Date.parse('2026-08-15T00:00:00Z');
+const PALETAS_EMPOTRADAS = null;   // el guion del artefacto sustituye esta línea
+function pesoEdad(created) {
+  if (!created || created < 1e12) return 4;
+  const d = (PESOS_A - created) / 86400000;
+  return d < 30 ? 4 : d < 90 ? 2 : d < 180 ? 1 : d < 365 ? 0.4 : 0.15;
+}
+function congela(pals) {
+  const w = pals.map(p => pesoEdad(p.created)), t = w.reduce((a, b) => a + b, 0) || 1;
+  return pals.map((p, i) => ({ ...p, prob: w[i] / t }));
+}
+let PALS = null;
+async function paletas() {
+  if (PALETAS_EMPOTRADAS) return congela(PALETAS_EMPOTRADAS);
+  try {
+    const d = await fetch('../../../data/palettes.json').then(r => r.ok ? r.json() : null);
+    if (d && d.length) return congela(d.filter(p => p.active !== false));
+  } catch (e) { /* se avisa abajo */ }
+  $('estado').textContent = '⚠ sin catálogo: se juzga con las cinco de emergencia, y eso no es la obra';
+  return congela(HOKS.DEFAULTS);
+}
+
+let estado = cargar();
+function cargar() {
+  try { const v = JSON.parse(localStorage.getItem(CLAVE)); if (v && v.juicios) return v; } catch (e) {}
+  return { lote: 0, juicios: {} };   // juicios[lote] = { obras:[…], elegidas:[índices] }
+}
+function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) {} }
+
+/* LA SEED SE MEZCLA ANTES DE USARLA. El Rng del motor es un LCG, y en un LCG los
+ * primeros sorteos de seeds CONSECUTIVAS no son independientes: el primero avanza
+ * 0,000388 por seed y el segundo 0,0907. Del tercero en adelante ya está disperso.
+ *
+ * Y aquí eso importaba el doble, porque el primer sorteo de esta familia ES LA
+ * PALETA y el segundo la pareja tinta/suelo. Con seeds seguidas, las cinco obras
+ * de un lote salían de la MISMA paleta —medido: 300 seeds seguidas usaron 3
+ * paletas de 15— así que la columna «paleta» del patrón no decía «da igual la
+ * paleta»: decía que no había ninguna que comparar. Las dos primeras vueltas
+ * están medidas así, y por eso su fila de paleta hay que tacharla, no leerla.
+ *
+ * No se toca el Rng: cambiarlo cambiaría todas las obras ya guardadas de seis
+ * familias. Se mezcla la seed aquí, que es donde estaba el fallo — el
+ * instrumento elegía mal la muestra, el motor no. */
+function semilla(n) {
+  let x = n >>> 0;
+  x = Math.imul(x ^ (x >>> 16), 2246822507) >>> 0;
+  x = Math.imul(x ^ (x >>> 13), 3266489909) >>> 0;
+  return (x ^ (x >>> 16)) >>> 0;
+}
+const seedDe = (lote, i) => semilla(SEED0 + lote * POR_LOTE + i);
+
+// Lo que se guarda de cada obra: la huella entera, para poder cruzar cualquier
+// rasgo después sin tener que volver a generar nada.
+function huella(res, seed) {
+  return { seed, tipo: res.tipo, gubia: res.gubia, piezas: res.piezas, sajaduras: res.sajaduras,
+           faltan: res.faltan, escalones: res.escalones, tintas: res.tintas, hondura: res.hondura,
+           cortes: res.cortes, mancha: +(res.mancha * 100).toFixed(2), crudo: !!res.crudo,
+           pulso: res.pulso, morfa: res.morfa, seguir: res.seguir,
+           paleta: res.pal.name, rareza: HOKS.PTZD.traits(res).overall };
+}
+
+let marcadas = new Set();
+
+function pinta() {
+  const lote = estado.lote;
+  $('cabecera').textContent = `lote ${Math.min(lote + 1, LOTES)} de ${LOTES} · ${Object.keys(estado.juicios).length} juzgados`;
+  $('prog').style.width = (100 * Object.keys(estado.juicios).length / LOTES) + '%';
+  if (lote >= LOTES) return verPanel();
+
+  const previo = estado.juicios[lote];
+  marcadas = new Set(previo ? previo.elegidas : []);
+  const fila = $('fila');
+  fila.innerHTML = '';
+  const obras = [];
+  for (let i = 0; i < POR_LOTE; i++) {
+    const seed = seedDe(lote, i);
+    const div = document.createElement('div');
+    div.className = 'obra' + (marcadas.has(i) ? ' on' : '');
+    div.innerHTML = `<span class="n">${i + 1}</span>`;
+    const cv = document.createElement('canvas');
+    cv.width = D.W; cv.height = D.H;
+    div.appendChild(cv);
+    const res = HOKS.PTZD.render(cv.getContext('2d', { willReadFrequently: true }), D.W, D.H, seed,
+                                 { palettes: PALS, params: { grainScale: 1 } });
+    obras.push(huella(res, seed));
+    div.addEventListener('click', () => marcar(i));
+    fila.appendChild(div);
+  }
+  fila.dataset.obras = JSON.stringify(obras);
+  refrescaEstado();
+}
+
+function marcar(i) {
+  if (marcadas.has(i)) marcadas.delete(i);
+  else {
+    // Dos como mucho: el tercero empuja al más antiguo, así no hay que
+    // desmarcar a mano para cambiar de idea.
+    if (marcadas.size >= 2) marcadas.delete(marcadas.values().next().value);
+    marcadas.add(i);
+  }
+  [...$('fila').children].forEach((el, k) => el.classList.toggle('on', marcadas.has(k)));
+  refrescaEstado();
+}
+function refrescaEstado() {
+  $('estado').textContent = marcadas.size === 0 ? 'ninguna marcada' : `${marcadas.size} marcada${marcadas.size > 1 ? 's' : ''}`;
+  $('atras').disabled = estado.lote === 0;
+}
+
+function avanza(vacio) {
+  const obras = JSON.parse($('fila').dataset.obras);
+  estado.juicios[estado.lote] = { obras, elegidas: vacio ? [] : [...marcadas].sort() };
+  estado.lote++;
+  guardar();
+  pinta();
+}
+
+$('siguiente').onclick = () => avanza(false);
+$('ninguno').onclick   = () => avanza(true);
+$('atras').onclick     = () => { if (estado.lote > 0) { estado.lote--; guardar(); pinta(); } };
+document.addEventListener('keydown', e => {
+  if ($('panel').style.display === 'block') return;
+  if (e.key >= '1' && e.key <= String(POR_LOTE)) { marcar(+e.key - 1); e.preventDefault(); }
+  else if (e.key === '0') avanza(true);
+  else if (e.key === 'Enter') avanza(false);
+  else if (e.key === 'Backspace') { if (estado.lote > 0) { estado.lote--; guardar(); pinta(); } }
+});
+
+// ── El patrón ───────────────────────────────────────────────────────────────
+// Dos números por cada valor de rasgo, y hacen falta los dos:
+//
+//   TASA  — de las veces que ese valor apareció, cuántas salió elegido.
+//   SESGO — cuánto se aparta de lo que ESE lote hacía esperar. Si en un lote se
+//           eligen 2 de 5, cada obra tenía de partida un 40%; pero si en el lote
+//           había tres `arbol` y dos `hendido`, la expectativa de cada rasgo no
+//           es la misma. El sesgo suma, lote a lote, elegidas − esperadas, y lo
+//           divide por las veces que apareció. Cero = indiferente. Es el número
+//           que hay que mirar: la tasa sola se la lleva la composición.
+const CATEG = [
+  ['tipo', 'Tipo'], ['gubia', 'Gubia'], ['tintas', 'Tintas'], ['piezas', 'Piezas'],
+  ['sajaduras', 'Sajaduras'], ['faltan', 'Faltan'], ['escalones', 'Escalones'],
+  ['hondura', 'Hondura'], ['crudo', 'Papel crudo'], ['rareza', 'Rareza'], ['paleta', 'Paleta'],
+];
+const CONT = [['mancha', 'Mancha %'], ['pulso', 'Pulso'], ['morfa', 'Morfa'], ['seguir', 'Seguir al pliego']];
+
+function analiza() {
+  const lotes = Object.values(estado.juicios);
+  const juzgados = lotes.length;
+  const usados = lotes.filter(l => l.elegidas.length > 0);
+  const nObras = lotes.reduce((s, l) => s + l.obras.length, 0);
+  const nEleg  = lotes.reduce((s, l) => s + l.elegidas.length, 0);
+
+  let html = `<h2>Lo que hay</h2><p class="nota">
+    ${juzgados} lotes juzgados · ${nObras} obras vistas · ${nEleg} elegidas ·
+    ${lotes.length - usados.length} lotes descartados enteros
+    ${juzgados < 30 ? '<br><b>Con menos de 30 lotes esto no dice nada todavía.</b>' : ''}</p>`;
+
+  for (const [campo, titulo] of CATEG) {
+    const acc = {};
+    for (const l of lotes) {
+      if (!l.elegidas.length) continue;               // un lote sin elegidas no informa
+      const k = l.elegidas.length / l.obras.length;   // expectativa base de ESE lote
+      l.obras.forEach((o, i) => {
+        const v = String(o[campo]);
+        (acc[v] = acc[v] || { n: 0, eleg: 0, esp: 0 });
+        acc[v].n++; acc[v].esp += k;
+        if (l.elegidas.includes(i)) acc[v].eleg++;
+      });
+    }
+    const filas = Object.entries(acc)
+      .map(([v, a]) => ({ v, n: a.n, eleg: a.eleg, tasa: a.eleg / a.n, sesgo: (a.eleg - a.esp) / a.n }))
+      .sort((a, b) => b.sesgo - a.sesgo);
+    if (!filas.length) continue;
+    html += `<h2>${titulo}</h2><table><tr><th>valor</th><th>vistas</th><th>elegidas</th><th>tasa</th><th>sesgo</th></tr>`;
+    for (const f of filas) {
+      const poco = f.n < 20;
+      html += `<tr class="${poco ? 'flojo' : ''}"><td>${f.v}</td><td class="num">${f.n}</td>` +
+              `<td class="num">${f.eleg}</td><td class="num">${(100 * f.tasa).toFixed(0)}%</td>` +
+              `<td class="num">${f.sesgo >= 0 ? '+' : ''}${(100 * f.sesgo).toFixed(0)}${poco ? ' ?' : ''}</td></tr>`;
+    }
+    html += `</table>`;
+  }
+
+  html += `<h2>Rasgos continuos</h2><table><tr><th>rasgo</th><th>elegidas (mediana)</th><th>descartadas</th><th>diferencia</th></tr>`;
+  for (const [campo, titulo] of CONT) {
+    const si = [], no = [];
+    for (const l of lotes) {
+      if (!l.elegidas.length) continue;
+      l.obras.forEach((o, i) => (l.elegidas.includes(i) ? si : no).push(o[campo]));
+    }
+    if (!si.length || !no.length) continue;
+    const med = a => { const v = a.slice().sort((x, y) => x - y); return v[Math.floor(v.length / 2)]; };
+    const a = med(si), b = med(no);
+    html += `<tr><td>${titulo}</td><td class="num">${a.toFixed(3)}</td><td class="num">${b.toFixed(3)}</td>` +
+            `<td class="num">${a - b >= 0 ? '+' : ''}${(a - b).toFixed(3)}</td></tr>`;
+  }
+  html += `</table>`;
+
+  html += `<p class="nota"><b>Cómo leerlo.</b> El <b>sesgo</b> es el número que manda: cuánto se
+    elige un rasgo por encima de lo que su presencia en cada lote hacía esperar, en puntos
+    porcentuales. Cero es indiferente. Las filas en gris con «?» tienen menos de 20 apariciones y
+    no aguantan una conclusión. Y con quince rasgos y unos cientos de obras <b>algo va a parecer un
+    patrón por puro azar</b>: sirve lo que salga grande, repetido y con muchas vistas — no lo que
+    salga primero en la tabla.
+    <br><br><b>Y esto mide compañía, no causa.</b> Los rasgos de esta familia van juntos:
+    <i>hendido</i> trae pocas piezas y hondura 1, y más tintas trae más rareza. Así que si el ojo
+    pide una cosa, se encienden todas las que vienen con ella. Comprobado a propósito: sembrando
+    una preferencia por <i>hendido</i> y por más de una tinta, la tabla las sacó con +47 — y sacó
+    también <i>piezas 2</i>, <i>hondura 1</i> y <i>rare</i>, que nadie había sembrado. <b>Lo que
+    hay que buscar es la causa más simple que explique el bloque entero</b>, no fila por fila.</p>`;
+  $('analisis').innerHTML = html;
+}
+
+function verPanel() { $('juicio').style.display = 'none'; $('panel').style.display = 'block'; analiza(); }
+$('volver').onclick = () => { $('panel').style.display = 'none'; $('juicio').style.display = 'block'; if (estado.lote >= LOTES) estado.lote = LOTES - 1; pinta(); };
+$('bajar').onclick = () => {
+  const b = new Blob([JSON.stringify({ version: 2, mezcla: 'murmur3', lotes: LOTES, porLote: POR_LOTE, seed0: SEED0, juicios: estado.juicios }, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download = 'ptzd-entrenamiento.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+};
+$('copiar').onclick = () => {
+  const t = $('analisis').innerText;
+  navigator.clipboard.writeText(t).then(() => { $('copiar').textContent = '✓ copiado'; setTimeout(() => ($('copiar').textContent = '⧉ Copiar resumen'), 1500); });
+};
+$('borrar').onclick = () => {
+  if (!confirm('Se borran todos los juicios. ¿Seguro?')) return;
+  estado = { lote: 0, juicios: {} }; guardar(); $('volver').click();
+};
+
+// Un enlace permanente al panel, aunque queden lotes: se puede mirar a mitad.
+document.addEventListener('keydown', e => { if (e.key === 'p' && $('juicio').style.display !== 'none') verPanel(); });
+
+// Nada se pinta antes de tener el catálogo: una primera obra dibujada con las
+// paletas de emergencia y el resto con las buenas sería un lote mentiroso.
+paletas().then(p => { PALS = p; pinta(); });
+</script>
+</body>
+</html>

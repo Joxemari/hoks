@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ptzd · verificación</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; background: #fff; color: #111; font: 13px/1.55 'Courier New', monospace; padding: 26px; }
+  h1 { font-size: 13px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 4px; }
+  p.sub { margin: 0 0 26px; opacity: .6; max-width: 62ch; }
+  section { border-top: 1px solid #ddd; padding: 16px 0; }
+  h2 { font-size: 13px; font-weight: 700; margin: 0 0 3px; }
+  .q { opacity: .6; margin: 0 0 10px; max-width: 70ch; }
+  pre { margin: 0; white-space: pre-wrap; }
+  .ok { color: #0a7d3a; font-weight: 700; }
+  .no { color: #b00020; font-weight: 700; }
+  .esperando { opacity: .4; }
+  button { font: inherit; border: 1px solid #111; background: #fff; color: #111; padding: 5px 14px; cursor: pointer; }
+  button:disabled { opacity: .35; cursor: default; }
+  label { margin-right: 14px; }
+  input[type=number] { font: inherit; width: 5em; border: 1px solid #ccc; padding: 2px 4px; }
+</style>
+</head>
+<body>
+<h1>ptzd · verificación</h1>
+<p class="sub">Cuatro preguntas que la familia tiene que contestar igual cada vez que
+se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
+
+<p>
+  <label>obras por bloque <input id="n" type="number" value="120" min="20" max="2000"></label>
+  <button id="go">Medir</button>
+  <span id="estado" class="esperando"></span>
+</p>
+<p id="aviso" class="no" hidden></p>
+
+<section>
+  <h2>1 · Cuñas</h2>
+  <p class="q">¿Queda algún ángulo agudo del que se vea el triángulo, alguna tira o
+  algún pincho? Se mide <b>sobre el píxel</b>, no sobre el polígono: la imagen ya
+  pintada es la verdad, porque ahí el repaso del contorno ya se ha comido el hueco
+  y lo que queda es lo que se ve. En un punto del borde, la fracción de un disco
+  que es tinta <b>vale</b> el ángulo — media en una recta, un cuarto en una esquina,
+  un octavo en una cuña de 45° — y una tira más fina que el disco da lo mismo que
+  una cuña. Un defecto, una medida.</p>
+  <pre id="r1" class="esperando">—</pre>
+</section>
+
+<section>
+  <h2>2 · Reparto</h2>
+  <p class="q">¿Sale lo que la gramática declara? Interesa sobre todo
+  <b>cortos</b>: obras que no llegan a los cortes de su tipo. Un
+  <code>astillado</code> con cuatro placas no es un astillado, es una etiqueta que
+  miente — y la rareza se calcula sobre ella. Y las frecuencias medidas de aquí
+  son las que hay que copiar a las tablas <code>F_*</code> y a
+  <code>P_MAX</code> del algoritmo.</p>
+  <pre id="r2" class="esperando">—</pre>
+</section>
+
+<section>
+  <h2>3 · Huella</h2>
+  <p class="q">¿Da el mismo seed la misma obra a cualquier tamaño? Medir elige —los
+  mínimos descartan candidatos—, así que un algoritmo que decidiera en píxeles
+  daría una obra distinta en la vista previa y en el A1. Se compara la huella de
+  cada obra a tres lados y en los tres formatos: tiene que salir cero.</p>
+  <pre id="r3" class="esperando">—</pre>
+</section>
+
+<section>
+  <h2>4 · La mancha</h2>
+  <p class="q">Tres cosas que se leen de la imagen entera y no de un borde.
+  <b>Soldadura</b>: cada placa repasa su propio contorno con el color del suelo,
+  así que dos placas no pueden tocarse nunca — las manchas conectadas tienen que
+  ser tantas como placas, y si son menos, dos se han soldado y el hueco se ha
+  cerrado. <b>Recorte</b>: el bloque nace con holgura, pero la deriva empuja hacia
+  fuera y podría sacarlo del pliego. <b>Flequillo</b>: cuántas placas están en el
+  suelo de carne — la regla 11 le pone suelo a cada tira por separado pero
+  <b>no cuenta cuántas van juntas</b>, y tres seguidas del ancho mínimo se leen
+  como un peine. Esto último no es un fallo, es un número para decidir: se informa
+  y no se juzga.</p>
+  <pre id="r4" class="esperando">—</pre>
+</section>
+
+<script src="../../_engine.js"></script>
+<script src="../algo.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const esperar = () => new Promise(r => setTimeout(r, 0));
+  let PALS = null;
+  const S0 = +(new URLSearchParams(location.search).get('s0') || 900000);
+
+  /* Las paletas de verdad, o esto no mide nada. `HOKS.loadPalettes()` cae al
+   * catálogo mínimo embebido cuando no hay red, y con una sola paleta el reparto
+   * de tintas sale «1 al 100%» y la rareza se va al garete — parecería un dato y
+   * sería el fallback. Así que si la red no está, se busca el `data/` del propio
+   * repositorio antes de rendirse, y si tampoco, se dice en voz alta. */
+  async function palettes() {
+    if (PALS) return PALS;
+    let p = await HOKS.loadPalettes();
+    if (p.length <= HOKS.DEFAULTS.length) {
+      try {
+        const d = await fetch('../../../data/palettes.json').then(r => r.ok ? r.json() : null);
+        if (d && d.length) p = HOKS.normalizePalettes(d.filter(x => x.active !== false));
+      } catch (e) { /* sin red y sin fichero: se avisa abajo */ }
+    }
+    // El aviso va en SU PROPIO sitio y se queda. Estuvo en el hueco del progreso
+    // y la línea siguiente se lo comía: una medida inválida corrió entera sin que
+    // nadie viera que lo era, y el reparto de tintas salió «1 al 100%» pareciendo
+    // un dato. Un aviso que se puede tapar no es un aviso.
+    if (p.length <= HOKS.DEFAULTS.length) {
+      const a = $('aviso');
+      a.hidden = false;
+      a.textContent = '⚠ sin catálogo de paletas (' + p.length + '): el reparto de tintas y la ' +
+                      'rareza de la pregunta 2 NO valen. Todo lo demás sí — la geometría no ' +
+                      'depende de la paleta.';
+    }
+    return (PALS = p);
+  }
+  function pinta(ctx, W, H, seed, params) {
+    return HOKS.PTZD.render(ctx, W, H, seed, { palettes: PALS, params });
+  }
+  function lienzo(fmt, lado) {
+    const d = HOKS.fmtDims(fmt, lado);
+    const cv = document.createElement('canvas'); cv.width = d.W; cv.height = d.H;
+    return { cv, ctx: cv.getContext('2d', { willReadFrequently: true }), W: d.W, H: d.H };
+  }
+  /* LA SEED SE MEZCLA ANTES DE USARLA, y no es un adorno. El Rng del motor es un
+   * LCG, y en un LCG los primeros sorteos de seeds CONSECUTIVAS no son
+   * independientes: el primero avanza 0,000388 por seed y el segundo 0,0907, así
+   * que en un bloque de mil seeds seguidas el primer sorteo recorre el 39% del
+   * rango y el segundo da tres vueltas ordenadas. Del tercero en adelante ya está
+   * disperso.
+   *
+   * Y el primer sorteo de esta familia ES LA PALETA; el segundo, la pareja
+   * tinta/suelo. Medido: 300 seeds seguidas usaron 3 paletas de 15, y las tres
+   * eran vecinas en el catálogo. Con eso, «tintas» y la parte de la rareza que
+   * depende de la paleta no miden la familia: miden un trozo del catálogo.
+   *
+   * No se toca el Rng —cambiarlo cambiaría TODAS las obras ya guardadas, de seis
+   * familias—. Se mezcla la seed aquí, que es donde está el problema: el
+   * instrumento elegía mal la muestra, el motor no. Mezclador de MurmurHash3.
+   * Con él, la geometría no cambia (venía del tercer sorteo en adelante y ya
+   * estaba bien) pero el color deja de estar congelado. */
+  function semilla(n) {
+    let x = n >>> 0;
+    x = Math.imul(x ^ (x >>> 16), 2246822507) >>> 0;
+    x = Math.imul(x ^ (x >>> 13), 3266489909) >>> 0;
+    return (x ^ (x >>> 16)) >>> 0;
+  }
+
+  const suelta = c => { c.width = c.height = 0; };
+  const pc = (a, b) => (100 * a / b).toFixed(1) + '%';
+  const pct2 = v => (v == null ? '—' : (100 * v).toFixed(0) + '%');
+
+  // ── 1 · Cuñas ────────────────────────────────────────────────────────────
+  const ESCALAS = [0.035, 0.055, 0.085];   // radios del disco / lado del bloque
+  /* DOS UMBRALES, y no es duplicar: el reparto de ángulos se amontona justo por
+   * encima de 60°, así que contar «por debajo de 62» cae en mitad de la cuesta y
+   * el número baila —dos bloques de seeds independientes dieron 0,9% y 2,4% sin
+   * que cambiara una línea—. Lo que no baila es la cola: por debajo de 45° hay
+   * triángulo de verdad, y ahí los dos bloques dieron 0,25% y 0,10%. Así que la
+   * cifra dura manda en el veredicto y la blanda se informa para ver la
+   * tendencia, no para decidir. */
+  const AGUDO = 45, BLANDO = 62;
+
+  function peorAngulo(ctx, W, H, ground, S) {
+    const im = ctx.getImageData(0, 0, W, H).data;
+    const gr = [parseInt(ground.slice(1, 3), 16), parseInt(ground.slice(3, 5), 16), parseInt(ground.slice(5, 7), 16)];
+    const m = new Uint8Array(W * H);
+    for (let i = 0, p = 0; i < m.length; i++, p += 4)
+      m[i] = (Math.abs(im[p] - gr[0]) + Math.abs(im[p + 1] - gr[1]) + Math.abs(im[p + 2] - gr[2])) > 90 ? 1 : 0;
+    /* SE PROBÓ A QUITARLE LA ORLA DEL ANTIALIAS Y SE DESHIZO. La idea era que el
+     * píxel intermedio entre tinta y suelo pasa el umbral y, en la esquina de una
+     * placa, esa orla sola se leyera como una cuña. Una erosión de un píxel la
+     * borraba — y de paso le quitaba un anillo de tinta REAL a todas las placas
+     * por igual, así que todos los ángulos bajaban: el peor caso pasó de 24° a 10°
+     * y las obras señaladas del 0,1% al 0,5%. Un arreglo que empeora el número sin
+     * ninguna prueba de que sea más verdadero no es un arreglo.
+     *
+     * Lo que queda en pie es lo otro: por debajo de 45° este detector ya está
+     * midiendo cosas del tamaño del píxel, y el ojo humano es el que decide si
+     * existen. El procedimiento no cambia — `donde.html` y mirar. */
+    const acc = new Int32Array(W * H);
+    for (let y = 0; y < H; y++) { let s = 0; for (let x = 0; x < W; x++) { s += m[y * W + x]; acc[y * W + x] = s; } }
+    const fila = (y, x0, x1) => {
+      if (y < 0 || y >= H) return 0;
+      x0 = Math.max(0, x0); x1 = Math.min(W - 1, x1);
+      return x1 < x0 ? 0 : acc[y * W + x1] - (x0 > 0 ? acc[y * W + x0 - 1] : 0);
+    };
+    const SS = Math.min(W, H);
+    const discos = ESCALAS.map(e => {
+      const R = Math.max(4, Math.round(e * S * SS)), f = [];
+      for (let dy = -R; dy <= R; dy++) f.push(Math.floor(Math.sqrt(R * R - dy * dy)));
+      return { R, f, tot: f.reduce((s, w) => s + 2 * w + 1, 0) };
+    });
+    let peor = 360;
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      const i = y * W + x;
+      if (!m[i] || (m[i - 1] && m[i + 1] && m[i - W] && m[i + W])) continue;   // sólo el borde
+      for (const D of discos) {
+        let s = 0;
+        for (let dy = -D.R; dy <= D.R; dy++) s += fila(y + dy, x - D.f[dy + D.R], x + D.f[dy + D.R]);
+        const th = 360 * s / D.tot;
+        if (th < peor) peor = th;
+      }
+    }
+    return peor;
+  }
+
+  async function cunas(N) {
+    const hist = {}, malas = [];
+    let n = 0;
+    for (const fmt of ['square', 'horizontal']) for (let i = 0; i < N; i++) {
+      const seed = semilla(S0 + i), L = lienzo(fmt, 760);
+      const r = pinta(L.ctx, L.W, L.H, seed, { grainScale: 0, veta: 0 });
+      const a = peorAngulo(L.ctx, L.W, L.H, r.col.ground, 0.64);
+      suelta(L.cv); n++;
+      const b = Math.min(150, Math.floor(a / 15) * 15);
+      hist[b] = (hist[b] || 0) + 1;
+      if (a < BLANDO) malas.push({ fmt, seed, ang: +a.toFixed(1), tipo: r.tipo, gubia: r.gubia, pz: r.piezas });
+      if (i % 8 === 0) await esperar();
+    }
+    malas.sort((x, y) => x.ang - y.ang);
+    const agudas = malas.filter(x => x.ang < AGUDO);
+    return {
+      bien: agudas.length <= Math.ceil(n * 0.005) && malas.length <= Math.ceil(n * 0.04),
+      texto: [
+        `obras ${n}`,
+        `cuña de verdad  (< ${AGUDO}°) ${agudas.length} = ${pc(agudas.length, n)}   ← la que decide`,
+        `en la cuesta    (< ${BLANDO}°) ${malas.length} = ${pc(malas.length, n)}   ← informativa: el umbral cae donde se amontona`,
+        `ángulo visible más cerrado, por tramos: ` +
+          Object.keys(hist).map(Number).sort((a, b) => a - b).map(k => `${k}–${k + 15}° ${hist[k]}`).join(' · '),
+        malas.length ? 'peores: ' + malas.slice(0, 6).map(x => `${x.seed}:${x.fmt} ${x.ang}° (${x.tipo} ${x.gubia}, ${x.pz} pz)`).join(' · ') : '',
+        malas.length ? 'para verlas: donde.html?l=' + malas.slice(0, 6).map(x => `${x.seed}:${x.fmt}`).join(',') : '',
+      ].filter(Boolean).join('\n'),
+    };
+  }
+
+  // ── 2 · Reparto ──────────────────────────────────────────────────────────
+  async function reparto(N) {
+    const acc = {}, add = (k, v) => { (acc[k] = acc[k] || {})[v] = (acc[k][v] || 0) + 1; };
+    const rs = [];
+    let n = 0, cortos = 0;
+    for (const fmt of ['square', 'horizontal']) for (let i = 0; i < N; i++) {
+      const L = lienzo(fmt, 520);
+      const r = pinta(L.ctx, L.W, L.H, semilla(S0 + i), { grainScale: 0 });
+      suelta(L.cv); n++;
+      add('tipo', r.tipo); add('gubia', r.gubia); add('piezas', r.piezas);
+      add('sajaduras', r.sajaduras); add('faltan', r.faltan); add('escalones', r.escalones);
+      add('tintas', r.tintas);
+      const t = HOKS.PTZD.traits(r); add('rareza', t.overall); rs.push(t.r);
+      if (r.cortes < r.pedidos) cortos++;
+      if (i % 8 === 0) await esperar();
+    }
+    rs.sort((a, b) => b - a);
+    const q = f => rs[Math.min(rs.length - 1, Math.floor(f * rs.length))].toPrecision(3);
+    const linea = k => k.padEnd(10) + Object.keys(acc[k])
+      .sort((a, b) => (isNaN(a) ? String(a).localeCompare(b) : a - b))
+      .map(v => `${v} ${pc(acc[k][v], n)}`).join(' · ');
+    return {
+      bien: cortos <= Math.ceil(n * 0.03),
+      texto: [
+        `obras ${n} · cortos ${cortos} = ${pc(cortos, n)}`,
+        ...['tipo', 'gubia', 'piezas', 'sajaduras', 'faltan', 'escalones', 'tintas', 'rareza'].map(linea),
+        `umbrales de rarComb, si se quiere el reparto 40/35/15/7/3: ` +
+          [.40, .75, .90, .97].map(f => q(f)).join(' · '),
+      ].join('\n'),
+    };
+  }
+
+  // ── 3 · Huella ───────────────────────────────────────────────────────────
+  const huella = r => [r.tipo, r.gubia, r.piezas, r.sajaduras, r.cortes, r.pedidos, r.faltan,
+                       r.escalones, r.tintas, r.hondura, r.mancha.toFixed(6),
+                       r.col.ink, r.col.ground, r.inks.join('/')].join('|');
+
+  async function invariancia(N) {
+    const lados = [760, 2400, 4200], fmts = ['square', 'horizontal', 'vertical'];
+    const malas = [];
+    let n = 0;
+    for (const fmt of fmts) for (let i = 0; i < N; i++) {
+      const hs = [];
+      for (const lado of lados) {
+        const L = lienzo(fmt, lado);
+        hs.push(huella(pinta(L.ctx, L.W, L.H, semilla(S0 + i), { grainScale: 0 })));
+        suelta(L.cv);
+      }
+      n++;
+      if (hs.some(h => h !== hs[0])) malas.push({ fmt, seed: semilla(S0 + i), hs });
+      await esperar();
+    }
+    return {
+      bien: !malas.length,
+      texto: `obras ${n} · lados ${lados.join('/')} · formatos ${fmts.join('/')}\n` +
+             `huellas distintas ${malas.length}` +
+             (malas.length ? '\n' + malas.slice(0, 3).map(x => `${x.seed} ${x.fmt}\n  ` + x.hs.join('\n  ')).join('\n') : ''),
+    };
+  }
+
+  // ── 4 · La mancha ────────────────────────────────────────────────────────
+  function mascara(ctx, W, H, ground) {
+    const im = ctx.getImageData(0, 0, W, H).data;
+    const g = [parseInt(ground.slice(1, 3), 16), parseInt(ground.slice(3, 5), 16), parseInt(ground.slice(5, 7), 16)];
+    const m = new Uint8Array(W * H);
+    let tinta = 0;
+    for (let k = 0, p = 0; k < m.length; k++, p += 4)
+      if ((Math.abs(im[p] - g[0]) + Math.abs(im[p + 1] - g[1]) + Math.abs(im[p + 2] - g[2])) > 90) { m[k] = 1; tinta++; }
+    return { m, tinta };
+  }
+  // Distancia de cada punto de tinta al suelo, chamfer en dos pasadas. El máximo
+  // dentro de una mancha es el radio del mayor círculo que cabe en ella — que es
+  // lo que dice si una placa es gorda, aunque tenga un brazo fino.
+  function distancias(m, W, H) {
+    const D = new Float32Array(W * H);
+    for (let k = 0; k < D.length; k++) D[k] = m[k] ? 1e9 : 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const k = y * W + x; if (!D[k]) continue;
+      let v = D[k];
+      if (x > 0) v = Math.min(v, D[k - 1] + 1);
+      if (y > 0) v = Math.min(v, D[k - W] + 1);
+      if (x > 0 && y > 0) v = Math.min(v, D[k - W - 1] + 1.4142);
+      if (x < W - 1 && y > 0) v = Math.min(v, D[k - W + 1] + 1.4142);
+      D[k] = v;
+    }
+    for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) {
+      const k = y * W + x; if (!D[k]) continue;
+      let v = D[k];
+      if (x < W - 1) v = Math.min(v, D[k + 1] + 1);
+      if (y < H - 1) v = Math.min(v, D[k + W] + 1);
+      if (x < W - 1 && y < H - 1) v = Math.min(v, D[k + W + 1] + 1.4142);
+      if (x > 0 && y < H - 1) v = Math.min(v, D[k + W - 1] + 1.4142);
+      D[k] = v;
+    }
+    return D;
+  }
+  async function laMancha(N) {
+    const soldadas = [], recortadas = [], flecos = [], finasHist = {}, cobertura = [], contraste = [];
+    let n = 0;
+    for (const fmt of ['square', 'horizontal', 'vertical']) for (let i = 0; i < N; i++) {
+      const seed = semilla(S0 + i), L = lienzo(fmt, 620), W = L.W, H = L.H;
+      const r = pinta(L.ctx, W, H, seed, { grainScale: 0, veta: 0 });
+      const { m, tinta } = mascara(L.ctx, W, H, r.col.ground);
+      suelta(L.cv); n++;
+      cobertura.push(tinta / (W * H));
+
+      let borde = 0;
+      for (let x = 0; x < W; x++) { if (m[x]) borde++; if (m[(H - 1) * W + x]) borde++; }
+      for (let y = 0; y < H; y++) { if (m[y * W]) borde++; if (m[y * W + W - 1]) borde++; }
+      if (borde > 2) recortadas.push({ fmt, seed, px: borde });
+
+      const vis = new Uint8Array(W * H), pila = new Int32Array(W * H), comp = new Int32Array(W * H);
+      let manchas = 0, etiq = 0;
+      for (let k = 0; k < m.length; k++) {
+        if (!m[k] || vis[k]) continue;
+        etiq++;
+        let sp = 0, area = 0; const cab = []; pila[sp++] = k; vis[k] = 1;
+        while (sp) {
+          const c = pila[--sp]; area++; comp[c] = etiq; cab.push(c);
+          const x = c % W, y = (c / W) | 0;
+          if (x > 0 && m[c - 1] && !vis[c - 1]) { vis[c - 1] = 1; pila[sp++] = c - 1; }
+          if (x < W - 1 && m[c + 1] && !vis[c + 1]) { vis[c + 1] = 1; pila[sp++] = c + 1; }
+          if (y > 0 && m[c - W] && !vis[c - W]) { vis[c - W] = 1; pila[sp++] = c - W; }
+          if (y < H - 1 && m[c + W] && !vis[c + W]) { vis[c + W] = 1; pila[sp++] = c + W; }
+        }
+        if (area >= 60) manchas++; else for (const c of cab) comp[c] = 0;   // mota, no placa
+      }
+      if (manchas !== r.piezas) soldadas.push({ fmt, seed, manchas, piezas: r.piezas, tipo: r.tipo, gubia: r.gubia });
+
+      // El suelo son 4,6 gubias de polígono, pero cada placa repasa su contorno,
+      // así que de tinta se ven 3,6 — radio 1,8. Cuenta como fina la que no llega
+      // a 2,2 gubias de radio: la que está en el suelo o justo encima.
+      const D = distancias(m, W, H), radio = new Map();
+      for (let k = 0; k < comp.length; k++) {
+        const c = comp[k]; if (c <= 0) continue;
+        if (!(radio.get(c) >= D[k])) radio.set(c, D[k]);
+      }
+      const g = (HOKS.PTZD.GUBIAS.find(x => x.key === r.gubia) || { w: 0.021 }).w * 0.64 * Math.min(W, H);
+      let finas = 0;
+      for (const v of radio.values()) if (v < 2.2 * g) finas++;
+      finasHist[finas] = (finasHist[finas] || 0) + 1;
+      if (finas >= 3) flecos.push({ fmt, seed, finas, piezas: r.piezas, tipo: r.tipo, gubia: r.gubia });
+
+      /* La distancia de cada tinta al suelo, la peor de la obra. En DISTANCIA DE
+       * COLOR y no en salto de luma, que fue el primer intento y medía otra cosa:
+       * media docena de paletas del catálogo son series de Itten, contraste
+       * complementario puro —mucho tono y poca luma a propósito—, así que por luma
+       * salían señaladas justo las que están bien. Se mide con la misma vara que
+       * usa `pareja` para elegir el par, que es la única forma de que el número
+       * hable del mismo mundo que la decisión. */
+      const rgb = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
+      const dcol = (a, b) => { const x = rgb(a), y = rgb(b);
+        return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
+      let cerca = Infinity;
+      for (const t of r.inks) cerca = Math.min(cerca, dcol(t, r.col.ground));
+      contraste.push(cerca);
+
+      if (i % 6 === 0) await esperar();
+    }
+    cobertura.sort((a, b) => a - b); contraste.sort((a, b) => a - b);
+    const q = f => (100 * cobertura[Math.min(cobertura.length - 1, (cobertura.length * f) | 0)]).toFixed(1) + '%';
+    return {
+      // Soldadura y recorte son fallos; el flequillo es un dato para decidir.
+      bien: !soldadas.length && !recortadas.length,
+      texto: [
+        `obras ${n}`,
+        `soldadas   ${soldadas.length} = ${pc(soldadas.length, n)}` +
+          (soldadas.length ? '  → ' + soldadas.slice(0, 6).map(x => `${x.seed} ${x.fmt} ${x.manchas}≠${x.piezas}`).join(' · ') : ''),
+        `recortadas ${recortadas.length} = ${pc(recortadas.length, n)}` +
+          (recortadas.length ? '  → ' + recortadas.slice(0, 6).map(x => `${x.seed} ${x.fmt} ${x.px}px`).join(' · ') : ''),
+        `mancha     p05 ${q(.05)} · p50 ${q(.5)} · p95 ${q(.95)}`,
+        /* CONTRASTE TINTA/SUELO. No es un fallo —una masa granate sobre papel
+         * coral es una decisión, no una avería— pero sí el número que dice si el
+         * corte se LEE: el hueco tiene el color del suelo, así que cuanto más
+         * cerca esté la tinta, menos existe la obra. `pareja` coge el par más
+         * distante de la paleta, así que hay suelo por construcción; esto
+         * comprueba que lo siga habiendo cuando el suelo se cambia por un tono
+         * medio (papel crudo) y cuando entra una segunda tinta. */
+        `contraste  distancia de color tinta/suelo, la peor de las tintas: ` +
+          `min ${contraste[0] | 0} · p05 ${contraste[(contraste.length * .05) | 0] | 0} · ` +
+          `p50 ${contraste[(contraste.length * .5) | 0] | 0} · ` +
+          `por debajo de 110: ${contraste.filter(v => v < 110).length} = ${pc(contraste.filter(v => v < 110).length, n)}` +
+          `   (110 es el suelo que el propio algoritmo exige al papel crudo)`,
+        `placas en el suelo de carne, por obra: ` +
+          Object.keys(finasHist).map(Number).sort((a, b) => a - b).map(k => `${k}→${finasHist[k]}`).join(' · '),
+        `obras con tres o más: ${flecos.length} = ${pc(flecos.length, n)}` +
+          (flecos.length ? '  → ' + flecos.slice(0, 6).map(x => `${x.seed} ${x.fmt} ${x.finas}/${x.piezas} (${x.tipo} ${x.gubia})`).join(' · ') : ''),
+      ].join('\n'),
+    };
+  }
+
+  // ── Orquesta ─────────────────────────────────────────────────────────────
+  async function medir() {
+    const N = Math.max(20, Math.min(2000, +$('n').value || 120));
+    $('go').disabled = true;
+    await palettes();
+    const pasos = [
+      ['r1', 'cuñas',   () => cunas(N)],
+      ['r2', 'reparto', () => reparto(Math.max(N, 200))],
+      // La huella se queda en 60 por formato pase lo que pase: es la pregunta más
+      // cara —tres renders por obra, uno de ellos a 4200 px, y el grano del motor
+      // recorre el lienzo entero aunque esté apagado— y a la vez la más
+      // estructural. Con 180 obras y cero diferencias ya está contestada; con
+      // 2000 tardaría horas y diría lo mismo.
+      ['r3', 'huella',  () => invariancia(Math.min(N, 60))],
+      ['r4', 'la mancha', () => laMancha(Math.min(N, 400))],
+    ];
+    for (const [id, nombre, fn] of pasos) {
+      $('estado').textContent = 'midiendo ' + nombre + '…';
+      $(id).textContent = '…';
+      await esperar();
+      const t = performance.now();
+      const res = await fn();
+      $(id).className = '';
+      $(id).innerHTML = `<span class="${res.bien ? 'ok' : 'no'}">${res.bien ? 'BIEN' : 'MAL '}</span>  ` +
+        `<span style="opacity:.5">${((performance.now() - t) / 1000).toFixed(1)} s</span>\n` +
+        res.texto.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+    }
+    $('estado').textContent = 'hecho';
+    $('go').disabled = false;
+  }
+  $('go').addEventListener('click', medir);
+  // `?auto=1&n=…` para lanzarlo sin manos, que es como se mide de verdad: un
+  // navegador sin cabeza y el DOM volcado a un fichero.
+  const q = new URLSearchParams(location.search);
+  if (q.get('n')) $('n').value = q.get('n');
+  if (q.get('auto')) medir();
+})();
+</script>
+</body>
+</html>

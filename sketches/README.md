@@ -56,10 +56,17 @@ sketches/
   dtkrt/            ← publicada: la primera familia que nació aquí
   eclps/             ← publicada: la fila, con su pliego doble
   evol/             ← EN PRUEBAS: la ley del encuentro invertida. Ver su README
-  ptzd/             ← SOLO CONCEPTO: el bloque partido. Aún no hay algo.js.
   hrrs/             ← EN PRUEBAS: la ley del encuentro esquivada — la cinta no se
                       cruza, se pone al lado. Con algo.js, harness y batería
                       propia. Ver su README y su verificacion/
+  ptzd/             ← EN PRUEBAS: el bloque partido. La gramática se escribió
+                      ANTES que el código, y el grid la corrigió. Ver su README
+    entrenamiento/  ← el ojo, registrado: 100 lotes de 5, se eligen 2 de cada uno
+                      y sale un patrón de preferencia sobre los rasgos. No se
+                      publica; es instrumento. Ver su README
+    verificacion/   ← el defecto, contado: cuñas sobre el píxel, el reparto contra
+                      lo declarado y la huella a tres resoluciones. Lo que el
+                      entrenamiento no puede decir. Tampoco se publica
   trzs/             ← graduada desde p5 (porte idéntico al píxel, verificado)
     verificacion/   ← los detectores del halo y sus controles rotos a propósito.
                       No se publica: se ejecuta a mano cuando alguien toca el
@@ -92,7 +99,8 @@ vacío. Lo que sí hereda entero es el método: el tipo declara cuántos ojos qu
 luego **se comprueban** sobre el dibujo, por campo de distancias e inundación desde
 el borde — el mismo mapa de vacíos con el que TRZS coloca sus discos.
 
-Activa en `works.json`. Reformulada desde los estratos a **la trama**: hebras en dos
+Registrada en `works.json` y **apagada** — se quedó en el laboratorio. Reformulada
+desde los estratos a **la trama**: hebras en dos
 direcciones que se cruzan y se sueldan, y el ojo es la celda que dejan al cruzarse
 —cuadrangular, como los de la referencia, y no el huso que daba un lazo—. Ver
 `evol/README.md` para el concepto, el filo (el canto vivo, que no toca la anatomía) y
@@ -124,15 +132,33 @@ pico de una esquina cruza el canal y suelda la obra.
 
 No está en `works.json` ni publicada. Ver `hrrs/README.md`.
 
-`ptzd/` es el quinto, y es distinto de los tres anteriores en una cosa: **por
-ahora sólo es concepto**. No hay `algo.js`, no hay harness, no hay una sola pieza
-renderizada — está escrita la gramática antes que el código, que es el paso que a
-`dtkrt/`, `eclps/` y `evol/` les faltó por escrito. El bloque nace cuadrado y unos
-cortes de anchura constante entran por los cantos, se ramifican y mueren unos
-contra otros; las piezas que sueltan se apartan, y la silueta es lo que queda. Si
-KRRTK **parte** el cuadrado, PTZD lo **rompe**: la subdivisión conoce el todo, y
-una grieta sólo conoce su punta. Ver `ptzd/README.md` para las ocho reglas, las
-influencias contrastadas de las que sale cada una y lo que habrá que medir.
+Y `ptzd/` sí está en `works.json`, con `active: false`: registrada para el panel y
+para el laboratorio, y fuera de la web hasta que se marque la casilla.
+
+`ptzd/` es el quinto, y es distinto de los cuatro anteriores en el método: **la
+gramática se escribió antes que el código**, que es el paso que a `dtkrt/`,
+`eclps/` y `evol/` les faltó por escrito. El bloque tiende al cuadrado sin serlo, y
+unos cortes de anchura constante entran por los cantos, se ramifican y mueren unos
+contra otros; las piezas que sueltan se apartan, alguna no vuelve, y la silueta es
+lo que queda. Si KRRTK **parte** el cuadrado, PTZD lo **rompe**: la subdivisión
+conoce el todo, y una grieta sólo conoce su punta.
+
+Escribir la gramática primero salió a cuenta y no fue gratis: el ojo le añadió tres
+reglas que el papel no vio —el **pulso** (sin irregularidad la familia se lee como
+un render, pero el temblor tiene que ir sobre la geometría COMPARTIDA o el hueco
+cambia de anchura y la obra se lee rasgada), **la que falta** (a la silueta de la
+referencia no le sobran mordiscos: le faltan placas enteras) y **la carne** (lo que
+queda entre dos blancos tiene que seguir siendo cuerpo: el hilo, la tira, la miga y
+el ángulo en triángulo son cuatro nombres para el mismo defecto, así que los mide
+una sola regla)— y le tumbó una docena de defectos con nombre. Ver
+`ptzd/README.md` para las once reglas, las influencias contrastadas de las que sale
+cada una, lo que el grid cambió y lo medido.
+
+Y es la primera familia con **los dos instrumentos**: `entrenamiento/` mide el
+gusto y `verificacion/` mide el defecto, que no es lo mismo y no se sustituyen. El
+segundo salió del primero por las malas — la guarda que se comió las cuñas dejó al
+20% de las obras sin llegar a los cortes de su tipo, y eso no se ve mirando obras:
+se ve contando.
 
 ECLPS es también la primera familia que existe en **un solo formato**: `double`, dos
 pliegos apaisados uno al lado del otro (2√2:1). No es capricho ni límite técnico
