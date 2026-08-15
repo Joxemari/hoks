@@ -246,6 +246,9 @@
   // material, como la anchura. Un cuadro con dos blancos distintos tiene dos
   // materiales, y eso no pasa en ninguna de las seis.
   const SEP_OBRA = [1.0, 1.20];            // el pelo de ESTA obra, en canales D
+  // CON HALO, dos trazos SI pueden solaparse. Lo único que hay que impedir es que uno
+  // desaparezca debajo del otro, así que los ejes no se acercan más de esto (× W).
+  const SOLAPE = 0.55;
   const SEP_SUELTO = [4.5, 11];            // el primer trazo no tiene con quién
   const RELLENO_MAX = 2.2;                 // techo del relleno de esquina, × W
   // El cruce: cuántos trazos de una obra pueden atravesar a otro, y con qué ángulo
@@ -491,9 +494,21 @@
   // `anchos` (opcional) son las SEMIANCHURAS por vértice, en unidades de campo.
   // Sólo las usa la réplica: el original no tiene una anchura sola, y reconstruirlo
   // con la modal suelda las bandas que van a un pelo.
-  function banda(ctx, pts, W, gub, relleno, anchos) {
-    const n = pts.length;
+  function banda(ctx, pts, W, gub, relleno, anchos, mas) {
+    // `mas` ensancha la banda: es el CORTE del halo, la misma banda un canal mas
+    // gorda y un canal mas larga. Va por los dos sitios porque el cabo también es
+    // un filo — si sólo se ensancharan los costados, el remate se soldaría a lo que
+    // tuviera delante, que es la lección que TRZS ya tenía escrita.
+    mas = mas || 0;
+    let n = pts.length;
     if (n < 2) return;
+    if (mas > 0) {
+      const alarga = (a, b) => {
+        const dx = a.x - b.x, dy = a.y - b.y, m = hypot(dx, dy) || 1e-9;
+        return { x: a.x + dx / m * mas, y: a.y + dy / m * mas };
+      };
+      pts = [alarga(pts[0], pts[1])].concat(pts.slice(1, n - 1), [alarga(pts[n - 1], pts[n - 2])]);
+    }
     const nx = [], ny = [], L = [];
     let tot = 0;
     for (let i = 0; i < n - 1; i++) {
@@ -503,9 +518,9 @@
     }
     // media anchura en cada vértice, por longitud de arco recorrida
     const h = [];
-    if (anchos && anchos.length === n) { for (const a2 of anchos) h.push(a2); }
+    if (anchos && anchos.length === n) { for (const a2 of anchos) h.push(a2 + mas); }
     else { let acc = 0;
-      for (let i = 0; i < n; i++) { h.push(anchoEn(tot > 0 ? acc / tot : 0, W, gub) / 2); if (i < n - 1) acc += L[i]; } }
+      for (let i = 0; i < n; i++) { h.push(anchoEn(tot > 0 ? acc / tot : 0, W, gub) / 2 + mas); if (i < n - 1) acc += L[i]; } }
     const izq = [], der = [];
     for (let i = 0; i < n - 1; i++) {
       izq.push({ x: pts[i].x + nx[i] * h[i],         y: pts[i].y + ny[i] * h[i] });
@@ -865,7 +880,12 @@
     const segs = segsDe(pts);
     if (seCorta(segs, ctx.D)) return false;
     for (const t of ctx.trazos) {
-      if (distTrazos(segs, t.segs) >= ctx.D - 1e-9) continue;   // el caso corriente
+      const dd = distTrazos(segs, t.segs);
+      if (dd >= ctx.D - 1e-9) continue;                         // el caso corriente
+      // CON HALO no hay rendija que temer: el canal se fabrica al pintar, así que un
+      // acercamiento deja de ser un defecto y pasa a ser composición. Lo único que
+      // sigue prohibido es que un trazo se meta DEBAJO de otro y desaparezca.
+      if (ctx.halo > 0) { if (dd >= ctx.W * SOLAPE) continue; return false; }
       // hay acercamiento: o es un cruce declarado y legal, o no cabe
       if (!cruza) return false;
       for (let ia = 0; ia < segs.length; ia++) for (const B of t.segs) {
@@ -1216,6 +1236,7 @@
                  : (rng.bool(P_GUBIA) ? rng.range(GUB_AMP[0], GUB_AMP[1]) : 0);
     const ctx = {
       fw, fh, S, W, g, D, mg: S * MARGEN, trazos: [], pSangra, gubAmp,
+      halo: params.halo != null ? params.halo * W : g,
       // el pelo de ESTA obra: uno solo, para paralelos y para cabos
       sep: D * rng.range(SEP_OBRA[0], SEP_OBRA[1]),
       // la retícula, si la hay: es de la obra, y con su propio giro para que no
@@ -1459,13 +1480,43 @@
     // cada tramo, unidos por su cuerda— así que ningún punto de tinta cae a más de
     // W/2 del eje. Con la anchura variando sólo HACIA ABAJO, sigue siendo cierto.
     // Lo comprueba `toque.js` píxel a píxel, y el control `miter` sigue disparando.
+    // EL HALO. Dos trazos no se solapan nunca sin dejar suelo entre ellos, y la
+    // manera de garantizarlo no es prohibir la rendija: es FABRICAR el canal. Cada
+    // trazo, antes de pintarse, corta a su alrededor una franja del ancho del canal
+    // de la obra. Así el margen no depende de acertar dos anchuras a la vez —que es
+    // exactamente donde la réplica se rompía, y donde el autor lo venía viendo— sino
+    // que sale constante por construcción. Es la incisión de TRZS: lo que separa dos
+    // hebras no es un contorno, es el corte por donde se ve el suelo.
+    //
+    // Va en una capa aparte y se corta con `destination-out` en vez de pintar el
+    // color del suelo, porque con fondo de degradado el suelo no es un color.
+    const halo = params.halo != null ? params.halo * best.W : best.g;
     ctx.save();
     ctx.translate(ox, 0);
     ctx.scale(S, S);
-    ctx.beginPath();
-    for (const tr of best.trazos) banda(ctx, tr.pts, best.W, tr.gubia, tr.relleno);
-    ctx.fillStyle = rol.tinta;
-    ctx.fill();
+    if (halo > 0) {
+      const capa = ctx.canvas.ownerDocument.createElement('canvas');
+      capa.width = W; capa.height = H;
+      const cx = capa.getContext('2d');
+      cx.translate(ox, 0); cx.scale(S, S);
+      cx.fillStyle = rol.tinta;
+      for (const tr of best.trazos) {
+        cx.globalCompositeOperation = 'destination-out';
+        cx.beginPath(); banda(cx, tr.pts, best.W, tr.gubia, tr.relleno, null, halo / 2);
+        cx.fill();
+        cx.globalCompositeOperation = 'source-over';
+        cx.beginPath(); banda(cx, tr.pts, best.W, tr.gubia, tr.relleno);
+        cx.fill();
+      }
+      ctx.restore();
+      ctx.drawImage(capa, 0, 0);
+      ctx.save();
+    } else {
+      ctx.beginPath();
+      for (const tr of best.trazos) banda(ctx, tr.pts, best.W, tr.gubia, tr.relleno);
+      ctx.fillStyle = rol.tinta;
+      ctx.fill();
+    }
     ctx.restore();
 
     E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
