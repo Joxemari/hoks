@@ -128,7 +128,7 @@
     "id": "evol",
     "name": "EVOL",
     "slug": "evol",
-    "active": true,
+    "active": false,
     "description": "Two bodies meet and weld. There is no over and no under, no incision: one single mass. And the ground, which in the crossing passed between, is here trapped — it survives only where the mass closes around it. It stops being a line and becomes an island with an edge. That is an eye, and the eyes are the work: the void is not what is left over, it is what the mass is there to define.",
     "page": "evol.html",
     "canvas": "square · horizontal (DIN)",
