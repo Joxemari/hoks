@@ -170,6 +170,17 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
     const m = new Uint8Array(W * H);
     for (let i = 0, p = 0; i < m.length; i++, p += 4)
       m[i] = (Math.abs(im[p] - gr[0]) + Math.abs(im[p + 1] - gr[1]) + Math.abs(im[p + 2] - gr[2])) > 90 ? 1 : 0;
+    /* SE PROBÓ A QUITARLE LA ORLA DEL ANTIALIAS Y SE DESHIZO. La idea era que el
+     * píxel intermedio entre tinta y suelo pasa el umbral y, en la esquina de una
+     * placa, esa orla sola se leyera como una cuña. Una erosión de un píxel la
+     * borraba — y de paso le quitaba un anillo de tinta REAL a todas las placas
+     * por igual, así que todos los ángulos bajaban: el peor caso pasó de 24° a 10°
+     * y las obras señaladas del 0,1% al 0,5%. Un arreglo que empeora el número sin
+     * ninguna prueba de que sea más verdadero no es un arreglo.
+     *
+     * Lo que queda en pie es lo otro: por debajo de 45° este detector ya está
+     * midiendo cosas del tamaño del píxel, y el ojo humano es el que decide si
+     * existen. El procedimiento no cambia — `donde.html` y mirar. */
     const acc = new Int32Array(W * H);
     for (let y = 0; y < H; y++) { let s = 0; for (let x = 0; x < W; x++) { s += m[y * W + x]; acc[y * W + x] = s; } }
     const fila = (y, x0, x1) => {

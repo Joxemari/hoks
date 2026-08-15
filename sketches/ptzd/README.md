@@ -393,8 +393,10 @@ Declarar sin comprobar es lo que ya falló dos veces en esta casa:
   enseña.
 - **Flequillo.** Tres tiras seguidas del ancho mínimo. No es el mosaico —las
   placas pueden ser pocas— es que la carne se acaba en una franja. La regla 11 le
-  pone suelo a cada tira por separado, pero **no cuenta cuántas van juntas**: eso
-  sigue sin medirse y es lo que hay que mirar en el grid.
+  pone suelo a cada tira por separado y **no cuenta cuántas van juntas**.
+  *Mirado y **admitido**: sale en el 0,1% de las obras y a ese ritmo es la tirada
+  rara que hace serie, no un defecto. No lleva guarda; `verificacion/` lo cuenta
+  para que se vea si algún día se dispara.*
 - **La etiqueta que miente.** Un `astillado` con cuatro placas. No es un defecto
   de la imagen —puede ser buena— es que la rareza se calcula sobre lo declarado.
   Se mide en `verificacion/` como *cortos*, y por eso la gubia pone techo.
@@ -420,6 +422,10 @@ Declarar sin comprobar es lo que ya falló dos veces en esta casa:
   significaría prohibir que dos placas se acerquen, que es tocar las reglas 6 y 7
   —el corte mete espacio y las piezas gravitan—, así que **se deja dicho y no se
   toca**: es decisión de autor, no de guarda.
+  *Mirado a ×5: de los dos casos que quedan por debajo de 45° en 2000 obras, uno
+  es un ganchito del ancho de la gubia —existe, y a tamaño de lectura es casi
+  nada— y el otro **no se ve siquiera ampliado**. Sigue abierto, pero lo que hay
+  que decidir es si algo que sólo existe a ×5 cuenta como defecto.*
 
 ## Decisiones abiertas
 
