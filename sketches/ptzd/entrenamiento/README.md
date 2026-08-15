@@ -39,6 +39,7 @@ versiones del algoritmo daría un patrón sobre una obra que ya no existe.
 | 1ª | 700000– | `…-v1` | antes de las guardas del hilo, la rectitud y el casi |
 | 2ª | 710000– | `…-v2` | con ellas, y con los pesos ya movidos por la 1ª |
 | 3ª | 720000– | `…-v3` | 40 lotes, sobre la 5ª revisión y ya con las seeds mezcladas ✔ |
+| 4ª | 730000– | `…-v4` | 40 lotes, y por fin con el **catálogo de paletas entero** |
 
 Lo que dieron las dos está en `../README.md`, en «Lo que el grid cambió». En
 resumen: la primera dio dos señales independientes —menos placas y **ninguna
@@ -91,21 +92,40 @@ La sajadura vuelve a salir negativa, cuarta vez, pero con n=15 no manda.
 Con 40 lotes casi todas las filas van en gris, y así hay que leerlas. Sirvió para
 lo que 40 lotes sirven: confirmar dirección y ver caer el rechazo a cero.
 
-## ⚠ El artefacto juzga con CINCO paletas, no con quince
+## El catálogo entero, y congelado *(desde la 4ª vuelta)*
 
-Lo sacó el análisis de la 3ª vuelta: en el JSON exportado **no aparece ni una
-paleta que no esté en `HOKS.DEFAULTS`**. La razón es que un artefacto publicado
-vive tras una CSP que bloquea cualquier host externo, así que `loadPalettes()` no
-llega a `raw.githubusercontent` y cae al catálogo mínimo embebido.
+Hasta la 3ª se juzgó con `HOKS.DEFAULTS`, las cinco paletas que el motor lleva de
+emergencia — y no por la CSP del artefacto, sino porque **el instrumento se
+escribió así**, en los dos gemelos. Eso no es lo que la obra va a ser: en la web y
+en el laboratorio las familias usan el catálogo, así que el ojo se estaba
+entrenando sobre un mundo de color que no existe.
 
-No invalida nada de lo geométrico —el tipo, la gubia, las placas y los cortes no
-dependen del catálogo— pero sí acota la columna PALETA: dice qué gusta **de esas
-cinco**, no del catálogo. Y explica de paso por qué la 3ª vuelta enseñó tantos
-amarillos: `Science` es amarillo y negro, y `Poet` y `Homage` traen amarillo.
+Desde la 4ª se juzga con las **activas del catálogo**, que es lo que la web
+publica. El gemelo del repositorio las lee de `data/palettes.json` por ruta
+relativa —no por red, para que el otro pueda hacer lo mismo— y el artefacto las
+lleva **empotradas**, porque un artefacto publicado vive tras una CSP que bloquea
+cualquier host externo. Se empotran al generarlo, igual que el motor y el
+algoritmo.
 
-Para que hable del catálogo hay que **empotrar las quince dentro del artefacto**
-al generarlo, igual que se empotran el motor y el algoritmo. El gemelo de `sketches/`
-no tiene el problema: ahí la red funciona.
+**Y los pesos van congelados a una fecha.** `ageWeight` mira `Date.now()` para dar
+más probabilidad a lo reciente, así que la paleta que le toca a una seed cambia
+con el calendario: un instrumento cuyas obras se mueven solas no es un
+instrumento. La 3ª vuelta sólo se pudo reanalizar semanas después porque las cinco
+de emergencia pesan igual entre sí y no envejecen — con el catálogo real eso ya no
+sería verdad. Con fecha fija el sorteo es reproducible para siempre, y si el
+catálogo cambia, cambia la vuelta, que es correcto y se ve.
+
+Los dos gemelos enseñan ahora **exactamente las mismas cinco obras** en cada lote:
+comprobado a la vista, que es la única manera de saber que empotrar no ha
+introducido una diferencia.
+
+### Lo que esto le hace a las tres primeras vueltas
+
+Nada de lo geométrico: el tipo, la gubia, las placas y los cortes no dependen del
+catálogo. Lo que queda acotado es la columna PALETA —hablaba de esas cinco— y
+`tintas`, que depende de cuántos colores trae la paleta que tocó. Y explica de
+paso por qué la 3ª vuelta enseñaba tantos amarillos: `Science` es amarillo y
+negro, y `Poet` y `Homage` traen amarillo.
 
 ## La seed se mezcla, y las dos primeras vueltas no lo hacían
 

@@ -80,11 +80,13 @@
  * Qué hace: 40 lotes de 5 obras. De cada lote se eligen las dos que más gustan
  * —o una, o ninguna—, y de ahí sale un patrón de preferencia sobre los rasgos.
  *
- * SEGUNDA VUELTA. Seeds nuevas (710000) y clave de almacenamiento nueva, y las
- * dos cosas por el mismo motivo: volver a juzgar las MISMAS obras no sería una
- * muestra, sería un re-test contaminado por el recuerdo — y mezclar los juicios
- * de dos versiones del algoritmo daría un patrón sobre una obra que no existe.
- * La primera vuelta sigue guardada bajo su clave, intacta.
+ * CUARTA VUELTA. Cada vuelta lleva seeds nuevas y clave de almacenamiento nueva,
+ * y las dos cosas por el mismo motivo: volver a juzgar las MISMAS obras no sería
+ * una muestra, sería un re-test contaminado por el recuerdo — y mezclar los
+ * juicios de dos versiones del algoritmo daría un patrón sobre una obra que no
+ * existe. Las anteriores siguen guardadas bajo su clave, intactas. Ésta empieza
+ * de cero porque cambia el color: hasta la 3ª se juzgó con las cinco paletas de
+ * emergencia del motor, y desde aquí se juzga con el catálogo (ver abajo).
  *
  * Dos decisiones de método, que son lo que hace que esto sirva de algo:
  *
@@ -98,12 +100,51 @@
  *      presencia en ESE lote hacía esperar. Así el número no se lo lleva la
  *      composición del muestreo.
  */
-const LOTES = 40, POR_LOTE = 5, SEED0 = 720000, LADO = 300;
-const CLAVE = 'hoks-ptzd-entrenamiento-v3';
+const LOTES = 40, POR_LOTE = 5, SEED0 = 730000, LADO = 300;
+const CLAVE = 'hoks-ptzd-entrenamiento-v4';
 
 const $ = id => document.getElementById(id);
-const PALS = HOKS.normalizePalettes(HOKS.DEFAULTS);
 const D = HOKS.fmtDims('square', LADO);
+
+/* EL CATÁLOGO DE VERDAD, Y CONGELADO. Dos cosas, y las dos hacen falta.
+ *
+ * La primera: aquí se juzgaba con `HOKS.DEFAULTS`, las cinco paletas embebidas
+ * que el motor lleva de emergencia. Se veía en el JSON de la 3ª vuelta, donde no
+ * aparece ninguna otra. Eso no es lo que la obra va a ser: en la web y en el
+ * laboratorio las familias usan el catálogo, así que el ojo estaba entrenándose
+ * sobre un mundo de color que no existe. Se lee del `data/` del propio
+ * repositorio —ruta relativa, no red, para que el gemelo empotrado pueda hacer lo
+ * mismo—, y sólo las activas, que es lo que la web publica.
+ *
+ * La segunda: los pesos se CONGELAN a una fecha. `ageWeight` del motor mira
+ * `Date.now()` para dar más probabilidad a lo reciente, así que la paleta que le
+ * toca a una seed cambia con el calendario — y un instrumento cuyas obras se
+ * mueven solas no es un instrumento: la 3ª vuelta sólo se pudo reanalizar porque
+ * las cinco de emergencia pesan igual entre sí y no envejecen. Con una fecha fija
+ * el sorteo es reproducible para siempre, y si el catálogo cambia, cambia la
+ * vuelta — que es correcto y se ve.
+ */
+const PESOS_A = Date.parse('2026-08-15T00:00:00Z');
+const PALETAS_EMPOTRADAS = null;   // el guion del artefacto sustituye esta línea
+function pesoEdad(created) {
+  if (!created || created < 1e12) return 4;
+  const d = (PESOS_A - created) / 86400000;
+  return d < 30 ? 4 : d < 90 ? 2 : d < 180 ? 1 : d < 365 ? 0.4 : 0.15;
+}
+function congela(pals) {
+  const w = pals.map(p => pesoEdad(p.created)), t = w.reduce((a, b) => a + b, 0) || 1;
+  return pals.map((p, i) => ({ ...p, prob: w[i] / t }));
+}
+let PALS = null;
+async function paletas() {
+  if (PALETAS_EMPOTRADAS) return congela(PALETAS_EMPOTRADAS);
+  try {
+    const d = await fetch('../../../data/palettes.json').then(r => r.ok ? r.json() : null);
+    if (d && d.length) return congela(d.filter(p => p.active !== false));
+  } catch (e) { /* se avisa abajo */ }
+  $('estado').textContent = '⚠ sin catálogo: se juzga con las cinco de emergencia, y eso no es la obra';
+  return congela(HOKS.DEFAULTS);
+}
 
 let estado = cargar();
 function cargar() {
@@ -315,7 +356,9 @@ $('borrar').onclick = () => {
 // Un enlace permanente al panel, aunque queden lotes: se puede mirar a mitad.
 document.addEventListener('keydown', e => { if (e.key === 'p' && $('juicio').style.display !== 'none') verPanel(); });
 
-pinta();
+// Nada se pinta antes de tener el catálogo: una primera obra dibujada con las
+// paletas de emergencia y el resto con las buenas sería un lote mentiroso.
+paletas().then(p => { PALS = p; pinta(); });
 </script>
 </body>
 </html>
