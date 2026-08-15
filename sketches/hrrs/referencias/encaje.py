@@ -40,12 +40,40 @@ def poligono(pts, h):
 
 
 def pinta(bandas, shape):
+    """El mismo dibujo que `banda()`, y la palabra «mismo» costo tres puntos.
+
+    La primera version pintaba UN poligono por banda, igual que el contorno que
+    construye `banda()`. Pero ese contorno SE AUTOINTERSECA en los codos —por dentro
+    del giro los dos costados se cruzan— y ahi PIL y el canvas no hacen lo mismo:
+    PIL rellena por paridad (even-odd) y deja un agujero justo en la esquina; el
+    canvas rellena por vueltas (nonzero) y lo llena. Los dos rasterizadores coincidian
+    solo un 97 %, asi que el ajuste estaba afinando contra una forma que no era la que
+    dibuja la casa.
+
+    Se arregla no autointersecando: cada tramo es su cuadrilatero y cada vertice su
+    triangulo de bisel, todos convexos y pintados por separado. Asi las dos reglas de
+    relleno dan lo mismo."""
     im = Image.new('1', (shape[1], shape[0]), 0)
     d = ImageDraw.Draw(im)
     for pts, h in bandas:
-        p = poligono(pts, h)
-        if p and len(p) >= 3:
-            d.polygon(p, fill=1)
+        n = len(pts)
+        if n < 2:
+            continue
+        nx, ny = [], []
+        for i in range(n - 1):
+            dx = pts[i+1][0] - pts[i][0]; dy = pts[i+1][1] - pts[i][1]
+            m = math.hypot(dx, dy) or 1e-9
+            nx.append(-dy / m); ny.append(dx / m)
+        for i in range(n - 1):
+            d.polygon([(pts[i][0] + nx[i]*h[i],     pts[i][1] + ny[i]*h[i]),
+                       (pts[i+1][0] + nx[i]*h[i+1], pts[i+1][1] + ny[i]*h[i+1]),
+                       (pts[i+1][0] - nx[i]*h[i+1], pts[i+1][1] - ny[i]*h[i+1]),
+                       (pts[i][0] - nx[i]*h[i],     pts[i][1] - ny[i]*h[i])], fill=1)
+        for i in range(1, n - 1):          # el bisel: la cuerda entre los dos costados
+            for sg in (1, -1):
+                d.polygon([(pts[i][0], pts[i][1]),
+                           (pts[i][0] + sg*nx[i-1]*h[i], pts[i][1] + sg*ny[i-1]*h[i]),
+                           (pts[i][0] + sg*nx[i]*h[i],   pts[i][1] + sg*ny[i]*h[i])], fill=1)
     return np.asarray(im, dtype=bool)
 
 

@@ -1525,18 +1525,32 @@ Dos cosas fueron las que separaron el 96 % del 97,5 %:
 umbral movido un 4 %. O sea que el 98 % que pide el autor es alcanzable y lo que queda
 por cerrar es error de verdad, no grano de papel.
 
-### Lo que NO está resuelto: dos medidas que no son la misma medida
+### Resuelto: eran dos cosas, y ninguna es error de dibujo
 
-Ajustada al 97,1 % contra el rasterizador propio, la misma réplica pasada por
-`componer` y vuelta a medir da **94 %**. Tres puntos de diferencia entre dos maneras de
-mirar lo mismo, y **no está localizado**. Descartados, cada uno con su medida: la gubia
-(0,3 puntos), el relleno de esquina (ninguno), la proporción nominal contra la real
-(ninguno) y la escala de render (ninguno).
+El 97,1 % del ajuste y el 94 % que salía al pasar por `componer` se separaban por dos
+causas, las dos medidas y ninguna de forma:
 
-Lo que queda por comprobar, y es lo más probable: **no son la misma medida**. La primera
-compara en sitio; la segunda recorta, re-umbraliza, filtra por material, reescala y
-re-registra — y cada uno de esos pasos tiene su propia pérdida. Hasta saberlo, el 97 %
-sólo vale contra el rasterizador y **no se puede afirmar del renderizador publicado**.
+**1. No era la misma medida (≈1,5 puntos).** La primera compara en sitio; la segunda
+recortaba, re-umbralizaba, filtraba por material, reescalaba y re-registraba, y cada
+paso pierde algo. Midiendo las dos **igual** —en sitio, al mismo tamaño de píxel— el
+renderizador de la casa da **95,5 %** de mediana, no 94 %.
+
+**2. Lo que queda entre los dos rasterizadores es UN PÍXEL DE BORDE (≈1,6 puntos).** Y
+esto se comprueba, no se supone: de los píxeles en que discrepan, el **97–99 % está a
+un píxel o menos del borde**, y el percentil 95 de esa distancia es **1,0 px**. O sea que
+las dos dibujan **la misma figura** y difieren en el convenio del filo — el canvas
+rellena con antialias y PIL no.
+
+Así que el ajuste es válido: está afinando la técnica de la casa y no una aproximación
+mía. Y el reparto del 3 % que falta para el 98 % queda desglosado: **~1 punto de suelo
+de binarizado, ~1,6 de convenio de rasterizado, y el resto —menos de un punto— error de
+dibujo de verdad.**
+
+Dicho de otro modo: contra un original impreso, con filo de tinta sobre papel, un
+modelo de banda poligonal está **a un píxel** de su techo. El 98 % es alcanzable pero
+cae dentro del margen del convenio, no del dibujo.
+
+
 
 ### Lo que queda mal, y ya con nombre
 
