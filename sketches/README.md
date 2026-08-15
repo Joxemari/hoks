@@ -108,17 +108,25 @@ Sin profundidad no hay halo, ni plan de secciones, ni orden de pintado: **un sol
 complejidad se va al recorrido — que es lo que queda cuando quitas la profundidad y
 no hay nada detrás de lo que esconderse.
 
+No es una cinta que se pliega sino **varios trazos independientes que no se tocan
+nunca** y cuya relación —paralelo, abanico, tangencia, cabo contra cabo, cabo contra
+cuerpo, suelto— **se declara y se construye**, no se espera a que salga sola. Cinco
+u ocho por obra, encadenados: el tercero acompaña al segundo, que acompaña al
+primero, y de ahí sale el haz.
+
 La regla que la gobierna es NEGATIVA y es una sola: dos tramos que no comparten
 vértice están a `W + g` o más. Y no se persigue con un relajador —`selfAvoid` no se
-porta— sino que se cumple por construcción: el recorrido no crece hacia donde no
-cabe. De ahí sale gratis el cabo, que deja de decidirse: la cinta se acaba donde ya
-no cabe.
+porta— sino que se cumple por construcción: el trazo no crece hacia donde no cabe.
+De ahí sale gratis el cabo, que deja de decidirse: **el trazo se acaba donde ya no
+cabe**, y por eso se pide ambicioso y se recorta en el punto exacto en vez de
+rechazarse entero. Lo que fija la escala de la hoja es el primer trazo: los demás
+caen desde lo que él **consiguió**, no desde lo que se le pidió.
 
-Verificada con su propia batería (`hrrs/verificacion/`): 996 obras, 2.008.529 pares
-no contiguos, **cero** por debajo del canal, y cada detector con su control roto a
-propósito. Uno de esos controles comprueba una afirmación del algoritmo y no un
-detector: que el **bisel** es lo que hace suficiente a la regla — con inglete, el
-pico de una esquina cruza el canal y suelda la obra.
+Verificada con su propia batería (`hrrs/verificacion/`): 996 obras repartidas entre
+catorce configuraciones, **cero** por debajo del canal, y cada detector con su
+control roto a propósito. Uno de esos controles comprueba una afirmación del
+algoritmo y no un detector: que el **bisel** es lo que hace suficiente a la regla —
+con inglete, el pico de una esquina cruza el canal y suelda la obra.
 
 No está en `works.json` ni publicada. Ver `hrrs/README.md`.
 

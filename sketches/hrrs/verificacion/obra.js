@@ -11,19 +11,20 @@
  *               Control: `margen`.
  *   ojos      — cuantos y con que reparto de tamanos. La regla 6 dice que un
  *               recinto con todos los ojos iguales es un laberinto, asi que lo que
- *               se mide es la DISPERSION: ojo mayor / ojo mediano.
- *               Control: `rejilla`.
+ *               se mide es la DISPERSION: ojo mayor / ojo mediano. SIN CONTROL —
+ *               ver la nota de abajo, y no leerlo como verificado.
  *   cadencia  — dispersion de las longitudes de tramo (CV). Es DISTRIBUCIONAL, no
  *               un defecto por obra: una obra con tramos parejos no esta mal, una
  *               FAMILIA en la que todas los tienen parejos si. Y tiene suelo — el
  *               brazo del pliegue mide D/sen(phi) por construccion, asi que un
  *               tercio de los tramos es forzosamente de otra longitud y el CV no
- *               puede bajar a cero por mucho que se rompa el resto. Medido: sano
- *               p50 0,60; con la rejilla 0,30. El control MUEVE LA DISTRIBUCION, y
- *               eso es lo que se comprueba; no hay umbral por obra que separe
- *               limpio (sano min 0,21 contra rejilla p50 0,30, se solapan).
- *   ojos      — el reparto de tamanos NO TIENE CONTROL QUE DISPARE: con la rejilla
- *               sale 9 de 120 contra 6 de 120 sano, que es lo mismo. Asi que estos
+ *               puede bajar a cero por mucho que se rompa el resto.
+ *               HOY TAMPOCO TIENE CONTROL: el que tuvo (`rejilla`) se cayo de
+ *               `mktest.py` al reescribirse el modelo y no se ha vuelto a poner, asi
+ *               que este numero es DESCRIPTIVO igual que el de los ojos. Queda
+ *               escrito aqui, y no borrado, para que no se lea como comprobado.
+ *   ojos      — el reparto de tamanos NO TIENE CONTROL QUE DISPARE: cuando lo tuvo
+ *               salia 9 de 120 contra 6 de 120 sano, que es lo mismo. Asi que estos
  *               numeros son DESCRIPTIVOS y sirven para el triaje del lote, no para
  *               dar nada por comprobado. Queda escrito para que nadie lea el cero
  *               de al lado como si estuviera verificado.

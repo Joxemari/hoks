@@ -668,6 +668,228 @@ falta = 0                 55%          92%
 Que `falta` suba del 55% al 92% es consecuencia del punto 3, no de haber aflojado
 lo declarado: los trazos se colocan de verdad en vez de perderse.
 
+## El marco era el techo
+
+Con el plan de longitudes puesto, el autor mira la hoja y añade una frase que
+parecía un consuelo y era el arreglo entero: *«pueden ser largos porque pueden
+salir del límite del canvas, no está mal»*.
+
+No es un permiso, es un diagnóstico. **El techo del trazo largo no lo ponía la
+gramática: lo ponía el marco.** El sangrado existía —era uno de los seis ejes que
+salieron del análisis de las referencias— pero estaba declarado en `0,09` del lado
+corto, que no es salirse: es rozar el borde. Así que un trazo, sangrara o no, tenía
+que caber **dentro**, y el protagonista se quedaba en lo que cupiera en diagonal.
+Un trazo que en Chillida no termina —se va— aquí terminaba siempre.
+
+Tres cosas, y otra vez ninguna sola basta:
+
+1. **`SANGRE` de 0,09 a 0,22.** Ahora salirse es salirse, y el protagonista puede
+   medir más que el pliego: `PROTA` sube de 1,10–1,60 a **1,45–2,40** del lado
+   corto.
+2. **Cuántos se salen es del CUADRO, no del trazo.** Antes había una probabilidad
+   fija (0,16) por trazo, así que todas las obras salían iguales: dos sangrados y
+   a otra cosa. Ahora la hoja sortea su propia tasa —**tres de cada diez no tocan
+   el borde**, el resto entre 0,15 y 0,62— igual que la vibración, que también es
+   del material y no del trazo.
+3. **Un trazo que sangra puede ARRANCAR fuera.** Faltaba la mitad del eje: todos
+   se iban y ninguno llegaba. Ahora un trazo entra desde detrás del marco.
+
+Y con el sangrado de verdad puesto se vio lo que tapaba: **el cerco iba antes que
+el protagonista**. Con tres o cinco trazos ya puestos en el centro, el largo
+entraba cuarto y cedía longitud hasta quedarse en uno más del montón — por eso los
+`recinto` salían de ocho trazos cortos donde ninguno manda. El cerco no pierde
+nada por ir detrás: se organiza contra el trazo largo, que es lo que hace en las
+referencias.
+
+**Y la jerarquía pasa a ser criterio de triaje.** `falta` tenía tres reglas —los
+trazos que se pidieron, que alguien acompañe a alguien, y que el trazo sea largo y
+simple— y le faltaba la que el autor había dicho con la mano: una hoja donde todos
+los trazos miden lo mismo no tiene dónde mirarse. Ahora `falta` penaliza el reparto
+por debajo de 1,5, así que de los siete candidatos del seed se queda el que tiene
+un trazo que manda. Va en `falta` y no en la colocación **a propósito**: es un
+juicio sobre la obra terminada, no una regla de construcción.
+
+## El trazo crece, y la hoja se mide desde él
+
+Segundo comentario del autor, y es el que arregla lo que quedaba: *«eso de que se
+cortan, creo que es porque los estás dibujando de manera simultánea. Si empiezas
+por una línea y se va haciendo larga, el resto de la composición se adaptará a eso.
+Sé que se tiene que componer, no ser adaptativo, pero se puede balancear»*.
+
+Tenía razón en el diagnóstico y la cura estaba **ya escrita en este README**, tres
+secciones más arriba, como consecuencia de la regla 3: *la cinta se acaba donde ya
+no cabe*. No estaba implementada. Lo que había era un plan de longitudes decidido
+antes de dibujar nada, y un trazo que no cabía **se tiraba entero** y se pedía otro
+más corto. Así que la longitud volvía a elegirla el filtro.
+
+1. **`recortar`: el trazo se pide ambicioso y se corta EXACTAMENTE donde deja de
+   caber**, por búsqueda binaria sobre la longitud de arco, cortando por dentro del
+   tramo y no por vértice — el sitio donde un trazo choca no tiene por qué ser una
+   esquina. Esto obliga a partir `cabe` en dos: `cabeDuro` es **monótona** (si un
+   trozo no cabe, ningún trazo que lo contenga cabe) y por eso se puede buscar; la
+   regla de lo visible no lo es (un trazo más largo se ve más) y se comprueba
+   aparte, una vez, al final.
+2. **De los intentos se queda el MÁS LARGO, no el primero.** Con recorte, el primero
+   siempre cabe: quedarse con él es volver a dejar que el azar del sitio elija la
+   longitud.
+3. **La caída se mide desde lo que el protagonista CONSIGUIÓ**, no desde lo que se
+   le pidió. Ese es el balance que el autor pedía, y cae justo donde tiene que caer:
+   las **relaciones** siguen declaradas y construidas —eso es componer— y lo que se
+   adapta es la **escala**. Si el protagonista sale corto porque el pliego no daba
+   para más, los demás bajan con él y la jerarquía se mantiene.
+
+El `cerco` también crece: ahora va detrás del protagonista, así que casi siempre
+tiene que ceder algo contra él, y rechazarlo entero dejaba recintos de dos cuerdas.
+
+## No hay más líneas, y están más relacionadas
+
+Tercer comentario, mirando las seis referencias otra vez: *«en los casos que te pasé
+no hay más líneas y están más relacionadas»*. Las dos mitades son dos errores
+distintos.
+
+**Cuántas.** Contadas en el análisis de arriba, ninguna referencia pasa de ocho:
+la 3 tiene siete tramos, la 4 seis, la 5 seis o siete, la 1 y la 2 rondan seis entre
+techo, patas y muñones. Y aquí salían de ocho a catorce — por un **error de
+contabilidad**: el `cerco` se sumaba a `n` en vez de salir de `n`, así que un
+`recinto` que pedía 5–9 dibujaba 8–14. El tipo declaraba una cosa y la obra hacía
+otra. Ahora `n` es el total, cerco incluido, y los rangos bajan a 3–5 / 5–8 / 5–8 /
+3–5.
+
+**Cómo.** Cada trazo se relacionaba con **uno cualquiera** de los ya puestos, así
+que la hoja salía como una lista de parejas sueltas: mucha relación declarada y
+ningún grupo. En las referencias los trazos van en grupo —tres o cuatro patas
+paralelas, dos peines engranados— y un grupo se hace **acompañando al último**: el
+tercero acompaña al segundo, que acompaña al primero. Dos de cada tres veces se
+encadena; la otra abre grupo nuevo, que es lo que impide que la obra sea una sola
+fila.
+
+```
+                        v3    + sangrado  + prota antes   + crece   + menos y
+                                          que el cerco              encadenados
+mediana colocada        0,45    0,54        0,60           —         0,65
+p90                     0,90    1,11        1,19           —         1,49
+máximo                  1,55    1,87        1,89           —         2,35
+reparto largo/mediano   1,59    1,45        1,61           —         2,01  (p90 3,80)
+obras que cruzan        113     170         229            —         287   de 300
+trazos por obra         6,1     6,1         6,1            —         5,6
+```
+
+De **38% a 96% de obras con un trazo que cruza la hoja entera**, y con menos trazos
+que antes. Sin tocar ni una regla de las que sostienen la familia: la distancia
+mínima sigue siendo `W+g` y sigue comprobándose igual.
+
+## Cuarta vuelta: volver a mirar las seis, con regla
+
+El autor mandó tres de las referencias **en grande** y dijo que seguía sin
+parecerse. Las imágenes originales se habían perdido del contexto por compactación,
+así que las saqué del transcripto de la sesión y las volví a medir en vez de opinar
+de memoria. Salieron dos errores de medida y cuatro reglas que faltaban.
+
+### Lo que estaba mal medido
+
+**El canal era casi el doble de ancho.** Con regla sobre las tres grandes: cartel de
+Múnich, banda 55 px y blanco 4 → 0,07. Litografía de las siete bandas, 30 y 3 →
+0,10. Las de papel hecho a mano, 14 y 2 → 0,14. Yo tenía **0,17–0,26**, el «1/5» que
+había puesto de oído. Ahora `GAMMA = [0,08, 0,16]`.
+
+**Y peor: `paralelo` sorteaba la separación entre 1 y 2,3 canales.** A 2,3·D el
+blanco entre dos bandas es *casi dos anchuras*: eso ya no es acompañar, son dos rayas
+que van en la misma dirección. En las seis no hay **ni un** sitio donde dos bandas se
+acompañen a esa distancia — cuando van juntas, van al pelo. `SEP_PAR = [1,0, 1,15]`,
+y las demás separaciones bajan por lo mismo. Sólo `suelto` sigue lejos, que es el
+contraste que hace legible el resto.
+
+### El pliegue, que lo había quitado yo
+
+*«Los trazos se voltean entre sí.»* Es **el** movimiento de la referencia: la banda
+se da la vuelta y vuelve pegada a sí misma con el pelo por medio. El cartel de Múnich
+es casi sólo pliegues; las siete bandas se doblan en uve; el recinto los tiene
+apilados.
+
+Lo tenía en la primera versión y lo quité al corregir el error de las horquillas:
+entendí «trazos independientes que nunca se juntan» como «un trazo tampoco se dobla».
+**El pliegue pasa dentro de un trazo y no une nada.** Un trazo se pliega; dos trazos
+no se juntan. Las dos cosas son verdad a la vez y yo las había fundido en una — está
+escrito en la cabecera del `algo.js` para que no vuelva a pasar.
+
+Y era *estructuralmente imposible*, no sólo improbable: un pliegue necesita dos giros
+seguidos **del mismo lado**, y había una regla puesta a propósito para evitarlos
+(«dos giros del mismo lado dan una espiral»). Se construye con la fórmula que este
+README ya tenía escrita como consecuencia de la regla 3 —girar φ, recorrer `D/sen φ`,
+girar `180−φ`— y por eso **cumple la distancia mínima sin comprobar nada**: los dos
+brazos salen antiparalelos a exactamente `D`.
+
+Efecto medido: los ojos pasan de mediana 3 a 5 (p90 10) y su dispersión de tamaños de
+1,8 a 4,3. El pliegue **atrapa suelo**, que es la doctrina del vacío, y las
+obras-laberinto caen del 30% al 13%.
+
+### El que sale, no vuelve
+
+*«Cuando una línea sale fuera, no vuelve. No es esa misma. Sale fuera y ya está. Eso
+es intencional.»* Un trazo que asomaba por un borde y reaparecía dos palmos más allá
+se leía como dos trazos con un puente invisible — contar algo que el papel no enseña.
+Se corta en el punto exacto en que vuelve a entrar.
+
+### La continuación, que es una relación nueva
+
+*«Una línea y otra pueden llegar a buscarse en el inicio y el fin; sus dos sistemas
+se buscan, y eso da una composición visual como continuación, pero realmente son los
+trazos.»* Es la séptima relación: el cabo de uno nace a un pelo del cabo del otro y
+**sigue su dirección**. El ojo lee una línea sola que cruza la hoja, y son dos trazos
+que ni se tocan. Es lo contrario de `caboCabo`, que busca el cabo del otro para morir
+a su lado, no para seguirlo.
+
+### La zona: el dibujo no ocupa la hoja
+
+En las seis el dibujo se **concentra**: el grabado del recinto vive en un tercio del
+papel y el resto está vacío. Repartiendo los trazos por todo el pliego sale una
+constelación; metiéndolos en una zona sale una **masa**, que es lo que hace que las
+bandas se encuentren y el canal aparezca. Cada obra tiene ahora un encuadre
+descentrado (52–88% del lado) y todo nace dentro; los trazos largos salen de él, que
+es lo que hacen los brazos de la referencia.
+
+### El filo hecho a mano, y el fin del `stroke()` único
+
+*«Siempre tienen mucha más vibración, el trazo parece de lápiz, hecho a mano. Y el
+ancho tiene pequeñas variaciones, muy sutiles.»* Dos cosas:
+
+- **El temblor** pasa del 45% de las obras al 86%, con la onda más fina. El techo de
+  amplitud se queda en 7,5° y **no es una decisión estética sino aritmética**: dos
+  subdivisiones seguidas con desvío de signo contrario se separan hasta 2·amp, y
+  `obra.js` cuenta como quiebro todo giro de más de 15°. A 7,5 el temblor cabe justo
+  por debajo; subiéndolo, la obra limpia empieza a contarse de garabato y el detector
+  deja de medir lo que dice medir. Lo que sube es el **suelo**.
+- **La anchura variable obliga a dejar el `stroke()` único**, que era una seña de la
+  familia. Un `stroke()` sólo tiene un `lineWidth`; no sabe adelgazar. La banda pasa a
+  construirse como **contorno y relleno**. Lo que no cambia es la garantía: el
+  contorno se levanta con la construcción del **bisel** hecha a mano —dos puntos por
+  vértice unidos por su cuerda— así que ningún punto de tinta cae a más de `W/2` del
+  eje. Y la gubia **sólo adelgaza, nunca engorda**: hacia arriba cerraría el canal,
+  que se mide contra `W`. Lo comprueba `toque.js` píxel a píxel: 0 de 252.
+
+Eso dejó los controles `miter` y `cabo` apuntando a `lineJoin` y `lineCap`, que ya no
+existen — y ahí sirvió el arreglo del apartado siguiente: `mil.sh` **se plantó** en
+vez de medir los ficheros viejos. Reescritos contra la construcción nueva, y el del
+cabo tuvo que ser **redondo y no cuadrado**: la esquina de un cabo cuadrado sale a
+`h·√2` del extremo, o sea *fuera* de la suma de Minkowski, y entonces disparaba
+también la medida de la geometría y dejaba de probar lo suyo — que el cabo es
+gramática y no seguridad. Ahora cada uno dispara en su medida y sólo en la suya.
+
+### Medido, sobre el resultado de esta vuelta
+
+```
+canal   994 obras · 0 incumplen · mínimo 1,0001 canales   controles: duro 100/126 · corta 120/126
+toque   252 obras · 0 fuera de la geometría · 0 más allá del cabo
+                                                          controles: miter 56/56 · cabo 56/56
+obra    994 obras · 0 escapados · 0 garabatos · 0 pizcas
+                                          controles: margen 96/126 · garabato 19/126 · pizca 59/126
+det      56 obras · determinismo 56/56 · misma huella a 760/2400/4200 56/56
+```
+
+`falta = 0` baja del 92% al 85% (máx 1,05): con el pliegue, más obras se quedan sin
+pasillo declarado. No es un defecto —`falta` es el criterio de triaje, no una regla—
+pero está anotado porque es el número que hay que vigilar si sigue bajando.
+
 ## Tres trampas nuevas, pagadas en esta vuelta
 
 1. **El sangrado leído como defecto.** El detector de margen marcaba 20 obras
@@ -683,14 +905,53 @@ lo declarado: los trazos se colocan de verdad en vez de perderse.
 3. **Dos suelos de longitud distintos.** El `cerco` usaba `LARGO_MIN × 0,8` y el
    detector `LARGO_MIN`: 19 pizcas de 996 que eran de la definición, no del
    dibujo.
+4. **Un control medido contra un artefacto viejo — y es la peor de todas.**
+   `mktest.py` construye cada control parcheando **líneas literales** del `algo.js`
+   publicado, así que cuando el algoritmo se reescribe un parche puede dejar de
+   encajar. Pasó dos veces seguidas con `pizca`, y las dos fallaron distinto:
+
+   - La primera, **en silencio**: de sus dos parches, uno apuntaba a una línea ya
+     reescrita, y `str.replace` **no falla cuando no encuentra nada**. La avería se
+     aplicaba a medias, el control seguía disparando por el otro parche, y no se
+     enteró nadie. Ahora los dos llevan `assert`.
+   - La segunda, **con `assert` puesto y aun así sin efecto**: al hacer que el trazo
+     creciera, la línea del suelo de longitud volvió a cambiar y `mktest.py` reventó
+     — pero `mil.sh` no comprobaba que la construcción hubiera ido bien, y en el
+     directorio seguía el `t_pizca.js` de la ejecución anterior. Se midió ese. Salió
+     94 de 126 y parecía perfecto.
+
+   Un control medido contra un artefacto viejo **es peor que no tener control**: no
+   prueba nada y además convence. Dos arreglos: `mil.sh` borra el fichero antes de
+   construirlo y **se planta** si la construcción falla, y la avería de `pizca` ya no
+   parchea el sitio donde se comprueba el suelo sino **la constante** `LARGO_MIN`,
+   que es lo que no se mueve cuando se reescribe el algoritmo.
+
+   Es la trampa 1 del encargo —una rama que nadie varía— pero dentro del instrumento
+   de medida, que es donde más caro sale.
+5. **Contar vértices para medir cuánto trazo se ve.** Con el sangrado hondo hay que
+   exigir que quede obra dentro del cuadro, y la primera versión contaba qué
+   fracción de los vértices caía dentro. No vale: sin vibración un tramo recto de
+   media hoja son dos puntos y uno vibrado son treinta, así que la cuenta hablaba
+   de la subdivisión y no del dibujo. Se mide **longitud vista**, muestreando cada
+   tramo.
+6. **Un tipo que declara `n` y dibuja `n + cerco`.** No es una trampa de medida sino
+   de contabilidad, y es peor porque no la ve nadie: el número está escrito en el
+   sitio correcto, sólo que se suma otro detrás. Se vio mirando, no midiendo — el
+   autor contó las líneas de sus referencias y no salían.
 
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
   triaje que la regla 6 pide, y se mide — pero **no tiene control que dispare**: la
-  rejilla da 9 obras-laberinto de 120 contra 6 de 120 del sano. Así que esos números
-  son descriptivos y la regla 6 sigue siendo una decisión del ojo en el grid. Dicho
-  aquí para que el cero de al lado no se lea como si estuviera comprobado.
+  rejilla daba 9 obras-laberinto de 120 contra 6 de 120 del sano. Así que esos
+  números son descriptivos y la regla 6 sigue siendo una decisión del ojo en el
+  grid. Dicho aquí para que el cero de al lado no se lea como si estuviera
+  comprobado.
+- **La cadencia tampoco lo está ya.** Tuvo control (`rejilla`) y se cayó de
+  `mktest.py` al reescribirse el modelo; no se ha vuelto a poner. El número sigue
+  saliendo y sigue sirviendo para el triaje, pero está en el mismo saco que los
+  ojos: descriptivo. Escrito en `obra.js` y aquí, y no borrado, porque un número sin
+  control que nadie marca acaba leyéndose como verificado.
 - **El temblor de gubia** de la observación 1 no está. Sigue pudiendo esperar, y
   añadirlo ahora sería una constante más que nadie varía.
 - **Las tres vueltas en paralelo** salen de dos pliegues seguidos y están medidas

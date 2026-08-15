@@ -27,6 +27,11 @@ const CONFIGS = [
   { n: 'gubia-fina', fmt: 'square',     p: { ancho: 0.52, canal: 0.17 } },
   { n: 'gubia-ancha',fmt: 'square',     p: { ancho: 1.0, canal: 0.26 } },
   { n: 'vibrada',    fmt: 'square',     p: { vibra: 1 } },
+  // Los dos extremos del sangrado. Tienen que estar: con la probabilidad sorteada
+  // por obra, una tirada al azar casi nunca da el caso limite —todos los trazos
+  // saliendose— que es justo donde el detector de margen se juega algo.
+  { n: 'seca',       fmt: 'square',     p: { sangra: 0 } },
+  { n: 'sangrada',   fmt: 'horizontal', p: { sangra: 1 } },
   { n: 'degradado',  fmt: 'square',     p: { bg: 'gradient' } },
 ];
 

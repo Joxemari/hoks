@@ -31,9 +31,30 @@ elif roto == 'corta':
 elif roto == 'miter':
     # EL BISEL, DESHECHO. Comprueba una AFIRMACION del algo.js: que el bisel es lo
     # que hace suficiente la distancia minima.
-    a = "    ctx.lineJoin = 'bevel';"
-    assert a in src, 'no encuentro el lineJoin'
-    src = src.replace(a, "    ctx.lineJoin = 'miter'; ctx.miterLimit = 10;   // ROTO A PROPOSITO")
+    #
+    # Ya no es `ctx.lineJoin`: desde que la banda se rellena en vez de trazarse, el
+    # bisel es la construccion de DOS PUNTOS POR VERTICE de `banda()`. Aqui se
+    # sustituye por el punto de la bisectriz, que es literalmente el inglete — el
+    # pico se va a h/cos(0/2) del vertice y cruza el canal.
+    a = """    for (let i = 0; i < n - 1; i++) {
+      izq.push({ x: pts[i].x + nx[i] * h[i],         y: pts[i].y + ny[i] * h[i] });
+      izq.push({ x: pts[i + 1].x + nx[i] * h[i + 1], y: pts[i + 1].y + ny[i] * h[i + 1] });
+      der.push({ x: pts[i].x - nx[i] * h[i],         y: pts[i].y - ny[i] * h[i] });
+      der.push({ x: pts[i + 1].x - nx[i] * h[i + 1], y: pts[i + 1].y - ny[i] * h[i + 1] });
+    }"""
+    assert a in src, 'no encuentro la construccion del bisel en banda()'
+    src = src.replace(a, """    for (let i = 0; i < n; i++) {   // ROTO A PROPOSITO: inglete en vez de bisel
+      let mx, my, esc = 1;
+      if (i === 0) { mx = nx[0]; my = ny[0]; }
+      else if (i === n - 1) { mx = nx[n - 2]; my = ny[n - 2]; }
+      else {
+        const sx = nx[i - 1] + nx[i], sy = ny[i - 1] + ny[i], mm = Math.hypot(sx, sy);
+        if (mm < 1e-6) { mx = nx[i]; my = ny[i]; }
+        else { mx = sx / mm; my = sy / mm; esc = Math.min(10, 1 / Math.max(mx * nx[i] + my * ny[i], 1e-3)); }
+      }
+      izq.push({ x: pts[i].x + mx * h[i] * esc, y: pts[i].y + my * h[i] * esc });
+      der.push({ x: pts[i].x - mx * h[i] * esc, y: pts[i].y - my * h[i] * esc });
+    }""")
 
 elif roto == 'margen':
     a = "  const MARGEN = 0.055;"
@@ -41,11 +62,30 @@ elif roto == 'margen':
     src = src.replace(a, "  const MARGEN = -0.045;   // ROTO A PROPOSITO")
 
 elif roto == 'cabo':
-    # El cabo redondo NO rompe el canal (cae dentro de la suma de Minkowski): es
+    # El cabo alargado NO rompe el canal (cae dentro de la suma de Minkowski): es
     # regla de GRAMATICA, no de seguridad. Control del bloque del remate.
-    a = "    ctx.lineCap = 'butt';"
-    assert a in src, 'no encuentro el lineCap'
-    src = src.replace(a, "    ctx.lineCap = 'round';   // ROTO A PROPOSITO")
+    #
+    # Como el bisel, ya no es propiedad del canvas: el cabo a escuadra es la cuerda
+    # que cierra el poligono en el ultimo vertice. Aqui se le pone un cabo REDONDO,
+    # que es media circunferencia de radio h alrededor del punto final — y por eso
+    # sigue cayendo dentro de la suma de Minkowski del eje con el disco de radio h.
+    # Tiene que ser redondo y no cuadrado: la esquina de un cabo cuadrado sale a
+    # h*raiz(2) del extremo, o sea FUERA de esa suma, y entonces el control
+    # dispararia tambien la medida de la geometria y ya no probaria lo que dice —
+    # que el cabo es gramatica y no seguridad.
+    a = "    ctx.moveTo(izq[0].x, izq[0].y);"
+    assert a in src, 'no encuentro el cierre del contorno en banda()'
+    src = src.replace(a, """    // ROTO A PROPOSITO: cabo redondo en vez de a escuadra
+    { const K = 7;
+      const a0 = Math.atan2(pts[0].y - pts[1].y, pts[0].x - pts[1].x);
+      const a1 = Math.atan2(pts[n-1].y - pts[n-2].y, pts[n-1].x - pts[n-2].x);
+      const arco = (c, ang, r) => { const o = [];
+        for (let k = 1; k < K; k++) { const t2 = ang - Math.PI / 2 + Math.PI * k / K;
+          o.push({ x: c.x + Math.cos(t2) * r, y: c.y + Math.sin(t2) * r }); }
+        return o; };
+      izq.unshift.apply(izq, arco(pts[0], a0, h[0]).reverse());
+      der.push.apply(der, arco(pts[n-1], a1, h[n-1])); }
+    ctx.moveTo(izq[0].x, izq[0].y);""")
 
 elif roto == 'garabato':
     # EL GARABATO: de uno a cinco quiebros pasa a diez o veinte. Es el error que
@@ -58,11 +98,24 @@ elif roto == 'garabato':
 elif roto == 'pizca':
     # SIN SUELO DE LONGITUD: vuelven las pizcas del `paralelo` sobre un trozo muy
     # corto, que es el confeti de la primera version.
-    a = "        if (largoDe(pts) < ctx.S * LARGO_MIN) continue;"
-    assert a in src, 'no encuentro el suelo de longitud'
-    src = src.replace(a, "        // ROTO A PROPOSITO: sin suelo de longitud")
-    src = src.replace("      const a = rng.range(0, 0.45), b = a + rng.range(0.48, 1 - a);",
-                      "      const a = rng.range(0, 0.45), b = a + rng.range(0.03, 0.10);   // ROTO A PROPOSITO")
+    #
+    # Se rompe LA CONSTANTE, no los sitios donde se usa. Antes se parcheaba la linea
+    # concreta que la comprueba al colocar, y esa linea se ha reescrito dos veces —
+    # la ultima al hacer que el trazo crezca en vez de rechazarse. Rompiendo
+    # `LARGO_MIN` la averia cae en los cuatro sitios a la vez y no se descoloca cada
+    # vez que se toca el algoritmo. El detector mide contra su propio 0,20, asi que
+    # sigue midiendo lo mismo.
+    a = "  const LARGO_MIN = 0.20;"
+    assert a in src, 'no encuentro LARGO_MIN'
+    src = src.replace(a, "  const LARGO_MIN = 0.02;   // ROTO A PROPOSITO")
+    # Y el trozo minimo del `paralelo`, que es de donde salian las pizcas. Las dos
+    # cosas hacen la misma averia por los dos lados. OJO: esto antes parcheaba una
+    # linea que ya no existe —`str.replace` no falla cuando no encuentra nada, asi
+    # que la averia se habia quedado a medias sin avisar. Por eso lleva `assert`,
+    # como las demas.
+    b = "      const fr = clamp(largo / (Lo || 1), 0.22, 1);"
+    assert b in src, 'no encuentro el trozo minimo del paralelo'
+    src = src.replace(b, "      const fr = clamp(largo / (Lo || 1), 0.03, 1);   // ROTO A PROPOSITO")
 
 elif roto:
     raise SystemExit('averia desconocida: ' + roto)

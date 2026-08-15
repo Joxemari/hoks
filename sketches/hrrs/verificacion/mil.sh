@@ -21,10 +21,28 @@ FALLOS=0
 
 linea() { printf '\n\033[1m── %s ──\033[0m\n' "$1"; }
 
-build() { python3 mktest.py "$1" "$2" > /dev/null; }
+# Construye una version de prueba y se PLANTA si no puede.
+#
+# El borrado de antes no es cosmetico. `mktest.py` parchea lineas literales de
+# ../algo.js, asi que cuando el algoritmo se reescribe un parche puede dejar de
+# encajar — y si el fichero viejo sigue en disco, el detector se lanza igual y mide
+# el control de HACE DOS VERSIONES. Sale un numero, el numero dispara, y todo el
+# bloque parece comprobado. Un control medido contra un artefacto viejo es peor que
+# no tener control: no prueba nada y ademas convence.
+build() {
+  rm -f "$2"
+  if ! python3 mktest.py "$1" "$2" > /dev/null; then
+    printf '\n\033[1;31m  NO SE PUDO CONSTRUIR EL CONTROL «%s»\033[0m\n' "${1:-sano}"
+    printf '  El parche ya no encaja en algo.js. NO se mide contra el fichero viejo.\n'
+    printf '  Arregla mktest.py antes de creerte los ceros de este bloque.\n'
+    FALLOS=$((FALLOS + 1))
+    return 1
+  fi
+}
 
-# El sano se construye siempre desde ../algo.js tal cual se publica.
-build "" hrrs_test.js
+# El sano se construye siempre desde ../algo.js tal cual se publica. Si esto falla,
+# no hay nada que medir.
+build "" hrrs_test.js || exit 2
 
 corre() {  # corre <detector> <algo> <n> <base> <configs> <etiqueta>
   local out
@@ -37,7 +55,7 @@ if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = canal ]; then
   linea "canal · la regla 3 exacta sobre la geometria · $N obras"
   corre canal.js hrrs_test.js "$N" 760 ""
   for r in duro corta; do
-    build "$r" "t_$r.js"
+    build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
     node canal.js "t_$r.js" 120 760 "" 2>/dev/null | grep -E "INCUMPLEN|SOLAPADAS|^  min"
   done
@@ -49,7 +67,7 @@ if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = toque ]; then
   linea "toque · la tinta es la geometria · $((N / 4)) obras a 900 px"
   corre toque.js hrrs_test.js "$((N / 4))" 900 ""
   for r in miter cabo; do
-    build "$r" "t_$r.js"
+    build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
     node toque.js "t_$r.js" 60 900 "" 2>/dev/null | grep -E "FUERA|CABO|^  p50"
   done
@@ -59,7 +77,7 @@ if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = obra ]; then
   linea "obra · margen, ojos, cadencia y ocupacion · $N obras"
   corre obra.js hrrs_test.js "$N" 760 ""
   for r in margen garabato pizca; do
-    build "$r" "t_$r.js"
+    build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
     node obra.js "t_$r.js" 120 760 "" 2>/dev/null | grep -E "ESCAPADO|GARABATO|PIZCAS"
   done
