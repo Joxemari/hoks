@@ -126,9 +126,9 @@ function medir({ seed, fmt, params, base }) {
   console.log(`  margen (fraccion del lado corto, >0 sano): min ${P('margen').min}  p50 ${P('margen').p50}`);
   console.log(`  OBRAS CON UN TRAZO ESCAPADO (fuera sin declararlo): ${fuera.length} de ${ok.length}`);
   console.log(`  sangrados declarados: ${ok.reduce((a, r) => a + r.sangrados, 0)} trazos`);
-  console.log(`  quiebros por trazo (1..5 sano): p50 ${P('quiebros').p50}  max ${P('quiebros').max}`);
-  const garab = ok.filter(r => r.quiebros > 6);
-  console.log(`  OBRAS-GARABATO (>6 quiebros de media): ${garab.length} de ${ok.length}`);
+  console.log(`  quiebros por trazo (2..7 sano): p50 ${P('quiebros').p50}  max ${P('quiebros').max}`);
+  const garab = ok.filter(r => r.quiebros > 9);
+  console.log(`  OBRAS-GARABATO (>9 quiebros de media): ${garab.length} de ${ok.length}`);
   const piz = ok.filter(r => r.pizcas > 0);
   console.log(`  OBRAS CON PIZCAS (trazo < 0,20 del lado corto): ${piz.length} de ${ok.length}`);
   console.log(`  cadencia (CV de longitudes): p50 ${P('cadencia').p50}  min ${P('cadencia').min}`);

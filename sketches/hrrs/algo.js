@@ -49,7 +49,13 @@
   const BG_GRADIENT = 0;          // el suelo es PLANO: figura/fondo lo necesita
 
   // ── El material ─────────────────────────────────────────────────────────────
-  const W_MIN = 0.030, W_MAX = 0.058;      // × lado corto
+  // MEDIDO en los dos detalles en alta, y me habia quedado corto otra vez: en el
+  // cartel la banda vertical mide 1/8 del ancho del pliego y en el grabado del
+  // recinto 1/12 del dibujo. Yo tenia entre 1/17 y 1/33 — bandas de la mitad de
+  // gruesas. Y no es un detalle: con la banda fina el canal es un pelo invisible y
+  // la obra se lee como un dibujo de lineas; con la banda gorda se lee como MATERIA
+  // cortada, que es de lo que va.
+  const W_MIN = 0.048, W_MAX = 0.086;      // × lado corto
   // El canal, medido con regla sobre las seis: banda 55 px y blanco 4 en el cartel
   // de Múnich (0,07), banda 30 y blanco 3 en la litografía de las siete bandas
   // (0,10), banda 14 y blanco 2 en las dos de papel hecho a mano (0,14). Es un PELO,
@@ -60,7 +66,14 @@
   // ── El trazo: LARGO Y SIMPLE ────────────────────────────────────────────────
   // De uno a cinco quiebros en todo el recorrido. No es una preferencia: es lo
   // que separa un trazo de un garabato, y era la mitad del no-parecido.
-  const QUIEBROS = [1, 5];
+  // RECONTADO sobre los dos detalles en alta que mando el autor, y me habia quedado
+  // corto: las bandas del grabado del recinto tienen OCHO cambios de direccion
+  // largos, no tres, y ademas se pliegan. El «de uno a cinco» salio de mirar las
+  // referencias pequenas, donde los quiebros chicos no se ven. Subir esto obliga a
+  // subir el umbral del detector de garabatos (de 6 a 9 de media), y eso hay que
+  // decirlo claro: el umbral se mueve porque la FUENTE dice otra cosa, no porque
+  // estorbara. Un detector que se afloja para que pase la obra ya no mide nada.
+  const QUIEBROS = [2, 7];
   // EL PLAN DE LONGITUDES, y es lo que le faltaba a la obra para tener interés.
   //
   // Declarar un rango y tirar de él da trazos TODOS IGUALES, y una hoja donde todo
@@ -103,7 +116,14 @@
   // El PLIEGUE: cuántas veces, de los sucesos de un trazo, la banda se vuelve sobre
   // sí misma. `phi` es el ángulo de entrada al pliegue: a 90° sale una uve cuadrada
   // (el cartel de Múnich), a 55° una uve tumbada (las siete bandas).
-  const P_VOLTEA = 0.38;
+  // LA ORTOGONAL. En el cartel de Múnich no hay una sola diagonal: todo son tramos
+  // verticales y horizontales con esquinas a escuadra, y esa retícula es la mitad de
+  // su carácter. Estaba en mi propia tabla de ejes («trazo: quebrado · ORTOGONAL ·
+  // liso») y no la había implementado. Es de la OBRA, no del trazo: una hoja es
+  // ortogonal entera o no lo es.
+  const P_ORTO = 0.30;
+  const ORTO_ERR = 7;                      // cuánto se permite desviarse del eje
+  const P_VOLTEA = 0.52;
   const VOLTEA_PHI = [52, 90];
   // La VIBRACIÓN es del filo y es del MATERIAL: constante dentro de una obra,
   // distinta entre obras. Es uno de los ejes que nombró el autor («otros vibran»),
@@ -201,9 +221,29 @@
   const RELLENO_MAX = 2.2;                 // techo del relleno de esquina, × W
   // El cruce: cuántos trazos de una obra pueden atravesar a otro, y con qué ángulo
   // mínimo. Pocos —en el cartel de Múnich hay dos— porque un cruce es un suceso.
-  const P_CRUZA = 0.26;
+  const P_CRUZA = 0.12;
   const P_DOBLE = 0.45;                    // acompañar a DOS, no a uno: la malla
+  const ATRAE = 0.9;                       // la gravedad hacia el núcleo
+  // Las patas: cuántas cuelgan y cuánto miden respecto al protagonista. El rango es
+  // ancho A PROPÓSITO — patas iguales son un rastrillo.
+  const P_PATAS = 0.42;
+  const PATAS = [2, 4];
+  const PATA_LARGO = [0.22, 0.62];
+  // La TRAVESÍA: un trazo que cruza el pliego de lado a lado y se sale por los dos.
+  // Es la referencia 5 entera, y mi propio análisis la había dado por imposible
+  // («el margen en los cuatro lados la prohíbe por construcción»). Con el sangrado
+  // de verdad ya no lo es: sólo hay que pedirla.
+  const P_TRAVESIA = 0.28;
+  const P_OUTLIER = 0.20;                  // los que se le escapan
   const CRUCE_MIN = 38;                    // grados: por debajo, la cuña se afila
+  // Y NO EN CUALQUIER SITIO. Lo dijo el autor: «el cruce tiene que ser muy, muy raro,
+  // y normalmente debería darse sólo cuando hay un cambio de dirección en un trazo —
+  // que parta en ángulo y cubra al trazo que tiene paralelo». O sea: no es que dos
+  // trazos se atraviesen porque sí, es que uno DEJA a su acompañado, gira, y al
+  // girar le pasa por encima. Así que el cruce tiene que caer junto a un quiebro mío
+  // de verdad, no en mitad de un tramo recto.
+  const CRUCE_GIRO = 40;                   // el quiebro que justifica el cruce
+  const CRUCE_CERCA = 3.0;                 // cómo de cerca del quiebro, × W
 
   // ── Los tipos ───────────────────────────────────────────────────────────────
   // Un tipo es un REPARTO DE RELACIONES y un número de trazos. Nada más: no hay
@@ -303,7 +343,7 @@
   // girando φ, recorriendo D/sen(φ) y girando 180−φ del mismo lado, se sale
   // antiparalelo a exactamente D. Esa fórmula ya estaba escrita en este README como
   // consecuencia de la regla 3; lo que faltaba era usarla.
-  function trazar(rng, x, y, dir, largo, nq, vib, D) {
+  function trazar(rng, x, y, dir, largo, nq, vib, D, orto) {
     const n = nq + 1;
     const pesos = [];
     let tot = 0;
@@ -328,7 +368,11 @@
         avanza(L, cd);
       }
       if (i < n - 1) {
-        if (D && rng.bool(P_VOLTEA)) {
+        if (orto) {
+          // a escuadra, y de vez en cuando media vuelta: la retícula del cartel
+          if (rng.bool(0.72)) lado = -lado;
+          cd += lado * (rng.bool(0.16) ? 180 - rng.range(0, ORTO_ERR) : 90 + rng.range(-ORTO_ERR, ORTO_ERR));
+        } else if (D && rng.bool(P_VOLTEA)) {
           // EL PLIEGUE. Dos giros del mismo lado con el brazo justo por medio. El
           // 1,02 es holgura de coma flotante, no un umbral: a exactamente D la
           // comprobación de auto-corte cae en el filo y a veces sale 0,9999999·D.
@@ -606,7 +650,7 @@
         const d0 = hypot(pts2[0].x - fin.x, pts2[0].y - fin.y);
         const d1 = hypot(pts2[pts2.length - 1].x - fin.x, pts2[pts2.length - 1].y - fin.y);
         if (d1 < d0) pts2.reverse();
-        const pu = puente(rng, fin, dOut, pts2[0], dirEn(pts2, 0), ctx.vib, D);
+        const pu = puente(rng, fin, dOut, pts2[0], dirEn(pts2, 0), ctx.vib, D, ctx.orto);
         pts = pts.concat(pu.slice(1), pts2.slice(1));
         return pts;
       }
@@ -614,7 +658,7 @@
       if (Lpost > ctx.S * 0.03) {
         const p = medio[medio.length - 1];
         const post = trazar(rng, p.x, p.y, dOut + rng.range(-14, 14), Lpost,
-                            max(0, nq - 1), ctx.vib, D);
+                            max(1, nq), ctx.vib, D, ctx.orto);
         pts = pts.concat(post.slice(1));
       }
       const Lpre = sobra * fPre;
@@ -622,7 +666,7 @@
         // se traza hacia atrás desde el arranque y se le da la vuelta
         const p = medio[0];
         const pre = trazar(rng, p.x, p.y, dIn + 180 + rng.range(-14, 14), Lpre,
-                           max(0, nq - 1), ctx.vib, D);
+                           max(1, nq), ctx.vib, D, ctx.orto);
         pre.reverse();
         pts = pre.slice(0, -1).concat(pts);
       }
@@ -637,7 +681,7 @@
       const lado = rng.bool(0.5) ? 1 : -1;
       const nrm = p.dir + 90 * lado;
       return trazar(rng, p.x + Math.cos(nrm * RAD) * sep, p.y + Math.sin(nrm * RAD) * sep,
-                    p.dir + lado * rng.range(7, 26), largo, nq, ctx.vib, D);
+                    p.dir + lado * rng.range(7, 26), largo, nq, ctx.vib, D, ctx.orto);
     }
     if (rel === 'tangencia' && obj) {
       // Se acercan a un mínimo PUNTUAL y se separan: cruzan en ángulo, y el punto
@@ -651,7 +695,7 @@
       // el punto de tangencia cae DENTRO del trazo, no en su cabo
       const atras = largo * rng.range(0.25, 0.6);
       return trazar(rng, cx - Math.cos(ang * RAD) * atras, cy - Math.sin(ang * RAD) * atras,
-                    ang, largo, nq, ctx.vib, D);
+                    ang, largo, nq, ctx.vib, D, ctx.orto);
     }
     if (rel === 'continua' && obj) {
       // LA CONTINUACIÓN. Es del autor, y es la que faltaba: «una línea y otra pueden
@@ -668,7 +712,7 @@
       const sigue = alFinal ? p.dir : p.dir + 180;
       const sep = ctx.sep;
       const x0 = p.x + Math.cos(sigue * RAD) * sep, y0 = p.y + Math.sin(sigue * RAD) * sep;
-      return trazar(rng, x0, y0, sigue + rng.range(-34, 34), largo, nq, ctx.vib, D);
+      return trazar(rng, x0, y0, sigue + rng.range(-34, 34), largo, nq, ctx.vib, D, ctx.orto);
     }
     if ((rel === 'caboCabo' || rel === 'caboCuerpo') && obj) {
       // Un extremo mío muere cerca de un extremo suyo (o de su costado), sin
@@ -679,7 +723,7 @@
       const hacia = rng.range(0, 360);
       const x0 = p.x + Math.cos(hacia * RAD) * sep, y0 = p.y + Math.sin(hacia * RAD) * sep;
       // sale ALEJÁNDOSE, si no se echa encima
-      return trazar(rng, x0, y0, hacia + rng.range(-52, 52), largo, nq, ctx.vib, D);
+      return trazar(rng, x0, y0, hacia + rng.range(-52, 52), largo, nq, ctx.vib, D, ctx.orto);
     }
     // suelto, o primer trazo: en cualquier sitio con aire DENTRO DE LA ZONA. Si
     // sangra, puede ARRANCAR fuera — el trazo entra desde detrás del marco en vez
@@ -687,9 +731,11 @@
     // hasta ahora todos se iban, ninguno llegaba.
     const h = sangra ? -ctx.S * SANGRE + W / 2 : ctx.mg + W / 2 + 1e-4;
     const z = ctx.zona;
+    const dir0 = ctx.orto ? ctx.ejeBase + 90 * rng.int(0, 3) + rng.range(-ORTO_ERR, ORTO_ERR)
+                          : rng.range(0, 360);
     return trazar(rng, rng.range(max(h, z.x0), min(ctx.fw - h, z.x1)),
                        rng.range(max(h, z.y0), min(ctx.fh - h, z.y1)),
-                  rng.range(0, 360), largo, nq, ctx.vib, D);
+                  dir0, largo, nq, ctx.vib, D, ctx.orto);
   }
 
   // ¿Cabe? Nunca se tocan: W+g contra todos los demás, y sin cortarse a sí mismo.
@@ -732,6 +778,23 @@
     return d > 90 ? 180 - d : d;
   }
 
+  // ¿Cae este tramo junto a un cambio de dirección de su propio trazo? Se mira el
+  // giro en los vértices que lo abrazan, y en los de al lado por si el cruce ocurre
+  // una pizca antes o después del codo.
+  function juntoAQuiebro(pts, i, ctx) {
+    const R = ctx.W * CRUCE_CERCA;
+    for (let k = max(1, i - 2); k <= min(pts.length - 2, i + 3); k++) {
+      const a1 = Math.atan2(pts[k].y - pts[k - 1].y, pts[k].x - pts[k - 1].x);
+      const a2 = Math.atan2(pts[k + 1].y - pts[k].y, pts[k + 1].x - pts[k].x);
+      let d = abs((a2 - a1) / RAD) % 360; if (d > 180) d = 360 - d;
+      if (d < CRUCE_GIRO) continue;
+      // el quiebro tiene que estar CERCA del tramo que cruza
+      const mx = (pts[i].x + pts[i + 1].x) / 2, my = (pts[i].y + pts[i + 1].y) / 2;
+      if (hypot(pts[k].x - mx, pts[k].y - my) <= R) return true;
+    }
+    return false;
+  }
+
   function cabeDuro(pts, ctx, sangra, cruza) {
     const h = ctx.W / 2, m = ctx.mg + h;
     // SANGRE mide el FILO DE LA TINTA, no el eje: si no, un trazo de gubia ancha
@@ -746,9 +809,12 @@
       if (distTrazos(segs, t.segs) >= ctx.D - 1e-9) continue;   // el caso corriente
       // hay acercamiento: o es un cruce declarado y legal, o no cabe
       if (!cruza) return false;
-      for (const A of segs) for (const B of t.segs) {
+      for (let ia = 0; ia < segs.length; ia++) for (const B of t.segs) {
+        const A = segs[ia];
         if (!bandaMala(A, B, ctx)) continue;
         if (anguloEntre(A, B) < CRUCE_MIN) return false;
+        // y tiene que pasar EN UN QUIEBRO MIO: si no, es un cruce cualquiera
+        if (!juntoAQuiebro(pts, ia, ctx)) return false;
       }
     }
     return true;
@@ -870,6 +936,44 @@
              p1: rng.range(0, 6.2832), p2: rng.range(0, 6.2832) };
   }
 
+  // ── Las patas ───────────────────────────────────────────────────────────────
+  // Varios trazos que CUELGAN del cuerpo en la misma dirección y mueren al aire, con
+  // los cabos a ALTURAS DISTINTAS. Está en las referencias 1, 2 y 6 —el grabado del
+  // recinto tiene tres colgando— y estaba en mi tabla de ejes desde el análisis, sin
+  // implementar. Es lo que le da peso a la obra: el cuerpo arriba y las patas
+  // bajando.
+  //
+  // Escalonadas, no alineadas: si acaban a la misma altura es un rastrillo. Ese
+  // detalle está escrito en el análisis y es la diferencia entre una figura y un
+  // objeto.
+  function colgar(rng, ctx, n, largoRef) {
+    if (!ctx.trazos.length) return 0;
+    // la dirección de caída, una para todas: perpendicular al eje del cuerpo
+    let sx = 0, sy = 0;
+    for (const t of ctx.trazos)
+      for (let i = 0; i < t.pts.length - 1; i++) { sx += abs(t.pts[i+1].x - t.pts[i].x); sy += abs(t.pts[i+1].y - t.pts[i].y); }
+    const caida = (sx >= sy ? 90 : 0) + (rng.bool(0.5) ? 0 : 180) + rng.range(-12, 12);
+    let puestas = 0;
+    for (let k = 0; k < n; k++) {
+      for (let t2 = 0; t2 < COLOCA; t2++) {
+        const o = ctx.trazos[rng.int(0, ctx.trazos.length - 1)];
+        const p = puntoEn(o.pts, rng.range(0.1, 0.9));
+        // nace a un pelo del cuerpo, por el lado hacia el que se cae
+        const x0 = p.x + Math.cos(caida * RAD) * ctx.sep, y0 = p.y + Math.sin(caida * RAD) * ctx.sep;
+        // ESCALONADAS: cada pata mide distinto, y bastante
+        const L = largoRef * rng.range(PATA_LARGO[0], PATA_LARGO[1]);
+        let pts = trazar(rng, x0, y0, caida + rng.range(-14, 14), ctx.S * L,
+                         rng.int(1, 3), ctx.vib, ctx.D, ctx.orto);
+        pts = cortarAlVolver(pts, ctx);
+        pts = recortar(pts, ctx, false, false);
+        if (!pts || largoDe(pts) < ctx.S * LARGO_MIN) continue;
+        ctx.trazos.push({ pts, segs: segsDe(pts), rel: 'pata', gubia: gubiaDe(rng, ctx) });
+        recentrar(ctx); puestas++; break;
+      }
+    }
+    return puestas;
+  }
+
   // ── El cerco ────────────────────────────────────────────────────────────────
   // Varios trazos rodeando un blanco SIN cerrarlo. El «recinto» de las referencias
   // no es un trazo cerrado: es vecindad. Se colocan como cuerdas alrededor de un
@@ -891,7 +995,7 @@
       for (let t = 0; t < COLOCA; t++) {
         const nq = rng.int(1, 3);
         let pts = trazar(rng, px - Math.cos(dir * RAD) * largo * 0.5,
-                         py - Math.sin(dir * RAD) * largo * 0.5, dir, largo, nq, ctx.vib, ctx.D);
+                         py - Math.sin(dir * RAD) * largo * 0.5, dir, largo, nq, ctx.vib, ctx.D, ctx.orto);
         // el cerco también CRECE hasta donde cabe: ahora se pone después del
         // protagonista, así que casi siempre tiene que ceder algo contra él, y
         // rechazarlo entero dejaba recintos de dos cuerdas.
@@ -1052,6 +1156,10 @@
       fw, fh, S, W, g, D, mg: S * MARGEN, trazos: [], pSangra, gubAmp,
       // el pelo de ESTA obra: uno solo, para paralelos y para cabos
       sep: D * rng.range(SEP_OBRA[0], SEP_OBRA[1]),
+      // la retícula, si la hay: es de la obra, y con su propio giro para que no
+      // salgan todas alineadas con el pliego
+      orto: params.orto != null ? !!params.orto : rng.bool(P_ORTO),
+      ejeBase: rng.range(0, 90),
       zona: { x0: zx * fw, y0: zy * fh, x1: (zx + zw) * fw, y1: (zy + zh) * fh },
       vib: vibra ? { amp: rng.range(VIB_AMP[0], VIB_AMP[1]), onda: W * rng.range(VIB_ONDA[0], VIB_ONDA[1]) } : null,
     };
@@ -1063,15 +1171,28 @@
     // Cada trazo se pide AMBICIOSO y se recorta donde deja de caber, en vez de
     // rechazarse entero. Los reintentos son de SITIO —dónde y contra quién— y ya no
     // de longitud: la longitud sale del dibujo.
-    const poner = (L) => {
+    const poner = (L, forzarSangre) => {
       const rel = ctx.trazos.length === 0 ? 'suelto' : rng.weighted(pesos).n;
       // SANGRAR y CRUZAR son propiedades DEL TRAZO, así que se deciden una vez y no
       // en cada intento. Sorteándolas dentro del bucle, los intentos que cruzan
       // caben mejor —tienen menos restricción— y como se elige el más largo, ganaban
       // casi siempre: salían obras con cruces por todas partes. En la referencia un
       // cruce es un suceso, no la norma.
-      const sangra = rng.bool(ctx.pSangra), cruza = rng.bool(P_CRUZA);
-      let mejor = null, mejorL = 0;
+      const sangra = forzarSangre || rng.bool(ctx.pSangra), cruza = rng.bool(P_CRUZA);
+      // LA GRAVEDAD, y los que se le escapan. Lo dijo el autor: «hay un primer trazo
+      // que marca algo, y en torno a eso se generan los demás; a veces tienden a
+      // alejarse, pero hay como una fuerza gravitacional que los lleva al centro. Y
+      // hay otros que son outliers, que dan complejidad».
+      //
+      // Hasta aquí, de los 26 intentos se quedaba EL MÁS LARGO, y el más largo es
+      // casi siempre el que se va lejos — por eso la hoja se abría en vez de hacer
+      // cuerpo. Ahora se puntúa largo MENOS distancia al núcleo, así que entre dos
+      // igual de largos gana el que se arrima. Y un trazo de cada cinco es OUTLIER:
+      // se le quita la gravedad y se va donde quiera. Sin ellos la obra se cierra
+      // sobre sí misma y se vuelve un ovillo; son los que dan el aire.
+      const fuga = rng.bool(P_OUTLIER);
+      const atrae = fuga ? 0 : ATRAE;
+      let mejor = null, mejorP = -Infinity, mejorL = 0;
       for (let k = 0; k < COLOCA; k++) {
         // CONTRA QUIÉN: encadenado, no al azar. Eligiendo un trazo cualquiera de
         // los ya puestos, cada uno se relacionaba con otro distinto y la hoja salía
@@ -1100,11 +1221,16 @@
         // se queda el intento MÁS LARGO, no el primero que cabe: con el recorte,
         // el primero que cabe cabe siempre, y quedarse con él es volver a dejar
         // que el azar del sitio elija la longitud.
-        if (Lr > mejorL) { mejor = pts; mejorL = Lr; }
-        if (Lr > L * ctx.S * 0.92) break;   // ya es lo que se pedía: no busques más
+        let punt = Lr;
+        if (atrae && ctx.nucleo) {
+          const m = puntoEn(pts, 0.5);
+          punt -= atrae * hypot(m.x - ctx.nucleo.x, m.y - ctx.nucleo.y);
+        }
+        if (punt > mejorP) { mejor = pts; mejorP = punt; mejorL = Lr; }
+        if (!atrae && Lr > L * ctx.S * 0.92) break;   // el que huye no busca más
       }
       if (!mejor) return 0;
-      ctx.trazos.push({ pts: mejor, segs: segsDe(mejor), rel, sangra, cruza, gubia: gubiaDe(rng, ctx) });
+      ctx.trazos.push({ pts: mejor, segs: segsDe(mejor), rel, sangra, cruza, fuga, gubia: gubiaDe(rng, ctx) });
       recentrar(ctx);
       relCount[rel]++;
       return mejorL / ctx.S;
@@ -1115,7 +1241,11 @@
     // se quedaba en uno más del montón: por eso los `recinto` salían de ocho trazos
     // cortos y ninguno mandaba. El cerco no pierde nada por ir detrás — se organiza
     // contra el trazo largo, que es lo que hace en las referencias.
-    const real = poner(rng.range(PROTA[0], PROTA[1]));
+    // Si la obra es de TRAVESÍA, al protagonista se le pide más que la diagonal y se
+    // le deja sangrar por los dos cabos: entra por un borde y sale por otro.
+    ctx.travesia = params.travesia != null ? !!params.travesia : rng.bool(P_TRAVESIA);
+    const real = poner(ctx.travesia ? hypot(fw, fh) / S * rng.range(1.15, 1.5)
+                                    : rng.range(PROTA[0], PROTA[1]), ctx.travesia);
     // El cerco SALE DE N, no se suma a N: son trazos de la obra, no un extra.
     let nC = params.cerco != null ? params.cerco : rng.int(t.cerco[0], t.cerco[1]);
     nC = min(nC, N - 2);              // siempre queda sitio para el protagonista y uno más
@@ -1135,6 +1265,10 @@
       L *= c0 * rng.range(0.92, 1.14);
     }
 
+    // LAS PATAS, al final: cuelgan del cuerpo ya hecho.
+    let patas = 0;
+    if (rng.bool(P_PATAS)) patas = colgar(rng, ctx, rng.int(PATAS[0], PATAS[1]), real || 0.7);
+
     holguras(ctx);
     const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };
     const pas = pasillos(ctx.trazos, W, D);
@@ -1145,7 +1279,7 @@
     const Ls = ctx.trazos.map(tr => largoDe(tr.pts) / S).sort((a, b) => a - b);
     const lMed = Ls.length ? Ls[Ls.length >> 1] : 0;
     const reparto = lMed > 0 ? Ls[Ls.length - 1] / lMed : 0;
-    return { trazos: ctx.trazos, W, g, D, cerco, relCount, vibra,
+    return { trazos: ctx.trazos, W, g, D, cerco, patas, relCount, vibra, orto: ctx.orto, travesia: ctx.travesia,
              ojos: med.ojos, ocupacion: med.ocupacion,
              pasillos: pas.n, largoPas: pas.largo / W, vert, quiebros,
              largoMax: Ls.length ? Ls[Ls.length - 1] : 0, reparto,

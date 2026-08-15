@@ -1049,6 +1049,48 @@ El sangrado tenía exactamente el mismo error y se arregló igual. Es una trampa
 merece nombre: **un parámetro sorteado dentro de un bucle de selección no vale lo que
 dice valer, vale lo que el criterio de selección prefiera.**
 
+## Octava vuelta: cuatro ejes que estaban escritos y sin hacer
+
+*«Hay muchas cosas que hemos comentado que estás pasando por alto.»* Fui a mi propio
+análisis —la tabla de nueve ejes de la segunda vuelta— y **cuatro de los nueve no
+estaban implementados**. Estaban escritos, con la referencia donde se ven anotada al
+lado, y nadie los comprobaba contra la hoja.
+
+- **`patas`** (refs 1, 2, 6). Varios trazos que cuelgan del cuerpo en la misma
+  dirección y mueren al aire, **escalonados**. El análisis incluso decía por qué:
+  *«alineados serían un rastrillo; escalonados son patas»*. El grabado del recinto
+  tiene tres colgando y es lo que le da peso a la obra.
+- **`travesía`** (ref 5). Mi análisis la había dado por **imposible**: *«el margen en
+  los cuatro lados la prohíbe por construcción»*. Con el sangrado de verdad dejó de
+  serlo cuatro vueltas antes, y no la reabrí. Un «no cabe» sin fecha de revisión se
+  convierte en un hecho.
+- **`ortogonal`** (ref 5). En el cartel de Múnich no hay **una sola diagonal**: todo
+  son verticales y horizontales con esquinas a escuadra. Esa retícula es la mitad de
+  su carácter, y yo sorteaba direcciones a 360°.
+- **`peine`** (ref 6, cuatro o más engranados). **Sigue sin hacer**, y queda dicho.
+
+Y una quinta que no está en la tabla porque sólo salta poniendo las imágenes juntas:
+**la banda era la mitad de gruesa.** En el cartel mide 1/8 del ancho del pliego y en
+el grabado 1/12 del dibujo; yo tenía entre 1/17 y 1/33. No es acabado: con la banda
+fina el canal es un pelo invisible y la obra se lee como un **dibujo de líneas**; con
+la banda gorda se lee como **materia cortada**, que es de lo que va.
+
+### La lección, que es sobre el método y no sobre el dibujo
+
+Un análisis escrito no vale nada si no hay un instrumento que lo confronte. La tabla
+de ejes llevaba seis vueltas en este fichero mientras la obra incumplía cuatro de
+ellos, y ninguna batería lo notaba **porque los detectores miden la regla dura, no la
+gramática**. La regla dura se puede automatizar; la gramática hay que mirarla.
+
+Por eso el ejercicio pasa a ser instrumento y no costumbre: `verificacion/hoja.js`
+vive ya en el repo, y `referencias/` trae el método escrito. Las imágenes **no se
+commitean** —son de terceros y este repo es público, Pages sirve la raíz— así que la
+carpeta las deja fuera y explica qué poner.
+
+De las ocho vueltas que lleva esto, **siete salieron de poner las dos imágenes juntas
+y medir**: el canal, los quiebros, la anchura de banda, el número de trazos. Las
+cuatro estaban mal, las cuatro eran medibles, y ninguna se veía razonando.
+
 ## Tres trampas nuevas, pagadas en esta vuelta
 
 1. **El sangrado leído como defecto.** El detector de margen marcaba 20 obras

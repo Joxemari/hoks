@@ -97,9 +97,9 @@ elif roto == 'garabato':
     # EL GARABATO: de uno a cinco quiebros pasa a diez o veinte. Es el error que
     # costo dos versiones enteras —el trazo deja de ser largo y simple y se vuelve
     # un paseo— y es el control del bloque de `obra`.
-    a = "  const QUIEBROS = [1, 5];"
+    a = "  const QUIEBROS = [2, 7];"
     assert a in src, 'no encuentro QUIEBROS'
-    src = src.replace(a, "  const QUIEBROS = [11, 20];   // ROTO A PROPOSITO")
+    src = src.replace(a, "  const QUIEBROS = [16, 26];   // ROTO A PROPOSITO")
 
 elif roto == 'pizca':
     # SIN SUELO DE LONGITUD: vuelven las pizcas del `paralelo` sobre un trozo muy
