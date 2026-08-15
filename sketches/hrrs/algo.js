@@ -610,6 +610,30 @@
           // el inglete sale por el lado CONVEXO; el otro lado es el interior del
           // codo y ahí no hay nada que rellenar
           const cruz = nx[i] * ny[i + 1] - ny[i] * nx[i + 1];
+          // EL INGLETE RECORTADO, y una hipotesis mia muerta de camino.
+          //
+          // Repartiendo el residuo de la replica por la curvatura del eje, el error en
+          // los giros de mas de 40° es de 5,3 a 8,6 % contra 1,7 a 3,6 % en los tramos
+          // rectos, en las seis, y ademas es FALTA de tinta (3,8-7,2 %) y no sobra
+          // (1,1-2,3 %). O sea: la banda se pinza en la esquina. Parecia claro que
+          // faltaba relleno de codo — el inglete entero ya se sabia que SOBRA, tres
+          // puntos, y por eso la replica se dibuja con `relleno: 0`.
+          //
+          // Medido: NO. Barriendo cuanto se llena el codo, de bisel puro a inglete
+          // entero, el bisel gana o empata en cuatro de las seis y lo demas mueve 0,3
+          // como mucho. Y ensanchar la anchura en el vertice del codo tampoco (92,1 %
+          // -> 92,3 % de mediana, y cuesta incisiones). El error del codo no es de
+          // relleno ni de anchura: es que el eje medial es menos fiable justo ahi.
+          //
+          // El recorte se queda porque es la construccion correcta —la esquina se llena
+          // hasta donde el material deja, no hasta un pico ni a ras, y el tope es la
+          // holgura, asi que no puede comerse el canal— pero no compro nada, y eso hay
+          // que decirlo.
+          // Y REVERTIDO, ademas, porque rompia el canal: con el recorte, el corte del
+          // halo y la tinta acaban los dos en `lim` y en el codo no queda halo — el
+          // minimo del canal visible se hundia de 0,892 g a 0,318 y las obras por
+          // debajo de g pasaban de 4 a 19. Se podria arreglar dandole al corte
+          // `lim + mas`, pero no hay por que arreglar un cambio que no compra nada.
           if (hIn / cos <= lim + 1e-9 && hIn / cos > hIn * 1.02) {
             if (cruz < 0) izq.push({ x: pts[i + 1].x + mx * r, y: pts[i + 1].y + my * r });
             else          der.push({ x: pts[i + 1].x - mx * r, y: pts[i + 1].y - my * r });
@@ -1786,6 +1810,10 @@
                      cx2.S * r.largo, 0, vib, D, false, gu);
       }
       cx2.trazos.push({ pts, segs: segsDe(pts), rel: 'receta', anchos: r.anchos,
+                        // la holgura del codo, si la receta la trae: es cuanto se deja
+                        // llenar la esquina, y con el inglete recortado ya es una
+                        // magnitud continua en vez de un si o un no
+                        relleno: r.holgura || null,
                         gubia: receta.gubia === 0 ? null : gubiaDe(rng, { gubAmp: receta.gubia || 0.09 }) });
     }
     // `relleno: 0` apaga el relleno de esquina. Lo pide la REPLICA, y por un motivo
@@ -1793,7 +1821,7 @@
     // rasterizador propio, al pasarla por `componer` bajaba a 94 %. La diferencia no
     // era la gubia ni la escala: es que la casa RELLENA LOS CODOS hacia el hueco y el
     // original no los rellena igual. Tres puntos de los seis que quedan estan ahi.
-    if (receta.relleno !== 0) holguras(cx2);
+    if (receta.relleno !== 0 && !receta.trazos.some(r => r.holgura)) holguras(cx2);
 
     ctx.fillStyle = rol.suelo; ctx.fillRect(0, 0, W, H);
     ctx.save(); ctx.translate(ox, 0); ctx.scale(S, S);
