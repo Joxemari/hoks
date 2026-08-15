@@ -7,7 +7,7 @@ el grid de obras y decidir si merece página, como lo fueron `dtkrt/`, `eclps/` 
 
 Se escribió **la gramática antes que el código** —el paso que a las tres
 anteriores les faltó por escrito— y después el ojo corrigió la gramática, en
-cinco revisiones: tres reglas nuevas y una docena de defectos con nombre, todo
+seis revisiones: tres reglas nuevas y una docena de defectos con nombre, todo
 ello abajo, en «Lo que el grid cambió». Las dos últimas vienen además con
 **medida** detrás: `entrenamiento/`, que registra la preferencia sobre 100 lotes
 de 5, y `verificacion/`, que cuenta los defectos sobre 600 obras. Los números de
@@ -285,10 +285,10 @@ pero es de las cosas que el grid dice enseguida.
 
 | tipo        | peso | cortes | gubia (fina/media/ancha) | piezas medidas |
 |-------------|------|--------|--------------------------|----------------|
-| `hendido`   | 15 % | 1–2    | 18 / 44 / 38 %           | 2–3            |
-| `partido`   | 34 % | 3–4    | 36 / 52 / 12 %           | 3–5            |
-| `árbol`     | 33 % | 4–6    | 42 / 50 / 8 %            | 4–7            |
-| `astillado` | 18 % | 7–9    | 66 / 34 / 0 %            | 7–10           |
+| `hendido`   | 15 % | 1–2    | 24 / 44 / 32 %           | 2–3            |
+| `partido`   | 34 % | 3–4    | 48 / 42 / 10 %           | 3–5            |
+| `árbol`     | 33 % | 4–6    | 54 / 40 / 6 %            | 4–7            |
+| `astillado` | 18 % | 7–9    | 74 / 26 / 0 %            | 7–10           |
 
 Y sobre eso, **el techo de la gubia**: 9 cortes con la fina, 7 con la media, 3 con
 la ancha. Se recorta lo *pedido* y no lo obtenido, que no es lo mismo — así el
@@ -723,37 +723,59 @@ tocado esta gramática lo que costó no fue el arreglo sino enterarse de lo que 
 arreglo había estropeado. Mide cuñas sobre el píxel, el reparto contra lo
 declarado y la huella a tres resoluciones. Tiene su propio README.
 
+### Sexta revisión: la gubia fina, que es lo único que el ojo repite
+
+Tres vueltas del entrenamiento han pedido lo mismo: **fina +7, luego +13**, la
+última con 83 apariciones contra 28. Es la única señal de las tres con muestra
+suficiente para mover un peso —las demás salen en gris— así que se mueve, y sólo
+ésa. El reparto pasa de **40/46/14 a 50/40/10**.
+
+**La ancha no se toca donde funciona.** Casi toda vivía en `hendido`, que es
+justamente donde un filo gordo tiene razón: dos placas, masa entera, y el 1% de
+obras cortas. Lo que se recorta es la ancha de `partido` y `arbol`, que es donde
+el techo de tres cortes aprieta. Y se mueve **sin agotar la señal**: obedecer una
+preferencia hasta el final estrecha la obra, y parte del valor de una serie está
+en las tiradas que no gustan a la primera.
+
+Efecto colateral bueno y no buscado: el **flequillo** —tres placas o más en el
+suelo de carne— baja del 0,4% al 0,1%. Con un filo fino el suelo es más estrecho
+en términos absolutos, así que caben más placas antes de rozarlo.
+
+Y una regla de higiene que esto deja clara: **mover un peso obliga a recalibrar la
+rareza entera**. Las tablas `F_*`, la `p` de cada gubia, `P_MAX` y los umbrales de
+`rarComb` son todas frecuencias medidas, así que cambiar el sorteo las invalida.
+Dos pasadas de `verificacion/` y vuelven a cuadrar.
+
 ## Medido
 
-**2000 tiradas**, cuadrado y apaisado, sobre el catálogo real de paletas activas.
-Todo esto sale de `verificacion/`, no de la intuición:
+**2000 tiradas** para las cuñas y el reparto, 1200 para la mancha, cuadrado y
+apaisado, sobre el catálogo real de paletas activas. Todo esto sale de
+`verificacion/`, no de la intuición:
 
 ```
-cuñas       0,1% de las obras tiene un ángulo por debajo de 45° — dos en 2000, y
-            las dos son «la punta afeitada», que está entre los riesgos y que
-            ninguna guarda geométrica puede ver
-            1,4% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
+cuñas       0,1% de las obras tiene un ángulo por debajo de 45° — y las que salen
+            son «la punta afeitada», que está entre los riesgos y que ninguna
+            guarda geométrica puede ver
+            1,7% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
             reparto se amontona y baila entre bloques (0,9% y 2,4% sin tocar nada)
             (antes de la 5ª revisión: 20% de las obras, y los peores a 2°, 8°, 12°)
-            reparto del ángulo más cerrado por obra:
-            15–30° 1 · 30–45° 1 · 45–60° 19 · 60–75° 176 · 75–90° 1523 · 90–105° 280
-cortos      0,8% no llega a los cortes que declara su tipo   (era el 20%)
+cortos      0,7% no llega a los cortes que declara su tipo   (era el 20%)
 soldadas    0 · dos placas nunca se tocan
 recortadas  0 · ninguna obra toca el borde del pliego
 contraste   distancia de color tinta/suelo: min 140 · p50 254 · cero por debajo de
             110, que es el suelo que el propio algoritmo le exige al papel crudo
-tipo        arbol 35%  partido 31%  astillado 17%  hendido 16%
-gubia       fina 40%  media 46%  ancha 14%
-tintas      una 89%  dos 9%  tres 1,5%   ← el sorteo pide 74/20/6: la regla del
+tipo        arbol 35%  partido 33%  hendido 16%  astillado 16%
+gubia       fina 50%  media 40%  ancha 10%
+tintas      una 90%  dos 9%  tres 1%   ← el sorteo pide 74/20/6: la regla del
             mismo lado del suelo tumba dos de cada tres segundas tintas
 piezas      p10 2 · p50 4 · p90 7 · max 10
-            2:14% 3:24% 4:18% 5:16% 6:11% 7:8% 8:5% 9:3% 10:1%
-sajaduras   0 · 92%   1 · 8%    (dos, ya nunca)
-faltan      0 · 33%   1 · 49%   2 · 18%
-escalones   0 · 21%   1 · 54%   2 · 24%
+            2:15% 3:23% 4:19% 5:17% 6:11% 7:7% 8:4% 9:3% 10:1%
+sajaduras   0 · 91%   1 · 9%    (dos, ya nunca)
+faltan      0 · 34%   1 · 47%   2 · 19%
+escalones   0 · 21%   1 · 55%   2 · 24%
 mancha      p05 16% · p50 26% · p95 40%
-flequillo   tres placas o más en el suelo de carne: 0,4% de las obras
-overall     common 41,3%  uncommon 34,8%  rare 14,5%  superrare 7,0%  legendary 2,4%
+flequillo   tres placas o más en el suelo de carne: 0,1% de las obras
+overall     common 40,1%  uncommon 35,2%  rare 14,9%  superrare 6,9%  legendary 2,9%
             (el reparto de la casa es 40/35/15/7/3, y los umbrales son sus
              percentiles medidos sobre esta misma muestra)
 huella      0 de 180 obras cambia a 760 / 2400 / 4200 px, en los tres formatos

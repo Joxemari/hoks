@@ -64,9 +64,9 @@
   // frecuencia MEDIDA de cada gubia en la familia, que es lo que la rareza
   // necesita. Se vuelve a medir cada vez que se toquen los pesos de los tipos.
   const GUBIAS = [
-    { key: 'fina',  w: 0.0130, p: 0.40 },
-    { key: 'media', w: 0.0210, p: 0.47 },   // ~2%, que es lo que se mide en la referencia
-    { key: 'ancha', w: 0.0330, p: 0.13 },
+    { key: 'fina',  w: 0.0130, p: 0.50 },
+    { key: 'media', w: 0.0210, p: 0.40 },   // ~2%, que es lo que se mide en la referencia
+    { key: 'ancha', w: 0.0330, p: 0.10 },
   ];
 
   // ── Los cuatro tipos ───────────────────────────────────────────────────────
@@ -84,8 +84,17 @@
    * el filo fino. Escribirlo aquí es escribir lo que ya decidía la materia, y de
    * paso la etiqueta del tipo deja de mentir.
    *
-   * Y el reparto va además hacia lo fino, que es lo que midió la 2ª vuelta del
-   * entrenamiento (fina +7, ancha −9). */
+   * Y el reparto va hacia lo fino, que es lo que han pedido TRES vueltas seguidas
+   * del entrenamiento: +7, luego +13, la última con 83 apariciones contra 28. Es
+   * la única señal de las tres con muestra suficiente para mover un peso, y se
+   * mueve sin agotarla — de 40/46/14 a 51/39/10.
+   *
+   * La ancha NO se toca donde funciona. Casi toda vive en `hendido`, que es
+   * justamente donde un filo gordo tiene razón: dos placas, masa entera, y el 1%
+   * de obras cortas. Lo que se recorta es la ancha de `partido` y `arbol`, que es
+   * donde el techo de tres cortes aprieta. Obedecer una preferencia hasta el
+   * final estrecha la obra, y parte del valor de una serie está en las tiradas
+   * que no gustan a la primera. */
   const TIPOS = [
     // Los pesos se mueven con el patrón medido en `entrenamiento/`. La 2ª vuelta
     // —ya con las guardas del hilo y del casi— dio la vuelta a la 1ª: pidió MÁS
@@ -93,10 +102,10 @@
     // encima de 2). Se lee como que el rechazo de la 1ª no era a los cortes sino
     // a los cortes MALOS: arreglados, el ojo quiere más. Se mueve en esa
     // dirección sin agotarla — dos vueltas afinan, diez producen una sola obra.
-    { key: 'hendido',   p: 0.15, cortes: [1, 2], sajaduras: [0, 1], gubias: { fina: 0.18, media: 0.44, ancha: 0.38 } },
-    { key: 'partido',   p: 0.34, cortes: [3, 4], sajaduras: [0, 1], gubias: { fina: 0.36, media: 0.52, ancha: 0.12 } },
-    { key: 'arbol',     p: 0.33, cortes: [4, 6], sajaduras: [0, 1], gubias: { fina: 0.42, media: 0.50, ancha: 0.08 } },
-    { key: 'astillado', p: 0.18, cortes: [7, 9], sajaduras: [0, 1], gubias: { fina: 0.66, media: 0.34, ancha: 0.00 } },
+    { key: 'hendido',   p: 0.15, cortes: [1, 2], sajaduras: [0, 1], gubias: { fina: 0.24, media: 0.44, ancha: 0.32 } },
+    { key: 'partido',   p: 0.34, cortes: [3, 4], sajaduras: [0, 1], gubias: { fina: 0.48, media: 0.42, ancha: 0.10 } },
+    { key: 'arbol',     p: 0.33, cortes: [4, 6], sajaduras: [0, 1], gubias: { fina: 0.54, media: 0.40, ancha: 0.06 } },
+    { key: 'astillado', p: 0.18, cortes: [7, 9], sajaduras: [0, 1], gubias: { fina: 0.74, media: 0.26, ancha: 0.00 } },
   ];
 
   /* Y el techo lo pone la gubia, no el tipo. Los pesos de arriba hacen que el
@@ -1214,19 +1223,19 @@
    * hay que volver a medirlas cada vez que se toque la gramática. Las de ahora
    * están medidas sobre 2000 tiradas en `verificacion/`, que las imprime listas
    * para pegar — incluidos los umbrales de `rarComb`, que son percentiles. */
-  const F_PIEZAS = { 2: .149, 3: .236, 4: .173, 5: .160, 6: .118, 7: .077, 8: .043, 9: .035, 10: .010 };
+  const F_PIEZAS = { 2: .148, 3: .234, 4: .191, 5: .165, 6: .106, 7: .073, 8: .040, 9: .032, 10: .011 };
   // La sajadura pasó de una de cada cuatro a una de cada trece: se sortea menos
   // (22%) y de las sorteadas sólo pasa la que viaja de verdad por su placa. Ya no
   // es un rasgo frecuente sino un suceso, y la rareza lo dice.
-  const F_SAJA   = { 0: .920, 1: .080, 2: .002 };
-  const F_FALTA  = { 0: .343, 1: .479, 2: .178 };
-  const F_ESCAL  = { 0: .218, 1: .547, 2: .235 };
+  const F_SAJA   = { 0: .911, 1: .089, 2: .002 };
+  const F_FALTA  = { 0: .341, 1: .472, 2: .187 };
+  const F_ESCAL  = { 0: .210, 1: .554, 2: .236 };
   /* Ojo con esta tabla: NO es el sorteo (74/20/6). La regla 1 exige que todas las
    * tintas caigan del mismo lado del suelo, y dos de cada tres veces la paleta no
    * da una segunda que lo cumpla, así que la pieza sale monócroma. Lo policromo es
    * mucho más raro de lo que se pide — y esto sólo se vio al dispersar las seeds:
    * con seeds seguidas salía 82/16/2, porque se medían tres paletas. */
-  const F_TINTA  = { 1: .902, 2: .083, 3: .015 };
+  const F_TINTA  = { 1: .902, 2: .086, 3: .012 };
 
   function rar(p) { return p > 0.06 ? 'common' : p > 0.018 ? 'uncommon' : p > 0.005 ? 'rare' : p > 0.0012 ? 'superrare' : 'legendary'; }
 
@@ -1235,12 +1244,12 @@
   // obras en el mismo cajón. Lo que se compara es contra la obra MÁS PROBABLE de
   // la familia — cuánto se aparta ésta de la que más sale. Así la escala es
   // legible (1 = la más corriente posible) y no depende de cuántos rasgos haya.
-  const P_MAX = { tipo: 0.34, gubia: 0.47, pz: 0.236, sj: 0.920, papel: 0.685, pal: 0.12, fl: 0.479, es: 0.547, tn: 0.902 };
+  const P_MAX = { tipo: 0.34, gubia: 0.50, pz: 0.234, sj: 0.911, papel: 0.685, pal: 0.12, fl: 0.472, es: 0.554, tn: 0.902 };
   // Los cortes NO salen de la intuición: se midió la distribución real de `r`
   // sobre 500 tiradas y se pusieron en los percentiles que la casa reparte
   // (≈40/35/15/7/3). La paleta va aparte en el producto y sólo empuja hacia más
   // raro, así que el reparto medido queda algo por debajo de esos números.
-  function rarComb(r) { return r > 0.0950 ? 'common' : r > 0.0207 ? 'uncommon' : r > 0.0072 ? 'rare' : r > 0.0023 ? 'superrare' : 'legendary'; }
+  function rarComb(r) { return r > 0.0957 ? 'common' : r > 0.0222 ? 'uncommon' : r > 0.0081 ? 'rare' : r > 0.0020 ? 'superrare' : 'legendary'; }
 
   function traits(res) {
     const pTipo  = (TIPOS.find(t => t.key === res.tipo)  || { p: 0.25 }).p;
