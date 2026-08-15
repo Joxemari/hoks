@@ -151,6 +151,7 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
 
   const suelta = c => { c.width = c.height = 0; };
   const pc = (a, b) => (100 * a / b).toFixed(1) + '%';
+  const pct2 = v => (v == null ? '—' : (100 * v).toFixed(0) + '%');
 
   // ── 1 · Cuñas ────────────────────────────────────────────────────────────
   const ESCALAS = [0.035, 0.055, 0.085];   // radios del disco / lado del bloque
@@ -322,7 +323,7 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
     return D;
   }
   async function laMancha(N) {
-    const soldadas = [], recortadas = [], flecos = [], finasHist = {}, cobertura = [];
+    const soldadas = [], recortadas = [], flecos = [], finasHist = {}, cobertura = [], contraste = [];
     let n = 0;
     for (const fmt of ['square', 'horizontal', 'vertical']) for (let i = 0; i < N; i++) {
       const seed = semilla(S0 + i), L = lienzo(fmt, 620), W = L.W, H = L.H;
@@ -368,9 +369,23 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
       finasHist[finas] = (finasHist[finas] || 0) + 1;
       if (finas >= 3) flecos.push({ fmt, seed, finas, piezas: r.piezas, tipo: r.tipo, gubia: r.gubia });
 
+      /* La distancia de cada tinta al suelo, la peor de la obra. En DISTANCIA DE
+       * COLOR y no en salto de luma, que fue el primer intento y medía otra cosa:
+       * media docena de paletas del catálogo son series de Itten, contraste
+       * complementario puro —mucho tono y poca luma a propósito—, así que por luma
+       * salían señaladas justo las que están bien. Se mide con la misma vara que
+       * usa `pareja` para elegir el par, que es la única forma de que el número
+       * hable del mismo mundo que la decisión. */
+      const rgb = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
+      const dcol = (a, b) => { const x = rgb(a), y = rgb(b);
+        return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
+      let cerca = Infinity;
+      for (const t of r.inks) cerca = Math.min(cerca, dcol(t, r.col.ground));
+      contraste.push(cerca);
+
       if (i % 6 === 0) await esperar();
     }
-    cobertura.sort((a, b) => a - b);
+    cobertura.sort((a, b) => a - b); contraste.sort((a, b) => a - b);
     const q = f => (100 * cobertura[Math.min(cobertura.length - 1, (cobertura.length * f) | 0)]).toFixed(1) + '%';
     return {
       // Soldadura y recorte son fallos; el flequillo es un dato para decidir.
@@ -382,6 +397,18 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
         `recortadas ${recortadas.length} = ${pc(recortadas.length, n)}` +
           (recortadas.length ? '  → ' + recortadas.slice(0, 6).map(x => `${x.seed} ${x.fmt} ${x.px}px`).join(' · ') : ''),
         `mancha     p05 ${q(.05)} · p50 ${q(.5)} · p95 ${q(.95)}`,
+        /* CONTRASTE TINTA/SUELO. No es un fallo —una masa granate sobre papel
+         * coral es una decisión, no una avería— pero sí el número que dice si el
+         * corte se LEE: el hueco tiene el color del suelo, así que cuanto más
+         * cerca esté la tinta, menos existe la obra. `pareja` coge el par más
+         * distante de la paleta, así que hay suelo por construcción; esto
+         * comprueba que lo siga habiendo cuando el suelo se cambia por un tono
+         * medio (papel crudo) y cuando entra una segunda tinta. */
+        `contraste  distancia de color tinta/suelo, la peor de las tintas: ` +
+          `min ${contraste[0] | 0} · p05 ${contraste[(contraste.length * .05) | 0] | 0} · ` +
+          `p50 ${contraste[(contraste.length * .5) | 0] | 0} · ` +
+          `por debajo de 110: ${contraste.filter(v => v < 110).length} = ${pc(contraste.filter(v => v < 110).length, n)}` +
+          `   (110 es el suelo que el propio algoritmo exige al papel crudo)`,
         `placas en el suelo de carne, por obra: ` +
           Object.keys(finasHist).map(Number).sort((a, b) => a - b).map(k => `${k}→${finasHist[k]}`).join(' · '),
         `obras con tres o más: ${flecos.length} = ${pc(flecos.length, n)}` +
