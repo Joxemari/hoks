@@ -1303,6 +1303,57 @@ exactamente las tres constantes de la familia:
 Está sin hacer, y es lo siguiente. Hasta entonces el número de solape se queda como
 está —informativo— y **no** como criterio.
 
+### El bucle: replicar, medir la diferencia, minimizarla
+
+Lo propuso el autor con una distincion que ordena todo lo anterior: *«la lógica de
+escritura no es por píxel, pero la verificación para determinar la diferencia sí se
+puede hacer por píxel»*. El algoritmo sigue escribiendo trazos; el píxel sólo dice
+cuánto se parece el resultado.
+
+`referencias/ajusta.py` cierra el bucle. La medida es
+`diferencia = |A ⊻ B| / |A ∪ B|`, con las dos imágenes recortadas a la caja de su
+tinta, escaladas a tamaño común **conservando la proporción** —deformar para cuadrar
+era otra manera de mentirse— y con búsqueda de la mejor traslación. Y el trazador deja
+de tener constantes razonadas: sus cuatro mandos se **barren** (54 ajustes) y se queda
+el mejor por referencia.
+
+```
+            antes    ahora
+r1           19 %     14,1 %
+r2           22 %     16,9 %
+r3           47 %     42,5 %
+r4           10 %     12,4 %
+r5 (cartel)  68 %     18,1 %
+r6           24 %     21,5 %
+mediana      23 %     17,5 %
+```
+
+**Y el barrido corrige dos decisiones mías, una de ellas de la vuelta anterior:**
+
+- **Tirar los vértices que caen dentro de un cruce sale peor en las seis, sin una sola
+  excepción.** El razonamiento era correcto sobre el eje y equivocado sobre el dibujo:
+  el eje dentro del cruce está mal, sí, pero la banda que se dibuja con él cae dentro
+  de la mancha del cruce —que es negra de todas formas, porque las dos bandas se funden
+  ahí— así que el error no se ve. Y quitando esos vértices se pierde la curvatura con
+  la que la banda **entra y sale** del cruce, que sí se ve.
+- **La anchura leída sale corta un 12 %**, también en las seis. No es azar ni gusto: la
+  transformada de distancia mide al centro del píxel de fondo más cercano, y con el
+  umbral y el antialias el filo real cae medio píxel más allá — medio por cada lado. Es
+  un sesgo del instrumento y se corrige como tal.
+
+### Y dos fallos del propio instrumento, los dos por medir cosas distintas en cada lado
+
+1. **El grosor de la obra lo fijaban las letras.** En el cartel, la moda del grosor daba
+   **4 px** — el grosor del texto del pie— porque veintidós componentes de texto tienen
+   mucho más esqueleto que siete bandas, aunque las bandas sean toda la tinta. La moda
+   contaba **longitud de eje** y había que contar **materia**: ahora es la mediana
+   ponderada por área. Y con eso se puede tirar lo que no está hecho con la misma
+   gubia, que es la misma idea que sostiene la familia —una obra, un material— usada
+   para leer en vez de para dibujar.
+2. **Y al quitarle el texto sólo a la réplica, la diferencia se disparó de 13 % a 55 %.**
+   Estaba midiendo el pie del cartel, no el dibujo. El filtro tiene que aplicarse a los
+   dos lados.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas

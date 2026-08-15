@@ -253,16 +253,88 @@ def bandas(esq, dt, anchoPx):
 # tinta donde no la hay. Medido, es al reves: el reagrupado de ramas en bandas no
 # siempre atraviesa el nudo, asi que muchos extremos marcados «nudo» son en realidad
 # el final de una banda que si sigue por debajo — y no alargarlos deja el hueco.
+# ── LOS MANDOS, Y TODOS SALEN DE UN BARRIDO, NO DE UN RAZONAMIENTO ───────────────
+# 54 ajustes por referencia, minimizando la diferencia de pixel contra el original
+# (`ajusta.py`, en el laboratorio). Resultado por referencia:
+#
+#   r1 14,0 %   r2 17,2 %   r3 28,5 %   r4 12,1 %   r5 12,5 %   r6 24,2 %
+#
+# Antes de barrer, la mediana de diferencia era 23 %; ahora 15,6 %. Y el cartel de
+# Munich, que era la aberracion, pasa de 68 % a 12,5 %.
 CLAMP = True
 SOLO_CABOS = False
+# Cuanto se tira de los vertices que caen dentro de un cruce. CERO, y es una
+# correccion de una decision mia: ver la nota larga abajo.
+CRUCE_LIM = 0
+# La anchura leida sale corta un 12 %, en las seis. No es azar ni es estetica: la
+# transformada de distancia mide al centro del pixel de fondo mas cercano, y con el
+# umbral y el antialias el filo real cae medio pixel mas alla — medio por cada lado.
+# Es un sesgo del instrumento, asi que se corrige como tal, con su motivo escrito.
+CALIBRE = 1.12
+# Cuanto se alarga el cabo, en semianchuras. El eje medial de un rectangulo se queda
+# a media anchura de su lado corto; media es lo que sale mejor en cuatro de las seis.
+ALARGA = 0.5
+# Cuanto se simplifica el eje, en anchuras. Y a que resolucion se lee: no es un
+# detalle de rendimiento —a 900 px la moda de la anchura cae en otro escalon del
+# histograma y toda la reconstruccion se mueve—. Las dos salen del mismo barrido, y
+# olvidar aplicarlas fue lo que hizo que el ajuste global saliera peor que el mejor
+# por referencia: cuatro mandos medidos y solo dos puestos.
+DP_TOL = 0.18
+LADO = 1200
+
+
+def soloElMaterial(t):
+    """Fuera lo que no esta hecho con la misma gubia.
+
+    En el cartel de Munich el trazador estaba dibujando el TEXTO IMPRESO —«Olympische
+    Spiele Munchen 1972»— como si fueran bandas. Y la firma, y los aros. Filtrarlo por
+    tamano es fragil (una letra grande mide como un cabo corto); por GROSOR no lo es:
+    la obra esta hecha con una sola gubia, asi que todo lo que la compone tiene el
+    mismo espesor. Una letra es mucho mas fina.
+
+    Asi que se mide el grosor modal de la obra entera y se tira toda componente cuyo
+    grosor propio no llegue a la mitad. Es la misma idea que sostiene la familia —una
+    obra, un material— usada aqui para leer en vez de para dibujar."""
+    dt = ndimage.distance_transform_edt(t)
+    esq = skeletonize(t)
+    if not esq.sum():
+        return t
+    lab, n = ndimage.label(t)
+    if n < 2:
+        return t
+    # El grosor de la OBRA se pondera por AREA, no por esqueleto. Medido sobre el
+    # esqueleto entero, el cartel de Munich daba 4 px — que es el grosor de las
+    # LETRAS del pie: veintidos componentes de texto tienen mucho mas esqueleto que
+    # siete bandas, aunque las bandas sean toda la tinta. La moda contaba longitud de
+    # eje y habia que contar materia.
+    grosores, areas = [], []
+    for i in range(1, n + 1):
+        m = (lab == i)
+        e = esq & m
+        if not e.sum():
+            continue
+        grosores.append(moda(2 * dt[e])); areas.append(int(m.sum()))
+    if not grosores:
+        return t
+    orden = np.argsort(grosores)
+    g = np.asarray(grosores)[orden]; ac = np.cumsum(np.asarray(areas)[orden])
+    W0 = float(g[int(np.searchsorted(ac, ac[-1] / 2))])   # mediana ponderada por area
+    if W0 <= 0:
+        return t
+    fuera = [i for i in range(1, n + 1)
+             if (esq & (lab == i)).sum() and moda(2 * dt[esq & (lab == i)]) < W0 * 0.55]
+    if fuera and np.isin(lab, fuera).sum() < t.sum() * 0.5:
+        t = t & ~np.isin(lab, fuera)
+    return t
 
 
 def analizar(ruta):
-    a = recortar(cargar(ruta))
+    a = recortar(cargar(ruta, LADO))
     H, W = a.shape
     u = otsu(a)
     tinta = a < u
     tinta = remove_small_holes(remove_small_objects(tinta, 128), 128)
+    tinta = soloElMaterial(tinta)
 
     # W: moda del doble de la distancia al fondo, sobre la tinta
     dt = ndimage.distance_transform_edt(tinta)
@@ -300,7 +372,7 @@ def analizar(ruta):
     ramas0, cabos, nudos = poligonales(esq)
     ramasX = bandas(esq, dt, anchoPx)
     lado = min(H, W)
-    tol = max(1.0, anchoPx * 0.22)
+    tol = max(1.0, anchoPx * DP_TOL)
     polis, largos, giros, anchos = [], [], [], []
     for cam, cabo0, cabo1 in ramasX:
         sp = simplificar(cam, tol)
@@ -341,8 +413,18 @@ def analizar(ruta):
         def grosorEn(x, y):
             yy = min(H - 1, max(0, int(round(y)))); xx = min(W - 1, max(0, int(round(x))))
             return 2 * float(dt[yy, xx])
-        if len(sp) > 2:
-            lim = anchoPx * 1.22
+        # …Y MEDIDO, NO: tirarlos sale PEOR en las seis referencias, sin una sola
+        # excepcion (barrido de 54 ajustes por referencia, minimizando la diferencia
+        # de pixel). El razonamiento era correcto sobre el eje y equivocado sobre el
+        # dibujo: el eje dentro del cruce esta mal, si, pero la banda que se dibuja
+        # con el sigue cayendo dentro de la mancha del cruce —que es negra de todas
+        # formas, porque las dos bandas se funden ahi—, asi que el error no se ve. Y
+        # quitando esos vertices se pierde la curvatura con la que la banda ENTRA y
+        # SALE del cruce, que si se ve.
+        #
+        # Se deja el mando, apagado, porque la conclusion es del barrido y no mia.
+        if CRUCE_LIM and len(sp) > 2:
+            lim = anchoPx * CRUCE_LIM
             sp = [sp[0]] + [q for q in sp[1:-1] if grosorEn(q[0], q[1]) <= lim] + [sp[-1]]
 
         # SE MIDE SOBRE EL EJE DENSO, NO SOBRE LOS VERTICES. Y esto era un error de
@@ -361,7 +443,7 @@ def analizar(ruta):
         k = int(anchoPx * 0.6)
         limpio = crudo[k:-k] if len(crudo) > 2 * k + 4 else crudo
         # y sin los puntos de cruce, que inflan la moda igual que inflaban el eje
-        limpio = [v for v in limpio if 2 * v <= anchoPx * 1.22] or limpio
+        limpio = [v for v in limpio if not CRUCE_LIM or 2 * v <= anchoPx * CRUCE_LIM] or limpio
         # Y se lee con la MEDIANA DE LOS NO HINCHADOS, no con un percentil bajo.
         # Probe el percentil 30 pensando que en una banda muy cruzada mas de la mitad
         # de los vertices estarian hinchados; medido, sale peor en las seis (IoU
@@ -374,7 +456,7 @@ def analizar(ruta):
         # mas numerosa), los codos y cabos (por debajo) y los cruces (muy por encima).
         # La mediana mezcla las tres; la moda coge la primera, que es la anchura de la
         # gubia — que es lo que se busca, porque la banda tiene UNA anchura.
-        base = float(moda(np.asarray(limpio), 0.5)) or float(np.median(crudo)) or (anchoPx / 2)
+        base = (float(moda(np.asarray(limpio), 0.5)) or float(np.median(crudo)) or (anchoPx / 2)) * CALIBRE
         # CONSTANTE. El autor lo dijo mirando el detalle en alta: «los margenes entre
         # trazos paralelizados no son constantes, los trazos se rompen, a veces el
         # final se arista/estrecha». Las tres cosas son el mismo defecto — reconstruir
@@ -400,8 +482,8 @@ def analizar(ruta):
         # empeoraban mientras las dos mas limpias mejoraban — el promedio tapaba que
         # eran dos efectos contrarios.
         if len(sp) >= 2:
-            p0 = alarga(sp[0], sp[1], base) if (cabo0 or not SOLO_CABOS) else sp[0]
-            p1 = alarga(sp[-1], sp[-2], base) if (cabo1 or not SOLO_CABOS) else sp[-1]
+            p0 = alarga(sp[0], sp[1], base * ALARGA) if (cabo0 or not SOLO_CABOS) else sp[0]
+            p1 = alarga(sp[-1], sp[-2], base * ALARGA) if (cabo1 or not SOLO_CABOS) else sp[-1]
             sp = [p0] + sp[1:-1] + [p1]
         if an is None:
             an = []
