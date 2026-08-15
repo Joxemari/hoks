@@ -193,13 +193,16 @@ def ejesDe(mask, W, minLargo=1.2, dpTol=0.05, perfil=True):
     g = float(np.median(v)) if len(v) >= 20 else W * 0.2
     hoyos = ndimage.binary_fill_holes(mask) & ~mask
     if hoyos.any():
+        # UNA sola transformada y el maximo por etiqueta. Una por agujero parece igual
+        # y no lo es: `ajustar` vuelve a trazar el RESIDUO en cada vuelta, y un residuo
+        # tiene cientos de agujeros de dos pixeles. Con una por agujero el ajuste se
+        # queda clavado — media hora sin acabar la primera referencia.
         lab, nl = ndimage.label(hoyos)
-        tapa = np.zeros_like(mask)
-        for k in range(1, nl + 1):
-            m = lab == k
-            if 2 * ndimage.distance_transform_edt(m).max() > g * 1.5:
-                tapa |= m
-        mask = mask | tapa
+        dh = ndimage.distance_transform_edt(hoyos)
+        anchos = np.atleast_1d(ndimage.maximum(dh, lab, np.arange(1, nl + 1)))
+        cuales = np.nonzero(2 * anchos > g * 1.5)[0] + 1
+        if len(cuales):
+            mask = mask | np.isin(lab, cuales)
     dt = ndimage.distance_transform_edt(mask)
     esq = skeletonize(mask)
     if not esq.any():
