@@ -55,7 +55,7 @@
   // gruesas. Y no es un detalle: con la banda fina el canal es un pelo invisible y
   // la obra se lee como un dibujo de lineas; con la banda gorda se lee como MATERIA
   // cortada, que es de lo que va.
-  const W_MIN = 0.048, W_MAX = 0.086;      // × lado corto
+  const W_MIN = 0.032, W_MAX = 0.092;      // × lado corto. Medido en las seis: 0,03-0,09
   // El canal, medido con regla sobre las seis: banda 55 px y blanco 4 en el cartel
   // de Múnich (0,07), banda 30 y blanco 3 en la litografía de las siete bandas
   // (0,10), banda 14 y blanco 2 en las dos de papel hecho a mano (0,14). Es un PELO,
@@ -159,6 +159,21 @@
   // EVOL: el codo abierto (lo corriente) y el cerrado (el acento).
   const P_ABIERTO = 0.68;
   const GIRO_ABIERTO = [22, 62], GIRO_CERRADO = [70, 118];
+  // LOS RUMBOS: la obra tiene un ALFABETO CORTO DE DIRECCIONES, no ángulos libres.
+  //
+  // Medido en las seis con el mismo trazador: entre el 48 % y el 81 % de la longitud
+  // cae en sólo 4 de 18 casillas de dirección, y entre el 19 % y el 60 % sobre los
+  // ejes. O sea que un trazo no gira lo que le apetece: vuelve a uno de los pocos
+  // rumbos que la obra tiene. Es lo que hace que un Chillida se lea CONSTRUIDO y no
+  // garabateado, y es el rasgo que más le faltaba al motor — sólo lo tenían las obras
+  // `orto`, que son el 30 %.
+  //
+  // El paso entre rumbos sale de la misma medida: el ángulo de quiebro mediano de las
+  // seis es 34–47°, y sólo del 4 % al 35 % son a escuadra. O sea que la escuadra es un
+  // TIPO —la cuadrada pequeña, con el 35 %— y no la norma.
+  const RUMBOS = [3, 5];                   // cuántas direcciones tiene la obra
+  const RUMBO_PASO = [30, 52];             // cuánto se separan, en grados
+  const RUMBO_ERR = 5;                     // cuánto se le permite salirse
   // El PLIEGUE: cuántas veces, de los sucesos de un trazo, la banda se vuelve sobre
   // sí misma. `phi` es el ángulo de entrada al pliegue: a 90° sale una uve cuadrada
   // (el cartel de Múnich), a 55° una uve tumbada (las siete bandas).
@@ -206,11 +221,15 @@
   // que la amplitud es de la OBRA y la fase de cada trazo.
   // Sólo adelgaza: engordar cerraría el canal, que se mide contra W.
   const P_GUBIA = 0.82;
-  const GUB_AMP = [0.05, 0.15];            // cuánto adelgaza como mucho, × W
-  const GUB_FREQ = [3.0, 7.0];             // ondas por trazo
+  // Medido con el mismo trazador por los dos lados: la anchura de un trazo de las seis
+  // varía con un coeficiente de variación de 0,15 (0,08 en las finas, 0,28 en el
+  // cartel) y la familia daba 0,05. Tres veces menos temblor del que tiene el original.
+  const GUB_AMP = [0.07, 0.18];            // cuánto adelgaza el temblor, × W
+  const GUB_FREQ = [3.0, 7.0];             // ondas por trazo, el temblor
+  const GUB_DERIVA = [0.8, 2.2];           // la deriva, × la amplitud del temblor
 
   // ── El campo ────────────────────────────────────────────────────────────────
-  const MARGEN = 0.055;
+  const MARGEN = 0.022;                    // medido en las seis: 0,00-0,03 del lado
   const ZONA = [0.52, 0.88];               // el lado de la zona de trabajo, × el del pliego
   // Sangrado: un trazo que se sale del cuadro. Es uno de los ejes nombrados, y
   // aquí es una decisión por trazo — pero CUÁNTOS se salen es del conjunto: hay
@@ -421,7 +440,18 @@
   // construyendo con la misma fórmula, el temblor y la deriva siguen siendo los
   // mismos, y la banda se dibuja igual. Es lo que permite REPLICAR una referencia con
   // esta gramática en vez de describirla con palabras (ver `referencias/`).
-  function trazar(rng, x, y, dir, largo, nq, vib, D, orto, guion) {
+  function alRumbo(rng, cd, rumbos) {
+    // el rumbo más cercano al que se pretendía, con su pizca de error
+    if (!rumbos || !rumbos.length) return cd;
+    let mejor = cd, dm = Infinity;
+    for (const r of rumbos) for (const q of (r, [r, r + 180])) {
+      const d = abs(((cd - q + 540) % 360) - 180);
+      if (d < dm) { dm = d; mejor = q; }
+    }
+    return mejor + rng.range(-RUMBO_ERR, RUMBO_ERR);
+  }
+
+  function trazar(rng, x, y, dir, largo, nq, vib, D, orto, guion, rumbos) {
     const n = (guion && guion.giros ? guion.giros.length + 1 : nq + 1);
     const pesos = [];
     let tot = 0;
@@ -461,6 +491,10 @@
           // a escuadra, y de vez en cuando media vuelta: la retícula del cartel
           if (rng.bool(0.72)) lado = -lado;
           cd += lado * (rng.bool(0.16) ? 180 - rng.range(0, ORTO_ERR) : 90 + rng.range(-ORTO_ERR, ORTO_ERR));
+        } else if (rumbos && rumbos.length && !(D && rng.bool(P_VOLTEA))) {
+          // gira a OTRO rumbo de la obra, prefiriendo el de al lado
+          const salto = rng.bool(0.72) ? 1 : rng.int(2, max(2, rumbos.length - 1));
+          cd = alRumbo(rng, cd + (rng.bool(0.5) ? 1 : -1) * salto * RUMBO_PASO[0], rumbos);
         } else if (D && rng.bool(P_VOLTEA)) {
           // EL PLIEGUE. Dos giros del mismo lado con el brazo justo por medio. El
           // 1,02 es holgura de coma flotante, no un umbral: a exactamente D la
@@ -496,8 +530,20 @@
   // onda; el filo de una gubia no es periódico.
   function anchoEn(u, W, gub) {
     if (!gub) return W;
+    // DOS COSAS Y NO UNA: el temblor rápido de la gubia, y la DERIVA — que el trazo
+    // engorde y adelgace a lo largo de su recorrido.
+    //
+    // Medido con el mismo trazador por los dos lados: la anchura de un trazo de las
+    // seis varía con un coeficiente de variación de 0,15 (0,08 en las finas, 0,28 en
+    // el cartel) y la familia daba 0,05. Y no se arregla subiendo el temblor: `anchoEn`
+    // promedia dos senos, así que la variación efectiva es la cuarta parte de lo que se
+    // le pide — triplicando la amplitud el coeficiente pasaba de 0,05 a 0,07 y la banda
+    // se deshilachaba. La variación del original no es de alta frecuencia: es que el
+    // trazo tiene partes más gordas y partes más finas, una o dos ondas en todo el
+    // recorrido. Eso es la deriva, y va con la amplitud entera.
     const a = Math.sin(u * gub.f1 + gub.p1), b = Math.sin(u * gub.f2 + gub.p2);
-    return W * (1 - gub.amp * (0.5 + 0.25 * (a + b)));   // 0 … amp por debajo de W
+    const d = Math.sin(u * gub.fd + gub.pd);
+    return W * (1 - gub.amp * (0.5 + 0.25 * (a + b)) - gub.der * 0.5 * (1 + d));
   }
   // CUÁNTO PUEDE RELLENAR CADA VÉRTICE. Es la lectura del detalle que mandó el
   // autor: en el original, el blanco entre dos bandas es una INCISIÓN de anchura
@@ -880,7 +926,7 @@
       const sigue = alFinal ? p.dir : p.dir + 180;
       const sep = ctx.sep;
       const x0 = p.x + Math.cos(sigue * RAD) * sep, y0 = p.y + Math.sin(sigue * RAD) * sep;
-      return trazar(rng, x0, y0, sigue + rng.range(-34, 34), largo, nq, ctx.vib, D, ctx.orto);
+      return trazar(rng, x0, y0, sigue + rng.range(-34, 34), largo, nq, ctx.vib, D, ctx.orto, null, ctx.rumbos);
     }
     if ((rel === 'caboCabo' || rel === 'caboCuerpo') && obj) {
       // Un extremo mío muere cerca de un extremo suyo (o de su costado), sin
@@ -891,7 +937,7 @@
       const hacia = rng.range(0, 360);
       const x0 = p.x + Math.cos(hacia * RAD) * sep, y0 = p.y + Math.sin(hacia * RAD) * sep;
       // sale ALEJÁNDOSE, si no se echa encima
-      return trazar(rng, x0, y0, hacia + rng.range(-52, 52), largo, nq, ctx.vib, D, ctx.orto);
+      return trazar(rng, x0, y0, hacia + rng.range(-52, 52), largo, nq, ctx.vib, D, ctx.orto, null, ctx.rumbos);
     }
     // suelto, o primer trazo: en cualquier sitio con aire DENTRO DE LA ZONA. Si
     // sangra, puede ARRANCAR fuera — el trazo entra desde detrás del marco en vez
@@ -899,11 +945,14 @@
     // hasta ahora todos se iban, ninguno llegaba.
     const h = sangra ? -ctx.S * SANGRE + W / 2 : ctx.mg + W / 2 + 1e-4;
     const z = ctx.zona;
+    // y el trazo nace YA en uno de los rumbos de la obra
     const dir0 = ctx.orto ? ctx.ejeBase + 90 * rng.int(0, 3) + rng.range(-ORTO_ERR, ORTO_ERR)
-                          : rng.range(0, 360);
+               : (ctx.rumbos && ctx.rumbos.length
+                  ? rng.pickFrom(ctx.rumbos) + (rng.bool(0.5) ? 0 : 180) + rng.range(-RUMBO_ERR, RUMBO_ERR)
+                  : rng.range(0, 360));
     return trazar(rng, rng.range(max(h, z.x0), min(ctx.fw - h, z.x1)),
                        rng.range(max(h, z.y0), min(ctx.fh - h, z.y1)),
-                  dir0, largo, nq, ctx.vib, D, ctx.orto);
+                  dir0, largo, nq, ctx.vib, D, ctx.orto, null, ctx.rumbos);
   }
 
   // ¿Cabe? Nunca se tocan: W+g contra todos los demás, y sin cortarse a sí mismo.
@@ -1175,7 +1224,9 @@
     return { amp: ctx.gubAmp,
              f1: rng.range(GUB_FREQ[0], GUB_FREQ[1]) * 6.2832,
              f2: rng.range(GUB_FREQ[0], GUB_FREQ[1]) * 6.2832 * 1.618,
-             p1: rng.range(0, 6.2832), p2: rng.range(0, 6.2832) };
+             p1: rng.range(0, 6.2832), p2: rng.range(0, 6.2832),
+             der: ctx.gubAmp * rng.range(GUB_DERIVA[0], GUB_DERIVA[1]),
+             fd: rng.range(0.6, 1.7) * 6.2832, pd: rng.range(0, 6.2832) };
   }
 
   // ── Las patas ───────────────────────────────────────────────────────────────
@@ -1205,7 +1256,8 @@
         // ESCALONADAS: cada pata mide distinto, y bastante
         const L = largoRef * rng.range(PATA_LARGO[0], PATA_LARGO[1]);
         let pts = trazar(rng, x0, y0, caida + rng.range(-14, 14), ctx.S * L,
-                         quiebrosPara(rng, ctx.S * L, ctx.W), ctx.vib, ctx.D, ctx.orto);
+                         quiebrosPara(rng, ctx.S * L, ctx.W), ctx.vib, ctx.D, ctx.orto,
+                         null, ctx.rumbos);
         pts = cortarAlVolver(pts, ctx);
         pts = recortar(pts, ctx, false, false);
         if (!pts || largoDe(pts) < ctx.S * LARGO_MIN) continue;
@@ -1237,7 +1289,8 @@
       for (let t = 0; t < COLOCA; t++) {
         const nq = quiebrosPara(rng, largo, ctx.W);
         let pts = trazar(rng, px - Math.cos(dir * RAD) * largo * 0.5,
-                         py - Math.sin(dir * RAD) * largo * 0.5, dir, largo, nq, ctx.vib, ctx.D, ctx.orto);
+                         py - Math.sin(dir * RAD) * largo * 0.5, dir, largo, nq, ctx.vib,
+                         ctx.D, ctx.orto, null, ctx.rumbos);
         // el cerco también CRECE hasta donde cabe: ahora se pone después del
         // protagonista, así que casi siempre tiene que ceder algo contra él, y
         // rechazarlo entero dejaba recintos de dos cuerdas.
@@ -1406,6 +1459,16 @@
       // salgan todas alineadas con el pliego
       orto: params.orto != null ? !!params.orto : rng.bool(P_ORTO),
       ejeBase: rng.range(0, 90),
+      // el alfabeto de direcciones de ESTA obra
+      rumbos: (() => {
+        const base = rng.range(0, 180);
+        if (params.orto != null ? params.orto : false) return [base, base + 90];
+        const k = rng.int(RUMBOS[0], RUMBOS[1]);
+        const out = [base];
+        let a = base;
+        for (let i = 1; i < k; i++) { a += rng.range(RUMBO_PASO[0], RUMBO_PASO[1]); out.push(a); }
+        return out;
+      })(),
       zona: { x0: zx * fw, y0: zy * fh, x1: (zx + zw) * fw, y1: (zy + zh) * fh },
       vib: vibra ? { amp: rng.range(VIB_AMP[0], VIB_AMP[1]), onda: W * rng.range(VIB_ONDA[0], VIB_ONDA[1]) } : null,
     };

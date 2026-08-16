@@ -1715,6 +1715,53 @@ con el umbral movido) está en 0,1–1,0 %: o sea que el 98 % es alcanzable en p
 hay que ganarlo ahí, con pasos de anchura y posición más finos que los 0,25 px de este
 pulido.
 
+### Los rasgos, extraídos de las seis, y el marcador contra la familia
+
+El mismo trazador por los dos lados, todo en unidades de la obra. No se mide lo que ya
+se sabe que el motor tiene: se buscan los que le faltan.
+
+| | r1 | r2 | r3 | r4 | r5 | r6 | refs | familia |
+|---|---|---|---|---|---|---|---|---|
+| anchura / lado | 0,03 | 0,04 | 0,05 | 0,05 | 0,09 | 0,09 | 0,05 | 0,04 |
+| largo del trazo (lados) | 0,31 | 0,29 | 0,30 | 0,24 | 0,50 | 0,26 | **0,30** | 0,21 |
+| el más largo (p90) | 0,79 | 0,54 | 0,75 | 0,85 | 1,08 | 0,55 | **0,77** | 0,45 |
+| vibración de grosor (cv) | 0,08 | 0,16 | 0,08 | 0,17 | 0,28 | 0,14 | **0,15** | 0,09 |
+| quiebros por anchura | 0,24 | 0,26 | 0,08 | 0,16 | 0,34 | 0,00 | **0,20** | 0,01 |
+| ángulo de quiebro | 37 | 40 | 34 | 38 | 45 | 47 | 39 | 36 |
+| quiebros a escuadra | 0,04 | 0,09 | 0,05 | 0,09 | 0,05 | 0,35 | 0,07 | 0,18 |
+| cierre del circuito (p90) | 0,41 | 0,23 | 0,27 | 0,24 | 0,26 | 0,22 | 0,25 | 0,19 |
+| longitud en 4 rumbos | 0,48 | 0,57 | 0,74 | 0,59 | 0,63 | 0,81 | 0,61 | 0,55 |
+| canal (anchuras) | 0,30 | 0,26 | 0,62 | 0,11 | 0,06 | 0,23 | **0,24** | 0,45 |
+| constancia del canal | 0,77 | 0,72 | 0,32 | 0,55 | 0,57 | 0,56 | **0,56** | 0,29 |
+| cuánto se acompañan | 0,46 | 0,57 | 0,48 | 0,46 | 0,87 | 1,06 | 0,53 | 0,41 |
+| línea total (lados) | 6,47 | 6,43 | 5,74 | 6,94 | 6,23 | 7,67 | **6,45** | 4,29 |
+| suelo encerrado | 0 | 0 | 0 | 5 | 2 | 0 | 0 | 0 |
+| margen al borde | 0,01 | 0,02 | 0,02 | 0,00 | 0,01 | 0,03 | 0,02 | 0,00 |
+| tinta | 0,17 | 0,20 | 0,25 | 0,25 | 0,32 | 0,51 | **0,25** | 0,16 |
+
+Cuatro rasgos que el motor no tenía y ahora sí:
+
+- **Los rumbos.** Entre el 48 % y el 81 % de la longitud cae en sólo 4 de 18 casillas de
+  dirección. La obra tiene un **alfabeto corto de direcciones** y un trazo no gira lo
+  que le apetece: vuelve a uno de los pocos rumbos que la obra tiene. Es lo que hace
+  que un Chillida se lea *construido* y no garabateado. El motor sólo lo hacía en las
+  obras `orto`, que son el 30 %; ahora lo hace siempre, y el número sale clavado a la
+  primera (0,60 contra 0,61).
+- **El ángulo de quiebro es de 34 a 47 grados, y sólo del 4 % al 35 % son a escuadra.**
+  La escuadra es un TIPO —la cuadrada pequeña, con el 35 %— y no la norma. El motor
+  tenía el 18 %, o sea el doble de la mediana.
+- **La anchura llega de 0,032 a 0,091 del lado**, casi el triple entre la más fina y la
+  más gorda. El motor iba de 0,048 a 0,086: no sabía dibujar las dos finas.
+- **El margen es casi cero**: la tinta llega al filo del cuadro (0,00–0,03 del lado). El
+  motor dejaba 0,055, más del doble de aire.
+
+Y uno que se resiste, con su medida: **la anchura de un trazo varía un 15 % (cv)** y el
+motor daba 0,05. No se arregla subiendo el temblor — `anchoEn` promedia dos senos, así
+que la variación efectiva es la cuarta parte de lo pedido, y triplicando la amplitud el
+coeficiente pasaba de 0,05 a 0,07 mientras la banda se deshilachaba. **La variación del
+original no es de alta frecuencia**: el trazo tiene partes gordas y partes finas, una o
+dos ondas en todo el recorrido. Añadida esa deriva sube a 0,09. Queda a medio camino.
+
 ### El encargo, dicho por el autor, y lo que le falta al motor para cumplirlo
 
 *«Producir en serie lo irrepetible.»* Y una aclaración que reencuadra las seis
