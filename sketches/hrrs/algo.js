@@ -254,7 +254,14 @@
   // la deriva: lo que se gana por un lado se paga por el otro, y el detector tiene
   // que seguir midiendo lo que dice.
   const DERIVA = 1.4;                      // grados por subdivisión, acumulativos
-  const DERIVA_MAX = 26;                   // cuánto se puede ir en total
+  // Grados por subdivisión, SOSTENIDOS: el sesgo que convierte la deriva en una curva.
+  // Barrido sobre 28 obras con el mismo instrumento que las referencias (eje fino ÷ eje
+  // grueso, del píxel): 0 → 1,007 · 2,5 → 1,005 · 5 → 1,010 · 8 → 1,006, contra 1,013 de
+  // las referencias. A 5 se recorta el 40 % de lo que faltaba, y de propina el
+  // acompañamiento sube de 18,4 % a 21,1 % —un trazo que curva roza más—. Cuesta un 7 %
+  // de línea (4,79 → 4,44), y eso hay que decirlo.
+  const CURVA = 5;
+  const DERIVA_MAX = 44;                   // cuánto se puede ir en total
 
   // LA GUBIA no tiene una anchura sola. Varía poco y despacio a lo largo del corte,
   // y esa variación es la mitad de que parezca hecho a mano. Es del material, así
@@ -512,8 +519,23 @@
         // dos cosas distintas y hacen falta las dos: sin la segunda, un tramo largo
         // es una recta con textura.
         const k = max(1, Math.round(L / vib.onda));
+        // LA CURVATURA DEL TRAMO, y es lo que faltaba para que el trazo no parezca de
+        // regla. El autor: «el trazo parece poco orgánico».
+        //
+        // La deriva sola es un paseo aleatorio de ±1,4° por paso, y con tramos de dos o
+        // tres subdivisiones no llega a moverse; además una desviación CONSTANTE da una
+        // recta inclinada, no una curva. Lo que curva es un sesgo sostenido, y es lo que
+        // hacen las bandas de las referencias: arcos largos y suaves. Se sortea una vez
+        // por tramo y se aplica en cada paso.
+        //
+        // Y no se arregla subiendo el TEMBLOR, que fue lo primero que probé: a 8° la
+        // medida no se mueve y a 14° la composición se cae —tinta 0,05, tres obras de
+        // catorce sobreviven— porque un trazo que zigzaguea se choca consigo mismo y
+        // `seCorta` se lo come. Es la misma lección que ya costó la vibración de grosor:
+        // lo que el original tiene no es alta frecuencia, es una onda larga.
+        const curv = rng.range(-CURVA, CURVA);
         for (let j = 0; j < k; j++) {
-          der = clamp(der + rng.range(-DERIVA, DERIVA), -DERIVA_MAX, DERIVA_MAX);
+          der = clamp(der + curv + rng.range(-DERIVA, DERIVA), -DERIVA_MAX, DERIVA_MAX);
           avanza(L / k, cd + der + (rng.bool(0.5) ? 1 : -1) * rng.range(vib.amp * 0.35, vib.amp));
         }
         cd += der; der = 0;   // la deriva se queda: el tramo siguiente sale de donde llegó

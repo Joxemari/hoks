@@ -2337,7 +2337,60 @@ va **`cuna`**, que es la construcción de antes —la banda más gorda, con su b
 es justo lo que este detector existe para cazar: dispara 10 de 42, mínimo 0,365. El
 control de un arreglo es el estado anterior al arreglo.
 
-### Tres controles rotos y una rama muerta: la batería llevaba tiempo mintiendo
+### «Las paralelizaciones no las veo y el trazo parece poco orgánico»
+
+Dos juicios del autor mirando la familia al lado de las seis. Los dos ciertos, y los dos
+con cifra — con **el mismo instrumento por los dos lados**, que es donde estuve a punto de
+equivocarme otra vez: la primera medida de la familia salió de `geo.cintas` (la poligonal
+generada) y la de las referencias de `ejesDe` (el eje trazado del píxel). Dos
+instrumentos, ninguna comparación. Rehecho todo desde el píxel:
+
+| | familia | referencias |
+|---|---|---|
+| **acompañado** (longitud a < 2 W de otro y a < 25°) | **21,8 %** | **37,7 %** |
+| racha p50 / p90 (anchuras) | 1,8 / 4,5 | 1,3 / 3,7 |
+| **orgánico** (eje fino ÷ eje grueso) | **1,006** | **1,013** |
+
+Y lo que la tabla dice **no** es lo que yo habría dicho mirando: cuando la familia
+acompaña, la sección es incluso **más larga** que en las referencias. Lo que falla es la
+**frecuencia**. Las referencias tienen muchas rachas cortas por todas partes; la familia,
+pocas y largas. No hay que alargar el acompañamiento: hay que repartirlo.
+
+**Cuatro levas probadas para el acompañamiento, y ninguna paga:**
+
+- **Subir el peso de `paralelo`.** Ya pesa 0,30–0,50 según el tipo: se declara mucho. El
+  problema no es cuántas veces se pide.
+- **La corrección de densidad.** El motor divide la cuenta de trazos por `escala^0,85`
+  —banda ancha, menos trazos—. Las referencias **no la respaldan**: la correlación entre
+  anchura y número de trazos es **+0,26**, débil y del signo contrario (r6 tiene la banda
+  más ancha *y* catorce trazos). Bajado el exponente a 0,45 y a 0: **21,8 % → 19,4 % →
+  21,3 %**. Nada. La regla estará mal fundada, pero no es la que aprieta aquí.
+- **Forzar la cuenta.** Con `trazos: 7` sube a 30,9 %, pero eso salta el rango del tipo
+  *y* la corrección a la vez, así que no dice cuál de las dos manda.
+- **Subir el temblor.** A 8° la medida no se mueve; a 14° **la composición se cae** —tinta
+  0,05, tres obras de catorce sobreviven— porque un trazo que zigzaguea se choca consigo
+  mismo y `seCorta` se lo come. Misma lección que ya costó la vibración de grosor: lo que
+  el original tiene no es alta frecuencia.
+
+**Lo orgánico sí tenía leva, y no era el temblor: es la CURVATURA.** La deriva que había
+es un paseo aleatorio de ±1,4° por paso, y con tramos de dos o tres subdivisiones no llega
+a moverse; además una desviación *constante* da una recta inclinada, no una curva. Lo que
+curva es un **sesgo sostenido**, sorteado una vez por tramo. Barrido sobre 28 obras:
+
+| `CURVA` | 0 | 2,5 | 5 | 8 |
+|---|---|---|---|---|
+| orgánico | 1,007 | 1,005 | **1,010** | 1,006 |
+
+A 5 se recorta el **40 % de lo que faltaba**, y de propina el acompañamiento sube de
+18,4 % a 21,1 %: un trazo que curva roza más. **Y cuesta un 7 % de línea** (4,79 → 4,44),
+que es justo el rasgo que peor va. Se queda porque el juicio era sobre lo orgánico, pero
+el precio está aquí escrito y es discutible.
+
+**Lo que NO está resuelto, y con nombre:** el acompañamiento sigue en 21 % contra 37,7 %.
+El diagnóstico es que a un trazo le falta **acompañar a varios a lo largo de su camino**
+—en las referencias una banda va un rato con A, se separa y va otro rato con B— mientras
+que `colocar('paralelo')` le da **una** sección contra **un** objetivo y `DESVIOS = 1` no
+deja encadenar una segunda. Ahí es donde hay que ir, y no a los pesos.
 
 Al pasar la batería salió lo que el propio `mil.sh` está escrito para que salga —*«un
 control medido contra un artefacto viejo es peor que no tener control: no prueba nada y
