@@ -54,6 +54,29 @@ elif roto == 'rendija':
     assert a in src, 'no encuentro la banda prohibida'
     src = src.replace(a, "    if (d <= ctx.D) return false;   // ROTO A PROPOSITO: la rendija pasa")
 
+elif roto == 'cuna':
+    # LA CUÑA DE LA ESQUINA, devuelta. Es el control del arreglo que la cerro: el corte
+    # del halo vuelve a dibujarse como «la misma banda un canal mas gorda» en vez de como
+    # el offset de la tinta. En una esquina convexa el bisel sustituye el arco por su
+    # cuerda y entre los dos queda una cuña sin cortar, por donde se cuela la tinta del
+    # vecino a menos de g. Control de `pelo`, y hace falta: desde el arreglo, `corta`
+    # -que era su otro control- ya no dispara ahi, y un cero sin control no significa
+    # nada.
+    a = """    ctx.beginPath();
+    banda(ctx, pts, W, gub, relleno, anchos);
+    ctx.fill();
+    if (mas > 0) {
+      ctx.save();
+      ctx.lineWidth = 2 * mas; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+    }"""
+    assert a in src, 'no encuentro el corte por offset'
+    src = src.replace(a, """    // ROTO A PROPOSITO: el corte vuelve a ser «la misma banda mas gorda»
+    ctx.beginPath();
+    banda(ctx, pts, W, gub, relleno, anchos, mas);
+    ctx.fill();""")
+
 elif roto == 'holgura':
     # LA CUENTA DE LA HOLGURA, ROTA. Es el control de la otra mitad: que lo que el
     # algoritmo se permite rellenar nunca se coma el pelo de otro trazo. Se comprueba

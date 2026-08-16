@@ -681,53 +681,21 @@
       // EL RELLENO DE LA ESQUINA, en el vértice i+1 y sólo por FUERA del giro: se
       // mete el punto del inglete si cabe en la holgura que se calculó. Si no cabe,
       // no se mete y queda el bisel — que es el caso de siempre, junto al canal.
+      //
+      // El corte del halo YA NO PASA POR AQUI: se dibuja como el offset de la tinta
+      // (ver `corte`), asi que esta esquina es solo la de la TINTA y `mas` vale cero.
       if (i < n - 2 && relleno) {
         const sx = nx[i] + nx[i + 1], sy = ny[i] + ny[i + 1], mm = hypot(sx, sy);
         if (mm > 1e-6) {
           const mx = sx / mm, my = sy / mm;
           const cos = max(mx * nx[i] + my * ny[i], 1e-3);
-          const r = h[i + 1] / cos;
-          // EL INGLETE SE DECIDE CON LA GEOMETRIA DE LA TINTA, y el corte lo copia.
-          //
-          // Sin esto el corte rechaza el inglete que la tinta si mete: `r` crece con
-          // `mas` mas deprisa que el limite, asi que hay codos donde la punta de la
-          // tinta asoma por encima del canal. Es la trampa del inglete de siempre,
-          // colandose esta vez por la puerta del halo — medida: dejaba pares de trazos
-          // a 0,29 g en vez de a g.
-          //
-          // Asi que la decision se toma UNA vez, con la banda sin ensanchar, y el
-          // corte mete su punta en el mismo sitio, un `mas` mas lejos. El corte es la
-          // misma forma, no otra forma parecida.
           const hIn = h[i + 1] - mas;
           const lim = relleno[i + 1] || hIn;
           // el inglete sale por el lado CONVEXO; el otro lado es el interior del
           // codo y ahí no hay nada que rellenar
           const cruz = nx[i] * ny[i + 1] - ny[i] * nx[i + 1];
-          // EL INGLETE RECORTADO, y una hipotesis mia muerta de camino.
-          //
-          // Repartiendo el residuo de la replica por la curvatura del eje, el error en
-          // los giros de mas de 40° es de 5,3 a 8,6 % contra 1,7 a 3,6 % en los tramos
-          // rectos, en las seis, y ademas es FALTA de tinta (3,8-7,2 %) y no sobra
-          // (1,1-2,3 %). O sea: la banda se pinza en la esquina. Parecia claro que
-          // faltaba relleno de codo — el inglete entero ya se sabia que SOBRA, tres
-          // puntos, y por eso la replica se dibuja con `relleno: 0`.
-          //
-          // Medido: NO. Barriendo cuanto se llena el codo, de bisel puro a inglete
-          // entero, el bisel gana o empata en cuatro de las seis y lo demas mueve 0,3
-          // como mucho. Y ensanchar la anchura en el vertice del codo tampoco (92,1 %
-          // -> 92,3 % de mediana, y cuesta incisiones). El error del codo no es de
-          // relleno ni de anchura: es que el eje medial es menos fiable justo ahi.
-          //
-          // El recorte se queda porque es la construccion correcta —la esquina se llena
-          // hasta donde el material deja, no hasta un pico ni a ras, y el tope es la
-          // holgura, asi que no puede comerse el canal— pero no compro nada, y eso hay
-          // que decirlo.
-          // Y REVERTIDO, ademas, porque rompia el canal: con el recorte, el corte del
-          // halo y la tinta acaban los dos en `lim` y en el codo no queda halo — el
-          // minimo del canal visible se hundia de 0,892 g a 0,318 y las obras por
-          // debajo de g pasaban de 4 a 19. Se podria arreglar dandole al corte
-          // `lim + mas`, pero no hay por que arreglar un cambio que no compra nada.
           if (hIn / cos <= lim + 1e-9 && hIn / cos > hIn * 1.02) {
+            const r = h[i + 1] / cos;
             if (cruz < 0) izq.push({ x: pts[i + 1].x + mx * r, y: pts[i + 1].y + my * r });
             else          der.push({ x: pts[i + 1].x - mx * r, y: pts[i + 1].y - my * r });
           }
@@ -738,6 +706,31 @@
     for (let i = 1; i < izq.length; i++) ctx.lineTo(izq[i].x, izq[i].y);
     for (let i = der.length - 1; i >= 0; i--) ctx.lineTo(der[i].x, der[i].y);
     ctx.closePath();
+  }
+
+  // EL CORTE ES EL OFFSET DE LA TINTA, y el canvas lo dibuja exacto sin aritmética.
+  //
+  // Rellenar la banda y además TRAZARLA con `lineWidth = 2·mas` y las uniones redondas
+  // da exactamente {p : dist(p, banda) ≤ mas} — la suma de Minkowski con un disco, que
+  // es la definición misma de «a menos de un canal». El cabo entra solo, por el remate
+  // redondo, así que tampoco hace falta alargar el eje.
+  //
+  // Antes el corte se dibujaba como «la misma banda un canal más gorda», y eso NO es lo
+  // mismo: en una esquina convexa el bisel sustituye el arco por su cuerda, y entre la
+  // cuerda y el arco queda una cuña SIN CORTAR por donde se cuela la tinta del vecino a
+  // menos de g. Es la cuarta puerta por la que entra el inglete en esta casa, y con esta
+  // construcción se cierra sin un solo umbral: la punta del inglete ya no es un punto
+  // que haya que desplazar a mano, es parte del contorno que se traza.
+  function corte(ctx, pts, W, gub, relleno, anchos, mas) {
+    ctx.beginPath();
+    banda(ctx, pts, W, gub, relleno, anchos);
+    ctx.fill();
+    if (mas > 0) {
+      ctx.save();
+      ctx.lineWidth = 2 * mas; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // Desplazar un trazo en paralelo: cada vértice por su bisectriz, así el canal
@@ -1247,9 +1240,34 @@
   // el séptimo (5,56 los tres). El largo del trazo, de 0,65 a 0,81. Después del primer
   // desvío o cabe o lo que queda ya no da para otro.
   const DESVIOS = 1;
+  // QUIÉN ESTORBA. Ante un bloqueo el trazo no gira a un rumbo cualquiera: gira al DEL
+  // QUE LE CORTA EL PASO —para paralelizarse— o al que le ALEJA de él. Los dos los da
+  // el estorbo, no la obra, así que hay que saber cuál es. Es, literalmente, el punto 5
+  // del encargo: «si la paralelización es lo bastante fuerte se da el solape; si no, el
+  // trazo tiende a paralelizarse o a irse a otro lado».
+  function quienEstorba(p, ctx) {
+    let mejor = null, dm = Infinity;
+    for (const t of ctx.trazos) {
+      for (let i = 0; i < t.pts.length - 1; i++) {
+        const a2 = t.pts[i], b2 = t.pts[i + 1];
+        const dx = b2.x - a2.x, dy = b2.y - a2.y, l2 = dx * dx + dy * dy;
+        let u = l2 > 1e-18 ? ((p.x - a2.x) * dx + (p.y - a2.y) * dy) / l2 : 0;
+        u = u < 0 ? 0 : u > 1 ? 1 : u;
+        const qx = a2.x + dx * u, qy = a2.y + dy * u;
+        const d = hypot(p.x - qx, p.y - qy);
+        if (d < dm) { dm = d; mejor = { d, dir: Math.atan2(dy, dx) / RAD, qx, qy }; }
+      }
+    }
+    return mejor && mejor.d < ctx.D * 3 ? mejor : null;
+  }
   function desviar(rng, pts, ctx, sangra, cruza) {
     const meta = largoDe(pts);
-    let cur = recortar(pts, ctx, sangra, cruza);
+    // SIN EL VETO DE LONGITUD AQUÍ, y era el agujero grande. `recortar` devolvía null
+    // cuando lo que salvaba no llegaba al mínimo, y `desviar` se rendía en esta línea:
+    // o sea que el trazo bloqueado EN SU ARRANQUE —justo el que más necesita
+    // desviarse— no llegaba nunca a intentarlo. Medido, el 34 % de las llamadas moría
+    // ahí. El mínimo se comprueba al final, sobre el trazo ya reencaminado.
+    let cur = recortar(pts, ctx, sangra, cruza, 0);
     if (!cur) return null;
     for (let v = 0; v < DESVIOS; v++) {
       const hecho = largoDe(cur);
@@ -1259,8 +1277,19 @@
       const p = cur[n - 1], q = cur[n - 2];
       const cd = Math.atan2(p.y - q.y, p.x - q.x) / RAD;
       let mejor = null, mejorL = hecho;
-      for (const lado of [1, -1]) for (const salto of [1, 2]) {
-        const nd = alRumbo(rng, cd + lado * salto * RUMBO_PASO[0], ctx.rumbos);
+      // Los rumbos que el autor nombra, primero: paralelizarse con el que estorba, o
+      // alejarse de él. Los de antes —girar un paso o dos desde donde iba— se quedan
+      // detrás como salida general.
+      const est = quienEstorba(p, ctx);
+      const cand = [];
+      if (est) {
+        cand.push(alRumbo(rng, est.dir, ctx.rumbos));
+        cand.push(alRumbo(rng, est.dir + 180, ctx.rumbos));
+        cand.push(alRumbo(rng, Math.atan2(p.y - est.qy, p.x - est.qx) / RAD, ctx.rumbos));
+      }
+      for (const lado of [1, -1]) for (const salto of [1, 2])
+        cand.push(alRumbo(rng, cd + lado * salto * RUMBO_PASO[0], ctx.rumbos));
+      for (const nd of cand) {
         const cola = trazar(rng, p.x, p.y, nd, falta, quiebrosPara(rng, falta, ctx.W),
                             ctx.vib, ctx.D, ctx.orto, null, ctx.rumbos, ctx.cierre);
         if (!cola || cola.length < 2) continue;
@@ -1273,10 +1302,14 @@
       if (!mejor) break;
       cur = mejor;
     }
-    return cur;
+    return largoDe(cur) < ctx.S * LARGO_MIN ? null : cur;
   }
 
-  function recortar(pts, ctx, sangra, cruza) {
+  // `minimo` es el suelo de longitud por debajo del cual no vale la pena devolver nada.
+  // `desviar` pasa 0 a propósito: allí el recorte es un paso intermedio y el suelo se
+  // comprueba al final, sobre el trazo ya reencaminado. Los demás no lo pasan y se
+  // quedan con el de siempre.
+  function recortar(pts, ctx, sangra, cruza, minimo) {
     if (cabeDuro(pts, ctx, sangra, cruza)) return pts;
     // NO ES MONOTONO, y por eso esto no puede ser una busqueda binaria.
     //
@@ -1306,7 +1339,7 @@
     const rev = pts.slice().reverse();
     const aDetras = busca(rev);
     const L = max(aDelante, aDetras);
-    if (L < ctx.S * LARGO_MIN) return null;
+    if (L <= 0 || L < (minimo == null ? ctx.S * LARGO_MIN : minimo)) return null;
     return aDelante >= aDetras ? prefijo(pts, aDelante)
                                : prefijo(rev, aDetras).reverse();
   }
@@ -1890,8 +1923,7 @@
           }
           cx.clip();
           cx.globalCompositeOperation = 'destination-out';
-          cx.beginPath(); banda(cx, tr.pts, best.W, tr.gubia, tr.relleno, null, halo);
-          cx.fill();
+          corte(cx, tr.pts, best.W, tr.gubia, tr.relleno, null, halo);
           cx.restore();
         }
         cx.globalCompositeOperation = 'source-over';
@@ -2063,8 +2095,7 @@
           }
           c2.clip();
           c2.globalCompositeOperation = 'destination-out';
-          c2.beginPath(); banda(c2, tr.pts, Wb, tr.gubia, tr.relleno, tr.anchos, halo2);
-          c2.fill();
+          corte(c2, tr.pts, Wb, tr.gubia, tr.relleno, tr.anchos, halo2);
           c2.restore();
         }
         c2.globalCompositeOperation = 'source-over';
@@ -2156,5 +2187,5 @@
   // `banda` sale fuera para el DETECTOR, no para dibujar. `pelo.js` tiene que pintar
   // cada trazo con su etiqueta y con los mismos cortes que la obra publicada, y un
   // detector que reimplementa el dibujo mide su copia, no el dibujo.
-  (global.HOKS = global.HOKS || {}).HRRS = { render, componer, traits, TIPOS, RELS, BG_GRADIENT, FORMATS, banda };
+  (global.HOKS = global.HOKS || {}).HRRS = { render, componer, traits, TIPOS, RELS, BG_GRADIENT, FORMATS, banda, corte };
 })(typeof window !== 'undefined' ? window : globalThis);

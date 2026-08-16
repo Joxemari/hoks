@@ -2225,6 +2225,118 @@ tapar un síntoma.
 Se queda, entonces, no porque arregle un número —no arreglaba ninguno— sino porque el
 autor lo declaró como variable y **una variable de carácter tiene que poder pedirse**.
 
+### El largo: primero medir QUÉ para el trazo, y luego tres hipótesis mías caídas
+
+El largo es el rasgo que peor va —0,43 contra 0,79— y llevaba dos vueltas atacado a
+ciegas. Antes de tocar nada, la pregunta: ¿los trazos se **piden** cortos o se **cortan**?
+
+Instrumentado el bucle de colocación: se piden **1,74 lados** —más ambiciosos que el
+trazo más largo de cualquier referencia— y se entrega el **35 %**. No se piden cortos: se
+cortan. Y de las llamadas a `desviar`, **el 56 % moría sin devolver nada**.
+
+**El primer agujero, y era de bulto.** `desviar` empieza llamando a `recortar`, y
+`recortar` devuelve `null` cuando lo que salva no llega al mínimo de longitud. Así que el
+trazo bloqueado **en su arranque** —justo el que más necesita desviarse— se rendía en esa
+línea sin llegar a intentarlo nunca. El mínimo pasa al final, sobre el trazo ya
+reencaminado.
+
+**El segundo, el del encargo.** `desviar` giraba a un rumbo cualquiera de la obra medido
+*desde donde iba*, y nunca miraba al que le corta el paso. El punto 5 dice otra cosa: *si
+la paralelización es lo bastante fuerte se da el solape; si no, el trazo tiende a
+paralelizarse o a irse a otro lado*. Ahora `quienEstorba` devuelve el trazo más cercano al
+punto de parada y los dos primeros candidatos son los suyos: **su rumbo** (paralelizarse,
+en los dos sentidos) y **su normal** (alejarse). Snapped al alfabeto, como todo.
+
+| | largo p50 | p90 | línea |
+|---|---|---|---|
+| antes | 0,471 | 1,451 | 4,48 |
+| + paralelizarse / alejarse | 0,486 | 1,456 | 4,72 |
+| + el veto al final | **0,513** | **1,482** | **4,94** |
+
+**Y tres hipótesis mías, muertas por medida en la misma vuelta:**
+
+- **Que la colocación fuera el cuello.** El 34 % de las llamadas moría porque *ni el
+  arranque cabía*: `caboCabo` y `caboCuerpo` salen en una dirección al azar de 0 a 360°
+  alrededor de un punto del otro trazo, y media vuelta apunta a lo ya dibujado. Escribí
+  un `sitioLibre` que mira antes de saltar. **4,94 → 4,92**: nada. `poner` se queda con el
+  más largo de 26 intentos, y el máximo lo pone la geometría disponible, no cuántos
+  intentos sobreviven.
+- **Que el marco se arreglara girando hacia dentro.** Es el estorbo más frecuente (abajo),
+  y ahí `quienEstorba` no devuelve nada. Añadido el candidato «al rumbo que mira al
+  cuerpo»: **+0,00 en línea**.
+- **Que se arreglara plegando.** Girar hacia dentro devuelve el trazo junto a su propio
+  recorrido y lo mata `seCorta`; volver de verdad pide el pliegue, que la casa ya tiene.
+  Ofrecido como salida del desvío: **4,94 → 4,92**. Tampoco.
+
+**Y una trampa de método que casi me hace publicar ruido.** Cada candidato nuevo consume
+tiradas del RNG, así que añadir uno **re-sortea el flujo entero**: a 60 obras el candidato
+«hacia dentro» parecía *empeorar* la línea un 2 %, y a 200 obras da exactamente lo mismo.
+Con un RNG determinista, cualquier cambio en el número de tiradas es un cambio de muestra.
+**Nada por debajo de 200 obras dice nada aquí.**
+
+#### Lo que de verdad para un trazo, con su cifra
+
+| qué lo para | | |
+|---|---|---|
+| **el marco** | 35,0 % | se acabó el papel |
+| **cruce malo** | 29,4 % | llega a otro pero el cruce no es entero (ángulo < 38°, cabo enterrado) |
+| **roce** | 18,9 % | se acerca por debajo de `SOLAPE_MIN` y tiene que apartarse |
+| **se corta** | 16,6 % | el trazo se echa encima de sí mismo |
+
+Las dos del solape suman **48 %**, más que el marco. Y el marco no se recupera
+desviando —las dos hipótesis de arriba lo demuestran—, así que el techo del largo está en
+la regla de cruce, no en el tamaño del papel. Ahí es donde sigue el trabajo, y ahora con
+una cifra al lado en vez de una intuición.
+
+### La cuña, cerrada: el corte es el OFFSET de la tinta, no la misma banda más gorda
+
+El largo se compró con esquinas, y cada esquina era una cuña: `pelo` pasó de **3 obras
+por debajo de g a 8**. Esta vez, en vez de suponer, se miró — se pintó la obra peor con
+cada trazo de su color y se recortó el píxel exacto donde dos tintas se tocan.
+
+Dos hipótesis mías cayeron ahí mismo, y las dos en un minuto porque había número:
+
+- **Que fuera un pincho de inglete pasándose de media anchura.** Medido en el punto del
+  conflicto: la tinta está a **0,353 W** de un eje y a **0,424 W** del otro. Las dos
+  dentro de su media anchura. No hay pincho.
+- **Que la gubia pudiera ensanchar por encima del nominal.** `anchoEn` devuelve
+  `W · (1 − …)` con los dos términos no negativos: **sólo estrecha**. Tampoco.
+
+Lo que había era esto, y es de definición, no de ajuste. **Lo que hay que quitar no es
+«la misma banda un canal más gorda»**: es el conjunto de puntos a menos de un canal de la
+banda, o sea su **suma de Minkowski con un disco**. Y en una esquina convexa eso es un
+**arco** de radio `h+g` alrededor del vértice. El bisel lo sustituía por su cuerda, y
+entre la cuerda y el arco quedaba sin cortar una cuña por donde se colaba la tinta del
+vecino. Cuarta puerta por la que entra el inglete en esta casa.
+
+Primer intento: meter el arco a mano en `banda()`. Bajó de 9 a 7 obras y el mínimo subió
+de 0,243 a 0,567 — mejor, pero no exacto, **y con un fallo mío dentro**: empujaba los
+puntos del arco *antes* que la punta del inglete, así que el contorno se cruzaba consigo
+mismo y dejaba una astilla. Los puntos de una esquina van en orden angular o no son un
+contorno.
+
+Y con eso a la vista salió la construcción que no necesita aritmética ninguna:
+
+```js
+ctx.beginPath(); banda(ctx, pts, W, gub, relleno, anchos); ctx.fill();
+ctx.lineWidth = 2 * mas; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+```
+
+Rellenar la banda **y además trazarla** con `lineWidth = 2·mas` y uniones redondas da
+exactamente `{p : dist(p, banda) ≤ mas}`. Es la definición, dibujada. El cabo entra solo
+por el remate redondo —ya no hace falta alargar el eje— y la punta del inglete deja de ser
+un punto que haya que desplazar a mano: es parte del contorno que se traza.
+
+**Resultado: 0 obras por debajo de g de 126, mínimo 1,063.** Sin un solo umbral nuevo.
+
+Y una consecuencia en la batería que hay que decir: **`corta` dejó de disparar aquí**.
+Antes cazaba 25 de 42; con el corte exacto, un trazo que se cruza consigo mismo ya no
+deja ningún par por debajo de g —`pelo` mide entre etiquetas distintas y un trazo es una
+etiqueta—. O sea que había dejado de ejercitar nada. Se retira del bloque y en su sitio
+va **`cuna`**, que es la construcción de antes —la banda más gorda, con su bisel— y que
+es justo lo que este detector existe para cazar: dispara 10 de 42, mínimo 0,365. El
+control de un arreglo es el estado anterior al arreglo.
+
 ### Tres controles rotos y una rama muerta: la batería llevaba tiempo mintiendo
 
 Al pasar la batería salió lo que el propio `mil.sh` está escrito para que salga —*«un
@@ -2274,18 +2386,15 @@ código 2 si *ninguna* obra tiene halo — el caso en que un cero no significar�
 
 | bloque | sano | controles |
 |---|---|---|
-| canal | 0 rendijas sin halo (**min 1,0016**), 0 holguras de 165 | duro 74/120 · corta 96/120 · rendija 23/120 · holgura 120/120 |
-| pelo | **3 de 42** por debajo de g (min 0,804) | duro 31/42 · corta 25/42 |
-| toque | limpio | miter 53/60 · cabo 60/60 |
-| obra | 0/165 escapado, garabato, pizcas, muestrario | margen 95/120 · garabato 120/120 · pizca 92/120 |
+| canal | 0 rendijas sin halo (**min 1,0016**), 0 holguras de 165 | duro 84/120 · corta · rendija · holgura 120/120 |
+| pelo | **0 de 126** por debajo de g (**min 1,063**) | duro 32/42 · cuña 10/42 |
+| toque | 0 de 45 tinta fuera de la geometría | miter 57/60 · cabo 60/60 |
+| obra | 0/165 escapado, garabato, pizcas, muestrario | margen 102/120 · garabato 120/120 · pizca 92/120 |
 | det | 60/60 determinismo · 60/60 misma huella a 760/2400/4200 | *(no puede tenerlo, y está dicho)* |
 
-Lo único que queda rojo es `pelo`, y es un defecto de verdad con sus semillas: `apaisado`
-y `apais-haz` seed 1013885301 a 0,804 con g = 5,0 px, y `disperso` seed 2654413734 a
-0,890 con g = 4,1 px. No es la rejilla —0,804 de 5 px es un píxel entero de menos—. Es
-que **el halo garantiza el canal en el costado y no en el pico**: la incisión corre limpia
-y de pronto la cruza una cuña, una punta de esquina. La trampa del inglete, por cuarta
-puerta distinta.
+**Verde entero, y `pelo` en cero por primera vez.** El rojo que había —el halo garantiza
+el canal en el costado y no en el pico— está cerrado, y por construcción: ver la sección
+de la cuña.
 
 ### Lo que queda mal, y ya con nombre
 

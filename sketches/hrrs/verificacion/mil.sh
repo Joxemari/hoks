@@ -77,7 +77,11 @@ if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = pelo ]; then
   # comprobaba la vigente.
   linea "pelo · el canal VISIBLE, sobre el pixel · $((N / 4)) obras"
   corre pelo.js hrrs_test.js "$((N / 4))" 760 ""
-  for r in duro corta; do
+  # `corta` estaba aqui y se ha quitado: desde que el corte es el offset exacto de la
+  # tinta ya no produce ni un par por debajo de g, o sea que no ejercita nada. En su
+  # sitio va `cuna`, que es la construccion de antes -la banda mas gorda, con su bisel-
+  # y que es justo lo que este detector existe para cazar.
+  for r in duro cuna; do
     build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
     node pelo.js "t_$r.js" 60 760 "" 2>/dev/null | grep -E "^  pelo|por debajo"

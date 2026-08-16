@@ -136,8 +136,10 @@ function medir({ seed, fmt, params, base }) {
       }
       lx.clip();
       lx.globalCompositeOperation = 'destination-out';
-      lx.beginPath(); HOKS.HRRS.banda(lx, pts, geo.W, geo.gubia[k], rel, null, halo);
-      lx.fill();
+      // `corte()` PUBLICADO, no una copia: el corte ya no es «la banda mas gorda» sino
+      // el offset de la tinta -relleno mas trazo de 2·halo con union redonda-, y un
+      // detector que reimplementa el dibujo mide su copia, no el dibujo.
+      HOKS.HRRS.corte(lx, pts, geo.W, geo.gubia[k], rel, null, halo);
       lx.restore();
     }
     lx.globalCompositeOperation = 'source-over';
