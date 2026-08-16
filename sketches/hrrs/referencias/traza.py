@@ -389,10 +389,42 @@ def bandas(esq, dt, anchoPx, tinta=None):
 # 60 grados dejaba sin pareja al que gira en escuadra sobre otro que muere ahi, y
 # salian tres piezas donde hay dos. Ver el barrido en la cabecera.
 GIRO_NUDO = 100
-# Y la segunda pasada, la que junta dos cabos que se miran sin nudo de por medio:
-# cuanto se pueden separar (en anchuras) y cuanto se pueden desalinear (en grados).
-JUNTA_D = 2.2
-JUNTA_A = 45
+# Y la segunda pasada, la que junta dos cabos que se miran sin nudo de por medio.
+#
+# LA DISTANCIA NO PINTA NADA, Y ESO NO ES UN AJUSTE FLOJO: ES EL RESULTADO. Barriendo
+# contra los trazos que cuenta el autor (8/10/7/5/6/14), el limite de separacion da
+# EXACTAMENTE lo mismo a 20 anchuras que a infinito. Quien decide es la prueba de
+# tinta: dos cabos solo se juntan si la recta entre ellos es toda tinta, y eso ya
+# acota la distancia sola —lo que hay entre dos cabos del mismo trazo es la masa por
+# debajo de la cual pasa—. Un umbral que no corta nada es peor que no tenerlo, porque
+# aparenta gobernar; se deja apagado y dicho.
+#
+# Y el angulo no es un mando aparte: ES EL MISMO GIRO_NUDO. La pregunta es la misma
+# —cuanto puede girar un trazo y seguir siendo el mismo trazo— hecha una vez en un
+# nudo y otra a media distancia, y dos umbrales distintos para una sola pregunta dan
+# dos respuestas. Ademas cae donde tiene que caer: 100 grados es la escuadra de la
+# casa mas holgura, asi que una banda que dobla en angulo recto sigue siendo una.
+# Barrido de 45 a 150: la cuenta no se mueve de 90 en adelante y el acierto tampoco
+# (91,8-91,9 %); con 45 salian 13/11/8/8/7/18.
+#
+# Con esto la cuenta sale 8/11/7/5/7/14 contra los 8/10/7/5/6/14 que cuenta el autor.
+# Las dos que sobran estan explicadas y ninguna es del instrumento:
+#
+#   r2  el propio autor lo dice: «uno de ellos solapado, que parecen 11». 11 es lo que
+#       se ve y 10 lo que hay, y el trazador ve.
+#   r5  un muñon de 1,7 anchuras arriba a la izquierda. Mirado en el pixel, lo que lo
+#       separa de la banda de abajo es una INCISION de verdad —la fila y=114 esta
+#       blanca de lado a lado—, asi que el trazador lee bien: es el trozo visible de
+#       un trazo que sigue por debajo. Subir el minimo de longitud lo quitaria, y no
+#       se hace: a 2,5 anchuras r5 sale 6 pero r6 baja de 14 a 11 y pierde 4,5 puntos.
+#       Eso no es un umbral mal puesto, es el punto 6 del encargo medido — los trazos
+#       de r6 son cortos de verdad.
+#
+# O sea que donde el trazador y el autor no coinciden es justo donde uno lee el pixel
+# y el otro lee la intencion, y el desacuerdo cae siempre en un trazo que pasa por
+# debajo y solo asoma. El instrumento no tiene que resolver eso: tiene que decirlo.
+JUNTA_D = float('inf')
+JUNTA_A = GIRO_NUDO
 CLAMP = True
 SOLO_CABOS = False
 # Cuanto se tira de los vertices que caen dentro de un cruce. CERO, y es una

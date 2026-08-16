@@ -2077,6 +2077,59 @@ salido en toda la comparación, va en la dirección contraria a la que yo buscab
 justo el rasgo que este README lleva desde el principio anotado como *medido pero sin
 control que dispare*. Ahora tiene contra qué compararse.
 
+### El circuito son ocho trazos, no dieciséis: contar como cuenta el autor
+
+El autor lo dijo dos veces y a la segunda puso los números: *«te digo los trazos que veo
+yo. r1‑8, r2‑10 (uno de ellos solapado, que parecen 11), r3‑7, r4‑5, r5‑6, r6‑14»*. Son
+**50**. El trazador iba por **65**, así que la columna del circuito —lo único que el
+algoritmo tiene que inventar— se leía un 30 % más complicada de lo que es. Eso no es un
+detalle de instrumento: si el circuito se lee partido, el motor aprende a partir.
+
+Calibrando contra esos números salen dos cosas, y ninguna es un ajuste fino:
+
+- **La distancia entre cabos no gobierna nada.** Limitar la unión a 20 anchuras da
+  exactamente el mismo resultado que no limitarla. Quien decide es la prueba de tinta:
+  dos cabos solo se juntan si la recta entre ellos es toda tinta, y eso ya acota la
+  separación sola —lo que hay entre dos cabos del mismo trazo es la masa por debajo de
+  la cual pasa—. Un umbral que no corta nada es peor que no tenerlo, porque aparenta
+  gobernar; queda apagado y dicho.
+- **El ángulo no es un mando aparte: es `GIRO_NUDO`.** La pregunta —cuánto puede girar
+  un trazo y seguir siendo el mismo— es la misma en un nudo y a media distancia, y dos
+  umbrales para una pregunta dan dos respuestas. Además cae donde tiene que caer: 100°
+  es la escuadra de la casa más holgura, así que una banda que dobla en ángulo recto
+  sigue siendo una.
+
+Resultado: **8 / 11 / 7 / 5 / 7 / 14** contra los 8 / 10 / 7 / 5 / 6 / 14 del autor
+—error 2, desde 15— y el acierto de píxel ni se entera (91,9 % contra 92,0 % de mediana).
+
+Las dos que sobran están explicadas y ninguna es del instrumento:
+
+- **r2** lo canta el propio autor: *«uno de ellos solapado, que parecen 11»*. 11 es lo
+  que se ve y 10 lo que hay. El trazador ve.
+- **r5** es un muñón de 1,7 anchuras arriba a la izquierda. Mirado en el píxel, lo que
+  lo separa de la banda de abajo es una **incisión de verdad** —la fila y=114 está
+  blanca de lado a lado—, así que el trazador lee bien: es el trozo visible de un trazo
+  que sigue por debajo.
+
+Y la tentación evidente —subir el mínimo de longitud hasta que el muñón caiga— **está
+medida y no se hace**: a 2,5 anchuras r5 sale 6, pero r6 baja de 14 a 11 y pierde 4,5
+puntos. Eso no es un umbral mal puesto; es el **punto 6 del encargo** con un número al
+lado: *los trazos de r6 son mucho más cortos*, y lo son de verdad. Donde el trazador y
+el autor no coinciden es justo donde uno lee el píxel y el otro lee la intención, y el
+desacuerdo cae siempre en un trazo que pasa por debajo y solo asoma. El instrumento no
+tiene que resolver eso: tiene que decirlo.
+
+**Y un subproducto que vale más que la cuenta: piezas = trazos.** Con los trazos
+enteros, el número de componentes de tinta y el número de trazos coinciden **exactamente
+en cinco de las seis** (8‑8, 11‑11, 7‑7, 7‑7, 14‑14). No es circular —un trazo no puede
+saltar de una componente a otra, porque la unión exige tinta, y una componente sí puede
+contener dos trazos—: lo que dice es que **en estas obras ningún trazo comparte tinta con
+otro**. La incisión corta *todos* los cruces. La excepción es **r4**, 5 trazos en 2
+componentes, que es justo la de las bandas que convergen y se funden a la derecha.
+
+Es la formulación más limpia que ha salido del halo, y es comprobable en la familia sin
+elegir umbral: si la incisión hace su trabajo, contar manchas es contar trazos.
+
 ### Lo que queda mal, y ya con nombre
 
 - **ref05, el cartel: 32 %, con 110 % de tinta de sobra.** Es la única de bandas anchas
