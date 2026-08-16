@@ -2104,6 +2104,10 @@
              geo: { cintas: cx2.trazos.map(x => x.pts), sangra: cx2.trazos.map(() => true),
                     relleno: cx2.trazos.map(x => x.relleno || null),
                     cruza: cx2.trazos.map(() => true), CRUCE_MIN,
+                    // igual que en `render`: el halo se publica para que un detector
+                    // sepa cual de las dos reglas le toca en vez de suponerla
+                    halo: receta.halo != null ? receta.halo * Wb : g,
+                    gubia: cx2.trazos.map(x => x.gubia || 0),
                     SANGRE, MARGEN, W: Wb, g, D, S, ox, fw, fh, veto: null } };
   }
 

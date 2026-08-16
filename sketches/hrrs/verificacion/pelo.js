@@ -23,6 +23,17 @@
  *   · si dos trazos se solapan, el corte del de encima deja exactamente g;
  *   · si no llegan a tocarse, deja su hueco MAS g.
  *
+ * ── Y SOLO DONDE HAY HALO. La afirmacion es del halo, no del dibujo ────────────
+ *
+ * Sin halo el canal no se fabrica: se prohibe sobre los ejes, y un cruce LEGAL —dos
+ * trazos que se funden— no deja blanco ninguno entre las dos tintas. Medido sobre el
+ * pixel eso da 0,20 g y parece el peor defecto de la bateria; es el cruce, que es la
+ * figura que la obra existe para producir.
+ *
+ * O sea el mismo error que `canal.js` acaba de dejar de cometer, en el otro sentido:
+ * alli una regla de geometria aplicada a obra con halo, aqui una regla de pixel
+ * aplicada a obra sin el. Cada detector afirma en su mitad y describe en la otra.
+ *
  * Se mide sobre la mascara entintada: el esqueleto del fondo, y en cada punto suyo
  * el doble de su distancia a la tinta. Los puntos con anchura ≥ W no son canal
  * —son el suelo de alrededor— y no cuentan. El minimo de los que quedan, en
@@ -60,15 +71,19 @@
  *
  * ── LO QUE ENCUENTRA HOY, y es un defecto de verdad ────────────────────────────
  *
- * 14 obras de 42 por debajo de g. Las que rondan 0,96-1,00 son la rejilla —medio
- * pixel— y las de g < 3,5 px tambien. Pero el peor caso es real y esta localizado:
- * `vibrada` seed 2415074606, los trazos 3 y 1 a 2,2 px con g = 7. Mirado a tamaño,
- * la incision corre limpia y constante y de pronto la cruza una CUÑA: una punta de
- * esquina que se salta el canal.
+ * 3 obras de 42 por debajo de g, y las tres son la misma averia: `apaisado` y
+ * `apais-haz` seed 1013885301 a 0,804 con g = 5,0 px, y `disperso` seed 2654413734 a
+ * 0,890 con g = 4,1 px. No es la rejilla: 0,804 de 5 px es un pixel entero de menos.
  *
- * O sea que el halo garantiza el canal en el costado y no en el pico. Es la trampa
- * del inglete otra vez, que en esta casa ya ha entrado tres veces por tres puertas
- * distintas. Queda ahi, con su seed, para arreglarlo con la punta a la vista.
+ * Mirado a tamaño, la incision corre limpia y constante y de pronto la cruza una CUÑA:
+ * una punta de esquina que se salta el canal. O sea que el halo garantiza el canal en
+ * el COSTADO y no en el PICO. Es la trampa del inglete otra vez, que en esta casa ya ha
+ * entrado tres veces por tres puertas distintas. Queda ahi, con sus seeds, para
+ * arreglarlo con la punta a la vista.
+ *
+ * (Antes decia 14 de 42 y señalaba `vibrada` seed 2415074606. Aquello se midio sin
+ * acotar la afirmacion al halo y con la etiqueta sin separar; las dos cosas estan
+ * arregladas y el recuento es este. La averia es la misma, y sigue sin arreglar.)
  *
  * El grano va a cero, como en toda la bateria: usa Math.random().
  */
@@ -91,7 +106,8 @@ function medir({ seed, fmt, params, base }) {
   });
   const geo = res.geo, S = geo.S, g = geo.g * S;
   const n = geo.cintas.length;
-  if (n < 2) return { seed, pelo: null, gpx: g, n };
+  const conHalo = geo.halo > 0;
+  if (n < 2) return { seed, pelo: null, gpx: g, n, conHalo };
 
   // La obra otra vez, pero con CADA TRAZO DE SU COLOR y con los mismos cortes. Se
   // usa la `banda()` publicada: un detector que reimplementa el dibujo mide su copia.
@@ -99,7 +115,9 @@ function medir({ seed, fmt, params, base }) {
   lb.width = d.W; lb.height = d.H;
   const lx = lb.getContext('2d');
   lx.translate(geo.ox, 0); lx.scale(S, S);
-  const halo = params.halo != null ? params.halo * geo.W : geo.g;
+  // EL HALO PUBLICADO, no reconstruido de los params: `geo.halo` lo dice el propio
+  // algoritmo, y un detector que recalcula lo que el artefacto ya declara mide su copia.
+  const halo = geo.halo;
   // LAS ETIQUETAS, BIEN SEPARADAS. Con la etiqueta en 1,2,3… el antialias entre dos
   // tintas da valores intermedios —el filo de la 3 sobre la 5 pinta un 4— y esos
   // cuentan como una etiqueta nueva pegada a las dos. Medido: daba 0,125 g de minimo,
@@ -171,7 +189,7 @@ function medir({ seed, fmt, params, base }) {
     }
   }
   return { seed, pelo: min === Infinity ? null : (min / 3) / Math.max(1e-9, g),
-           gpx: g, n, quien };
+           gpx: g, n, quien, conHalo };
 }
 
 (async () => {
@@ -179,14 +197,26 @@ function medir({ seed, fmt, params, base }) {
   const err = rs.filter(r => r.err);
   if (err.length) console.error(`  ${err.length} obras con error: ${err[0].err}`);
   const finos = rs.filter(r => r.gpx != null && r.gpx < 3);
-  const v = rs.filter(r => r.pelo != null).map(r => r.pelo);
-  const s = stats(v);
-  const malas = rs.filter(r => r.pelo != null && r.pelo < 1 - 1e-9);
-  console.log(`obras ${rs.length}   con dos trazos o mas ${v.length}`);
+  // LA AFIRMACION ES DEL HALO. Sin el, un cruce legal no deja blanco y la cifra sale
+  // ~0,2 sin que haya defecto: se informa aparte y no cuenta para el veredicto.
+  const con = rs.filter(r => r.pelo != null && r.conHalo);
+  const sin = rs.filter(r => r.pelo != null && !r.conHalo);
+  const s = stats(con.map(r => r.pelo));
+  const malas = con.filter(r => r.pelo < 1 - 1e-9);
+  console.log(`obras ${rs.length}   con halo y dos trazos o mas ${con.length}`);
+  if (!con.length) {
+    console.log(`  AVISO: ninguna obra CON halo — no se ha comprobado nada.`);
+    process.exit(2);
+  }
   if (finos.length) console.log(`  AVISO: ${finos.length} con g < 3 px — ahi manda la rejilla, no el dibujo`);
   if (s) console.log(`  pelo (canal visible / g)   min ${s.min.toFixed(3)}   p50 ${s.p50.toFixed(3)}   max ${s.max.toFixed(3)}`);
   console.log(`  por debajo de g: ${malas.length}`);
   malas.sort((a, b) => a.pelo - b.pelo).slice(0, 6).forEach(r =>
     console.log(`    ${r.cfg} seed ${r.seed}  pelo ${r.pelo.toFixed(3)}  trazos ${r.quien}  g ${r.gpx.toFixed(1)} px`));
+  if (sin.length) {
+    const ss = stats(sin.map(r => r.pelo));
+    console.log(`  sin halo (${sin.length} obras, descriptivo: ahi el cruce SE FUNDE y no deja blanco):`);
+    console.log(`    min ${ss.min.toFixed(3)}  p50 ${ss.p50.toFixed(3)}   (la regla ahi la mide canal.js)`);
+  }
   process.exit(malas.length ? 1 : 0);
 })();
