@@ -1825,9 +1825,52 @@
 
     ctx.fillStyle = rol.suelo; ctx.fillRect(0, 0, W, H);
     ctx.save(); ctx.translate(ox, 0); ctx.scale(S, S);
-    ctx.beginPath();
-    for (const tr of cx2.trazos) banda(ctx, tr.pts, Wb, tr.gubia, tr.relleno, tr.anchos);
-    ctx.fillStyle = rol.tinta; ctx.fill();
+    // EL HALO TAMBIEN AQUI. Lo pide el laboratorio: poder ver una composicion dada
+    // —la de una referencia, por ejemplo— dibujada con la mano entera de la casa y no
+    // solo con su banda. Es el mismo corte que `render`, con los mismos discos en los
+    // cruces, asi que no hay dos incisiones distintas segun por donde se entre.
+    // Aqui va APAGADO por defecto, al reves que en `render`: una receta es una
+    // transcripcion y no debe cambiar sola. Se pide con `halo: <fraccion de W>`.
+    const halo2 = receta.halo ? receta.halo * Wb : 0;
+    if (halo2 > 0) {
+      const cru2 = cx2.trazos.map(() => []);
+      for (let k = 0; k < cx2.trazos.length; k++)
+        for (let j = 0; j < k; j++)
+          for (const a of cx2.trazos[k].segs)
+            for (const b2 of cx2.trazos[j].segs) {
+              const P = corteDe(a, b2);
+              if (P) cru2[k].push(P);
+            }
+      const R2 = Wb * RCRUCE_G;
+      const capa2 = ctx.canvas.ownerDocument.createElement('canvas');
+      capa2.width = W; capa2.height = H;
+      const c2 = capa2.getContext('2d');
+      c2.translate(ox, 0); c2.scale(S, S);
+      c2.fillStyle = rol.tinta;
+      for (let k = 0; k < cx2.trazos.length; k++) {
+        const tr = cx2.trazos[k];
+        if (cru2[k].length) {
+          c2.save();
+          c2.beginPath();
+          for (const P of cru2[k]) { c2.moveTo(P.x + R2, P.y); c2.arc(P.x, P.y, R2, 0, 2 * Math.PI); }
+          c2.clip();
+          c2.globalCompositeOperation = 'destination-out';
+          c2.beginPath(); banda(c2, tr.pts, Wb, tr.gubia, tr.relleno, tr.anchos, halo2);
+          c2.fill();
+          c2.restore();
+        }
+        c2.globalCompositeOperation = 'source-over';
+        c2.beginPath(); banda(c2, tr.pts, Wb, tr.gubia, tr.relleno, tr.anchos);
+        c2.fill();
+      }
+      ctx.restore();
+      ctx.drawImage(capa2, 0, 0);
+      ctx.save(); ctx.translate(ox, 0); ctx.scale(S, S);
+    } else {
+      ctx.beginPath();
+      for (const tr of cx2.trazos) banda(ctx, tr.pts, Wb, tr.gubia, tr.relleno, tr.anchos);
+      ctx.fillStyle = rol.tinta; ctx.fill();
+    }
     // LAS INCISIONES. El pelo blanco de un original NO es un hueco entre dos bandas:
     // es un CORTE hecho encima. Se vio midiendo: el 100 % de la tinta que le sobra a
     // la replica, en las seis referencias, es canal del original que la replica tapa —
