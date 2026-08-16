@@ -208,7 +208,7 @@ def ejesDe(mask, W, minLargo=1.2, dpTol=0.05, perfil=True):
     if not esq.any():
         return []
     out = []
-    for cam, c0, c1 in G['bandas'](esq, dt, W):
+    for cam, c0, c1 in G['bandas'](esq, dt, W, mask):
         sp = G['simplificar'](cam, max(1.0, W * dpTol))
         if len(sp) < 2:
             continue

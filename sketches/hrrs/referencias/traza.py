@@ -167,7 +167,7 @@ def simplificar(cam, tol):
     return [pts[i] for i in idx]
 
 
-def bandas(esq, dt, anchoPx):
+def bandas(esq, dt, anchoPx, tinta=None):
     """El esqueleto partido en BANDAS, no en ramas.
 
     Una rama del esqueleto va de suceso a suceso (cabo o nudo), asi que una banda que
@@ -257,7 +257,7 @@ def bandas(esq, dt, anchoPx):
         pares.sort()
         libre = [True] * len(cand)
         for giro, a, b in pares:
-            if giro > math.pi / 3:            # mas de 60 grados no es seguir
+            if giro > GIRO_NUDO * math.pi / 180:
                 break
             if libre[a] and libre[b]:
                 libre[a] = libre[b] = False
@@ -296,6 +296,65 @@ def bandas(esq, dt, anchoPx):
             if sentido == 1:
                 cam.reverse()
         out.append((cam, cam[0] in setC, cam[-1] in setC))
+
+    # Y UNA SEGUNDA PASADA: dos cabos que se miran son el mismo trazo.
+    #
+    # El emparejado del nudo sólo casa ramas que llegan al MISMO nudo. Pero el esqueleto
+    # se rompe también donde no hay nudo — una mella del escaneo, un estrechamiento— y
+    # ahí quedan dos cabos a un pelo uno de otro, alineados, que en el dibujo son un
+    # trazo. Se juntan si se tocan casi (menos de una anchura y media) y si el segundo
+    # sigue por donde iba el primero.
+    def dirCabo(cam, alFinal, n=6):
+        c = cam if alFinal else cam[::-1]
+        k = min(n, len(c) - 1)
+        return math.atan2(c[-1][0] - c[-1-k][0], c[-1][1] - c[-1-k][1])
+    cerca = anchoPx * JUNTA_D
+    cambio = True
+    while cambio:
+        cambio = False
+        for a in range(len(out)):
+            if out[a] is None: continue
+            for b2 in range(len(out)):
+                if b2 == a or out[b2] is None: continue
+                for fa in (True, False):
+                    for fb in (True, False):
+                        ca, cb = out[a][0], out[b2][0]
+                        pa = ca[-1] if fa else ca[0]
+                        pb = cb[0] if fb else cb[-1]
+                        if math.hypot(pa[0]-pb[0], pa[1]-pb[1]) > cerca: continue
+                        da = dirCabo(ca, fa)
+                        db = dirCabo(cb[::-1] if not fb else cb, True) if fb else dirCabo(cb, True)
+                        db = math.atan2(*( (cb[1][0]-cb[0][0], cb[1][1]-cb[0][1]) if fb
+                                           else (cb[-2][0]-cb[-1][0], cb[-2][1]-cb[-1][1]) ))
+                        d = abs((da - db + math.pi) % (2*math.pi) - math.pi)
+                        if d > JUNTA_A * math.pi / 180: continue
+                        # Y EL HUECO TIENE QUE SER TINTA. Sin esto la union se decide
+                        # por parecido —cerca y alineados— y en una reticula densa hay
+                        # cabos que se miran sin ser el mismo trazo: la del laberinto
+                        # perdia 1,7 puntos de acierto, que es exactamente la tinta que
+                        # se inventaba al empalmarlos. Comprobarlo quita la eleccion de
+                        # umbral: si entre los dos cabos hay suelo, no son el mismo.
+                        if tinta is not None:
+                            paso, malo = 0.5, False
+                            L2 = math.hypot(pa[0]-pb[0], pa[1]-pb[1])
+                            k2 = max(2, int(L2/paso))
+                            for t2 in range(k2 + 1):
+                                yy = int(round(pa[0] + (pb[0]-pa[0]) * t2 / k2))
+                                xx = int(round(pa[1] + (pb[1]-pa[1]) * t2 / k2))
+                                if not (0 <= yy < tinta.shape[0] and 0 <= xx < tinta.shape[1]
+                                        and tinta[yy, xx]): malo = True; break
+                            if malo: continue
+                        A2 = ca if fa else ca[::-1]
+                        B2 = cb if fb else cb[::-1]
+                        out[a] = (A2 + B2, out[a][1] if fa else out[a][2],
+                                  out[b2][2] if fb else out[b2][1])
+                        out[b2] = None
+                        cambio = True
+                        break
+                    if cambio: break
+                if cambio: break
+            if cambio: break
+    out = [o for o in out if o is not None]
     return out
 
 
@@ -326,6 +385,14 @@ def bandas(esq, dt, anchoPx):
 #
 # Antes de barrer, la mediana de diferencia era 23 %; ahora 15,6 %. Y el cartel de
 # Munich, que era la aberracion, pasa de 68 % a 12,5 %.
+# Cuanto puede girar un trazo EN UN NUDO y seguir siendo el mismo trazo.
+# 60 grados dejaba sin pareja al que gira en escuadra sobre otro que muere ahi, y
+# salian tres piezas donde hay dos. Ver el barrido en la cabecera.
+GIRO_NUDO = 100
+# Y la segunda pasada, la que junta dos cabos que se miran sin nudo de por medio:
+# cuanto se pueden separar (en anchuras) y cuanto se pueden desalinear (en grados).
+JUNTA_D = 2.2
+JUNTA_A = 45
 CLAMP = True
 SOLO_CABOS = False
 # Cuanto se tira de los vertices que caen dentro de un cruce. CERO, y es una
