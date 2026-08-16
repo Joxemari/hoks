@@ -188,20 +188,84 @@ def bandas(esq, dt, anchoPx):
     ramas = [r for r in ramas
              if not ((r[0] in setC or r[-1] in setC) and (r[0] in setN or r[-1] in setN)
                      and largo(r) < espuela)]
+    # UN NUDO ES UN BORRON, NO UN PUNTO. El esqueleto de un cruce da varios pixeles con
+    # tres o mas vecinos, y entre ellos quedan ramitas de dos pixeles que `poligonales`
+    # descarta por cortas. Sin agrupar, dos ramas que se encuentran en el mismo cruce
+    # aparecen llegando a nudos DISTINTOS y no se pueden casar: por eso el emparejado
+    # no servia de nada -38 ramas seguian saliendo 26 bandas-. Cada borron de nudo se
+    # colapsa en uno solo.
+    grp = {}
+    vistosN = set()
+    for p0 in setN:
+        if p0 in vistosN:
+            continue
+        pila, cl = [p0], []
+        vistosN.add(p0)
+        while pila:
+            q = pila.pop(); cl.append(q)
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    r2 = (q[0] + dy, q[1] + dx)
+                    if r2 in setN and r2 not in vistosN:
+                        vistosN.add(r2); pila.append(r2)
+        for q in cl:
+            grp[q] = cl[0]
+    clave = lambda p: grp.get(p, p)
+
     # indice: de cada extremo, las ramas que salen de ahi
     porExtremo = {}
     for i, r in enumerate(ramas):
-        porExtremo.setdefault(r[0], []).append((i, 0))
-        porExtremo.setdefault(r[-1], []).append((i, 1))
+        porExtremo.setdefault(clave(r[0]), []).append((i, 0))
+        porExtremo.setdefault(clave(r[-1]), []).append((i, 1))
 
     def dirDe(r, extremo, n=6):
         c = r if extremo == 0 else r[::-1]
         k = min(n, len(c) - 1)
         return math.atan2(c[k][0] - c[0][0], c[k][1] - c[0][1])
 
+    # EN EL NUDO SE EMPAREJA, NO SE REPARTE POR ORDEN.
+    #
+    # La version anterior empezaba por la rama mas larga y en cada nudo se llevaba la
+    # continuacion mas recta; la que llegaba despues se quedaba sin salida y el trazo se
+    # cortaba ahi. Resultado: lo que el artista dibujo de un tiron salia partido en
+    # varios, y el circuito -que es lo unico que el algoritmo tiene que inventar- se
+    # leia mucho mas complicado de lo que es. Se vio dibujando el eje a un pixel: la del
+    # haz salia con 24 trazos y sus cabos enterrados dentro de la masa, cuando los cabos
+    # del artista estan en el aire o en el borde.
+    #
+    # Ahora cada nudo se resuelve ENTERO antes de recorrer nada: se miran todos los
+    # pares de ramas que llegan y se casan las que menos giran, como un diagrama de
+    # nudo. Un cruce de cuatro ramas empareja las dos opuestas con las dos opuestas y
+    # las dos cintas salen enteras. Las que se quedan sin pareja -valencia impar, o giro
+    # demasiado brusco- acaban ahi, y eso si es un cabo.
+    casada = {}
+    for nudo in set(grp.values()) | (setN - set(grp)):
+        cand = porExtremo.get(nudo, [])
+        if len(cand) < 2:
+            continue
+        pares = []
+        for a in range(len(cand)):
+            for b in range(a + 1, len(cand)):
+                ia, ea = cand[a]
+                ib, eb = cand[b]
+                if ia == ib:
+                    continue
+                # la de entrada llega con la contraria de su direccion de salida
+                d = abs(((dirDe(ramas[ia], ea) - dirDe(ramas[ib], eb) + math.pi)
+                         % (2 * math.pi)) - math.pi)
+                pares.append((abs(d - math.pi), a, b))
+        pares.sort()
+        libre = [True] * len(cand)
+        for giro, a, b in pares:
+            if giro > math.pi / 3:            # mas de 60 grados no es seguir
+                break
+            if libre[a] and libre[b]:
+                libre[a] = libre[b] = False
+                casada[(nudo, cand[a])] = cand[b]
+                casada[(nudo, cand[b])] = cand[a]
+
     usadas = set()
     out = []
-    # se empieza por las ramas mas largas: la banda principal manda en cada nudo
     for i0 in sorted(range(len(ramas)), key=lambda i: -largo(ramas[i])):
         if i0 in usadas:
             continue
@@ -210,22 +274,23 @@ def bandas(esq, dt, anchoPx):
             if sentido == 0:
                 cam.reverse()
             while True:
-                fin = cam[-1]
-                if fin not in setN:
+                fin = clave(cam[-1])
+                if cam[-1] not in setN:
                     break
-                # direccion de LLEGADA
-                k = min(6, len(cam) - 1)
-                da = math.atan2(cam[-1][0] - cam[-1-k][0], cam[-1][1] - cam[-1-k][1])
-                mejor, mejorD = None, math.pi / 3     # 60 grados: mas que eso no es seguir recto
+                # por que rama entre en este nudo
+                cual = None
                 for (j, ex) in porExtremo.get(fin, []):
-                    if j in usadas:
-                        continue
-                    d = abs((dirDe(ramas[j], ex) - da + math.pi) % (2 * math.pi) - math.pi)
-                    if d < mejorD:
-                        mejorD, mejor = d, (j, ex)
-                if mejor is None:
+                    r = ramas[j] if ex == 1 else ramas[j][::-1]
+                    if r[-1] == cam[-1] and len(cam) >= 2 and r[-2] == cam[-2]:
+                        cual = (j, ex); break
+                if cual is None:
+                    for (j, ex) in porExtremo.get(fin, []):
+                        if j in usadas and clave(ramas[j][0 if ex == 0 else -1]) == fin:
+                            cual = (j, ex); break
+                sig = casada.get((fin, cual)) if cual is not None else None
+                if sig is None or sig[0] in usadas:
                     break
-                j, ex = mejor; usadas.add(j)
+                j, ex = sig; usadas.add(j)
                 r = ramas[j] if ex == 0 else ramas[j][::-1]
                 cam.extend(r[1:])
             if sentido == 1:
