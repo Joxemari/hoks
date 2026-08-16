@@ -3,7 +3,27 @@
  *   node canal.js <algo.js> [n] [base] [configs]
  *
  * Distancia minima entre TODOS los pares de tramos no contiguos, en unidades de
- * D = W + g. Sano es ≥ 1,000. No hay umbral: 1,0 es la regla.
+ * D = W + g. No hay umbral: 1,0 es la regla.
+ *
+ * ── PERO LA REGLA ES CONDICIONAL, y llevaba tiempo sin serlo ──────────────────
+ *
+ * «Ningun par por debajo de D» vale donde NO hay halo. Donde lo hay, el canal no se
+ * prohibe: se FABRICA al pintar, cada trazo corta una franja de un canal a su
+ * alrededor antes de pintarse, y entonces dos ejes a 0,55 W son composicion y no
+ * defecto. Este detector seguia aplicando la regla vieja a las catorce
+ * configuraciones, TODAS con halo, y cantaba 102 obras sanas de 238 — mas del 40 %.
+ *
+ * Un detector que dispara sobre obra sana es peor que no tener detector: convence en
+ * la direccion contraria, y ademas se acaba ignorando, que es como se pierde el unico
+ * que si sabria avisar. Asi que la regla se ACOTA a donde es cierta -`geo.halo === 0`,
+ * que es la configuracion `sin-halo`- y donde hay halo la separacion se informa como
+ * lo que es: una descripcion de cuanto se meten los trazos, sin veredicto.
+ *
+ * La garantia con halo vive en `pelo.js`, que la mide donde ahora esta: en el pixel.
+ *
+ * Lo que este fichero sigue AFIRMANDO en los dos casos es la holgura: que lo que el
+ * algoritmo se permite rellenar en un codo nunca se coma el pelo de otro trazo. Esa
+ * es geometria pura, no depende del halo, y tiene su control (`holgura`).
  *
  * Se escribe entero y aparte de `cabe()`, recorriendo todos los pares sin
  * excepciones y sin heredar su idea de que es "contiguo": si `cabe()` se olvida de
@@ -115,7 +135,7 @@ function medir({ seed, fmt, params, base }) {
   }
 
   return { seed, pares, malos, solapes, cruces, peor: +peor.toFixed(4), donde,
-           holgMalos, holgPeor: +holgPeor.toFixed(4),
+           holgMalos, holgPeor: +holgPeor.toFixed(4), halo: g.halo,
            cintas: res.cintas, tipo: res.tipo, vert: res.vert };
 }
 
@@ -127,13 +147,30 @@ function medir({ seed, fmt, params, base }) {
     const e = rs.find(r => r.err); if (e) console.log('  ' + e.err);
     process.exit(2);
   }
-  const malas = ok.filter(r => r.malos > 0), sol = ok.filter(r => r.solapes > 0);
+  // LA REGLA SOLO SE APLICA DONDE ES CIERTA: sin halo. Con halo la misma cifra se
+  // informa, porque describe cuanto se meten los trazos, pero no juzga.
+  const sinHalo = ok.filter(r => !r.halo), conHalo = ok.filter(r => r.halo);
+  const malas = sinHalo.filter(r => r.malos > 0), sol = ok.filter(r => r.solapes > 0);
   const st = stats(ok.map(r => r.peor));
   const pares = ok.reduce((a, r) => a + r.pares, 0);
   console.log(`\ncanal · ${algo} · ${ok.length} obras · ${pares} pares no contiguos`);
-  console.log(`  separacion minima, en canales D=W+g (1,000 = la regla):`);
+  console.log(`  separacion minima, en canales D=W+g:`);
   console.log(`  min ${st.min}  p50 ${st.p50}  max ${st.max}`);
-  console.log(`  OBRAS CON RENDIJA (blanco mas fino que el pelo): ${malas.length} de ${ok.length}`);
+  if (!sinHalo.length) {
+    console.log(`  AVISO: ninguna obra SIN halo — la regla D no se ha comprobado.`);
+    console.log(`         corre con la configuracion \`sin-halo\` o no hay veredicto.`);
+  } else {
+    console.log(`  SIN HALO (${sinHalo.length} obras, aqui 1,000 ES la regla):`);
+    console.log(`    OBRAS CON RENDIJA: ${malas.length} de ${sinHalo.length}` +
+                `  ·  min ${stats(sinHalo.map(r => r.peor)).min}`);
+  }
+  if (conHalo.length) {
+    const sh = stats(conHalo.map(r => r.peor));
+    console.log(`  CON HALO (${conHalo.length} obras, descriptivo: el canal se fabrica al pintar):`);
+    console.log(`    cuanto se meten   min ${sh.min}  p50 ${sh.p50}` +
+                `  ·  por debajo de D: ${conHalo.filter(r => r.malos > 0).length}` +
+                `   (la garantia la mide pelo.js)`);
+  }
   console.log(`  pares FUNDIDOS (legal, es el cruce): ${ok.reduce((a, r) => a + r.solapes, 0)}` +
               `  ·  pares en el paso del cruce: ${ok.reduce((a, r) => a + r.cruces, 0)}`);
   console.log(`  obras con algun cruce: ${sol.length} de ${ok.length}`);
@@ -142,7 +179,7 @@ function medir({ seed, fmt, params, base }) {
               `  (peor exceso ${stats(ok.map(r => r.holgPeor)).max} canales)`);
   const porCfg = {};
   for (const r of ok) { porCfg[r.cfg] = porCfg[r.cfg] || { n: 0, mal: 0, min: 9 };
-    porCfg[r.cfg].n++; if (r.malos) porCfg[r.cfg].mal++;
+    porCfg[r.cfg].n++; if (r.malos && !r.halo) porCfg[r.cfg].mal++;
     porCfg[r.cfg].min = Math.min(porCfg[r.cfg].min, r.peor); }
   for (const k of Object.keys(porCfg))
     console.log(`    ${k.padEnd(12)} ${porCfg[k].mal}/${porCfg[k].n}  min ${porCfg[k].min.toFixed(3)}`);

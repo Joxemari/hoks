@@ -52,12 +52,35 @@ corre() {  # corre <detector> <algo> <n> <base> <configs> <etiqueta>
 }
 
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = canal ]; then
+  # LA REGLA GEOMETRICA VALE DONDE NO HAY HALO, y por eso los controles corren en la
+  # configuracion `sin-halo` y no en todas. Corridos en todas median la rama que el
+  # halo no ejecuta -o sea, nada- y salian identicos al sano byte por byte. Un control
+  # que parchea codigo muerto es la peor clase de control: sale verde y no ha mirado.
   linea "canal · la regla 3 exacta sobre la geometria · $N obras"
   corre canal.js hrrs_test.js "$N" 760 ""
-  for r in duro corta rendija holgura; do
+  for r in duro corta rendija; do
+    build "$r" "t_$r.js" || continue
+    printf '\n  CONTROL %s (tiene que disparar, sin-halo):\n' "$r"
+    node canal.js "t_$r.js" 120 760 "sin-halo" 2>/dev/null | grep -E "RENDIJA|^  min"
+  done
+  build holgura t_holgura.js && {
+    printf '\n  CONTROL holgura (tiene que disparar):\n'
+    node canal.js t_holgura.js 120 760 "" 2>/dev/null | grep -E "HOLGURA"
+  }
+fi
+
+if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = pelo ]; then
+  # DONDE VIVE HOY LA GARANTIA. Con halo el canal no se prohibe, se fabrica al pintar,
+  # asi que la afirmacion -el blanco entre dos tintas nunca mide menos de g- ya no es
+  # geometria de ejes: es pixel. `canal.js` mide la regla vieja y aqui se mide la que
+  # rige. Sin este bloque la bateria comprobaba a fondo una regla retirada y no
+  # comprobaba la vigente.
+  linea "pelo · el canal VISIBLE, sobre el pixel · $((N / 4)) obras"
+  corre pelo.js hrrs_test.js "$((N / 4))" 760 ""
+  for r in duro corta; do
     build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
-    node canal.js "t_$r.js" 120 760 "" 2>/dev/null | grep -E "RENDIJA|FUNDIDOS|PELO|^  min"
+    node pelo.js "t_$r.js" 60 760 "" 2>/dev/null | grep -E "^  pelo|por debajo"
   done
 fi
 

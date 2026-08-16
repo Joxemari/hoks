@@ -1720,24 +1720,45 @@ pulido.
 El mismo trazador por los dos lados, todo en unidades de la obra. No se mide lo que ya
 se sabe que el motor tiene: se buscan los que le faltan.
 
+Los números de abajo son los de **trazos enteros**. La tabla anterior se midió con el
+trazador que partía un trazo en cuatro, y eso no movía un decimal: movía la mitad de la
+tabla. Todo lo que se calcula *por trazo* —largo, giros, cierre, cuerda— salía
+sistemáticamente corto, y en el caso del cierre salía **al revés**: partir un trazo le
+destruye el giro neto. Un instrumento mal calibrado no da ruido, da un objetivo falso.
+
 | | r1 | r2 | r3 | r4 | r5 | r6 | refs | familia |
 |---|---|---|---|---|---|---|---|---|
 | anchura / lado | 0,03 | 0,04 | 0,05 | 0,05 | 0,09 | 0,09 | 0,05 | 0,04 |
-| largo del trazo (lados) | 0,31 | 0,29 | 0,30 | 0,24 | 0,50 | 0,26 | **0,30** | 0,21 |
-| el más largo (p90) | 0,79 | 0,54 | 0,75 | 0,85 | 1,08 | 0,55 | **0,77** | 0,45 |
-| vibración de grosor (cv) | 0,08 | 0,16 | 0,08 | 0,17 | 0,28 | 0,14 | **0,15** | 0,09 |
-| quiebros por anchura | 0,24 | 0,26 | 0,08 | 0,16 | 0,34 | 0,00 | **0,20** | 0,01 |
-| ángulo de quiebro | 37 | 40 | 34 | 38 | 45 | 47 | 39 | 36 |
-| quiebros a escuadra | 0,04 | 0,09 | 0,05 | 0,09 | 0,05 | 0,35 | 0,07 | 0,18 |
-| cierre del circuito (p90) | 0,41 | 0,23 | 0,27 | 0,24 | 0,26 | 0,22 | 0,25 | 0,19 |
-| longitud en 4 rumbos | 0,48 | 0,57 | 0,74 | 0,59 | 0,63 | 0,81 | 0,61 | 0,55 |
-| canal (anchuras) | 0,30 | 0,26 | 0,62 | 0,11 | 0,06 | 0,23 | **0,24** | 0,45 |
-| constancia del canal | 0,77 | 0,72 | 0,32 | 0,55 | 0,57 | 0,56 | **0,56** | 0,29 |
-| cuánto se acompañan | 0,46 | 0,57 | 0,48 | 0,46 | 0,87 | 1,06 | 0,53 | 0,41 |
-| línea total (lados) | 6,47 | 6,43 | 5,74 | 6,94 | 6,23 | 7,67 | **6,45** | 4,29 |
+| **largo del trazo (lados)** | 0,74 | 0,54 | 0,85 | 1,46 | 1,04 | 0,61 | **0,79** | 0,43 |
+| **el más largo (p90)** | 1,13 | 1,04 | 1,16 | 2,52 | 1,17 | 1,09 | **1,14** | 0,81 |
+| vibración de grosor (cv) | 0,08 | 0,20 | 0,12 | 0,26 | 0,34 | 0,28 | 0,23 | 0,26 |
+| quiebros por anchura | 0,31 | 0,34 | 0,26 | 0,28 | 0,43 | 0,39 | 0,32 | 0,21 |
+| ángulo de quiebro | 39 | 45 | 49 | 46 | 48 | 78 | 47 | 56 |
+| quiebros a escuadra | 0,08 | 0,19 | 0,07 | 0,15 | 0,14 | 0,49 | 0,14 | 0,25 |
+| cierre del circuito (p90) | 0,72 | 0,23 | 0,63 | 0,59 | 0,41 | 0,40 | 0,50 | 0,46 |
+| cuerda / largo | 0,60 | 0,80 | 0,68 | 0,23 | 0,90 | 0,72 | 0,70 | 0,74 |
+| longitud en 4 rumbos | 0,46 | 0,55 | 0,67 | 0,64 | 0,70 | 0,82 | 0,66 | 0,59 |
+| longitud en los ejes | 0,21 | 0,39 | 0,48 | 0,57 | 0,43 | 0,61 | 0,45 | 0,22 |
+| canal (anchuras) | 0,30 | 0,26 | 0,62 | 0,11 | 0,06 | 0,23 | **0,24** | 0,49 |
+| constancia del canal | 0,77 | 0,72 | 0,32 | 0,55 | 0,57 | 0,56 | **0,56** | 0,26 |
+| cuánto se acompañan | 0,46 | 0,57 | 0,48 | 0,46 | 0,87 | 1,06 | 0,53 | 0,43 |
+| **línea total (lados)** | 6,47 | 6,43 | 5,74 | 6,94 | 6,23 | 7,67 | **6,45** | 4,83 |
+| piezas | 8 | 11 | 7 | 2 | 7 | 14 | 7,5 | 11 |
 | suelo encerrado | 0 | 0 | 0 | 5 | 2 | 0 | 0 | 0 |
 | margen al borde | 0,01 | 0,02 | 0,02 | 0,00 | 0,01 | 0,03 | 0,02 | 0,00 |
-| tinta | 0,17 | 0,20 | 0,25 | 0,25 | 0,32 | 0,51 | **0,25** | 0,16 |
+| **tinta** | 0,17 | 0,20 | 0,25 | 0,25 | 0,32 | 0,51 | **0,25** | 0,17 |
+
+Y lo que la tabla nueva dice, que no es lo que decía la vieja:
+
+- **El largo es el rasgo que falla, y falla el doble de lo que parecía.** 0,43 contra
+  0,79 —y el más largo 0,81 contra 1,14—. Con la medida vieja el hueco era 0,21 contra
+  0,30; ahora se ve entero. Es *el* problema abierto de la familia.
+- **El cierre NO fallaba.** 0,46 contra 0,50, y con la misma dispersión (p10 0,25 / p90
+  0,74 contra 0,23 / 0,72). El 0,19 de la tabla vieja era el trazador partiendo trazos.
+- **La vibración de grosor ya está** (0,26 contra 0,23): la deriva lenta la arregló.
+- Lo que sigue mal y ya se sabía: **el canal sale del doble de ancho y la mitad de
+  constante** (0,49/0,26 contra 0,24/0,56), y **la tinta es dos tercios** de la que hay
+  que poner.
 
 Cuatro rasgos que el motor no tenía y ahora sí:
 
@@ -1755,12 +1776,16 @@ Cuatro rasgos que el motor no tenía y ahora sí:
 - **El margen es casi cero**: la tinta llega al filo del cuadro (0,00–0,03 del lado). El
   motor dejaba 0,055, más del doble de aire.
 
-Y uno que se resiste, con su medida: **la anchura de un trazo varía un 15 % (cv)** y el
+Y uno que se resistía, con su medida: **la anchura de un trazo varía un 15 % (cv)** y el
 motor daba 0,05. No se arregla subiendo el temblor — `anchoEn` promedia dos senos, así
 que la variación efectiva es la cuarta parte de lo pedido, y triplicando la amplitud el
 coeficiente pasaba de 0,05 a 0,07 mientras la banda se deshilachaba. **La variación del
 original no es de alta frecuencia**: el trazo tiene partes gordas y partes finas, una o
-dos ondas en todo el recorrido. Añadida esa deriva sube a 0,09. Queda a medio camino.
+dos ondas en todo el recorrido. Añadida esa deriva sube a 0,09.
+
+*(Con trazos enteros el objetivo era 0,23 y la deriva lo deja en 0,26: resuelto. La
+medida vieja estaba corta por los dos lados —el objetivo y el resultado— porque un trozo
+de trazo no tiene la variación de un trazo.)*
 
 ### El encargo, dicho por el autor, y lo que le falta al motor para cumplirlo
 
@@ -2129,6 +2154,84 @@ componentes, que es justo la de las bandas que convergen y se funden a la derech
 
 Es la formulación más limpia que ha salido del halo, y es comprobable en la familia sin
 elegir umbral: si la incisión hace su trabajo, contar manchas es contar trazos.
+
+### El cierre, que sí era una variable y no era el número que yo decía
+
+El autor lo declaró: *«cuánto tiende el trazo a cerrarse o a abrirse; r1 circula más, r3
+es totalmente abierto»*, y añadió que **es de obra y no de trazo** — se aplica sobre todo
+al primero y marca el carácter; la relación entre trazos la manda la gravedad, no el
+cierre. Estaba sin implementar.
+
+Se dibuja con una sola cosa, **la mano**: un trazo que alterna el lado en cada giro
+zigzaguea y no cierra; uno que gira siempre del mismo lado da la vuelta. Así que el
+cierre es la probabilidad de *no* alternar, y no hace falta ni un ángulo más. De paso
+apareció un descuido: la rama que gobierna casi todos los giros —la de los rumbos—
+tiraba una **moneda nueva** en cada giro en vez de llevar la mano, o sea un paseo
+aleatorio gobernara lo que gobernara el resto.
+
+Y entonces la medida dijo dos cosas que yo no esperaba:
+
+**Una, que el número que este README traía era falso.** Decía que la familia cerraba 0,19
+contra el 0,50 de las referencias. Era del trazador viejo: **partir un trazo le destruye
+el giro neto**, así que medía trozos y los trozos no cierran. Con trazos enteros la
+familia ya daba 0,46 contra 0,50, y con la misma dispersión (p10 0,25 / p90 0,74 contra
+0,23 / 0,72). No había nada roto.
+
+**Y dos, que el mando gobierna pero flojo.** Fijándolo y midiendo el giro neto que sale,
+50 obras por punto:
+
+| pedido | 0,00 | 0,10 | 0,20 | 0,35 | 0,50 | 0,65 | 0,80 | 1,00 |
+|---|---|---|---|---|---|---|---|---|
+| p50 | 0,37 | 0,44 | 0,46 | 0,49 | 0,48 | 0,49 | 0,50 | 0,54 |
+| p90 | 0,50 | 0,54 | 0,62 | 0,66 | 0,65 | 0,69 | 0,75 | 0,84 |
+
+Monótono, sí, pero de punta a punta mueve la mediana 0,17 mientras que **a mando fijo la
+variación entre obras va de 0,23 a 0,84**. Manda más la tirada que el mando, y la causa
+es concreta y no es el mando: **para cerrar hacen falta giros, y los giros salen de la
+longitud**. Con tres quiebros de 45°, ni girando siempre del mismo lado se pasa de 0,38
+de vuelta. El cierre está **topado por el largo**, que es justo el rasgo donde la familia
+más lejos está. Arreglado el largo, el cierre recupera su rango solo; forzarlo aquí sería
+tapar un síntoma.
+
+Se queda, entonces, no porque arregle un número —no arreglaba ninguno— sino porque el
+autor lo declaró como variable y **una variable de carácter tiene que poder pedirse**.
+
+### Tres controles rotos y una rama muerta: la batería llevaba tiempo mintiendo
+
+Al pasar la batería salió lo que el propio `mil.sh` está escrito para que salga —*«un
+control medido contra un artefacto viejo es peor que no tener control: no prueba nada y
+además convence»*— y salió por tres puertas a la vez.
+
+**1. Tres parches que ya no encajaban.** `duro`, `miter` y `margen` parchean líneas
+literales de `algo.js`, y las tres líneas se habían reescrito en refactores anteriores.
+El guardia funcionó (se planta y no mide contra el fichero viejo), pero llevaban sin
+comprobar nada desde entonces. Reparados. Y `margen` pasa a parchearse **por expresión y
+no por literal**, con su motivo: `MARGEN` es una constante *medida*, así que se vuelve a
+mover cada vez que se remide, y un control que se cae al remedir una constante es un
+control que se acaba borrando. El código sí sigue por literal: si el código cambia, el
+control hay que mirarlo.
+
+**2. Una rama entera sin ejecutar, y su control parcheando código muerto.** Con halo, la
+mitad de `cabeDuro` que decide los cruces por geometría —`bandaMala`, `CRUCE_MIN`,
+`juntoAQuiebro`— **no se ejecuta nunca**, porque el camino del halo sale antes. Las
+catorce configuraciones de la batería tienen halo. Así que el control `rendija` parcheaba
+código muerto y salía **idéntico al sano, byte por byte**, sin que nadie se enterara. Es
+exactamente lo que prohíbe la cabecera de `_lanza.js`: *una constante que nunca se varía
+esconde su rama entera*. Añadida la configuración **`sin-halo`**, y los tres controles
+geométricos (`duro`, `corta`, `rendija`) corren ahí: disparan 27/40, 33/40 y 7/40.
+
+**3. Y el detector principal disparaba sobre obra sana.** `canal.js` seguía aplicando la
+regla vieja —ningún par de ejes por debajo de `D = W+g`— a obras **con** halo, donde esa
+regla no rige: el canal no se prohíbe, se fabrica al pintar, y dos ejes a 0,55 W son
+composición. Cantaba **102 obras de 238**, más del 40 %, y con eso decidía el código de
+salida de la batería. `pelo.js` documentaba la retirada desde hacía versiones; nadie la
+había ejecutado.
+
+La regla no estaba mal: estaba **sin acotar**. Ahora `canal.js` la afirma donde es cierta
+—`geo.halo === 0`, y ahí sale 0 de 5 con mínimo 1,0016, exacta— y donde hay halo informa
+de cuánto se meten los trazos sin dar veredicto. La garantía con halo la mide `pelo.js`,
+**que además no estaba en `mil.sh`**: la batería comprobaba a fondo una regla retirada y
+no comprobaba la vigente. Ya tiene su bloque, con `duro` y `corta` de control.
 
 ### Lo que queda mal, y ya con nombre
 

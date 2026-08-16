@@ -174,6 +174,46 @@
   const RUMBOS = [3, 5];                   // cuántas direcciones tiene la obra
   const RUMBO_PASO = [30, 52];             // cuánto se separan, en grados
   const RUMBO_ERR = 5;                     // cuánto se le permite salirse
+  // EL CIERRE: cuánto tiende el trazo a cerrarse o a abrirse. Es del autor, y es una
+  // variable de OBRA y no de trazo — «se aplica sobre todo al primer trazo y marca el
+  // carácter; la relación entre trazos depende de la gravedad, no del cierre».
+  //
+  // Medido en las seis como el giro NETO de un trazo partido por 360, p90 de la obra:
+  // r1 0,72 (la que más circula), r2 0,23 (la más abierta), r3 0,63, r4 0,59, r5 0,41,
+  // r6 0,40. De un cuarto de vuelta a tres cuartos: rango ancho, y de obra.
+  //
+  // Y se dibuja con UNA SOLA COSA, la mano: un trazo que alterna el lado en cada giro
+  // zigzaguea y no cierra; uno que gira siempre del mismo lado da la vuelta. Así que el
+  // cierre es la probabilidad de NO alternar y no hace falta ni un ángulo más.
+  //
+  // De paso se arregla un descuido: la rama que hoy gobierna casi todos los giros —la
+  // de los rumbos— tiraba una moneda NUEVA cada vez en vez de llevar la mano, así que
+  // ahí el recorrido era un paseo aleatorio gobernara lo que gobernara el resto.
+  //
+  // ── Y AHORA LO QUE MIDE, que no es lo que yo esperaba ─────────────────────────
+  //
+  // Fijando el mando y midiendo el giro neto que sale (50 obras por punto):
+  //
+  //     pedido   0,00  0,10  0,20  0,35  0,50  0,65  0,80  1,00
+  //     p50      0,37  0,44  0,46  0,49  0,48  0,49  0,50  0,54
+  //     p90      0,50  0,54  0,62  0,66  0,65  0,69  0,75  0,84
+  //
+  // Gobierna, y es monótono — pero flojo: de punta a punta mueve la mediana 0,17,
+  // mientras que a mando FIJO la variación entre obras va de 0,23 a 0,84. O sea que
+  // manda más la tirada que el mando, y eso tiene una causa concreta y no es el mando:
+  // PARA CERRAR HACEN FALTA GIROS, y los giros salen de la longitud (`quiebrosPara`).
+  // Con tres quiebros de 45°, ni girando siempre del mismo lado se pasa de 0,38 de
+  // vuelta. El cierre está TOPADO POR EL LARGO, que es justo el rasgo donde la familia
+  // más lejos está (0,43 contra 0,79 de las referencias). Arreglado el largo, el cierre
+  // recupera su rango solo; forzarlo aquí sería tapar un síntoma.
+  //
+  // Y una corrección de lo que este README llegó a afirmar: que la familia cerraba 0,19
+  // contra 0,50. Era del trazador VIEJO, el que partía un trazo en cuatro — partir un
+  // trazo le destruye el giro neto. Medido con trazos enteros la familia ya daba 0,46.
+  // El mando no llegó para arreglar un número: llegó porque el autor lo declaró como
+  // variable y una variable de carácter tiene que poder pedirse.
+  const CIERRE = [0.05, 0.95];
+  const CIERRE_POR = 0.27;                 // el valor de siempre, para quien no lo pase
   // El PLIEGUE: cuántas veces, de los sucesos de un trazo, la banda se vuelve sobre
   // sí misma. `phi` es el ángulo de entrada al pliegue: a 90° sale una uve cuadrada
   // (el cartel de Múnich), a 55° una uve tumbada (las siete bandas).
@@ -451,8 +491,12 @@
     return mejor + rng.range(-RUMBO_ERR, RUMBO_ERR);
   }
 
-  function trazar(rng, x, y, dir, largo, nq, vib, D, orto, guion, rumbos) {
+  function trazar(rng, x, y, dir, largo, nq, vib, D, orto, guion, rumbos, cierre) {
     const n = (guion && guion.giros ? guion.giros.length + 1 : nq + 1);
+    // LA MANO. Probabilidad de cambiar de lado en cada giro; es el cierre, del revés.
+    // A 0,95 el trazo zigzaguea y no cierra nunca; a 0,10 gira siempre igual y da la
+    // vuelta. El valor de siempre —0,72 de alternancia— es CIERRE_POR.
+    const pAlt = 0.95 - 0.85 * clamp(cierre == null ? CIERRE_POR : cierre, 0, 1);
     const pesos = [];
     let tot = 0;
     if (guion && guion.pesos) { for (const w of guion.pesos) { pesos.push(w); tot += w; } }
@@ -489,12 +533,15 @@
           }
         } else if (orto) {
           // a escuadra, y de vez en cuando media vuelta: la retícula del cartel
-          if (rng.bool(0.72)) lado = -lado;
+          if (rng.bool(pAlt)) lado = -lado;
           cd += lado * (rng.bool(0.16) ? 180 - rng.range(0, ORTO_ERR) : 90 + rng.range(-ORTO_ERR, ORTO_ERR));
         } else if (rumbos && rumbos.length && !(D && rng.bool(P_VOLTEA))) {
-          // gira a OTRO rumbo de la obra, prefiriendo el de al lado
+          // gira a OTRO rumbo de la obra, prefiriendo el de al lado — y DEL LADO QUE
+          // MANDA LA MANO. Aquí había una moneda nueva en cada giro, y con moneda
+          // nueva el recorrido es un paseo aleatorio: nunca cierra, gire lo que gire.
+          if (rng.bool(pAlt)) lado = -lado;
           const salto = rng.bool(0.72) ? 1 : rng.int(2, max(2, rumbos.length - 1));
-          cd = alRumbo(rng, cd + (rng.bool(0.5) ? 1 : -1) * salto * RUMBO_PASO[0], rumbos);
+          cd = alRumbo(rng, cd + lado * salto * RUMBO_PASO[0], rumbos);
         } else if (D && rng.bool(P_VOLTEA)) {
           // EL PLIEGUE. Dos giros del mismo lado con el brazo justo por medio. El
           // 1,02 es holgura de coma flotante, no un umbral: a exactamente D la
@@ -506,9 +553,9 @@
           avanza(brazo, cd);
           cd += lado * (180 - phi);
         } else {
-          // los giros alternan de lado la mayoría de las veces: dos giros seguidos
-          // del mismo lado dan una espiral, y eso no está en la referencia
-          if (rng.bool(0.72)) lado = -lado;
+          // los giros alternan de lado según la mano: alternando sale un zigzag y
+          // sin alternar sale una vuelta, que es de lo que trata el cierre
+          if (rng.bool(pAlt)) lado = -lado;
           const mag = rng.bool(P_ABIERTO) ? rng.range(GIRO_ABIERTO[0], GIRO_ABIERTO[1])
                                           : rng.range(GIRO_CERRADO[0], GIRO_CERRADO[1]);
           cd += lado * mag;
@@ -872,7 +919,7 @@
       if (Lpost > ctx.S * 0.03) {
         const p = pts[pts.length - 1];
         const post = trazar(rng, p.x, p.y, (dOut2 != null ? dOut2 : dOut) + rng.range(-14, 14), Lpost,
-                            quiebrosPara(rng, Lpost, ctx.W), ctx.vib, D, ctx.orto);
+                            quiebrosPara(rng, Lpost, ctx.W), ctx.vib, D, ctx.orto, null, null, ctx.cierre);
         pts = pts.concat(post.slice(1));
       }
       const Lpre = pts2 ? largo * rng.range(0.10, 0.30) : sobra * fPre;
@@ -880,7 +927,7 @@
         // se traza hacia atrás desde el arranque y se le da la vuelta
         const p = medio[0];
         const pre = trazar(rng, p.x, p.y, dIn + 180 + rng.range(-14, 14), Lpre,
-                           quiebrosPara(rng, Lpre, ctx.W), ctx.vib, D, ctx.orto);
+                           quiebrosPara(rng, Lpre, ctx.W), ctx.vib, D, ctx.orto, null, null, ctx.cierre);
         pre.reverse();
         pts = pre.slice(0, -1).concat(pts);
       }
@@ -895,7 +942,8 @@
       const lado = rng.bool(0.5) ? 1 : -1;
       const nrm = p.dir + 90 * lado;
       return trazar(rng, p.x + Math.cos(nrm * RAD) * sep, p.y + Math.sin(nrm * RAD) * sep,
-                    p.dir + lado * rng.range(7, 26), largo, nq, ctx.vib, D, ctx.orto);
+                    p.dir + lado * rng.range(7, 26), largo, nq, ctx.vib, D, ctx.orto,
+                    null, null, ctx.cierre);
     }
     if (rel === 'tangencia' && obj) {
       // Se acercan a un mínimo PUNTUAL y se separan: cruzan en ángulo, y el punto
@@ -909,7 +957,7 @@
       // el punto de tangencia cae DENTRO del trazo, no en su cabo
       const atras = largo * rng.range(0.25, 0.6);
       return trazar(rng, cx - Math.cos(ang * RAD) * atras, cy - Math.sin(ang * RAD) * atras,
-                    ang, largo, nq, ctx.vib, D, ctx.orto);
+                    ang, largo, nq, ctx.vib, D, ctx.orto, null, null, ctx.cierre);
     }
     if (rel === 'continua' && obj) {
       // LA CONTINUACIÓN. Es del autor, y es la que faltaba: «una línea y otra pueden
@@ -926,7 +974,8 @@
       const sigue = alFinal ? p.dir : p.dir + 180;
       const sep = ctx.sep;
       const x0 = p.x + Math.cos(sigue * RAD) * sep, y0 = p.y + Math.sin(sigue * RAD) * sep;
-      return trazar(rng, x0, y0, sigue + rng.range(-34, 34), largo, nq, ctx.vib, D, ctx.orto, null, ctx.rumbos);
+      return trazar(rng, x0, y0, sigue + rng.range(-34, 34), largo, nq, ctx.vib, D, ctx.orto,
+                    null, ctx.rumbos, ctx.cierre);
     }
     if ((rel === 'caboCabo' || rel === 'caboCuerpo') && obj) {
       // Un extremo mío muere cerca de un extremo suyo (o de su costado), sin
@@ -937,7 +986,8 @@
       const hacia = rng.range(0, 360);
       const x0 = p.x + Math.cos(hacia * RAD) * sep, y0 = p.y + Math.sin(hacia * RAD) * sep;
       // sale ALEJÁNDOSE, si no se echa encima
-      return trazar(rng, x0, y0, hacia + rng.range(-52, 52), largo, nq, ctx.vib, D, ctx.orto, null, ctx.rumbos);
+      return trazar(rng, x0, y0, hacia + rng.range(-52, 52), largo, nq, ctx.vib, D, ctx.orto,
+                    null, ctx.rumbos, ctx.cierre);
     }
     // suelto, o primer trazo: en cualquier sitio con aire DENTRO DE LA ZONA. Si
     // sangra, puede ARRANCAR fuera — el trazo entra desde detrás del marco en vez
@@ -952,7 +1002,7 @@
                   : rng.range(0, 360));
     return trazar(rng, rng.range(max(h, z.x0), min(ctx.fw - h, z.x1)),
                        rng.range(max(h, z.y0), min(ctx.fh - h, z.y1)),
-                  dir0, largo, nq, ctx.vib, D, ctx.orto, null, ctx.rumbos);
+                  dir0, largo, nq, ctx.vib, D, ctx.orto, null, ctx.rumbos, ctx.cierre);
   }
 
   // ¿Cabe? Nunca se tocan: W+g contra todos los demás, y sin cortarse a sí mismo.
@@ -1212,7 +1262,7 @@
       for (const lado of [1, -1]) for (const salto of [1, 2]) {
         const nd = alRumbo(rng, cd + lado * salto * RUMBO_PASO[0], ctx.rumbos);
         const cola = trazar(rng, p.x, p.y, nd, falta, quiebrosPara(rng, falta, ctx.W),
-                            ctx.vib, ctx.D, ctx.orto, null, ctx.rumbos);
+                            ctx.vib, ctx.D, ctx.orto, null, ctx.rumbos, ctx.cierre);
         if (!cola || cola.length < 2) continue;
         const junto = cur.concat(cola.slice(1));
         if (cabeDuro(junto, ctx, sangra, cruza)) {
@@ -1312,7 +1362,7 @@
         const L = largoRef * rng.range(PATA_LARGO[0], PATA_LARGO[1]);
         let pts = trazar(rng, x0, y0, caida + rng.range(-14, 14), ctx.S * L,
                          quiebrosPara(rng, ctx.S * L, ctx.W), ctx.vib, ctx.D, ctx.orto,
-                         null, ctx.rumbos);
+                         null, ctx.rumbos, ctx.cierre);
         pts = cortarAlVolver(pts, ctx);
         pts = recortar(pts, ctx, false, false);
         if (!pts || largoDe(pts) < ctx.S * LARGO_MIN) continue;
@@ -1345,7 +1395,7 @@
         const nq = quiebrosPara(rng, largo, ctx.W);
         let pts = trazar(rng, px - Math.cos(dir * RAD) * largo * 0.5,
                          py - Math.sin(dir * RAD) * largo * 0.5, dir, largo, nq, ctx.vib,
-                         ctx.D, ctx.orto, null, ctx.rumbos);
+                         ctx.D, ctx.orto, null, ctx.rumbos, ctx.cierre);
         // el cerco también CRECE hasta donde cabe: ahora se pone después del
         // protagonista, así que casi siempre tiene que ceder algo contra él, y
         // rechazarlo entero dejaba recintos de dos cuerdas.
@@ -1524,6 +1574,8 @@
         for (let i = 1; i < k; i++) { a += rng.range(RUMBO_PASO[0], RUMBO_PASO[1]); out.push(a); }
         return out;
       })(),
+      // cuánto cierra el circuito ESTA obra. Del autor, y de obra: marca el carácter.
+      cierre: params.cierre != null ? params.cierre : rng.range(CIERRE[0], CIERRE[1]),
       zona: { x0: zx * fw, y0: zy * fh, x1: (zx + zw) * fw, y1: (zy + zh) * fh },
       vib: vibra ? { amp: rng.range(VIB_AMP[0], VIB_AMP[1]), onda: W * rng.range(VIB_ONDA[0], VIB_ONDA[1]) } : null,
     };
@@ -1676,6 +1728,9 @@
     const lMed = Ls.length ? Ls[Ls.length >> 1] : 0;
     const reparto = lMed > 0 ? Ls[Ls.length - 1] / lMed : 0;
     return { trazos: ctx.trazos, W, g, D, cerco, patas, relCount, vibra, orto: ctx.orto, travesia: ctx.travesia,
+             // los dos de OBRA que los detectores necesitan y `ctx` no cruza sola:
+             // el halo -para saber que regla toca- y el cierre -el carácter-
+             halo: ctx.halo, cierre: ctx.cierre,
              ojos: med.ojos, ocupacion: med.ocupacion,
              pasillos: pas.n, largoPas: pas.largo / W, vert, quiebros,
              largoMax: Ls.length ? Ls[Ls.length - 1] : 0, reparto,
@@ -1865,10 +1920,17 @@
              rel: best.relCount,
              anchoRel: best.W / min(fw, fh), gam: best.g / best.W,
              ojos: best.ojos, ocupacion: best.ocupacion, esq: 0,
+             cierre: best.cierre,
              geo: { cintas: best.trazos.map(x => x.pts), sangra: best.trazos.map(x => !!x.sangra),
                     relleno: best.trazos.map(x => x.relleno || null),
                     cruza: best.trazos.map(x => !!x.cruza), CRUCE_MIN,
                     gubia: best.trazos.map(x => x.gubia || 0), debajo,
+                    cierre: best.cierre, rumbos: best.rumbos,
+                    // el halo de ESTA obra. Lo mira `canal.js`: la regla vieja -ningun
+                    // par por debajo de D- vale donde NO hay halo, y donde lo hay no,
+                    // porque ahi el canal se fabrica al pintar. Sin este dato el
+                    // detector no puede saber cual de las dos reglas le toca.
+                    halo: best.halo,
                     SANGRE, MARGEN, W: best.W, g: best.g, D: best.D,
                     S, ox, fw, fh, veto: null } };
   }

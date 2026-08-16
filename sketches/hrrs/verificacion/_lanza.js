@@ -33,6 +33,13 @@ const CONFIGS = [
   { n: 'seca',       fmt: 'square',     p: { sangra: 0 } },
   { n: 'sangrada',   fmt: 'horizontal', p: { sangra: 1 } },
   { n: 'degradado',  fmt: 'square',     p: { bg: 'gradient' } },
+  // SIN HALO. Faltaba, y es justo el caso que la cabecera de aqui arriba prohibe
+  // olvidar: `params.halo` es publico -lo pone el laboratorio y lo lee `componer`-
+  // y con halo la rama de `cabeDuro` que decide los cruces por geometria (bandaMala,
+  // CRUCE_MIN, juntoAQuiebro) NO SE EJECUTA NUNCA. O sea que media docena de reglas
+  // y su control (`rendija`) llevaban tiempo sin medirse: el control parcheaba codigo
+  // muerto y salia identico al sano, byte por byte, sin que nadie se enterara.
+  { n: 'sin-halo',   fmt: 'square',     p: { halo: 0 } },
 ];
 
 function configs(only) {

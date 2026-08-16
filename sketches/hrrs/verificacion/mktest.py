@@ -16,9 +16,9 @@ if roto == 'duro':
     # LA RESTRICCION DURA, BAJADA. Con 0,72·D los trazos se acercan mas que la
     # anchura, asi que las tintas se solapan y el canal desaparece. Control de
     # `canal` y de `toque`.
-    a = "      if (distTrazos(segs, t.segs) >= ctx.D - 1e-9) continue;   // el caso corriente"
+    a = "      if (dd >= ctx.D - 1e-9) continue;                         // el caso corriente"
     assert a in src, 'no encuentro la restriccion dura entre trazos'
-    src = src.replace(a, "      if (distTrazos(segs, t.segs) >= ctx.D * 0.72) continue;   // ROTO A PROPOSITO")
+    src = src.replace(a, "      if (dd >= ctx.D * 0.72) continue;   // ROTO A PROPOSITO")
 
 elif roto == 'corta':
     # EL TRAZO SE CORTA A SI MISMO. Un trazo con giros cerrados puede cruzarse, y
@@ -42,9 +42,9 @@ elif roto == 'miter':
     # el plan roto sale declarado, la tinta lo obedece y el control no dispara —
     # medido, 1 de 28. Que el plan no se coma el canal de nadie es otra afirmacion y
     # tiene su propio control (`holgura`, sobre la geometria, en `canal.js`).
-    a = "          if (r <= lim + 1e-9 && r > h[i + 1] * 1.02) {"
+    a = "          if (hIn / cos <= lim + 1e-9 && hIn / cos > hIn * 1.02) {"
     assert a in src, 'no encuentro el tope del relleno de esquina'
-    src = src.replace(a, "          if (r > h[i + 1] * 1.02) {   // ROTO A PROPOSITO: relleno sin tope")
+    src = src.replace(a, "          if (hIn / cos > hIn * 1.02) {   // ROTO A PROPOSITO: relleno sin tope")
 
 elif roto == 'rendija':
     # LA RENDIJA. Control de la regla nueva: entre dos bandas el blanco es o el pelo
@@ -63,9 +63,13 @@ elif roto == 'holgura':
     src = src.replace(a, "        out.push(techo);   // ROTO A PROPOSITO: sin mirar quien hay al lado")
 
 elif roto == 'margen':
-    a = "  const MARGEN = 0.055;"
-    assert a in src, 'no encuentro MARGEN'
-    src = src.replace(a, "  const MARGEN = -0.045;   // ROTO A PROPOSITO")
+    # POR EXPRESION Y NO POR LITERAL, y es a proposito: MARGEN es una constante MEDIDA
+    # -sale de las seis referencias- asi que se vuelve a mover cada vez que se remide, y
+    # un control que se cae al remedir una constante es un control que se acaba borrando.
+    # El codigo si va por literal: si el codigo cambia, el control hay que mirarlo.
+    src, k = re.subn(r"const MARGEN = [-0-9.]+;",
+                     "const MARGEN = -0.045;   // ROTO A PROPOSITO", src, count=1)
+    assert k == 1, 'no encuentro MARGEN'
 
 elif roto == 'cabo':
     # El cabo alargado NO rompe el canal (cae dentro de la suma de Minkowski): es
