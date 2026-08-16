@@ -2155,6 +2155,35 @@ componentes, que es justo la de las bandas que convergen y se funden a la derech
 Es la formulación más limpia que ha salido del halo, y es comprobable en la familia sin
 elegir umbral: si la incisión hace su trabajo, contar manchas es contar trazos.
 
+### Y con la mitad de trazos replica MEJOR, que era lo contrario de lo que yo esperaba
+
+Rehecho el ajuste entero con la descomposición nueva, contra el mismo patrón y con el
+mismo rasterizador de la casa a 3×:
+
+| ref | trazos | acierto | acierto (canal pesado ×8) |
+|---|---|---|---|
+| r1 | 16 → **8** | 97,3 → **97,6 %** | 90,5 → **91,7 %** |
+| r2 | 20 → **11** | 96,5 → **96,9 %** | 88,7 → **90,1 %** |
+| r3 | 17 → **8** | 96,2 → **97,1 %** | 85,6 → **89,1 %** |
+| r4 | 24 → **5** | 98,0 → **98,1 %** | 91,1 → **91,8 %** |
+| r5 | 10 → **7** | 96,2 → **96,8 %** | 83,2 → **87,2 %** |
+| r6 | 29 → **14** | 96,3 → **96,4 %** | 87,0 → **88,2 %** |
+| | 116 → **53** | 96,4 → **97,0 %** | 87,8 → **89,6 %** |
+
+**Mejora en las seis, en las dos medidas, con menos de la mitad de trazos.** Yo contaba
+con pagar algo: menos piezas es menos grados de libertad, y un ajuste con menos grados de
+libertad ajusta peor. Pues no.
+
+El motivo, y es de fondo: **un trazo tiene UNA anchura, la de su gubia.** Partido en
+cuatro, cada trozo se lleva la suya, y eso parece más expresivo pero es peor —los trozos
+cortos caen justo en los cruces, que es donde la medida de anchura miente, así que la
+libertad de más se gasta en copiar el error—. Entero, la anchura sale del tramo limpio
+más largo, que es de donde el artista la sacó.
+
+Y lo confirma **cuál** de las dos medidas mejora más: la del canal pesado, +1,8 frente a
++0,6. O sea que donde los trazos enteros pagan es **en la incisión**, que es exactamente
+lo que el autor lleva señalando desde el principio.
+
 ### El cierre, que sí era una variable y no era el número que yo decía
 
 El autor lo declaró: *«cuánto tiende el trazo a cerrarse o a abrirse; r1 circula más, r3
