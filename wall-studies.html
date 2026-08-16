@@ -1330,9 +1330,14 @@
     try{H[fam].render(ctx,w,h,s,o);}catch(e){try{H.PLLS.render(ctx,w,h,s,o);}catch(_){ctx.fillStyle='#efeee9';ctx.fillRect(0,0,w,h);}}}
 
   // palette pool (for Vestaboard-style color flashes)
-  var COLORS=[];try{var _p=(H.normalizePalettes?H.normalizePalettes(H.DEFAULTS):H.DEFAULTS)||[];_p.forEach(function(p){(p.colors||[]).forEach(function(c){if(COLORS.indexOf(c)<0)COLORS.push(c);});});}catch(e){}
+  var COLORS=[], PALS=[];
+  try{PALS=(H.normalizePalettes?H.normalizePalettes(H.DEFAULTS):H.DEFAULTS)||[];PALS.forEach(function(p){(p.colors||[]).forEach(function(c){if(COLORS.indexOf(c)<0)COLORS.push(c);});});}catch(e){}
   if(COLORS.length<4)COLORS=['#dcff32','#000ef7','#ff4f19','#ffd919','#111111','#f5f0ea'];
   function palColor(){return COLORS[(Math.random()*COLORS.length)|0];}
+  // render with optional locked palette (family passed explicitly)
+  function render2(cv,w,h,fam,s,pal){cv.width=w;cv.height=h;var ctx=cv.getContext('2d');var o={params:{field:(w===h?'square':'sheet'),grainScale:1}};
+    if(pal){o.palettes=[pal];o.locked=true;o.lockedIdx=0;}
+    try{H[fam].render(ctx,w,h,s,o);}catch(e){try{H.PLLS.render(ctx,w,h,s,o);}catch(_){ctx.fillStyle='#efeee9';ctx.fillRect(0,0,w,h);}}}
 
   // sound — a soft heartbeat "pum-pum" per pulse (created on first enable, user gesture)
   var actx=null, soundOn=false;
@@ -1363,10 +1368,18 @@
       var maxR=Math.sqrt(W*W+Hh*Hh);
       var SWEEP=2500, GAP=300, BAND=54, REST=1500, speed=(maxR+BAND)/SWEEP; // one heartbeat: pum-pum, then rest
       var pulse=null, restUntil=0;
-      function flip(t){var c=t._c;c.width=c.width;var g=c.getContext('2d');g.fillStyle=palColor();g.fillRect(0,0,c.width,c.height);
-        setTimeout(function(){if(running)draw(c,150,150,randFam(),seed());},120);}
+      function flip(t){var c=t._c;c.width=c.width;var g=c.getContext('2d');
+        var mode=pulse.mode, pf=pulse.fam, pal=(mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null;
+        g.fillStyle=(pal&&pal.colors&&pal.colors.length)?pal.colors[(Math.random()*pal.colors.length)|0]:palColor();
+        g.fillRect(0,0,c.width,c.height);
+        setTimeout(function(){if(!running)return;var fam=(mode==='family')?pf:randFam();render2(c,150,150,fam,seed(),pal);},120);}
       function loop(now){ if(!running)return;
-        if(!pulse && now>=restUntil){ pulse={ox:Math.random()*W, oy:Math.random()*Hh, b:[now, now+GAP]}; heartbeat(GAP); }
+        if(!pulse && now>=restUntil){
+          var rr=Math.random(), mode=(rr<0.5)?'mixed':((rr<0.75&&PALS.length)?'palette':'family');
+          pulse={ox:Math.random()*W, oy:Math.random()*Hh, b:[now, now+GAP], mode:mode, fam:randFam(), palIdx:(Math.random()*Math.max(1,PALS.length))|0};
+          desc.textContent='heartbeat · '+(mode==='palette'?'one palette':(mode==='family'?('one family ('+pulse.fam+')'):'mixed'));
+          heartbeat(GAP);
+        }
         if(pulse){ var done=true;
           for(var bi=0;bi<pulse.b.length;bi++){ var rad=(now-pulse.b[bi])*speed; if(rad<0){done=false;continue;} if(rad<=maxR+BAND)done=false;
             for(var i2=0;i2<ts.length;i2++){var t=ts[i2];var dx=t._x-pulse.ox,dy=t._y-pulse.oy;var d=Math.sqrt(dx*dx+dy*dy);
