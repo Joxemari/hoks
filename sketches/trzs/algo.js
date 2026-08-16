@@ -165,6 +165,7 @@
   // de la obra y el triaje lo necesita para poder decir "descartas las
   // Mondrian". Perdiéndolo aquí, ese patrón no se puede ni buscar.
 
+  let cfgDial = 'auto';
   function pickRoles(colors, rngColor) {
     const cols = colors.slice().sort((a, b) => lum(a) - lum(b));
     if (cols.length < 2) return { bg: cols[0] || BG, fg: FG, fg2: FG2, dot: DOT, filo: FG };
@@ -193,9 +194,13 @@
     // La cinta, con su propio azar: una decisión más en el stream principal
     // correría la geometría de todas las obras ya vistas.
     let fg = porContraste[0];
-    if (rngColor && porContraste.length > 2 && rngColor.next() < SORPRESA_PROB) {
+    // El laboratorio puede fijar el dial para poder verlo: `maximo` deja la
+    // cinta siempre en el extremo (lo de antes), `medio` la baja siempre.
+    const dial = (typeof cfgDial === 'string') ? cfgDial : 'auto';
+    if (dial !== 'maximo' && rngColor && porContraste.length > 2
+        && (dial === 'medio' || rngColor.next() < SORPRESA_PROB)) {
       const medias = porContraste.slice(1).filter(c => dcolor(c, bg) >= CINTA_MIN_DIST);
-      if (medias.length) fg = medias[floor(rngColor.next() * medias.length)];
+      if (medias.length) fg = medias[floor((dial === 'medio' ? 0 : rngColor.next()) * medias.length)];
     }
 
     // el disco quiere separarse del fondo Y de la cinta
@@ -501,6 +506,7 @@
               ? cfg.paletas[cfg.lockedIdx]
               : (cfg.paletas && cfg.paletas.length ? rng.weighted(cfg.paletas)
                                                    : { colors: PALETA_BASE, name: "base", prob: 0.05 });
+    cfgDial = (cfg.dial && cfg.dial !== 'auto') ? cfg.dial : 'auto';
     const colores = pickRoles(pal.colors, new E.Rng((seed ^ 0x50A17A) >>> 0));
     // Con su propio azar, como la esquina y el remate: una decisión más en el
     // stream principal correría todas las obras ya vistas.
@@ -2899,6 +2905,7 @@
     if (params.ends === 'redondos' && (!params.corner || params.corner === 'auto'))
       cfg.corner = 'curvas';
     if (params.fantasma && params.fantasma !== 'auto') cfg.fantasma = params.fantasma;
+    if (params.dial && params.dial !== 'auto') cfg.dial = params.dial;
     if (params.dots && params.dots !== 'auto') cfg.dots = params.dots;
     if (params.reintentos) cfg.reintentos = params.reintentos | 0;
 

@@ -135,6 +135,16 @@
         que la esquina esté fijada a mano, y entonces manda ella y sale inglete</span>
     </div>
     <div class="group">
+      <span class="lbl">Contraste de la cinta</span>
+      <select id="dial">
+        <option value="auto">Auto · una de cada cuatro baja del extremo</option>
+        <option value="maximo">Máximo siempre · el color más lejano del suelo</option>
+        <option value="medio">Medio siempre · el más cercano que aún se sostiene</option>
+      </select>
+      <span class="hintline">cogiendo siempre el extremo gana la misma pareja en todas las
+        tiradas y quince paletas se leen como cuatro. El otro tope del dial es el fantasma</span>
+    </div>
+    <div class="group">
       <span class="lbl">Ghost ribbon</span>
       <select id="fantasma">
         <option value="auto">Auto (3,5% de las obras)</option>
@@ -234,6 +244,7 @@ function params() {
     corner:     $('corner').value,
     ends:       $('ends').value,
     fantasma:   $('fantasma').value,
+    dial:       $('dial').value,
     temblor:    $('temblor').value,
     dots:       $('dots').value,
   };
