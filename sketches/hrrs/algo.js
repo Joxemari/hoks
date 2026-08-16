@@ -1171,6 +1171,61 @@
   // libre—, cortar siempre por delante mataba el trazo entero cuando lo que no
   // cabía era su arranque, y con él se perdía la sección acompañada, que es la que
   // vale.
+  // ANTE UN ESTORBO EL TRAZO SE DESVÍA, NO SE ACORTA.
+  //
+  // Lo dijo el autor y la medida lo respalda: «si la paralelización es lo bastante
+  // fuerte se da el solape; si no, el trazo tiende a paralelizarse o a irse a otro
+  // lado». Hasta aquí la única salida ante un estorbo era `recortar` — quedarse con el
+  // trozo más largo que cabe y tirar el resto— y eso explicaba cuatro rasgos a la vez:
+  // medido con el mismo trazador por los dos lados, el largo del trazo salía 0,21
+  // lados contra 0,30 de las referencias, el más largo 0,45 contra 0,77, los quiebros
+  // por anchura 0,01 contra 0,20, y la línea total 4,3 contra 6,5. No eran cuatro
+  // problemas: era uno. Un trazo truncado nunca llega a ser largo ni a dar sus
+  // quiebros, y por eso la hoja se leía a base de palos en vez de a base de cintas.
+  //
+  // Y se veía en el número: pidiendo protagonistas de 2,05 · 2,6 · 3,2 y 4,0 lados
+  // salían 4,55 · 4,46 · 4,47 · 4,61 de línea. Plano. La longitud pedida no mandaba
+  // nada porque se tiraba entera.
+  //
+  // Así que el trozo que no cabe no se tira: se reencamina. Desde donde se paró, el
+  // trazo sale por OTRO RUMBO DE LA OBRA con la longitud que le quedaba. Se prueba de
+  // fuera hacia dentro y se queda el que cabe entero; si ninguno cabe, se recorta y se
+  // vuelve a intentar. El desvío no inventa direcciones: usa el mismo alfabeto, así
+  // que un trazo que esquiva sigue perteneciendo a la obra.
+  // UNO, y satura ahí: medido sobre la geometría declarada, la línea total pasa de
+  // 4,65 a 5,56 lados con el primer desvío y no se mueve con el segundo, el cuarto ni
+  // el séptimo (5,56 los tres). El largo del trazo, de 0,65 a 0,81. Después del primer
+  // desvío o cabe o lo que queda ya no da para otro.
+  const DESVIOS = 1;
+  function desviar(rng, pts, ctx, sangra, cruza) {
+    const meta = largoDe(pts);
+    let cur = recortar(pts, ctx, sangra, cruza);
+    if (!cur) return null;
+    for (let v = 0; v < DESVIOS; v++) {
+      const hecho = largoDe(cur);
+      const falta = meta - hecho;
+      if (falta < ctx.S * LARGO_MIN * 0.6) break;
+      const n = cur.length;
+      const p = cur[n - 1], q = cur[n - 2];
+      const cd = Math.atan2(p.y - q.y, p.x - q.x) / RAD;
+      let mejor = null, mejorL = hecho;
+      for (const lado of [1, -1]) for (const salto of [1, 2]) {
+        const nd = alRumbo(rng, cd + lado * salto * RUMBO_PASO[0], ctx.rumbos);
+        const cola = trazar(rng, p.x, p.y, nd, falta, quiebrosPara(rng, falta, ctx.W),
+                            ctx.vib, ctx.D, ctx.orto, null, ctx.rumbos);
+        if (!cola || cola.length < 2) continue;
+        const junto = cur.concat(cola.slice(1));
+        if (cabeDuro(junto, ctx, sangra, cruza)) {
+          const L = largoDe(junto);
+          if (L > mejorL) { mejorL = L; mejor = junto; }
+        }
+      }
+      if (!mejor) break;
+      cur = mejor;
+    }
+    return cur;
+  }
+
   function recortar(pts, ctx, sangra, cruza) {
     if (cabeDuro(pts, ctx, sangra, cruza)) return pts;
     // NO ES MONOTONO, y por eso esto no puede ser una busqueda binaria.
@@ -1545,7 +1600,7 @@
         let pts = colocar(rng, ctx, rel, obj, L, sangra, ctx.sep);
         if (!pts || pts.length < 2) continue;
         pts = cortarAlVolver(pts, ctx);
-        pts = recortar(pts, ctx, sangra, cruza);
+        pts = desviar(rng, pts, ctx, sangra, cruza);
         if (!pts || pts.length < 2) continue;
         if (!bastaVisto(pts, ctx, sangra)) continue;
         const Lr = largoDe(pts);
