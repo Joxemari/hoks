@@ -30,8 +30,18 @@ window.costuras = (seed, pals, extra) => {
   // cualquier mezcla rodeada de filos pasaba por costura.
   const dosCintas = (c.saltos || []).length > 0;   // dos tintas en cuanto hay un salto
   const cerca = (i,C,t) => Math.abs(d[i]-C[0])+Math.abs(d[i+1]-C[1])+Math.abs(d[i+2]-C[2]) < t;
-  const esTinta = i => cerca(i,F,30) || (dosCintas && cerca(i,F2,30));
-  const esFondo = i => cerca(i,B,30);
+  // Se pregunta por los colores de la obra en vez de suponerlos: en el trazo
+  // fantasma la cinta va del color del suelo y su incision es un tono corrido,
+  // asi que buscando la tinta por `fg` no se encuentra ni una y buscando el
+  // fondo por `bg` se encuentra la cinta entera. Ese 3,5% de obras estaba
+  // excluido de la bateria por eso.
+  const mismo = (a,b) => String(a).toLowerCase() === String(b).toLowerCase();
+  const bgEsTinta = (rr0.tintas||[]).some(t => mismo(t, c.colores.bg));
+  const TINTAS = (rr0.tintas||[]).filter(t => typeof t === 'string').map(hex);
+  const CORTES = (rr0.halos||[]).map(hex).concat(bgEsTinta ? [] : [B]);
+  const esTinta = i => TINTAS.some(C => cerca(i,C,30)) ||
+                       cerca(i,F,30) || (dosCintas && cerca(i,F2,30));
+  const esFondo = i => CORTES.some(C => cerca(i,C,30));
   const idx = (x,y) => 4*(y*S+x);
   let mez = 0; const pts = [], todos = [];
   for (let y=3;y<S-3;y++) for (let x=3;x<S-3;x++){

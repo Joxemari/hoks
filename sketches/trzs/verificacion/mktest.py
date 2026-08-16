@@ -51,9 +51,13 @@ elif roto == 'margen':
     assert a in src
     src = src.replace(a, "    margen:       -0.06,      // ROTO A PROPOSITO")
 elif roto == 'ojo':
-    a = "      const rad = D[mejor] - aire;"
-    assert a in src
-    src = src.replace(a, "      const rad = D[mejor];   // ROTO A PROPOSITO: sin aire")
+    # Por patron, no literal: esta linea ya ha cambiado dos veces (el aire
+    # primero, el temblor del disco despues) y cada vez rompio el banco entero.
+    # Lo que importa es que el radio del ojo deja de descontar el aire.
+    m4 = re.search(r'^( *)const rad = .*D\[mejor\].*aire.*$', src, re.M)
+    assert m4, 'no encuentro el radio del ojo'
+    src = src.replace(m4.group(0),
+                      m4.group(1) + 'const rad = D[mejor];   // ROTO A PROPOSITO: sin aire')
 elif roto == 'sueloigual':
     # Fuerza el caso que pickRoles evita por contraste: la SEGUNDA cinta sale
     # exactamente del color del suelo. Sin esto no se puede comprobar que el

@@ -41,10 +41,29 @@ window.huecos = (seed, pals, extra) => {
   // Tres clases, no dos. Un pixel MEZCLADO es el filo antialias de algo, no un
   // hueco: contarlo como hueco es lo que inflaba las rachas. Hueco es tinta
   // SOLIDA donde tiene que haber fondo.
+  // Y LA INCISION NO ES SIEMPRE EL FONDO. En el trazo fantasma la cinta es del
+  // color del suelo, asi que su corte se pinta de un tono corrido: preguntando
+  // solo por el fondo, esas obras salian con todas sus incisiones rotas y por
+  // eso estaban excluidas de la bateria entera —el 3,5% de lo que se publica,
+  // sin medir—. El render dice ahora de que color es cada corte.
+  // El ORDEN importa: la comprobacion de corte va ANTES que la de tinta,
+  // porque en una obra fantasma el color del suelo es a la vez el de la cinta.
+  // El fondo cuenta como corte SÓLO si no es tinta de nadie: en una obra
+  // fantasma el suelo es la tinta de una cinta, y aceptarlo dejaba pasar una
+  // incisión rellena por el cuerpo de al lado. Con eso el control caía del 97%
+  // al 1,7% sin que se notara, que es como se queda ciego un detector.
+  const mismo = (a,b) => String(a).toLowerCase() === String(b).toLowerCase();
+  const bgEsTinta = (r.tintas||[]).some(t => mismo(t, c.colores.bg));
+  // Y la TINTA tambien se pregunta, no se supone: en una obra fantasma el
+  // cuerpo va del color del suelo, asi que buscandolo por `fg` no se encuentra
+  // y el detector no ve ni la tinta ni el hueco.
+  const TINTAS = (r.tintas||[]).filter(t => typeof t === 'string').map(hex);
+  const CORTES = (r.halos||[]).map(hex).concat(bgEsTinta ? [] : [hex(c.colores.bg)]);
   const clase = (x,y) => { x=Math.round(x); y=Math.round(y);
     if (x<0||y<0||x>=S||y>=S) return 'fondo';
     const i=4*(y*S+x);
-    if (d3(i,B) < 55) return 'fondo';
+    if (CORTES.some(C => d3(i,C) < 55)) return 'fondo';
+    if (TINTAS.some(C => d3(i,C) < 55)) return 'tinta';
     if (d3(i,F) < 55 || (dosCintas && d3(i,F2) < 55)) return 'tinta';
     return 'mezcla'; };
   const esFondo = (x,y) => clase(x,y) === 'fondo';

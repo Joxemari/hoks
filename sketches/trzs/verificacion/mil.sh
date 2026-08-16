@@ -27,11 +27,14 @@ done
 # La batería tiene que cubrir lo que se publica: cuando entró el tipo de tres
 # cintas y el temblor, entraron aquí. Un detector que no ve la tercera cinta no
 # dice nada sobre ella.
-# Las obras FANTASMA se excluyen a mano: su cinta es del color del suelo y los
-# detectores que comparan tinta contra fondo no pueden medirlas por
-# construccion. Tienen su propio control (sueloigual) y se miran aparte.
-CFGS=('{"fantasma":"no"}' '{"tipo":"suelto","fantasma":"no"}' '{"tipo":"anudado","fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}' '{"tipo":"tres","fantasma":"no"}' '{"corner":"curvas","fantasma":"no"}' '{"ends":"inglete","fantasma":"no"}' '{"temblor":0.2,"fantasma":"no"}' '{"temblor":0.35,"corner":"curvas","fantasma":"no"}' '{"aspecto":1.5,"fantasma":"no"}' '{"tipo":"tres","aspecto":1.5,"fantasma":"no"}')
-POR=85   # 12 configuraciones x 85 = 1.020, mas las cuatro tandas de 250
+# Las obras FANTASMA ya no se excluyen. Estuvieron fuera de la bateria entera
+# —el 3,5% de lo que se publica, sin medir— porque los detectores comparaban
+# contra el fondo y en esas obras la cinta ES del color del fondo. Ahora el
+# render dice de que color es cada corte y cada tinta, y los detectores
+# preguntan en vez de suponer. En cuanto entraron aparecio un defecto que
+# llevaba ahi desde el arreglo de la cara del cabo: el halo del inglete.
+CFGS=('{"fantasma":"no"}' '{"tipo":"suelto","fantasma":"no"}' '{"tipo":"anudado","fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}' '{"tipo":"tres","fantasma":"no"}' '{"corner":"curvas","fantasma":"no"}' '{"ends":"inglete","fantasma":"no"}' '{"temblor":0.2,"fantasma":"no"}' '{"temblor":0.35,"corner":"curvas","fantasma":"no"}' '{"aspecto":1.5,"fantasma":"no"}' '{"tipo":"tres","aspecto":1.5,"fantasma":"no"}' '{"fantasma":"si"}' '{"tipo":"dos","fantasma":"si"}')
+POR=72   # 14 configuraciones x 72 = 1.008, mas las cuatro tandas de 250
 
 res() { python3 -c "
 import sys,json,re; d=json.load(sys.stdin)
@@ -72,7 +75,7 @@ echo "##### 4. REMATES, MARGEN Y DISCOS (200 x 5 = 1.000)"
 # Aqui tambien se excluyen las fantasma: su halo NO es el color del suelo (es un
 # tono corrido, para separar del suelo una cinta del color del suelo), asi que
 # el sondeo no ve fondo por ningun lado y marca los cuatro cabos de la obra.
-for c in '{"fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}' '{"tipo":"tres","fantasma":"no"}' '{"tipo":"tres","aspecto":1.5,"fantasma":"no"}'; do
+for c in '{"fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}' '{"tipo":"tres","fantasma":"no"}' '{"fantasma":"si"}'; do
   node o2.js trzs_test.js 200 "$c" 2>&1 | sed -n '1,5p'; done
 echo "-- CONTROLES (deben disparar)"
 # `cara` es el control del sondeo de remates: quita la incision de la cara del
