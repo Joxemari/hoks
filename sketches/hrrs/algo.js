@@ -1673,15 +1673,30 @@
     // incisión se recorta a un disco alrededor de cada cruce. De paso sale la figura
     // que las referencias tienen y que el análisis llevaba nombrada sin implementar:
     // el pelo empieza y acaba DENTRO del negro.
-    const RCRUCE = RCRUCE_G;
-    const cruces = best.trazos.map(() => []);
+    // LA INCISION CORRE CON EL TRAZO, no es un disco.
+    //
+    // Recortando el corte a un disco centrado en el cruce, la incision sale como una
+    // mancha redonda y en un nudo apretado se astilla en esquirlas — se vio pasando por
+    // aqui los ejes de la referencia del haz, que tiene DOS pelos largos y limpios y
+    // salia con veinte trocitos. Un corte de gubia no es una mancha: es la raya que
+    // deja el trazo que pasa por encima, y por tanto tiene la forma del que pasa y la
+    // extension del que esta debajo.
+    //
+    // Asi que el recorte deja de ser un disco y pasa a ser LA BANDA DEL DE ABAJO: el
+    // corte de k existe solo donde k esta encima de j, y ahi son las dos rayas de los
+    // costados de k cruzando la banda de j. Que es exactamente lo que se ve en las
+    // referencias. De paso desaparece el radio del disco, que era un numero que
+    // elegir.
+    const debajo = best.trazos.map(() => []);
     for (let k = 0; k < best.trazos.length; k++)
-      for (let j = 0; j < k; j++)
-        for (const a of best.trazos[k].segs)
-          for (const b of best.trazos[j].segs) {
-            const P = corteDe(a, b);
-            if (P) cruces[k].push(P);
-          }
+      for (let j = 0; j < k; j++) {
+        let toca = false;
+        for (const a of best.trazos[k].segs) {
+          for (const b of best.trazos[j].segs) if (corteDe(a, b)) { toca = true; break; }
+          if (toca) break;
+        }
+        if (toca) debajo[k].push(j);
+      }
     ctx.save();
     ctx.translate(ox, 0);
     ctx.scale(S, S);
@@ -1691,13 +1706,15 @@
       const cx = capa.getContext('2d');
       cx.translate(ox, 0); cx.scale(S, S);
       cx.fillStyle = rol.tinta;
-      const R = best.W * RCRUCE;
       for (let k = 0; k < best.trazos.length; k++) {
         const tr = best.trazos[k];
-        if (cruces[k].length) {
+        if (debajo[k].length) {
           cx.save();
           cx.beginPath();
-          for (const P of cruces[k]) { cx.moveTo(P.x + R, P.y); cx.arc(P.x, P.y, R, 0, 2 * Math.PI); }
+          for (const j of debajo[k]) {
+            const t2 = best.trazos[j];
+            banda(cx, t2.pts, best.W, t2.gubia, t2.relleno, null, halo);
+          }
           cx.clip();
           cx.globalCompositeOperation = 'destination-out';
           cx.beginPath(); banda(cx, tr.pts, best.W, tr.gubia, tr.relleno, null, halo);
@@ -1733,7 +1750,7 @@
              geo: { cintas: best.trazos.map(x => x.pts), sangra: best.trazos.map(x => !!x.sangra),
                     relleno: best.trazos.map(x => x.relleno || null),
                     cruza: best.trazos.map(x => !!x.cruza), CRUCE_MIN,
-                    gubia: best.trazos.map(x => x.gubia || 0), cruces, RCRUCE,
+                    gubia: best.trazos.map(x => x.gubia || 0), debajo,
                     SANGRE, MARGEN, W: best.W, g: best.g, D: best.D,
                     S, ox, fw, fh, veto: null } };
   }
@@ -1845,17 +1862,11 @@
       // cortan de verdad, el angulo no es rasante, y ningun cabo muere enterrado dentro
       // del otro— asi que no hay dos incisiones distintas segun por donde se entre. En
       // `render` no cambia nada, porque alli los trazos ya nacen cumpliendola.
-      const cru2 = cx2.trazos.map(() => []);
+      const deb2 = cx2.trazos.map(() => []);
       for (let k = 0; k < cx2.trazos.length; k++)
-        for (let j = 0; j < k; j++) {
-          if (!cruceEntero(cx2.trazos[k].pts, cx2.trazos[k].segs, cx2.trazos[j], cx2)) continue;
-          for (const a of cx2.trazos[k].segs)
-            for (const b2 of cx2.trazos[j].segs) {
-              const P = corteDe(a, b2);
-              if (P) cru2[k].push(P);
-            }
-        }
-      const R2 = Wb * RCRUCE_G;
+        for (let j = 0; j < k; j++)
+          if (cruceEntero(cx2.trazos[k].pts, cx2.trazos[k].segs, cx2.trazos[j], cx2))
+            deb2[k].push(j);
       const capa2 = ctx.canvas.ownerDocument.createElement('canvas');
       capa2.width = W; capa2.height = H;
       const c2 = capa2.getContext('2d');
@@ -1863,10 +1874,13 @@
       c2.fillStyle = rol.tinta;
       for (let k = 0; k < cx2.trazos.length; k++) {
         const tr = cx2.trazos[k];
-        if (cru2[k].length) {
+        if (deb2[k].length) {
           c2.save();
           c2.beginPath();
-          for (const P of cru2[k]) { c2.moveTo(P.x + R2, P.y); c2.arc(P.x, P.y, R2, 0, 2 * Math.PI); }
+          for (const j of deb2[k]) {
+            const t2 = cx2.trazos[j];
+            banda(c2, t2.pts, Wb, t2.gubia, t2.relleno, t2.anchos, halo2);
+          }
           c2.clip();
           c2.globalCompositeOperation = 'destination-out';
           c2.beginPath(); banda(c2, tr.pts, Wb, tr.gubia, tr.relleno, tr.anchos, halo2);

@@ -1715,6 +1715,48 @@ con el umbral movido) está en 0,1–1,0 %: o sea que el 98 % es alcanzable en p
 hay que ganarlo ahí, con pasos de anchura y posición más finos que los 0,25 px de este
 pulido.
 
+### El encargo, dicho por el autor, y lo que le falta al motor para cumplirlo
+
+*«Producir en serie lo irrepetible.»* Y una aclaración que reencuadra las seis
+referencias: **nunca fueron el objetivo**. Eran un banco de pruebas para dar con las
+funciones — el algoritmo tiene que dar obras *como* esas, no esas. Cada una podría ser
+una tirada suya, ninguna tiene que salir.
+
+El orden de construcción, en sus palabras:
+
+1. **Primero un trazo central**, un circuito. Un trazo es una línea de puntos unidos
+   por rectas; eso es lo único que hay de partida.
+2. A ese circuito se le dan las **variables: anchura —con una vibración, incluso de
+   grosor— y longitud**, que ya está implícita en el trazo dibujado.
+3. **Sobre él sale el número de trazos y la gravedad**, y se aplican. En r1–r4 los
+   trazos tienden al centro.
+4. **Márgenes constantes entre los trazos paralelizados.** Importantísimo.
+5. **Cada punto del trazo tendrá un valor** que dice si tiende a solaparse. Si la
+   paralelización es lo bastante fuerte, se da el solape; si no, el trazo **tiende a
+   paralelizarse o a irse a otro lado**.
+6. **La longitud manda**: en r6 los trazos son mucho más cortos que en r4.
+7. El trazo es **casi cuadrado** —un rotulador de punta cuadrada con algo de
+   organismo— y **también en el remate**: los que acaban en arista o en redondo no
+   valen.
+8. **Las juntas se rellenan**, porque el atributo principal es el halo: el margen entre
+   trazos solapados.
+9. **Todo son trazos, y un trazo tiene continuidad y longitud.** Los micro-trazos no.
+
+De eso, lo que ya cumple el motor: la anchura con gubia, el margen fabricado por el
+halo, las juntas rellenas (`holguras`), el remate a escuadra, la gravedad al núcleo, y
+—desde esta vuelta— la incisión corriendo con el trazo.
+
+**Lo que no cumple es el punto 9, y ahora se sabe por qué.** Medido: la línea total
+sobre la hoja no depende de lo que se pida. Pidiendo protagonistas de 2,05 · 2,6 · 3,2 y
+4,0 lados, sale 4,55 · 4,46 · 4,47 · 4,61. Plana. La escalera no es la que manda.
+
+Lo que manda es que **un trazo que roza a otro sin poder cruzarlo se TRUNCA**:
+`recortar()` devuelve el trozo más largo que cabe, y el resto se tira. Por eso todo sale
+corto por mucho que se pida largo. Y el arreglo está en el punto 5 del encargo: cuando
+el solape no sale, el trazo **no debe truncarse — debe desviarse**, paralelizarse o
+irse. Truncar es la respuesta equivocada a un estorbo, y es la causa de que la hoja se
+lea a base de palos en vez de a base de cintas.
+
 ### r5, y por qué es la última: su pelo es de 4 px y mi temblor de 0,97
 
 El 100 % de la tinta que sobra, en las seis, es **canal del original que la réplica

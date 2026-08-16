@@ -108,12 +108,14 @@ function medir({ seed, fmt, params, base }) {
   const paso1 = Math.max(2, Math.floor(250 / Math.max(1, n)));
   for (let k = 0; k < n; k++) {
     const pts = geo.cintas[k], rel = geo.relleno[k];
-    const cr = geo.cruces ? geo.cruces[k] : null;
-    if (halo > 0 && cr && cr.length) {
-      const R = geo.W * (geo.RCRUCE || 1.6);
+    const deb = geo.debajo ? geo.debajo[k] : null;
+    if (halo > 0 && deb && deb.length) {
+      // el mismo recorte que el dibujo: la banda del de abajo, no un disco
       lx.save();
       lx.beginPath();
-      for (const P of cr) { lx.moveTo(P.x + R, P.y); lx.arc(P.x, P.y, R, 0, 2 * Math.PI); }
+      for (const j of deb) {
+        HOKS.HRRS.banda(lx, geo.cintas[j], geo.W, geo.gubia[j], geo.relleno[j], null, halo);
+      }
       lx.clip();
       lx.globalCompositeOperation = 'destination-out';
       lx.beginPath(); HOKS.HRRS.banda(lx, pts, geo.W, geo.gubia[k], rel, null, halo);
