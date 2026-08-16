@@ -2257,10 +2257,35 @@ salida de la batería. `pelo.js` documentaba la retirada desde hacía versiones;
 había ejecutado.
 
 La regla no estaba mal: estaba **sin acotar**. Ahora `canal.js` la afirma donde es cierta
-—`geo.halo === 0`, y ahí sale 0 de 5 con mínimo 1,0016, exacta— y donde hay halo informa
+—`geo.halo === 0`, y ahí sale 0 de 11 con mínimo 1,0016, exacta— y donde hay halo informa
 de cuánto se meten los trazos sin dar veredicto. La garantía con halo la mide `pelo.js`,
 **que además no estaba en `mil.sh`**: la batería comprobaba a fondo una regla retirada y
 no comprobaba la vigente. Ya tiene su bloque, con `duro` y `corta` de control.
+
+**Y el mismo error, en el otro sentido, en el detector nuevo.** Metida la configuración
+`sin-halo`, `pelo.js` cantó `sin-halo` seed 1013885301 a **0,201 g**, el peor de los 45.
+No es un defecto: sin halo el canal no se fabrica, se prohíbe sobre los ejes, y un cruce
+**legal** —dos trazos que se funden— no deja blanco ninguno entre las dos tintas. Allí una
+regla de geometría aplicada a obra con halo; aquí una regla de píxel aplicada a obra sin
+él. **Cada detector afirma en su mitad y describe en la otra**, y `pelo.js` se planta con
+código 2 si *ninguna* obra tiene halo — el caso en que un cero no significaría nada.
+
+#### El marcador, a 160 obras por bloque
+
+| bloque | sano | controles |
+|---|---|---|
+| canal | 0 rendijas sin halo (**min 1,0016**), 0 holguras de 165 | duro 74/120 · corta 96/120 · rendija 23/120 · holgura 120/120 |
+| pelo | **3 de 42** por debajo de g (min 0,804) | duro 31/42 · corta 25/42 |
+| toque | limpio | miter 53/60 · cabo 60/60 |
+| obra | 0/165 escapado, garabato, pizcas, muestrario | margen 95/120 · garabato 120/120 · pizca 92/120 |
+| det | 60/60 determinismo · 60/60 misma huella a 760/2400/4200 | *(no puede tenerlo, y está dicho)* |
+
+Lo único que queda rojo es `pelo`, y es un defecto de verdad con sus semillas: `apaisado`
+y `apais-haz` seed 1013885301 a 0,804 con g = 5,0 px, y `disperso` seed 2654413734 a
+0,890 con g = 4,1 px. No es la rejilla —0,804 de 5 px es un píxel entero de menos—. Es
+que **el halo garantiza el canal en el costado y no en el pico**: la incisión corre limpia
+y de pronto la cruza una cuña, una punta de esquina. La trampa del inglete, por cuarta
+puerta distinta.
 
 ### Lo que queda mal, y ya con nombre
 
