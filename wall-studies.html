@@ -1363,30 +1363,28 @@
     if(reduce)return;
     requestAnimationFrame(function(){
       var fr=frame.getBoundingClientRect();
-      ts.forEach(function(t){var r=t.getBoundingClientRect();t._x=r.left-fr.left+r.width/2;t._y=r.top-fr.top+r.height/2;t._last=-1e9;});
+      ts.forEach(function(t){var r=t.getBoundingClientRect();t._x=r.left-fr.left+r.width/2;t._y=r.top-fr.top+r.height/2;t._c0=-1e9;t._c1=-1e9;});
       var W=fr.width,Hh=fr.height,running=true;
       var maxR=Math.sqrt(W*W+Hh*Hh);
       var SWEEP=2500, GAP=300, BAND=54, REST=1500, speed=(maxR+BAND)/SWEEP; // one heartbeat: pum-pum, then rest
       var pulse=null, restUntil=0, pcount=0, SEQ=['mixed','palette','family']; // fixed cadence, loops
-      // one flip = two colour flaps (vestaboard), then ONE definitive image
-      function flip(t){var c=t._c;var g=c.getContext('2d');
-        var mode=pulse.mode, pf=pulse.fam, pal=(mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null;
-        function pick(){return (pal&&pal.colors&&pal.colors.length)?pal.colors[(Math.random()*pal.colors.length)|0]:palColor();}
-        function flap(col){c.width=c.width;g.fillStyle=col;g.fillRect(0,0,c.width,c.height);}
-        flap(pick());
-        setTimeout(function(){if(running)flap(pick());},95);
-        setTimeout(function(){if(!running)return;var fam=(mode==='family')?pf:randFam();render2(c,150,150,fam,seed(),pal);},200);}
+      // beat 1 (pum) -> flip to a palette colour; beat 2 (pum) -> resolve to ONE final image
+      function palPick(){var pal=(pulse.mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null; return (pal&&pal.colors&&pal.colors.length)?pal.colors[(Math.random()*pal.colors.length)|0]:palColor();}
+      function flapColor(t){var c=t._c,g=c.getContext('2d');c.width=c.width;g.fillStyle=palPick();g.fillRect(0,0,c.width,c.height);}
+      function resolveImg(t){var pal=(pulse.mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null; var fam=(pulse.mode==='family')?pulse.fam:randFam(); render2(t._c,150,150,fam,seed(),pal);}
       function loop(now){ if(!running)return;
         if(!pulse && now>=restUntil){
           var mode=SEQ[pcount%SEQ.length]; pcount++; if(mode==='palette'&&!PALS.length)mode='mixed';
-          pulse={ox:Math.random()*W, oy:Math.random()*Hh, b:[now], mode:mode, fam:randFam(), palIdx:(Math.random()*Math.max(1,PALS.length))|0};
+          pulse={ox:Math.random()*W, oy:Math.random()*Hh, b:[now, now+GAP], mode:mode, fam:randFam(), palIdx:(Math.random()*Math.max(1,PALS.length))|0};
           desc.textContent='heartbeat · '+(mode==='palette'?'one palette':(mode==='family'?('one family ('+pulse.fam+')'):'mixed'));
           heartbeat(GAP);
         }
         if(pulse){ var done=true;
           for(var bi=0;bi<pulse.b.length;bi++){ var rad=(now-pulse.b[bi])*speed; if(rad<0){done=false;continue;} if(rad<=maxR+BAND)done=false;
             for(var i2=0;i2<ts.length;i2++){var t=ts[i2];var dx=t._x-pulse.ox,dy=t._y-pulse.oy;var d=Math.sqrt(dx*dx+dy*dy);
-              if(Math.abs(d-rad)<BAND && now-t._last>260){t._last=now;flip(t);} } }
+              if(Math.abs(d-rad)<BAND){
+                if(bi===0){ if(now-t._c0>250){t._c0=now; flapColor(t);} }
+                else { if(now-t._c1>250){t._c1=now; resolveImg(t);} } } } }
           if(done){pulse=null;restUntil=now+REST;} }
         rafId=requestAnimationFrame(loop);}
       frame._stop=function(){running=false;};
