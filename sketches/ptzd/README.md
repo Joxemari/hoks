@@ -56,6 +56,46 @@ regla; los que no producen regla no están.
 | **El «espacio lento»** — la materia sentida como un espacio más lento | la veta: el negro no es plano, y su textura es lo único que dice que la masa también se mueve, sólo que despacio |
 | **Las estelas discoidales vascas** (*hilarriak*), fuente común de Oteiza, Basterretxea y de él | frontalidad: el bloque **se planta de cara**, con su reserva de suelo. No flota en medio de la hoja por casualidad |
 
+### Lo que la revisión de su obra gráfica dejó FUERA, y por qué
+
+Volver sobre el cuerpo de obra con la tabla ya escrita sirve para dos cosas: ver
+qué falta y ver dónde nos hemos separado de él **sin decirlo**. Cuatro cosas.
+
+**El color es nuestro, no suyo, y hay que decirlo.** Hizo **más de 600 estampas
+desde 1959 usando sólo blanco y negro**, y lo defendía: con el blanco y el negro se
+produce «la dialéctica más poderosa y la más elemental». PTZD es policroma y usa
+quince paletas con suelos de color. Eso **no** sale de él: sale de la regla de casa
+—una paleta es una combinación que funciona y se presume transversal— y la regla de
+casa gana. Pero la tabla presentaba la regla 1 como si viniera de su obra, y de su
+obra viene la *unidad de tinta*, no la *elección* de tinta.
+
+**La huella de la matriz.** Sus estampas llevan la impronta del taco en el papel,
+al margen de la tinta: el rectángulo hundido que deja el bloque al prensarlo. Es la
+prueba física de que ahí hubo un objeto, y está en **todas** las estampas, no sólo
+en las impresas en seco — el `gofrado` declarado no es una técnica aparte, es esa
+misma huella cuando se le quita la tinta. Es el candidato más fuerte de los que no
+hemos tomado, y el más barato de dibujar. No se ha metido porque cambia todas las
+obras de la familia y porque hay que decidir antes si hoks quiere convenciones de
+estampa en algo que se ve en pantalla.
+
+**El rayado.** Su obra gráfica se describe por cuatro recursos: *rayados, texturas,
+líneas y manchas*. Nosotros tenemos la mancha, la línea (el corte) y la textura (la
+veta), y **no tenemos el rayado**: la trama de incisiones paralelas como marca
+deliberada. O entra como recurso o se rechaza por escrito, pero hoy simplemente no
+está.
+
+**Y una corrección de encuadre:** su medio más usado fue el **aguafuerte**, no la
+xilografía. Esta familia se apoya entera en una técnica que es minoría en su obra.
+No invalida nada —tomamos principios de forma— pero conviene no contarlo como si
+xilografía y Chillida fueran lo mismo.
+
+Lo que **no** se ha podido verificar: si su masa negra llega a sangrar por el borde
+del pliego. PTZD garantiza hoy que no lo toca nunca (la batería lo mide: cero
+recortadas). Si en su obra sí ocurre, ahí hay una lectura que nos falta —la de masa
+como fragmento de algo mayor, que PLLS sí tiene con su `field`—. Para eso hace falta
+el catálogo razonado de Van der Koelen, que es la referencia estándar de su gráfica
+y no está en línea.
+
 Lo que se toma son **principios de forma**, no obras: aquí no se reproduce
 ninguna estampa suya ni se imita ninguna pieza concreta. El sistema es propio, y
 la continuidad de la casa sigue donde estaba —**Elena Asins**: la serie, el
@@ -856,4 +896,8 @@ Lo que aquí se afirma de su obra está contrastado, no recordado:
 - [*Harri, Lurra, Huts* — Chillida Leku / IAC](https://www.iac.org.es/noticias/actividades-socios/nueva-exposicion-en-chillida-leku-harri-lurra-huts-hasta-el-26-de-mayo.html)
 - [*Lurra* — Colección de Arte ABANCA](https://coleccion.abanca.com/collection/lurra/)
 - [Homenaje a Bach — Tomàs Rotger](https://www.tomasrotger.com/eduardo-chillida-homenaje-a-bach/)
+- [Chillida. Obra gráfica — Galería A34](https://a34.es/esp-chillida-obra-grafica-2021) · las 600 estampas en blanco y negro y «la dialéctica más poderosa y la más elemental»
+- [Chillida grabador — MilArt](https://milartienda.com/chillida-grabador/) · los gofrados y las marcas de matriz en el papel
+- [Eduardo Chillida. Obra sobre papel — ARTEINFORMADO](https://www.arteinformado.com/agenda/f/eduardo-chillida-obra-sobre-papel-97261)
+- [Chillida, obra gráfica — Fundación Cerezales Antonino y Cinia](https://fundacioncerezalesantoninoycinia.org/en/activity/chillida-graphic-work/) · el grabado desde 1959 y el repertorio de técnicas
 - [Estelas discoidales vascas (*hilarriak*)](http://estelasvascas-pz.blogspot.com/2015/10/estelas-discoidales-vascas-cap-01-los.html)
