@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>ptzd · figuras del making of</title>
+<style>
+  body { margin: 0; background: #fff; font: 12px/1.5 'Courier New', monospace; color: #111; padding: 20px; }
+  h1 { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; margin: 0 0 4px; }
+  p.q { opacity: .6; max-width: 72ch; margin: 0 0 18px; }
+  figure { margin: 0 0 22px; }
+  figcaption { padding-top: 5px; opacity: .55; }
+  canvas { display: block; border: 1px solid #eee; max-width: 100%; height: auto; }
+  button { font: inherit; border: 1px solid #111; background: #fff; padding: 5px 14px; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>ptzd · figuras del making of</h1>
+<p class="q">Genera las figuras del ensayo. Una por idea, todas <b>del código de verdad</b> —
+nada dibujado a mano para la ocasión. Con <code>?auto=1</code> se descargan solas;
+si no, salen aquí para mirarlas. Las seeds van fijadas: la figura tiene que poder
+volver a salir igual dentro de un año.</p>
+<p><button id="go">Generar</button> <span id="estado" style="opacity:.5"></span></p>
+<div id="out"></div>
+
+<script src="../../_engine.js"></script>
+<script src="../algo.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const q = new URLSearchParams(location.search);
+  const AUTO = !!q.get('auto');
+  let PALS = null;
+
+  async function palettes() {
+    if (PALS) return PALS;
+    let p = await HOKS.loadPalettes();
+    if (p.length <= HOKS.DEFAULTS.length) {
+      try {
+        const d = await fetch('../../../data/palettes.json').then(r => r.ok ? r.json() : null);
+        if (d && d.length) p = HOKS.normalizePalettes(d.filter(x => x.active !== false));
+      } catch (e) {}
+    }
+    return (PALS = p);
+  }
+
+  // Un lienzo con la obra dentro, al tamaño pedido.
+  function obra(seed, fmt, lado, params) {
+    const d = HOKS.fmtDims(fmt || 'square', lado);
+    const cv = document.createElement('canvas'); cv.width = d.W; cv.height = d.H;
+    const res = HOKS.PTZD.render(cv.getContext('2d', { willReadFrequently: true }),
+                                 d.W, d.H, seed, { palettes: PALS, params: params || {} });
+    return { cv, res, W: d.W, H: d.H };
+  }
+
+  // Tira de paneles con rótulo debajo de cada uno.
+  function tira(paneles, alto, rotulos) {
+    const gap = 18, pad = 26;
+    const anchos = paneles.map(p => p.width * (alto / p.height));
+    const W = anchos.reduce((a, b) => a + b, 0) + gap * (paneles.length - 1) + pad * 2;
+    const H = alto + pad * 2 + 22;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#fff'; c.fillRect(0, 0, W, H);
+    let x = pad;
+    paneles.forEach((p, i) => {
+      c.drawImage(p, x, pad, anchos[i], alto);
+      if (rotulos && rotulos[i]) {
+        c.fillStyle = '#9a958e'; c.font = '13px "Courier New", monospace';
+        c.textAlign = 'center';
+        c.fillText(rotulos[i], x + anchos[i] / 2, pad + alto + 17);
+      }
+      x += anchos[i] + gap;
+    });
+    return cv;
+  }
+
+  function rejilla(paneles, cols, lado) {
+    const gap = 12, pad = 16;
+    const filas = Math.ceil(paneles.length / cols);
+    const cv = document.createElement('canvas');
+    cv.width = cols * lado + gap * (cols - 1) + pad * 2;
+    cv.height = filas * lado + gap * (filas - 1) + pad * 2;
+    const c = cv.getContext('2d');
+    c.fillStyle = '#fff'; c.fillRect(0, 0, cv.width, cv.height);
+    paneles.forEach((p, i) => {
+      const cx = pad + (i % cols) * (lado + gap), cy = pad + ((i / cols) | 0) * (lado + gap);
+      c.drawImage(p, cx, cy, lado, lado);
+    });
+    return cv;
+  }
+
+  const figuras = [];
+  const añadir = (nombre, cv, pie) => {
+    figuras.push({ nombre, cv });
+    const f = document.createElement('figure');
+    f.appendChild(cv);
+    const cap = document.createElement('figcaption'); cap.textContent = nombre + '.png — ' + pie;
+    f.appendChild(cap); $('out').appendChild(f);
+  };
+
+  async function generar() {
+    $('go').disabled = true;
+    await palettes();
+    const P = { grainScale: 0 };
+    const esperar = () => new Promise(r => setTimeout(r, 0));
+
+    // 1 · EL TACO. Tres bloques de un solo corte: la silueta tiende al cuadrado
+    //     y no lo es — esquinas desviadas, cantos ondulados, un escalón de esquina.
+    $('estado').textContent = 'el taco…';
+    añadir('block', tira(
+      [900004, 900005, 900011].map(s => obra(s, 'square', 620, { ...P, cortes: 1, faltan: 0 }).cv),
+      420, ['tiende al cuadrado', 'y no lo es', 'un escalón de esquina']),
+      'el taco antes de romperse');
+    await esperar();
+
+    // 2 · LA GUBIA. El mismo seed con los tres filos: la anchura del corte es la
+    //     herramienta, y con ella cambia cuántos trozos admite el taco.
+    $('estado').textContent = 'la gubia…';
+    añadir('gouge', tira(
+      ['fina', 'media', 'ancha'].map(g => obra(900002, 'square', 620, { ...P, gubia: g }).cv),
+      420, ['fina · 1,3%', 'media · 2,1%', 'ancha · 3,3%']),
+      'la anchura del corte es la herramienta');
+    await esperar();
+
+    // 3 · LOS CUATRO TIPOS. De un corte a nueve: la pregunta del límite en una fila.
+    $('estado').textContent = 'los tipos…';
+    añadir('types', tira(
+      [['hendido', 900004], ['partido', 900007], ['arbol', 900000], ['astillado', 900002]]
+        .map(([t, s]) => obra(s, 'square', 560, { ...P, tipo: t }).cv),
+      380, ['hendido', 'partido', 'árbol', 'astillado']),
+      'los cuatro tipos, de un corte a nueve');
+    await esperar();
+
+    // 4 · TRI-FORMATO. La misma seed en los tres pliegos: no es un recorte, el
+    //     algoritmo recompone y la huella no se mueve.
+    $('estado').textContent = 'el pliego…';
+    añadir('format', tira(
+      ['square', 'vertical', 'horizontal'].map(f => obra(900044, f, 560, P).cv),
+      380, ['cuadrado', 'vertical', 'apaisado']),
+      'la misma seed en los tres pliegos');
+    await esperar();
+
+    // 5 · LA QUE FALTA. Con y sin la placa perdida, misma seed: la silueta deja
+    //     de ser un polígono proporcional.
+    $('estado').textContent = 'la que falta…';
+    añadir('missing', tira(
+      [0, 1, 2].map(n => obra(900012, 'square', 620, { ...P, faltan: n }).cv),
+      420, ['ninguna falta', 'falta una', 'faltan dos']),
+      'la silueta la hace lo que no está');
+    await esperar();
+
+    // 6 · LA SERIE. Doce seeds seguidas — dispersadas, que si no la paleta se
+    //     congela y doce obras enseñan tres paletas.
+    $('estado').textContent = 'la serie…';
+    const mez = n => { let x = n >>> 0;
+      x = Math.imul(x ^ (x >>> 16), 2246822507) >>> 0;
+      x = Math.imul(x ^ (x >>> 13), 3266489909) >>> 0;
+      return (x ^ (x >>> 16)) >>> 0; };
+    const doce = [];
+    for (let i = 0; i < 12; i++) { doce.push(obra(mez(970000 + i), 'square', 420, P).cv); await esperar(); }
+    añadir('contact', rejilla(doce, 6, 300), 'doce seeds');
+
+    $('estado').textContent = 'hecho · ' + figuras.length + ' figuras';
+    $('go').disabled = false;
+    // Para sacarlas sin manos: se vuelcan al DOM en base64 y las recoge quien
+    // llame. Bajarlas con <a download> no funciona sin cabeza.
+    const vol = document.createElement('pre');
+    vol.id = 'volcado'; vol.style.display = 'none';
+    vol.textContent = JSON.stringify(figuras.map(f => ({ n: f.nombre, d: f.cv.toDataURL('image/png') })));
+    document.body.appendChild(vol);
+    if (AUTO) for (const f of figuras) {
+      const a = document.createElement('a');
+      a.download = f.nombre + '.png'; a.href = f.cv.toDataURL('image/png');
+      a.click(); await new Promise(r => setTimeout(r, 250));
+    }
+  }
+  $('go').addEventListener('click', generar);
+  if (AUTO) generar();
+})();
+</script>
+</body>
+</html>
