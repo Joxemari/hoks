@@ -1833,14 +1833,28 @@
     // transcripcion y no debe cambiar sola. Se pide con `halo: <fraccion de W>`.
     const halo2 = receta.halo ? receta.halo * Wb : 0;
     if (halo2 > 0) {
+      // LA INCISION ES UNA DECISION, NO UNA CONSECUENCIA de que dos ejes se corten.
+      //
+      // Sin esta puerta, pasando por aqui los ejes transcritos de las seis referencias
+      // el corte disparaba en CADA interseccion y convertia la masa en confeti: la
+      // enmarcada, la litografia y la cuadrada quedaban hechas trizas, y el nudo
+      // central de la litografia se llenaba de rectangulos blancos. El original de esa
+      // litografia tiene un nudo enorme con DOS pelos, no veinte.
+      //
+      // La puerta es la MISMA que usa `render` para autorizar el solape —los ejes se
+      // cortan de verdad, el angulo no es rasante, y ningun cabo muere enterrado dentro
+      // del otro— asi que no hay dos incisiones distintas segun por donde se entre. En
+      // `render` no cambia nada, porque alli los trazos ya nacen cumpliendola.
       const cru2 = cx2.trazos.map(() => []);
       for (let k = 0; k < cx2.trazos.length; k++)
-        for (let j = 0; j < k; j++)
+        for (let j = 0; j < k; j++) {
+          if (!cruceEntero(cx2.trazos[k].pts, cx2.trazos[k].segs, cx2.trazos[j], cx2)) continue;
           for (const a of cx2.trazos[k].segs)
             for (const b2 of cx2.trazos[j].segs) {
               const P = corteDe(a, b2);
               if (P) cru2[k].push(P);
             }
+        }
       const R2 = Wb * RCRUCE_G;
       const capa2 = ctx.canvas.ownerDocument.createElement('canvas');
       capa2.width = W; capa2.height = H;
