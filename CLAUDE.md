@@ -169,8 +169,30 @@ redeploy de Pages.
 
 - **RNG**: clase `Rng` (LCG, `Math.imul(1664525,s)+1013904223`). Mismo seed →
   mismo resultado. Helpers: `int, range, bool, pickFrom, weighted`.
-- **Paletas ponderadas**: `ageWeight()` da más probabilidad a las recientes;
+- **TODAS LAS PALETAS EN TODAS LAS FAMILIAS.** Es regla de casa: una paleta es una
+  combinación que funciona, y se presume transversal. Las diez familias sortean de
+  la **lista completa de activas** —nadie excluye ninguna— y hoy todas pesan igual.
+  Si alguna familia tuviera que dejar fuera una paleta, sería una **excepción muy
+  marcada y escrita como tal**, no un efecto lateral.
+  Lo que limita el impacto de una paleta **no es la generación, es la selección**:
+  en lotes curados eliges tú, y en lotes automatizados a gran escala mandan los
+  porcentajes que se les asignen. La generación no debe hacer ese trabajo por
+  adelantado.
+  ⚠️ **`ageWeight()` está inerte hoy**: devuelve 4 para cualquier `created < 1e12`, y
+  las quince activas tienen `created` de 1 a 35 (índices, no *timestamps*). Así que
+  el reparto es **uniforme**, no ponderado por edad, digan lo que digan los
+  comentarios viejos. Si algún día se ponen fechas reales, el peso se enciende solo
+  y deja de cumplirse la regla de arriba — hay que decidirlo, no descubrirlo.
   `getActivePalette(rng)` elige por peso (o fija una si el admin la bloquea).
+- **Lo que sí cambia por familia es qué hace con la paleta que le toca**, y ahí hay
+  tres escuelas: el **extremo** (el par más distante — `inkRoles` del motor, que usan
+  EVOL y HRRS, y el `pareja()` de PTZD), la **banda** (DTKRT ordena por luminancia,
+  parte en tercios y sortea dentro) y la **libre** (PLLS coge cualquier color con un
+  suelo de 0,12 de luma para que nada se disuelva). TRZS añadió el **dial**: máximo
+  casi siempre, una de cada cuatro baja del extremo, y el fantasma en el otro tope.
+  Ojo con las reglas de tinta que, sin excluir la paleta, la dejan casi muda: PTZD
+  exige que todas las tintas caigan del mismo lado del suelo y con eso el 90% de sus
+  obras sale monócroma, así que una paleta de seis colores enseña dos.
 - **Familias base**: PLLS (cápsulas/pills con arquetipos de densidad y *finishes*),
   KRRTK (subdivisión recursiva de cuadrados), DTK (rejilla de círculos), BZRS
   (cientos de curvas Bézier con degradado entre dos colores).
