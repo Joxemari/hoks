@@ -172,9 +172,9 @@ function circuito(seed) {
   // a la suma. El tipo modula esa suma; no la contradice.
   const CANAL = 0.22;
   const TIPOS = {
-    denso:   { n: [7, 12], sepK: [1.00, 1.12], atrae: [0.30, 0.55],
+    denso:   { n: [9, 15], sepK: [1.00, 1.12], atrae: [0.30, 0.55],
                grav: [0.55, 1.25], solape: [0.10, 0.30] },
-    abierto: { n: [5, 8],  sepK: [1.25, 2.10], atrae: [0.14, 0.32],
+    abierto: { n: [6, 10],  sepK: [1.25, 2.10], atrae: [0.14, 0.32],
                grav: [0.12, 0.50], solape: [0.02, 0.12] },
   };
   const tipo = rng.bool(0.62) ? 'denso' : 'abierto';
@@ -193,6 +193,7 @@ function circuito(seed) {
   const SOL_UMBRAL = 0.82;
   const VUELTAS = 18;
 
+  const HOLGURA = 0.45;      // cuánto aire guarda el punto sin fuerza de solape, sobre el carril
   const TOPE_VUELTA = 100;   // un giro más cerrado que esto no existe en las seis
   const PASO = 0.105;
   const ERR_RUMBO = 7;
@@ -326,9 +327,12 @@ function circuito(seed) {
 
   // ── FASE 1. SEMBRAR: series de puntos, sin mirarse entre sí ───────────────────
   const trazos = [], masas = [], sols = [], atrs = [], errs = [];
-  // se siembra de más porque la quita-púas se lleva un 18 % del recorrido y la tinta se mide al
-  // final, no al principio: sin esto la cobertura acaba en 20,8 % contra el 24,8 % de las seis
-  const Lmed = rng.range(0.80, 1.22);
+  // Se siembra de más porque la quita-púas y el abrir el canal se llevan recorrido, y la tinta
+  // se mide al final, no al principio. Pero MENOS que antes: el objetivo de largo estaba
+  // inflado por r4 —la referencia que funde, y que al fundirse dio un trazo de 1,45 cuando las
+  // otras cinco van de 0,38 a 1,00—, así que la familia perseguía 0,64 cuando la mediana de las
+  // cinco buenas es 0,568. Subí la siembra dos veces para llegar a un número que no existía.
+  const Lmed = rng.range(0.62, 0.96);
   for (let k = 0; k < n; k++) {
     const largo = Lmed * (k === 0 ? rng.range(1.4, 1.8) : rng.range(0.70, 1.30));
     const a = rng.range(0, 6.2832), r = rng.range(0.08, 0.46);
@@ -428,7 +432,11 @@ function circuito(seed) {
           if (c && (!mejor || c.d < mejor.d)) mejor = c;
         }
         if (mejor && mejor.d < carril * 4.0) {
-          const meta = sols[k][i] >= SOL_UMBRAL ? 0 : carril;
+          // LA FUERZA DE SOLAPE DICE CUÁNTO SE ARRIMA, NO SI SE FUNDE. Antes la meta era 0 —el
+          // punto encima del vecino— y eso es fundir por diseño: el 63 % de las obras salían con
+          // menos piezas de tinta que trazos. Las bandas no se funden NUNCA (el autor: «r4 es un
+          // error»), así que el solape modula el carril entre pegarse al canal y guardar aire.
+          const meta = carril * (1 + (1 - Math.min(1, sols[k][i] / SOL_UMBRAL)) * HOLGURA);
           const nx = mejor.d > 1e-9 ? (p[0] - mejor.qx) / mejor.d : Math.cos(mejor.dir + Math.PI / 2);
           const ny = mejor.d > 1e-9 ? (p[1] - mejor.qy) / mejor.d : Math.sin(mejor.dir + Math.PI / 2);
           const err = meta - mejor.d;
@@ -458,7 +466,8 @@ function circuito(seed) {
     let roto = false;
     for (let k = 0; k < trazos.length; k++) {
       for (let i = 0; i < trazos[k].length; i++) {
-        if (sols[k][i] >= SOL_UMBRAL) continue;      // tiene fuerza: se queda solapado
+        // ya no hay exención: ningún punto «tiene derecho» a solaparse, porque solaparse es
+        // fundir y fundir no ocurre
         let mejor = null;
         for (let j = 0; j < trazos.length; j++) {
           if (j === k) continue;
@@ -526,8 +535,7 @@ function circuito(seed) {
       const t = trazos[k];
       let corte = -1;
       for (let i = 0; i < t.length - 1; i++) {
-        if (Math.max(sols[k][i], sols[k][i + 1]) >= SOL_UMBRAL) continue;
-        if (cruza(k, i)) { corte = i; break; }
+        if (cruza(k, i)) { corte = i; break; }   // un cruce ES una fusión: no se exime ninguno
       }
       if (corte < 0) break;
       // el trozo largo se queda: el cruce parte el trazo en dos y sobrevive el que más dice
@@ -628,6 +636,62 @@ function circuito(seed) {
       errs.splice(k, 1);
     }
   }
+
+  // ── ABRIR EL CANAL ────────────────────────────────────────────────────────────
+  // LAS BANDAS NO SE FUNDEN NUNCA. Es regla del autor y es absoluta: «r4 es un error, nunca
+  // debe fundir». Y no basta con que los centros no se cruzen ni con separar los VÉRTICES: dos
+  // tramos pueden pasar a menos de una anchura entre vértice y vértice y las bandas se tocan
+  // igual. Medido sobre el píxel, el 63 % de las obras salían con menos piezas de tinta que
+  // trazos. Así que aquí se mide TRAMO CONTRA TRAMO y se abre a empujones hasta que cabe.
+  const distTramos = (a, b, c, d) => {
+    if (segCorta(a, b, c, d)) return 0;
+    const dp = (p, q, r) => {
+      const ex = r[0] - q[0], ey = r[1] - q[1], l2 = ex * ex + ey * ey;
+      let u = l2 > 1e-18 ? ((p[0] - q[0]) * ex + (p[1] - q[1]) * ey) / l2 : 0;
+      u = u < 0 ? 0 : u > 1 ? 1 : u;
+      return hy(p[0] - (q[0] + ex * u), p[1] - (q[1] + ey * u));
+    };
+    return Math.min(dp(a, c, d), dp(b, c, d), dp(c, a, b), dp(d, a, b));
+  };
+  const abreCanal = (vueltas) => {
+    // el suelo, con holgura de verdad. A sep*1,02 el foso del vecino —que mide W+2g— roza el
+    // borde de la banda y la PARTE por la mitad: dos obras de sesenta salían con más piezas de
+    // tinta que trazos. Una banda interrumpida es el mismo defecto que dos fundidas.
+    const MIN = sep * 1.08;
+    for (let v = 0; v < vueltas; v++) {
+      let toco = false;
+      for (let k = 0; k < trazos.length; k++) {
+        for (let i = 0; i < trazos[k].length - 1; i++) {
+          for (let j = 0; j < trazos.length; j++) {
+            if (j === k) continue;
+            for (let q = 0; q < trazos[j].length - 1; q++) {
+              const d = distTramos(trazos[k][i], trazos[k][i + 1], trazos[j][q], trazos[j][q + 1]);
+              if (d >= MIN) continue;
+              // se aparta el tramo entero por su normal, y los DOS lados a la vez: apartar un
+              // vértice solo es lo que clavaba púas
+              const mx = (trazos[k][i][0] + trazos[k][i + 1][0]) / 2;
+              const my = (trazos[k][i][1] + trazos[k][i + 1][1]) / 2;
+              const c = cercaDe([mx, my], trazos[j]);
+              if (!c) continue;
+              let ux, uy;
+              if (c.d > 1e-9) { ux = (mx - c.qx) / c.d; uy = (my - c.qy) / c.d; }
+              else { ux = -Math.sin(c.dir); uy = Math.cos(c.dir); }
+              const emp = (MIN - d) * 0.60;
+              for (const idx of [i, i + 1])
+                trazos[k][idx] = dentro([trazos[k][idx][0] + ux * emp,
+                                         trazos[k][idx][1] + uy * emp]);
+              toco = true;
+            }
+          }
+        }
+      }
+      if (!toco) return true;
+    }
+    return false;
+  };
+  abreCanal(14);
+  quitaPuas();
+  abreCanal(6);
 
   // ── FASE 3. PARTIR PARA ACOMPAÑAR — Y VA AL FINAL ─────────────────────────────
   // Iba antes del encauzado y el encauzado lo deshacía: reconstruye la polilínea desde el
@@ -808,7 +872,9 @@ function circuito(seed) {
     errs[k] = rec.slice(0, rec.length - 1).map(() => 0);
     aceptadas++;
   }
+  abreCanal(10);
   quitaPuas();
+  abreCanal(8);
   if (typeof process !== 'undefined' && process.env.HRRS_ACDBG)
     console.error('ofertas=' + ofertas + ' ok=' + aceptadas + ' cruce=' + porQue.cruce + ' margen=' + porQue.margen + ' grapa=' + porQue.grapa);
 

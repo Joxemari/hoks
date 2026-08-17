@@ -59,8 +59,17 @@ for(let i=0;i<20;i++){
     if(cerca>3.0*c.W)lib++;}
   push('cabosLibres',lib/Math.max(1,tot2));
 }
-const OBJ={n:7.5,linea:5.21,largo:0.64,reparto:1.56,r1:0.24,r4:0.60,ejes:0.52,giro:32,
-  girosPorLado:7.55,cierre:0.30,cuerda:0.76,polo:0.41,cruces:0,acomp:0.52,cabosLibres:0.18};
+// LOS OBJETIVOS SON LA MEDIANA DE CINCO, NO DE SEIS. El autor: «r4 es un error, nunca debe
+// fundir» — y al fundirse corrompio su propia geometria trazada: cuerda 0,23 cuando las otras
+// cinco van de 0,59 a 0,84, y cinco cabos tocando el borde cuando las demas tienen cero o uno.
+// Sus numeros estaban contaminando los objetivos, y el peor: el largo del trazo bajaba un 12 %
+// (0,644 -> 0,568), asi que la familia llevaba media sesion persiguiendo un trazo demasiado
+// largo. Tres veredictos se dan la vuelta al quitarlo: largo -12 %, reparto +15 %, giro +9 %.
+//
+// `acomp` y `cabosLibres` se quedan como estaban: son los valores recalculados en ANCHURAS DE
+// BANDA y no se sabe cual de los seis era r4, asi que quitarlo a ciegas seria inventar.
+const OBJ={n:8.0,linea:5.19,largo:0.568,reparto:1.80,r1:0.24,r4:0.60,ejes:0.49,giro:35,
+  girosPorLado:6.90,cierre:0.30,cuerda:0.79,polo:0.38,cruces:0,acomp:0.52,cabosLibres:0.18};
 console.log('rasgo'.padEnd(15)+'GENERADOR'.padStart(10)+'refs'.padStart(9));
 for(const k of Object.keys(OBJ)){
   const v=med(acc[k]||[0]);
