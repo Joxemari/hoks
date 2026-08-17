@@ -3,7 +3,11 @@
 <style>
   /* hrrs — doce pares, un mando cada uno. Sistema de la casa: Courier New, papel #fff, tinta #111,
      marca #b8352a. Los mismos tokens que la física, la autopsia y la tanda.
-     Tema único a propósito: se juzga tinta sobre papel, y un fondo que cambia cambia el juicio. */
+
+     Tema único a propósito, y no por dejadez: lo que se juzga aquí es tinta sobre papel, y un
+     fondo que cambia con el del visor cambiaría el juicio. Por lo mismo el cromo de la página se
+     queda en blanco mientras las obras van sobre su crema medido (#e8e2d4): el marco no debe
+     competir con el papel que se está mirando. */
   :root {
     --papel: #ffffff;
     --tinta: #141312;
@@ -61,7 +65,7 @@
 
   .ficha { background: var(--papel); padding: 11px 13px; }
   .ficha .num { font-size: 10px; color: var(--gris); letter-spacing: .1em; }
-  .ficha .mando { font-size: 13px; font-weight: 700; margin: 1px 0 4px; }
+  .ficha .mando { font-size: 13px; font-weight: 700; margin: 1px 0 4px; text-wrap: balance; }
   .ficha .preg { font-size: 11px; color: var(--tinta); line-height: 1.4; }
   .ficha .por { font-size: 10.5px; color: var(--gris); line-height: 1.35; margin-top: 6px; }
   .nota {
@@ -86,7 +90,9 @@
   .lado.elegido .cual::before { content: "▸ "; color: var(--marca); }
   .lado .val { color: var(--marca); font-variant-numeric: tabular-nums; }
   .obras { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-  .obras canvas { display: block; width: 100%; height: auto; background: var(--hueco); }
+  /* el hueco de espera va del color del papel medido: si fuera de otro tono, cada obra
+     parpadearía de un crema a otro al pintarse */
+  .obras canvas { display: block; width: 100%; height: auto; background: #e8e2d4; }
   .med { font-size: 10px; color: var(--gris); font-variant-numeric: tabular-nums; }
 
   footer {
