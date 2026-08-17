@@ -2438,6 +2438,33 @@ bastante fuerte se da el solape, si no el trazo tiende a paralelizarse o a aleja
 lo único que no se ha implementado nunca: todas las levas de arriba están *dentro* del
 marco de relaciones. Hoy sólo `desviar` paraleliza, y sólo cuando algo le bloquea.
 
+### El tirón: el punto 5, implementado — y es la primera leva que paga
+
+`trazar` recibe ahora los trazos ya puestos, y **en cada subdivisión del recorrido** el
+punto mira qué tiene cerca (`vecinoEn`: el trazo más próximo dentro de `TIRON_R = 3`
+canales, su distancia y su rumbo local) y **se deja llevar**: gira hacia el rumbo del
+vecino hasta `TIRON = 20°` por subdivisión — o se aparta, si ya está a menos de un canal.
+No es un salto, es una tendencia: una vez alineados, siguen juntos solos, que es
+exactamente lo que el punto 5 describe.
+
+Barrido sobre la obra terminada (acompañamiento total, dentro del motor):
+
+| tirón | 0 | 4 | 10 | 15 | **20** | 25 | 35 |
+|---|---|---|---|---|---|---|---|
+| total | 18,6 | 19,3 | 18,7 | 22,4 | **26,7 %** | 25,0 | 23,7 |
+
+Por encima de 20 vuelve a bajar: el trazo se pega demasiado y empieza a chocar. El radio
+igual: 2,2 D da 24,8, 5 D da 23,6, y 3 D es el punto.
+
+Con el instrumento honesto —del píxel, el mismo que las referencias—: **acompañado
+18,4 % → 26,2 %** (objetivo 37,7) y la **racha p90 pasa de 2,7 a 3,7 anchuras, clavada a
+las referencias**. Cuesta un 2,5 % de línea. En la hoja se ve: por primera vez hay haces
+que no nacieron de la relación `paralelo`, sino de dos trazos que pasaron cerca y se
+fueron juntos.
+
+La batería, verde con el tirón puesto: `canal` 0 rendijas sin halo y 0 holguras de 195,
+`pelo` 0 por debajo de g, `obra` 0/195 en las cuatro, y todos los controles disparando.
+
 Al pasar la batería salió lo que el propio `mil.sh` está escrito para que salga —*«un
 control medido contra un artefacto viejo es peor que no tener control: no prueba nada y
 además convence»*— y salió por tres puertas a la vez.
