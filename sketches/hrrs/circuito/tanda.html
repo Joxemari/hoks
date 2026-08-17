@@ -1,3 +1,117 @@
+<title>La tanda</title>
+
+<style>
+  /* hrrs — el circuito en vivo, y elegir dos de cada tanda.
+     Un solo tema, y a propósito: se juzga tinta negra sobre papel blanco. Sistema de la
+     casa: Courier New, papel #fff, tinta #111. */
+  :root {
+    --papel: #ffffff;
+    --tinta: #111111;
+    --gris:  #77736c;
+    --linea: #ded9d1;
+    --hueco: #f6f4f0;
+    --marca: #b8352a;
+    --mono: "Courier New", Courier, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--papel); color: var(--tinta);
+    font-family: var(--mono); font-size: 13px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+
+  header {
+    display: flex; align-items: stretch; border-bottom: 1px solid var(--linea);
+    flex-wrap: wrap; position: sticky; top: 0; background: var(--papel); z-index: 2;
+  }
+  .tit { padding: 10px 18px; border-right: 1px solid var(--linea); display: flex;
+         flex-direction: column; justify-content: center; }
+  .tit b { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: 11px; }
+  .tit span { color: var(--gris); font-size: 11px; }
+  .mandos { display: flex; align-items: center; gap: 14px; padding: 8px 16px; flex: 1;
+            flex-wrap: wrap; }
+  .btn {
+    appearance: none; font-family: var(--mono); font-size: 12px;
+    background: var(--papel); color: var(--tinta);
+    border: 1px solid var(--tinta); padding: 7px 12px; cursor: pointer;
+    transition: background .12s, color .12s;
+  }
+  .btn:hover { background: var(--tinta); color: var(--papel); }
+  .btn.suave { border-color: var(--linea); color: var(--gris); }
+  .btn.suave:hover { background: var(--hueco); color: var(--tinta); }
+  .btn[aria-pressed="true"] { background: var(--tinta); color: var(--papel); }
+  .btn:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+  .sel { margin-left: auto; font-size: 12px; color: var(--gris); font-variant-numeric: tabular-nums; }
+  .sel b { color: var(--marca); }
+
+  .rejilla {
+    display: grid; gap: 1px; background: var(--linea);
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    border-bottom: 1px solid var(--linea);
+  }
+  .obra {
+    background: var(--papel); position: relative; padding: 0;
+    border: 0; cursor: pointer; font-family: var(--mono); display: block; width: 100%;
+    transition: background .12s;
+  }
+  .obra canvas { display: block; width: 100%; height: auto; }
+  .obra .pie {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 10px 9px; font-size: 11px; color: var(--gris);
+    font-variant-numeric: tabular-nums;
+  }
+  .obra:hover { background: var(--hueco); }
+  .obra[aria-pressed="true"] { background: #fbeeec; }
+  .obra[aria-pressed="true"] .pie { color: var(--marca); }
+  .obra[aria-pressed="true"]::after {
+    content: ""; position: absolute; inset: 0; border: 2px solid var(--marca); pointer-events: none;
+  }
+  .obra:focus-visible { outline: 2px solid var(--marca); outline-offset: -2px; }
+  .num { letter-spacing: .1em; }
+
+  footer {
+    padding: 10px 16px; font-size: 11px; color: var(--gris);
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+  }
+  footer kbd { font-family: var(--mono); border: 1px solid var(--linea); padding: 1px 5px;
+               color: var(--tinta); background: var(--papel); }
+  #aviso { margin-left: auto; color: var(--marca); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header>
+    <div class="tit">
+      <b>hrrs · la tanda</b>
+      <span>el circuito en vivo · elige dos</span>
+    </div>
+    <div class="mandos">
+      <button class="btn" id="nueva">Nueva tanda</button>
+      <button class="btn suave" id="vista" aria-pressed="false">Ver el circuito</button>
+      <label class="sel" style="margin-left:0;display:flex;gap:7px;align-items:center">
+        <span>por tanda</span>
+        <select id="cuantas" style="font-family:var(--mono);font-size:12px;padding:4px 6px;border:1px solid var(--linea);background:var(--papel);color:var(--tinta)">
+          <option>5</option><option selected>10</option>
+        </select>
+      </label>
+      <button class="btn suave" id="copiar">Copiar elegidas</button>
+      <span class="sel">elegidas <b id="ncur">0</b> · guardadas <b id="ntot">0</b></span>
+    </div>
+  </header>
+
+  <div class="rejilla" id="rejilla"></div>
+
+  <footer>
+    <span><kbd>clic</kbd> elegir</span>
+    <span><kbd>N</kbd> nueva tanda</span>
+    <span><kbd>C</kbd> circuito / tinta</span>
+    <span id="aviso"></span>
+  </footer>
+</div>
+
+<script>
 // hrrs — EL CIRCUITO. Sólo los centros: la línea fina de la que cuelga todo lo demás.
 //
 // Los invariantes salen de los seis circuitos que el autor marcó a mano, y hay uno que
@@ -228,4 +342,132 @@ function circuito(seed) {
   return { trazos, fw, fh, W, sep, polo, rumbos, seed };
 }
 
-if (typeof module !== 'undefined') module.exports = { circuito, Rng };
+
+
+
+// ── VESTIR EL CIRCUITO ────────────────────────────────────────────────────────
+// Ahora que los centros no se cruzan, la técnica cabe en diez líneas: por cada trazo,
+// primero su FOSO —un trazo blanco de W+2g— y encima su tinta de W. El foso del que
+// llega después muerde al que ya estaba, así que entre dos bandas queda exactamente g y
+// el reparto sale ASIMÉTRICO solo. Es el paso 4 del autor —«se rellena hasta el
+// margen»— hecho por orden de pintado en vez de por aritmética de esquinas.
+function vestir(cx, c, W, H, circuito, soloEje) {
+  const S = Math.min(W, H);
+  const esc = S / Math.min(circuito.fw, circuito.fh);
+  const ox = (W - circuito.fw * esc) / 2, oy = (H - circuito.fh * esc) / 2;
+  cx.save();
+  cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, W, H);
+  cx.translate(ox, oy); cx.scale(esc, esc);
+  const traza = (p) => {
+    cx.beginPath(); cx.moveTo(p[0][0], p[0][1]);
+    for (let i = 1; i < p.length; i++) cx.lineTo(p[i][0], p[i][1]);
+  };
+  if (soloEje) {
+    cx.lineWidth = 0.006; cx.lineJoin = 'round'; cx.lineCap = 'round';
+    cx.strokeStyle = '#111111';
+    for (const p of circuito.trazos) { traza(p); cx.stroke(); }
+    // los cabos, marcados: es donde se ve si el trazo muere contra el cuerpo o al aire
+    cx.fillStyle = '#b8352a';
+    for (const p of circuito.trazos) for (const q of [p[0], p[p.length - 1]]) {
+      cx.beginPath(); cx.arc(q[0], q[1], 0.010, 0, 6.2832); cx.fill();
+    }
+  } else {
+    const g = circuito.W * 0.22;                 // el margen medido: 0,22 anchuras
+    const Wp = circuito.W * 1.35;                // el relleno, hasta el margen
+    cx.lineJoin = 'round'; cx.lineCap = 'butt';  // el remate es a escuadra
+    for (const p of circuito.trazos) {
+      cx.strokeStyle = '#ffffff'; cx.lineWidth = Wp + 2 * g; traza(p); cx.stroke();
+      cx.strokeStyle = '#111111'; cx.lineWidth = Wp;         traza(p); cx.stroke();
+    }
+  }
+  cx.restore();
+}
+
+// ── la tanda ──────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const est = { semillaTanda: 1, obras: [], elegidas: new Set(), guardadas: [], eje: false };
+
+function nuevaSemilla() {
+  return (Math.floor(Math.random() * 0xffffffff) >>> 0) || 1;
+}
+
+function nuevaTanda() {
+  const n = parseInt($('cuantas').value, 10);
+  est.obras = [];
+  est.elegidas = new Set();
+  for (let i = 0; i < n; i++) {
+    const s = nuevaSemilla();
+    est.obras.push({ seed: s, c: circuito(s) });
+  }
+  pinta();
+}
+
+function pinta() {
+  const r = $('rejilla'); r.innerHTML = '';
+  est.obras.forEach((o, i) => {
+    const b = document.createElement('button');
+    b.className = 'obra'; b.setAttribute('aria-pressed', est.elegidas.has(i) ? 'true' : 'false');
+    const cv = document.createElement('canvas');
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = 460, h = Math.round(460 * (o.c.fh / o.c.fw));
+    cv.width = w * dpr; cv.height = h * dpr;
+    cv.style.aspectRatio = w + ' / ' + h;
+    const cx = cv.getContext('2d'); cx.scale(dpr, dpr);
+    vestir(cx, cv, w, h, o.c, est.eje);
+    b.appendChild(cv);
+    const pie = document.createElement('div');
+    pie.className = 'pie';
+    pie.innerHTML = '<span class="num">#' + o.seed.toString(16) + '</span>' +
+                    '<span>' + o.c.trazos.length + ' trazos</span>';
+    b.appendChild(pie);
+    b.onclick = () => {
+      if (est.elegidas.has(i)) est.elegidas.delete(i);
+      else if (est.elegidas.size >= 2) avisa('Dos por tanda: quita una primero');
+      else est.elegidas.add(i);
+      guardaElegidas(); pinta();
+    };
+    r.appendChild(b);
+  });
+  $('ncur').textContent = est.elegidas.size;
+  $('ntot').textContent = est.guardadas.length;
+}
+
+function guardaElegidas() {
+  const dela = new Set(est.obras.map(o => o.seed));
+  est.guardadas = est.guardadas.filter(s => !dela.has(s));
+  for (const i of est.elegidas) est.guardadas.push(est.obras[i].seed);
+  try { localStorage.setItem('hrrs-tanda-v1', JSON.stringify(est.guardadas)); } catch (e) {}
+}
+try {
+  const g = JSON.parse(localStorage.getItem('hrrs-tanda-v1') || '[]');
+  if (Array.isArray(g)) est.guardadas = g.filter(x => typeof x === 'number');
+} catch (e) {}
+
+function avisa(t) {
+  const a = $('aviso'); a.textContent = t;
+  clearTimeout(avisa._t); avisa._t = setTimeout(() => { a.textContent = ''; }, 2400);
+}
+
+$('nueva').onclick = nuevaTanda;
+$('cuantas').onchange = nuevaTanda;
+$('vista').onclick = () => {
+  est.eje = !est.eje;
+  $('vista').setAttribute('aria-pressed', est.eje ? 'true' : 'false');
+  $('vista').textContent = est.eje ? 'Ver la tinta' : 'Ver el circuito';
+  pinta();
+};
+$('copiar').onclick = async () => {
+  if (!est.guardadas.length) { avisa('Todavía no has elegido ninguna'); return; }
+  const txt = JSON.stringify({ semillas: est.guardadas });
+  try {
+    await navigator.clipboard.writeText(txt);
+    avisa('Copiadas ' + est.guardadas.length + ' semillas');
+  } catch (e) { avisa('No se pudo copiar: ' + txt.slice(0, 60)); }
+};
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'SELECT') return;
+  if (e.key.toLowerCase() === 'n') nuevaTanda();
+  if (e.key.toLowerCase() === 'c') $('vista').click();
+});
+nuevaTanda();
+</script>

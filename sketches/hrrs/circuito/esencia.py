@@ -9,6 +9,13 @@ sys.path.insert(0,'.')
 from crecer import desdobla
 
 man=json.load(open('mano.json'))
+# LA ANCHURA DE BANDA DE CADA OBRA, medida sobre el pixel. Hace falta porque el
+# acompanamiento se mide en ANCHURAS y no en lados: con un umbral absoluto -0,08 del
+# lado- el mismo numero valia 3,2 anchuras en r1 y 0,9 en r5, y a 0,9 anchuras el umbral
+# NO PUEDE dispararse, porque dos centros a menos de ~1,2 anchuras estarian solapados.
+# Los ceros de r5 y r6 eran del instrumento. Es la misma leccion de siempre: la unidad
+# de la medida es la del material.
+ANCHO={'r1':0.025,'r2':0.029,'r3':0.047,'r4':0.047,'r5':0.091,'r6':0.089}
 
 def largo(p):
     return sum(math.hypot(p[i+1][0]-p[i][0], p[i+1][1]-p[i][1]) for i in range(len(p)-1))
@@ -97,7 +104,7 @@ for n,v in sorted(man.items()):
                 for (u,vv,e) in b:
                     dd=math.hypot(x-u,y-vv)
                     if dd<mejorD: mejorD=dd; da=e
-            if mejorD<0.08 and abs(((d-da+math.pi/2)%math.pi)-math.pi/2)<math.radians(25): ac+=1
+            if mejorD<2.5*ANCHO[n] and abs(((d-da+math.pi/2)%math.pi)-math.pi/2)<math.radians(25): ac+=1
     # cabos: al aire o contra otro
     libres=0; total=0
     for i,c in enumerate(caminos):
@@ -106,7 +113,7 @@ for n,v in sorted(man.items()):
             for j,o in enumerate(SM):
                 if i==j: continue
                 for (u,vv,_) in o: cerca=min(cerca, math.hypot(p[0]-u,p[1]-vv))
-            if cerca>0.10: libres+=1
+            if cerca>3.0*ANCHO[n]: libres+=1
     borde = sum(1 for c in caminos for p in (c[0][0],c[0][-1])
                 if p[0]<0.02 or p[1]<0.02 or p[0]>W/S-0.02 or p[1]>H/S-0.02)
     R[n]=dict(n=len(caminos), ramas=ramas, prop=round(prop,2),

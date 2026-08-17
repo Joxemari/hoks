@@ -52,15 +52,15 @@ for(let i=0;i<20;i++){
   for(let i2=0;i2<SM.length;i2++)for(const q of SM[i2]){tt++;let mj=9,da=0;
     for(let j=0;j<SM.length;j++){if(i2===j)continue;for(const o of SM[j]){const dd=hy(q[0]-o[0],q[1]-o[1]);if(dd<mj){mj=dd;da=o[2];}}}
     let df=Math.abs(((q[2]-da+Math.PI/2)%Math.PI)-Math.PI/2);
-    if(mj<0.08&&df<25*Math.PI/180)ac++;}
+    if(mj<2.5*c.W&&df<25*Math.PI/180)ac++;}
   push('acomp',ac/Math.max(1,tt));
   for(let i2=0;i2<T.length;i2++)for(const p of [T[i2][0],T[i2][T[i2].length-1]]){tot2++;let cerca=9;
     for(let j=0;j<SM.length;j++){if(i2===j)continue;for(const o of SM[j])cerca=Math.min(cerca,hy(p[0]-o[0],p[1]-o[1]));}
-    if(cerca>0.10)lib++;}
+    if(cerca>3.0*c.W)lib++;}
   push('cabosLibres',lib/Math.max(1,tot2));
 }
 const OBJ={n:7.5,linea:5.21,largo:0.64,reparto:1.56,r1:0.24,r4:0.60,ejes:0.52,giro:32,
-  girosPorLado:7.55,cierre:0.30,cuerda:0.76,polo:0.41,cruces:0,acomp:0.32,cabosLibres:0.32};
+  girosPorLado:7.55,cierre:0.30,cuerda:0.76,polo:0.41,cruces:0,acomp:0.52,cabosLibres:0.18};
 console.log('rasgo'.padEnd(15)+'GENERADOR'.padStart(10)+'refs'.padStart(9));
 for(const k of Object.keys(OBJ)){
   const v=med(acc[k]||[0]);
