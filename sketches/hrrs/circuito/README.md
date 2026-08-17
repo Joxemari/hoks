@@ -147,14 +147,55 @@ y como tal se anota aparte.
   columna salió 0,00 en los dos lados. Eso no es un empate: es que no se medía nada. Con
   el dato puesto sale +0,36 hacia lo denso.
 
+## El orden, dictado a mano por el autor
+
+Un esquema suyo en un cuaderno, y es un algoritmo entero:
+
+1. **Dibujar primer trazo** — y el dibujo son **puntos sueltos**.
+2. **Unir puntos.**
+3. **Dibujar otros trazos, también partiendo de sus puntos** · *paralelizar / solape* ·
+   ***atraer ↑↑***
+4. **Dar cuerpo.**
+5. **Revisar márgenes.**
+
+**El orden es el hallazgo, no un detalle de implementación.** El generador anterior
+*caminaba*: paso a paso, comprobando en cada tramo si cabía y girando cuando no. Por eso
+un trazo que entraba en un callejón moría ahí —nunca retrocede— y el largo se quedaba en
+0,35 contra 0,64, arrastrando a la línea. Sembrando los puntos ANTES y uniéndolos después
+no hay callejón que valga: **la longitud la ponen los puntos, no lo lejos que se consiga
+caminar.**
+
+Y la **atracción** es el mecanismo que faltaba para el punto 5 del encargo —«cada punto del
+trazo lleva un valor y si tiende a solaparse»—: el valor no se evalúa andando, se aplica
+**al punto** cuando se coloca. Fuerte, cae encima (solape); media, cae al canal
+(paralelizar); débil, se queda donde estaba. El cruce ya no se evita caminando: se
+**repara** apartando el vértice, porque la longitud ya está decidida.
+
+| rasgo | caminando | **puntos primero** | referencias | |
+|---|---|---|---|---|
+| **largo del trazo** | 0,35 | **0,49** | 0,64 | +40 % |
+| **línea total** | 3,28 | **4,68** | 5,21 | +43 % |
+| **quiebros por lado** | 6,03 | **7,58** | **7,55** | ✔ |
+| longitud en 4 rumbos | 0,61 | **0,59** | **0,60** | ✔ |
+| cruces entre centros | 0 | **0** | **0** | ✔ |
+| acompañado | 0,35 | **0,39** | 0,52 | ↑ |
+| ángulo de quiebro | 32,6 | 37,2 | 32 | |
+| cierre | 0,20 | 0,38 | 0,30 | |
+| cabos al aire | 0,10 | 0,06 | 0,18 | |
+
+La población entera cae ya donde caían **las obras que el autor elegía** del generador
+anterior (largo 0,50, línea 5,06).
+
 ## Lo que falta, con su causa
 
-- **El largo (0,39 contra 0,64) y la línea (3,22 contra 5,21).** Sin cruces, un trazo que
-  entra en un callejón muere ahí: al bloquearse prueba otro rumbo *desde donde está* y no
-  retrocede nunca. Medido: subir la persistencia del carril no lo arregla (0,40 → 0,39).
-- **El acompañamiento (0,27 contra 0,52).** El carril engancha y suelta bien, pero sólo se
-  entra en él por casualidad — pasando cerca. En las referencias un trazo *nace* para
-  acompañar a otro la mitad de su recorrido.
+- **Demasiado pegado.** Con la atracción puesta las obras se leen como una masa con
+  pelos, y las seis tienen más aire. La atracción necesita techo, o un `solape` que no
+  cierre el canal.
+- **Se abrazan al marco.** `dentro()` recorta el punto contra el pliego, así que los
+  puntos se apilan a lo largo del borde. Hay que rebotar, no recortar.
+- **El acompañamiento (0,39 contra 0,52).** Va subiendo con cada vuelta y ya no está lejos.
+- **El cierre (0,38 contra 0,30) y el ángulo (37 contra 32).** Sembrar sin comprobar deja
+  al trazo girar más de lo que gira la fuente.
 - **Las ramas.** Cinco en r6, ninguna en las otras cinco. El trazo es un árbol y el
   generador sólo hace caminos.
 
