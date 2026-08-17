@@ -186,18 +186,112 @@ trazo lleva un valor y si tiende a solaparse»—: el valor no se evalúa andand
 La población entera cae ya donde caían **las obras que el autor elegía** del generador
 anterior (largo 0,50, línea 5,06).
 
+## Las dos fases, y las tres variables en su sitio
+
+El autor completó el esquema con la pieza que faltaba: **todos los trazos se siembran
+primero**, como líneas de un píxel y sin nada aplicado, y **después** el campo actúa sobre
+el conjunto entero. Antes el campo se aplicaba mientras se construía, así que el primer
+trazo quedaba congelado y los últimos hacían toda la acomodación: la obra se leía como un
+protagonista y un montón de sirvientes. **En su orden el protagonista también se mueve.**
+
+Y sus tres variables, cada una donde él las puso:
+
+- **Gravedad, del trazo.** «La gravedad que pueda tener cada uno de los trazos». Es una
+  **masa**, y una masa mueve un **cuerpo**: el trazo se traslada entero, sin cambiar ni un
+  ángulo. Poniéndola punto a punto —el primer intento— el campo deshilacha la polilínea y
+  el ángulo de quiebro se va a **124°** contra los 32 de la fuente.
+- **Atracción, del punto.** «No sé si tanto en el trazo o en los puntos del trazo». Ahí sí:
+  cada punto decide cuánto se deja llevar al carril del vecino.
+- **Probabilidad de solape, del punto.** El solape **ocurre** primero y se **justifica**
+  después: es un juicio, no una prohibición.
+
+Tres correcciones que costaron una vuelta cada una, apuntadas para no repetirlas:
+
+1. **La gravedad era máxima justo donde debía parar.** Con `d = max(sep, distancia)` el
+   tirón vale ~200 en el margen mismo contra 0,3 del muelle: todo colapsa en un grumo
+   (`polo` 0,70 contra 0,41). Tiene que tirar de lejos y **morir en el carril**.
+2. **El alfabeto no cuantiza, atrae.** Llevando cada tramo al rumbo más próximo el trazo
+   dobla 70° ocho veces; las seis doblan 30° cinco veces. **Los trazos de Chillida curvan**:
+   los rumbos son atractores y la dirección deriva hacia ellos, con una **esquina** de
+   verdad de vez en cuando. Cuantizar daba la estructura dos veces y lo orgánico ninguna.
+3. **El barrido de cruces borraba trazos enteros** — n bajaba de 10 a 4. Se recorta, y lo
+   que el cruce quitó de recorrido el trazo lo **recrece** por un rumbo que no cruce.
+
+## Partir para acompañar
+
+«Si un punto se atrae a otro de un diferente trazo, uno de esos trazos se parte en más
+puntos: una parte del trazo sí está paralelizada con otra a la que se ha traído, y luego ya
+**cambia de rumbo hacia donde estaban los puntos del trazo original**.» Es lo que separa un
+roce de una paralela: la atracción mueve **un punto**, y un punto se toca y se va;
+acompañar es un **tramo**, y para tener tramo hay que tener puntos.
+
+Está implementado como un **empalme**, no como una mezcla, y va **al final de todo**. Cinco
+cosas que hubo que arreglar antes de que sumara nada, cada una medida:
+
+| lo que hacía mal | qué pasaba |
+|---|---|
+| proyectar cada punto sobre *su* punto más cercano del vecino | dos trazos de través caen todos en el mismo sitio: **un nudo, no una paralela** (0,43 → 0,35) |
+| arrastrar los puntos hacia el carril en vez de empalmar | el trazo se comprime y se enrolla: cierre 0,61, y **el primer cruce de toda la serie** |
+| hacerlo antes del encauzado | el encauzado reconstruye desde el medio y **despega el tramo en bloque** (0,43 → 0,27) |
+| construir el carril con la normal desplazada | en un doblez la paralela de dentro **corta la esquina**: 91 de 222 propuestas tumbadas. El carril es el **offset** del vecino |
+| juzgar la propuesta sobre el trazo entero | el ancla es por definición el punto más próximo a otro trazo: la prueba **castigaba la propuesta por el estado que venía a arreglar** |
+| coger el primer empalme limpio | el codo salía de 90°: acompañaba **grapando**. Se busca el más tangente |
+
+Arreglado todo, el desvío suma **+0,03** de acompañamiento pagando dos codos. Es poco, y es
+un dato: no es un fallo de ajuste.
+
 ## Lo que falta, con su causa
 
-- **Demasiado pegado.** Con la atracción puesta las obras se leen como una masa con
-  pelos, y las seis tienen más aire. La atracción necesita techo, o un `solape` que no
-  cierre el canal.
-- **Se abrazan al marco.** `dentro()` recorta el punto contra el pliego, así que los
-  puntos se apilan a lo largo del borde. Hay que rebotar, no recortar.
-- **El acompañamiento (0,39 contra 0,52).** Va subiendo con cada vuelta y ya no está lejos.
-- **El cierre (0,38 contra 0,30) y el ángulo (37 contra 32).** Sembrar sin comprobar deja
-  al trazo girar más de lo que gira la fuente.
+- **El acompañamiento (0,38 contra 0,52).** El número **no subió** al arreglar la
+  geometría: bajó de 0,44 a 0,38. No es una regresión — el 0,44 estaba medido sobre bandas
+  que **se solapaban** (se dibujaba `1,35·W` con los centros a `1,30·W` como mucho), así
+  que aquello no era acompañar, era chocar. Dos mecanismos más probados y **descartados por
+  peores**: que la atracción vaya a un **socio** fijo en vez de al vecino más próximo
+  (0,34), y añadir el socio como tirón de largo alcance (0,38). La conclusión, medida:
+  **acompañar no se consigue empujando trazos que nacieron sueltos.** En las seis el trazo
+  *nace* acompañando, y eso pide sembrar unos como offset de otros — que choca de frente
+  con «los trazos se siembran sin mirarse». Esa decisión es del autor, no mía.
+- **El eje y el doblez se pelean, y no es un mando mal puesto.** Si media longitud va sobre
+  dos ejes perpendiculares hay que doblar 90° para pasar de uno al otro: el barrido va de
+  (ejes 0,35 / giro 40) a (0,48 / 48) y **no hay combinación que dé 0,52 con 32**. Las seis
+  lo resuelven con tiradas de eje **largas** y transiciones por los oblicuos: el rumbo
+  tendría que durar un tramo declarado, no decidirse tramo a tramo.
+- **El cierre (0,40 contra 0,30) y los cabos al aire (0,07 contra 0,18).**
+- **Componer.** Varias obras dejan media hoja vacía. Falta el paso 4 mirando el conjunto.
 - **Las ramas.** Cinco en r6, ninguna en las otras cinco. El trazo es un árbol y el
   generador sólo hace caminos.
+
+## Dónde está hoy, medido a 200 obras
+
+| rasgo | caminando | puntos primero | **dos fases** | referencias | |
+|---|---|---|---|---|---|
+| **largo del trazo** | 0,35 | 0,49 | **0,68** | 0,64 | ✔ |
+| **línea total** | 3,28 | 4,68 | **4,97** | 5,21 | ✔ |
+| reparto | — | 1,85 | **1,49** | 1,56 | ✔ |
+| longitud en 4 rumbos | 0,61 | 0,59 | **0,60** | 0,60 | ✔ |
+| rumbo dominante | — | 0,19 | **0,22** | 0,24 | ✔ |
+| cuerda / largo | — | 0,89 | **0,75** | 0,76 | ✔ |
+| polo | — | 0,38 | **0,39** | 0,41 | ✔ |
+| quiebros por lado | 6,03 | 7,58 | **7,14** | 7,55 | ✔ |
+| cruces entre centros | 0 | 0 | **0** | 0 | ✔ |
+| trazos | — | 10 | **8** | 7,5 | ✔ |
+| ángulo de quiebro | 32,6 | 37,2 | 40,7 | 32 | |
+| cierre | 0,20 | 0,38 | 0,40 | 0,30 | |
+| **sobre los ejes** | — | 0,34 | **0,40** | 0,52 | ↑ |
+| **acompañado** | 0,35 | 0,39 | 0,38 | 0,52 | ↑ |
+| cabos al aire | 0,10 | 0,06 | 0,07 | 0,18 | |
+
+## Un banco que medía otra cosa
+
+`barre.sh` llevaba el generador **escrito dentro** y se cambiaba a golpe de `sed`. Un `sed`
+que no encajó dejó el banco midiendo `gen13` mientras yo leía los números como si fueran de
+`gen22`: un barrido entero de cuatro configuraciones, tirado. Ahora el generador es un
+argumento. Y `medir.js` pedía un `./gen2.js` que no existe en el repositorio — el
+instrumento no arrancaba desde aquí.
+
+**Y nada por debajo de 200 obras significa nada.** Añadir una sola tirada de RNG cambia el
+número de sorteos y vuelve a sortear todo lo que viene detrás: a 20 obras un cambio nulo se
+lee como una mejora o un desastre de 0,06.
 
 ## Vestir el circuito
 
@@ -218,3 +312,10 @@ W. El foso del que llega después muerde al que ya estaba, así que entre dos ba
 exactamente g y el reparto sale **asimétrico solo**. Es el paso 4 del autor —«se rellena
 hasta el margen»— resuelto por orden de pintado en vez de por aritmética de esquinas, que
 es lo que en el motor grande costó cuatro intentos y una cuña.
+
+**Separación = banda + canal**, y esto es aritmética, no gusto. Se dibujaba `1,35·W` con los
+centros a `1,30·W` como mucho: **la banda era más ancha que la separación de centros**, así
+que el foso tenía que morder a los vecinos y donde se juntaban tres quedaba un borrón. El
+canal son 0,22 anchuras —medido en las seis—, el generador separa los centros por
+`banda + canal`, y aquí la tinta es `W`. Es el mismo offset con el que el motor grande corta
+el canal, donde el corte **es** la tinta engordada y no una banda más ancha.

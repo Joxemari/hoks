@@ -1,5 +1,5 @@
 // los mismos invariantes que esencia.py, sobre lo que sale del generador
-const { circuito } = require('./gen2.js');
+const { circuito } = require('./gen.js');
 const hy=Math.hypot;
 function largo(p){let L=0;for(let i=0;i<p.length-1;i++)L+=hy(p[i+1][0]-p[i][0],p[i+1][1]-p[i][1]);return L;}
 function remu(p,paso){paso=paso||0.025;const o=[];for(let i=0;i<p.length-1;i++){const ax=p[i][0],ay=p[i][1],bx=p[i+1][0],by=p[i+1][1];
