@@ -117,6 +117,10 @@
     inventadas</b>. Se elige una con un clic y a partir de ahí los mandos de la derecha la afinan;
     lo que se toca se aplica a la elegida y las demás se quedan como estaban, para poder comparar.
     <b>Otro trazo</b> cambia la semilla: la física es la que se juzga, no el recorrido concreto.
+    <b>Aviso de dato:</b> las medidas de r1 y r5 están tomadas <b>sobre las fotos que se miraron</b>,
+    no sobre la geometría trazada — son dos juegos de archivos distintos y no se pueden emparejar.
+    Sus filos son <b>0,072 y 0,019</b>: casi lisos. Lo que parecía irregularidad del borde es, en la
+    fuente, irregularidad del <b>recorrido</b>.
   </div>
 
   <div class="cuerpo">
@@ -155,9 +159,15 @@
 //   LA ESQUINA     viva o redondeada, y con radio. Una esquina en ángulo perfecto es lo que más
 //                  delata el vector.
 //   EL CUERPO      la anchura, que no es constante: se abre y se cierra a lo largo del recorrido.
-//   EL FILO        y encima, la desviación del borde. Medida en r1 y r5: 0,177 y 0,117 anchuras.
-//                  Va DESPUÉS del cuerpo y es la más pequeña de las tres irregularidades, no la
-//                  única — que es el error que se estaba cometiendo.
+//   EL FILO        y encima, la desviación del borde. Medida SOBRE LAS FOTOS que el autor miró:
+//                  r1 0,072 y r5 0,019 anchuras — casi lisas. Es la MÁS PEQUEÑA de las tres
+//                  irregularidades y durante toda la familia se le pidió que fuera la única.
+//
+//                  (Aviso de dato: el 0,177 y el 0,117 que se citaron antes salían de la geometría
+//                  trazada, que está en OTRO juego de archivos —`orig_*.npy` son las obras
+//                  recortadas y `refs4/*` las fotos enteras— y los dos juegos NO se pueden
+//                  emparejar: por contenido sólo casan dos de seis. Lo que el autor eligió lo
+//                  eligió mirando las fotos, así que la medida que vale es la de las fotos.)
 //   LOS CABOS      a escuadra, y con su ángulo: el remate no es perpendicular al eje por defecto.
 
 const RAD = Math.PI / 180;
@@ -183,7 +193,7 @@ const POR_DEFECTO = {
   esquina: 55,        // el giro típico de una esquina, en grados
   radio: 0.55,        // el radio de la esquina, en anchuras (0 = viva)
   cuerpo: 0.28,       // cuánto se abre y se cierra la anchura a lo largo (fracción)
-  filo: 0.15,         // la desviación del borde (r1: 0,177 · r5: 0,117)
+  filo: 0.07,         // la desviación del borde. Medida sobre las fotos: r1 0,072 · r5 0,019
   filoRapido: 0.30,   // cuánta parte del filo es rápida (el resto es ondulación lenta)
   cabo: 22,           // cuánto se inclina el remate respecto a la perpendicular, en grados
   remate: 'escuadra', // escuadra · sesgo · punta · redondo
@@ -434,16 +444,16 @@ function trazo(seed, opts) {
 // idea al extremo, para que se pueda decir «esta» sin tener que mover nueve mandos a ciegas.
 const OPCIONES = [
   { nom: 'r1 · medida',
-    que: 'Los números de r1: filo 0,177 anchuras, esquinas mezcladas —vivas y con radio— y tiradas ' +
-         'medias. Vibración media. Es la referencia que el autor eligió.',
+    que: 'Medido SOBRE LA FOTO QUE SE MIRÓ: filo 0,072 anchuras — la mitad de lo que se creía. ' +
+         'Esquinas mezcladas, tiradas medias, poca vibración. El carácter está en el recorrido.',
     P: { largo: 14, tirada: [2.5, 6.5], curva: 0.22, esquina: 55, radio: 0.5, viva: 0.45,
-         cuerpo: 0.22, filo: 0.177, filoRapido: 0.30, vibra: 0.06, vibraLam: 1.8,
+         cuerpo: 0.22, filo: 0.072, filoRapido: 0.47, vibra: 0.06, vibraLam: 1.8,
          cabo: 22, remate: 'sesgo' } },
   { nom: 'r5 · medida',
-    que: 'Los de r5, el cartel: filo 0,117 —la mitad— y tiradas largas con poca esquina. La banda ' +
-         'barre. Casi sin vibración: es un cartel impreso.',
+    que: 'El cartel, y es el más liso de todos: filo 0,019 — prácticamente un borde limpio. ' +
+         'Tiradas largas y poca esquina: la banda barre.',
     P: { largo: 17, tirada: [5, 11], curva: 0.30, esquina: 38, radio: 1.0, viva: 0.30,
-         cuerpo: 0.16, filo: 0.117, filoRapido: 0.22, vibra: 0.03, vibraLam: 3.0,
+         cuerpo: 0.16, filo: 0.019, filoRapido: 0.79, vibra: 0.03, vibraLam: 3.0,
          cabo: 14, remate: 'escuadra' } },
   { nom: 'la mano',
     que: 'La VIBRACIÓN al mando: el eje oscila y vuelve, que es lo que da la tinta aplicada a mano. ' +
@@ -485,8 +495,8 @@ const MANDOS = [
   ['radio', 0, 2.5, 0.05, 'el radio de la esquina, en anchuras. Cero = esquina viva.'],
   ['cuerpo', 0, 0.8, 0.01, 'cuánto se abre y se cierra la anchura a lo largo del recorrido. Es la ' +
                            'irregularidad GRANDE, la del gesto.'],
-  ['filo', 0, 0.4, 0.005, 'la desviación del borde. Medida: r1 0,177 · r5 0,117. Es la ' +
-                          'irregularidad PEQUEÑA, la del corte.'],
+  ['filo', 0, 0.25, 0.002, 'la desviación del borde. Medida sobre las fotos: r1 0,072 · r5 0,019. ' +
+                           'Es la irregularidad MÁS PEQUEÑA de las tres, no la principal.'],
   ['filoRapido', 0, 1, 0.02, 'qué parte del filo es rápida. Alto = temblor; bajo = ondulación.'],
   ['cabo', 0, 55, 1, 'cuánto se inclina el remate respecto a la perpendicular, en grados. Un cabo ' +
                      'perpendicular es la firma del vector.'],

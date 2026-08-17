@@ -18,9 +18,15 @@
 //   LA ESQUINA     viva o redondeada, y con radio. Una esquina en ángulo perfecto es lo que más
 //                  delata el vector.
 //   EL CUERPO      la anchura, que no es constante: se abre y se cierra a lo largo del recorrido.
-//   EL FILO        y encima, la desviación del borde. Medida en r1 y r5: 0,177 y 0,117 anchuras.
-//                  Va DESPUÉS del cuerpo y es la más pequeña de las tres irregularidades, no la
-//                  única — que es el error que se estaba cometiendo.
+//   EL FILO        y encima, la desviación del borde. Medida SOBRE LAS FOTOS que el autor miró:
+//                  r1 0,072 y r5 0,019 anchuras — casi lisas. Es la MÁS PEQUEÑA de las tres
+//                  irregularidades y durante toda la familia se le pidió que fuera la única.
+//
+//                  (Aviso de dato: el 0,177 y el 0,117 que se citaron antes salían de la geometría
+//                  trazada, que está en OTRO juego de archivos —`orig_*.npy` son las obras
+//                  recortadas y `refs4/*` las fotos enteras— y los dos juegos NO se pueden
+//                  emparejar: por contenido sólo casan dos de seis. Lo que el autor eligió lo
+//                  eligió mirando las fotos, así que la medida que vale es la de las fotos.)
 //   LOS CABOS      a escuadra, y con su ángulo: el remate no es perpendicular al eje por defecto.
 'use strict';
 
@@ -47,7 +53,7 @@ const POR_DEFECTO = {
   esquina: 55,        // el giro típico de una esquina, en grados
   radio: 0.55,        // el radio de la esquina, en anchuras (0 = viva)
   cuerpo: 0.28,       // cuánto se abre y se cierra la anchura a lo largo (fracción)
-  filo: 0.15,         // la desviación del borde (r1: 0,177 · r5: 0,117)
+  filo: 0.07,         // la desviación del borde. Medida sobre las fotos: r1 0,072 · r5 0,019
   filoRapido: 0.30,   // cuánta parte del filo es rápida (el resto es ondulación lenta)
   cabo: 22,           // cuánto se inclina el remate respecto a la perpendicular, en grados
   remate: 'escuadra', // escuadra · sesgo · punta · redondo

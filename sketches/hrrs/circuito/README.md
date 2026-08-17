@@ -380,6 +380,41 @@ un dato: no es un fallo de ajuste.
 | **acompañado** | 0,35 | 0,39 | 0,38 | 0,52 | ↑ |
 | cabos al aire | 0,10 | 0,06 | 0,07 | 0,18 | |
 
+## ⚠️ DOS JUEGOS DE REFERENCIAS QUE NO SE PUEDEN EMPAREJAR
+
+Antes de seguir leyendo nada sobre la textura: **hay dos juegos de archivos de referencia y no
+están numerados igual.**
+
+- `orig_r?.npy` + `fitT_r?.pkl` — las obras **ya recortadas y enderezadas**. De aquí salen todas
+  las medidas de geometría: los cabos, las celdas, el hueco entre bandas, la anchura de banda.
+- `refs4/r?.webp` — las **fotos enteras**, con pared, marco y márgenes. De aquí salieron los
+  recortes del filo que el autor miró para elegir la técnica.
+
+Emparejados por contenido —recortando la obra dentro de la foto y correlando— **sólo dos de seis
+casan con confianza**: `refs4/r4 → r4` (0,53) y `refs4/r5 → r5` (0,56). El resto queda en nivel de
+ruido. **No se puede afirmar la correspondencia.**
+
+Consecuencia, y hay que decirla: **el «filo 0,177 en r1 y 0,117 en r5» que se publicó no estaba
+apoyado.** Salía de `fitT`, y el autor eligió mirando la tira hecha con `refs4`. Medido de nuevo
+donde toca —directamente sobre las fotos que miró, por esqueleto y transformada de distancia, sin
+pasar por la geometría trazada—:
+
+| lo que miró | anchura de banda | **sd del filo** | parte rápida |
+|---|---|---|---|
+| `refs4/r1` | 12 px | **0,072** | 0,034 |
+| `refs4/r5` | 38 px | **0,019** | 0,015 |
+| `refs4/r2` | 10 px | 0,085 | 0,050 |
+| `refs4/r6` | 42 px | 0,105 | 0,057 |
+| `refs4/r4` | 30 px | 0,295 | 0,212 ← casi todo rápido: es ruido del esqueleto, no la obra |
+
+**Las obras que eligió tienen el filo casi liso.** El generador estaba en 0,119 y los presets
+llegaban a 0,177: **de dos a seis veces más irregular que la fuente.** Ése es su «demasiado
+irregular», y dice dónde tiene que estar el carácter: **en el recorrido, no en el borde.**
+
+Lo que sí sigue en pie de la lectura de la técnica es lo visual —en esas seis imágenes hay tres
+maneras distintas de imprimir, y se ven— y **cuál eligió**, porque eligió señalando la tira. Lo que
+no vale es cruzar esas etiquetas con las de la geometría.
+
 ## LA TÉCNICA, mirada en los originales
 
 *«Los trazos parecen demasiado vectoriales. Los de Chillida tienen cierto contorno, cierto
