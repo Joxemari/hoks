@@ -1,5 +1,50 @@
 # El circuito
 
+## LOS CUATRO PROBLEMAS
+
+El autor los separó, y esta división manda sobre el resto del documento — dos días de vueltas
+salieron de tratarlos como uno:
+
+| | problema | quién lo posee |
+|---|---|---|
+| **1** | **La fisicalidad del trazo**, su diseño | `trazo.js` · banco: `fisica.html` |
+| **2** | **El primer trazo**, cómo se dibuja | `gen.js`, fase 1–2 |
+| **3** | **Las relaciones de trazos** | `gen.js`, fase 3: las cuatro categorías y el offset |
+| **4** | **La densidad**: cómo la elongación rellena y fija los márgenes | `gen.js`, fase 6: `semis` y `contornoDe` |
+
+Y una regla de método que sale de haberlos mezclado: **cada problema se juzga en su propio banco.**
+El trazo no se puede decidir mirando una composición de nueve, porque lo que falla no se sabe de
+quién es.
+
+### El problema 1, aparte
+
+*«No dibujas una línea, simplemente una línea con otra paralela, sin más, que tenga algo de curva.»*
+Y tenía razón en el diagnóstico: lo que el generador producía **no era una línea con cuerpo**, era un
+eje y dos bordes desplazados. El carácter se le pedía al borde —que respirara, que temblara— cuando
+el carácter de un trazo está en **su recorrido**. Un borde irregular sobre un eje sin gesto da un
+trazo irregular, no un trazo con carácter — que es exactamente lo que él vio: *«demasiado irregular,
+muy digital»*, las dos cosas a la vez.
+
+`trazo.js` define un trazo por lo que un trazo tiene, y en este orden de tamaños:
+
+1. **El recorrido** — tiradas rectas unidas por esquinas, y sobre todas ellas **una curva larga**:
+   el brazo pivota, no es un plóter. La curva es del trazo entero y no de cada tramo; una deriva por
+   tramo daba curvas de nivel, y eso ya se descartó midiendo.
+2. **La esquina** — viva o con radio. Una esquina en ángulo perfecto es lo que más delata el vector.
+3. **El cuerpo** — la anchura se abre y se cierra a lo largo. Es la irregularidad **grande**, la del
+   gesto.
+4. **El filo** — la desviación del borde, medida en 0,177 (r1) y 0,117 (r5). Es la **pequeña**, la
+   del corte. Y ahí estaba el error: se le pedía todo al filo, que es la última y la menor de las
+   tres.
+5. **Los cabos** — a escuadra, pero **no perpendiculares**: un cabo perpendicular es la firma del
+   vector.
+
+`fisica.html` es su banco: un trazo solo, grande, con **seis físicas** —dos de ellas medidas sobre
+r1 y r5, no inventadas— para elegir una con un clic y afinarla. Lo que se toca se aplica sólo a la
+elegida, así que las otras cinco siguen ahí para comparar.
+
+---
+
 **La corriente 1**: cómo se relacionan los centros de los trazos. La línea fina de la que
 cuelga todo lo demás, separada de la corriente 2 —cómo se dibuja y se rellena la banda—,
 que es la partición que pidió el autor cuando vio que la técnica ya estaba y la
