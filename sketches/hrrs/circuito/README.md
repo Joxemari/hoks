@@ -281,6 +281,47 @@ un dato: no es un fallo de ajuste.
 | **acompañado** | 0,35 | 0,39 | 0,38 | 0,52 | ↑ |
 | cabos al aire | 0,10 | 0,06 | 0,07 | 0,18 | |
 
+## Cuando el ojo dice una cosa y el píxel otra
+
+«Estéticamente sigue sin funcionar vs Chillida en general.» Puestas las seis al lado de una
+hoja de contactos, aposté cuatro diagnósticos. **La medida tumbó tres.**
+
+| lo que vi | lo que dice el píxel |
+|---|---|
+| «las seis son **una figura** cuyas bandas se funden; yo hago cintas separadas» | **falso.** r1 son 8 trozos de tinta desconectados, r6 son 14 — las cuentas de trazos del autor. El canal los separa del todo. Sólo **r4** funde (91 % en una pieza) |
+| «las seis **escalonan**, no curvan: tiradas largas rectas» | **falso en la comparación.** La tirada recta de las seis es de 1,1 anchuras de mediana y la mía 2,0: **mis trazos corren más rectos**. El 1,1 es densidad de vértices del trazador, no del cuadro, así que el rasgo no compara |
+| «falta una **espina** que cruce la hoja» | **falso.** Extensión máxima: 0,66 del lado corto en las seis, **0,73** en las mías |
+| «mis trazos **se doblan sobre sí mismos**» | **cierto, y gordo:** 19 % de mis giros pasan de 110°; en las seis, **1 %** |
+
+Dos rasgos que sí faltaban y no estaban en la lista de quince: **la vuelta atrás** y la
+**cobertura de tinta** (20,1 % contra 24,8 %). Ninguno de los dos aparecía en el marcador, y
+la vuelta atrás es la que convierte un circuito en un garabato.
+
+La vuelta atrás no estaba donde aposté **dos veces**. Una sonda por fases la localizó:
+
+| fase | vueltas atrás |
+|---|---|
+| sembrado | 16–50 % |
+| relajado | **2–6 %** — el campo las quita |
+| barrido de solape | 15–29 % — las vuelve a meter |
+| recrecido | 13–22 % — **la fuente principal** |
+
+Tres causas, las tres de la misma forma: **una lista de candidatos que incluye cada rumbo y
+su opuesto, sin tope**. En la siembra, encima, el rebote reflejaba **el punto** contra el
+pliego, y reflejar el punto es exactamente dar la vuelta — de ahí también que las obras se
+abrazaran al marco. Un trazo que llega al canto del papel no rebota: **dobla**. Y el
+empujón punto a punto del solape clava púas, que no son giros sino puntos mal puestos: se
+quitan, y lo que el trazo pierde de recorrido lo recupera el recrecido.
+
+Resultado: **19 % → 5 %** de vueltas atrás, tinta **23,6 %** contra 24,8, y el ángulo de
+quiebro cae a **33,5** contra 32.
+
+Y una confirmación por el otro lado: subir el peso del eje **en la siembra** de 0,52 a 0,92
+mueve los ejes de 61 % a 62 %. **El eje no se pierde al sembrar: se pierde después.** La
+relajación y el acompañamiento sacan los puntos del eje y el encauzado no los sostiene — lo
+mismo que salió al medir gen7 desde la otra dirección. Es la pieza de modelo que falta, no
+un mando: **el rumbo tiene que durar un tramo declarado**, no decidirse tramo a tramo.
+
 ## Un banco que medía otra cosa
 
 `barre.sh` llevaba el generador **escrito dentro** y se cambiaba a golpe de `sed`. Un `sed`

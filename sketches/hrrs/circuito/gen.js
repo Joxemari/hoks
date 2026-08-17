@@ -111,7 +111,7 @@ function circuito(seed) {
   // seis— y dos o cuatro oblicuos, con su error
   const K = (typeof process !== 'undefined' && process.env.HRRS_K)
     ? process.env.HRRS_K.split(',').map(Number)
-    : [2.60, 0.30, 0.55, 0.13, 0.45, 11, 0.36, 0.60, 26];
+    : [3.60, 0.34, 0.55, 0.11, 0.55, 9, 0.42, 0.60, 24];
   const TIRA_EJE   = K[0];   // la cuenca del eje frente al oblicuo
   const PESO_ALF   = K[1];   // cuánto se lleva el atractor a cada vuelta del encauzado
   const PESO_PAR   = K[2];   // y cuánto el rumbo del vecino — esto es lo que paraleliza
@@ -131,11 +131,21 @@ function circuito(seed) {
   const TOPE_EMPALME  = A[6]; // más cerrado que esto, el empalme es una grapa: se rechaza
 
   const gira = rng.range(-4, 4);
-  const rumbos = [gira, gira + 90], pesoRumbo = [0.26, 0.26];
+  // EL PESO DEL EJE, en la siembra. En las seis el 72 % de la longitud corre a ±20° de los
+  // ejes del pliego; yo iba en el 60 %. La cuenca del encauzado ya tira, pero si la siembra
+  // reparte a partes iguales el encauzado tiene que deshacer la mitad del trabajo — y deshacer
+  // rumbo cuesta giro. Se siembra ya escorado al eje.
+  const P_EJE = (typeof process !== 'undefined' && process.env.HRRS_EJE)
+    ? Number(process.env.HRRS_EJE) : 0.34;
+  const OBL_MIN = (typeof process !== 'undefined' && process.env.HRRS_OBL)
+    ? Number(process.env.HRRS_OBL.split(',')[0]) : 20;
+  const OBL_MAX = (typeof process !== 'undefined' && process.env.HRRS_OBL)
+    ? Number(process.env.HRRS_OBL.split(',')[1]) : 70;
+  const rumbos = [gira, gira + 90], pesoRumbo = [P_EJE, P_EJE];
   const nObl = rng.int(2, 4);
   for (let i = 0; i < nObl; i++) {
-    rumbos.push(gira + rng.range(20, 70) * (rng.bool(0.5) ? 1 : -1));
-    pesoRumbo.push(0.48 / nObl);
+    rumbos.push(gira + rng.range(OBL_MIN, OBL_MAX) * (rng.bool(0.5) ? 1 : -1));
+    pesoRumbo.push((1 - 2 * P_EJE) / nObl);
   }
   const todos = [], tira = [];
   for (let i = 0; i < rumbos.length; i++) {
@@ -149,7 +159,11 @@ function circuito(seed) {
 
   // la banda fina pesa más: no es invariante de las seis —van de 0,025 a 0,096— es una
   // preferencia del autor, medida (z = −0,79 sobre 24 obras que eligió sin queja)
-  const W = rng.range(0.028, 0.075);
+  // La cobertura de tinta de las seis es 24,8 % y la mía 20,1 %, y sale de aquí: con la línea
+  // ya en su sitio, la tinta la pone la banda. Despejando en las seis —línea 5,21 sobre un
+  // pliego de área ~1,28— su banda mediana es 0,061, y yo sorteaba con media 0,0515. Se sube
+  // el rango sin perder la fina, que es la que él prefiere (z = −0,79 sobre 24 obras suyas).
+  const W = rng.range(0.036, 0.086);
 
   // SEPARACIÓN = BANDA + CANAL, y esto es aritmética, no gusto. Antes la banda se dibujaba a
   // 1,35·W con los centros a 1,21·W: la banda era MÁS ANCHA que la separación de centros, así
@@ -179,6 +193,7 @@ function circuito(seed) {
   const SOL_UMBRAL = 0.82;
   const VUELTAS = 18;
 
+  const TOPE_VUELTA = 100;   // un giro más cerrado que esto no existe en las seis
   const PASO = 0.105;
   const ERR_RUMBO = 7;
 
@@ -202,8 +217,12 @@ function circuito(seed) {
       return rumbos[Math.min(k, rumbos.length - 1)] + (rng.bool(0.5) ? 0 : 180)
              + rng.range(-ERR_RUMBO, ERR_RUMBO);
     }
+    // NI VUELTAS ATRÁS. `todos` lleva cada rumbo y su opuesto, así que sin este tope el trazo
+    // podía elegir un candidato a 170° y doblarse sobre sí mismo: 19 % de mis giros pasaban de
+    // 110° contra el 1 % de las seis, y eso convierte un circuito en un garabato. Es el defecto
+    // que más se veía y no salía en ninguno de los quince rasgos que medía.
     const cand = todos.map(r => ({ r, d: Math.abs(((r - desde + 540) % 360) - 180) }))
-                      .filter(o => o.d > 12).sort((a, b) => a.d - b.d);
+                      .filter(o => o.d > 12 && o.d < TOPE_VUELTA).sort((a, b) => a.d - b.d);
     if (!cand.length) return desde;
     const i = rng.bool(0.72) ? 0 : Math.min(cand.length - 1, rng.int(1, 2));
     return cand[i].r + rng.range(-ERR_RUMBO, ERR_RUMBO);
@@ -307,7 +326,9 @@ function circuito(seed) {
 
   // ── FASE 1. SEMBRAR: series de puntos, sin mirarse entre sí ───────────────────
   const trazos = [], masas = [], sols = [], atrs = [], errs = [];
-  const Lmed = rng.range(0.66, 1.02);
+  // se siembra de más porque la quita-púas se lleva un 18 % del recorrido y la tinta se mide al
+  // final, no al principio: sin esto la cobertura acaba en 20,8 % contra el 24,8 % de las seis
+  const Lmed = rng.range(0.80, 1.22);
   for (let k = 0; k < n; k++) {
     const largo = Lmed * (k === 0 ? rng.range(1.4, 1.8) : rng.range(0.70, 1.30));
     const a = rng.range(0, 6.2832), r = rng.range(0.08, 0.46);
@@ -318,6 +339,19 @@ function circuito(seed) {
     while (hecho < largo) {
       const L = Math.min(PASO * rng.range(0.72, 1.5), largo - hecho);
       const q = pts[pts.length - 1];
+      // AL LLEGAR AL BORDE GIRA EL TRAZO, no se refleja el punto. Reflejando el punto —lo que
+      // hacía— el tramo siguiente sale hacia atrás y en la polilínea eso ES una vuelta atrás:
+      // la siembra metía entre el 16 y el 50 % de giros de más de 110°, cuando las seis tienen
+      // el 1 %. Y de paso era la causa de que las obras se abrazaran al marco. Un trazo que
+      // llega al canto del papel no rebota: dobla.
+      for (let intento = 0; intento < 3; intento++) {
+        const nx = q[0] + Math.cos(dir * RAD) * L, ny = q[1] + Math.sin(dir * RAD) * L;
+        if (nx > mg && nx < fw - mg && ny > mg && ny < fh - mg) break;
+        // se refleja EL RUMBO contra la pared que estorba, y se vuelve a encauzar al alfabeto
+        if (nx <= mg || nx >= fw - mg) dir = 180 - dir;
+        if (ny <= mg || ny >= fh - mg) dir = -dir;
+        dir = atractor(dir) + rng.range(-TEMBLOR, TEMBLOR);
+      }
       pts.push(dentro([q[0] + Math.cos(dir * RAD) * L, q[1] + Math.sin(dir * RAD) * L]));
       hecho += L;
       // LA ESQUINA, de vez en cuando: un salto declarado a otro rumbo. Es lo que da la
@@ -447,6 +481,33 @@ function circuito(seed) {
   // tramo con rumbo, que es lo que hay en las seis.
   for (let k = 0; k < trazos.length; k++) trazos[k] = encauza(trazos[k], errs[k], k, atrs[k]);
 
+  // LA PÚA. Apartar puntos de uno en uno clava vértices que doblan más de 110°, y las seis
+  // tienen el 1 % de esos. Una púa no es un giro: es un punto mal puesto, así que se quita. Lo
+  // que el trazo pierde de recorrido lo recupera el recrecido, que es su trabajo.
+  //
+  // SE PASA EN LOS TRES SITIOS DONDE SE CLAVAN —el barrido de solape, el recrecido y el
+  // acompañamiento—, porque cada uno mete las suyas: la sonda por fases decía 2 % después de
+  // relajar, 25 % después del solape y 22 % después del recrecido. Pasarla una vez sola dejaba
+  // la mitad puestas, y no se veían en ninguno de los quince rasgos que medía.
+  const quitaPuas = () => {
+    for (let vuelta = 0; vuelta < 6; vuelta++) {
+      let quitada = false;
+      for (let k = 0; k < trazos.length; k++) {
+        const t = trazos[k];
+        for (let i = 1; i < t.length - 1 && t.length > 3; i++) {
+          const a1 = Math.atan2(t[i][1] - t[i - 1][1], t[i][0] - t[i - 1][0]);
+          const a2 = Math.atan2(t[i + 1][1] - t[i][1], t[i + 1][0] - t[i][0]);
+          if (Math.abs(corto((a2 - a1) / RAD)) <= TOPE_VUELTA) continue;
+          t.splice(i, 1); sols[k].splice(i, 1); atrs[k].splice(i, 1);
+          if (errs[k].length > i) errs[k].splice(i, 1);
+          quitada = true; i--;
+        }
+      }
+      if (!quitada) break;
+    }
+  };
+  quitaPuas();
+
   // Y el cruce sin justificar cede: los empujones no siempre convergen —apartar un vértice
   // puede crear el cruce un tramo más allá— y las seis no cruzan un solo par de centros.
   // SE RECORTA, NO SE BORRA: borrar el trazo entero se llevaba la mitad de la obra (n bajaba
@@ -501,7 +562,12 @@ function circuito(seed) {
       // el cabo nuevo sigue el trazo: deriva su rumbo, y solo a veces hace esquina
       const cand = [];
       for (let g = -TOPE_GIRO; g <= TOPE_GIRO; g += TOPE_GIRO / 3) cand.push({ r: desde + g });
-      for (const r of todos) if (Math.abs(corto(r - desde)) > 12) cand.push({ r });
+      // y el cabo nuevo tampoco se da la vuelta: `todos` lleva cada rumbo y su opuesto, y sin
+      // tope el recrecido metía del 13 al 22 % de vueltas atrás — era la fuente principal
+      for (const r of todos) {
+        const d = Math.abs(corto(r - desde));
+        if (d > 12 && d < TOPE_VUELTA) cand.push({ r });
+      }
       const paso = Math.min(PASO * rng.range(0.72, 1.5), falta);
       // cuánto lleva doblado ya: sin este tope el trazo esquiva cruces enrollándose sobre sí
       // mismo y el cierre se va a 0,62 contra el 0,30 de las seis
@@ -742,6 +808,7 @@ function circuito(seed) {
     errs[k] = rec.slice(0, rec.length - 1).map(() => 0);
     aceptadas++;
   }
+  quitaPuas();
   if (typeof process !== 'undefined' && process.env.HRRS_ACDBG)
     console.error('ofertas=' + ofertas + ' ok=' + aceptadas + ' cruce=' + porQue.cruce + ' margen=' + porQue.margen + ' grapa=' + porQue.grapa);
 
