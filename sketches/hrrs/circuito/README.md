@@ -33,27 +33,63 @@ distancia *es* acompañar.
 pliego. El motor sorteaba una diagonal cualquiera y evitaba a propósito alinearse con el
 papel — decisión contraria a la fuente, y escrita en su comentario.
 
+## El juicio del autor, contado
+
+`elegidas.json` son 17 obras elegidas y 15 notas suyas sobre la primera versión. Contadas:
+
+| | |
+|---|---|
+| **9** | la composición general se lee — «interesante», «dice algo», «cierta cohesión compositiva», «buena densidad», «potencial» |
+| **7** | la relación entre trazos es nula — «mal relacionados», «cohesión nula» |
+| **6** | mal paralelizados |
+| 2 | sin rellenos, intersecciones vacías |
+| 2 | solape que sobra |
+| 1 cada uno | márgenes cambiantes · sin árboles · trazo demasiado digital · sueltos y scattered |
+
+**Ocho notas dicen las dos cosas a la vez**: la composición bien, la relación mal. Es el
+diagnóstico más limpio que ha dado esta familia en toda su historia — el gesto global ya
+está y lo que falla es cómo se responden los trazos entre sí.
+
+Y su corrección, en sus palabras: *«hay que dibujar UN trazo y, sobre él, empezar a hacer
+otros trazos que tendrán diferentes características. Si es denso, habrá que empezar por
+alguna paralela cerca; si son abiertos, pues abiertos y scattered»*.
+
+## El tipo de obra
+
+La obra deja de ser una colección de trazos que se estorban y pasa a ser **un trazo y una
+manera de responderle**, declarada para la obra entera:
+
+| | trazos | separación | paralela | prolonga | apoya | suelta |
+|---|---|---|---|---|---|---|
+| **denso** | 8–14 | 1,04–1,18 W | 0,62 | 0,13 | 0,20 | 0,05 |
+| **abierto** | 5–8 | 1,30–2,20 W | 0,34 | 0,20 | 0,16 | 0,30 |
+
+Y la paralela **nace en su carril** —a `sep` del padre, en su dirección, ya enganchada—
+en vez de encontrarlo por casualidad. Con un detalle que costó una vuelta: la consigna del
+servo no puede ser `sep`, porque `cabe` rechaza todo lo que baje de `sep` y un servo que
+apunta al límite vive sobre la línea prohibida; el primer temblor mata la paralela al
+nacer. Se apunta un 10 % por encima.
+
 ## El marcador
 
 | rasgo | generador | referencias | |
 |---|---|---|---|
-| cruces entre centros | **0** | **0** | ✔ |
-| ángulo de quiebro | **31,5** | **32** | ✔ |
-| longitud en 1 rumbo | **0,25** | **0,24** | ✔ |
-| longitud en 4 rumbos | **0,63** | **0,60** | ✔ |
-| cierre | **0,26** | **0,30** | ✔ |
-| reparto | **1,63** | **1,56** | ✔ |
-| trazos | **8** | **7,5** | ✔ |
-| polo | **0,38** | **0,41** | ✔ |
-| quiebros por lado | 6,20 | 7,55 | casi |
-| cabos al aire | 0,08 | 0,18 | casi |
-| longitud en los ejes | 0,40 | 0,52 | |
-| cuerda / largo | 0,92 | 0,76 | |
-| **acompañado** | 0,27 | **0,52** | ✗ |
-| **largo del trazo** | 0,39 | **0,64** | ✗ |
-| **línea total** | 3,22 | **5,21** | ✗ |
-
-Ocho de quince clavados, incluidas las dos reglas estructurales.
+| rasgo | v1 | con tipos | referencias | |
+|---|---|---|---|---|
+| cruces entre centros | 0 | **0** | **0** | ✔ |
+| ángulo de quiebro | 31,5 | **32,6** | **32** | ✔ |
+| longitud en 4 rumbos | 0,63 | **0,61** | **0,60** | ✔ |
+| trazos | 8 | **8** | **7,5** | ✔ |
+| polo | 0,38 | **0,38** | **0,41** | ✔ |
+| cabos al aire | 0,08 | **0,10** | **0,18** | casi |
+| quiebros por lado | 6,20 | 6,03 | 7,55 | casi |
+| reparto | 1,63 | 1,81 | 1,56 | |
+| longitud en 1 rumbo | 0,25 | 0,19 | 0,24 | |
+| cierre | 0,26 | 0,20 | 0,30 | |
+| longitud en los ejes | 0,40 | 0,32 | 0,52 | |
+| **acompañado** | 0,27 | **0,35** | **0,52** | ↑ |
+| **largo del trazo** | 0,39 | 0,35 | **0,64** | ✗ |
+| **línea total** | 3,22 | 3,28 | **5,21** | ✗ |
 
 ## Y una unidad mal puesta que invalidaba el objetivo
 

@@ -75,10 +75,39 @@ function circuito(seed) {
   const polo = [rng.range(0.32, 0.68) * fw, rng.range(0.32, 0.68) * fh];
 
   const W = rng.range(0.030, 0.092);        // la anchura que tendrá la banda
-  const sep = W * rng.range(1.14, 1.34);    // lo que dos centros se respetan
-  const mg = W * 0.5 + 0.004;               // margen del pliego
 
-  const n = rng.int(5, 13);
+  // EL TIPO DE OBRA, y es lo que faltaba. Del autor: «hay que dibujar UN trazo y, sobre
+  // él, empezar a hacer otros trazos que tendrán diferentes características. Si es
+  // denso, habrá que empezar por alguna paralela cerca; si son abiertos, pues abiertos
+  // y scattered».
+  //
+  // O sea que la obra no es una colección de trazos que se estorban: es UN trazo y una
+  // manera de responderle, y esa manera es de la obra entera. El generador anterior
+  // dejaba a cada trazo a su aire después de nacer, y sus notas lo cantaron: nueve de
+  // quince decían que la composición general se lee, y trece que la relación entre
+  // trazos no existe — ocho lo decían a la vez.
+  const TIPOS = {
+    denso:   { n: [8, 14], sepK: [1.04, 1.18],
+               w: { paralela: 0.62, prolonga: 0.13, apoya: 0.20, suelta: 0.05 } },
+    abierto: { n: [5, 8],  sepK: [1.30, 2.20],
+               w: { paralela: 0.34, prolonga: 0.20, apoya: 0.16, suelta: 0.30 } },
+  };
+  const tipo = rng.bool(0.55) ? 'denso' : 'abierto';
+  const T = TIPOS[tipo];
+  const sep = W * rng.range(T.sepK[0], T.sepK[1]);
+  // LA CONSIGNA NO ES `sep`, ES UN PELO MÁS. `cabe` rechaza cualquier tramo a menos de
+  // `sep`, así que un servo que apunta a `sep` exactos vive sobre la línea prohibida:
+  // el primer temblor lo tira fuera y la paralela muere al nacer. Se apunta por encima.
+  const carril = sep * 1.10;
+  const mg = W * 0.5 + 0.004;               // margen del pliego
+  const relaciones = Object.keys(T.w);
+  const eligeRel = () => {
+    let u = rng.u(), acc = 0;
+    for (const r of relaciones) { acc += T.w[r]; if (u <= acc) return r; }
+    return 'paralela';
+  };
+
+  const n = rng.int(T.n[0], T.n[1]);
   // LA JERARQUÍA: el más largo mide 1,56 veces el mediano, no diez veces.
   const Lmed = rng.range(0.50, 0.82);
   const largos = [];
@@ -155,33 +184,62 @@ function circuito(seed) {
     const meta = largos[k];
     let mejor = null;
     for (let intento = 0; intento < 40 && !mejor; intento++) {
-      // DÓNDE NACE. Dos de cada tres cabos mueren cerca de otro trazo (0,32 al aire),
-      // así que dos de cada tres nacen buscando a alguien: a un canal del cuerpo ya
-      // puesto. El resto, con la gravedad del polo.
-      let p;
-      if (trazos.length && rng.bool(0.66)) {
-        const o = rng.pick(trazos);
-        const i = rng.int(0, o.length - 2);
+      // NACE SOBRE OTRO, Y CON UNA RELACIÓN DECLARADA. Antes nacía «cerca de alguien»
+      // y se iba a su aire: el acompañamiento salía por casualidad, 0,27 contra 0,52.
+      // Ahora la paralela nace EN SU CARRIL —a `sep` exactos, en la dirección del
+      // padre— y sale enganchada; el carril no hay que encontrarlo, se hereda.
+      const rel = trazos.length ? eligeRel() : 'suelta';
+      let p, dir = null, carrilIni = false;
+      // el padre: casi siempre el último puesto, que es como se forma un haz
+      const padre = trazos.length
+        ? (rng.bool(0.66) ? trazos[trazos.length - 1] : rng.pick(trazos)) : null;
+
+      if (padre && (rel === 'paralela')) {
+        const i = rng.int(0, padre.length - 2);
         const f = rng.u();
-        const q = [o[i][0] + (o[i + 1][0] - o[i][0]) * f, o[i][1] + (o[i + 1][1] - o[i][1]) * f];
-        const nrm = Math.atan2(o[i + 1][1] - o[i][1], o[i + 1][0] - o[i][0]) + Math.PI / 2 * (rng.bool(0.5) ? 1 : -1);
-        const d = sep * rng.range(1.0, 1.9);
-        p = [q[0] + Math.cos(nrm) * d, q[1] + Math.sin(nrm) * d];
+        const q = [padre[i][0] + (padre[i + 1][0] - padre[i][0]) * f,
+                   padre[i][1] + (padre[i + 1][1] - padre[i][1]) * f];
+        const pd = Math.atan2(padre[i + 1][1] - padre[i][1], padre[i + 1][0] - padre[i][0]);
+        const lado = rng.bool(0.5) ? 1 : -1;
+        const d = carril * rng.range(1.0, 1.10);
+        p = [q[0] + Math.cos(pd + Math.PI / 2 * lado) * d,
+             q[1] + Math.sin(pd + Math.PI / 2 * lado) * d];
+        dir = pd / RAD + (rng.bool(0.5) ? 0 : 180);
+        carrilIni = true;
+      } else if (padre && rel === 'prolonga') {
+        // sigue por donde el padre acaba, a un canal: dos trazos que el ojo lee como uno
+        const alFin = rng.bool(0.5);
+        const q = alFin ? padre[padre.length - 1] : padre[0];
+        const q2 = alFin ? padre[padre.length - 2] : padre[1];
+        const pd = Math.atan2(q[1] - q2[1], q[0] - q2[0]);
+        p = [q[0] + Math.cos(pd) * sep * 1.25, q[1] + Math.sin(pd) * sep * 1.25];
+        dir = eligeRumbo(pd / RAD);
+      } else if (padre && rel === 'apoya') {
+        // nace a un canal del cuerpo y se va: es el cabo que muere contra otro trazo
+        const i = rng.int(0, padre.length - 2);
+        const f = rng.u();
+        const q = [padre[i][0] + (padre[i + 1][0] - padre[i][0]) * f,
+                   padre[i][1] + (padre[i + 1][1] - padre[i][1]) * f];
+        const nrm = Math.atan2(padre[i + 1][1] - padre[i][1], padre[i + 1][0] - padre[i][0])
+                    + Math.PI / 2 * (rng.bool(0.5) ? 1 : -1);
+        p = [q[0] + Math.cos(nrm) * sep * 1.05, q[1] + Math.sin(nrm) * sep * 1.05];
+        dir = eligeRumbo(nrm / RAD);
       } else {
         const a = rng.range(0, 6.2832), r = rng.range(0, 0.34);
         p = [polo[0] + Math.cos(a) * r * fw, polo[1] + Math.sin(a) * r * fh];
       }
       p = [Math.max(mg, Math.min(fw - mg, p[0])), Math.max(mg, Math.min(fh - mg, p[1]))];
-
-      let dir = eligeRumbo(null);
+      if (dir == null) dir = eligeRumbo(null);
       const pts = [p];
-      let hecho = 0, atasco = 0, enCarril = false;
+      let hecho = 0, atasco = 0, enCarril = carrilIni;
+      // una paralela declarada aguanta el carril: es su razón de existir
+      const pSuelta = carrilIni ? P_SUELTA * 0.34 : P_SUELTA;
       while (hecho < meta && atasco < 6) {
         const act = pts[pts.length - 1];
         const v = vecinoEn(act);
         // ¿engancha, sigue, o suelta?
-        if (enCarril && (!v || v.d > sep * 3.2 || rng.bool(P_SUELTA))) enCarril = false;
-        if (!enCarril && v && v.d < sep * 2.4) {
+        if (enCarril && (!v || v.d > sep * 3.2 || rng.bool(pSuelta))) enCarril = false;
+        if (!enCarril && v && v.d < sep * 2.6) {
           let dd = Math.abs(((v.dir - dir + 540) % 360) - 180);
           if (dd > 90) dd = 180 - dd;
           if (dd < 42 && rng.bool(P_ENGANCHA)) enCarril = true;
@@ -192,7 +250,7 @@ function circuito(seed) {
           if (Math.abs(((base - dir + 540) % 360) - 180) > 90) base += 180;
           const nx = (act[0] - v.qx) / Math.max(1e-9, v.d), ny = (act[1] - v.qy) / Math.max(1e-9, v.d);
           const cruz = Math.cos(base * RAD) * ny - Math.sin(base * RAD) * nx;
-          const err = (v.d - sep) / sep;
+          const err = (v.d - carril) / sep;
           dir = base + Math.max(-32, Math.min(32, err * 46)) * (cruz > 0 ? -1 : 1);
         }
         const L = Math.min(PASO * rng.range(0.7, 1.5), meta - hecho);
