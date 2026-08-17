@@ -335,6 +335,59 @@ un dato: no es un fallo de ajuste.
 | **acompañado** | 0,35 | 0,39 | 0,38 | 0,52 | ↑ |
 | cabos al aire | 0,10 | 0,06 | 0,07 | 0,18 | |
 
+## LA COHERENCIA NO LA DA UN CAMPO: LA DA DERIVAR
+
+Su juicio: *«el punto 5 sigue curvando de manera excesiva, y ninguna tiene coherencia visual
+similar a las de Chillida, el campo no está bien logrado»*. Las dos cosas eran ciertas y ninguna
+era del campo — que ya estaba **apagado**.
+
+**Lo que curvaba era la siembra.** Cada paso derivaba hacia su rumbo y llevaba un temblor de ±9°;
+acumulado sobre cinco o seis pasos eso no es un trazo con carácter, es una **curva de nivel**. Un
+trazo de Chillida es una sucesión de **rectas unidas por esquinas**: dentro de un tramo la
+dirección no cambia. Y el error de mano se tira **una vez por trazo**, no por paso — uno que se
+sortea a cada paso es ruido; uno que se sortea una vez es la mano de quien dibuja.
+
+**Y la coherencia se consigue derivando, no atrayendo.** Una paralela nacía al lado del padre y se
+iba por su cuenta: dos trazos compartían un punto de partida y nada más. En las referencias una
+paralela es **la misma línea desplazada** —r3 y r5 son haces de tres, cuatro y cinco curvas casi
+idénticas—, y de ahí sale la coherencia: **los trazos se parecen porque uno está derivado del
+otro**. Eso es lo que el campo intentaba fabricar después y no puede.
+
+Tres cosas que costó que el offset funcionara, cada una medida:
+
+| lo que fallaba | qué pasaba |
+|---|---|
+| el offset por la normal de **un** tramo | en las esquinas el punto sale mal colocado. La construcción es la **bisectriz**, la misma con la que el motor grande dibuja el borde de una banda |
+| **un solo intento** por paralela | el carril de un padre se ocupa en cuanto le sale la primera —a menudo con otra paralela del mismo padre—, así que se rechazaban 9 de cada 10 y caían a `suelta`. Con doce intentos (padres, lados y ventanas): **12 → 100 paralelas** en 40 obras, y el acompañamiento 0,25 → 0,44 |
+| el tope de la banda en 0,098 | casi una décima del pliego. Con la composición holgada el percentil 25 llegaba hasta ahí y una obra de trece trazos salía como un **rectángulo negro**. La banda se mide contra la separación con la que se compuso, no contra un número absoluto |
+
+Y dos avisos de método, los dos de la misma familia: **un mando que no está cableado da números
+idénticos y parecen medidas**. Pasó con `barre.sh` —midiendo `gen13` mientras yo leía como si fuera
+`gen22`— y volvió a pasar con el rango de los oblicuos, que existía en el generador viejo y no en
+el nuevo: tres filas de barrido exactamente iguales.
+
+### Dónde queda
+
+| rasgo | generador | refs (5) | |
+|---|---|---|---|
+| línea total | 5,71 | 5,19 | ✔ |
+| largo del trazo | 0,60 | 0,568 | ✔ |
+| rumbo dominante | 0,25 | 0,24 | ✔ |
+| cuerda | 0,75 | 0,79 | ✔ |
+| **anchura de banda** | **0,063** | **0,061** | ✔ |
+| cruces | 0 | 0 | ✔ |
+| fusiones | 0 | 0 | ✔ |
+| **celdas de blanco** | **1** | 1–4 | de 0 a 1 |
+| acompañado | 0,44 | 0,52 | ↑ |
+| sobre los ejes | 0,43 | 0,49 | ↑ |
+| ángulo de quiebro | 45,8 | 35 | ↓ |
+| quiebros por lado | 4,90 | 6,9 | ↓ |
+| cierre | 0,45 | 0,30 | |
+
+Lo que sigue faltando: **el quiebro es demasiado grande y hay demasiados pocos**. Un trazo dobla
+46° cinco veces por unidad de longitud y las referencias doblan 35° siete veces. Y **el cierre**
+(0,45 contra 0,30): los trazos se enrollan más de lo que se enrolla la fuente.
+
 ## METER UN CHILLIDA EN NUESTRO MOTOR
 
 La prueba que faltaba, y la que contesta «¿qué nos falta para hacer r1 y r2?». `mano.json` tiene

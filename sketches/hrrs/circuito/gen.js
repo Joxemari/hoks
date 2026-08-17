@@ -137,9 +137,13 @@ function circuito(seed, opt) {
   // a ±20° de los ejes— y dos o cuatro oblicuos, con su error de mano.
   const gira = rng.range(-4, 4);
   const rumbos = [gira, gira + 90], pesoRumbo = [0.30, 0.30];
+  // el rango de los oblicuos, y es un mando de primer orden sobre el ángulo de quiebro: un giro
+  // del eje a un oblicuo de 70° son 70°, y las referencias doblan 35 de mediana
+  const OBL = (typeof process !== 'undefined' && process.env.HRRS_OBL)
+    ? process.env.HRRS_OBL.split(',').map(Number) : [32, 48];
   const nObl = rng.int(2, 4);
   for (let i = 0; i < nObl; i++) {
-    rumbos.push(gira + rng.range(20, 70) * (rng.bool(0.5) ? 1 : -1));
+    rumbos.push(gira + rng.range(OBL[0], OBL[1]) * (rng.bool(0.5) ? 1 : -1));
     pesoRumbo.push(0.40 / nObl);
   }
   const todos = [], tira = [];
@@ -175,6 +179,9 @@ function circuito(seed, opt) {
   const mg = sep * 0.55 + 0.010;
   const n = rng.int(T.n[0], T.n[1]);
   const PASO = 0.105, ERR = 7, TOPE_VUELTA = 100;
+  // el largo de un TRAMO recto, en pasos. Las referencias corren mucho antes de doblar.
+  const L_TRAMO = (typeof process !== 'undefined' && process.env.HRRS_T)
+    ? process.env.HRRS_T.split(',').map(Number) : [1.0, 2.6];
   // LA ESQUINA, por PASO y no por trazo. En las referencias hay 6,9 quiebros por unidad de
   // longitud, o sea ~0,7 por paso: con 0,11 el trazo hacía media esquina y salía recto —cuerda
   // 0,98 contra 0,79—. Un trazo corto con tasa baja de esquina es una raya.
@@ -209,53 +216,60 @@ function circuito(seed, opt) {
   // el trazo corre y la esquina es un acontecimiento.
   const DBG = (typeof process !== 'undefined' && process.env.HRRS_POR)
     ? { fuera: 0, estorba: 0, nace_fuera: 0, nace_pegado: 0 } : null;
+  // EL PASEO: TRAMOS RECTOS Y ESQUINAS, y nada más. Antes cada paso derivaba hacia su rumbo y
+  // llevaba un temblor de ±9°; acumulado sobre cinco o seis pasos eso no es un trazo con
+  // carácter, es una CURVA DE NIVEL — y era lo que hacía que las obras leyeran como un mapa
+  // topográfico en vez de como un circuito. Un trazo de Chillida es una sucesión de rectas
+  // unidas por esquinas: dentro de un tramo la dirección NO CAMBIA.
+  //
+  // El error de mano se tira UNA VEZ POR TRAZO y no por paso. Un temblor que se sortea a cada
+  // paso es ruido; uno que se sortea una vez es la mano de quien lo dibuja.
   function pasea(p0, dir0, largo, evita) {
-    let dir = dir0;
-    if (DBG) {
-      if (fuera(p0)) DBG.nace_fuera++;
-      let m = Infinity;
-      for (const t of trazos) { const c = cercaDe(dentro(p0), t); if (c && c.d < m) m = c.d; }
-      if (m < sep * 0.78) DBG.nace_pegado++;
-    }
+    const err = rng.range(-ERR, ERR);
+    let dir = dir0 + err;
     const pts = [dentro(p0)];
     let hecho = 0, atasco = 0;
     while (hecho < largo && atasco < 25) {
-      const u = pts[pts.length - 1];
-      // LA INTENCIÓN PRIMERO, y el escape después. Probando primero «seguir recto» y usando el
-      // giro sólo como salida de emergencia, el trazo sale recto por construcción: la cuerda
-      // salía 0,99 contra el 0,79 de las referencias. Lo que el trazo quiere hacer es derivar
-      // hacia su rumbo, o hacer esquina; esquivar es lo que hace cuando no puede.
-      const quiere = rng.bool(P_ESQ)
-        ? eligeRumbo(dir)
-        : dir + corto(atractor(dir) - dir) * 0.55 + rng.range(-9, 9);
-      const cand = [quiere];
-      for (let g = 1; g <= 4; g++) { cand.push(quiere + g * 14); cand.push(quiere - g * 14); }
-      cand.push(eligeRumbo(dir));
-      // y si nada cabe a paso largo, se prueba a paso corto: un trazo que no puede avanzar un
-      // tramo entero puede avanzar medio, y eso NO ES ATASCARSE
-      let puesto = false;
-      for (const fL of [1, 0.6, 0.35]) {
-        const L = Math.min(PASO * rng.range(0.72, 1.5) * fL, largo - hecho);
-        if (L < PASO * 0.20) break;
-        for (const d2 of cand) {
+      // el largo del TRAMO, no del paso: varias anchuras de banda de recta seguida
+      const objetivo = Math.min(largo - hecho, PASO * rng.range(L_TRAMO[0], L_TRAMO[1]));
+      let dado = 0, puesto = false;
+      // se prueba el rumbo que toca y, si no cabe, otros del alfabeto: esquivar es lo que hace
+      // el trazo cuando no puede, no lo que quiere hacer
+      const cand = [dir];
+      for (let i = 0; i < 5; i++) cand.push(eligeRumbo(dir) + err);
+      for (const d2 of cand) {
+        // el tramo entero de una vez: si no cabe entero, se prueba mas corto, y si no, otro rumbo
+        for (const f of [1, 0.62, 0.38]) {
+          const L = objetivo * f;
+          if (L < PASO * 0.30) break;
+          const u = pts[pts.length - 1];
           const q = [u[0] + Math.cos(d2 * RAD) * L, u[1] + Math.sin(d2 * RAD) * L];
-          if (fuera(q)) { if (DBG) DBG.fuera++; continue; }
-          if (evita && evita(u, q)) { if (DBG) DBG.estorba++; continue; }
-          pts.push(q); dir = d2; hecho += L; puesto = true; break;
+          if (fuera(q)) continue;
+          if (evita && evita(u, q)) continue;
+          pts.push(q); dir = d2; dado = L; puesto = true; break;
         }
         if (puesto) break;
       }
-      if (!puesto) { atasco++; dir = eligeRumbo(dir); continue; }
-      atasco = 0;
+      if (!puesto) { atasco++; dir = eligeRumbo(dir) + err; continue; }
+      atasco = 0; hecho += dado;
+      dir = eligeRumbo(dir) + err;      // y en el vertice, ESQUINA: se cambia de rumbo
     }
     return pts;
   }
   // no cruzar, y no meterse en el canal de nadie: el canal se respeta AL DIBUJAR
-  const estorba = (k) => (a, b) => {
+  // EL SUELO AL DIBUJAR, con una excepción medida: contra EL PADRE de una paralela se admite más
+  // cerca. La paralela es el offset del padre, y en un codo el offset de dentro corta la esquina y
+  // se acerca a la otra pata — pedirle el suelo entero ahí tumbaba el 90 % de las paralelas (17
+  // construidas de 354 trazos) y las hacía caer a `suelta`, que es justo lo contrario de lo que se
+  // buscaba. Y no es una licencia: en r1 la banda real es MÁS ancha que el hueco mínimo entre los
+  // ejes marcados, o sea que en la obra el canal se estrecha en esos puntos. La densidad lo
+  // absorbe, porque sale del percentil 25 y no del mínimo.
+  const estorba = (k, padre) => (a, b) => {
     for (let j = 0; j < trazos.length; j++) {
       if (j === k) continue;
+      const suelo = (padre != null && trazos[j] === padre) ? sep * 0.80 : sep * 0.78;
       for (let q = 0; q < trazos[j].length - 1; q++)
-        if (distTramos(a, b, trazos[j][q], trazos[j][q + 1]) < sep * 0.78) return true;
+        if (distTramos(a, b, trazos[j][q], trazos[j][q + 1]) < suelo) return true;
     }
     return false;
   };
@@ -345,8 +359,76 @@ function circuito(seed, opt) {
              dir: eligeRumbo(null) };
   };
 
+  // LA PARALELA ES EL OFFSET DEL PADRE. Naciendo al lado y andando por su cuenta, dos trazos
+  // comparten un punto de partida y nada más: se separan al segundo tramo y la obra se lee como
+  // un montón de líneas que casualmente empiezan juntas. En las referencias una paralela es la
+  // MISMA línea desplazada —r3 y r5 son haces de tres, cuatro y cinco curvas casi idénticas—, y
+  // de ahí sale la coherencia visual: los trazos se parecen porque uno está DERIVADO del otro.
+  //
+  // Esto es lo que el campo intentaba fabricar después y no puede: la coherencia no se consigue
+  // atrayendo trazos que nacieron distintos, se consigue derivándolos.
+  // EL OFFSET, POR BISECTRIZ. Desplazando cada vértice por la normal de UN tramo, en las esquinas
+  // el punto sale mal colocado respecto a la otra pata: el 90 % de las paralelas se rechazaban por
+  // el primer tramo. La bisectriz es la construcción correcta —la misma matemática con la que el
+  // motor grande dibuja el borde de una banda— y mantiene la distancia en el codo.
+  const offsetDe = (padre, lado, desde, cuantos) => {
+    const hasta = Math.min(padre.length - 1, desde + cuantos);
+    if (hasta - desde < 1) return [];
+    const out = [];
+    const nor = (i) => {   // la normal del tramo i→i+1, al lado que toca
+      const d = Math.atan2(padre[i + 1][1] - padre[i][1], padre[i + 1][0] - padre[i][0]);
+      return [Math.cos(d + Math.PI / 2 * lado), Math.sin(d + Math.PI / 2 * lado)];
+    };
+    const R = sep * 1.06;
+    for (let i = desde; i <= hasta; i++) {
+      const a = padre[i];
+      if (i === desde || i === hasta) {
+        // en los cabos, la normal del único tramo que hay
+        const n2 = nor(i === desde ? i : i - 1);
+        out.push([a[0] + n2[0] * R, a[1] + n2[1] * R]);
+        continue;
+      }
+      const n1 = nor(i - 1), n2 = nor(i);
+      let bx = n1[0] + n2[0], by = n1[1] + n2[1];
+      const m = hy(bx, by);
+      if (m < 1e-9) { out.push([a[0] + n2[0] * R, a[1] + n2[1] * R]); continue; }
+      bx /= m; by /= m;
+      // el largo de la bisectriz: R / cos(mitad del giro). Se topa, porque en un codo cerrado se
+      // dispara y sale una púa — ahí el offset se corta a escuadra, como el motor grande.
+      const cosm = Math.max(0.42, bx * n2[0] + by * n2[1]);
+      const L = Math.min(R / cosm, R * 2.4);
+      out.push([a[0] + bx * L, a[1] + by * L]);
+    }
+    return out.map(dentro);
+  };
+
   for (let k = 1; k < n && !dado; k++) {
     let cat = eligeCat(), nac = null;
+
+    // LA PARALELA SE CONSTRUYE, NO SE PASEA. Y se prueba VARIAS VECES: el carril de un padre se
+    // ocupa en cuanto le sale la primera paralela —a menudo con otra paralela del mismo padre—, así
+    // que con un solo intento se rechazaban nueve de cada diez y caían a `suelta`, que es
+    // exactamente lo contrario de lo que se busca. Se prueban padres, lados y ventanas.
+    if (cat === 'paralela') {
+      let hecha = null;
+      for (let intento = 0; intento < 12 && !hecha; intento++) {
+        const padre = trazos[rng.bool(0.45) ? 0 : rng.int(0, trazos.length - 1)];
+        if (padre.length < 3) continue;
+        const lado = rng.bool(0.5) ? 1 : -1;
+        const cuantos = Math.max(2, Math.round((padre.length - 1) * rng.range(0.45, 1.0)));
+        const desde = rng.int(0, Math.max(0, padre.length - 1 - cuantos));
+        const pts = offsetDe(padre, lado, desde, cuantos);
+        let ok = pts.length >= 2 && largoDe(pts) > PASO * 1.4;
+        for (let i = 0; ok && i < pts.length - 1; i++)
+          if (estorba(-1, padre)(pts[i], pts[i + 1])) ok = false;
+        if (ok) hecha = pts;
+      }
+      if (hecha) {
+        trazos.push(hecha); masas.push(rng.range(0.3, 1.2)); cats.push('paralela');
+        continue;
+      }
+      cat = 'suelta';   // no cabía: cede la categoría antes que perder el trazo
+    }
     for (let intento = 0; intento < 8 && !nac; intento++) {
       const c = naceCat(cat);
       if (libre(c.p)) nac = c;
@@ -650,10 +732,14 @@ function circuito(seed, opt) {
       if (vale) trazos[k] = enc;
     }
   }
-  foto('5 · relajado', 'hilo',
-       'El campo sobre la estructura completa: gravedad del trazo, atracción del punto, fuerza ' +
-       'de solape, y el encauzado devolviendo cada tramo hacia su rumbo. Y aquí se para: es lo ' +
-       'último que toca la geometría.');
+  foto(VUELTAS ? '5 · el campo' : '5 · el campo (APAGADO)', 'hilo',
+       VUELTAS
+         ? 'Gravedad del trazo, atracción del punto, fuerza de solape y el encauzado. Es lo ' +
+           'último que toca la geometría.'
+         : 'Va a cero, y lo apaga una prueba: metiéndole la geometría real de r1, r2, r3 y r6 ' +
+           'borra las celdas de blanco atrapado de las CUATRO y contrae la obra (r6 pierde el ' +
+           '44 % de su tinta). Esta columna es igual que la anterior a propósito. La coherencia ' +
+           'no la da un campo: la da que un trazo sea el offset de otro.');
 
   // ── 6. LA DENSIDAD, Y NO ANTES ────────────────────────────────────────────────
   // «En ese momento, y no antes, se le daría densidad al trazo.» La banda se corta a la medida
@@ -671,7 +757,12 @@ function circuito(seed, opt) {
   // obra— para que la regla de no fundir siga cumpliéndose. Es una reparación LOCAL: la autopsia
   // condenó los martillos globales, no arreglar tres sitios que se sabe cuáles son.
   const hs0 = huecosPares(trazos);
-  W = Math.min(0.098, percentil(hs0, P_BANDA));
+  // LA BANDA NO PUEDE SER MÁS ANCHA QUE LA SEPARACIÓN CON LA QUE SE COMPUSO. El tope estaba en
+  // 0,098 —casi una décima del pliego— y cuando la composición queda holgada el percentil 25 llega
+  // hasta ahí: una obra de trece trazos salía como un RECTÁNGULO NEGRO, la hoja entera de tinta.
+  // La separación nominal es la escala de la composición, así que la banda se mide contra ella y
+  // no contra un número absoluto que no sabe de qué obra se está hablando.
+  W = Math.min(percentil(hs0, P_BANDA), sep / (1 + CANAL) * 1.20, 0.082);
   {
     const SUELO_W = W * 1.06;      // la banda más un pelo de canal: por debajo, se funde
     for (let v = 0; v < 12; v++) {
