@@ -76,19 +76,26 @@ const LADO = parseInt(process.argv[4] || '900', 10);
       const t = trozos(d, LADO, h);
       // los trozos de menos de 20 px son antialias suelto, no una banda
       const reales = t.tam.filter(x => x >= 20).length;
-      filas.push({ seed, trazos: c.trazos.length, piezas: reales, tipo: c.tipo });
+      // ¿ES UNA OBRA RECORTE? Si un trazo se sale del pliego y vuelve a entrar, aparece como dos
+      // piezas de tinta, y eso NO es una banda partida: es el recorte. Contarlo como defecto era
+      // un fallo del instrumento —12 obras de 60 marcadas como partidas— no del generador. La
+      // fusión sí se sigue midiendo igual: dos bandas que se tocan se tocan, recortada o no.
+      const recortada = c.trazos.some(q => q.some(p2 =>
+        p2[0] < 0 || p2[1] < 0 || p2[0] > c.fw || p2[1] > c.fh));
+      filas.push({ seed, trazos: c.trazos.length, piezas: reales, tipo: c.tipo, recortada });
     }
     return filas;
   }, { N, LADO });
 
-  let funden = 0, parten = 0;
+  let funden = 0, parten = 0, recs = 0;
   for (const f of res) {
     if (f.piezas < f.trazos) funden++;
-    if (f.piezas > f.trazos) parten++;
+    if (f.recortada) recs++;
+    else if (f.piezas > f.trazos) parten++;   // en una recortada, más piezas es el recorte
   }
   console.log('obras=' + res.length +
               '  FUNDEN=' + funden + ' (' + (100 * funden / res.length).toFixed(0) + '%)' +
-              '  se parten=' + parten);
+              '  se parten=' + parten + '  (recortadas, sin contar: ' + recs + ')');
   const mal = res.filter(f => f.piezas < f.trazos).slice(0, 12);
   for (const f of mal)
     console.log('  #' + f.seed.toString(16) + '  ' + f.trazos + ' trazos -> ' +

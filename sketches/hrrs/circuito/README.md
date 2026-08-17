@@ -393,13 +393,52 @@ decide por su cuenta. Eso sí lo hago bien.
 ojo en vez de creérsela: círculo hueco = al aire, cuadrado = llega de frente, barra = muere en
 paralelo.
 
-### Lo que hay que cambiar
+### Aplicado, y lo que no entró
 
-- **Tres márgenes**, no uno.
-- **Dos gestos** de llegada, con el medio prohibido: de frente o en paralelo, nada de 45°.
-- **Cabo contra cabo** como caso principal, no como rareza.
-- **Que el cabo al aire lo sea de verdad**: 0,04 contra 0,17, y encima la mitad de los suyos son
-  trazos que se salen del pliego, cosa que hoy es imposible porque el paseo rebota en el margen.
+**Los tres márgenes son UN número.** Eje a eje sale 1,02 contra un cabo y 0,98 contra un costado —
+el mismo—, así que la regla es **un cabo se para a una anchura de banda del eje del vecino**, y los
+dos huecos de tinta distintos (1,02 W y 0,48 W) salen solos de si el vecino tiene tinta ahí o no.
+Un número, no tres. ✔
+
+**Cada obra decide su tasa de cabos al aire**, de 0 a 40 %, en vez de una constante. ✔ Con eso
+`cabosLibres` sube de 0,04 a **0,11** contra el 0,17 de las seis.
+
+**Las obras recorte.** La mitad de los cabos al aire de las seis están a menos de una anchura del
+borde, y por obra se reparte muy desigual: r4, r5 y r6 tienen la mitad de sus cabos pegados al
+borde y r1, r2, r3 uno o dos. **Hay obras que son un recorte de una composición mayor**, y el
+paseo rebotaba contra el margen: era imposible ni por accidente. Ahora el 40 % de las obras nace
+recortada y sus trazos se salen del pliego. ✔
+
+**Los dos gestos, sí — pero sólo llegan al 19 % de los cabos.** Cuatro construcciones probadas y
+las cuatro rechazadas por la geometría: apuntar el último tramo al vecino (el ángulo sale el que
+sale, y el que salía es justo el que no existe en las seis); meter un codo para que el último tramo
+sea el gesto exacto (rompe el contorno: 13 obras de 60 con la banda partida en dos, y el
+acompañamiento de 0,52 a 0,38); filtrar los vecinos que están enfrente y elegir el sentido del
+gesto en vez de sortearlo (del 17 % al 20 %); y decirle al paseo a dónde va para que se acerque
+mientras anda (sin cambio). El desglose por causa: los dos topes de grapa y el estorbo se llevan
+casi todo.
+
+**La conclusión, después de medir las cuatro: rematar no es un paso que se añada al final.** Es
+parte de cómo se anda el trazo, y andarlo *hacia un destino con un ángulo de llegada declarado* es
+otra pieza de modelo. Es la cuarta vez que esta familia aprende lo mismo —el campo no puede
+arreglar lo que no compuso, la paralela hay que derivarla y no acercarla, el canal hay que
+respetarlo al dibujar y no abrirlo después— y la cuarta vez con la misma forma: **lo que se
+construye sale; lo que se retoca, no.**
+
+### Y un fallo del instrumento, no del generador
+
+`funde.js` marcaba 12 obras de 60 con «la banda partida». No lo estaban: **son las obras recorte**
+— un trazo que se sale del pliego y vuelve a entrar aparece como dos piezas de tinta, y eso es el
+recorte, no un defecto. Corregido en el detector. La fusión se sigue midiendo igual, porque dos
+bandas que se tocan se tocan, recortada la obra o no.
+
+Queda **1 obra de 80 que funde**, con semilla: `be1e5234`. Diagnosticada — el relleno se pasa 0,004
+en un par— y con tres arreglos ya aplicados en el camino, el último de ellos el que importa: **el
+lado no se decide con un solo punto.** Se cogía el punto más cercano del vecino y, si caía al otro
+lado, se descartaba al vecino entero para ese borde aunque otra parte suya sí estuviera enfrente.
+Y el hueco se mide entre TRAMOS y no desde el vértice: **es la tercera vez que ese mismo error
+aparece** —el suelo del campo, el abrir el canal y ahora el relleno— y las tres por lo mismo, que
+la regla es sobre tramos y la medida era sobre vértices.
 
 ## UN TRAZO NO SE CRUZA CONSIGO MISMO — y estaba sin comprobar
 

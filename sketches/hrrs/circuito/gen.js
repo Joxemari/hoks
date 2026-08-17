@@ -168,6 +168,14 @@ function circuito(seed, opt) {
     abierto: { n: [5, 9],  sep: [0.085, 0.150], cats: [0.30, 0.18, 0.20, 0.32] },
   };
   const tipo = rng.bool(0.62) ? 'denso' : 'abierto';
+  // CADA OBRA DECIDE LO SUYO. Los cabos al aire van de 0 en r6 a un 40 % en r4: no es una
+  // constante global, es una decisión de la obra, como el tipo. La mediana de las seis es 17 %.
+  const P_AIRE = rng.bool(0.28) ? 0 : rng.range(0.10, 0.40);
+  // Y HAY OBRAS QUE SON UN RECORTE de una composición mayor: en r4, r5 y r6 la mitad de los cabos
+  // están a menos de una anchura del borde del pliego, contra uno o dos en r1, r2 y r3. En un
+  // recorte los trazos SE SALEN del papel; hasta ahora el paseo rebotaba en el margen y eso era
+  // imposible ni por accidente.
+  const recorte = rng.bool(0.42);
   const T = TIPOS[tipo];
   let sep = rng.range(T.sep[0], T.sep[1]);
   if (opt && opt.geometria) {
@@ -176,7 +184,11 @@ function circuito(seed, opt) {
     const h = huecosPares(opt.geometria.trazos);
     if (h.length) sep = percentil(h, P_BANDA) * (1 + CANAL);
   }
-  const mg = sep * 0.55 + 0.010;
+  // la anchura NOMINAL de banda: la que la composición supone. La de verdad se decide al final
+  // —la densidad va después— pero los cabos se rematan antes y necesitan una unidad en la que
+  // medirse. Es `separación = banda + canal`, despejado.
+  const W_NOM = sep / (1 + CANAL);
+  const mg = recorte ? -sep * 0.9 : sep * 0.55 + 0.010;
   const n = rng.int(T.n[0], T.n[1]);
   const PASO = 0.105, ERR = 7, TOPE_VUELTA = 100;
   // el largo de un TRAMO recto, en pasos. Las referencias corren mucho antes de doblar.
@@ -209,7 +221,7 @@ function circuito(seed, opt) {
     return cand[i].r + rng.range(-ERR, ERR);
   };
 
-  const trazos = [], masas = [], sols = [], atrs = [], cats = [];
+  const trazos = [], masas = [], sols = [], atrs = [], cats = [], metas = [];
 
   // el paseo: una serie de puntos con la cadencia del alfabeto. Deriva casi siempre y de vez en
   // cuando hace ESQUINA — en las referencias el 73 % de los tramos dobla menos de 15°, así que
@@ -230,7 +242,15 @@ function circuito(seed, opt) {
       if (distTramos(u, q, pts[i], pts[i + 1]) < sep * 0.78) return true;
     return false;
   };
-  function pasea(p0, dir0, largo, evita) {
+  // EL TRAZO SABE A DÓNDE VA. Rematar un trazo YA TERMINADO no funciona: se andaba hasta agotar
+  // el recorrido y luego se intentaba torcer el último tramo hacia un vecino, y la geometría no lo
+  // permitía el 80 % de las veces —dos topes de grapa y un estorbo—. Es la tercera vez que la
+  // misma lección aparece en esta familia: construir, no retocar. Como las paralelas, que hay que
+  // derivarlas y no acercarlas; como el campo, que no puede arreglar lo que no compuso.
+  //
+  // Así que el destino del cabo se decide ANTES de andar y el paseo se inclina hacia él: entre los
+  // rumbos que caben, gana el que acerca. Y cuando llega a tiro, para.
+  function pasea(p0, dir0, largo, evita, meta) {
     const err = rng.range(-ERR, ERR);
     let dir = dir0 + err;
     const pts = [dentro(p0)];
@@ -243,6 +263,18 @@ function circuito(seed, opt) {
       // el trazo cuando no puede, no lo que quiere hacer
       const cand = [dir];
       for (let i = 0; i < 5; i++) cand.push(eligeRumbo(dir) + err);
+      if (meta) {
+        // el rumbo que más acerca, dentro del alfabeto: la meta inclina, no manda
+        const u0 = pts[pts.length - 1];
+        cand.sort((A, B) => {
+          const dA = hy(u0[0] + Math.cos(A * RAD) * objetivo - meta.q[0],
+                        u0[1] + Math.sin(A * RAD) * objetivo - meta.q[1]);
+          const dB = hy(u0[0] + Math.cos(B * RAD) * objetivo - meta.q[0],
+                        u0[1] + Math.sin(B * RAD) * objetivo - meta.q[1]);
+          return dA - dB;
+        });
+        if (rng.bool(0.35)) cand.reverse();      // no siempre el mejor: el trazo no es un misil
+      }
       for (const d2 of cand) {
         // el tramo entero de una vez: si no cabe entero, se prueba mas corto, y si no, otro rumbo
         for (const f of [1, 0.62, 0.38]) {
@@ -264,6 +296,11 @@ function circuito(seed, opt) {
       }
       if (!puesto) { atasco++; dir = eligeRumbo(dir) + err; continue; }
       atasco = 0; hecho += dado;
+      // ya está a tiro de su destino: para aquí y que el remate haga el gesto
+      if (meta) {
+        const u1 = pts[pts.length - 1];
+        if (hy(u1[0] - meta.q[0], u1[1] - meta.q[1]) < meta.D * 2.6) break;
+      }
       dir = eligeRumbo(dir) + err;      // y en el vertice, ESQUINA: se cambia de rumbo
     }
     return pts;
@@ -307,7 +344,7 @@ function circuito(seed, opt) {
     const a = rng.range(0, 6.2832), r = rng.range(0.06, 0.30);
     const p0 = [0.5 * fw + Math.cos(a) * r * fw, 0.5 * fh + Math.sin(a) * r * fh];
     const pts = pasea(p0, eligeRumbo(null), rng.range(0.85, 1.45) * K_LARGO, null);
-    trazos.push(pts); masas.push(rng.range(1.5, 2.6)); cats.push('primero');
+    trazos.push(pts); masas.push(rng.range(1.5, 2.6)); cats.push('primero'); metas[0] = null;
   }
   foto('1 · los puntos del primer trazo', 'puntos',
        'Sólo el primero. La hoja está vacía y no hay nada que mirar.');
@@ -440,6 +477,7 @@ function circuito(seed, opt) {
       }
       if (hecha) {
         trazos.push(hecha); masas.push(rng.range(0.3, 1.2)); cats.push('paralela');
+        metas[trazos.length - 1] = null;
         continue;
       }
       cat = 'suelta';   // no cabía: cede la categoría antes que perder el trazo
@@ -457,12 +495,29 @@ function circuito(seed, opt) {
     }
     if (!nac) continue;                      // la hoja está llena: no se fuerza
     const largo = rng.range(0.38, 0.95) * K_LARGO;
-    let pts = pasea(nac.p, nac.dir, largo, estorba(-1));
+    // LA META, decidida antes de andar. El 83 % de los cabos de las seis muere contra algo, así
+    // que un trazo que nace sin saber contra qué va a morir nace mal.
+    let meta = null;
+    if (!rng.bool(0.22) && trazos.length) {
+      const j = rng.int(0, trazos.length - 1), o = trazos[j];
+      if (o.length >= 2) {
+        if (rng.bool(0.66)) {                 // contra un cabo: el 55 % de las seis
+          const oi = rng.bool(0.5) ? 0 : o.length - 1;
+          meta = { q: o[oi], D: W_NOM };
+        } else {                              // contra el costado
+          const c = cercaDe(nac.p, o);
+          if (c) meta = { q: [c.qx, c.qy], D: W_NOM };
+        }
+      }
+    }
+    let pts = pasea(nac.p, nac.dir, largo, estorba(-1), meta);
     if (typeof process !== 'undefined' && process.env.HRRS_PIDE)
       console.error('pide ' + largo.toFixed(2) + ' logra ' + largoDe(pts).toFixed(2) + '  ' + cat);
     if (pts.length < 2 || largoDe(pts) < PASO * 1.4) continue;
     if (cat === 'apoyo') pts.reverse();
     trazos.push(pts); masas.push(rng.range(0.3, 1.2)); cats.push(cat);
+    // se guarda CONTRA QUÉ andaba, para que el remate use ese destino y no otro
+    metas[trazos.length - 1] = meta;
   }
   // cada punto trae sus dos variables: cuánto se deja llevar y cuánta fuerza de solape tiene.
   // Onda lenta y no ruido: un trazo tiene TRAMOS que tienden a arrimarse, no puntos alternos.
@@ -492,62 +547,163 @@ function circuito(seed, opt) {
   // tramo se REORIENTA para llegar: se apunta al cuerpo y se le da el largo justo para quedarse
   // a un canal. Si al llegar estorbaría a alguien, o si el giro que pide es una grapa, el cabo
   // se queda abierto — el destino es una intención, no una orden.
-  const P_ABIERTO = dado ? 1 : 0.18;   // con geometría dada, la mano ya remató los cabos
+  // ── 4. EL DESTINO DE CADA CABO, con lo que dicen los 102 cabos de las seis ────
+  //
+  //   AL AIRE ............ 17 % (pero de 0 en r6 a 40 % en r4: lo decide la obra)
+  //   CONTRA UN CABO ..... 55 %  ← el caso PRINCIPAL, y yo lo tenía como la rareza
+  //   CONTRA EL COSTADO .. 28 %
+  //
+  // Y SE PARA A UNA ANCHURA DE BANDA DEL EJE DEL VECINO. Eso es lo bonito de la medida: eje a eje
+  // sale 1,02 contra un cabo y 0,98 contra un costado —el mismo número— y los dos huecos de tinta
+  // distintos (1,02 W y 0,48 W) salen solos de si el vecino tiene tinta ahí o no. Un número, no
+  // dos. Y comparado con el canal de una paralela (0,22 W), un encuentro de cabos deja casi cinco
+  // veces más: por eso las obras se leían apretadas cuando se aplicaba 0,22 en todas partes.
+  //
+  // DOS GESTOS, Y EL MEDIO PROHIBIDO. El ángulo de llegada es bimodal con el centro vacío: 28
+  // cabos entre 0° y 15°, 26 entre 75° y 90°, y NI UNO entre 30° y 60°. O el trazo llega de
+  // frente y se para, o muere en paralelo al lado de su vecino —que es el final de un
+  // acompañamiento—. Un cabo a 45° no existe en las seis, así que aquí tampoco.
+  const D_CABO = W_NOM;              // a una anchura de banda del eje del vecino
+  const ANG_FRENTE = 78, ANG_PAR = 8;
+  const DBGC = (typeof process !== 'undefined' && process.env.HRRS_CABO)
+    ? { lejos:0, grapa1:0, grapa2:0, corto:0, estorba:0, cruza:0, ok:0, sinCand:0 } : null;
   const destinos = [];
   for (let k = 0; k < trazos.length; k++) {
     destinos.push([null, null]);
+    if (dado) { destinos[k] = ['dado', 'dado']; continue; }
     for (const cual of [0, 1]) {
       const idx = cual === 0 ? 0 : trazos[k].length - 1;
       const vec = cual === 0 ? 1 : trazos[k].length - 2;
-      if (trazos[k].length < 3) { destinos[k][cual] = 'abierto'; continue; }
-      if (rng.bool(P_ABIERTO)) { destinos[k][cual] = 'abierto'; continue; }
-      const quiereCabo = rng.bool(0.38);   // contra un cabo o contra el lateral
+      if (trazos[k].length < 3) { destinos[k][cual] = 'al aire'; continue; }
+      if (rng.bool(P_AIRE)) { destinos[k][cual] = 'al aire'; continue; }
+      // cabo contra cabo dos de cada tres: 55 contra 28 en las seis
+      const quiereCabo = (cual === 1 && metas[k]) ? true : rng.bool(0.66);
+      const deFrente = rng.bool(0.52);      // 26 de frente contra 28 en paralelo
 
-      // los candidatos: cabos de otros trazos, o el punto más próximo de su cuerpo
       const cands = [];
+      // SI EL TRAZO ANDABA HACIA ALGO, se remata contra ESO. El paseo se acercaba a un destino y
+      // el remate elegía otro por su cuenta —el más próximo que tuviera enfrente— así que el
+      // trabajo de acercarse no servía para nada y el 80 % de los cabos se quedaba al aire.
+      const mia = cual === 1 ? metas[k] : null;
+      if (mia) {
+        let mej = null;
+        for (let j = 0; j < trazos.length; j++) {
+          if (j === k || trazos[j].length < 2) continue;
+          const c = cercaDe(mia.q, trazos[j]);
+          if (c && (!mej || c.d < mej.d)) mej = { d: c.d, j };
+        }
+        if (mej) {
+          const o = trazos[mej.j];
+          const c2 = cercaDe(trazos[k][idx], o);
+          // ¿el destino era un cabo de ese trazo o su costado?
+          const dc = Math.min(hy(mia.q[0] - o[0][0], mia.q[1] - o[0][1]),
+                              hy(mia.q[0] - o[o.length - 1][0], mia.q[1] - o[o.length - 1][1]));
+          if (dc < W_NOM * 0.8) {
+            const oi = hy(mia.q[0] - o[0][0], mia.q[1] - o[0][1]) < W_NOM * 0.8 ? 0 : o.length - 1;
+            const ov = o[oi === 0 ? 1 : o.length - 2];
+            cands.push({ q: o[oi], tang: Math.atan2(o[oi][1] - ov[1], o[oi][0] - ov[0]),
+                         d: hy(o[oi][0] - trazos[k][idx][0], o[oi][1] - trazos[k][idx][1]),
+                         clase: 'contra un cabo' });
+          } else if (c2) {
+            cands.push({ q: [c2.qx, c2.qy], tang: c2.dir, d: c2.d, clase: 'contra el costado' });
+          }
+        }
+      }
       for (let j = 0; j < trazos.length; j++) {
         if (j === k || trazos[j].length < 2) continue;
         if (quiereCabo) {
           for (const oi of [0, trazos[j].length - 1]) {
             const o = trazos[j][oi];
-            cands.push({ q: o, d: hy(o[0] - trazos[k][idx][0], o[1] - trazos[k][idx][1]),
-                         clase: 'cabo' });
+            const ov = trazos[j][oi === 0 ? 1 : trazos[j].length - 2];
+            cands.push({ q: o, tang: Math.atan2(o[1] - ov[1], o[0] - ov[0]),
+                         d: hy(o[0] - trazos[k][idx][0], o[1] - trazos[k][idx][1]),
+                         clase: 'contra un cabo' });
           }
         } else {
           const c = cercaDe(trazos[k][idx], trazos[j]);
-          if (c) cands.push({ q: [c.qx, c.qy], d: c.d, clase: 'lateral' });
+          if (c) cands.push({ q: [c.qx, c.qy], tang: c.dir, d: c.d, clase: 'contra el costado' });
         }
       }
-      cands.sort((a, b) => a.d - b.d);
+      // EL VECINO TIENE QUE ESTAR DELANTE. Ordenando sólo por distancia, el más próximo suele
+      // estar detrás del trazo —a su espalda— y llegar hasta él pide doblar cien grados: los dos
+      // topes de grapa se llevaban el 70 % de los remates. Un cabo remata contra lo que tiene
+      // enfrente, que es lo que hace una mano.
+      {
+        const p0 = trazos[k][idx], pv = trazos[k][vec];
+        const av = Math.atan2(p0[1] - pv[1], p0[0] - pv[0]);
+        for (const cd of cands) {
+          const ac = Math.atan2(cd.q[1] - pv[1], cd.q[0] - pv[0]);
+          cd.delante = Math.abs(corto((ac - av) / RAD));
+        }
+        // primero los que están enfrente, y entre ellos el más cercano
+        cands.sort((a, b) => (a.delante > 85) - (b.delante > 85) || a.d - b.d);
+        while (cands.length && cands[0].delante > 85) cands.shift();
+      }
+      if (DBGC && !cands.length) DBGC.sinCand++;
       let puesto = null;
-      for (const cd of cands.slice(0, 3)) {
-        if (cd.d > sep * 5.0) break;                    // demasiado lejos: no es un encuentro
+      for (const cd of cands.slice(0, 4)) {
+        if (cd.d > W_NOM * 7) { if (DBGC) DBGC.lejos++; break; }
         const desde = trazos[k][vec];
-        const dx = cd.q[0] - desde[0], dy = cd.q[1] - desde[1], D = hy(dx, dy);
-        if (D < sep * 1.2) continue;
-        // el largo justo para quedarse a un canal del cuerpo, llegando de frente
-        const L = D - sep * 1.08;
-        const q = dentro([desde[0] + dx / D * L, desde[1] + dy / D * L]);
-        // el giro que pide, contra el tramo anterior: más de 70° es una grapa
-        const ant = cual === 0 ? trazos[k][2] : trazos[k][trazos[k].length - 3];
-        if (ant) {
-          const a1 = Math.atan2(desde[1] - ant[1], desde[0] - ant[0]);
-          const a2 = Math.atan2(q[1] - desde[1], q[0] - desde[0]);
-          if (Math.abs(corto((a2 - a1) / RAD)) > 70) continue;
+        // EL SITIO DONDE MUERE LO FIJA EL VECINO, no mi trazo. Se coloca el cabo a una anchura
+        // del eje del vecino por el lado en el que ya estoy, y se mete un CODO para que el último
+        // tramo sea exactamente el gesto —de frente o en paralelo— en vez del ángulo que salga.
+        // Calculándolo al revés —proyectar desde el penúltimo punto— sólo acierta si ese punto ya
+        // estaba en la línea buena, y el 70 % de los cabos se quedaba sin destino.
+        let nx = -Math.sin(cd.tang), ny = Math.cos(cd.tang);
+        if ((trazos[k][idx][0] - cd.q[0]) * nx + (trazos[k][idx][1] - cd.q[1]) * ny < 0) {
+          nx = -nx; ny = -ny;                              // por el lado en el que ya estoy
         }
-        if (estorba(k)(desde, q)) continue;
-        // reorientar el último tramo puede hacer que el trazo se cruce solo
+        const q0 = [cd.q[0] + nx * D_CABO, cd.q[1] + ny * D_CABO];
+        const q = recorte ? q0 : dentro(q0);
+        // el rumbo del último tramo: perpendicular al vecino si es de frente, paralelo si no
+        // y el sentido del gesto se ELIGE, no se sortea: el que menos obliga a doblar
+        const salgo = Math.atan2(trazos[k][idx][1] - desde[1], trazos[k][idx][0] - desde[0]);
+        let rumbo;
+        if (deFrente) {
+          rumbo = Math.atan2(-ny, -nx) + rng.range(-1, 1) * (90 - ANG_FRENTE) * RAD;
+        } else {
+          const a = cd.tang, b = cd.tang + Math.PI;
+          rumbo = (Math.abs(corto((a - salgo) / RAD)) <= Math.abs(corto((b - salgo) / RAD)) ? a : b)
+                  + rng.range(-1, 1) * ANG_PAR * RAD;
+        }
+        const Lg = W_NOM * rng.range(1.1, 2.2);            // lo que dura el gesto
+        const codo = [q[0] - Math.cos(rumbo) * Lg, q[1] - Math.sin(rumbo) * Lg];
+        // ¿se puede llegar al codo desde donde estoy, sin grapa y sin estorbar?
+        const a1 = Math.atan2(desde[1] - trazos[k][vec === 1 ? 2 : trazos[k].length - 3][1],
+                              desde[0] - trazos[k][vec === 1 ? 2 : trazos[k].length - 3][0]);
+        const a2 = Math.atan2(codo[1] - desde[1], codo[0] - desde[0]);
+        if (isFinite(a1) && Math.abs(corto((a2 - a1) / RAD)) > 100) { if (DBGC) DBGC.grapa1++; continue; }
+        if (Math.abs(corto((rumbo - a2) / RAD)) > 100) { if (DBGC) DBGC.grapa2++; continue; }
+        if (hy(codo[0] - desde[0], codo[1] - desde[1]) < W_NOM * 0.4) { if (DBGC) DBGC.corto++; continue; }
+        if (estorba(k)(desde, codo) || estorba(k)(codo, q)) { if (DBGC) DBGC.estorba++; continue; }
         const resto = cual === 0 ? trazos[k].slice(2).reverse() : trazos[k].slice(0, -2);
-        if (seCruza(resto.concat([desde]), desde, q)) continue;
-        trazos[k][idx] = q; puesto = cd.clase; break;
+        if (seCruza(resto.concat([desde]), desde, codo)) { if (DBGC) DBGC.cruza++; continue; }
+        if (seCruza(resto.concat([desde, codo]), codo, q)) { if (DBGC) DBGC.cruza++; continue; }
+        // EL CODO NO ENTRA, y lo dice la medida. Meter un vértice extra para que el último tramo
+        // fuera exactamente el gesto rompía 13 obras de 60 —el contorno se cruzaba consigo mismo y
+        // la banda salía partida en dos— y tiraba el acompañamiento de 0,52 a 0,38, porque un codo
+        // al final de una paralela la deja de ser. Así que el cabo se MUEVE al sitio que le toca y
+        // el gesto se queda en la dirección con la que llega, que a veces no es la declarada.
+        //
+        // Es el cuarto intento de rematar un trazo YA TERMINADO y el cuarto que no sale. La
+        // conclusión, después de medir los cuatro: esto no es un paso que se añade al final, es
+        // parte de cómo se anda el trazo — y andarlo hacia un destino con un ángulo de llegada
+        // declarado es otra pieza de modelo, no un ajuste de ésta.
+        trazos[k][idx] = q;
+        puesto = cd.clase + (deFrente ? ' de frente' : ' en paralelo');
+        if (DBGC) DBGC.ok++;
+        break;
       }
-      destinos[k][cual] = puesto || 'abierto';
+      destinos[k][cual] = puesto || 'al aire';
     }
   }
+  if (DBGC) console.error('cabos: ok=' + DBGC.ok + ' lejos=' + DBGC.lejos +
+    ' grapa(entrada)=' + DBGC.grapa1 + ' grapa(codo)=' + DBGC.grapa2 + ' corto=' + DBGC.corto +
+    ' estorba=' + DBGC.estorba + ' cruza=' + DBGC.cruza + ' sinCand=' + DBGC.sinCand);
   // y el que muere al aire se aparta, para que se lea que muere al aire
   for (let k = 0; k < trazos.length; k++) {
     for (const cual of [0, 1]) {
-      if (destinos[k][cual] !== 'abierto') continue;
+      if (destinos[k][cual] !== 'al aire') continue;
       const idx = cual === 0 ? 0 : trazos[k].length - 1;
       const vec = cual === 0 ? 1 : trazos[k].length - 2;
       if (trazos[k].length < 3) continue;
@@ -557,14 +713,17 @@ function circuito(seed, opt) {
         const c = cercaDe(trazos[k][idx], trazos[j]);
         if (c && (!mejor || c.d < mejor.d)) mejor = c;
       }
-      if (!mejor || mejor.d > sep * 2.2) continue;
+      if (!mejor || mejor.d > W_NOM * 3) continue;
       const desde = trazos[k][vec];
       const d = Math.atan2(trazos[k][idx][1] - desde[1], trazos[k][idx][0] - desde[0]);
       const L = hy(trazos[k][idx][0] - desde[0], trazos[k][idx][1] - desde[1]);
-      const q = dentro([desde[0] + Math.cos(d) * L * 1.45, desde[1] + Math.sin(d) * L * 1.45]);
-      if (!estorba(k)(desde, q)) trazos[k][idx] = q;
+      const q0 = [desde[0] + Math.cos(d) * L * 1.5, desde[1] + Math.sin(d) * L * 1.5];
+      const q = recorte ? q0 : dentro(q0);
+      if (!estorba(k)(desde, q) && !seCruza(trazos[k].slice(0, -2), desde, q))
+        trazos[k][idx] = q;
     }
   }
+
   foto('4 · los cabos rematados', 'hilo',
        'Cada cabo tiene su destino: abierto, contra el lateral de un trazo, o contra el cabo ' +
        'de otro. El que muere contra un cuerpo LLEGA —el último tramo apunta— y el que muere ' +
@@ -848,7 +1007,7 @@ function circuito(seed, opt) {
   // apaño: tapaba al vecino para fabricar un canal que la banda no dejaba.
   const MARGEN = W * CANAL;
   const CRECE = 1.7;      // hasta cuánto puede engordar sobre su mínimo
-  const semis = [];
+  const semis = [], tope = [];
   for (let k = 0; k < trazos.length; k++) {
     const t = trazos[k], sm = [];
     for (let i = 0; i < t.length; i++) {
@@ -858,14 +1017,35 @@ function circuito(seed, opt) {
       const lado = [W / 2, W / 2];
       for (const s2 of [0, 1]) {
         const sg = s2 === 0 ? 1 : -1;
+        // EL HUECO SE MIDE ENTRE TRAMOS, no desde el vértice. Midiéndolo desde el vértice, entre
+        // vértice y vértice el hueco es más pequeño y el relleno se pasa: una obra de cada sesenta
+        // acababa fundiendo. Es la TERCERA vez que este mismo error aparece en esta familia —el
+        // suelo del campo, el abrir el canal y ahora el relleno— y las tres veces por lo mismo:
+        // la regla es sobre tramos, así que la medida tiene que ser sobre tramos.
+        // EL LADO NO SE DECIDE CON UN SOLO PUNTO. Se cogía el punto más cercano del vecino y, si
+        // ése caía al otro lado, se descartaba al vecino ENTERO para este borde — aunque otra parte
+        // suya sí estuviera enfrente. Así un trazo crecía 0,83 anchuras hacia otro que tenía al
+        // lado y las dos bandas se tocaban. Hay que mirar sólo los trozos del vecino que están de
+        // este lado, y de ellos el más próximo.
+        //
+        // Y el hueco se mide entre TRAMOS, no desde el vértice: es la tercera vez que este mismo
+        // error aparece en la familia —el suelo del campo, el abrir el canal y ahora el relleno— y
+        // las tres por lo mismo, que la regla es sobre tramos y la medida era sobre vértices.
         let libre = Infinity;
         for (let j = 0; j < trazos.length; j++) {
           if (j === k) continue;
-          const c = cercaDe(t[i], trazos[j]);
-          if (!c) continue;
-          // ¿está el vecino de este lado? Si no, no limita este borde
-          if ((c.qx - t[i][0]) * nx * sg + (c.qy - t[i][1]) * ny * sg <= 0) continue;
-          libre = Math.min(libre, c.d);
+          const o = trazos[j];
+          for (let z = 0; z < o.length - 1; z++) {
+            const mx = (o[z][0] + o[z + 1][0]) / 2, my = (o[z][1] + o[z + 1][1]) / 2;
+            if ((mx - t[i][0]) * nx * sg + (my - t[i][1]) * ny * sg <= 0) continue;
+            let d1 = Math.min(hy(t[i][0] - o[z][0], t[i][1] - o[z][1]),
+                              hy(t[i][0] - o[z + 1][0], t[i][1] - o[z + 1][1]));
+            for (const par of [[i - 1, i], [i, i + 1]]) {
+              if (par[0] < 0 || par[1] > t.length - 1) continue;
+              d1 = Math.min(d1, distTramos(t[par[0]], t[par[1]], o[z], o[z + 1]));
+            }
+            libre = Math.min(libre, d1);
+          }
         }
         // SE CRECE HACIA UN VECINO, no hacia el vacío. Sin este alcance, un borde sin nadie
         // enfrente engorda hasta el tope y la obra sale a lozas: rellenar hasta el margen sólo
@@ -877,6 +1057,7 @@ function circuito(seed, opt) {
       sm.push(lado);
     }
     semis.push(sm);
+    tope.push(sm.map(l => [l[0], l[1]]));   // el sitio que hay, para no pasarse al modular el filo
   }
 
   // ── EL CONTORNO: DOS O TRES CALIDADES DE TRAZO ────────────────────────────────
@@ -907,7 +1088,10 @@ function circuito(seed, opt) {
       for (const s2 of [0, 1]) {
         let g = 1 + amp * Math.sin(u * f[s2] * 6.2832 + ph[s2]);
         if (c === 'gubia') g *= 0.72 + 0.46 * Math.sin(Math.PI * u);
-        semis[k][i][s2] *= g;
+        // Y SE VUELVE A RECORTAR AL SITIO QUE HAY. El vibrado multiplica hasta 1,20 y lo hacía
+        // DESPUÉS de calcular el hueco disponible, así que se comía el margen y una obra de cada
+        // sesenta acababa fundiendo. El filo puede temblar, pero no hacia dentro del canal.
+        semis[k][i][s2] = Math.min(semis[k][i][s2] * g, tope[k][i][s2]);
       }
     }
   }
