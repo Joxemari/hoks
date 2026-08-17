@@ -105,6 +105,10 @@ function medir({ seed, fmt, params, base }) {
     params: Object.assign({}, params, { grainScale: 0, bg: 'solid' }),
   });
   const geo = res.geo, S = geo.S, g = geo.g * S;
+  // LA ANCHURA PINTADA, no la de composicion: desde el paso 4 -el relleno hasta el
+  // margen- la tinta es mas gorda que la banda que la composicion coloco, y este
+  // detector mide TINTA.
+  const Wt = geo.Wtinta != null ? geo.Wtinta : geo.W;
   const n = geo.cintas.length;
   const conHalo = geo.halo > 0;
   if (n < 2) return { seed, pelo: null, gpx: g, n, conHalo };
@@ -132,19 +136,19 @@ function medir({ seed, fmt, params, base }) {
       lx.save();
       lx.beginPath();
       for (const j of deb) {
-        HOKS.HRRS.banda(lx, geo.cintas[j], geo.W, geo.gubia[j], geo.relleno[j], null, halo);
+        HOKS.HRRS.banda(lx, geo.cintas[j], Wt, geo.gubia[j], geo.relleno[j], null, halo);
       }
       lx.clip();
       lx.globalCompositeOperation = 'destination-out';
       // `corte()` PUBLICADO, no una copia: el corte ya no es «la banda mas gorda» sino
       // el offset de la tinta -relleno mas trazo de 2·halo con union redonda-, y un
       // detector que reimplementa el dibujo mide su copia, no el dibujo.
-      HOKS.HRRS.corte(lx, pts, geo.W, geo.gubia[k], rel, null, halo);
+      HOKS.HRRS.corte(lx, pts, Wt, geo.gubia[k], rel, null, halo);
       lx.restore();
     }
     lx.globalCompositeOperation = 'source-over';
     lx.fillStyle = 'rgb(' + paso1 * (k + 1) + ',0,0)';
-    lx.beginPath(); HOKS.HRRS.banda(lx, pts, geo.W, geo.gubia[k], rel);
+    lx.beginPath(); HOKS.HRRS.banda(lx, pts, Wt, geo.gubia[k], rel);
     lx.fill();
   }
   const px = lx.getImageData(0, 0, d.W, d.H).data;

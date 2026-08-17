@@ -549,6 +549,36 @@
   // Es la primera leva que mueve esto de verdad. Las siete anteriores -pesos, densidad,
   // cuenta, temblor, la baraja de los cortos, el alfabeto, la densidad como causa- no
   // movieron nada, y todas estaban DENTRO del marco de relaciones.
+  // EL PASO 4 DEL AUTOR: «viendo el dibujo en general, se rellena hasta el margen».
+  // No es una anchura mayor: es una PASADA POSTERIOR. La composición se hace con la
+  // anchura base -por eso el trazo no se acorta por engordar- y al pintar la banda
+  // crece hasta que el hueco con el vecino vale g. El reparto sale asimétrico solo, que
+  // es por lo que el eje marcado a mano no cae en el centro visual de la banda.
+  // El factor sale de dos sitios independientes y coinciden:
+  //   · ajustando los cuatro pasos sobre los ejes que el autor marcó A MANO, la anchura
+  //     base sale ~60 % de la final (r1 1,63× · r2 1,39 · r3 1,82 · r4 1,11 · r5 1,25 ·
+  //     r6 1,68 — mediana 1,63);
+  //   · y midiendo la tinta de la familia contra la de las referencias: a 1,6 sale 0,25,
+  //     que es EXACTAMENTE el 0,25 de las seis, desde el 0,17 que daba sin rellenar.
+  //
+  // Lo demás que mueve, medido sobre el píxel con el mismo instrumento que las seis:
+  //   acompañado 31,4 % → 41,4 % (referencias 37,7)   canal 0,51 → 0,36 W (0,24)
+  // y la línea no se mueve (4,73 → 4,82), que es la prueba de que el relleno es una
+  // pasada POSTERIOR: si engordara la banda antes de componer, el trazo se acortaría.
+  //
+  // Lo que NO arregla, y hay que decirlo: la constancia del canal baja de 0,25 a 0,20
+  // contra 0,56 de las referencias.
+  // APAGADO, y con su motivo. El número es correcto y la IMAGEN es peor: a 1,6 las
+  // bandas se hinchan en bloques y se comen las incisiones -r5 y r6 quedan como papel
+  // rasgado-. La causa es mía y es de bulto: esto engorda UNIFORME, y «rellenar hasta el
+  // margen» sólo tiene sentido DONDE HAY MARGEN. Donde no hay vecino no hay nada hasta
+  // lo que rellenar, y es justo donde más engorda. El 0,25 de tinta es el correcto y
+  // está puesto en el sitio equivocado.
+  //
+  // La corrección es una condición más —que el vecino esté al alcance, `d2 <= alcance`—
+  // y está a medio medir sobre los ejes que el autor marcó a mano. Queda el mecanismo
+  // puesto y a 1,0 hasta que la medida diga con qué crece.
+  const RELLENO_W = 1.0;
   const TIRON = 20;                        // grados por subdivisión
   const TIRON_R = 3.0;                     // radio de influencia, en canales D
   // EL SEQUITO: el acompanamiento como ESTADO, no como empujon. Capturado un vecino
@@ -2020,9 +2050,16 @@
     const debajo = best.trazos.map(() => []);
     for (let k = 0; k < best.trazos.length; k++)
       for (let j = 0; j < k; j++) {
+        // AL ALCANCE DEL RELLENO, no solo cruzados. Con la banda creciendo mas alla
+        // de su anchura base, dos trazos que corren en paralelo -y que NO se cruzan,
+        // asi que no estaban en esta lista- acabarian fundiendo sus tintas. El corte
+        // tiene que llegar a todo lo que el relleno pueda alcanzar.
         let toca = false;
+        const alcance = best.W * RELLENO_W + best.g;
         for (const a of best.trazos[k].segs) {
-          for (const b of best.trazos[j].segs) if (corteDe(a, b)) { toca = true; break; }
+          for (const b of best.trazos[j].segs) {
+            if (corteDe(a, b) || segSegDist(a, b) < alcance) { toca = true; break; }
+          }
           if (toca) break;
         }
         if (toca) debajo[k].push(j);
@@ -2043,15 +2080,15 @@
           cx.beginPath();
           for (const j of debajo[k]) {
             const t2 = best.trazos[j];
-            banda(cx, t2.pts, best.W, t2.gubia, t2.relleno, null, halo);
+            banda(cx, t2.pts, best.W * RELLENO_W, t2.gubia, t2.relleno, null, halo);
           }
           cx.clip();
           cx.globalCompositeOperation = 'destination-out';
-          corte(cx, tr.pts, best.W, tr.gubia, tr.relleno, null, halo);
+          corte(cx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno, null, halo);
           cx.restore();
         }
         cx.globalCompositeOperation = 'source-over';
-        cx.beginPath(); banda(cx, tr.pts, best.W, tr.gubia, tr.relleno);
+        cx.beginPath(); banda(cx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno);
         cx.fill();
       }
       ctx.restore();
@@ -2059,7 +2096,7 @@
       ctx.save();
     } else {
       ctx.beginPath();
-      for (const tr of best.trazos) banda(ctx, tr.pts, best.W, tr.gubia, tr.relleno);
+      for (const tr of best.trazos) banda(ctx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno);
       ctx.fillStyle = rol.tinta;
       ctx.fill();
     }
@@ -2087,7 +2124,7 @@
                     // porque ahi el canal se fabrica al pintar. Sin este dato el
                     // detector no puede saber cual de las dos reglas le toca.
                     halo: best.halo,
-                    SANGRE, MARGEN, W: best.W, g: best.g, D: best.D,
+                    SANGRE, MARGEN, W: best.W, Wtinta: best.W * RELLENO_W, g: best.g, D: best.D,
                     S, ox, fw, fh, veto: null } };
   }
 
