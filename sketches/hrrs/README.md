@@ -2386,11 +2386,57 @@ A 5 se recorta el **40 % de lo que faltaba**, y de propina el acompañamiento su
 que es justo el rasgo que peor va. Se queda porque el juicio era sobre lo orgánico, pero
 el precio está aquí escrito y es discutible.
 
-**Lo que NO está resuelto, y con nombre:** el acompañamiento sigue en 21 % contra 37,7 %.
-El diagnóstico es que a un trazo le falta **acompañar a varios a lo largo de su camino**
-—en las referencias una banda va un rato con A, se separa y va otro rato con B— mientras
-que `colocar('paralelo')` le da **una** sección contra **un** objetivo y `DESVIOS = 1` no
-deja encadenar una segunda. Ahí es donde hay que ir, y no a los pesos.
+#### El acompañamiento, desmontado: siete levas y ninguna paga
+
+Escribí aquí que a un trazo le faltaba «acompañar a varios a lo largo de su camino» y que
+`colocar('paralelo')` le daba una sección contra un objetivo. **Falso, y basta con abrir
+el fichero**: la segunda sección lleva tiempo implementada (`P_DOBLE = 0,45`, con su
+puente y su tramo libre detrás). Un diagnóstico que no se comprueba contra el código es
+una historia.
+
+Comprobado, entonces. Primero: **el acompañamiento no se pierde al recortar, no se
+construye** — medido en el motor, 12,4 % al colocar y 9,8 % tras `desviar`. Y segundo, el
+desglose que lo decide, midiendo cada trazo contra todos los demás con la obra ya puesta:
+
+| relación | trazos | acompaña |
+|---|---|---|
+| **paralelo** | 42 | **38,4 %** |
+| cerco | 18 | 16,6 % |
+| suelto | 41 | 15,4 % |
+| abanico | 20 | 15,2 % |
+| continua | 24 | 14,1 % |
+| caboCuerpo · tangencia · pata · caboCabo | 69 | 9–11 % |
+| | 214 | **18,6 %** |
+
+**`paralelo` da 38,4 %, que es exactamente el 37,7 % de las referencias.** La relación
+funciona. Lo que no llega es el resto, y con esa aritmética el objetivo **no se alcanza
+cambiando la mezcla**: si `paralelo` da 38 y los demás 13, para que el conjunto dé 37,7
+haría falta que el 99 % de la longitud fuera `paralelo`. No es un problema de pesos.
+
+Las siete levas, con su cifra:
+
+| leva | resultado |
+|---|---|
+| subir el peso de `paralelo` | ya pesa 0,30–0,50; no es cuántas veces se pide |
+| bajar la corrección de densidad (0,85 → 0,45 → 0) | 21,8 → 19,4 → 21,3 % |
+| forzar la cuenta de trazos | 30,9 %, pero salta dos reglas a la vez: no dice cuál |
+| subir el temblor | a 8° nada; a 14° la composición se cae (tinta 0,05) |
+| `paralelo` en la baraja de los cortos (0,10 → 0,60) | 18,6 → 18,3 %: los cortos aportan poca longitud |
+| todas las relaciones al alfabeto de rumbos | 18,6 → 19,3 % |
+| **la densidad, como causa** | **correlación acompañado ↔ línea: −0,05 y +0,08** |
+
+La última mata mi propia explicación: yo había escrito que acompañar dependía de la
+densidad, la densidad del largo y el largo de la regla de cruce. **La correlación es
+cero.** Y las referencias dicen lo mismo por su lado: **r6 es la más densa y la que menos
+acompaña** (25 %), porque sus rumbos son ortogonales entre sí; r1 y r5, más aireadas,
+llegan a 51 % y 58 %.
+
+Lo que queda en pie, y ya sin historia alrededor: **la paralelización no es una relación
+declarada, es una tendencia punto a punto.** Es literalmente el punto 5 del encargo —«cada
+punto del trazo lleva un valor que dice si tiende a solaparse; si la paralelización es lo
+bastante fuerte se da el solape, si no el trazo tiende a paralelizarse o a alejarse»— y es
+lo único que no se ha implementado nunca: todas las levas de arriba están *dentro* del
+marco de relaciones. Hoy sólo `desviar` paraleliza, y sólo cuando algo le bloquea.
 
 Al pasar la batería salió lo que el propio `mil.sh` está escrito para que salga —*«un
 control medido contra un artefacto viejo es peor que no tener control: no prueba nada y
