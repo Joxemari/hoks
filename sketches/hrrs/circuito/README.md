@@ -335,6 +335,74 @@ un dato: no es un fallo de ajuste.
 | **acompañado** | 0,35 | 0,39 | 0,38 | 0,52 | ↑ |
 | cabos al aire | 0,10 | 0,06 | 0,07 | 0,18 | |
 
+## UN TRAZO NO SE CRUZA CONSIGO MISMO — y estaba sin comprobar
+
+Lo cantó tres veces sobre tres obras distintas: *«hay un trazo que se sigue cruzando consigo
+mismo, que ya hemos dicho que esto es imposible»*. Tenía razón y la causa es de una línea: la
+función que impide los cruces dice `if (j === k) continue`, o sea que **salta el propio trazo**.
+Nunca se había mirado. `solo.js` lo mide: **66 obras de 120, el 55 %**.
+
+Arreglado en la raíz —el paseo se mira a sí mismo antes de dar cada tramo, y no basta con no
+cruzarse: meterse en el propio canal es igual de imposible— más una comprobación final para el
+offset de las paralelas y el remate de los cabos, que pueden crearlo después. **0 de 120.**
+
+Y un efecto que no esperaba: **el acompañamiento subió de 0,44 a 0,50 sin tocar nada más.** Un
+trazo que no se dobla sobre sí mismo corre al lado de otro.
+
+## EL CUERPO: EL RELLENO HASTA EL MARGEN, Y TRES CONTORNOS
+
+*«El centro de trazos seguiría siendo el mismo, pero rellenaríamos la diferencia hasta dejar el
+margen entre los trazos.»* La banda **no es de anchura constante**: `W` es su mínimo, y donde hay
+sitio la tinta **crece hacia el vecino** hasta dejar el canal — y crece **por cada lado por
+separado**, así que el centro puede no quedar en el centro visual. Es lo que él describió hace
+mucho, y es lo que hace que los márgenes se lean constantes: **lo constante no es la banda, es el
+hueco que queda entre dos.**
+
+Con eso, **el canal sale de la geometría y no de pintar un foso blanco encima**. El foso era un
+apaño: tapaba al vecino para fabricar un canal que la banda no dejaba. Ya no está.
+
+Y *«distingo dos o tres contornos de trazos, podrían alternarse o relacionarlos con el grosor»*:
+tres, la obra elige dos y los alterna, y cuál le toca a cada trazo lo **inclina su grosor**.
+
+- **limpio** — el borde recto. El de la banda fina.
+- **vibrado** — el borde ondula, y cada lado por su cuenta. **No es que el trazo curve** —eso era
+  la curva de nivel que hubo que matar— **es que el filo tiembla**. Ahí está lo orgánico.
+- **gubia** — engorda por el medio y afina en los cabos, como un corte de gubia.
+
+Dos cosas que costaron: creciendo **hacia el vacío** la obra sale a lozas (rellenar hasta el
+margen sólo significa algo cuando hay un margen que dejar, así que se crece sólo hacia un vecino a
+tiro), y el techo absoluto de la banda tuvo que bajar a 0,062 porque en una obra dispersa el
+percentil 25 cae en un hueco grande y la banda se vuelve un bloque.
+
+`contornoDe(obra, k)` vive en el generador y no en cada dibujante: la banda ya no es una línea
+gruesa, y tres dibujantes con tres copias de esa geometría serían tres bandas distintas.
+
+### Dónde queda
+
+| rasgo | generador | refs (5) | |
+|---|---|---|---|
+| **acompañado** | **0,52** | **0,52** | ✔ |
+| línea total | 5,06 | 5,19 | ✔ |
+| largo del trazo | 0,54 | 0,568 | ✔ |
+| reparto | 1,77 | 1,80 | ✔ |
+| rumbo dominante | 0,23 | 0,24 | ✔ |
+| longitud en 4 rumbos | 0,63 | 0,60 | ✔ |
+| anchura de banda | 0,062 | 0,061 | ✔ |
+| cruces entre trazos | 0 | 0 | ✔ |
+| **un trazo consigo mismo** | **0** | 0 | ✔ |
+| fusiones | 0 | 0 | ✔ |
+| sobre los ejes | 0,41 | 0,49 | ↑ |
+| cierre | 0,39 | 0,30 | |
+| cuerda | 0,86 | 0,79 | |
+| ángulo de quiebro | 45,1 | 35 | ↓ |
+| quiebros por lado | 4,32 | 6,9 | ↓ |
+| cabos al aire | 0,04 | 0,18 | ↓ |
+
+Lo que queda, y ya está localizado: **se dobla poco y demasiado** —45° cuatro veces por unidad de
+longitud contra 35° siete veces— y **casi ningún cabo muere al aire** (0,04 contra 0,18), cuando
+él pide justo lo contrario: que un cabo termine en abierto *o* contra un cuerpo, y que se note
+cuál de las dos cosas es.
+
 ## LA COHERENCIA NO LA DA UN CAMPO: LA DA DERIVAR
 
 Su juicio: *«el punto 5 sigue curvando de manera excesiva, y ninguna tiene coherencia visual

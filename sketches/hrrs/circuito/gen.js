@@ -224,6 +224,12 @@ function circuito(seed, opt) {
   //
   // El error de mano se tira UNA VEZ POR TRAZO y no por paso. Un temblor que se sortea a cada
   // paso es ruido; uno que se sortea una vez es la mano de quien lo dibuja.
+  // ¿el tramo u→q cruza o roza al propio trazo ya dibujado?
+  const seCruza = (pts, u, q) => {
+    for (let i = 0; i < pts.length - 2; i++)
+      if (distTramos(u, q, pts[i], pts[i + 1]) < sep * 0.78) return true;
+    return false;
+  };
   function pasea(p0, dir0, largo, evita) {
     const err = rng.range(-ERR, ERR);
     let dir = dir0 + err;
@@ -245,6 +251,12 @@ function circuito(seed, opt) {
           const u = pts[pts.length - 1];
           const q = [u[0] + Math.cos(d2 * RAD) * L, u[1] + Math.sin(d2 * RAD) * L];
           if (fuera(q)) continue;
+          // UN TRAZO NO SE CRUZA CONSIGO MISMO. Regla del autor, absoluta, y estaba sin
+          // comprobar: la función que impide los cruces dice `if (j === k) continue`, o sea que
+          // salta el propio trazo. El 55 % de las obras tenía uno, y el autor lo cantó tres veces
+          // sobre tres obras distintas. Los dos tramos contiguos comparten vértice y no cuentan;
+          // y no basta con no cruzarse: meterse en el propio canal es igual de imposible.
+          if (seCruza(pts, u, q)) continue;
           if (evita && evita(u, q)) continue;
           pts.push(q); dir = d2; dado = L; puesto = true; break;
         }
@@ -419,8 +431,11 @@ function circuito(seed, opt) {
         const desde = rng.int(0, Math.max(0, padre.length - 1 - cuantos));
         const pts = offsetDe(padre, lado, desde, cuantos);
         let ok = pts.length >= 2 && largoDe(pts) > PASO * 1.4;
-        for (let i = 0; ok && i < pts.length - 1; i++)
+        for (let i = 0; ok && i < pts.length - 1; i++) {
           if (estorba(-1, padre)(pts[i], pts[i + 1])) ok = false;
+          // el offset de un trazo que se dobla sobre sí mismo se cruza solo, aunque el padre no
+          else if (seCruza(pts.slice(0, i + 1), pts[i], pts[i + 1])) ok = false;
+        }
         if (ok) hecha = pts;
       }
       if (hecha) {
@@ -521,6 +536,9 @@ function circuito(seed, opt) {
           if (Math.abs(corto((a2 - a1) / RAD)) > 70) continue;
         }
         if (estorba(k)(desde, q)) continue;
+        // reorientar el último tramo puede hacer que el trazo se cruce solo
+        const resto = cual === 0 ? trazos[k].slice(2).reverse() : trazos[k].slice(0, -2);
+        if (seCruza(resto.concat([desde]), desde, q)) continue;
         trazos[k][idx] = q; puesto = cd.clase; break;
       }
       destinos[k][cual] = puesto || 'abierto';
@@ -741,6 +759,28 @@ function circuito(seed, opt) {
            '44 % de su tinta). Esta columna es igual que la anterior a propósito. La coherencia ' +
            'no la da un campo: la da que un trazo sea el offset de otro.');
 
+  // Y LA ÚLTIMA COMPROBACIÓN DE QUE NINGÚN TRAZO SE CRUZA CONSIGO MISMO. La regla se respeta al
+  // dibujar —ahí bajó del 55 % al 2 %— pero el offset de una paralela y el remate de un cabo
+  // pueden crearlo después. Si queda uno, se recorta por ahí: es local y es la última salida.
+  for (let k = 0; k < trazos.length; k++) {
+    for (let vuelta = 0; vuelta < 3; vuelta++) {
+      const t = trazos[k];
+      let corte = -1;
+      for (let a = 0; a < t.length - 1 && corte < 0; a++)
+        for (let b = a + 2; b < t.length - 1; b++)
+          if (segCorta(t[a], t[a + 1], t[b], t[b + 1])) { corte = b; break; }
+      if (corte < 0) break;
+      trazos[k] = t.slice(0, corte + 1);
+      if (trazos[k].length < 2) break;
+    }
+  }
+  for (let k = trazos.length - 1; k >= 0; k--)
+    if (trazos[k].length < 2 || largoDe(trazos[k]) < PASO * 0.9) {
+      trazos.splice(k, 1); masas.splice(k, 1); cats.splice(k, 1);
+      if (atrs.length > k) atrs.splice(k, 1);
+      if (sols.length > k) sols.splice(k, 1);
+    }
+
   // ── 6. LA DENSIDAD, Y NO ANTES ────────────────────────────────────────────────
   // «En ese momento, y no antes, se le daría densidad al trazo.» La banda se corta a la medida
   // del hueco que la composición dejó: separación = banda + canal, así que
@@ -762,7 +802,10 @@ function circuito(seed, opt) {
   // hasta ahí: una obra de trece trazos salía como un RECTÁNGULO NEGRO, la hoja entera de tinta.
   // La separación nominal es la escala de la composición, así que la banda se mide contra ella y
   // no contra un número absoluto que no sabe de qué obra se está hablando.
-  W = Math.min(percentil(hs0, P_BANDA), sep / (1 + CANAL) * 1.20, 0.082);
+  // Y un techo absoluto, porque en una obra dispersa el percentil 25 cae en un hueco grande y la
+  // banda sale una losa. Las referencias van de 0,032 a 0,042 sobre el lado corto; 0,062 deja
+  // sitio a la variedad sin que ninguna obra se vuelva un bloque.
+  W = Math.min(percentil(hs0, P_BANDA), sep / (1 + CANAL) * 1.10, 0.062);
   {
     const SUELO_W = W * 1.06;      // la banda más un pelo de canal: por debajo, se funde
     for (let v = 0; v < 12; v++) {
@@ -791,12 +834,114 @@ function circuito(seed, opt) {
     W = Math.min(W, huecoMinimo(trazos) * 0.98);   // y la regla manda: nunca funde
   }
   const hueco = huecoMinimo(trazos);
+
+  // ── EL CUERPO: LA BANDA SE RELLENA HASTA EL MARGEN ────────────────────────────
+  // «El centro de trazos seguiría siendo el mismo, pero rellenaríamos la diferencia hasta dejar
+  // el margen entre los trazos.» O sea: la banda NO es de anchura constante. W es su mínimo, y
+  // allí donde hay sitio la tinta CRECE hacia el vecino hasta dejar el canal — y crece por cada
+  // lado por separado, así que el centro puede no quedar en el centro visual. Es lo que el autor
+  // describió hace mucho («un punto central puede no ser central visualmente porque el trazo se
+  // ha rellenado más hacia la derecha que hacia la izquierda»), y es lo que hace que los márgenes
+  // se lean constantes: lo constante no es la banda, es el hueco que queda entre dos.
+  //
+  // Y así el canal sale de la GEOMETRÍA y no de pintar un foso blanco encima. El foso era un
+  // apaño: tapaba al vecino para fabricar un canal que la banda no dejaba.
+  const MARGEN = W * CANAL;
+  const CRECE = 1.7;      // hasta cuánto puede engordar sobre su mínimo
+  const semis = [];
+  for (let k = 0; k < trazos.length; k++) {
+    const t = trazos[k], sm = [];
+    for (let i = 0; i < t.length; i++) {
+      const a = t[Math.max(0, i - 1)], b = t[Math.min(t.length - 1, i + 1)];
+      const d = Math.atan2(b[1] - a[1], b[0] - a[0]);
+      const nx = -Math.sin(d), ny = Math.cos(d);
+      const lado = [W / 2, W / 2];
+      for (const s2 of [0, 1]) {
+        const sg = s2 === 0 ? 1 : -1;
+        let libre = Infinity;
+        for (let j = 0; j < trazos.length; j++) {
+          if (j === k) continue;
+          const c = cercaDe(t[i], trazos[j]);
+          if (!c) continue;
+          // ¿está el vecino de este lado? Si no, no limita este borde
+          if ((c.qx - t[i][0]) * nx * sg + (c.qy - t[i][1]) * ny * sg <= 0) continue;
+          libre = Math.min(libre, c.d);
+        }
+        // SE CRECE HACIA UN VECINO, no hacia el vacío. Sin este alcance, un borde sin nadie
+        // enfrente engorda hasta el tope y la obra sale a lozas: rellenar hasta el margen sólo
+        // significa algo cuando hay un margen que dejar.
+        const ALCANCE = W * 3.2;
+        const hasta = (isFinite(libre) && libre < ALCANCE) ? (libre - MARGEN) / 2 : W / 2;
+        lado[s2] = Math.max(W * 0.42, Math.min(W / 2 * CRECE, hasta));
+      }
+      sm.push(lado);
+    }
+    semis.push(sm);
+  }
+
+  // ── EL CONTORNO: DOS O TRES CALIDADES DE TRAZO ────────────────────────────────
+  // «Yo distingo dos o tres contornos de trazos, podrían alternarse o relacionarlos con el
+  // grosor.» Tres, y cada obra elige dos y los alterna; cuál le toca a cada trazo lo inclina su
+  // grosor, porque una banda fina y una gorda no se cortan igual:
+  //
+  //   LIMPIO   el borde recto. Es el de la banda fina.
+  //   VIBRADO  el borde ondula, y cada lado por su cuenta. NO es que el trazo curve —eso era la
+  //            curva de nivel que había que matar— es que el FILO tiembla. Ahí está lo orgánico.
+  //   GUBIA    engorda por el medio y afina en los cabos, como un corte de gubia.
+  const CONTORNOS = ['limpio', 'vibrado', 'gubia'];
+  // dos DISTINTOS: si la obra elige el mismo dos veces no alterna nada
+  const c0 = rng.int(0, 2);
+  const dosDe = [CONTORNOS[c0], CONTORNOS[(c0 + 1 + rng.int(0, 1)) % 3]];
+  const contornos = [];
+  for (let k = 0; k < trazos.length; k++) {
+    const gordo = semis[k].reduce((a, b) => a + b[0] + b[1], 0) / semis[k].length / W;
+    const cual = rng.bool(Math.max(0.1, Math.min(0.9, 0.5 + 0.30 * (gordo - 1)))) ? 1 : 0;
+    contornos.push(dosDe[cual]);
+    const c = dosDe[cual];
+    const f = [rng.range(1.4, 3.2), rng.range(1.4, 3.2)];
+    const ph = [rng.range(0, 6.2832), rng.range(0, 6.2832)];
+    const amp = c === 'vibrado' ? rng.range(0.10, 0.20) : 0;
+    const m = semis[k].length;
+    for (let i = 0; i < m; i++) {
+      const u = m > 1 ? i / (m - 1) : 0.5;
+      for (const s2 of [0, 1]) {
+        let g = 1 + amp * Math.sin(u * f[s2] * 6.2832 + ph[s2]);
+        if (c === 'gubia') g *= 0.72 + 0.46 * Math.sin(Math.PI * u);
+        semis[k][i][s2] *= g;
+      }
+    }
+  }
+
   foto('6 · con densidad', 'banda',
        'La banda, cortada a la medida del hueco que dejó la composición. Por eso no puede ' +
        'fundirse: no hace falta abrir ningún canal, ya cabe.');
 
-  return { trazos, masas, cats, destinos, fw, fh, W, sep, hueco, rumbos, tipo, fuerza, G, solMedia,
+  return { trazos, masas, cats, destinos, semis, contornos, fw, fh, W, sep, hueco, rumbos, tipo, fuerza, G, solMedia,
            polo: [0.5 * fw, 0.5 * fh], seed, pasos };
 }
 
-if (typeof module !== 'undefined') module.exports = { circuito, Rng };
+// EL CONTORNO DE UNA BANDA, cerrado y listo para rellenar. Vive aquí y no en cada dibujante
+// porque la banda ya no es una línea gruesa: tiene media anchura propia por punto y por lado, y
+// tres dibujantes con tres copias de esa geometría serían tres bandas distintas.
+//
+// Se recorre el borde de un lado hacia delante y el del otro hacia atrás, y se cierra. Los cabos
+// van a escuadra —el remate de las referencias— así que no hay casquete: el contorno se cierra
+// con el segmento que une los dos bordes.
+function contornoDe(o, k) {
+  const t = o.trazos[k], sm = o.semis[k];
+  if (!t || t.length < 2) return [];
+  const nor = (i) => {
+    const a = t[Math.max(0, i - 1)], b = t[Math.min(t.length - 1, i + 1)];
+    const d = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    return [-Math.sin(d), Math.cos(d)];
+  };
+  const izq = [], der = [];
+  for (let i = 0; i < t.length; i++) {
+    const n = nor(i), s = sm[Math.min(i, sm.length - 1)];
+    izq.push([t[i][0] + n[0] * s[0], t[i][1] + n[1] * s[0]]);
+    der.push([t[i][0] - n[0] * s[1], t[i][1] - n[1] * s[1]]);
+  }
+  return izq.concat(der.reverse());
+}
+
+if (typeof module !== 'undefined') module.exports = { circuito, Rng, contornoDe };
