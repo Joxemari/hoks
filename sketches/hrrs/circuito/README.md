@@ -83,7 +83,18 @@ Y de paso el generador pasó de un «0,01» que era mentira a un 0,27 que es rea
 
 ## Vestir el circuito
 
-`tanda.html` es la vista en vivo. Y con los centros sin cruzarse, la técnica cabe en diez
+`tanda.html` es la vista en vivo: tandas de 5 o 10, clic para elegir, `C` alterna entre la
+tinta y el circuito desnudo con los cabos marcados, y un **campo de nota por obra**.
+
+La nota no es un extra: **va también en las elegidas, y en las descartadas**. Lo que falla
+en la que más te gusta es lo que más enseña, y un «esto no» razonado vale tanto como un
+sí. Se guarda por SEMILLA y no por posición, así que sobrevive a la tanda y una obra que
+vuelva a salir trae lo que ya se dijo de ella. `Copiar elegidas y notas` saca
+`{semilla, elegida, nota}` para poder cruzar lo que gusta con lo que se mide.
+
+*(Y un fallo que se comió la primera versión: la rejilla se reconstruía entera en cada
+clic, así que escribir una nota y tocar otra obra la borraba y mandaba el foco al limbo.
+Ahora se construye una vez por tanda y se toca en sitio.)* Y con los centros sin cruzarse, la técnica cabe en diez
 líneas: por cada trazo, primero su **foso** —un trazo blanco de W+2g— y encima su tinta de
 W. El foso del que llega después muerde al que ya estaba, así que entre dos bandas queda
 exactamente g y el reparto sale **asimétrico solo**. Es el paso 4 del autor —«se rellena

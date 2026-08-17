@@ -51,25 +51,44 @@
     grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
     border-bottom: 1px solid var(--linea);
   }
-  .obra {
-    background: var(--papel); position: relative; padding: 0;
-    border: 0; cursor: pointer; font-family: var(--mono); display: block; width: 100%;
-    transition: background .12s;
+  /* La tarjeta ya no es un botón: dentro hay un campo de texto, y un textarea dentro de
+     un <button> es HTML inválido y no coge el foco. El botón es sólo el lienzo. */
+  .obra { background: var(--papel); position: relative; display: flex; flex-direction: column;
+          transition: background .12s; }
+  .obra .lienzo {
+    appearance: none; background: none; border: 0; padding: 0; margin: 0;
+    display: block; width: 100%; cursor: pointer; position: relative;
   }
   .obra canvas { display: block; width: 100%; height: auto; }
   .obra .pie {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
     padding: 6px 10px 9px; font-size: 11px; color: var(--gris);
     font-variant-numeric: tabular-nums;
   }
   .obra:hover { background: var(--hueco); }
-  .obra[aria-pressed="true"] { background: #fbeeec; }
-  .obra[aria-pressed="true"] .pie { color: var(--marca); }
-  .obra[aria-pressed="true"]::after {
+  .obra.elegida { background: #fbeeec; }
+  .obra.elegida .pie { color: var(--marca); }
+  .obra.elegida .lienzo::after {
     content: ""; position: absolute; inset: 0; border: 2px solid var(--marca); pointer-events: none;
   }
-  .obra:focus-visible { outline: 2px solid var(--marca); outline-offset: -2px; }
+  .obra.connota .num::before { content: "✎ "; color: var(--marca); }
+  .obra .lienzo:focus-visible { outline: 2px solid var(--marca); outline-offset: -2px; }
   .num { letter-spacing: .1em; }
+  .notabtn {
+    appearance: none; background: none; border: 1px solid var(--linea);
+    font-family: var(--mono); font-size: 10px; color: var(--gris);
+    padding: 2px 7px; cursor: pointer; letter-spacing: .06em;
+  }
+  .notabtn:hover { background: var(--papel); color: var(--tinta); border-color: var(--tinta); }
+  .notabtn:focus-visible { outline: 2px solid var(--marca); outline-offset: 1px; }
+  .nota {
+    margin: 0 10px 10px; font-family: var(--mono); font-size: 11px; line-height: 1.45;
+    color: var(--tinta); background: var(--papel);
+    border: 1px solid var(--linea); padding: 7px 8px; resize: vertical;
+  }
+  .nota::placeholder { color: #a8a49c; }
+  .nota:focus { outline: 0; border-color: var(--marca); }
+  .nota[hidden] { display: none; }
 
   footer {
     padding: 10px 16px; font-size: 11px; color: var(--gris);
@@ -85,7 +104,7 @@
   <header>
     <div class="tit">
       <b>hrrs · la tanda</b>
-      <span>el circuito en vivo · elige dos</span>
+      <span>elige dos · y di qué falla</span>
     </div>
     <div class="mandos">
       <button class="btn" id="nueva">Nueva tanda</button>
@@ -96,8 +115,10 @@
           <option>5</option><option selected>10</option>
         </select>
       </label>
-      <button class="btn suave" id="copiar">Copiar elegidas</button>
-      <span class="sel">elegidas <b id="ncur">0</b> · guardadas <b id="ntot">0</b></span>
+      <button class="btn suave" id="copiar">Copiar elegidas y notas</button>
+      <button class="btn suave" id="vaciar">Vaciar</button>
+      <span class="sel">en esta tanda <b id="ncur">0</b> · guardadas <b id="ntot">0</b>
+        · notas <b id="nnotas">0</b></span>
     </div>
   </header>
 
@@ -107,6 +128,7 @@
     <span><kbd>clic</kbd> elegir</span>
     <span><kbd>N</kbd> nueva tanda</span>
     <span><kbd>C</kbd> circuito / tinta</span>
+    <span>la nota se guarda sola</span>
     <span id="aviso"></span>
   </footer>
 </div>
@@ -351,7 +373,7 @@ function circuito(seed) {
 // llega después muerde al que ya estaba, así que entre dos bandas queda exactamente g y
 // el reparto sale ASIMÉTRICO solo. Es el paso 4 del autor —«se rellena hasta el
 // margen»— hecho por orden de pintado en vez de por aritmética de esquinas.
-function vestir(cx, c, W, H, circuito, soloEje) {
+function vestir(cx, W, H, circuito, soloEje) {
   const S = Math.min(W, H);
   const esc = S / Math.min(circuito.fw, circuito.fh);
   const ox = (W - circuito.fw * esc) / 2, oy = (H - circuito.fh * esc) / 2;
@@ -383,89 +405,164 @@ function vestir(cx, c, W, H, circuito, soloEje) {
   cx.restore();
 }
 
-// ── la tanda ──────────────────────────────────────────────────────────────────
+// ── estado ────────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-const est = { semillaTanda: 1, obras: [], elegidas: new Set(), guardadas: [], eje: false };
+const LS = 'hrrs-tanda-v2';
+// `apuntes` va por SEMILLA y no por posición en la tanda: una nota sobrevive a la
+// tanda en que se escribió, y una obra que vuelve a salir trae lo que ya dijiste.
+const est = { obras: [], eje: false, apuntes: {} };
 
-function nuevaSemilla() {
-  return (Math.floor(Math.random() * 0xffffffff) >>> 0) || 1;
+try {
+  const g = JSON.parse(localStorage.getItem(LS) || '{}');
+  if (g && typeof g.apuntes === 'object' && g.apuntes) est.apuntes = g.apuntes;
+} catch (e) { /* primera vez */ }
+function guarda() {
+  try { localStorage.setItem(LS, JSON.stringify({ apuntes: est.apuntes })); } catch (e) {}
+}
+const ap = (s) => (est.apuntes[s] = est.apuntes[s] || { elegida: false, nota: '' });
+const elegidas = () => Object.keys(est.apuntes).filter(s => est.apuntes[s].elegida);
+const conNota = () => Object.keys(est.apuntes).filter(s => (est.apuntes[s].nota || '').trim());
+
+function marcador() {
+  $('ncur').textContent = est.obras.filter(o => ap(o.seed).elegida).length;
+  $('ntot').textContent = elegidas().length;
+  $('nnotas').textContent = conNota().length;
 }
 
+// ── la tanda ──────────────────────────────────────────────────────────────────
 function nuevaTanda() {
   const n = parseInt($('cuantas').value, 10);
   est.obras = [];
-  est.elegidas = new Set();
   for (let i = 0; i < n; i++) {
-    const s = nuevaSemilla();
+    const s = (Math.floor(Math.random() * 0xffffffff) >>> 0) || 1;
     est.obras.push({ seed: s, c: circuito(s) });
   }
-  pinta();
+  construye();
 }
 
-function pinta() {
+// SE CONSTRUYE UNA VEZ POR TANDA Y LUEGO SE TOCA EN SITIO. Reconstruyendo la rejilla en
+// cada clic —que es lo que hacía— se perdía lo escrito en el campo de notas y el foco
+// se iba al cuerpo del documento a media frase.
+function construye() {
   const r = $('rejilla'); r.innerHTML = '';
-  est.obras.forEach((o, i) => {
-    const b = document.createElement('button');
-    b.className = 'obra'; b.setAttribute('aria-pressed', est.elegidas.has(i) ? 'true' : 'false');
+  for (const o of est.obras) {
+    const a = ap(o.seed);
+    const card = document.createElement('div');
+    card.className = 'obra';
+    card.dataset.seed = o.seed;
+
+    const bt = document.createElement('button');
+    bt.className = 'lienzo';
+    bt.setAttribute('aria-pressed', a.elegida ? 'true' : 'false');
+    bt.setAttribute('aria-label', 'Elegir la obra ' + o.seed.toString(16));
     const cv = document.createElement('canvas');
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = 460, h = Math.round(460 * (o.c.fh / o.c.fw));
     cv.width = w * dpr; cv.height = h * dpr;
     cv.style.aspectRatio = w + ' / ' + h;
-    const cx = cv.getContext('2d'); cx.scale(dpr, dpr);
-    vestir(cx, cv, w, h, o.c, est.eje);
-    b.appendChild(cv);
+    cv.getContext('2d').scale(dpr, dpr);
+    bt.appendChild(cv); card.appendChild(bt);
+
     const pie = document.createElement('div');
     pie.className = 'pie';
-    pie.innerHTML = '<span class="num">#' + o.seed.toString(16) + '</span>' +
-                    '<span>' + o.c.trazos.length + ' trazos</span>';
-    b.appendChild(pie);
-    b.onclick = () => {
-      if (est.elegidas.has(i)) est.elegidas.delete(i);
-      else if (est.elegidas.size >= 2) avisa('Dos por tanda: quita una primero');
-      else est.elegidas.add(i);
-      guardaElegidas(); pinta();
+    const izq = document.createElement('span');
+    izq.className = 'num'; izq.textContent = '#' + o.seed.toString(16);
+    const der = document.createElement('span');
+    der.textContent = o.c.trazos.length + ' trazos';
+    const bn = document.createElement('button');
+    bn.className = 'notabtn'; bn.type = 'button';
+    bn.textContent = a.nota ? '✎ nota' : '+ nota';
+    pie.appendChild(izq); pie.appendChild(bn); pie.appendChild(der);
+    card.appendChild(pie);
+
+    const ta = document.createElement('textarea');
+    ta.className = 'nota'; ta.value = a.nota || '';
+    ta.rows = 3;
+    ta.placeholder = 'Qué falla, aunque la elijas. Concreto: «el trazo de arriba se queda solo».';
+    ta.hidden = !a.nota;
+    ta.oninput = () => {
+      a.nota = ta.value; guarda();
+      bn.textContent = ta.value.trim() ? '✎ nota' : '+ nota';
+      card.classList.toggle('connota', !!ta.value.trim());
+      marcador();
     };
-    r.appendChild(b);
-  });
-  $('ncur').textContent = est.elegidas.size;
-  $('ntot').textContent = est.guardadas.length;
+    card.appendChild(ta);
+
+    card.classList.toggle('elegida', !!a.elegida);
+    card.classList.toggle('connota', !!(a.nota || '').trim());
+
+    bt.onclick = () => {
+      const yo = ap(o.seed);
+      if (yo.elegida) yo.elegida = false;
+      else if (est.obras.filter(x => ap(x.seed).elegida).length >= 2) {
+        avisa('Dos por tanda: quita una primero'); return;
+      } else {
+        yo.elegida = true;
+        // al elegir, se abre la nota: lo que falla en la buena es lo que más enseña
+        ta.hidden = false; ta.focus();
+      }
+      bt.setAttribute('aria-pressed', yo.elegida ? 'true' : 'false');
+      card.classList.toggle('elegida', yo.elegida);
+      guarda(); marcador();
+    };
+    bn.onclick = () => { ta.hidden = !ta.hidden; if (!ta.hidden) ta.focus(); };
+
+    r.appendChild(card);
+    o.cv = cv;
+  }
+  redibuja(); marcador();
 }
 
-function guardaElegidas() {
-  const dela = new Set(est.obras.map(o => o.seed));
-  est.guardadas = est.guardadas.filter(s => !dela.has(s));
-  for (const i of est.elegidas) est.guardadas.push(est.obras[i].seed);
-  try { localStorage.setItem('hrrs-tanda-v1', JSON.stringify(est.guardadas)); } catch (e) {}
+function redibuja() {
+  for (const o of est.obras) {
+    if (!o.cv) continue;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    vestir(o.cv.getContext('2d'), o.cv.width / dpr, o.cv.height / dpr, o.c, est.eje);
+  }
 }
-try {
-  const g = JSON.parse(localStorage.getItem('hrrs-tanda-v1') || '[]');
-  if (Array.isArray(g)) est.guardadas = g.filter(x => typeof x === 'number');
-} catch (e) {}
 
 function avisa(t) {
   const a = $('aviso'); a.textContent = t;
-  clearTimeout(avisa._t); avisa._t = setTimeout(() => { a.textContent = ''; }, 2400);
+  clearTimeout(avisa._t); avisa._t = setTimeout(() => { a.textContent = ''; }, 2600);
 }
 
+// ── mandos ────────────────────────────────────────────────────────────────────
 $('nueva').onclick = nuevaTanda;
 $('cuantas').onchange = nuevaTanda;
 $('vista').onclick = () => {
   est.eje = !est.eje;
   $('vista').setAttribute('aria-pressed', est.eje ? 'true' : 'false');
   $('vista').textContent = est.eje ? 'Ver la tinta' : 'Ver el circuito';
-  pinta();
+  redibuja();
 };
 $('copiar').onclick = async () => {
-  if (!est.guardadas.length) { avisa('Todavía no has elegido ninguna'); return; }
-  const txt = JSON.stringify({ semillas: est.guardadas });
+  const claves = Array.from(new Set(elegidas().concat(conNota())));
+  if (!claves.length) { avisa('Todavía no hay nada elegido ni apuntado'); return; }
+  const out = claves.map(s => ({
+    semilla: Number(s), elegida: !!est.apuntes[s].elegida,
+    nota: (est.apuntes[s].nota || '').trim() || null
+  }));
+  const txt = JSON.stringify(out);
   try {
     await navigator.clipboard.writeText(txt);
-    avisa('Copiadas ' + est.guardadas.length + ' semillas');
-  } catch (e) { avisa('No se pudo copiar: ' + txt.slice(0, 60)); }
+    avisa('Copiadas ' + out.length + ' · ' + out.filter(o => o.elegida).length + ' elegidas');
+  } catch (e) {
+    const t2 = document.createElement('textarea');
+    t2.value = txt;
+    t2.style.cssText = 'position:fixed;top:8%;left:8%;width:84%;height:70%;z-index:9;font-family:var(--mono);font-size:11px';
+    document.body.appendChild(t2); t2.select();
+    avisa('Selecciona y copia a mano, luego Esc');
+    t2.addEventListener('keydown', ev => { if (ev.key === 'Escape') t2.remove(); });
+  }
+};
+$('vaciar').onclick = () => {
+  if (!elegidas().length && !conNota().length) return;
+  est.apuntes = {}; guarda(); construye();
+  avisa('Borrado todo lo guardado');
 };
 addEventListener('keydown', e => {
-  if (e.target.tagName === 'SELECT') return;
+  const t = e.target.tagName;
+  if (t === 'SELECT' || t === 'TEXTAREA' || t === 'INPUT') return;
   if (e.key.toLowerCase() === 'n') nuevaTanda();
   if (e.key.toLowerCase() === 'c') $('vista').click();
 });
