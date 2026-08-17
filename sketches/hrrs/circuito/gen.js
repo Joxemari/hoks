@@ -85,20 +85,38 @@ function largoDe(p) {
   for (let i = 0; i < p.length - 1; i++) L += hy(p[i + 1][0] - p[i][0], p[i + 1][1] - p[i][1]);
   return L;
 }
-// el hueco mínimo real entre trazos distintos: es lo que decide la anchura de la banda
-function huecoMinimo(trazos) {
-  let m = Infinity;
+// EL HUECO ENTRE CADA PAR DE TRAZOS, todos, no sólo el más apretado. Y esto importa: la banda no
+// la decide el mínimo, la decide el PERCENTIL 25 — calibrado contra las obras reales, donde el
+// p25 de los huecos entre los ejes marcados a mano da la anchura de banda medida con un error del
+// 2 % en r1 y del 5 % en r2, dos obras independientes. Usando el mínimo, la banda sale entre un
+// 30 y un 45 % más fina de lo que es, y la obra entera adelgaza por un solo punto apretado.
+//
+// Lo que eso dice del cuadro: EL CANAL NO ES CONSTANTE. La banda lo es y el canal se estrecha
+// donde dos trazos se juntan. Nuestro modelo suponía separación = banda + canal en todas partes,
+// y no: la separación varía y el canal la absorbe.
+function huecosPares(trazos) {
+  const hs = [];
   for (let k = 0; k < trazos.length; k++)
-    for (let j = k + 1; j < trazos.length; j++)
+    for (let j = k + 1; j < trazos.length; j++) {
+      let m = Infinity;
       for (let i = 0; i < trazos[k].length - 1; i++)
         for (let q = 0; q < trazos[j].length - 1; q++) {
           const d = distTramos(trazos[k][i], trazos[k][i + 1], trazos[j][q], trazos[j][q + 1]);
           if (d < m) m = d;
         }
-  return m;
+      if (isFinite(m)) hs.push(m);
+    }
+  hs.sort((a, b) => a - b);
+  return hs;
 }
+const percentil = (hs, q) => hs.length ? hs[Math.min(hs.length - 1, Math.floor(q * hs.length))] : 0;
+function huecoMinimo(trazos) { const h = huecosPares(trazos); return h.length ? h[0] : Infinity; }
 
 const CANAL = 0.22;   // el canal, en anchuras de banda: medido en las cinco referencias buenas
+// el percentil de los huecos que da la banda. 0,25 está CALIBRADO contra las obras reales: el p25
+// de los huecos entre los ejes que el autor marcó a mano reproduce la anchura de banda medida con
+// un 2 % de error en r1 y un 5 % en r2. No es un ajuste, es una medida.
+const P_BANDA = 0.25;
 
 function circuito(seed, opt) {
   const rng = new Rng(seed);
@@ -112,7 +130,8 @@ function circuito(seed, opt) {
   };
 
   const prop = rng.range(1.02, 1.55), apais = rng.bool(0.5);
-  const fw = apais ? prop : 1, fh = apais ? 1 : prop;
+  const fw = (opt && opt.geometria) ? opt.geometria.fw : (apais ? prop : 1);
+  const fh = (opt && opt.geometria) ? opt.geometria.fh : (apais ? 1 : prop);
 
   // EL ALFABETO. Dos rumbos anclados al pliego —en las referencias el 72 % de la longitud corre
   // a ±20° de los ejes— y dos o cuatro oblicuos, con su error de mano.
@@ -146,7 +165,13 @@ function circuito(seed, opt) {
   };
   const tipo = rng.bool(0.62) ? 'denso' : 'abierto';
   const T = TIPOS[tipo];
-  const sep = rng.range(T.sep[0], T.sep[1]);
+  let sep = rng.range(T.sep[0], T.sep[1]);
+  if (opt && opt.geometria) {
+    // la escala del campo la pone la obra dada, no nuestro sorteo: si no, el campo la reordena
+    // a una densidad que no es la suya y la comparación no dice nada
+    const h = huecosPares(opt.geometria.trazos);
+    if (h.length) sep = percentil(h, P_BANDA) * (1 + CANAL);
+  }
   const mg = sep * 0.55 + 0.010;
   const n = rng.int(T.n[0], T.n[1]);
   const PASO = 0.105, ERR = 7, TOPE_VUELTA = 100;
@@ -154,9 +179,9 @@ function circuito(seed, opt) {
   // longitud, o sea ~0,7 por paso: con 0,11 el trazo hacía media esquina y salía recto —cuerda
   // 0,98 contra 0,79—. Un trazo corto con tasa baja de esquina es una raya.
   const P_ESQ = (typeof process !== 'undefined' && process.env.HRRS_E)
-    ? Number(process.env.HRRS_E) : 0.30;
+    ? Number(process.env.HRRS_E) : 0.45;
   const K_LARGO = (typeof process !== 'undefined' && process.env.HRRS_L)
-    ? Number(process.env.HRRS_L) : 1.4;
+    ? Number(process.env.HRRS_L) : 0.85;
 
   const dentro = (p) => [Math.max(mg, Math.min(fw - mg, p[0])),
                          Math.max(mg, Math.min(fh - mg, p[1]))];
@@ -235,9 +260,24 @@ function circuito(seed, opt) {
     return false;
   };
 
+  // ── LA GEOMETRÍA PUEDE VENIR DE FUERA ─────────────────────────────────────────
+  // `circuito(seed, {geometria: {trazos, fw, fh}})` se salta la siembra y le aplica a lo que se
+  // le dé sólo los pasos de después: el campo y la densidad. Es lo que permite meter un Chillida
+  // de verdad —los ejes que el autor marcó a mano— y ver qué le hace nuestro motor. Sin esto, la
+  // única comparación posible es la nuestra contra la suya, y ahí los dos errores se suman y no
+  // se distinguen.
+  const dado = opt && opt.geometria;
+  if (dado) {
+    for (const t of dado.trazos) if (t.length > 1) {
+      trazos.push(t.map(q => dentro([q[0], q[1]])));
+      masas.push(trazos.length === 1 ? rng.range(1.5, 2.6) : rng.range(0.3, 1.2));
+      cats.push('dado');
+    }
+  }
+
   // ── 1 y 2. EL PRIMER TRAZO, SOLO ──────────────────────────────────────────────
   // Es el protagonista: más largo que los demás y sin nadie a quien mirar. La hoja está vacía.
-  {
+  if (!dado) {
     const a = rng.range(0, 6.2832), r = rng.range(0.06, 0.30);
     const p0 = [0.5 * fw + Math.cos(a) * r * fw, 0.5 * fh + Math.sin(a) * r * fh];
     const pts = pasea(p0, eligeRumbo(null), rng.range(0.85, 1.45) * K_LARGO, null);
@@ -305,7 +345,7 @@ function circuito(seed, opt) {
              dir: eligeRumbo(null) };
   };
 
-  for (let k = 1; k < n; k++) {
+  for (let k = 1; k < n && !dado; k++) {
     let cat = eligeCat(), nac = null;
     for (let intento = 0; intento < 8 && !nac; intento++) {
       const c = naceCat(cat);
@@ -355,7 +395,7 @@ function circuito(seed, opt) {
   // tramo se REORIENTA para llegar: se apunta al cuerpo y se le da el largo justo para quedarse
   // a un canal. Si al llegar estorbaría a alguien, o si el giro que pide es una grapa, el cabo
   // se queda abierto — el destino es una intención, no una orden.
-  const P_ABIERTO = 0.18;          // medido en las cinco referencias buenas
+  const P_ABIERTO = dado ? 1 : 0.18;   // con geometría dada, la mano ya remató los cabos
   const destinos = [];
   for (let k = 0; k < trazos.length; k++) {
     destinos.push([null, null]);
@@ -462,7 +502,22 @@ function circuito(seed, opt) {
   const carril = sep * 1.04;
   const CERCA = carril * 1.55, ALCANCE = Math.max(fw, fh) * 0.55;
   const G = rng.range(tipo === 'denso' ? 0.55 : 0.12, tipo === 'denso' ? 1.25 : 0.50);
-  const VUELTAS = 16;
+  // EL CAMPO VA APAGADO, y lo apaga una prueba, no un gusto. Metiendo la geometría
+  // real de r1, r2, r3 y r6 —los ejes que el autor marcó a mano— y aplicándoles sólo el campo:
+  // borra las celdas de blanco atrapado de las CUATRO, cuatro de cuatro, y contrae la obra (r6
+  // pierde el 44 % de su tinta, r1 el 35 %). Es un paso que RESTA.
+  //
+  // Y con él apagado, la obra mejora justo donde peor estaba: el ángulo de quiebro pasa de 23,6°
+  // a 36,4° contra los 35 de las referencias, los quiebros por lado de 10,8 a 6,3 contra 6,9, y
+  // la cuerda de 0,79 a 0,78 clavada. Cuesta 0,10 de acompañamiento (0,43 → 0,33), y ese cambio
+  // es el que hay que hacer: acompañar contrayendo la obra no es acompañar.
+  //
+  // Se deja el mando porque el campo NO es basura —sabe arrimar dos trazos— pero tal como está
+  // paga ese arrimo con la estructura. Lo que tiene que aprender es a no contraer, y hasta
+  // entonces va a cero. Con VUELTAS=0 los vetos son código muerto, y sus controles se pasan con
+  // el campo encendido, que es donde significan algo.
+  const VUELTAS = (typeof process !== 'undefined' && process.env.HRRS_V)
+    ? Number(process.env.HRRS_V) : 0;
   const encauza = (pts, k) => {
     const m = pts.length;
     if (m < 2) return pts;
@@ -611,8 +666,40 @@ function circuito(seed, opt) {
   // debe pasar: la banda obedece a la composición y no al revés.
   if (DBG) console.error('rechazos: fuera=' + DBG.fuera + ' estorba=' + DBG.estorba +
                          ' | nacen fuera=' + DBG.nace_fuera + ' nacen pegados=' + DBG.nace_pegado);
+  // LA BANDA, del percentil 25 de los huecos y no del mínimo. Y como el p25 deja por debajo a
+  // una cuarta parte de los pares, esos pocos se separan a mano —un puñado de vértices, no la
+  // obra— para que la regla de no fundir siga cumpliéndose. Es una reparación LOCAL: la autopsia
+  // condenó los martillos globales, no arreglar tres sitios que se sabe cuáles son.
+  const hs0 = huecosPares(trazos);
+  W = Math.min(0.098, percentil(hs0, P_BANDA));
+  {
+    const SUELO_W = W * 1.06;      // la banda más un pelo de canal: por debajo, se funde
+    for (let v = 0; v < 12; v++) {
+      let peor = null;
+      for (let k = 0; k < trazos.length; k++)
+        for (let j = 0; j < trazos.length; j++) {
+          if (j === k) continue;
+          for (let i = 0; i < trazos[k].length - 1; i++)
+            for (let q = 0; q < trazos[j].length - 1; q++) {
+              const d = distTramos(trazos[k][i], trazos[k][i + 1], trazos[j][q], trazos[j][q + 1]);
+              if (d < SUELO_W && (!peor || d < peor.d)) peor = { d, k, i, j };
+            }
+        }
+      if (!peor) break;
+      // se aparta EL PAR MÁS APRETADO y sólo él, y se vuelve a mirar: así se toca lo mínimo
+      const t = trazos[peor.k], i = peor.i;
+      const mx = (t[i][0] + t[i + 1][0]) / 2, my = (t[i][1] + t[i + 1][1]) / 2;
+      const c = cercaDe([mx, my], trazos[peor.j]);
+      if (!c) break;
+      const ux = c.d > 1e-9 ? (mx - c.qx) / c.d : Math.cos(c.dir + Math.PI / 2);
+      const uy = c.d > 1e-9 ? (my - c.qy) / c.d : Math.sin(c.dir + Math.PI / 2);
+      const emp = (SUELO_W - peor.d) * 0.62;
+      for (const idx of [i, i + 1])
+        t[idx] = dentro([t[idx][0] + ux * emp, t[idx][1] + uy * emp]);
+    }
+    W = Math.min(W, huecoMinimo(trazos) * 0.98);   // y la regla manda: nunca funde
+  }
   const hueco = huecoMinimo(trazos);
-  W = Math.min(0.098, hueco / (1 + CANAL));
   foto('6 · con densidad', 'banda',
        'La banda, cortada a la medida del hueco que dejó la composición. Por eso no puede ' +
        'fundirse: no hace falta abrir ningún canal, ya cabe.');

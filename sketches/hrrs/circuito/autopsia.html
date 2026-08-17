@@ -130,7 +130,7 @@
   <div class="marco"><table id="tabla"></table></div>
 
   <footer>
-    <span>la nota se guarda sola, por semilla y paso</span>
+    <span>la nota se guarda sola, por semilla y NOMBRE del paso</span>
     <span>seis pasos · cinco obras</span>
     <span id="aviso"></span>
   </footer>
@@ -810,23 +810,44 @@ function dibuja(cx, W, H, obra, pts, modo) {
 
 // ── estado ────────────────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
-const LS = 'hrrs-autopsia-v1';
-// las notas van por SEMILLA y por PASO, no por posición en la rejilla: así una nota sobrevive
-// a cambiar de cinco obras, y una obra que vuelva a salir trae lo que ya se dijo de ella
-const est = { obras: [], banda: false, notas: {} };
+const LS = 'hrrs-autopsia-v2';
+// LAS NOTAS VAN POR SEMILLA Y POR NOMBRE DEL PASO, no por su número. Iban por número, y eso
+// corrompe lo único que no se puede rehacer: al cambiar la lista de pasos —que es lo que pasó en
+// cuanto el autor corrigió el orden— una nota escrita sobre «solape roto» se pegaba a «los cabos
+// rematados», con toda la pinta de ser suya. Una nota mal atribuida es peor que una nota
+// perdida, porque se sigue leyendo.
+//
+// Y las de la versión anterior no se tiran: se guardan aparte y salen en `Copiar notas` bajo
+// `notasHuerfanas`, con el número de paso que tenían, para poder releerlas a mano.
+const LSV1 = 'hrrs-autopsia-v1';
+const slug = (t) => String(t).replace(/\s+/g, ' ').trim();
+const est = { obras: [], banda: false, notas: {}, huerfanas: {} };
 try {
   const g = JSON.parse(localStorage.getItem(LS) || '{}');
   if (g && typeof g.notas === 'object' && g.notas) est.notas = g.notas;
+  if (g && typeof g.huerfanas === 'object' && g.huerfanas) est.huerfanas = g.huerfanas;
 } catch (e) { /* primera vez */ }
+try {
+  // lo que quedó de la versión que guardaba por número de paso
+  const v = JSON.parse(localStorage.getItem(LSV1) || '{}');
+  if (v && typeof v.notas === 'object' && v.notas)
+    for (const k of Object.keys(v.notas))
+      if (!est.huerfanas[k]) est.huerfanas[k] = v.notas[k];
+} catch (e) { /* no había nada */ }
 const guarda = () => {
-  try { localStorage.setItem(LS, JSON.stringify({ notas: est.notas })); } catch (e) {}
+  try {
+    localStorage.setItem(LS, JSON.stringify({ notas: est.notas, huerfanas: est.huerfanas }));
+  } catch (e) {}
 };
 const N = (k) => (est.notas[k] || '');
 const pon = (k, v) => {
   if (v.trim()) est.notas[k] = v; else delete est.notas[k];
   guarda(); marcador();
 };
-const marcador = () => { $('nn').textContent = Object.keys(est.notas).length; };
+const marcador = () => {
+  const h = Object.keys(est.huerfanas).length;
+  $('nn').textContent = Object.keys(est.notas).length + (h ? ' (+' + h + ' viejas)' : '');
+};
 
 const avisa = (t) => {
   const a = $('aviso'); a.textContent = t;
@@ -886,7 +907,7 @@ function construye() {
     const d = document.createElement('span'); d.className = 'd';
     d.textContent = p.nota;
     th.appendChild(n); th.appendChild(q); th.appendChild(d);
-    th.appendChild(textarea('', 'paso:' + i,
+    th.appendChild(textarea('', 'paso@' + slug(p.etq),
       'Qué se lleva SIEMPRE este paso'));
     tr.appendChild(th);
   });
@@ -917,7 +938,7 @@ function construye() {
       cv.style.aspectRatio = w + ' / ' + h;
       cv.getContext('2d').scale(dpr, dpr);
       td.appendChild(cv);
-      const clave = o.seed + ':' + i;
+      const clave = o.seed + '@' + slug(p.etq);
       td.appendChild(textarea('', clave, '…'));
       td.classList.toggle('connota', !!N(clave).trim());
       fila.appendChild(td);
@@ -958,16 +979,26 @@ $('modo').onclick = () => {
 };
 $('copiar').onclick = async () => {
   const claves = Object.keys(est.notas);
-  if (!claves.length) { avisa('Todavía no hay nada apuntado'); return; }
+  if (!claves.length && !Object.keys(est.huerfanas).length) {
+    avisa('Todavía no hay nada apuntado'); return;
+  }
   const pasos = est.obras.length ? est.obras[0].c.pasos.map((p) => p.etq) : [];
   const out = { pasos, porPaso: {}, porObra: {}, porCelda: {} };
   for (const k of claves) {
-    if (k.indexOf('paso:') === 0) out.porPaso[pasos[+k.slice(5)] || k] = est.notas[k];
+    if (k.indexOf('paso@') === 0) out.porPaso[k.slice(5)] = est.notas[k];
     else if (k.indexOf('obra:') === 0) out.porObra[(+k.slice(5)).toString(16)] = est.notas[k];
     else {
-      const [s, i] = k.split(':');
-      out.porCelda[(+s).toString(16) + ' · ' + (pasos[+i] || i)] = est.notas[k];
+      const i = k.indexOf('@');
+      out.porCelda[(+k.slice(0, i)).toString(16) + ' · ' + k.slice(i + 1)] = est.notas[k];
     }
+  }
+  // las de la versión anterior, tal cual y avisando: iban por número de paso, así que el nombre
+  // del paso al que se referían ya no se puede reconstruir sin equivocarse
+  const hs = Object.keys(est.huerfanas);
+  if (hs.length) {
+    out.notasHuerfanas = { aviso: 'de la version anterior, guardadas por NUMERO de paso: el ' +
+                                  'nombre del paso al que se referian no se puede reconstruir' };
+    for (const k of hs) out.notasHuerfanas[k] = est.huerfanas[k];
   }
   const txt = JSON.stringify(out, null, 1);
   try {
@@ -984,8 +1015,10 @@ $('copiar').onclick = async () => {
   }
 };
 $('vaciar').onclick = () => {
-  if (!Object.keys(est.notas).length) return;
-  est.notas = {}; guarda(); construye();
+  if (!Object.keys(est.notas).length && !Object.keys(est.huerfanas).length) return;
+  est.notas = {}; est.huerfanas = {};
+  try { localStorage.removeItem(LSV1); } catch (e) {}
+  guarda(); construye();
   avisa('Borrado todo lo apuntado');
 };
 

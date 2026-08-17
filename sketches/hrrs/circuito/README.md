@@ -335,6 +335,81 @@ un dato: no es un fallo de ajuste.
 | **acompañado** | 0,35 | 0,39 | 0,38 | 0,52 | ↑ |
 | cabos al aire | 0,10 | 0,06 | 0,07 | 0,18 | |
 
+## METER UN CHILLIDA EN NUESTRO MOTOR
+
+La prueba que faltaba, y la que contesta «¿qué nos falta para hacer r1 y r2?». `mano.json` tiene
+el trazo de un píxel de cada obra tal como el autor lo marcó; `desde_mano.js` lo carga y
+`circuito(seed, {geometria})` le aplica **sólo los pasos de después** — el campo y la densidad.
+Sin esto la única comparación posible es la nuestra contra la suya, y ahí los dos errores se suman
+y no se distinguen.
+
+**Tres respuestas, y las tres duras.**
+
+### 1. La banda y el canal están BIEN
+
+Vestir la geometría real de r1 y r2 con nuestra regla de densidad **da r1 y da r2**. Se reconoce
+la obra. Ese paso está resuelto.
+
+Y de paso se calibró la regla, que estaba mal: usaba el hueco **mínimo**, y eso da una banda un
+30–45 % más fina de lo que es. La medida:
+
+| | hueco mín | p25 de los huecos | **W real** |
+|---|---|---|---|
+| r1 | 0,0280 | **0,0320** | **0,0325** |
+| r2 | 0,0284 | **0,0396** | **0,0417** |
+
+**El percentil 25 de los huecos entre pares de trazos ES la anchura de banda**, con un 2 % de
+error en r1 y un 5 % en r2 — dos obras independientes, la misma constante. Y lo que eso dice del
+cuadro: **el canal no es constante.** La banda lo es y el canal se estrecha donde dos trazos se
+juntan; nuestro modelo suponía `separación = banda + canal` en todas partes.
+
+### 2. EL CAMPO DESTRUYE LA OBRA, y no es una opinión
+
+Aplicando sólo el campo a la geometría real de cuatro referencias:
+
+| | celdas de blanco atrapado | tinta |
+|---|---|---|
+| r1 mano | **1** | 0,188 |
+| r1 tras nuestro campo | **0** | 0,123 |
+| r2 mano | **2** | 0,153 |
+| r2 tras campo | **0** | 0,115 |
+| r3 mano | **3** | 0,342 |
+| r3 tras campo | **0** | 0,332 |
+| r6 mano | **4** | 0,635 |
+| r6 tras campo | **0** | 0,356 |
+
+**Borra las celdas de las cuatro, cuatro de cuatro**, y contrae la obra: r6 pierde el 44 % de su
+tinta y r1 el 35 %. La gravedad contrae, la atracción disuelve las celdas y el encauzado endereza.
+
+Así que **va apagado** (`VUELTAS = 0`). Y con él apagado la obra mejora justo donde peor estaba:
+el ángulo de quiebro pasa de 23,6° a **36,4°** contra los 35 de las referencias, los quiebros por
+lado de 10,8 a **6,3** contra 6,9, y la cuerda a **0,78** contra 0,79. Cuesta 0,10 de
+acompañamiento (0,43 → 0,33) y ese cambio es el que hay que hacer: **acompañar contrayendo la obra
+no es acompañar.** El mando se deja, porque el campo sí sabe arrimar dos trazos; lo que tiene que
+aprender es a no contraer.
+
+### 3. LO QUE FALTA: la celda
+
+Las referencias **encierran blanco** —1, 2, 3 y 4 celdas— y las nuestras **0 de mediana en 12**.
+El circuito de Chillida **se cierra sobre sí mismo**; el nuestro hace trazos que se esquivan y no
+vuelven. Eso no es un parámetro: es una pieza de modelo que no existe, y es la que queda.
+
+`celdas.js` la mide: se dibuja la banda, se engorda por el canal para que las vecinas se toquen
+—o sea, se mira la obra como UNA figura— y se cuentan los agujeros.
+
+### Y una atribución equivocada que un control cazó antes de publicarse
+
+Al principio escribí que la regla de no fundir la garantizaba la derivación del percentil. Los
+controles no dispararon al romperla, y por una razón: detrás hay una reparación local que separa
+los pares más apretados y **arreglaba la rotura del propio control**. La cadena, con cada pieza en
+su sitio:
+
+- `W = percentil 25 de los huecos` → pone la **densidad** (calibrada contra r1 y r2).
+- la **reparación local** → separa los pares más apretados, para que un caso extremo no arrastre
+  la densidad de la obra entera. Toca un puñado de vértices, no la obra.
+- `W = min(W, hueco mínimo · 0,98)` → **garantiza** que no funde. Ésta y sólo ésta: quitándola
+  funde el 70 % de las obras.
+
 ## EL ORDEN, corregido por el autor sobre la autopsia
 
 Vio la autopsia paso a paso y reescribió el orden. Es el que está implementado hoy:
