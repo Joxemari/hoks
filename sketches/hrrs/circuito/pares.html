@@ -1,3 +1,139 @@
+<title>Los pares</title>
+
+<style>
+  /* hrrs — doce pares, un mando cada uno. Sistema de la casa: Courier New, papel #fff, tinta #111,
+     marca #b8352a. Los mismos tokens que la física, la autopsia y la tanda.
+     Tema único a propósito: se juzga tinta sobre papel, y un fondo que cambia cambia el juicio. */
+  :root {
+    --papel: #ffffff;
+    --tinta: #141312;
+    --gris:  #77736c;
+    --linea: #ded9d1;
+    --hueco: #f6f4f0;
+    --marca: #b8352a;
+    --mono: "Courier New", Courier, monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--papel); color: var(--tinta);
+    font-family: var(--mono); font-size: 13px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  header {
+    display: flex; align-items: stretch; border-bottom: 1px solid var(--linea);
+    flex-wrap: wrap; background: var(--papel); position: sticky; top: 0; z-index: 5;
+  }
+  .tit { padding: 10px 18px; border-right: 1px solid var(--linea); display: flex;
+         flex-direction: column; justify-content: center; }
+  .tit b { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: 11px; }
+  .tit span { color: var(--gris); font-size: 11px; }
+  .mandos { display: flex; align-items: center; gap: 12px; padding: 8px 16px; flex: 1;
+            flex-wrap: wrap; }
+  .btn {
+    appearance: none; font-family: var(--mono); font-size: 12px;
+    background: var(--papel); color: var(--tinta);
+    border: 1px solid var(--tinta); padding: 7px 12px; cursor: pointer;
+    transition: background .12s, color .12s;
+  }
+  .btn:hover { background: var(--tinta); color: var(--papel); }
+  .btn.suave { border-color: var(--linea); color: var(--gris); }
+  .btn.suave:hover { background: var(--hueco); color: var(--tinta); }
+  .btn:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+  .cuenta { margin-left: auto; font-size: 12px; color: var(--gris); }
+  .cuenta b { color: var(--marca); font-variant-numeric: tabular-nums; }
+
+  .intro { padding: 12px 18px; border-bottom: 1px solid var(--linea); color: var(--gris);
+           font-size: 12px; max-width: 88ch; }
+  .intro b { color: var(--tinta); }
+  .intro p { margin: 0 0 7px; }
+  .intro p:last-child { margin-bottom: 0; }
+
+  .filas { display: flex; flex-direction: column; }
+  .fila {
+    display: grid; grid-template-columns: 216px 1fr 1fr; gap: 1px;
+    background: var(--linea); border-bottom: 1px solid var(--linea);
+  }
+  @media (max-width: 1000px) { .fila { grid-template-columns: 1fr; } }
+
+  .ficha { background: var(--papel); padding: 11px 13px; }
+  .ficha .num { font-size: 10px; color: var(--gris); letter-spacing: .1em; }
+  .ficha .mando { font-size: 13px; font-weight: 700; margin: 1px 0 4px; }
+  .ficha .preg { font-size: 11px; color: var(--tinta); line-height: 1.4; }
+  .ficha .por { font-size: 10.5px; color: var(--gris); line-height: 1.35; margin-top: 6px; }
+  .nota {
+    display: block; width: 100%; margin: 9px 0 0; border: 1px solid var(--linea);
+    font-family: var(--mono); font-size: 10.5px; line-height: 1.4; color: var(--tinta);
+    background: var(--papel); padding: 5px 6px; resize: vertical; min-height: 3.4em;
+  }
+  .nota::placeholder { color: #b8b4ac; }
+  .nota:focus { outline: 0; border-color: var(--marca); }
+
+  .lado {
+    appearance: none; font-family: var(--mono); text-align: left;
+    background: var(--papel); border: 0; padding: 9px 11px 10px; margin: 0; cursor: pointer;
+    display: flex; flex-direction: column; gap: 6px; position: relative;
+  }
+  .lado:hover { background: var(--hueco); }
+  .lado.elegido { background: #fbeeec; }
+  .lado:focus-visible { outline: 2px solid var(--marca); outline-offset: -2px; }
+  .lado .cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+               font-size: 11px; }
+  .lado .cual { font-weight: 700; letter-spacing: .08em; }
+  .lado.elegido .cual::before { content: "▸ "; color: var(--marca); }
+  .lado .val { color: var(--marca); font-variant-numeric: tabular-nums; }
+  .obras { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .obras canvas { display: block; width: 100%; height: auto; background: var(--hueco); }
+  .med { font-size: 10px; color: var(--gris); font-variant-numeric: tabular-nums; }
+
+  footer {
+    padding: 9px 18px; font-size: 11px; color: var(--gris);
+    border-top: 1px solid var(--linea); display: flex; gap: 18px; flex-wrap: wrap;
+  }
+  #aviso { margin-left: auto; color: var(--marca); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header>
+    <div class="tit">
+      <b>hrrs · los pares</b>
+      <span>un mando cada uno</span>
+    </div>
+    <div class="mandos">
+      <button class="btn" id="otras">Otras semillas</button>
+      <button class="btn suave" id="copiar">Copiar lo elegido</button>
+      <span class="cuenta">elegidos <b id="cuantos">0</b>/12</span>
+    </div>
+  </header>
+
+  <div class="intro">
+    <p>Doce pares, y entre A y B <b>cambia un solo mando</b>. Clic en el lado que prefieras.</p>
+    <p>Cuando eliges una obra entre cinco, dentro hay veinte mandos y <b>yo no sé cuál la hizo
+    buena</b>. Aquí cada clic calibra uno. Y sólo están los de la <b>composición</b>: la piel del
+    trazo ya está clavada por número contra r1, r2, r5 y r6, así que votarla sería gastar tu ojo en
+    algo que hace un script.</p>
+    <p>Tres obras por lado, y no la misma obra con el mando movido —cambiar una regla cambia el
+    orden en que se consume el azar—, así que <b>se compara el carácter, no la instancia</b>. Debajo
+    van los números medidos, para que la etiqueta no pueda mentir sobre lo que se ve.</p>
+  </div>
+
+  <div class="filas" id="filas"></div>
+
+  <footer>
+    <span>clic en un lado para elegirlo</span>
+    <span>la nota se guarda sola</span>
+    <span id="aviso"></span>
+  </footer>
+</div>
+
+<script>
+/* EL GENERADOR VA INCRUSTADO, entre las marcas de abajo, y NO SE EDITA AQUÍ: lo escribe
+   `empotra.py` desde `sketches/hrrs/circuito/gen.js`, que es la fuente. */
+/* ⟦gen.js⟧ */
 // hrrs — EL CIRCUITO, en el orden que el autor corrigió viendo la autopsia paso a paso.
 //
 //   1. LOS PUNTOS DEL PRIMER TRAZO. Sólo del primero. «Hay un montón de puntos, cuando en
@@ -38,7 +174,6 @@
 // o sea que el 82 % muere contra algo. Un cabo que muere contra un cuerpo tiene que LLEGAR —el
 // último tramo apunta al cuerpo—, porque si llega de refilón se lee como un roce y no como un
 // encuentro.
-'use strict';
 
 function Rng(s) { this.s = (s >>> 0) || 1; }
 Rng.prototype.u = function () {
@@ -1323,5 +1458,272 @@ function pinta(cx, Wpx, Hpx, o, opt) {
     cx.restore();
   }
 }
+/* ⟦/gen.js⟧ */
 
-if (typeof module !== 'undefined') module.exports = { circuito, Rng, contornoDe, pinta };
+// ── LOS DOCE PARES ────────────────────────────────────────────────────────────
+// Cada uno es una decisión que hoy está tomada a ojo y que ninguna medida puede desempatar. El
+// orden no es casual: van de lo que más cambia la obra a lo que menos, para que si se abandona a
+// mitad lo contestado siga sirviendo.
+const PARES = [
+  { k: 'canal', mando: 'el canal',
+    preg: '¿Cuánto blanco queda entre dos bandas paralelas?',
+    por: 'Hoy 0,22 anchuras, medido en las cinco buenas. Pero medido sobre fotos de imprenta, ' +
+         'donde la tinta se extiende: el canal real del dibujo pudo ser más ancho.',
+    a: { et: '0,22 · estrecho', m: { canal: 0.22 } },
+    b: { et: '0,34 · ancho',    m: { canal: 0.34 } } },
+
+  { k: 'obl', mando: 'los oblicuos',
+    preg: '¿Los rumbos que no son de eje rozan la vertical o se plantan en diagonal?',
+    por: 'En las referencias el 72 % de la longitud corre a ±20° de los ejes, y el quiebro típico ' +
+         'es de 35°. Con oblicuos más abiertos la obra dobla más fuerte.',
+    a: { et: '32–48° · pegados', m: { obl: [32, 48] } },
+    b: { et: '58–76° · abiertos', m: { obl: [58, 76] } } },
+
+  { k: 'tramo', mando: 'la tirada',
+    preg: '¿Cuánto corre un trazo recto antes de doblar?',
+    por: 'Es lo que separa una obra de tramos largos y pocos quiebros de una de zigzag corto.',
+    a: { et: '1,0–2,6 · corta', m: { tramo: [1.0, 2.6] } },
+    b: { et: '2,2–4,6 · larga', m: { tramo: [2.2, 4.6] } } },
+
+  { k: 'err', mando: 'el error de mano',
+    preg: '¿Los trazos se alinean al alfabeto, o cada uno lleva su desvío?',
+    por: 'El rumbo de cada trazo se sortea del alfabeto y se le suma un error, UNA VEZ por trazo ' +
+         'y no por paso —un temblor por paso es ruido; uno por trazo es la mano de quien lo ' +
+         'dibuja—. Hoy son ±7°. Aquí vivía «la probabilidad de doblar», que resultó ser código ' +
+         'muerto: los dos lados salían idénticos hasta el píxel y lo dijo el comprobador.',
+    a: { et: '±3° · alineado', m: { err: 3 } },
+    b: { et: '±13° · a mano',  m: { err: 13 } } },
+
+  { k: 'largo', mando: 'el largo',
+    preg: '¿Trazos contenidos, o trazos que cruzan el pliego de lado a lado?',
+    por: 'Un factor sobre el largo. Las seis van de 6 a 18 anchuras, así que hay sitio para las dos.',
+    a: { et: '0,85 · contenido', m: { largo: 0.85 } },
+    b: { et: '1,30 · cruza',     m: { largo: 1.30 } } },
+
+  { k: 'crece', mando: 'el relleno',
+    preg: '¿La banda engorda donde tiene sitio, o es casi de anchura constante?',
+    por: 'Tu regla era rellenar hasta el margen —«se ve perfectamente en R5 y R6»—. Pero la piel ' +
+         'medida dice que a lo largo de un mismo trazo la anchura casi no cambia. Así que puede ' +
+         'que el ensanche sea de un trazo a otro, y no dentro de uno.',
+    a: { et: '1,70 · engorda',  m: { crece: 1.70 } },
+    b: { et: '1,15 · constante', m: { crece: 1.15 } } },
+
+  { k: 'pDenso', mando: 'denso o abierto',
+    preg: '¿La mayoría de las obras salen apretadas, o la mayoría con aire?',
+    por: 'Hoy 62 % densas. Es lo que más cambia la familia entera vista de lejos.',
+    a: { et: '62 % densas', m: { pDenso: 0.62 } },
+    b: { et: '20 % densas', m: { pDenso: 0.20 } } },
+
+  { k: 'pRecorte', mando: 'el recorte',
+    preg: '¿La obra se sale del papel, o cabe entera dentro?',
+    por: 'En r4, r5 y r6 la mitad de los cabos están a menos de una anchura del borde: son el ' +
+         'recorte de una composición mayor. En r1, r2 y r3 no.',
+    a: { et: '42 % recortadas', m: { pRecorte: 0.42 } },
+    b: { et: '5 % recortadas',  m: { pRecorte: 0.05 } } },
+
+  { k: 'aire', mando: 'los cabos al aire',
+    preg: '¿Los finales mueren contra algo, o se quedan sueltos en el blanco?',
+    por: 'Medido en las seis: el 17 % muere al aire, y la tasa sube cuando hay menos trazos. Lo ' +
+         'nuestro se queda en el 7–11 %, por debajo, así que puede que falte soltura.',
+    a: { et: '×1,0 · como está', m: { aire: 1.0 } },
+    b: { et: '×2,2 · más sueltos', m: { aire: 2.2 } } },
+
+  { k: 'nTrazos', mando: 'cuántos trazos',
+    preg: '¿Pocos trazos grandes, o muchos y más finos?',
+    por: 'La banda se corta a la medida del hueco que deja la composición, así que más trazos ' +
+         'salen más finos por sí solos. No es sólo cantidad: es otra escala.',
+    a: { et: '×1,00 · como está', m: { nTrazos: 1.0 } },
+    b: { et: '×1,45 · más',       m: { nTrazos: 1.45 } } },
+
+  { k: 'cats', mando: 'la mezcla',
+    preg: '¿Casi todo paralelo y apoyado, o bastante suelto con su propio rumbo?',
+    por: 'Las cuatro maneras de poner un trazo respecto a los que ya están: paralela, prolonga, ' +
+         'apoyo, suelta. La suelta es la que da aire y la que rompe la trama.',
+    a: { et: 'la del tipo',   m: { cats: null } },
+    b: { et: '42 % suelta',   m: { cats: [0.28, 0.12, 0.18, 0.42] } } },
+
+  { k: 'vueltas', mando: 'el campo',
+    preg: '¿Los trazos se acomodan unos a otros después de colocarse, o se quedan donde cayeron?',
+    por: 'El campo está apagado por medida: aplicado a la geometría real de r1, r2, r3 y r6 borra ' +
+         'las celdas de blanco atrapado de las cuatro, y r6 pierde el 44 % de la tinta. Este par ' +
+         'es para cerrarlo con el ojo y no sólo con el número — tú dijiste que «no está bien ' +
+         'logrado», y quiero saber si es que falta o es que sobra.',
+    a: { et: '0 · apagado', m: { vueltas: 0 } },
+    b: { et: '8 · encendido', m: { vueltas: 8 } } },
+];
+
+const $ = (id) => document.getElementById(id);
+const LS = 'hrrs-pares-v1';
+const est = { semillas: 0, sel: {}, notas: {} };
+try {
+  const g = JSON.parse(localStorage.getItem(LS) || '{}');
+  if (g && g.sel) est.sel = g.sel;
+  if (g && g.notas) est.notas = g.notas;
+  if (typeof g.semillas === 'number') est.semillas = g.semillas;
+} catch (e) { /* primera vez */ }
+const guarda = () => {
+  try { localStorage.setItem(LS, JSON.stringify(est)); } catch (e) {}
+};
+const avisa = (t) => { const a = $('aviso'); a.textContent = t;
+  clearTimeout(avisa._t); avisa._t = setTimeout(() => { a.textContent = ''; }, 2600); };
+
+// ── LAS SEMILLAS DE CADA FILA ─────────────────────────────────────────────────
+// Distintas por fila —para no juzgar doce veces las mismas tres composiciones— e iguales dentro de
+// la fila, porque si no el par no compara nada.
+//
+// Y SE BUSCAN, no se toman las tres primeras. Hay mandos que son una moneda: cambiar la
+// probabilidad de que la obra salga densa de 0,62 a 0,20 sólo cambia el resultado en las semillas
+// cuyo sorteo cae en medio, o sea en cuatro de cada doce. Con las tres primeras, ocho filas de cada
+// doce enseñarían dos tripletes IDÉNTICOS y le harían elegir entre dos cosas iguales. Así que de
+// cada fila se buscan tres semillas en las que A y B de verdad se separen, y las obras se guardan
+// para no volver a generarlas al pintar.
+const firma = (o) => o.W.toFixed(5) + '|' +
+  o.trazos.map(t => t.map(q => q[0].toFixed(4) + ',' + q[1].toFixed(4)).join(';')).join('|') +
+  '|' + o.semis.map(sm => sm.reduce((a, l) => a + l[0] + l[1], 0).toFixed(4)).join(',');
+
+function buscaObras(par, i) {
+  const base = 1000 + est.semillas * 997 + i * 131;
+  const hay = [], sobras = [];
+  for (let t = 0; t < 40 && hay.length < 3; t++) {
+    const sd = base + t * 37;
+    const oa = circuito(sd >>> 0, { grainScale: 0, mandos: par.a.m });
+    const ob = circuito(sd >>> 0, { grainScale: 0, mandos: par.b.m });
+    if (firma(oa) !== firma(ob)) hay.push({ sd, oa, ob });
+    else if (sobras.length < 3) sobras.push({ sd, oa, ob });
+  }
+  while (hay.length < 3 && sobras.length) hay.push(sobras.shift());
+  return hay;
+}
+
+// ── PINTAR, Y MEDIR LO QUE SE HA PINTADO ──────────────────────────────────────
+// El número va debajo de la imagen porque la etiqueta de un lado dice lo que se PIDIÓ y no lo que
+// SALIÓ, y las dos cosas se separan: subir el canal puede acabar dando una banda más gorda si el
+// percentil de los huecos manda. Con la medida a la vista, la etiqueta no puede mentir.
+function unaObra(cv, o) {
+  const cx = cv.getContext('2d');
+  pinta(cx, cv.width, cv.height, o, { grano: 0 });
+  const d = cx.getImageData(0, 0, cv.width, cv.height).data;
+  let osc = 0, tot = 0;
+  for (let i = 0; i < d.length; i += 4 * 13) { tot++; if (d[i] < 140) osc++; }
+  return { tinta: osc / Math.max(1, tot), W: o.W, n: o.trazos.length };
+}
+
+function pintaLado(cont, med, obras, cual) {
+  const rs = [];
+  [...cont.querySelectorAll('canvas')].forEach((cv, j) => {
+    if (obras[j]) rs.push(unaObra(cv, obras[j][cual === 'a' ? 'oa' : 'ob']));
+  });
+  if (!rs.length) { med.textContent = '(sin obras)'; return; }
+  const pr = (f) => rs.reduce((a, r) => a + f(r), 0) / rs.length;
+  med.textContent = 'tinta ' + (100 * pr(r => r.tinta)).toFixed(0) + '%   ' +
+                    'banda ' + pr(r => r.W).toFixed(3) + '   ' +
+                    'trazos ' + pr(r => r.n).toFixed(1);
+}
+
+function construye() {
+  const f = $('filas'); f.innerHTML = '';
+  const pend = [];
+  PARES.forEach((par, i) => {
+    const fila = document.createElement('div'); fila.className = 'fila';
+
+    const fi = document.createElement('div'); fi.className = 'ficha';
+    const num = document.createElement('div'); num.className = 'num';
+    num.textContent = (i + 1) + ' DE 12';
+    const nm = document.createElement('div'); nm.className = 'mando'; nm.textContent = par.mando;
+    const pg = document.createElement('div'); pg.className = 'preg'; pg.textContent = par.preg;
+    const po = document.createElement('div'); po.className = 'por'; po.textContent = par.por;
+    const ta = document.createElement('textarea'); ta.className = 'nota';
+    ta.value = est.notas[par.k] || '';
+    ta.placeholder = 'Qué ves, o qué falta en los dos';
+    ta.oninput = () => { est.notas[par.k] = ta.value; guarda(); };
+    fi.append(num, nm, pg, po, ta);
+    fila.appendChild(fi);
+
+    let obras = null;
+    const dame = () => (obras || (obras = buscaObras(par, i)));
+    for (const cual of ['a', 'b']) {
+      const lado = document.createElement('button');
+      lado.className = 'lado' + (est.sel[par.k] === cual ? ' elegido' : '');
+      lado.type = 'button';
+      lado.setAttribute('aria-pressed', est.sel[par.k] === cual ? 'true' : 'false');
+      lado.setAttribute('aria-label', 'Elegir ' + cual.toUpperCase() + ': ' + par[cual].et);
+      const cab = document.createElement('div'); cab.className = 'cab';
+      const c1 = document.createElement('span'); c1.className = 'cual';
+      c1.textContent = cual.toUpperCase();
+      const c2 = document.createElement('span'); c2.className = 'val';
+      c2.textContent = par[cual].et;
+      cab.append(c1, c2);
+      const obras_ = document.createElement('div'); obras_.className = 'obras';
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      for (let j = 0; j < 3; j++) {
+        const cv = document.createElement('canvas');
+        const lad = 190;
+        cv.width = Math.round(lad * dpr); cv.height = Math.round(lad * dpr);
+        cv.style.aspectRatio = '1 / 1';
+        obras_.appendChild(cv);
+      }
+      const med = document.createElement('div'); med.className = 'med'; med.textContent = '…';
+      lado.append(cab, obras_, med);
+      lado.onclick = () => {
+        est.sel[par.k] = cual; guarda();
+        [...fila.querySelectorAll('.lado')].forEach((l, k) => {
+          const es = (k === 0 ? 'a' : 'b') === cual;
+          l.classList.toggle('elegido', es);
+          l.setAttribute('aria-pressed', es ? 'true' : 'false');
+        });
+        cuenta();
+      };
+      fila.appendChild(lado);
+      pend.push(() => pintaLado(obras_, med, dame(), cual));
+    }
+    f.appendChild(fila);
+  });
+  cuenta();
+  // se dibuja por tandas para que la página no se quede muda: 24 lados a ~180 ms cada uno
+  let k = 0;
+  const sigue = () => {
+    if (k >= pend.length) { avisa(''); return; }
+    avisa('dibujando ' + (k + 1) + '/' + pend.length);
+    pend[k++]();
+    setTimeout(sigue, 0);
+  };
+  setTimeout(sigue, 30);
+}
+
+const cuenta = () => { $('cuantos').textContent = Object.keys(est.sel).length; };
+
+$('otras').onclick = () => {
+  est.semillas++; guarda(); construye();
+  avisa('semillas nuevas — lo elegido se conserva');
+};
+
+$('copiar').onclick = () => {
+  const out = {
+    que: 'hrrs · los pares · composición',
+    semillas: est.semillas,
+    elegidos: PARES.map((p, i) => ({
+      n: i + 1, mando: p.k,
+      elegido: est.sel[p.k] || null,
+      valor: est.sel[p.k] ? p[est.sel[p.k]].et : null,
+      nota: est.notas[p.k] || '',
+    })),
+  };
+  const txt = JSON.stringify(out, null, 2);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(
+      () => avisa('copiado — pégalo en el chat'), () => aMano(txt));
+  } else aMano(txt);
+};
+
+function aMano(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt;
+  ta.style.cssText = 'position:fixed;top:8%;left:8%;width:84%;height:70%;z-index:9;' +
+                     'font-family:var(--mono);font-size:11px';
+  document.body.appendChild(ta); ta.select();
+  avisa('Selecciona y copia a mano, luego Esc');
+  ta.addEventListener('keydown', ev => { if (ev.key === 'Escape') ta.remove(); });
+}
+
+construye();
+</script>
