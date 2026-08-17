@@ -335,6 +335,64 @@ un dato: no es un fallo de ajuste.
 | **acompañado** | 0,35 | 0,39 | 0,38 | 0,52 | ↑ |
 | cabos al aire | 0,10 | 0,06 | 0,07 | 0,18 | |
 
+## LA AUTOPSIA: qué paso se lleva la esencia
+
+Intuición del autor: *«tengo la intuición de que en alguno de los pasos perdemos el 90 % de la
+esencia»*. Era exacta, y es **un solo paso**. `circuito(seed, {pasos:true})` devuelve una copia
+de la geometría en cada estación, `pasos.js` la mide con la misma vara y `autopsia.html` la
+enseña —una columna por paso, una fila por obra, y hueco para anotar en la celda, en la columna
+y en la fila—.
+
+| paso | línea | largo | ejes | giro | vuelta% | acomp |
+|---|---|---|---|---|---|---|
+| 1 · los puntos | 8,55 | 0,85 | 0,66 | 33 | 14 | 0,21 |
+| 2 · unidos | 8,55 | 0,85 | 0,66 | 33 | 14 | 0,21 |
+| **3 · relajado** | 6,96 | 0,68 | **0,59** | 26 | 5 | **0,53** |
+| **4 · solape roto** | 8,25 | 0,79 | **0,33** | 39 | 5 | **0,27** |
+| 5 · cruces cortados | 4,04 | 0,38 | 0,37 | 31 | 4 | 0,32 |
+| 6 · recrecido | 5,45 | 0,60 | 0,36 | 36 | 7 | 0,36 |
+| 7 · canal abierto | 4,91 | 0,54 | 0,37 | 41 | 6 | 0,33 |
+| 8 · acompañado | 4,83 | 0,54 | 0,38 | 41 | 6 | 0,33 |
+| **objetivo (5 refs)** | 5,19 | 0,568 | **0,49** | 35 | 1 | **0,52** |
+
+**Después de relajar, la obra está EN EL OBJETIVO de las dos cosas que llevaban toda la familia
+sin salir**: sobre los ejes 0,59 contra 0,49, y acompañamiento **0,53 contra 0,52 clavado**. El
+barrido de solape se lleva las dos en una sola pasada, y no se recupera nunca. Hay una segunda
+pérdida en el paso 5, pero ésa es de **cantidad** (línea 8,25 → 4,04), no de esencia.
+
+La causa: el barrido va **punto por punto**, ocho rondas, martilleando todo lo que baje de `sep`
+hasta el carril, sin mirar la dirección del trazo. Deshace lo que el campo acaba de conseguir. Y
+`abreCanal` es el mismo martillo: quitando el barrido de solape, el daño se muda al paso 7 —
+ejes 0,57 → 0,38, acompañamiento 0,53 → 0,36— exactamente igual.
+
+**LA LECCIÓN:** una regla que hay que cumplir es una **fuerza dentro de la relajación**, no una
+pasada correctora después. Corrigiendo después se cumple la regla y se pierde la obra.
+
+### Y el arreglo obvio no funciona, con su razón
+
+Probado en esta misma vuelta, medido y descartado:
+
+- **Poner el suelo del canal como fuerza del campo** (medido entre tramos, que es lo que mide la
+  regla): compra un 10 % de fusiones menos a cambio del acompañamiento (0,68 → 0,50) y del largo
+  del trazo (0,55 → 0,43). La fusión no nace del campo —en el carril, a 1,24 anchuras, no puede
+  haberla— nace de los tres sitios que crean geometría **fuera** del campo: los muñones del
+  corte de cruces, los cabos del recrecido y los empalmes del acompañamiento. Una fuerza global
+  para arreglar tres sitios locales cuesta la obra entera.
+- **Reordenar el circuito** para que la relajación sea lo último (corte y recrecido antes):
+  arregla lo que buscaba —ejes 0,77, acompañamiento 0,69— y **rompe la forma del trazo**. Salen
+  **peines**: longitud en un solo rumbo 0,69 contra 0,24, cuerda **0,99** contra 0,79, quiebros
+  por lado 3,3 contra 6,9, y los cruces vuelven (2 por obra). Y no es un mando: `cuerda` sale
+  0,99 en las ocho combinaciones de vueltas y peso del alfabeto que barrí. La causa es que el
+  recrecido elige el giro más pequeño, así que alargar un trazo cortado lo alarga **recto**.
+
+O sea que el arreglo pide tres cosas a la vez, no una: que el corte y el recrecido respeten el
+canal al crear geometría, que el recrecido conserve la cadencia de quiebro del trazo, y que
+después no haya ningún martillo. Eso es la próxima vuelta, no un ajuste.
+
+**Y un aviso de método para mí:** leí «el paso 7 es el mejor estado que ha tenido esta familia»
+mirando una tabla de siete rasgos, y el marcador completo decía que `r1`, `cuerda` y
+`girosPorLado` se habían ido a hacer peines. Se mide con el marcador entero o no se mide.
+
 ## Cuando el ojo dice una cosa y el píxel otra
 
 «Estéticamente sigue sin funcionar vs Chillida en general.» Puestas las seis al lado de una

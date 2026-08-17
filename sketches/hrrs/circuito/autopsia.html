@@ -1,3 +1,143 @@
+<title>La autopsia</title>
+
+<style>
+  /* hrrs — la autopsia del circuito: una columna por paso, una fila por obra.
+     Un solo tema, y a propósito: se juzga tinta negra sobre papel blanco. Sistema de la
+     casa: Courier New, papel #fff, tinta #111. Los mismos tokens que la tanda, para que el
+     laboratorio se lea como una sola cosa. */
+  :root {
+    --papel: #ffffff;
+    --tinta: #111111;
+    --gris:  #77736c;
+    --linea: #ded9d1;
+    --hueco: #f6f4f0;
+    --marca: #b8352a;
+    --mono: "Courier New", Courier, monospace;
+    --celda: 208px;
+    --fila: 150px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--papel); color: var(--tinta);
+    font-family: var(--mono); font-size: 13px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  header {
+    display: flex; align-items: stretch; border-bottom: 1px solid var(--linea);
+    flex-wrap: wrap; background: var(--papel); position: sticky; top: 0; z-index: 5;
+  }
+  .tit { padding: 10px 18px; border-right: 1px solid var(--linea); display: flex;
+         flex-direction: column; justify-content: center; }
+  .tit b { font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: 11px; }
+  .tit span { color: var(--gris); font-size: 11px; }
+  .mandos { display: flex; align-items: center; gap: 12px; padding: 8px 16px; flex: 1;
+            flex-wrap: wrap; }
+  .btn {
+    appearance: none; font-family: var(--mono); font-size: 12px;
+    background: var(--papel); color: var(--tinta);
+    border: 1px solid var(--tinta); padding: 7px 12px; cursor: pointer;
+    transition: background .12s, color .12s;
+  }
+  .btn:hover { background: var(--tinta); color: var(--papel); }
+  .btn.suave { border-color: var(--linea); color: var(--gris); }
+  .btn.suave:hover { background: var(--hueco); color: var(--tinta); }
+  .btn[aria-pressed="true"] { background: var(--tinta); color: var(--papel); }
+  .btn:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+  .cuenta { margin-left: auto; font-size: 12px; color: var(--gris);
+            font-variant-numeric: tabular-nums; }
+  .cuenta b { color: var(--marca); }
+
+  .intro { padding: 12px 18px; border-bottom: 1px solid var(--linea); color: var(--gris);
+           font-size: 12px; max-width: 76ch; }
+  .intro b { color: var(--tinta); }
+
+  /* El scroll horizontal vive AQUÍ y no en el documento: la rejilla es más ancha que
+     cualquier pantalla y el cuerpo de la página no debe moverse de lado. */
+  .marco { overflow: auto; flex: 1; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid var(--linea); padding: 0; vertical-align: top; }
+
+  /* la esquina y las cabeceras se quedan pegadas: sin eso, a la quinta columna ya no se sabe
+     qué paso se está mirando ni de qué obra */
+  thead th { position: sticky; top: 0; background: var(--papel); z-index: 3; }
+  thead th:first-child { left: 0; z-index: 4; }
+  tbody th { position: sticky; left: 0; background: var(--papel); z-index: 2; }
+
+  .paso { width: var(--celda); padding: 8px 9px 9px; text-align: left; font-weight: 400; }
+  .paso .n { display: block; font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+             color: var(--marca); }
+  .paso .q { display: block; font-size: 12px; font-weight: 700; margin-top: 1px; }
+  .paso .d { display: block; font-size: 10.5px; color: var(--gris); line-height: 1.4;
+             margin-top: 4px; }
+
+  .obra { width: 132px; padding: 8px 9px; text-align: left; font-weight: 400; }
+  .obra .s { display: block; font-size: 11px; letter-spacing: .08em; }
+  .obra .t { display: block; font-size: 10.5px; color: var(--gris); margin-top: 2px; }
+
+  .lienzo { display: block; width: 100%; height: auto; background: var(--papel); }
+  td.celda { position: relative; }
+  td.celda:hover { background: var(--hueco); }
+  td.celda.connota { background: #fbeeec; }
+
+  .nota {
+    display: block; width: 100%; margin: 0; border: 0; border-top: 1px solid var(--linea);
+    font-family: var(--mono); font-size: 10.5px; line-height: 1.4; color: var(--tinta);
+    background: transparent; padding: 5px 7px; resize: vertical; min-height: 2.6em;
+  }
+  .nota::placeholder { color: #b8b4ac; }
+  .nota:focus { outline: 0; background: var(--papel); box-shadow: inset 0 0 0 1px var(--marca); }
+  .nota.gorda { min-height: 4.2em; }
+
+  footer {
+    padding: 10px 18px; font-size: 11px; color: var(--gris);
+    border-top: 1px solid var(--linea);
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+  }
+  #aviso { margin-left: auto; color: var(--marca); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header>
+    <div class="tit">
+      <b>hrrs · la autopsia</b>
+      <span>un paso por columna</span>
+    </div>
+    <div class="mandos">
+      <button class="btn" id="otras">Otras cinco</button>
+      <button class="btn suave" id="modo" aria-pressed="false">Ver todo en banda</button>
+      <button class="btn suave" id="copiar">Copiar notas</button>
+      <button class="btn suave" id="vaciar">Vaciar</button>
+      <span class="cuenta">notas <b id="nn">0</b></span>
+    </div>
+  </header>
+
+  <div class="intro">
+    El tiempo se lee de izquierda a derecha: cada columna es un paso del generador y cada fila
+    una obra, la misma semilla en las ocho. <b>Se anota en tres sitios</b>: en la celda (lo que
+    le pasa a esa obra en ese paso), en la cabecera de la columna (lo que el paso hace mal
+    <i>siempre</i>) y en la cabecera de la fila (lo que le falta a esa obra en su conjunto). La
+    columna es la unidad que importa si la sospecha es que un paso se lleva la esencia.
+    <b>Ver todo en banda</b> dibuja la tinta ya en los pasos donde sólo hay hilo, para ver en
+    qué se iba a convertir cada estado.
+  </div>
+
+  <div class="marco"><table id="tabla"></table></div>
+
+  <footer>
+    <span>la nota se guarda sola, por semilla y paso</span>
+    <span>ocho pasos · cinco obras</span>
+    <span id="aviso"></span>
+  </footer>
+</div>
+
+<script>
+/* EL GENERADOR VA INCRUSTADO. La página es un artefacto suelto y no puede pedir el archivo,
+   así que aquí abajo está la misma fuente que `sketches/hrrs/circuito/gen.js`, palabra por
+   palabra. Si se toca el generador, se vuelve a incrustar; no se edita aquí. */
 // hrrs — EL CIRCUITO. Dos fases, y el orden lo dictó el autor:
 //
 //   FASE 1 · SEMBRAR. «Lo primero es dibujar una serie de puntos, que es el primer trazo.
@@ -63,7 +203,6 @@
 // La conclusión, medida: acompañar no se consigue empujando trazos que nacieron sueltos. En
 // las seis el trazo NACE acompañando, y eso pide sembrar unos como offset de otros — que
 // choca con «los trazos se siembran sin mirarse», así que hay que preguntárselo a él.
-'use strict';
 
 function Rng(s) { this.s = (s >>> 0) || 1; }
 Rng.prototype.u = function () {
@@ -924,5 +1063,228 @@ function circuito(seed, opt) {
   return { trazos, masas, fw, fh, W, sep, rumbos, tipo, fuerza, G, solMedia,
            polo: [0.5 * fw, 0.5 * fh], seed, pasos };
 }
+'use strict';
 
-if (typeof module !== 'undefined') module.exports = { circuito, Rng };
+// ── DIBUJAR UN PASO ───────────────────────────────────────────────────────────
+// Tres maneras, y cada paso trae la suya: los PUNTOS sueltos (que es lo primero que existe),
+// el HILO de un píxel (la geometría, sin nada que la tape) y la BANDA con su canal (el dibujo
+// de verdad). Ver el mismo estado en hilo y en banda es lo que enseña qué se llevó cada paso.
+function dibuja(cx, W, H, obra, pts, modo) {
+  const esc = Math.min(W, H) / Math.min(obra.fw, obra.fh);
+  cx.save();
+  cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, W, H);
+  cx.translate((W - obra.fw * esc) / 2, (H - obra.fh * esc) / 2);
+  cx.scale(esc, esc);
+  const traza = (q) => {
+    cx.beginPath(); cx.moveTo(q[0][0], q[0][1]);
+    for (let i = 1; i < q.length; i++) cx.lineTo(q[i][0], q[i][1]);
+  };
+  if (modo === 'puntos') {
+    cx.fillStyle = '#111111';
+    for (const q of pts) for (const z of q) {
+      cx.beginPath(); cx.arc(z[0], z[1], 0.013, 0, 6.2832); cx.fill();
+    }
+  } else if (modo === 'banda') {
+    // el mismo vestido que la tanda: foso de W+2g y encima la tinta de W. Separación de
+    // centros = banda + canal, así que la tinta va a W y no engordada.
+    const g = obra.W * 0.22;
+    cx.lineJoin = 'round'; cx.lineCap = 'butt';
+    for (const q of pts) {
+      if (q.length < 2) continue;
+      cx.strokeStyle = '#ffffff'; cx.lineWidth = obra.W + 2 * g; traza(q); cx.stroke();
+      cx.strokeStyle = '#111111'; cx.lineWidth = obra.W;         traza(q); cx.stroke();
+    }
+  } else {
+    cx.lineWidth = 0.007; cx.lineJoin = 'round'; cx.lineCap = 'round';
+    cx.strokeStyle = '#111111';
+    for (const q of pts) { if (q.length < 2) continue; traza(q); cx.stroke(); }
+    // los cabos, marcados: es donde se ve si el trazo muere contra el cuerpo o al aire
+    cx.fillStyle = '#b8352a';
+    for (const q of pts) for (const z of [q[0], q[q.length - 1]]) {
+      if (!z) continue;
+      cx.beginPath(); cx.arc(z[0], z[1], 0.012, 0, 6.2832); cx.fill();
+    }
+  }
+  cx.restore();
+}
+
+// ── estado ────────────────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const LS = 'hrrs-autopsia-v1';
+// las notas van por SEMILLA y por PASO, no por posición en la rejilla: así una nota sobrevive
+// a cambiar de cinco obras, y una obra que vuelva a salir trae lo que ya se dijo de ella
+const est = { obras: [], banda: false, notas: {} };
+try {
+  const g = JSON.parse(localStorage.getItem(LS) || '{}');
+  if (g && typeof g.notas === 'object' && g.notas) est.notas = g.notas;
+} catch (e) { /* primera vez */ }
+const guarda = () => {
+  try { localStorage.setItem(LS, JSON.stringify({ notas: est.notas })); } catch (e) {}
+};
+const N = (k) => (est.notas[k] || '');
+const pon = (k, v) => {
+  if (v.trim()) est.notas[k] = v; else delete est.notas[k];
+  guarda(); marcador();
+};
+const marcador = () => { $('nn').textContent = Object.keys(est.notas).length; };
+
+const avisa = (t) => {
+  const a = $('aviso'); a.textContent = t;
+  clearTimeout(avisa._t); avisa._t = setTimeout(() => { a.textContent = ''; }, 2600);
+};
+
+// ── las cinco obras ───────────────────────────────────────────────────────────
+// De las que ya se han mirado en la hoja de contactos: dos que funcionan y tres que no, que
+// es donde está la pregunta. Con `Otras cinco` se sortean, porque una elección mía no debe
+// ser el único material del juicio.
+const ARRANQUE = [0xb54c8031, 0x2e2a9afd, 0x17153a62, 0x8ff31d2e, 0xcc62608c];
+
+function cargaObras(semillas) {
+  est.obras = semillas.map((s) => {
+    const c = circuito(s >>> 0, { pasos: true });
+    return { seed: s >>> 0, c };
+  }).filter((o) => o.c.pasos && o.c.pasos.length);
+  construye();
+}
+
+function textarea(clase, clave, hueco) {
+  const ta = document.createElement('textarea');
+  ta.className = 'nota' + (clase ? ' ' + clase : '');
+  ta.value = N(clave);
+  ta.placeholder = hueco;
+  ta.oninput = () => {
+    pon(clave, ta.value);
+    const td = ta.closest('td');
+    if (td) td.classList.toggle('connota', !!ta.value.trim());
+  };
+  return ta;
+}
+
+// SE CONSTRUYE UNA VEZ Y LUEGO SE TOCA EN SITIO. Reconstruir la tabla al escribir borraría lo
+// escrito y mandaría el foco al limbo — es el mismo fallo que se comió la primera tanda.
+function construye() {
+  const t = $('tabla');
+  t.innerHTML = '';
+  if (!est.obras.length) return;
+  const pasos = est.obras[0].c.pasos;
+
+  const thead = document.createElement('thead');
+  const tr = document.createElement('tr');
+  const esquina = document.createElement('th');
+  esquina.className = 'obra';
+  esquina.innerHTML = '<span class="s">obra \\ paso</span>' +
+                      '<span class="t">la nota de la fila va aquí</span>';
+  tr.appendChild(esquina);
+  pasos.forEach((p, i) => {
+    const th = document.createElement('th');
+    th.className = 'paso';
+    const partes = p.etq.split('·');
+    const n = document.createElement('span'); n.className = 'n';
+    n.textContent = 'paso ' + (partes[0] || '').trim();
+    const q = document.createElement('span'); q.className = 'q';
+    q.textContent = (partes[1] || p.etq).trim();
+    const d = document.createElement('span'); d.className = 'd';
+    d.textContent = p.nota;
+    th.appendChild(n); th.appendChild(q); th.appendChild(d);
+    th.appendChild(textarea('', 'paso:' + i,
+      'Qué se lleva SIEMPRE este paso'));
+    tr.appendChild(th);
+  });
+  thead.appendChild(tr); t.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for (const o of est.obras) {
+    const fila = document.createElement('tr');
+    const th = document.createElement('th');
+    th.className = 'obra';
+    const s = document.createElement('span'); s.className = 's';
+    s.textContent = '#' + o.seed.toString(16);
+    const info = document.createElement('span'); info.className = 't';
+    info.textContent = o.c.tipo + ' · ' + o.c.trazos.length + ' trazos';
+    th.appendChild(s); th.appendChild(info);
+    th.appendChild(textarea('', 'obra:' + o.seed, 'Qué le falta a esta obra'));
+    fila.appendChild(th);
+
+    o.lienzos = [];
+    o.c.pasos.forEach((p, i) => {
+      const td = document.createElement('td');
+      td.className = 'celda';
+      const cv = document.createElement('canvas');
+      cv.className = 'lienzo';
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = 206, h = Math.round(206 * (o.c.fh / o.c.fw));
+      cv.width = w * dpr; cv.height = h * dpr;
+      cv.style.aspectRatio = w + ' / ' + h;
+      cv.getContext('2d').scale(dpr, dpr);
+      td.appendChild(cv);
+      const clave = o.seed + ':' + i;
+      td.appendChild(textarea('', clave, '…'));
+      td.classList.toggle('connota', !!N(clave).trim());
+      fila.appendChild(td);
+      o.lienzos.push({ cv, paso: p });
+    });
+    tbody.appendChild(fila);
+  }
+  t.appendChild(tbody);
+  redibuja(); marcador();
+}
+
+function redibuja() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  for (const o of est.obras) {
+    if (!o.lienzos) continue;
+    for (const l of o.lienzos) {
+      const modo = est.banda ? 'banda' : l.paso.modo;
+      dibuja(l.cv.getContext('2d'), l.cv.width / dpr, l.cv.height / dpr,
+             o.c, l.paso.trazos, modo);
+    }
+  }
+}
+
+// ── mandos ────────────────────────────────────────────────────────────────────
+$('otras').onclick = () => {
+  const s = [];
+  for (let i = 0; i < 5; i++) s.push((Math.floor(Math.random() * 0xffffffff) >>> 0) || 1);
+  cargaObras(s);
+};
+$('modo').onclick = () => {
+  est.banda = !est.banda;
+  $('modo').setAttribute('aria-pressed', est.banda ? 'true' : 'false');
+  $('modo').textContent = est.banda ? 'Ver cada paso como es' : 'Ver todo en banda';
+  redibuja();
+};
+$('copiar').onclick = async () => {
+  const claves = Object.keys(est.notas);
+  if (!claves.length) { avisa('Todavía no hay nada apuntado'); return; }
+  const pasos = est.obras.length ? est.obras[0].c.pasos.map((p) => p.etq) : [];
+  const out = { pasos, porPaso: {}, porObra: {}, porCelda: {} };
+  for (const k of claves) {
+    if (k.indexOf('paso:') === 0) out.porPaso[pasos[+k.slice(5)] || k] = est.notas[k];
+    else if (k.indexOf('obra:') === 0) out.porObra[(+k.slice(5)).toString(16)] = est.notas[k];
+    else {
+      const [s, i] = k.split(':');
+      out.porCelda[(+s).toString(16) + ' · ' + (pasos[+i] || i)] = est.notas[k];
+    }
+  }
+  const txt = JSON.stringify(out, null, 1);
+  try {
+    await navigator.clipboard.writeText(txt);
+    avisa('Copiadas ' + claves.length + ' notas');
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.style.cssText = 'position:fixed;top:8%;left:8%;width:84%;height:70%;z-index:9;' +
+                       'font-family:var(--mono);font-size:11px';
+    document.body.appendChild(ta); ta.select();
+    avisa('Selecciona y copia a mano, luego Esc');
+    ta.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') ta.remove(); });
+  }
+};
+$('vaciar').onclick = () => {
+  if (!Object.keys(est.notas).length) return;
+  est.notas = {}; guarda(); construye();
+  avisa('Borrado todo lo apuntado');
+};
+
+cargaObras(ARRANQUE);
+</script>
