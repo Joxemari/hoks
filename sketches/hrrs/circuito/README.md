@@ -21,6 +21,57 @@ en las otras cinco. **El trazo es un árbol, no un camino**, y eso no está impl
 `esencia.py` mide los invariantes del circuito sobre esos ejes. `gen.js` es el generador
 que intenta cumplirlos y `medir.js` lo mide con la misma vara.
 
+## R4 ES UN ERROR, y eso cambia dos cosas
+
+Palabras del autor: **«r4 es un error, nunca debe fundir.»** Las bandas no se funden jamás, y
+eso deja de ser una tendencia medida para ser una **regla absoluta**.
+
+**Primero: el generador la rompía en el 63 % de las obras.** Medido sobre el píxel, no sobre
+la geometría, porque fundirse es un hecho del dibujo: dos centros que no se cruzan pueden
+pasar a menos de una anchura y las bandas se tocan igual. La tinta de una obra tiene que tener
+exactamente tantos trozos conectados como trazos, y salían menos.
+
+Dos causas, las dos mías y de bulto:
+
+- **El «solape justificado» mandaba una banda encima de otra** (`meta = 0`). Eso es fundir por
+  diseño. Su idea y su regla se reconcilian de una manera: la fuerza de solape dice **cuánto se
+  arrima**, hasta el canal y nunca a través. Y el corte de cruces **eximía** a los cruces
+  justificados, cuando un cruce *es* una fusión.
+- **El canal se medía vértice a vértice.** Dos tramos pasan a menos de una anchura entre
+  vértice y vértice y las bandas se tocan igual. Ahora se mide **tramo contra tramo** y se abre
+  a empujones hasta que cabe (`abreCanal`).
+
+`funde.js` es el detector y `controles.sh` lo rompe a propósito de tres maneras — sin abrir el
+canal (77 % funde), midiendo sólo los vértices (53 %) y con el suelo del corredor por debajo de
+la anchura de banda (67 %)—. **Un cero sin control no significa nada.** Y un control que *no*
+disparó también dijo algo: devolver el `meta = 0` no funde, porque `abreCanal` lo limpia
+después. La pieza que sostiene la regla es abrir el canal, no el cambio del solape.
+
+Queda un residuo honesto: **2 obras de 60 salen con una banda PARTIDA** por el foso de otra —
+el mismo defecto por el otro lado, y una banda interrumpida es tan falsa como dos fundidas.
+
+**Segundo: r4 contaminaba los objetivos.** Al fundirse corrompió su propia geometría trazada —
+`cuerda` **0,23** cuando las otras cinco van de 0,59 a 0,84, y **cinco cabos tocando el borde**
+cuando las demás tienen cero o uno. Las medianas cambian al quitarlo:
+
+| rasgo | con r4 | sin r4 | |
+|---|---|---|---|
+| **largo del trazo** | 0,644 | **0,568** | **−12 %** |
+| **reparto** | 1,565 | **1,800** | **+15 %** |
+| **giro** | 32 | **35** | +9 % |
+| quiebros por lado | 7,55 | 6,90 | −9 % |
+| trazos | 7,5 | 8,0 | +7 % |
+| sobre los ejes | 0,515 | 0,490 | −5 % |
+| polo | 0,405 | 0,380 | −6 % |
+| cuerda | 0,76 | 0,79 | +4 % |
+
+Y de ahí sale **el peor error de método de toda la sesión**: la familia llevaba media sesión
+persiguiendo un trazo de 0,64 que no existe, y yo subí la longitud de siembra **dos veces**
+para llegar a él. Tres veredictos se dan la vuelta al corregirlo.
+
+`acomp` y `cabosLibres` se quedan como estaban: son los valores recalculados en anchuras de
+banda y no se sabe cuál de los seis era r4, así que quitarlo a ciegas sería inventar.
+
 ## Los dos invariantes que mandan
 
 **LOS CENTROS NO SE CRUZAN.** Un cruce en 220 pares posibles, en las seis. La familia
@@ -257,7 +308,10 @@ un dato: no es un fallo de ajuste.
   lo resuelven con tiradas de eje **largas** y transiciones por los oblicuos: el rumbo
   tendría que durar un tramo declarado, no decidirse tramo a tramo.
 - **El cierre (0,40 contra 0,30) y los cabos al aire (0,07 contra 0,18).**
-- **Componer.** Varias obras dejan media hoja vacía. Falta el paso 4 mirando el conjunto.
+- **Componer, y ahora más.** Con el canal garantizado y el trazo en su largo real, la mitad de
+  las obras salen **en confeti**: bandas cortas y sueltas sin relación entre sí. Abrir el canal
+  separa y el trazo corto no llega a nadie, así que la cohesión se queda sin de dónde salir. Es
+  el mismo agujero que el acompañamiento, visto desde la composición.
 - **Las ramas.** Cinco en r6, ninguna en las otras cinco. El trazo es un árbol y el
   generador sólo hace caminos.
 

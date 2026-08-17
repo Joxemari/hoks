@@ -1,4 +1,9 @@
-# Referencias
+# Las referencias
+
+> **r4 NO ES VÁLIDA para la separación de bandas.** El autor: «r4 es un error, nunca debe
+> fundir». Y al fundirse corrompió su propia geometría trazada —`cuerda` 0,23 contra 0,59–0,84
+> de las otras cinco, cinco cabos tocando el borde contra cero o uno—, así que **sus números
+> quedan fuera de los objetivos**: ver `sketches/hrrs/circuito/README.md`.
 
 Aquí van las imágenes de referencia contra las que se juzga cada iteración. **No se
 commitean**: son obra de terceros y este repo es público —GitHub Pages sirve la
