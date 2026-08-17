@@ -1003,62 +1003,94 @@ function circuito(seed, opt) {
   }
   const hueco = huecoMinimo(trazos);
 
-  // ── EL CUERPO: LA BANDA SE RELLENA HASTA EL MARGEN ────────────────────────────
-  // «El centro de trazos seguiría siendo el mismo, pero rellenaríamos la diferencia hasta dejar
-  // el margen entre los trazos.» O sea: la banda NO es de anchura constante. W es su mínimo, y
-  // allí donde hay sitio la tinta CRECE hacia el vecino hasta dejar el canal — y crece por cada
-  // lado por separado, así que el centro puede no quedar en el centro visual. Es lo que el autor
-  // describió hace mucho («un punto central puede no ser central visualmente porque el trazo se
-  // ha rellenado más hacia la derecha que hacia la izquierda»), y es lo que hace que los márgenes
-  // se lean constantes: lo constante no es la banda, es el hueco que queda entre dos.
+  // ── EL CUERPO: EL RELLENO HASTA EL MARGEN, Y EL FILO ──────────────────────────
   //
-  // Y así el canal sale de la GEOMETRÍA y no de pintar un foso blanco encima. El foso era un
-  // apaño: tapaba al vecino para fabricar un canal que la banda no dejaba.
+  // Dos cosas a la vez, y las dos medidas sobre los originales.
+  //
+  // EL RELLENO. «El centro de trazos seguiría siendo el mismo, pero rellenaríamos la diferencia
+  // hasta dejar el margen entre los trazos.» La banda NO es de anchura constante: W es su mínimo
+  // y donde hay sitio la tinta crece hacia el vecino hasta dejar el canal, POR CADA LADO POR
+  // SEPARADO, así que el centro puede no quedar en el centro visual. Lo constante no es la banda,
+  // es el hueco que queda entre dos.
+  //
+  // EL FILO. «Los trazos parecen demasiado vectoriales; los de Chillida tienen cierto contorno,
+  // cierto carácter orgánico.» Cortando las bandas reales perpendiculares a su eje y midiendo
+  // hasta dónde llega la tinta (`filo.py`):
+  //
+  //     sd de la semianchura ........ 0,215 anchuras de banda
+  //     parte rápida (tras quitarle una media móvil de una anchura) ... 0,061
+  //     escala de la variación ...... 0,3 anchuras
+  //     correlación entre los dos filos ... +0,32
+  //
+  // Yo tenía una sola onda de amplitud 0,05 y varias anchuras de largo: cuatro veces poco y diez
+  // veces lento. Y sobre todo, el contorno se construía sobre los VÉRTICES DEL EJE —cuatro o cinco
+  // por trazo— así que no podía variar cada 0,3 anchuras ni queriendo. Ahora el eje se remuestrea
+  // fino y el filo lleva tres octavas: una lenta que engorda y adelgaza la banda, una media, y una
+  // rápida que es el temblor del corte. Y un tercio del temblor es COMÚN a los dos filos —la banda
+  // cambia de grosor— y dos tercios propios de cada uno —el filo tiembla y el eje no se mueve—,
+  // que es lo que dice esa correlación de +0,32.
   const MARGEN = W * CANAL;
-  const CRECE = 1.7;      // hasta cuánto puede engordar sobre su mínimo
-  const semis = [], tope = [];
+  const CRECE = 1.7;
+  const PASO_FILO = W * 0.16;                 // para que el filo pueda variar a 0,3 anchuras
+  // la desviación del filo. En las obras que el autor eligió —r1, r4, r5— vale 0,177 y 0,117, así
+  // que el rango es ése y no el de las seis: r2 y r6 desvían el doble porque son de taco.
+  const SD_FILO = rng.range(0.12, 0.20);
+  const COMUN = 0.32;                         // cuánto comparten los dos filos
+
+  // ruido correlacionado y determinista: suma de octavas, con su fase
+  const octavas = () => {
+    const o = [];
+    // La octava rápida se queda corta A PROPÓSITO. Medida sale en 0,061 anchuras, pero buena
+    // parte de eso es ruido de binarización del escaneo y no del cuadro: puesta entera, el filo
+    // sale en diente de sierra, que es otra manera de ser digital. Lo que se ve en las seis es una
+    // ondulación confiada con algún mordisco, no una serración constante.
+    for (const [lam, amp] of [[4.0, 0.66], [1.5, 0.27], [0.55, 0.07]])
+      o.push({ lam, amp, ph: rng.range(0, 6.2832) });
+    return o;
+  };
+  const evalua = (o, u) => {
+    let v = 0;
+    for (const c of o) v += c.amp * Math.sin(u / c.lam * 6.2832 + c.ph);
+    return v;
+  };
+
+  const semis = [], ejes = [];
   for (let k = 0; k < trazos.length; k++) {
-    const t = trazos[k], sm = [];
-    for (let i = 0; i < t.length; i++) {
-      const a = t[Math.max(0, i - 1)], b = t[Math.min(t.length - 1, i + 1)];
+    // 1. el eje, remuestreado fino
+    const t = trazos[k], fino = [t[0]];
+    for (let i = 0; i < t.length - 1; i++) {
+      const L = hy(t[i + 1][0] - t[i][0], t[i + 1][1] - t[i][1]);
+      const n2 = Math.max(1, Math.round(L / PASO_FILO));
+      for (let z = 1; z <= n2; z++)
+        fino.push([t[i][0] + (t[i + 1][0] - t[i][0]) * z / n2,
+                   t[i][1] + (t[i + 1][1] - t[i][1]) * z / n2]);
+    }
+    ejes.push(fino);
+    const m = fino.length, sm = [];
+    // 2. el sitio que hay a cada lado
+    for (let i = 0; i < m; i++) {
+      const a = fino[Math.max(0, i - 1)], b = fino[Math.min(m - 1, i + 1)];
       const d = Math.atan2(b[1] - a[1], b[0] - a[0]);
       const nx = -Math.sin(d), ny = Math.cos(d);
       const lado = [W / 2, W / 2];
       for (const s2 of [0, 1]) {
         const sg = s2 === 0 ? 1 : -1;
-        // EL HUECO SE MIDE ENTRE TRAMOS, no desde el vértice. Midiéndolo desde el vértice, entre
-        // vértice y vértice el hueco es más pequeño y el relleno se pasa: una obra de cada sesenta
-        // acababa fundiendo. Es la TERCERA vez que este mismo error aparece en esta familia —el
-        // suelo del campo, el abrir el canal y ahora el relleno— y las tres veces por lo mismo:
-        // la regla es sobre tramos, así que la medida tiene que ser sobre tramos.
-        // EL LADO NO SE DECIDE CON UN SOLO PUNTO. Se cogía el punto más cercano del vecino y, si
-        // ése caía al otro lado, se descartaba al vecino ENTERO para este borde — aunque otra parte
-        // suya sí estuviera enfrente. Así un trazo crecía 0,83 anchuras hacia otro que tenía al
-        // lado y las dos bandas se tocaban. Hay que mirar sólo los trozos del vecino que están de
-        // este lado, y de ellos el más próximo.
-        //
-        // Y el hueco se mide entre TRAMOS, no desde el vértice: es la tercera vez que este mismo
-        // error aparece en la familia —el suelo del campo, el abrir el canal y ahora el relleno— y
-        // las tres por lo mismo, que la regla es sobre tramos y la medida era sobre vértices.
         let libre = Infinity;
         for (let j = 0; j < trazos.length; j++) {
           if (j === k) continue;
           const o = trazos[j];
           for (let z = 0; z < o.length - 1; z++) {
             const mx = (o[z][0] + o[z + 1][0]) / 2, my = (o[z][1] + o[z + 1][1]) / 2;
-            if ((mx - t[i][0]) * nx * sg + (my - t[i][1]) * ny * sg <= 0) continue;
-            let d1 = Math.min(hy(t[i][0] - o[z][0], t[i][1] - o[z][1]),
-                              hy(t[i][0] - o[z + 1][0], t[i][1] - o[z + 1][1]));
+            if ((mx - fino[i][0]) * nx * sg + (my - fino[i][1]) * ny * sg <= 0) continue;
+            let d1 = Math.min(hy(fino[i][0] - o[z][0], fino[i][1] - o[z][1]),
+                              hy(fino[i][0] - o[z + 1][0], fino[i][1] - o[z + 1][1]));
             for (const par of [[i - 1, i], [i, i + 1]]) {
-              if (par[0] < 0 || par[1] > t.length - 1) continue;
-              d1 = Math.min(d1, distTramos(t[par[0]], t[par[1]], o[z], o[z + 1]));
+              if (par[0] < 0 || par[1] > m - 1) continue;
+              d1 = Math.min(d1, distTramos(fino[par[0]], fino[par[1]], o[z], o[z + 1]));
             }
             libre = Math.min(libre, d1);
           }
         }
-        // SE CRECE HACIA UN VECINO, no hacia el vacío. Sin este alcance, un borde sin nadie
-        // enfrente engorda hasta el tope y la obra sale a lozas: rellenar hasta el margen sólo
-        // significa algo cuando hay un margen que dejar.
         const ALCANCE = W * 3.2;
         const hasta = (isFinite(libre) && libre < ALCANCE) ? (libre - MARGEN) / 2 : W / 2;
         lado[s2] = Math.max(W * 0.42, Math.min(W / 2 * CRECE, hasta));
@@ -1066,50 +1098,60 @@ function circuito(seed, opt) {
       sm.push(lado);
     }
     semis.push(sm);
-    tope.push(sm.map(l => [l[0], l[1]]));   // el sitio que hay, para no pasarse al modular el filo
   }
 
   // ── EL CONTORNO: DOS O TRES CALIDADES DE TRAZO ────────────────────────────────
-  // «Yo distingo dos o tres contornos de trazos, podrían alternarse o relacionarlos con el
-  // grosor.» Tres, y cada obra elige dos y los alterna; cuál le toca a cada trazo lo inclina su
-  // grosor, porque una banda fina y una gorda no se cortan igual:
-  //
-  //   LIMPIO   el borde recto. Es el de la banda fina.
-  //   VIBRADO  el borde ondula, y cada lado por su cuenta. NO es que el trazo curve —eso era la
-  //            curva de nivel que había que matar— es que el FILO tiembla. Ahí está lo orgánico.
-  //   GUBIA    engorda por el medio y afina en los cabos, como un corte de gubia.
+  // «Distingo dos o tres contornos de trazos, podrían alternarse o relacionarlos con el grosor.»
+  // Tres, la obra elige dos y los alterna, y el grosor inclina cuál toca. Lo que cambia entre
+  // ellos es CUÁNTO respira el filo y cómo: el temblor medido es de todos, la gubia es del corte.
   const CONTORNOS = ['limpio', 'vibrado', 'gubia'];
-  // dos DISTINTOS: si la obra elige el mismo dos veces no alterna nada
   const c0 = rng.int(0, 2);
   const dosDe = [CONTORNOS[c0], CONTORNOS[(c0 + 1 + rng.int(0, 1)) % 3]];
+  // CUÁNTA HUELLA DE TACO tiene esta obra. Medido en las seis: r6 casi plano (sd 3 % del rango) y
+  // r1, r2 y r3 muy mordidos (17–28 %). No es una constante: es la técnica de cada obra.
+  const taco = rng.bool(0.30) ? rng.range(0, 0.04) : rng.range(0.12, 0.34);
   const contornos = [];
   for (let k = 0; k < trazos.length; k++) {
-    const gordo = semis[k].reduce((a, b) => a + b[0] + b[1], 0) / semis[k].length / W;
-    const cual = rng.bool(Math.max(0.1, Math.min(0.9, 0.5 + 0.30 * (gordo - 1)))) ? 1 : 0;
-    contornos.push(dosDe[cual]);
-    const c = dosDe[cual];
-    const f = [rng.range(1.4, 3.2), rng.range(1.4, 3.2)];
-    const ph = [rng.range(0, 6.2832), rng.range(0, 6.2832)];
-    const amp = c === 'vibrado' ? rng.range(0.10, 0.20) : 0;
     const m = semis[k].length;
+    const gordo = semis[k].reduce((a, b) => a + b[0] + b[1], 0) / m / W;
+    const cual = rng.bool(Math.max(0.1, Math.min(0.9, 0.5 + 0.30 * (gordo - 1)))) ? 1 : 0;
+    const c = dosDe[cual];
+    contornos.push(c);
+    const A = c === 'limpio' ? 0.62 : c === 'vibrado' ? 1.25 : 0.85;
+    const oc = [octavas(), octavas()], oComun = octavas();
+    // el largo del trazo en anchuras, que es la unidad del ruido
+    const Ltot = largoDe(ejes[k]) / W;
+    const tope = semis[k].map(l => [l[0], l[1]]);
     for (let i = 0; i < m; i++) {
-      const u = m > 1 ? i / (m - 1) : 0.5;
+      const u = Ltot * (m > 1 ? i / (m - 1) : 0.5);
+      const com = evalua(oComun, u);
       for (const s2 of [0, 1]) {
-        let g = 1 + amp * Math.sin(u * f[s2] * 6.2832 + ph[s2]);
-        if (c === 'gubia') g *= 0.72 + 0.46 * Math.sin(Math.PI * u);
-        // Y SE VUELVE A RECORTAR AL SITIO QUE HAY. El vibrado multiplica hasta 1,20 y lo hacía
-        // DESPUÉS de calcular el hueco disponible, así que se comía el margen y una obra de cada
-        // sesenta acababa fundiendo. El filo puede temblar, pero no hacia dentro del canal.
-        semis[k][i][s2] = Math.min(semis[k][i][s2] * g, tope[k][i][s2]);
+        let v = SD_FILO * A * (COMUN * com + (1 - COMUN) * evalua(oc[s2], u));
+        if (c === 'gubia') v += (0.72 + 0.46 * Math.sin(Math.PI * i / Math.max(1, m - 1)) - 1) * 0.5;
+        // el filo respira sobre la anchura, y nunca hacia dentro del canal
+        semis[k][i][s2] = Math.max(W * 0.30, Math.min(tope[i][s2], semis[k][i][s2] + v * W));
       }
     }
   }
+  // Y SE ALISA EL FILO. Sin esto el contorno son cientos de segmentos rectos entre muestras y el
+  // borde queda picado; una pasada de media móvil corta lo que queda de serración sin tocar la
+  // ondulación, que es la que lleva el carácter.
+  for (const sm of semis) {
+    for (let v = 0; v < 2; v++) {
+      const cp = sm.map(l => [l[0], l[1]]);
+      for (let i = 1; i < sm.length - 1; i++)
+        for (const s2 of [0, 1])
+          sm[i][s2] = cp[i][s2] * 0.5 + cp[i - 1][s2] * 0.25 + cp[i + 1][s2] * 0.25;
+    }
+  }
+  trazos.length = 0;
+  for (const e of ejes) trazos.push(e);   // el eje fino ES el trazo: el contorno cuelga de él
 
   foto('6 · con densidad', 'banda',
        'La banda, cortada a la medida del hueco que dejó la composición. Por eso no puede ' +
        'fundirse: no hace falta abrir ningún canal, ya cabe.');
 
-  return { trazos, masas, cats, destinos, semis, contornos, fw, fh, W, sep, hueco, rumbos, tipo, fuerza, G, solMedia,
+  return { trazos, masas, cats, destinos, semis, contornos, taco, fw, fh, W, sep, hueco, rumbos, tipo, fuerza, G, solMedia,
            polo: [0.5 * fw, 0.5 * fh], seed, pasos };
 }
 
@@ -1137,4 +1179,51 @@ function contornoDe(o, k) {
   return izq.concat(der.reverse());
 }
 
-if (typeof module !== 'undefined') module.exports = { circuito, Rng, contornoDe };
+// ── PINTAR ────────────────────────────────────────────────────────────────────
+// LA TÉCNICA ES LA DE r1, r4 y r5: litografía, serigrafía u offset. Tinta PLANA y filo limpio.
+// Mirando las seis a resolución nativa hay tres técnicas distintas y el autor eligió ésta:
+//
+//   r1, r4, r5 .. negro plano, filo limpio ......................... ESTA
+//   r3 ......... filo blando y papel muy granulado (aguatinta) ..... descartada: además las
+//                bandas se juntan, que va contra la regla
+//   r2, r6 ..... el negro lleno de motas y el filo dentado (taco) ... descartadas
+//
+// Así que aquí no hay textura de tinta, ni huella de gubia, ni línea de lápiz: probé las tres y
+// las tres eran la respuesta a otra pregunta. **Todo el carácter está en el CONTORNO** — y eso es
+// lo que hace que r1 no parezca vectorial teniendo la tinta plana: el filo es limpio pero no es
+// recto, porque lo cortó una mano.
+//
+// El único añadido es un grano de papel muy leve, que en r1 se ve y en r4 casi no.
+function pinta(cx, Wpx, Hpx, o, opt) {
+  opt = opt || {};
+  const esc = Math.min(Wpx / o.fw, Hpx / o.fh);
+  const ox = (Wpx - o.fw * esc) / 2, oy = (Hpx - o.fh * esc) / 2;
+  const rng = new Rng((o.seed ^ 0x9e3779b9) >>> 0);
+  cx.save();
+  cx.fillStyle = opt.papel || '#ffffff';
+  cx.fillRect(0, 0, Wpx, Hpx);
+  cx.translate(ox, oy); cx.scale(esc, esc);
+  cx.fillStyle = opt.tinta || '#151412';
+  for (let k = 0; k < o.trazos.length; k++) {
+    const ct = contornoDe(o, k);
+    if (ct.length < 3) continue;
+    cx.beginPath(); cx.moveTo(ct[0][0], ct[0][1]);
+    for (let i = 1; i < ct.length; i++) cx.lineTo(ct[i][0], ct[i][1]);
+    cx.closePath(); cx.fill();
+  }
+  cx.restore();
+  // el grano del papel, apenas: en r1 se ve y en r4 casi no
+  if ((opt.grano == null ? 1 : opt.grano) > 0 && typeof document !== 'undefined') {
+    cx.save();
+    const n = Math.round(Wpx * Hpx / 900);
+    for (let i = 0; i < n; i++) {
+      cx.globalAlpha = rng.range(0.012, 0.045);
+      cx.fillStyle = rng.bool(0.5) ? '#000' : '#fff';
+      const x = rng.range(0, Wpx), y = rng.range(0, Hpx);
+      cx.fillRect(x, y, rng.range(0.7, 1.8), rng.range(0.7, 1.8));
+    }
+    cx.restore();
+  }
+}
+
+if (typeof module !== 'undefined') module.exports = { circuito, Rng, contornoDe, pinta };

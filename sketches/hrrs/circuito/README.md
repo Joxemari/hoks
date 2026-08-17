@@ -335,6 +335,63 @@ un dato: no es un fallo de ajuste.
 | **acompañado** | 0,35 | 0,39 | 0,38 | 0,52 | ↑ |
 | cabos al aire | 0,10 | 0,06 | 0,07 | 0,18 | |
 
+## LA TÉCNICA, mirada en los originales
+
+*«Los trazos parecen demasiado vectoriales. Los de Chillida tienen cierto contorno, cierto
+carácter orgánico.»* Y luego: *«tiene que ser la de Chillida. No sé si era grabada, pero los
+grabados dejan imperfecciones.»*
+
+No se adivina: se recortan las bandas reales a resolución nativa y se mira. **Y no hay una
+técnica, hay tres:**
+
+| | el negro | el filo | qué es |
+|---|---|---|---|
+| **r1, r4, r5** | **plano** | **limpio** | litografía, serigrafía u offset |
+| r3 | plano, papel muy granulado | **blando** | aguatinta |
+| r2, r6 | **lleno de motas claras** | **dentado** | xilografía o linóleo: la gubia deja el taco irregular |
+
+Medido dentro de la tinta de las de taco: motas de 2–3 px —**0,06–0,09 anchuras de banda**—,
+elongación **2 a 1**, cobertura del 11 al 23 %. Y r6 casi plano: desviación del 3 % del rango
+contra el 17–28 % de las otras.
+
+**El autor eligió r1, r4 y r5**, descartó r3 —*«además se juntan y no tiene sentido para lo que
+estamos haciendo»*, que es exactamente la regla de no fundir— y dejó r2 y r6 fuera. Así que
+**tinta plana y filo limpio**, y *«lo importante es que parezca orgánico y que las rectas no sean
+ultra digitales»*.
+
+### Tres texturas probadas y tiradas, con su razón
+
+- **El pastel** (relleno gris mordido por el diente del papel): con mordiscos grandes sale un
+  **cielo estrellado**, que es ruido de fotocopia y no materia.
+- **La pasada de pastel a lo largo del trazo** (quitar tinta donde la mano apretó menos): sale
+  **cromado**. Los tramos con remate redondo se solapan, el alfa se acumula y la banda parece un
+  tubo con luz.
+- **La huella de gubia** (motas alargadas en la dirección del trazo, del tamaño medido): es
+  correcta —es r2 y r6— y el autor no la quiere.
+
+Lo que queda es lo que hace que **r1 no parezca vectorial teniendo la tinta plana**: el filo es
+limpio pero **no es recto**, porque lo cortó una mano. Todo el carácter está en el contorno.
+
+### El filo, medido y reproducido
+
+`filo.py` corta las bandas reales perpendiculares a su eje y mide hasta dónde llega la tinta:
+
+| | las seis | **r1 / r5** | el generador |
+|---|---|---|---|
+| sd de la semianchura | 0,215 | **0,177 / 0,117** | **0,119** |
+| parte rápida | 0,061 | — | 0,040 |
+| escala de la variación | 0,3 anchuras | — | — |
+| correlación entre los dos filos | +0,32 | — | 0,12 |
+
+El rango que importa es el de r1 y r5, no el de las seis: **r2 y r6 desvían el doble porque son de
+taco**. Y para poder variar a esa escala el contorno se construye sobre un **eje remuestreado
+fino** —antes colgaba de los cuatro o cinco vértices del trazo, así que no podía respirar ni
+queriendo— con **tres octavas**: una lenta que engorda y adelgaza la banda, una media, y una rápida
+muy corta a propósito, porque puesta entera el filo sale **en diente de sierra**, que es otra manera
+de ser digital. Un tercio del temblor es común a los dos filos —la banda cambia de grosor— y dos
+tercios propios de cada uno —el filo tiembla y el eje no se mueve—, que es lo que dice esa
+correlación de +0,32.
+
 ## LOS CABOS DE r1 A r6, uno a uno
 
 102 cabos en las seis. `cabos.py` los clasifica sobre los ejes marcados a mano y en **anchuras de
