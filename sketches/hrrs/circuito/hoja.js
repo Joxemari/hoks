@@ -12,13 +12,15 @@ const N = parseInt(process.argv[3] || '6', 10);
 const S0 = parseInt(process.argv[4] || '3', 10);
 const LADO = parseInt(process.argv[5] || '420', 10);
 const SEEDS = process.argv.slice(6).map(Number).filter(n => !isNaN(n));
+// para poder poner el de antes al lado del de ahora sin tocar nada: HRRS_GEN=/tmp/gen_antes.js
+const GEN = process.env.HRRS_GEN || path.resolve(__dirname, 'gen.js');
 
 (async () => {
   const b = await chromium.launch();
   const p = await b.newPage();
   p.on('console', m => { if (m.type() === 'error') console.error('  [page]', m.text()); });
   await p.setContent('<body style="margin:0"></body>');
-  await p.addScriptTag({ path: path.resolve(__dirname, 'gen.js') });
+  await p.addScriptTag({ path: GEN });
 
   const png = await p.evaluate(({ N, S0, LADO, SEEDS }) => {
     const seeds = SEEDS.length ? SEEDS : Array.from({ length: N }, (_, i) => S0 + i * 14 + 1);
