@@ -1360,7 +1360,7 @@
   function render(f,cv,px,s){cv.width=px;cv.height=px;var ctx=cv.getContext('2d');var o={params:{field:'square',grainScale:1}};
     try{H[f].render(ctx,px,px,s,o);}catch(e){try{H.PLLS.render(ctx,px,px,s,o);}catch(_){ctx.fillStyle='#efeee9';ctx.fillRect(0,0,px,px);}}}
 
-  var LINES=["One of one.","A system's residue.","The rule is the work; this is its shadow.","Chosen, then kept.","Producing the unrepeatable, in series.","What is visible is only a shadow."];
+  var LINES=["One of one.","The rule is the work. This is its shadow.","A system's residue.","Chosen, then kept.","Producing the unrepeatable, in series.","What is visible is only a shadow.","One system, read once more.","The line only makes originals.","Not the image — the rule behind it.","Kept. The rest, discarded.","Seeded, grown, chosen.","The essence is in the discard.","Mass-produced. Unrepeatable."];
   var TAGS="#generativeart #algorithmicart #codeart #hoks";
   function caption(f,s){ var line=LINES[(Math.random()*LINES.length)|0];
     return line+"\n\n"+f+" · seed "+s+" · 1/1\n\n"+TAGS; }
