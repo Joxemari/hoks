@@ -797,6 +797,84 @@ rareza entera**. Las tablas `F_*`, la `p` de cada gubia, `P_MAX` y los umbrales 
 `rarComb` son todas frecuencias medidas, así que cambiar el sorteo las invalida.
 Dos pasadas de `verificacion/` y vuelven a cuadrar.
 
+### Séptima revisión: el canal de la fantasma, y un sorteo que no sorteaba
+
+**El canal iba a media anchura, y se veía.** La placa fantasma lleva su halo por
+dentro, recortado contra su propio contorno para no soldarse a la vecina. Pero
+recortado *a hueso*, el halo arranca en el borde mismo de la placa y se come la
+mitad interior de la incisión: el suelo que queda entre la masa y el filo es sólo
+la media gubia que pone la vecina, cuando cualquier otro corte de la obra mide
+una entera. De ahí el «el canal sigue siendo demasiado fino, a veces inexistente»
+— y es que lo era, exactamente la mitad de fino que todos los demás.
+
+El arreglo no es ensanchar nada: **la fantasma no pide un canal distinto, pide el
+mismo**. El halo se mete media gubia hacia dentro y la placa recupera **su propio
+repaso**, que es lo que la regla 3 dice de todas — cada una se come su mitad del
+corte. Medido leyendo la imagen, con el grano apagado, sobre las obras fantasma
+de las primeras 400 seeds:
+
+```
+canal de suelo   mediana 4,5 px → 10,0 px   (la gubia mide 10)
+halo             mediana 5,0 px → 5,0 px    (sin tocar: 0,55 gubias)
+```
+
+Y hay un caso que lo explica mejor que la cifra: cuando `filo` coincide con la
+tinta —pasa en cuanto la paleta tiene dos colores y el más lejano al suelo es el
+que ya se está usando— el halo es **del mismo color que la masa de al lado**. Sin
+canal, la placa se suelda visualmente a ella y vuelve a leerse como un agujero. El
+canal no es un margen estético ahí: es lo único que declara que hay dos cosas.
+
+**Y el sorteo del fantasma no sorteaba.** Al ir a enseñar su probabilidad en el
+lab salió que no había tal probabilidad. Las dos decisiones de color se tomaban
+con `new Rng(seed ^ K).next()`, y un LCG arranca casi donde se le siembra: es el
+mismo fallo que esta carpeta ya tenía escrito para los instrumentos, cometido
+otra vez dentro del algoritmo. Medido sobre 200.000 seeds consecutivas:
+
+```
+licencia   1er tiro del LCG   20,2%  racha máxima 512   cambios     770
+           hash01             19,9%  racha máxima   8   cambios  63.858   (esperada ~7)
+fantasma   2º tiro del LCG     5,0%  racha máxima   1   cambios  20.009
+           hash01              5,1%  racha máxima   3   cambios  19.330   (esperada ~4)
+```
+
+**El porcentaje global era el correcto, y por eso no se veía.** Lo roto era la
+independencia. La licencia salía en bloques de hasta 512 seeds seguidas — una hoja
+de contactos con seeds consecutivas daba páginas enteras con licencia y páginas
+enteras sin ella. Y el fantasma, con el segundo tiro avanzando 0,0907 (casi una
+rotación exacta), caía en una **retícula**: uno de cada once, jamás dos seguidos.
+Un azar que no se repite nunca no es azar, es un patrón.
+
+Se pasa a `E.hash01`, una constante por decisión. Aquí **sí** se puede tocar,
+porque PTZD no está publicada: el aviso de no mover el `Rng` protege las obras
+guardadas de seis familias, y ésta todavía no tiene ninguna. El día que se
+publique, esto deja de ser gratis.
+
+Las dos tiradas se calculan **siempre**, se usen o no. Antes, forzar la licencia
+se saltaba su `next()` y el fantasma pasaba a leer el primer tiro en vez del
+segundo: un mando del panel movía la decisión de al lado.
+
+### Lo que subió al lab
+
+Las variables de color estaban escritas como constantes y decidiéndolo todo sin
+que se pudieran ni ver. Ahora tienen mando: **Fantasma** (auto / sí / no) con su
+probabilidad de sorteo, **Halo** en anchuras de gubia, y **Licencia** con la suya.
+Los dos sliders de probabilidad se apagan solos cuando el select fuerza la
+decisión — un mando a la vista que ya no decide nada es mentir con la interfaz.
+
+Y debajo del mando del fantasma va **la cifra que de verdad importa, medida en
+vivo**: no la del sorteo, sino cuántas obras acaban con placa. No son la misma
+porque la placa pide además tres placas o más y que a una le quepa el anillo con
+su hueco dentro, y eso depende del tipo, de la gubia y del propio halo. El lab
+tira 600 obras en lienzos de 8 px —el stream del RNG no depende del tamaño y la
+elección se decide en campo normalizado, así que un lienzo de 8 decide lo mismo
+que uno de 1000— y escribe el resultado al lado. Mueves el halo, y la cifra baja
+delante de ti.
+
+Por lo mismo, la guarda que decide si a una placa le cabe el anillo dejó de ser
+`4,5` a pelo y pasó a calcularse: `1 + 2·halo + 2,4` gubias. Con el halo por
+defecto son las 4,5 de siempre; subiéndolo, la guarda sube sola en vez de quedarse
+corta y dejar que el anillo rellene la placa.
+
 ## Medido
 
 **2000 tiradas** para las cuñas y el reparto, 1200 para la mancha, cuadrado y
@@ -810,8 +888,16 @@ cuñas       0,1% de las obras tiene un ángulo por debajo de 45° — y las que
             1,7% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
             reparto se amontona y baila entre bloques (0,9% y 2,4% sin tocar nada)
             (antes de la 5ª revisión: 20% de las obras, y los peores a 2°, 8°, 12°)
-cortos      0,7% no llega a los cortes que declara su tipo   (era el 20%)
-soldadas    0 · dos placas nunca se tocan
+cortos      0,8% no llega a los cortes que declara su tipo   (era el 20%)
+soldadas    0 · dos placas nunca se tocan — y ya SIN excepción: la fantasma dejó
+            de dar «una mancha de menos» en cuanto el halo se metió media gubia
+            hacia dentro y la placa recuperó su repaso (eran 22 de 600, luego 7
+            de 1.200 contadas aparte, ahora 0 de 1.200)
+fantasma    sorteo 5% → 4,3% de las obras (4.000 tiradas). El hueco son las que
+            no tienen tres placas o a ninguna le cabe el anillo con hueco dentro:
+            forzando el sorteo al 100%, la placa sale en el 86,8%. La anchura del
+            halo casi no lo mueve (4,33% con 0,55 gubias · 4,22% con 1,50), porque
+            la guarda escala con él y la mayoría de las placas la pasan de sobra
 recortadas  0 · ninguna obra toca el borde del pliego
 contraste   distancia de color tinta/suelo: min 140 · p50 254 · cero por debajo de
             110, que es el suelo que el propio algoritmo le exige al papel crudo
@@ -825,10 +911,12 @@ sajaduras   0 · 91%   1 · 9%    (dos, ya nunca)
 faltan      0 · 34%   1 · 47%   2 · 19%
 escalones   0 · 21%   1 · 55%   2 · 24%
 mancha      p05 16% · p50 26% · p95 40%
-flequillo   tres placas o más en el suelo de carne: 0,1% de las obras
-overall     common 40,1%  uncommon 35,2%  rare 14,9%  superrare 6,9%  legendary 2,9%
+flequillo   tres placas o más en el suelo de carne: 0,3% de las obras
+overall     common 38,8%  uncommon 34,8%  rare 16,2%  superrare 7,2%  legendary 3,0%
             (el reparto de la casa es 40/35/15/7/3, y los umbrales son sus
-             percentiles medidos sobre esta misma muestra)
+             percentiles medidos sobre esta misma muestra. Se recalibraron al
+             pasar las decisiones de color a `hash01`: el sorteo de la licencia
+             mueve las tintas, y las tintas son uno de los nueve factores)
 huella      0 de 180 obras cambia a 760 / 2400 / 4200 px, en los tres formatos
 ms          ~30 por pieza a 520 px, con grano y veta
 ```
@@ -843,6 +931,14 @@ bloque y 100/0/0 en otro sin que cambiara una línea de código. La geometría n
 estaba tocada (se sortea del tercero en adelante), pero el color sí, y con él la
 rareza. No se toca el `Rng`: cambiarlo cambiaría todas las obras guardadas de seis
 familias. Se mezcla la seed en los instrumentos, que es donde estaba el fallo.
+
+**Y luego resultó estar también dentro del algoritmo.** Las decisiones de color
+—licencia y fantasma— usaban `new Rng(seed ^ K).next()`, que es el mismo error con
+otra ropa: sembrar un LCG y leerle el primer tiro. Ahí sí se arregló, con
+`E.hash01`, porque esta familia no tiene obra publicada que proteger. Está contado
+en la séptima revisión, con las rachas medidas. La lección que queda: **un `Rng`
+derivado no es una fuente de azar, es una continuación del mismo**; si de él sólo
+se va a sacar un número, hay que mezclarlo primero.
 
 El coste por pieza subió de ~18 a ~30 ms: el grosor compara el contorno consigo
 mismo por cada candidato, y hay siete candidatos por corte. Es geometría, así que

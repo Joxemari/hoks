@@ -219,7 +219,13 @@
    * NO es la placa, es su halo. Repasando su contorno con el color de la paleta
    * más lejano al suelo, la placa deja de ser un hueco y pasa a ser una placa
    * que sólo se ve por su corte. La materia se declara por el filo, no por el
-   * relleno — que es exactamente lo que dice la familia de los cortes. */
+   * relleno — que es exactamente lo que dice la familia de los cortes.
+   *
+   * OJO CON LA PROBABILIDAD: `P_FANTASMA` es la del SORTEO, no la de las obras.
+   * Salir fantasma pide además tres placas o más y que a una le quepa el anillo
+   * con hueco dentro, así que la cifra que importa —cuántas obras acaban con
+   * placa fantasma— es bastante menor y sólo se sabe midiendo. Se mide en
+   * `verificacion/` y el lab la enseña al lado del mando. */
   const P_FANTASMA = 0.05;
   const HALO_ANCHO = 0.55;   // en anchuras de gubia, por dentro del contorno
   // Una sajadura APUNTA a otro borde y se queda corta: ni pega en él (sería un
@@ -889,9 +895,31 @@
     const filo = pal.colors.filter(c => c !== col.ground)
                    .sort((a, b) => dist(b, col.ground) - dist(a, col.ground))[0] || col.ink;
     // Las dos licencias de color, cada una con su azar derivado.
-    const rgLic = new E.Rng((seed ^ 0x11CE7C) >>> 0);
-    const suelta   = params.licencia != null ? !!params.licencia : rgLic.next() < P_LICENCIA;
-    const fantasma = params.fantasma != null ? !!params.fantasma : rgLic.next() < P_FANTASMA;
+    /* CON `hash01`, NO CON EL PRIMER TIRO DE UN Rng. Un LCG arranca casi donde
+     * se le siembra: el primer `next()` avanza 0,000388 entre semillas
+     * consecutivas, así que `new Rng(seed ^ K).next() < p` no sortea nada — parte
+     * la recta de semillas en BLOQUES. Medido sobre 200.000 consecutivas, la
+     * licencia salía en su 20,2% correcto pero en rachas de hasta 512 seguidas,
+     * con 770 cambios en vez de los ~64.000 que da el azar. Y el segundo tiro no
+     * está mejor, sólo disimula: avanza 0,0907, o sea casi una rotación exacta,
+     * y el fantasma caía en una RETÍCULA — uno de cada once, jamás dos seguidos,
+     * racha máxima 1 cuando lo esperable son 4.
+     *
+     * El porcentaje global engaña porque es el correcto. Lo que estaba roto era
+     * la independencia, y se ve en cuanto una hoja de contactos usa semillas
+     * consecutivas: páginas enteras con licencia y páginas enteras sin ella.
+     * `E.hash01` es el mezclador del motor y devuelve 19,9% y 5,1% con rachas de
+     * 8 y 3, que es lo que dice la teoría.
+     *
+     * Cada decisión con su constante, y las dos se calculan SIEMPRE, se usen o
+     * no: un mando del lab no puede mover otra decisión al pasar. */
+    const pLic  = params.pLicencia != null ? +params.pLicencia : P_LICENCIA;
+    const pFant = params.pFantasma != null ? +params.pFantasma : P_FANTASMA;
+    const tLic  = E.hash01((seed ^ 0x11CE7C) >>> 0);
+    const tFant = E.hash01((seed ^ 0xFA57A0) >>> 0);
+    const suelta   = params.licencia != null ? !!params.licencia : tLic  < pLic;
+    const fantasma = params.fantasma != null ? !!params.fantasma : tFant < pFant;
+    const haloAncho = params.halo != null ? +params.halo : HALO_ANCHO;
 
     // Campo normalizado: lado corto = 1, largo = la proporción NOMINAL. Todo se
     // decide y se mide aquí; el píxel sólo aparece al dibujar.
@@ -1211,14 +1239,22 @@
      * con dos, quitarle el cuerpo a una deja media obra. */
     let iFantasma = -1;
     if (fantasma && piezas.length >= 3) {
-      // Y tiene que caberle el anillo con hueco dentro. El halo mide una gubia por
-      // el interior; en una placa estrecha se cierra sobre sí mismo, la rellena
-      // entera y lo que sale no es una fantasma sino una placa del color del filo.
-      // Se pide carne para el anillo y para el vacío que declara.
+      /* Y TIENE QUE CABERLE EL ANILLO CON HUECO DENTRO. En una placa estrecha el
+       * halo se cierra sobre sí mismo, la rellena entera, y lo que sale no es una
+       * fantasma sino una placa del color del filo.
+       *
+       * La cuenta se hace con el halo que se vaya a pintar, no con un número
+       * fijo: cada lado se lleva media gubia de canal más `haloAncho` de halo, o
+       * sea `1 + 2·haloAncho` gubias entre los dos, y por delante hay que dejar
+       * VACIO_MIN de suelo para que la ausencia se lea como ausencia. Con el halo
+       * por defecto son las 4,5 gubias de siempre; subiendo el mando del lab, la
+       * guarda sube sola en vez de quedarse corta. */
+      const VACIO_MIN = 2.4;
+      const anchoMin = (1 + 2 * haloAncho + VACIO_MIN) * gubia.w * S;
       const orden = piezas.map((p, i) => ({ i, a: Math.abs(area(p.poly)) }))
                           .filter(o => !piezas[o.i].reserva &&
                                   grosor(piezas[o.i].poly, GROSOR_VUELTA, gubia.w * S * 0.8)
-                                    > 4.5 * gubia.w * S)
+                                    > anchoMin)
                           .sort((a, b) => a.a - b.a);
       if (orden.length) iFantasma = orden[Math.floor(orden.length / 2)].i;
     }
@@ -1266,8 +1302,18 @@
        * imagen no se veía —el filo suele ser el mismo color que la tinta, así que
        * parecía que la vecina tenía el borde algo más grueso— y lo cazó la cuenta
        * de manchas conectadas: 22 obras de 600 con menos manchas que placas, todas
-       * fantasma. Recortando contra la placa y doblando la anchura, el halo entero
-       * cae DENTRO y el canal conserva su gubia, que es la regla 3. */
+       * fantasma. Recortando contra la placa, el halo entero cae DENTRO.
+       *
+       * PERO NO A HUESO CON EL CONTORNO. Recortado y nada más, el halo arranca en
+       * el borde mismo de la placa y se come la mitad interior del canal: lo que
+       * queda de suelo es sólo la mitad que pone la vecina, media gubia, cuando
+       * cualquier otro corte de la obra mide una. Se veía —«el canal sigue siendo
+       * demasiado fino, a veces inexistente»— y es que lo era, la mitad de fino
+       * que todos los demás. La placa fantasma no pide un canal distinto: pide EL
+       * MISMO. Así que el halo se mete media gubia hacia dentro y la fantasma
+       * recupera su propio repaso, que es lo que la regla 3 dice de toda placa —
+       * cada una se come su mitad del corte. Orden: halo primero, ancho hasta el
+       * contorno, y el repaso encima le devuelve su mitad al canal. */
       const q = caras[iFantasma];
       const trazo = () => { ctx.beginPath();
         q.forEach((p, k) => (k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
@@ -1275,14 +1321,17 @@
       ctx.save();
       trazo(); ctx.clip();
       ctx.strokeStyle = filo;
-      // Anchura del halo, POR DENTRO. Se traza al doble y se recorta contra la
-      // placa, así que lo que queda es la mitad: `HALO_ANCHO` gubias de banda
-      // interior. Una gubia entera lo empata con la incisión y la placa se lee
-      // como un marco; menos, y se lee como lo que es — el corte que la declara.
-      ctx.lineWidth = gPx * 2 * HALO_ANCHO;
+      // Se traza hasta el contorno y se recorta, así que de este ancho sólo queda
+      // la mitad de dentro: media gubia de canal + `haloAncho` gubias de halo.
+      // El repaso de después se lleva la media gubia y deja el halo limpio.
+      ctx.lineWidth = gPx * (1 + 2 * haloAncho);
       trazo(); ctx.stroke();
       ctx.restore();
+      // Su mitad del corte, igual que las demás placas (bucle de arriba, del que
+      // se saltó para que ninguna vecina le borrase el halo).
       ctx.lineWidth = gPx;
+      ctx.strokeStyle = col.ground;
+      trazo(); ctx.stroke();
     }
 
     // Las sajaduras se pintan encima: son el único blanco que no es una frontera.
@@ -1350,7 +1399,10 @@
   // sobre 500 tiradas y se pusieron en los percentiles que la casa reparte
   // (≈40/35/15/7/3). La paleta va aparte en el producto y sólo empuja hacia más
   // raro, así que el reparto medido queda algo por debajo de esos números.
-  function rarComb(r) { return r > 0.0957 ? 'common' : r > 0.0222 ? 'uncommon' : r > 0.0081 ? 'rare' : r > 0.0020 ? 'superrare' : 'legendary'; }
+  // Recalibrados tras pasar las dos decisiones de color a `hash01`: cambiar un
+  // sorteo invalida la rareza entera, y el de la licencia mueve las tintas, que
+  // es uno de los nueve factores. Percentiles sobre 1.200 obras.
+  function rarComb(r) { return r > 0.0913 ? 'common' : r > 0.0201 ? 'uncommon' : r > 0.0080 ? 'rare' : r > 0.0019 ? 'superrare' : 'legendary'; }
 
   function traits(res) {
     const pTipo  = (TIPOS.find(t => t.key === res.tipo)  || { p: 0.25 }).p;

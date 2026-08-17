@@ -143,6 +143,37 @@
       </select>
       <span class="hintline">el color sigue a la ROTURA, no a la placa: cada tinta es una rama del árbol</span>
     </div>
+    <!-- LAS DECISIONES DE COLOR, CON SUS PROBABILIDADES A LA VISTA. Son las que
+         producen los outliers, y una probabilidad que no se puede mover ni ver
+         es una constante escondida. Las tres van con azar derivado del seed, así
+         que tocarlas no corre la geometría: la misma obra, otra tinta. -->
+    <div class="group">
+      <span class="lbl">Fantasma</span>
+      <select id="fant">
+        <option value="">auto</option>
+        <option value="1">sí — una placa del color del suelo</option>
+        <option value="0">no</option>
+      </select>
+      <span class="lbl" style="margin-top:6px">· sorteo <span id="pFantV">5%</span></span>
+      <input type="range" id="pFant" min="0" max="100" step="1" value="5">
+      <span class="hintline" id="fantHint">del sorteo, no de las obras: además pide ≥3 placas y sitio para el anillo</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Halo · <span id="haloV">0.55</span></span>
+      <input type="range" id="halo" min="0" max="150" step="5" value="55">
+      <span class="hintline">gubias, por DENTRO. El canal de suelo va entero por fuera de él</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Licencia</span>
+      <select id="lic">
+        <option value="">auto</option>
+        <option value="1">sí — umbrales sueltos</option>
+        <option value="0">no — siempre estrictos</option>
+      </select>
+      <span class="lbl" style="margin-top:6px">· sorteo <span id="pLicV">20%</span></span>
+      <input type="range" id="pLic" min="0" max="100" step="1" value="20">
+      <span class="hintline">afloja lado del suelo, distancia al suelo y entre tintas</span>
+    </div>
     <div class="group">
       <span class="lbl">Veta · <span id="vetaV">auto</span></span>
       <input type="range" id="veta" min="-5" max="200" step="5" value="-5">
@@ -219,6 +250,15 @@ function params() {
   if ($('tintas').value) p.tintas = parseInt($('tintas').value, 10);
   const v = parseInt($('veta').value, 10);   if (v >= 0) p.veta = v / 100;
   const f = parseInt($('faltan').value, 10); if (f >= 0) p.faltan = f;
+  // Color. Las probabilidades sólo viajan si se han movido: una receta con
+  // `pFantasma: 0.05` escrito dentro deja de seguir al algoritmo el día que la
+  // constante cambie, y una receta guardada tiene que decir lo que se decidió,
+  // no repetir lo que había por defecto.
+  if ($('fant').value) p.fantasma = $('fant').value === '1';
+  if ($('lic').value)  p.licencia = $('lic').value === '1';
+  const pf = parseInt($('pFant').value, 10); if (pf !== 5)  p.pFantasma = pf / 100;
+  const pl = parseInt($('pLic').value, 10);  if (pl !== 20) p.pLicencia = pl / 100;
+  const ha = parseInt($('halo').value, 10);  if (ha !== 55) p.halo = ha / 100;
   return p;
 }
 let palPicker = null;
@@ -331,6 +371,62 @@ $('deriva').oninput = () => { $('derivaV').textContent = $('deriva').value === '
 $('tintas').onchange = refresh;
 $('veta').oninput   = () => { $('vetaV').textContent   = $('veta').value === '-5'  ? 'auto' : ($('veta').value / 100).toFixed(2); refresh(); };
 $('faltan').oninput = () => { $('faltanV').textContent = $('faltan').value === '-1' ? 'auto' : $('faltan').value; refresh(); };
+// Color. Los dos sliders de probabilidad se apagan cuando el select fuerza la
+// decision: dejar a la vista un mando que ya no decide nada es mentir con la
+// interfaz. Y `medirFantasma()` va detras, porque la cifra que importa no es la
+// del sorteo — es cuantas obras acaban con placa.
+function syncColor() {
+  const forz = $('fant').value !== '';
+  $('pFant').disabled = forz;
+  $('pFantV').textContent = forz ? '—' : $('pFant').value + '%';
+  $('pLic').disabled = $('lic').value !== '';
+  $('pLicV').textContent = $('lic').value !== '' ? '—' : $('pLic').value + '%';
+  $('haloV').textContent = ($('halo').value / 100).toFixed(2);
+}
+$('fant').onchange = () => { syncColor(); refresh(); medirFantasma(); };
+$('lic').onchange  = () => { syncColor(); refresh(); };
+$('pFant').oninput = () => { syncColor(); refresh(); };
+$('pFant').onchange = medirFantasma;
+$('pLic').oninput  = () => { syncColor(); refresh(); };
+$('halo').oninput  = () => { syncColor(); refresh(); };
+$('halo').onchange = medirFantasma;   // el halo mueve el sitio que hace falta
+
+/* CUANTAS OBRAS ACABAN CON PLACA FANTASMA. No es la probabilidad del sorteo: la
+ * placa pide ademas tres placas o mas y que a una le quepa el anillo con hueco
+ * dentro, y esa segunda condicion depende del tipo, de la gubia y del halo. Asi
+ * que la unica forma de saberla es tirar obras y contarlas.
+ *
+ * Se hace con renders de 8 px. El stream del RNG no depende del tamano y la
+ * eleccion de la placa se decide en campo normalizado, asi que un lienzo de 8
+ * decide exactamente lo mismo que uno de 1000 y cuesta nada. Las semillas van
+ * mezcladas con hash01 y no consecutivas: consecutivas medirian la reticula del
+ * LCG en vez de la familia. */
+let midiendo = 0;
+function medirFantasma() {
+  const yo = ++midiendo;
+  const hint = $('fantHint');
+  if ($('fant').value !== '') {
+    hint.textContent = $('fant').value === '1'
+      ? 'forzado: sale si hay ≥3 placas y a una le cabe el anillo'
+      : 'forzado a no';
+    return;
+  }
+  hint.textContent = 'del sorteo, no de las obras — midiendo…';
+  setTimeout(() => {
+    if (yo !== midiendo) return;
+    const c = document.createElement('canvas'); c.width = c.height = 8;
+    const x = c.getContext('2d'), o = { ...palOpts(), params: params() };
+    const N = 600; let con = 0, ok = 0;
+    for (let i = 0; i < N; i++) {
+      const s = (HOKS.hash01(i ^ 0x5EED) * 4294967296) >>> 0;
+      try { if (WORK.render(x, 8, 8, s, o).fantasma) con++; ok++; } catch (e) {}
+    }
+    if (yo !== midiendo) return;
+    const pct = ok ? (100 * con / ok) : 0;
+    hint.textContent = `sorteo ${$('pFant').value}% → ${pct.toFixed(1)}% de las obras `
+      + `(${con}/${ok}); el resto no tiene sitio para el anillo`;
+  }, 0);
+}
 $('rot').onclick = () => { ROT = !ROT; applyFormat(); refresh(); };   // la etiqueta la pone formatControls
 $('field').onchange = refresh;
 $('bg').onchange = () => { syncBgAuto(); refresh(); };
@@ -403,8 +499,13 @@ batch = HOKSBATCH.mount($('batchPanel'), {
 // Un lote puede mezclar obras: para pintar su tira hacen falta todos los algos.
 HOKSLAB.loadAlgos(() => batch.refresh());
 applyFormat();
+syncColor();
 renderSingle();
-HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});
+// Con las paletas de verdad, no con las de arranque: la placa fantasma se elige
+// por geometria, pero medir con quince paletas o con las tres del fallback no da
+// la misma familia de obras. Por eso la medida se lanza DESPUES de cargarlas.
+HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } })
+  .catch(() => {}).then(() => medirFantasma());
 </script>
 </body>
 </html>
