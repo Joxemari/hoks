@@ -50,6 +50,10 @@ const POR_DEFECTO = {
   filo: 0.15,         // la desviación del borde (r1: 0,177 · r5: 0,117)
   filoRapido: 0.30,   // cuánta parte del filo es rápida (el resto es ondulación lenta)
   cabo: 22,           // cuánto se inclina el remate respecto a la perpendicular, en grados
+  remate: 'escuadra', // escuadra · sesgo · punta · redondo
+  vibra: 0.07,        // LA VIBRACIÓN del eje, en anchuras. Oscila y VUELVE: no es deriva.
+  vibraLam: 1.8,      // su longitud de onda, en anchuras
+  viva: 0.45,         // qué parte de las esquinas son vivas; el resto van con radio
 };
 
 // ── EL RECORRIDO ──────────────────────────────────────────────────────────────
@@ -85,7 +89,10 @@ function recorrido(rng, P) {
   for (let i = 0; i < tramos.length; i++) {
     const t = tramos[i], a = t.dir * RAD;
     const fin = [p[0] + Math.cos(a) * t.L, p[1] + Math.sin(a) * t.L];
-    if (P.radio > 0.01 && i < tramos.length - 1) {
+    // ¿esta esquina es viva o va con radio? «Combinan ángulos rectos con curvas.» No es una
+    // propiedad del trazo, es de cada esquina: un trazo tiene de las dos.
+    const estaViva = rng.bool(P.viva);
+    if (P.radio > 0.01 && !estaViva && i < tramos.length - 1) {
       // la esquina redondeada: se corta el final del tramo y se pone un arco hasta el siguiente
       const b = tramos[i + 1].dir * RAD;
       const giro = corto((tramos[i + 1].dir - t.dir));
@@ -121,6 +128,32 @@ function octavas(rng, lams) {
   return lams.map(([lam, amp]) => ({ lam, amp, ph: rng.range(0, 6.2832) }));
 }
 const evalua = (oc, u) => oc.reduce((v, c) => v + c.amp * Math.sin(u / c.lam * 6.2832 + c.ph), 0);
+
+// LA VIBRACIÓN. «Tienen curvas, pero no tienen nada de vibración, que es lo que un trazo un poco
+// orgánico suele dar en la aplicación de la tinta en el papel.»
+//
+// Y aquí había una confusión mía de bulto: la DERIVA y la VIBRACIÓN no son lo mismo. La deriva
+// acumula rumbo —cada paso gira un poco más— y curva la línea: eso daba curvas de nivel y se
+// descartó midiendo. La vibración OSCILA Y VUELVE: desplaza el eje perpendicular a sí mismo, con
+// media cero, así que el trazo va a donde iba pero no llega en línea recta. Yo quité la primera y
+// nunca puse la segunda, y por eso ninguna de las seis físicas tenía vibración.
+//
+// Va sobre el eje y no sobre el filo: es la mano, no el corte.
+function vibra(rng, eje, P) {
+  if (!(P.vibra > 0.001)) return eje;
+  const s = [0];
+  for (let i = 0; i < eje.length - 1; i++)
+    s.push(s[i] + hy(eje[i + 1][0] - eje[i][0], eje[i + 1][1] - eje[i][1]));
+  const oc = octavas(rng, [[P.vibraLam, 0.62], [P.vibraLam * 0.42, 0.28], [P.vibraLam * 2.4, 0.34]]);
+  const out = [];
+  for (let i = 0; i < eje.length; i++) {
+    const a = eje[Math.max(0, i - 1)], b = eje[Math.min(eje.length - 1, i + 1)];
+    const d = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    const v = P.vibra * evalua(oc, s[i]);
+    out.push([eje[i][0] - Math.sin(d) * v, eje[i][1] + Math.cos(d) * v]);
+  }
+  return out;
+}
 
 function cuerpoYFilo(rng, eje, P) {
   // el recorrido, en anchuras acumuladas
@@ -160,32 +193,100 @@ function contorno(eje, semis, P) {
     const d = Math.atan2(b[1] - a[1], b[0] - a[0]);
     return [-Math.sin(d), Math.cos(d)];
   };
+  // LA CUÑA HACIA ADENTRO ES UN BUG, y es éste: en el interior de una curva la semianchura supera
+  // el radio de curvatura, el borde se dobla sobre sí mismo y el relleno deja una muesca en pico.
+  // Se recorta el borde de dentro al radio, que es el arreglo de siempre del offset de una
+  // polilínea. El de fuera no tiene ese problema: ahí el offset se abre.
+  const radioEn = (i) => {
+    if (i === 0 || i === m - 1) return Infinity;
+    const a = eje[i - 1], b = eje[i], c = eje[i + 1];
+    const A = hy(b[0] - a[0], b[1] - a[1]), B = hy(c[0] - b[0], c[1] - b[1]);
+    const C = hy(c[0] - a[0], c[1] - a[1]);
+    const area2 = Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+    if (area2 < 1e-9) return Infinity;
+    return (A * B * C) / area2;          // circunradio de los tres puntos
+  };
+  const ladoCurva = (i) => {
+    if (i === 0 || i === m - 1) return 0;
+    const a = eje[i - 1], b = eje[i], c = eje[i + 1];
+    const cr = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]);
+    return cr > 0 ? 1 : cr < 0 ? -1 : 0;   // +1 gira a la izquierda
+  };
   const izq = [], der = [];
   for (let i = 0; i < m; i++) {
-    const n = nor(i), sm = semis[Math.min(i, semis.length - 1)];
+    const n = nor(i), sm0 = semis[Math.min(i, semis.length - 1)];
+    const R = radioEn(i), gira = ladoCurva(i);
+    const sm = [sm0[0], sm0[1]];
+    // el borde de DENTRO de la curva es el del lado hacia el que gira
+    if (isFinite(R)) {
+      if (gira > 0) sm[0] = Math.min(sm[0], R * 0.88);
+      else if (gira < 0) sm[1] = Math.min(sm[1], R * 0.88);
+    }
     izq.push([eje[i][0] + n[0] * sm[0], eje[i][1] + n[1] * sm[0]]);
     der.push([eje[i][0] - n[0] * sm[1], eje[i][1] - n[1] * sm[1]]);
   }
-  // los cabos, inclinados: se desliza el punto de un borde a lo largo del eje
-  const inc = Math.tan(P.cabo * RAD);
-  const desliza = (i, lado, sg) => {
-    const a = eje[Math.min(m - 1, i + 1)] || eje[i], b = eje[Math.max(0, i - 1)] || eje[i];
-    const d = Math.atan2(a[1] - b[1], a[0] - b[0]);
+  // ── EL REMATE ───────────────────────────────────────────────────────────────
+  // Cuatro, porque «no me gusta la terminación de ninguno» y con un solo remate no hay nada que
+  // elegir. Los cuatro salen de mirar los cabos de las seis: el 52 % llega de frente y el 48 %
+  // muere en paralelo, así que el remate no puede ser siempre el mismo corte.
+  //
+  //   ESCUADRA  el corte perpendicular al eje. Es el más limpio y el que más delata el vector.
+  //   SESGO     el corte inclinado: un borde acaba antes que el otro.
+  //   PUNTA     los dos bordes se juntan: el trazo se afila y muere en un filo.
+  //   REDONDO   el corte se cierra con un arco.
+  const rem = (i, dirSg) => {
+    const j = i === 0 ? 1 : m - 2;
+    const d = Math.atan2(eje[i][1] - eje[j][1], eje[i][0] - eje[j][0]);   // hacia fuera
     const sm = semis[Math.min(i, semis.length - 1)];
-    const off = sm[lado] * inc * sg;
-    const p = lado === 0 ? izq[i] : der[i];
-    p[0] += Math.cos(d) * off; p[1] += Math.sin(d) * off;
+    if (P.remate === 'punta') {
+      // los dos bordes convergen en un punto un poco más allá del cabo
+      const L = (sm[0] + sm[1]) * 0.5 * 0.9;
+      const q = [eje[i][0] + Math.cos(d) * L, eje[i][1] + Math.sin(d) * L];
+      izq[i] = [q[0], q[1]]; der[i] = [q[0], q[1]];
+      return;
+    }
+    if (P.remate === 'redondo') {
+      // se mete un arco: unos puntos entre los dos bordes, pasando por delante del cabo
+      const n = 5, arco = [];
+      const nrm = Math.atan2(izq[i][1] - der[i][1], izq[i][0] - der[i][0]);
+      const R = (sm[0] + sm[1]) / 2;
+      for (let k = 1; k < n; k++) {
+        const a = nrm + (dirSg > 0 ? -1 : 1) * Math.PI * k / n;
+        arco.push([eje[i][0] + Math.cos(a) * R, eje[i][1] + Math.sin(a) * R]);
+      }
+      (i === 0 ? tapaIni : tapaFin).push(...arco);
+      return;
+    }
+    if (P.remate === 'sesgo' || P.cabo > 0.5) {
+      const inc = Math.tan(P.cabo * RAD);
+      izq[i][0] += Math.cos(d) * sm[0] * inc; izq[i][1] += Math.sin(d) * sm[0] * inc;
+      der[i][0] -= Math.cos(d) * sm[1] * inc; der[i][1] -= Math.sin(d) * sm[1] * inc;
+    }
   };
-  desliza(0, 0, +1); desliza(0, 1, -1);
-  desliza(m - 1, 0, +1); desliza(m - 1, 1, -1);
-  return izq.concat(der.reverse());
+  const tapaIni = [], tapaFin = [];
+  rem(0, -1); rem(m - 1, +1);
+  return izq.concat(tapaFin, der.reverse(), tapaIni);
 }
 
 // ── UN TRAZO ──────────────────────────────────────────────────────────────────
 function trazo(seed, opts) {
   const P = Object.assign({}, POR_DEFECTO, opts || {});
   const rng = new Rng(seed);
-  const eje = recorrido(rng, P);
+  // EL EJE SE REMUESTREA ANTES DE VIBRAR. Con un punto cada 0,7 anchuras y una onda de 1,8 no
+  // caben ni tres muestras por ciclo: la vibración no se vería y el trazo saldría igual de recto.
+  // Es el mismo error que ya apareció con el filo, que colgaba de cuatro vértices.
+  const fino = (t, paso) => {
+    const o = [t[0]];
+    for (let i = 0; i < t.length - 1; i++) {
+      const L = hy(t[i + 1][0] - t[i][0], t[i + 1][1] - t[i][1]);
+      const n = Math.max(1, Math.round(L / paso));
+      for (let k = 1; k <= n; k++)
+        o.push([t[i][0] + (t[i + 1][0] - t[i][0]) * k / n,
+                t[i][1] + (t[i + 1][1] - t[i][1]) * k / n]);
+    }
+    return o;
+  };
+  const eje = vibra(rng, fino(recorrido(rng, P), 0.22), P);
   const semis = cuerpoYFilo(rng, eje, P);
   return { eje, semis, contorno: contorno(eje, semis, P), P, seed };
 }
