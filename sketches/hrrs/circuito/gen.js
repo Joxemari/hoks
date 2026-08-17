@@ -1031,23 +1031,41 @@ function circuito(seed, opt) {
   // que es lo que dice esa correlación de +0,32.
   const MARGEN = W * CANAL;
   const CRECE = 1.7;
-  const PASO_FILO = W * 0.16;                 // para que el filo pueda variar a 0,3 anchuras
-  // la desviación del filo. En las obras que el autor eligió —r1, r4, r5— vale 0,177 y 0,117, así
-  // que el rango es ése y no el de las seis: r2 y r6 desvían el doble porque son de taco.
-  const SD_FILO = rng.range(0.12, 0.20);
+  const PASO_FILO = W * 0.10;                 // 5 muestras por la octava más corta (0,5)
+  // EL FILO VA EN LO QUE SE MIDE: la desviación típica de la semianchura, en anchuras de banda.
+  // El 0,12–0,20 que había aquí era «amplitud de las octavas», una unidad que no se podía comparar
+  // con ninguna medida, y por eso pudo estar tres veces por encima de las referencias sin que se
+  // notara en ningún número. Con `piel.py`, el mismo código sobre las fotos y sobre lo nuestro:
+  //
+  //             sd total   lenta   rápida   escala        (restado el suelo del método)
+  //   r1          0,032    0,024   0,019     0,4
+  //   r2          0,036    0,027   0,017     0,4
+  //   r5          0,034    0,027   0,016     0,4
+  //   r6          0,034    0,026   0,015     0,3
+  //   (r4 da 0,130: es la que tiene las bandas fundidas y la geometría corrompida — fuera)
+  //
+  // Las cuatro dicen lo mismo con bandas de 14 a 76 px, así que no es una casualidad de escala.
+  // Y la lenta y la rápida no son lo mismo ni vienen del mismo sitio: LA LENTA es el relleno —la
+  // banda se ensancha donde tiene sitio— y LA RÁPIDA es el filo. Al filo le toca 0,015.
+  const SD_FILO = rng.range(0.017, 0.025);
   const COMUN = 0.32;                         // cuánto comparten los dos filos
 
-  // ruido correlacionado y determinista: suma de octavas, con su fase
-  const octavas = () => {
-    const o = [];
-    // La octava rápida se queda corta A PROPÓSITO. Medida sale en 0,061 anchuras, pero buena
-    // parte de eso es ruido de binarización del escaneo y no del cuadro: puesta entera, el filo
-    // sale en diente de sierra, que es otra manera de ser digital. Lo que se ve en las seis es una
-    // ondulación confiada con algún mordisco, no una serración constante.
-    for (const [lam, amp] of [[4.0, 0.66], [1.5, 0.27], [0.55, 0.07]])
-      o.push({ lam, amp, ph: rng.range(0, 6.2832) });
-    return o;
-  };
+  // ruido correlacionado y determinista: suma de octavas, con su fase.
+  // Las octavas van de 2 a 0,5 anchuras: la escala medida en las cuatro es 0,3–0,4, así que una
+  // octava de 4 anchuras —la que había— no es filo, es cuerpo, y sumaba a la parte lenta que ya
+  // pone el relleno. Ahí estaban las nubes.
+  const LAMS = [[2.0, 0.5], [1.0, 0.45], [0.5, 0.5]];
+  // Y HAY QUE CONTAR LO QUE SE LLEVA EL ALISADO. Al final de todo esto el filo pasa dos veces por
+  // una media móvil [¼,½,¼] para quitarle la serración entre muestras, y esa media no es neutral:
+  // con las muestras a 0,10 anchuras deja el 95 % de la octava de 2 anchuras y sólo el 43 % de la
+  // de 0,5. O sea que pedíamos un filo y salía otro, más lento y más flojo, y encima la cuenta de
+  // normalización creía que había salido entero. Se calcula la atenuación y se compensa: así
+  // SD_FILO vale de verdad lo que dice, que es la única manera de que se pueda comparar con la foto.
+  const NALISA = 2;
+  const atenua = (lam) => Math.pow(0.5 + 0.5 * Math.cos(2 * Math.PI * 0.10 / lam), NALISA);
+  const SD_OCT = Math.sqrt(LAMS.reduce((s2, l) => s2 + Math.pow(l[1] * atenua(l[0]), 2), 0) / 2)
+               * Math.sqrt(COMUN * COMUN + (1 - COMUN) * (1 - COMUN));
+  const octavas = () => LAMS.map(([lam, amp]) => ({ lam, amp, ph: rng.range(0, 6.2832) }));
   const evalua = (o, u) => {
     let v = 0;
     for (const c of o) v += c.amp * Math.sin(u / c.lam * 6.2832 + c.ph);
@@ -1060,7 +1078,11 @@ function circuito(seed, opt) {
     const t = trazos[k], fino = [t[0]];
     for (let i = 0; i < t.length - 1; i++) {
       const L = hy(t[i + 1][0] - t[i][0], t[i + 1][1] - t[i][1]);
-      const n2 = Math.max(1, Math.round(L / PASO_FILO));
+      // el tope no es cosmético: cuando la banda colapsa —que es justo lo que los controles del
+      // campo provocan a propósito— PASO_FILO se va a cero y esto pedía un array de mil millones.
+      // El control moría con «Invalid array length» en vez de decir que la obra había colapsado,
+      // o sea que el control no medía nada. Con el tope, colapsa y se puede contar.
+      const n2 = Math.max(1, Math.min(4000, Math.round(L / PASO_FILO)));
       for (let z = 1; z <= n2; z++)
         fino.push([t[i][0] + (t[i + 1][0] - t[i][0]) * z / n2,
                    t[i][1] + (t[i + 1][1] - t[i][1]) * z / n2]);
@@ -1097,6 +1119,24 @@ function circuito(seed, opt) {
       }
       sm.push(lado);
     }
+    // EL RELLENO NO PUEDE IR PUNTO A PUNTO, y esto lo dijo la medida. El sitio libre cambia deprisa
+    // —un vecino que se acerca y se va— así que la banda se hinchaba y se deshinchaba a lo largo de
+    // sí misma: sd de la semianchura 0,05 anchuras cuando en r1, r2, r5 y r6 es 0,025. Eso es
+    // exactamente lo que él veía: «parecen nubes, y el grosor es demasiado variable».
+    //
+    // Lo que hay en las referencias es una banda de grosor casi constante que se ENSANCHA DE UNA
+    // PIEZA según el sitio que tiene, no una que respira cada media anchura. Así que el relleno se
+    // pasa por un filtro largo —tres anchuras a cada lado— y se vuelve a topar contra el sitio real
+    // punto a punto: liso donde sobra sitio, exacto donde aprieta. El tope conserva la regla.
+    const VENT = Math.max(1, Math.round(3.0 / 0.10));
+    for (const s2 of [0, 1]) {
+      const raw = sm.map(l => l[s2]);
+      for (let i = 0; i < sm.length; i++) {
+        let a = 0, n3 = 0;
+        for (let j = Math.max(0, i - VENT); j <= Math.min(sm.length - 1, i + VENT); j++) { a += raw[j]; n3++; }
+        sm[i][s2] = Math.min(raw[i], a / n3);
+      }
+    }
     semis.push(sm);
   }
 
@@ -1126,8 +1166,11 @@ function circuito(seed, opt) {
       const u = Ltot * (m > 1 ? i / (m - 1) : 0.5);
       const com = evalua(oComun, u);
       for (const s2 of [0, 1]) {
-        let v = SD_FILO * A * (COMUN * com + (1 - COMUN) * evalua(oc[s2], u));
-        if (c === 'gubia') v += (0.72 + 0.46 * Math.sin(Math.PI * i / Math.max(1, m - 1)) - 1) * 0.5;
+        let v = (SD_FILO / SD_OCT) * A * (COMUN * com + (1 - COMUN) * evalua(oc[s2], u));
+        // la gubia adelgaza en los cabos y engorda en medio. Iba a ±0,12 anchuras, que ella sola
+        // se comía cinco veces el presupuesto de variación lenta de las cuatro referencias; y es
+        // además la calidad de r2 y r6, que son las dos que él descartó. Se queda, pero apuntada.
+        if (c === 'gubia') v += (0.72 + 0.46 * Math.sin(Math.PI * i / Math.max(1, m - 1)) - 1) * 0.15;
         // el filo respira sobre la anchura, y nunca hacia dentro del canal
         semis[k][i][s2] = Math.max(W * 0.30, Math.min(tope[i][s2], semis[k][i][s2] + v * W));
       }
@@ -1137,7 +1180,7 @@ function circuito(seed, opt) {
   // borde queda picado; una pasada de media móvil corta lo que queda de serración sin tocar la
   // ondulación, que es la que lleva el carácter.
   for (const sm of semis) {
-    for (let v = 0; v < 2; v++) {
+    for (let v = 0; v < NALISA; v++) {
       const cp = sm.map(l => [l[0], l[1]]);
       for (let i = 1; i < sm.length - 1; i++)
         for (const s2 of [0, 1])
@@ -1194,16 +1237,32 @@ function contornoDe(o, k) {
 // recto, porque lo cortó una mano.
 //
 // El único añadido es un grano de papel muy leve, que en r1 se ve y en r4 casi no.
+//
+// Y EL PAPEL NO ES BLANCO NI LA TINTA ES NEGRA, que era una sospecha suya —«quizás es un juego
+// entre el color del fondo y el color del trazo: al no ser blanco puro, igual el contraste no se
+// ve tanto»— y resultó ser cierta. Medido en las fotos (`piel.py color`), tomando el corazón de
+// cada zona para no leer el borde, que es mezcla:
+//
+//   r1  papel #e4d8bc   tinta #302a27   contraste 0,67      ← las tres que él eligió
+//   r4  papel #e8e6e5   tinta #313034   contraste 0,65
+//   r5  papel #e6e1d2   tinta #211b18   contraste 0,78
+//   r2  papel #d5d0c7   tinta #6d6658   contraste 0,34      (tinta gris: es otra técnica)
+//   r6  papel #ffffff   tinta #222323   contraste 0,76      (escaneada sobre blanco)
+//
+// Lo nuestro era blanco puro sobre casi negro: 0,86, por encima de las seis. Un contraste de más
+// endurece el filo —el ojo ve el borde antes que la forma— y eso es parte de lo que se leía como
+// vectorial, aparte de la geometría. Ahora sale a 0,71, entre r1 y r5.
+const PAPEL = '#e8e2d4', TINTA = '#2a2521';
 function pinta(cx, Wpx, Hpx, o, opt) {
   opt = opt || {};
   const esc = Math.min(Wpx / o.fw, Hpx / o.fh);
   const ox = (Wpx - o.fw * esc) / 2, oy = (Hpx - o.fh * esc) / 2;
   const rng = new Rng((o.seed ^ 0x9e3779b9) >>> 0);
   cx.save();
-  cx.fillStyle = opt.papel || '#ffffff';
+  cx.fillStyle = opt.papel || PAPEL;
   cx.fillRect(0, 0, Wpx, Hpx);
   cx.translate(ox, oy); cx.scale(esc, esc);
-  cx.fillStyle = opt.tinta || '#151412';
+  cx.fillStyle = opt.tinta || TINTA;
   for (let k = 0; k < o.trazos.length; k++) {
     const ct = contornoDe(o, k);
     if (ct.length < 3) continue;

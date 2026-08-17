@@ -18,15 +18,21 @@
 //   LA ESQUINA     viva o redondeada, y con radio. Una esquina en ángulo perfecto es lo que más
 //                  delata el vector.
 //   EL CUERPO      la anchura, que no es constante: se abre y se cierra a lo largo del recorrido.
-//   EL FILO        y encima, la desviación del borde. Medida SOBRE LAS FOTOS que el autor miró:
-//                  r1 0,072 y r5 0,019 anchuras — casi lisas. Es la MÁS PEQUEÑA de las tres
-//                  irregularidades y durante toda la familia se le pidió que fuera la única.
+//                  Es LO LENTO, y era el error: iba tres veces por encima de las referencias, que
+//                  es exactamente lo que se veía como «nubes» y como «grosor demasiado variable».
+//   EL FILO        y encima, la desviación del borde. Es LO RÁPIDO, y es lo que hace que una banda
+//                  de tinta plana no parezca vectorial.
 //
-//                  (Aviso de dato: el 0,177 y el 0,117 que se citaron antes salían de la geometría
-//                  trazada, que está en OTRO juego de archivos —`orig_*.npy` son las obras
-//                  recortadas y `refs4/*` las fotos enteras— y los dos juegos NO se pueden
-//                  emparejar: por contenido sólo casan dos de seis. Lo que el autor eligió lo
-//                  eligió mirando las fotos, así que la medida que vale es la de las fotos.)
+//                  Los dos van en la misma unidad y esa unidad es la que se mide: la desviación
+//                  típica de la semianchura en anchuras de banda (`piel.py`, el mismo código sobre
+//                  las fotos y sobre lo nuestro, con su suelo medido aparte). En r1, r2, r5 y r6
+//                  —bandas de 14 a 76 px— sale siempre lo mismo: lento 0,025, rápido 0,015, y
+//                  cambia cada 0,35 anchuras.
+//
+//                  (Los números de antes —0,072 y 0,019— salían de la misma idea sin control: el
+//                  esqueleto se partía en trozos cortos en cuanto el filo temblaba, y lo que se
+//                  medía era esa fragmentación. La cifra cambia porque la medida tiene control,
+//                  no porque haya cambiado la foto.)
 //   LOS CABOS      a escuadra, y con su ángulo: el remate no es perpendicular al eje por defecto.
 'use strict';
 
@@ -52,9 +58,17 @@ const POR_DEFECTO = {
   curva: 0.22,        // LA CURVA LARGA del trazo entero, en radianes de giro total
   esquina: 55,        // el giro típico de una esquina, en grados
   radio: 0.55,        // el radio de la esquina, en anchuras (0 = viva)
-  cuerpo: 0.28,       // cuánto se abre y se cierra la anchura a lo largo (fracción)
-  filo: 0.07,         // la desviación del borde. Medida sobre las fotos: r1 0,072 · r5 0,019
-  filoRapido: 0.30,   // cuánta parte del filo es rápida (el resto es ondulación lenta)
+  // EL CUERPO Y EL FILO VAN EN LO QUE SE MIDE, que es la desviación típica de la semianchura en
+  // anchuras de banda. No en «fracción de algo»: esa unidad es la que dejó pasar un cuerpo tres
+  // veces más gordo que el de Chillida durante toda la familia, porque nadie podía comparar el
+  // número del mando con el número de la medida. Ahora son el mismo número (ver `piel.py`).
+  //
+  //   Chillida, r1·r2·r5·r6, restado el suelo del método:  cuerpo 0,025   filo 0,015   escala 0,4
+  cuerpo: 0.025,      // lo LENTO: la banda se abre y se cierra. Es lo que se veía como «nubes».
+  cuerpoLam: 5.0,     // su longitud de onda, EN ANCHURAS —no en fracción del trazo—: que la banda
+                      // respire cada tantas anchuras es cosa de la mano, no de lo largo que salga
+  filo: 0.015,        // lo RÁPIDO: el borde del corte
+  filoRapido: 0.30,   // cuánta parte del filo es la más rápida de todas
   cabo: 22,           // cuánto se inclina el remate respecto a la perpendicular, en grados
   remate: 'escuadra', // escuadra · sesgo · punta · redondo
   vibra: 0.07,        // LA VIBRACIÓN del eje, en anchuras. Oscila y VUELVE: no es deriva.
@@ -134,6 +148,10 @@ function octavas(rng, lams) {
   return lams.map(([lam, amp]) => ({ lam, amp, ph: rng.range(0, 6.2832) }));
 }
 const evalua = (oc, u) => oc.reduce((v, c) => v + c.amp * Math.sin(u / c.lam * 6.2832 + c.ph), 0);
+// la desviación típica de esa suma de senos con fase al azar, que es sqrt(Σ amp²/2). Se calcula
+// en vez de escribirse a mano para que el mando siga valiendo lo que dice cuando se toquen las
+// octavas: es justo la cuenta que se descuadró y nadie vio.
+const sdDe = (lams) => Math.sqrt(lams.reduce((s, l) => s + l[1] * l[1], 0) / 2) || 1;
 
 // LA VIBRACIÓN. «Tienen curvas, pero no tienen nada de vibración, que es lo que un trazo un poco
 // orgánico suele dar en la aplicación de la tinta en el papel.»
@@ -166,20 +184,26 @@ function cuerpoYFilo(rng, eje, P) {
   const s = [0];
   for (let i = 0; i < eje.length - 1; i++)
     s.push(s[i] + hy(eje[i + 1][0] - eje[i][0], eje[i + 1][1] - eje[i][1]));
-  const L = s[s.length - 1] || 1;
-  const ocCuerpo = octavas(rng, [[L * 0.55, 0.7], [L * 0.22, 0.3]]);
-  const ocComun = octavas(rng, [[4.0, 0.66], [1.5, 0.27], [0.55, 0.07 * P.filoRapido / 0.3]]);
-  const ocLado = [octavas(rng, [[4.0, 0.66], [1.5, 0.27], [0.55, 0.07 * P.filoRapido / 0.3]]),
-                  octavas(rng, [[4.0, 0.66], [1.5, 0.27], [0.55, 0.07 * P.filoRapido / 0.3]])];
+  const LC = Math.max(1.2, P.cuerpoLam);
+  const lamsCuerpo = [[LC, 0.7], [LC * 0.4, 0.3]];
+  const lamsFilo = [[2.0, 0.5], [1.0, 0.45], [0.5, 0.5 * P.filoRapido / 0.3]];
+  const ocCuerpo = octavas(rng, lamsCuerpo);
+  const ocComun = octavas(rng, lamsFilo);
+  const ocLado = [octavas(rng, lamsFilo), octavas(rng, lamsFilo)];
   const COMUN = 0.32;
+  // de la desviación que se pide a la amplitud que hay que darle. El cuerpo va sobre la
+  // semianchura entera (0,5) y el filo se suma aparte; la mezcla común/propio no cambia la sd
+  // porque las dos señales son independientes: sqrt(c² + (1-c)²).
+  const ampCuerpo = P.cuerpo / (0.5 * sdDe(lamsCuerpo));
+  const ampFilo = P.filo / (sdDe(lamsFilo) * Math.sqrt(COMUN * COMUN + (1 - COMUN) * (1 - COMUN)));
   const semis = [];
   for (let i = 0; i < eje.length; i++) {
     const u = s[i];
-    const cuerpo = 1 + P.cuerpo * evalua(ocCuerpo, u);
+    const cuerpo = 1 + ampCuerpo * evalua(ocCuerpo, u);
     const com = evalua(ocComun, u);
     const lado = [];
     for (const k of [0, 1]) {
-      const f = P.filo * (COMUN * com + (1 - COMUN) * evalua(ocLado[k], u));
+      const f = ampFilo * (COMUN * com + (1 - COMUN) * evalua(ocLado[k], u));
       lado.push(Math.max(0.12, 0.5 * cuerpo + f));
     }
     semis.push(lado);
@@ -292,7 +316,7 @@ function trazo(seed, opts) {
     }
     return o;
   };
-  const eje = vibra(rng, fino(recorrido(rng, P), 0.22), P);
+  const eje = vibra(rng, fino(recorrido(rng, P), 0.09), P);
   const semis = cuerpoYFilo(rng, eje, P);
   return { eje, semis, contorno: contorno(eje, semis, P), P, seed };
 }

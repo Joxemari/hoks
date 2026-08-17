@@ -1,0 +1,6 @@
+# Las fotos de referencia NO van al repo: son obra de Chillida y esto se publica en Pages.
+# Se dejan en local (o donde diga HRRS_REFS) y las herramientas las leen de ahí.
+refs4/
+refs/
+__pycache__/
+*.pyc

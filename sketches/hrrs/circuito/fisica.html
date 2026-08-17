@@ -106,6 +106,7 @@
     <div class="mandos">
       <button class="btn" id="otro">Otro trazo</button>
       <button class="btn suave" id="eje" aria-pressed="false">Ver el eje</button>
+      <button class="btn suave" id="papel" aria-pressed="false">Papel blanco</button>
       <button class="btn suave" id="copiar">Copiar lo elegido</button>
       <span class="cuenta">elegida <b id="cual">—</b></span>
     </div>
@@ -117,11 +118,13 @@
     inventadas</b>. Se elige una con un clic y a partir de ahí los mandos de la derecha la afinan;
     lo que se toca se aplica a la elegida y las demás se quedan como estaban, para poder comparar.
     <b>Otro trazo</b> cambia la semilla: la física es la que se juzga, no el recorrido concreto.
-    <b>Aviso de dato:</b> las medidas de r1 y r5 están tomadas <b>sobre las fotos que se miraron</b>,
-    no sobre la geometría trazada — son dos juegos de archivos distintos y no se pueden emparejar.
-    Sus filos son <b>0,072 y 0,019</b>: casi lisos. Lo que parecía irregularidad del borde es, en la
-    fuente, irregularidad del <b>recorrido</b>.
-  </div>
+    <b>El grosor está medido, y con control.</b> `piel.py` recorre el esqueleto de cada banda y lee
+    su semianchura, y corre igual sobre las fotos y sobre lo nuestro. En r1, r2, r5 y r6 —bandas de
+    14 a 76 px— sale siempre lo mismo: <b>lo lento 0,025 anchuras, lo rápido 0,015, y cambia cada
+    0,35</b>. Lo nuestro tenía lo lento en 0,074, tres veces más: eso eran las nubes. El suelo del
+    método está medido aparte con una banda lisa y otra rota a propósito, porque un cero sin control
+    no significa nada.
+</div>
 
   <div class="cuerpo">
     <div class="rejilla" id="rejilla"></div>
@@ -136,9 +139,9 @@
 </div>
 
 <script>
-/* EL TRAZO VA INCRUSTADO. La página es un artefacto suelto y no puede pedir el archivo, así que
-   aquí abajo está la misma fuente que `sketches/hrrs/circuito/trazo.js`, palabra por palabra. Si
-   se toca el trazo, se vuelve a incrustar; no se edita aquí. */
+/* EL TRAZO VA INCRUSTADO, entre las marcas de abajo, y NO SE EDITA AQUÍ: lo escribe
+   `empotra.py` desde `sketches/hrrs/circuito/trazo.js`, que es la fuente. */
+/* ⟦trazo.js⟧ */
 // hrrs — UN TRAZO, y nada más.
 //
 // «El trazo me parece demasiado irregular porque no dibujas una línea, simplemente una línea con
@@ -159,15 +162,21 @@
 //   LA ESQUINA     viva o redondeada, y con radio. Una esquina en ángulo perfecto es lo que más
 //                  delata el vector.
 //   EL CUERPO      la anchura, que no es constante: se abre y se cierra a lo largo del recorrido.
-//   EL FILO        y encima, la desviación del borde. Medida SOBRE LAS FOTOS que el autor miró:
-//                  r1 0,072 y r5 0,019 anchuras — casi lisas. Es la MÁS PEQUEÑA de las tres
-//                  irregularidades y durante toda la familia se le pidió que fuera la única.
+//                  Es LO LENTO, y era el error: iba tres veces por encima de las referencias, que
+//                  es exactamente lo que se veía como «nubes» y como «grosor demasiado variable».
+//   EL FILO        y encima, la desviación del borde. Es LO RÁPIDO, y es lo que hace que una banda
+//                  de tinta plana no parezca vectorial.
 //
-//                  (Aviso de dato: el 0,177 y el 0,117 que se citaron antes salían de la geometría
-//                  trazada, que está en OTRO juego de archivos —`orig_*.npy` son las obras
-//                  recortadas y `refs4/*` las fotos enteras— y los dos juegos NO se pueden
-//                  emparejar: por contenido sólo casan dos de seis. Lo que el autor eligió lo
-//                  eligió mirando las fotos, así que la medida que vale es la de las fotos.)
+//                  Los dos van en la misma unidad y esa unidad es la que se mide: la desviación
+//                  típica de la semianchura en anchuras de banda (`piel.py`, el mismo código sobre
+//                  las fotos y sobre lo nuestro, con su suelo medido aparte). En r1, r2, r5 y r6
+//                  —bandas de 14 a 76 px— sale siempre lo mismo: lento 0,025, rápido 0,015, y
+//                  cambia cada 0,35 anchuras.
+//
+//                  (Los números de antes —0,072 y 0,019— salían de la misma idea sin control: el
+//                  esqueleto se partía en trozos cortos en cuanto el filo temblaba, y lo que se
+//                  medía era esa fragmentación. La cifra cambia porque la medida tiene control,
+//                  no porque haya cambiado la foto.)
 //   LOS CABOS      a escuadra, y con su ángulo: el remate no es perpendicular al eje por defecto.
 
 const RAD = Math.PI / 180;
@@ -192,9 +201,17 @@ const POR_DEFECTO = {
   curva: 0.22,        // LA CURVA LARGA del trazo entero, en radianes de giro total
   esquina: 55,        // el giro típico de una esquina, en grados
   radio: 0.55,        // el radio de la esquina, en anchuras (0 = viva)
-  cuerpo: 0.28,       // cuánto se abre y se cierra la anchura a lo largo (fracción)
-  filo: 0.07,         // la desviación del borde. Medida sobre las fotos: r1 0,072 · r5 0,019
-  filoRapido: 0.30,   // cuánta parte del filo es rápida (el resto es ondulación lenta)
+  // EL CUERPO Y EL FILO VAN EN LO QUE SE MIDE, que es la desviación típica de la semianchura en
+  // anchuras de banda. No en «fracción de algo»: esa unidad es la que dejó pasar un cuerpo tres
+  // veces más gordo que el de Chillida durante toda la familia, porque nadie podía comparar el
+  // número del mando con el número de la medida. Ahora son el mismo número (ver `piel.py`).
+  //
+  //   Chillida, r1·r2·r5·r6, restado el suelo del método:  cuerpo 0,025   filo 0,015   escala 0,4
+  cuerpo: 0.025,      // lo LENTO: la banda se abre y se cierra. Es lo que se veía como «nubes».
+  cuerpoLam: 5.0,     // su longitud de onda, EN ANCHURAS —no en fracción del trazo—: que la banda
+                      // respire cada tantas anchuras es cosa de la mano, no de lo largo que salga
+  filo: 0.015,        // lo RÁPIDO: el borde del corte
+  filoRapido: 0.30,   // cuánta parte del filo es la más rápida de todas
   cabo: 22,           // cuánto se inclina el remate respecto a la perpendicular, en grados
   remate: 'escuadra', // escuadra · sesgo · punta · redondo
   vibra: 0.07,        // LA VIBRACIÓN del eje, en anchuras. Oscila y VUELVE: no es deriva.
@@ -274,6 +291,10 @@ function octavas(rng, lams) {
   return lams.map(([lam, amp]) => ({ lam, amp, ph: rng.range(0, 6.2832) }));
 }
 const evalua = (oc, u) => oc.reduce((v, c) => v + c.amp * Math.sin(u / c.lam * 6.2832 + c.ph), 0);
+// la desviación típica de esa suma de senos con fase al azar, que es sqrt(Σ amp²/2). Se calcula
+// en vez de escribirse a mano para que el mando siga valiendo lo que dice cuando se toquen las
+// octavas: es justo la cuenta que se descuadró y nadie vio.
+const sdDe = (lams) => Math.sqrt(lams.reduce((s, l) => s + l[1] * l[1], 0) / 2) || 1;
 
 // LA VIBRACIÓN. «Tienen curvas, pero no tienen nada de vibración, que es lo que un trazo un poco
 // orgánico suele dar en la aplicación de la tinta en el papel.»
@@ -306,20 +327,26 @@ function cuerpoYFilo(rng, eje, P) {
   const s = [0];
   for (let i = 0; i < eje.length - 1; i++)
     s.push(s[i] + hy(eje[i + 1][0] - eje[i][0], eje[i + 1][1] - eje[i][1]));
-  const L = s[s.length - 1] || 1;
-  const ocCuerpo = octavas(rng, [[L * 0.55, 0.7], [L * 0.22, 0.3]]);
-  const ocComun = octavas(rng, [[4.0, 0.66], [1.5, 0.27], [0.55, 0.07 * P.filoRapido / 0.3]]);
-  const ocLado = [octavas(rng, [[4.0, 0.66], [1.5, 0.27], [0.55, 0.07 * P.filoRapido / 0.3]]),
-                  octavas(rng, [[4.0, 0.66], [1.5, 0.27], [0.55, 0.07 * P.filoRapido / 0.3]])];
+  const LC = Math.max(1.2, P.cuerpoLam);
+  const lamsCuerpo = [[LC, 0.7], [LC * 0.4, 0.3]];
+  const lamsFilo = [[2.0, 0.5], [1.0, 0.45], [0.5, 0.5 * P.filoRapido / 0.3]];
+  const ocCuerpo = octavas(rng, lamsCuerpo);
+  const ocComun = octavas(rng, lamsFilo);
+  const ocLado = [octavas(rng, lamsFilo), octavas(rng, lamsFilo)];
   const COMUN = 0.32;
+  // de la desviación que se pide a la amplitud que hay que darle. El cuerpo va sobre la
+  // semianchura entera (0,5) y el filo se suma aparte; la mezcla común/propio no cambia la sd
+  // porque las dos señales son independientes: sqrt(c² + (1-c)²).
+  const ampCuerpo = P.cuerpo / (0.5 * sdDe(lamsCuerpo));
+  const ampFilo = P.filo / (sdDe(lamsFilo) * Math.sqrt(COMUN * COMUN + (1 - COMUN) * (1 - COMUN)));
   const semis = [];
   for (let i = 0; i < eje.length; i++) {
     const u = s[i];
-    const cuerpo = 1 + P.cuerpo * evalua(ocCuerpo, u);
+    const cuerpo = 1 + ampCuerpo * evalua(ocCuerpo, u);
     const com = evalua(ocComun, u);
     const lado = [];
     for (const k of [0, 1]) {
-      const f = P.filo * (COMUN * com + (1 - COMUN) * evalua(ocLado[k], u));
+      const f = ampFilo * (COMUN * com + (1 - COMUN) * evalua(ocLado[k], u));
       lado.push(Math.max(0.12, 0.5 * cuerpo + f));
     }
     semis.push(lado);
@@ -432,11 +459,11 @@ function trazo(seed, opts) {
     }
     return o;
   };
-  const eje = vibra(rng, fino(recorrido(rng, P), 0.22), P);
+  const eje = vibra(rng, fino(recorrido(rng, P), 0.09), P);
   const semis = cuerpoYFilo(rng, eje, P);
   return { eje, semis, contorno: contorno(eje, semis, P), P, seed };
 }
-'use strict';
+/* ⟦/trazo.js⟧ */
 
 // ── LAS OPCIONES ──────────────────────────────────────────────────────────────
 // Seis físicas distintas. Dos son MEDIDAS sobre las referencias que el autor eligió —r1 y r5— y
@@ -444,40 +471,40 @@ function trazo(seed, opts) {
 // idea al extremo, para que se pueda decir «esta» sin tener que mover nueve mandos a ciegas.
 const OPCIONES = [
   { nom: 'r1 · medida',
-    que: 'Medido SOBRE LA FOTO QUE SE MIRÓ: filo 0,072 anchuras — la mitad de lo que se creía. ' +
-         'Esquinas mezcladas, tiradas medias, poca vibración. El carácter está en el recorrido.',
+    que: 'Lo que mide r1 con el mismo código que mide lo nuestro: cuerpo 0,024 y filo 0,019. ' +
+         'Esquinas mezcladas, tiradas medias. El carácter está en el recorrido, no en el borde.',
     P: { largo: 14, tirada: [2.5, 6.5], curva: 0.22, esquina: 55, radio: 0.5, viva: 0.45,
-         cuerpo: 0.22, filo: 0.072, filoRapido: 0.47, vibra: 0.06, vibraLam: 1.8,
+         cuerpo: 0.024, cuerpoLam: 5.0, filo: 0.019, filoRapido: 0.47, vibra: 0.06, vibraLam: 1.8,
          cabo: 22, remate: 'sesgo' } },
   { nom: 'r5 · medida',
-    que: 'El cartel, y es el más liso de todos: filo 0,019 — prácticamente un borde limpio. ' +
-         'Tiradas largas y poca esquina: la banda barre.',
+    que: 'El cartel: cuerpo 0,027 y filo 0,016 — a un pelo de r1, con la banda cinco veces más ' +
+         'ancha. Tiradas largas y poca esquina: la banda barre.',
     P: { largo: 17, tirada: [5, 11], curva: 0.30, esquina: 38, radio: 1.0, viva: 0.30,
-         cuerpo: 0.16, filo: 0.019, filoRapido: 0.79, vibra: 0.03, vibraLam: 3.0,
+         cuerpo: 0.027, cuerpoLam: 6.0, filo: 0.016, filoRapido: 0.60, vibra: 0.03, vibraLam: 3.0,
          cabo: 14, remate: 'escuadra' } },
   { nom: 'la mano',
     que: 'La VIBRACIÓN al mando: el eje oscila y vuelve, que es lo que da la tinta aplicada a mano. ' +
-         'El filo, tranquilo — la irregularidad va al recorrido y no al borde.',
+         'El grosor, el medido — la irregularidad va al recorrido y no al borde.',
     P: { largo: 15, tirada: [3, 7], curva: 0.24, esquina: 52, radio: 0.6, viva: 0.40,
-         cuerpo: 0.26, filo: 0.06, filoRapido: 0.12, vibra: 0.16, vibraLam: 1.5,
+         cuerpo: 0.025, cuerpoLam: 4.0, filo: 0.015, filoRapido: 0.12, vibra: 0.16, vibraLam: 1.5,
          cabo: 26, remate: 'sesgo' } },
   { nom: 'la plancha',
     que: 'Todas las esquinas vivas, sin radio y sin vibración: el trazo dobla en ángulo como una ' +
          'plancha cortada. Remate en punta. Es la lectura más dura.',
     P: { largo: 13, tirada: [2.5, 5.5], curva: 0.06, esquina: 78, radio: 0, viva: 1,
-         cuerpo: 0.14, filo: 0.08, filoRapido: 0.25, vibra: 0.02, vibraLam: 2.2,
+         cuerpo: 0.014, cuerpoLam: 7.0, filo: 0.012, filoRapido: 0.25, vibra: 0.02, vibraLam: 2.2,
          cabo: 34, remate: 'punta' } },
   { nom: 'el brazo',
     que: 'Una sola curva larga, pocas esquinas y todas con radio: lo dibuja un brazo que pivota. ' +
          'Vibración alta y de onda larga, remate redondo.',
     P: { largo: 18, tirada: [7, 14], curva: 0.62, esquina: 24, radio: 1.6, viva: 0.05,
-         cuerpo: 0.22, filo: 0.07, filoRapido: 0.10, vibra: 0.13, vibraLam: 3.6,
+         cuerpo: 0.022, cuerpoLam: 8.0, filo: 0.014, filoRapido: 0.10, vibra: 0.13, vibraLam: 3.6,
          cabo: 10, remate: 'redondo' } },
   { nom: 'la gubia',
-    que: 'El cuerpo muy desigual —se abre y se cierra el doble que las demás— y el remate en punta: ' +
-         'se afila y muere en un filo, como un corte de gubia.',
+    que: 'La única que se sale del sobre medido a propósito: el cuerpo al doble, 0,050, para ver ' +
+         'de dónde venían las nubes. Y remate en punta: se afila y muere en un filo.',
     P: { largo: 14, tirada: [3, 6], curva: 0.16, esquina: 60, radio: 0.3, viva: 0.55,
-         cuerpo: 0.55, filo: 0.12, filoRapido: 0.35, vibra: 0.09, vibraLam: 1.2,
+         cuerpo: 0.050, cuerpoLam: 3.5, filo: 0.022, filoRapido: 0.35, vibra: 0.09, vibraLam: 1.2,
          cabo: 40, remate: 'punta' } },
 ];
 
@@ -493,11 +520,15 @@ const MANDOS = [
                           'hace que lo dibuje un brazo y no un plóter.'],
   ['esquina', 10, 100, 1, 'el giro típico de una esquina, en grados.'],
   ['radio', 0, 2.5, 0.05, 'el radio de la esquina, en anchuras. Cero = esquina viva.'],
-  ['cuerpo', 0, 0.8, 0.01, 'cuánto se abre y se cierra la anchura a lo largo del recorrido. Es la ' +
-                           'irregularidad GRANDE, la del gesto.'],
-  ['filo', 0, 0.25, 0.002, 'la desviación del borde. Medida sobre las fotos: r1 0,072 · r5 0,019. ' +
-                           'Es la irregularidad MÁS PEQUEÑA de las tres, no la principal.'],
-  ['filoRapido', 0, 1, 0.02, 'qué parte del filo es rápida. Alto = temblor; bajo = ondulación.'],
+  ['cuerpo', 0, 0.09, 0.002, 'lo LENTO: cuánto se abre y se cierra la banda a lo largo. Va en la ' +
+                             'desviación típica de la semianchura, en anchuras — el mismo número ' +
+                             'que se mide en la foto. r1 0,024 · r2 0,027 · r5 0,027 · r6 0,026. ' +
+                             'Pasado de 0,05 son NUBES: es lo que estaba mal.'],
+  ['cuerpoLam', 1.5, 12, 0.25, 'cada cuántas anchuras respira el cuerpo. Corto = la banda late; ' +
+                               'largo = se ensancha de una pieza.'],
+  ['filo', 0, 0.06, 0.001, 'lo RÁPIDO: el borde del corte, en la misma unidad. r1 0,019 · r2 0,017 ' +
+                           '· r5 0,016 · r6 0,015. Es la irregularidad más pequeña de las tres.'],
+  ['filoRapido', 0, 1, 0.02, 'qué parte del filo es la más rápida. Alto = temblor; bajo = ondulación.'],
   ['cabo', 0, 55, 1, 'cuánto se inclina el remate respecto a la perpendicular, en grados. Un cabo ' +
                      'perpendicular es la firma del vector.'],
   ['vibra', 0, 0.35, 0.005, 'LA VIBRACIÓN del eje, en anchuras. Oscila y VUELVE: no es deriva, así ' +
@@ -511,16 +542,17 @@ const MANDOS = [
 
 const $ = (id) => document.getElementById(id);
 const LS = 'hrrs-fisica-v1';
-const est = { seed: 0x51ce, sel: 0, eje: false, ops: null, notas: {} };
+const est = { seed: 0x51ce, sel: 0, eje: false, blanco: false, ops: null, notas: {} };
 try {
   const g = JSON.parse(localStorage.getItem(LS) || '{}');
   if (g && g.notas) est.notas = g.notas;
   if (g && g.ops) est.ops = g.ops;
   if (typeof g.sel === 'number') est.sel = g.sel;
+  if (typeof g.blanco === 'boolean') est.blanco = g.blanco;
 } catch (e) { /* primera vez */ }
 if (!est.ops) est.ops = OPCIONES.map(o => JSON.parse(JSON.stringify(o.P)));
 const guarda = () => {
-  try { localStorage.setItem(LS, JSON.stringify({ notas: est.notas, ops: est.ops, sel: est.sel })); }
+  try { localStorage.setItem(LS, JSON.stringify({ notas: est.notas, ops: est.ops, sel: est.sel, blanco: est.blanco })); }
   catch (e) {}
 };
 const avisa = (t) => { const a = $('aviso'); a.textContent = t;
@@ -529,8 +561,22 @@ const avisa = (t) => { const a = $('aviso'); a.textContent = t;
 // ── DIBUJAR UN TRAZO ──────────────────────────────────────────────────────────
 // Tinta plana y filo limpio: la técnica de r1, r4 y r5, que es la que el autor eligió. El trazo se
 // encaja en el lienzo por su propia extensión, así que se ve igual de grande sea largo o corto.
-function dibuja(cx, Wpx, Hpx, t, soloEje) {
-  cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, Wpx, Hpx);
+//
+// Y EL PAPEL NO ES BLANCO. «Quizás es un juego entre el color del fondo y el color del trazo: al no
+// ser blanco puro, igual el contraste no se ve tanto.» Medido en las fotos (`piel.py color`),
+// cogiendo el corazón de cada zona para no leer el borde:
+//
+//   r1  #e4d8bc / #302a27  → 0,67        r2  #d5d0c7 / #6d6658  → 0,34   (tinta gris, otra técnica)
+//   r4  #e8e6e5 / #313034  → 0,65        r6  #ffffff / #222323  → 0,76   (escaneada sobre blanco)
+//   r5  #e6e1d2 / #211b18  → 0,78
+//
+// Las tres que él eligió van de 0,65 a 0,78. Lo nuestro era blanco puro sobre casi negro: 0,86,
+// por encima de las seis. Un contraste de más endurece el filo —el ojo ve el borde antes que la
+// forma— así que parte de lo vectorial no era geometría, era contraste. Aquí sale a 0,71, y el
+// botón deja volver al blanco para poder verlo al lado.
+const PAPEL = '#e8e2d4', TINTA = '#2a2521';
+function dibuja(cx, Wpx, Hpx, t, soloEje, blanco) {
+  cx.fillStyle = blanco ? '#ffffff' : PAPEL; cx.fillRect(0, 0, Wpx, Hpx);
   const pts = t.contorno.length ? t.contorno : t.eje;
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
   const x0 = Math.min(...xs), x1 = Math.max(...xs);
@@ -543,7 +589,7 @@ function dibuja(cx, Wpx, Hpx, t, soloEje) {
                (Hpx - (y1 - y0) * esc) / 2 - y0 * esc);
   cx.scale(esc, esc);
   if (soloEje) {
-    cx.strokeStyle = '#141312'; cx.lineWidth = 0.055; cx.lineJoin = 'round'; cx.lineCap = 'round';
+    cx.strokeStyle = blanco ? '#141312' : TINTA; cx.lineWidth = 0.055; cx.lineJoin = 'round'; cx.lineCap = 'round';
     cx.beginPath(); cx.moveTo(t.eje[0][0], t.eje[0][1]);
     for (let i = 1; i < t.eje.length; i++) cx.lineTo(t.eje[i][0], t.eje[i][1]);
     cx.stroke();
@@ -552,7 +598,7 @@ function dibuja(cx, Wpx, Hpx, t, soloEje) {
       cx.beginPath(); cx.arc(p[0], p[1], 0.13, 0, 6.2832); cx.fill();
     }
   } else {
-    cx.fillStyle = '#141312';
+    cx.fillStyle = blanco ? '#141312' : TINTA;
     cx.beginPath(); cx.moveTo(t.contorno[0][0], t.contorno[0][1]);
     for (let i = 1; i < t.contorno.length; i++) cx.lineTo(t.contorno[i][0], t.contorno[i][1]);
     cx.closePath(); cx.fill();
@@ -674,13 +720,19 @@ function redibuja() {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   est.lienzos.forEach((cv, i) => {
     const t = trazo(est.seed, est.ops[i]);
-    dibuja(cv.getContext('2d'), cv.width / dpr, cv.height / dpr, t, est.eje);
+    dibuja(cv.getContext('2d'), cv.width / dpr, cv.height / dpr, t, est.eje, est.blanco);
   });
 }
 
 $('otro').onclick = () => {
   est.seed = (Math.floor(Math.random() * 0xffffffff) >>> 0) || 1;
   redibuja();
+};
+$('papel').onclick = () => {
+  est.blanco = !est.blanco;
+  $('papel').setAttribute('aria-pressed', est.blanco ? 'true' : 'false');
+  $('papel').textContent = est.blanco ? 'Papel medido' : 'Papel blanco';
+  guarda(); pinta();
 };
 $('eje').onclick = () => {
   est.eje = !est.eje;
@@ -703,6 +755,10 @@ $('copiar').onclick = async () => {
     ta.addEventListener('keydown', ev => { if (ev.key === 'Escape') ta.remove(); });
   }
 };
+
+// el botón del papel tiene que arrancar diciendo lo que hay, no lo de por defecto
+$('papel').setAttribute('aria-pressed', est.blanco ? 'true' : 'false');
+$('papel').textContent = est.blanco ? 'Papel medido' : 'Papel blanco';
 
 construye();
 </script>
