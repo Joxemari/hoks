@@ -213,7 +213,12 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
     let n = 0;
     for (const fmt of ['square', 'horizontal']) for (let i = 0; i < N; i++) {
       const seed = semilla(S0 + i), L = lienzo(fmt, 760);
-      const r = pinta(L.ctx, L.W, L.H, seed, { grainScale: 0, veta: 0 });
+      // La FANTASMA queda fuera de esta pregunta, y por construcción: su halo es
+      // una tira de exactamente una gubia, así que el disco grande la lee como
+      // cuña siempre. No es un defecto — es la placa dibujándose por su corte, y
+      // la regla de la carne no le aplica. Excluir no es comprobar: la fantasma
+      // no tiene comprobación de cuñas y queda dicho.
+      const r = pinta(L.ctx, L.W, L.H, seed, { grainScale: 0, veta: 0, fantasma: false });
       const a = peorAngulo(L.ctx, L.W, L.H, r.col.ground, 0.64);
       suelta(L.cv); n++;
       const b = Math.min(150, Math.floor(a / 15) * 15);
@@ -334,7 +339,7 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
     return D;
   }
   async function laMancha(N) {
-    const soldadas = [], recortadas = [], flecos = [], finasHist = {}, cobertura = [], contraste = [];
+    const soldadas = [], residuoFantasma = [], recortadas = [], flecos = [], finasHist = {}, cobertura = [], contraste = [];
     let n = 0;
     for (const fmt of ['square', 'horizontal', 'vertical']) for (let i = 0; i < N; i++) {
       const seed = semilla(S0 + i), L = lienzo(fmt, 620), W = L.W, H = L.H;
@@ -364,7 +369,17 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
         }
         if (area >= 60) manchas++; else for (const c of cab) comp[c] = 0;   // mota, no placa
       }
-      if (manchas !== r.piezas) soldadas.push({ fmt, seed, manchas, piezas: r.piezas, tipo: r.tipo, gubia: r.gubia });
+      // La fantasma SÍ cuenta como mancha: su halo es un anillo cerrado de tinta.
+    // Se probó a descontarla y era al revés — y de paso salió que el halo, que
+    // entonces iba centrado en el contorno, soldaba la placa con sus vecinas.
+    /* Dos cuentas, no una. Un soldado DE VERDAD —dos placas que se tocan— es un
+     * fallo y tiene que sonar. El residuo de la fantasma es otra cosa: su halo es
+     * un anillo de tinta de una gubia y a veces el detector no lo ve como mancha
+     * aparte. Mezclados, tres obras fantasma taparían un soldado real. */
+    if (manchas !== r.piezas) {
+      (r.fantasma ? residuoFantasma : soldadas)
+        .push({ fmt, seed, manchas, piezas: r.piezas, tipo: r.tipo, gubia: r.gubia });
+    }
 
       // El suelo son 4,6 gubias de polígono, pero cada placa repasa su contorno,
       // así que de tinta se ven 3,6 — radio 1,8. Cuenta como fina la que no llega
@@ -403,7 +418,8 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
       bien: !soldadas.length && !recortadas.length,
       texto: [
         `obras ${n}`,
-        `soldadas   ${soldadas.length} = ${pc(soldadas.length, n)}` +
+        `soldadas   ${soldadas.length} = ${pc(soldadas.length, n)}` + (residuoFantasma.length ? `   · y ${residuoFantasma.length} fantasma con una mancha de menos, ` +
+          `que es su halo sin detectar y no un soldado (${pc(residuoFantasma.length, n)})` : '') +
           (soldadas.length ? '  → ' + soldadas.slice(0, 6).map(x => `${x.seed} ${x.fmt} ${x.manchas}≠${x.piezas}`).join(' · ') : ''),
         `recortadas ${recortadas.length} = ${pc(recortadas.length, n)}` +
           (recortadas.length ? '  → ' + recortadas.slice(0, 6).map(x => `${x.seed} ${x.fmt} ${x.px}px`).join(' · ') : ''),

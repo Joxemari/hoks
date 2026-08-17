@@ -191,6 +191,36 @@
   // entrenamiento la puso en −18 en las dos vueltas: no es que sobre, es que
   // sobraba tanta. Con las exigencias de arriba, la que queda es la que viaja.
   const P_SAJADURA = 0.22;
+
+  /* LA LICENCIA. Los criterios de color de la regla 1 están puestos para que la
+   * obra MEDIA se lea: todas las tintas del mismo lado del suelo, y lejos del
+   * suelo y entre sí. Sanos los tres. Pero aplicados siempre convierten una
+   * familia de quince paletas en una de tintas oscuras sobre papel claro, y el
+   * 90% de las obras sale monócroma.
+   *
+   * Así que no se aflojan: se levantan A VECES. Una de cada cinco obras tiene
+   * licencia y usa los umbrales sueltos; las demás siguen estrictas. Eso no
+   * produce una familia más laxa, produce OUTLIERS — que es lo que se pedía,
+   * porque detrás hay siempre una selección curada y lo que no sirva no sale.
+   * Una regla que nunca se rompe no es una regla, es un límite del motor.
+   *
+   * Va con azar derivado del seed, como el fantasma y la esquina: una decisión
+   * de color no puede correr la geometría de las obras ya vistas. */
+  const P_LICENCIA = 0.20;
+  const SUELO_DIST = 120, SUELO_DIST_SUELTA = 62;    // distancia mínima al suelo
+  const SUELO_LUMA = 0.14, SUELO_LUMA_SUELTA = 0.05; // salto de valor mínimo
+  const ENTRE_TINTAS = 70, ENTRE_TINTAS_SUELTA = 40; // distancia entre tintas
+
+  /* LA PLACA FANTASMA. Del color exacto del suelo — la que la regla 1 prohibía
+   * porque se lee como un agujero. Y se leía: sin nada que la dibuje, el ojo
+   * asigna el papel a lo más claro y la placa deja de ser materia.
+   *
+   * Lo que la hace posible es lo mismo que resolvió la cinta fantasma de TRZS:
+   * NO es la placa, es su halo. Repasando su contorno con el color de la paleta
+   * más lejano al suelo, la placa deja de ser un hueco y pasa a ser una placa
+   * que sólo se ve por su corte. La materia se declara por el filo, no por el
+   * relleno — que es exactamente lo que dice la familia de los cortes. */
+  const P_FANTASMA = 0.05;
   // Una sajadura APUNTA a otro borde y se queda corta: ni pega en él (sería un
   // corte que suelta) ni se muere en campo abierto (no diría nada). El aire que
   // le queda por delante, en anchuras de gubia.
@@ -805,7 +835,7 @@
    * entre sí, pero no tanto como para que parezcan dos obras superpuestas: se
    * ordenan por distancia al suelo y se toman las mejores. Si la paleta no da
    * para tantas, se devuelven las que haya: la obra sale monócroma y no falla. */
-  function paleta(rng, colors, col, n) {
+  function paleta(rng, colors, col, n, suelta) {
     const out = [col.ink];
     if (n <= 1) return out;
     // La exigencia con el SUELO es mucho más dura que entre tintas: una placa del
@@ -819,14 +849,22 @@
     // lado del valor cae. Con esto, todas las tintas son materia y el suelo sigue
     // siendo el vacío, que es la única lectura que esta familia admite.
     const lg = E.luma(col.ground), lado = Math.sign(E.luma(col.ink) - lg) || -1;
+    // Con licencia caen las tres exigencias a la vez: el lado del suelo deja de
+    // pedirse y las dos distancias bajan. Se sueltan JUNTAS a propósito — medido,
+    // el lado sólo mata al 12% de los candidatos que cumplen lo demás, así que
+    // levantarlo solo no habría cambiado casi nada y las distancias son las que
+    // de verdad dejan la obra muda.
+    const dSuelo = suelta ? SUELO_DIST_SUELTA : SUELO_DIST;
+    const lSuelo = suelta ? SUELO_LUMA_SUELTA : SUELO_LUMA;
+    const dTinta = suelta ? ENTRE_TINTAS_SUELTA : ENTRE_TINTAS;
     const resto = colors
       .filter(c => c !== col.ground && c !== col.ink &&
-                   Math.sign(E.luma(c) - lg) === lado &&
-                   dist(c, col.ground) > 120 && Math.abs(E.luma(c) - lg) > 0.14)
+                   (suelta || Math.sign(E.luma(c) - lg) === lado) &&
+                   dist(c, col.ground) > dSuelo && Math.abs(E.luma(c) - lg) > lSuelo)
       .sort((a, b) => dist(b, col.ground) - dist(a, col.ground));
     for (const c of resto) {
       if (out.length >= n) break;
-      if (out.every(o => dist(o, c) > 70)) out.push(c);
+      if (out.every(o => dist(o, c) > dTinta)) out.push(c);
     }
     return out;
   }
@@ -844,6 +882,15 @@
 
     const pal = (opts.locked && palettes[opts.lockedIdx]) ? palettes[opts.lockedIdx] : rng.weighted(palettes);
     const col = pareja(rng, pal.colors);
+    // El FILO: el color de la paleta más lejano al suelo. Es con lo que se dibuja
+    // una placa fantasma — nunca con un tono fabricado hacia el blanco o el negro,
+    // que no está en la paleta y se ve que no está.
+    const filo = pal.colors.filter(c => c !== col.ground)
+                   .sort((a, b) => dist(b, col.ground) - dist(a, col.ground))[0] || col.ink;
+    // Las dos licencias de color, cada una con su azar derivado.
+    const rgLic = new E.Rng((seed ^ 0x11CE7C) >>> 0);
+    const suelta   = params.licencia != null ? !!params.licencia : rgLic.next() < P_LICENCIA;
+    const fantasma = params.fantasma != null ? !!params.fantasma : rgLic.next() < P_FANTASMA;
 
     // Campo normalizado: lado corto = 1, largo = la proporción NOMINAL. Todo se
     // decide y se mide aquí; el píxel sólo aparece al dibujar.
@@ -871,7 +918,7 @@
      * separaron pronto. */
     const nTintas = params.tintas != null ? params.tintas
                   : rng.weighted([{ prob: 0.74, v: 1 }, { prob: 0.20, v: 2 }, { prob: 0.06, v: 3 }]).v;
-    const tintas = paleta(rng, pal.colors, col, nTintas);
+    const tintas = paleta(rng, pal.colors, col, nTintas, suelta);
     const fuerzaVeta = params.veta != null ? params.veta : rng.range(0.55, 1.35);
 
     // El bloque. Nace exacto: toda la irregularidad viene después, y viene de las
@@ -1156,18 +1203,38 @@
     const gPx = gubia.w * S * SS;
     const caras = piezas.map(pc => pc.poly.map(p => toPx(add(p, pc.drift))));
 
+    /* CUÁL ES LA FANTASMA. No la reserva —es contra ella contra lo que se lee
+     * todo lo demás— ni una miga, que no se vería ni con halo. La mediana por
+     * área entre las que quedan: una placa de tamaño normal, para que su ausencia
+     * de relleno sea una decisión y no un accidente. Y sólo si hay tres o más:
+     * con dos, quitarle el cuerpo a una deja media obra. */
+    let iFantasma = -1;
+    if (fantasma && piezas.length >= 3) {
+      // Y tiene que caberle el anillo con hueco dentro. El halo mide una gubia por
+      // el interior; en una placa estrecha se cierra sobre sí mismo, la rellena
+      // entera y lo que sale no es una fantasma sino una placa del color del filo.
+      // Se pide carne para el anillo y para el vacío que declara.
+      const orden = piezas.map((p, i) => ({ i, a: Math.abs(area(p.poly)) }))
+                          .filter(o => !piezas[o.i].reserva &&
+                                  grosor(piezas[o.i].poly, GROSOR_VUELTA, gubia.w * S * 0.8)
+                                    > 4.5 * gubia.w * S)
+                          .sort((a, b) => a.a - b.a);
+      if (orden.length) iFantasma = orden[Math.floor(orden.length / 2)].i;
+    }
+
     caras.forEach((q, i) => {
       ctx.beginPath();
       q.forEach((p, k) => (k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
       ctx.closePath();
-      ctx.fillStyle = tintas[piezas[i].tinta % tintas.length];
+      ctx.fillStyle = i === iFantasma ? col.ground : tintas[piezas[i].tinta % tintas.length];
       ctx.fill();
     });
 
     // Una pasada de fibra por tinta, con SUS placas: ver `veta`.
     const grupos = tintas.map((t, k) => ({
       tinta: t,
-      caras: caras.filter((_, i) => piezas[i].tinta % tintas.length === k),
+      // La fantasma no lleva fibra: no hay tinta encima que pueda tenerla.
+      caras: caras.filter((_, i) => i !== iFantasma && piezas[i].tinta % tintas.length === k),
     }));
     veta(ctx, grupos, new E.Rng(seed ^ 0x7E7A), col.ground, W, H, u, fuerzaVeta);
 
@@ -1178,11 +1245,39 @@
     ctx.lineJoin = 'round';
     ctx.lineWidth = gPx;
     ctx.strokeStyle = col.ground;
-    for (const q of caras) {
+    caras.forEach((q, i) => {
+      if (i === iFantasma) return;   // va la última, y en otro color
       ctx.beginPath();
       q.forEach((p, k) => (k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
       ctx.closePath();
       ctx.stroke();
+    });
+
+    /* Y EL HALO DE LA FANTASMA, EL ÚLTIMO. Va después de todos los repasos en
+     * color de suelo porque si no una vecina se lo borraría por la mitad: cada
+     * placa repasa su contorno, y el de la vecina cae encima del suyo. Pintado
+     * al final, el filo queda entero y la placa se lee por su corte. */
+    if (iFantasma >= 0) {
+      /* Y VA POR DENTRO, RECORTADO CONTRA SU PROPIA PLACA. Centrado en el
+       * contorno como los demás repasos, la mitad del halo cae en el canal y lo
+       * llena: la incisión se queda a media anchura y el filo toca la tinta de la
+       * vecina, o sea que la fantasma se SUELDA a lo que tenga al lado. En la
+       * imagen no se veía —el filo suele ser el mismo color que la tinta, así que
+       * parecía que la vecina tenía el borde algo más grueso— y lo cazó la cuenta
+       * de manchas conectadas: 22 obras de 600 con menos manchas que placas, todas
+       * fantasma. Recortando contra la placa y doblando la anchura, el halo entero
+       * cae DENTRO y el canal conserva su gubia, que es la regla 3. */
+      const q = caras[iFantasma];
+      const trazo = () => { ctx.beginPath();
+        q.forEach((p, k) => (k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])));
+        ctx.closePath(); };
+      ctx.save();
+      trazo(); ctx.clip();
+      ctx.strokeStyle = filo;
+      ctx.lineWidth = gPx * 2;
+      trazo(); ctx.stroke();
+      ctx.restore();
+      ctx.lineWidth = gPx;
     }
 
     // Las sajaduras se pintan encima: son el único blanco que no es una frontera.
@@ -1205,7 +1300,8 @@
     return {
       pal, tipo: tipo.key, gubia: gubia.key, col, inks: tintas,
       piezas: piezas.length, sajaduras: sajaduras.length, cortes: cortes.length,
-      faltan, escalones, tintas: tintas.length, seguir: +seguir.toFixed(2), pulso: +(pulso / S).toFixed(4), morfa: +morfa.toFixed(3),
+      faltan, escalones, tintas: tintas.length,
+      licencia: !!suelta, fantasma: iFantasma >= 0, seguir: +seguir.toFixed(2), pulso: +(pulso / S).toFixed(4), morfa: +morfa.toFixed(3),
       pedidos: nCortes,
       hondura: piezas.reduce((m, p) => Math.max(m, p.hondura), 0),
       mancha, crudo: !!col.crudo,
