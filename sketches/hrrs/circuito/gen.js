@@ -168,9 +168,15 @@ function circuito(seed, opt) {
     abierto: { n: [5, 9],  sep: [0.085, 0.150], cats: [0.30, 0.18, 0.20, 0.32] },
   };
   const tipo = rng.bool(0.62) ? 'denso' : 'abierto';
-  // CADA OBRA DECIDE LO SUYO. Los cabos al aire van de 0 en r6 a un 40 % en r4: no es una
-  // constante global, es una decisión de la obra, como el tipo. La mediana de las seis es 17 %.
-  const P_AIRE = rng.bool(0.28) ? 0 : rng.range(0.10, 0.40);
+  // LA TASA DE CABOS AL AIRE VA CON LA DENSIDAD, y eso lo dicen las seis ordenadas por número de
+  // trazos: 14 trazos → 0 %, 11 → 18 %, 8 → 19 %, 7 → 29 %, 6 → 17 %, 5 → 40 %. Cuantos más
+  // trazos, menos cabos al aire — y tiene sentido: en una obra apretada un cabo tiene contra qué
+  // morir, y en una dispersa no hay nada enfrente.
+  //
+  // Sorteándola libre de 0 a 40 % costaba 0,07 de acompañamiento, porque las obras que sacaban un
+  // 40 % dejaban los cabos suel­tos lejos de todo. Atada al tipo, la variación se conserva y el
+  // acompañamiento no se paga.
+  const P_AIRE = tipo === 'denso' ? rng.range(0.00, 0.16) : rng.range(0.16, 0.40);
   // Y HAY OBRAS QUE SON UN RECORTE de una composición mayor: en r4, r5 y r6 la mitad de los cabos
   // están a menos de una anchura del borde del pliego, contra uno o dos en r1, r2 y r3. En un
   // recorte los trazos SE SALEN del papel; hasta ahora el paseo rebotaba en el margen y eso era
@@ -495,10 +501,13 @@ function circuito(seed, opt) {
     }
     if (!nac) continue;                      // la hoja está llena: no se fuerza
     const largo = rng.range(0.38, 0.95) * K_LARGO;
-    // LA META, decidida antes de andar. El 83 % de los cabos de las seis muere contra algo, así
-    // que un trazo que nace sin saber contra qué va a morir nace mal.
+    // AQUÍ HABÍA UNA META —decirle al trazo contra qué iba a morir para que se acercara mientras
+    // andaba— Y SALE FUERA. Medida contra el control: costaba 0,03 de acompañamiento (0,46 → 0,43)
+    // y 6° de ángulo de quiebro (45,4 → 51,1), y no compró nada donde tenía que comprar: los
+    // remates se quedaron en el 19 % con ella y sin ella. Un trazo que persigue un punto deja de
+    // seguir su alfabeto, que es lo que le daba el carácter.
     let meta = null;
-    if (!rng.bool(0.22) && trazos.length) {
+    if (false) {
       const j = rng.int(0, trazos.length - 1), o = trazos[j];
       if (o.length >= 2) {
         if (rng.bool(0.66)) {                 // contra un cabo: el 55 % de las seis

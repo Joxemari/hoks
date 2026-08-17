@@ -425,6 +425,27 @@ arreglar lo que no compuso, la paralela hay que derivarla y no acercarla, el can
 respetarlo al dibujar y no abrirlo después— y la cuarta vez con la misma forma: **lo que se
 construye sale; lo que se retoca, no.**
 
+### Dos controles que dieron la vuelta a dos decisiones
+
+Aislando la caída del acompañamiento (0,52 → 0,43) con un control por cambio:
+
+| variante | acomp | giro |
+|---|---|---|
+| como estaba | 0,43 | 51,1 |
+| con la tasa de cabos al aire FIJA en 0,18 | **0,50** | 49,2 |
+| **sin la meta del paseo** | 0,46 | **45,4** |
+| sin las obras recorte | 0,40 | 51,2 |
+
+- **La meta del paseo sale fuera.** Costaba 0,03 de acompañamiento y 6° de ángulo de quiebro, y no
+  compró nada donde tenía que comprar: los remates se quedaron en el 19 % con ella y sin ella. Un
+  trazo que persigue un punto deja de seguir su alfabeto, que es lo que le daba el carácter.
+- **La tasa de cabos al aire no es libre: va con la densidad.** Las seis, ordenadas por número de
+  trazos: 14 → 0 %, 11 → 18 %, 8 → 19 %, 7 → 29 %, 6 → 17 %, 5 → 40 %. **Cuantos más trazos, menos
+  cabos al aire** — y tiene sentido: en una obra apretada un cabo tiene contra qué morir y en una
+  dispersa no hay nada enfrente. Atada al tipo, la variación se conserva y el acompañamiento vuelve
+  a 0,50. Sorteándola libre, costaba 0,07.
+- Y las obras **recorte** ayudan (0,43 contra 0,40 sin ellas), al contrario de lo que suponía.
+
 ### Y un fallo del instrumento, no del generador
 
 `funde.js` marcaba 12 obras de 60 con «la banda partida». No lo estaban: **son las obras recorte**
@@ -551,11 +572,18 @@ el nuevo: tres filas de barrido exactamente iguales.
 | cruces | 0 | 0 | ✔ |
 | fusiones | 0 | 0 | ✔ |
 | **celdas de blanco** | **1** | 1–4 | de 0 a 1 |
-| acompañado | 0,44 | 0,52 | ↑ |
+| **cierre** | **0,30** | **0,30** | ✔ |
+| acompañado | 0,50 | 0,52 | casi |
 | sobre los ejes | 0,43 | 0,49 | ↑ |
-| ángulo de quiebro | 45,8 | 35 | ↓ |
-| quiebros por lado | 4,90 | 6,9 | ↓ |
-| cierre | 0,45 | 0,30 | |
+| ángulo de quiebro | 43,2 | 35 | ↓ |
+| quiebros por lado | 3,87 | 6,9 | ↓ |
+| cabos al aire | 0,07 | 0,18 | ↓ |
+
+**Y una distinción que hay que tener presente**: el remate *intenta* un gesto y **falla tres veces
+de cada cuatro**, pero el cabo tampoco queda al aire —`cabosLibres` es 0,07— porque se para donde
+sea, cerca de algo, sin gesto legible. Eso es exactamente lo que el autor vio: *«algunas
+terminaciones tengan más sentido»*. El 75 % de intención fallida y el 7 % de cabos realmente libres
+son dos medidas distintas y las dos hacen falta.
 
 Lo que sigue faltando: **el quiebro es demasiado grande y hay demasiados pocos**. Un trazo dobla
 46° cinco veces por unidad de longitud y las referencias doblan 35° siete veces. Y **el cierre**
