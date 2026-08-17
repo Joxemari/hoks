@@ -551,7 +551,17 @@
   // movieron nada, y todas estaban DENTRO del marco de relaciones.
   const TIRON = 20;                        // grados por subdivisión
   const TIRON_R = 3.0;                     // radio de influencia, en canales D
-  function trazar(rng, x, y, dir, largo, nq, vib, D, orto, guion, rumbos, cierre, vecinos) {
+  // EL SEQUITO: el acompanamiento como ESTADO, no como empujon. Capturado un vecino
+  // -cerca y mas o menos al rumbo-, el trazo suspende su guion y viaja por su carril:
+  // sigue el rumbo local del vecino con CONSIGNA DE DISTANCIA (el canal del grupo) y en
+  // cada paso sortea seguir o soltarse. Es el punto 5 del encargo leido entero: la
+  // tendencia tiene memoria.
+  const SEQ_ANG = 38;      // capturable solo si el rumbo ya se parece
+  const P_CAPTA = 0.45;    // por subdivision: cuanto tarda en dejarse llevar
+  const P_SUELTA = 0.12;   // por subdivision: cuanto dura el carril
+  const SEQ_KP = 30;     // grados de correccion por canal de error de distancia
+  const SEQ_MAX = 40;      // techo de la correccion
+  function trazar(rng, x, y, dir, largo, nq, vib, D, orto, guion, rumbos, cierre, vecinos, sepV) {
     const n = (guion && guion.giros ? guion.giros.length + 1 : nq + 1);
     // LA MANO. Probabilidad de cambiar de lado en cada giro; es el cierre, del revés.
     // A 0,95 el trazo zigzaguea y no cierra nunca; a 0,10 gira siempre igual y da la
@@ -564,6 +574,7 @@
     const pts = [{ x, y }];
     let cx = x, cy = y, cd = dir, lado = rng.bool(0.5) ? 1 : -1;
     let der = 0;                            // la deriva acumulada del tramo en curso
+    let seq = false;                        // ¿va por el carril de un vecino?
     const avanza = (L, ang) => { cx += Math.cos(ang * RAD) * L; cy += Math.sin(ang * RAD) * L; pts.push({ x: cx, y: cy }); };
     for (let i = 0; i < n; i++) {
       const L = largo * pesos[i] / tot;
@@ -589,16 +600,34 @@
         const curv = rng.range(-CURVA, CURVA);
         for (let j = 0; j < k; j++) {
           der = clamp(der + curv + rng.range(-DERIVA, DERIVA), -DERIVA_MAX, DERIVA_MAX);
-          // EL TIRON. Si hay algo cerca, el trazo se deja llevar por su rumbo -o se
-          // aparta si ya esta encima-, unos pocos grados por subdivision. No es un
-          // salto: es una tendencia, asi que una vez alineados siguen juntos solos.
-          if (vecinos && vecinos.length && TIRON > 0) {
+          // EL SEQUITO primero, y el tiron para el que va suelto. El tiron solo
+          // -un controlador de rumbo sin consigna de distancia- se estanco en 26 %:
+          // dejaba el canal ancho (0,49 W) e inconstante (0,26), y la racha moria en
+          // la primera bisagra porque el giro del guion dispara ignorando si el punto
+          // va acompanado. El estado arregla las tres cosas a la vez.
+          if (vecinos && vecinos.length) {
             const v = vecinoEn(cx, cy, vecinos, D * TIRON_R);
-            if (v) {
-              // hacia su rumbo, en el sentido que menos gire
+            if (seq && (!v || rng.bool(P_SUELTA))) seq = false;   // se suelta
+            if (!seq && v && rng.bool(P_CAPTA)) {
+              let dif = ((v.dir - cd) % 180 + 180) % 180;
+              if (dif > 90) dif = 180 - dif;
+              if (dif < SEQ_ANG) seq = true;                      // se deja llevar
+            }
+            if (seq && v) {
+              // EL CARRIL: el rumbo del vecino en mi sentido, corregido hacia la
+              // consigna. Las co-bisagras salen solas: cuando el vecino dobla, su
+              // tangente local cambia y el servo dobla detras.
+              let base = v.dir;
+              const dcd = ((base - cd) % 360 + 540) % 360 - 180;
+              if (abs(dcd) > 90) base += 180;
+              const nx2 = (cx - v.qx) / max(1e-9, v.d), ny2 = (cy - v.qy) / max(1e-9, v.d);
+              const cruz2 = Math.cos(base * RAD) * ny2 - Math.sin(base * RAD) * nx2;
+              const err = (v.d - (sepV || D * 1.08)) / D;
+              cd = base + clamp(err * SEQ_KP, -SEQ_MAX, SEQ_MAX) * (cruz2 > 0 ? -1 : 1);
+              der = 0;
+            } else if (v && TIRON > 0) {
               let dif = ((v.dir - (cd + der)) % 180 + 180) % 180;
               if (dif > 90) dif -= 180;
-              // y si esta demasiado cerca, la tendencia es apartarse
               if (v.d < D) {
                 const fuera = Math.atan2(cy - v.qy, cx - v.qx) / RAD;
                 dif = ((fuera - (cd + der)) % 360 + 540) % 360 - 180;
@@ -612,7 +641,10 @@
       } else {
         avanza(L, cd);
       }
-      if (i < n - 1) {
+      // ACOMPANANDO, EL GIRO LO PONE EL CARRIL, no el guion privado: era lo que
+      // mataba la racha en la primera bisagra. El giro perdido no se difiere -el
+      // vecino ya esta doblando por los dos-.
+      if (i < n - 1 && !seq) {
         const gi = guion && guion.giros && guion.giros[i];
         if (gi) {
           if (gi.pliega) {
@@ -1004,7 +1036,7 @@
       if (Lpost > ctx.S * 0.03) {
         const p = pts[pts.length - 1];
         const post = trazar(rng, p.x, p.y, (dOut2 != null ? dOut2 : dOut) + rng.range(-14, 14), Lpost,
-                            quiebrosPara(rng, Lpost, ctx.W), ctx.vib, D, ctx.orto, null, null, ctx.cierre, ctx.trazos);
+                            quiebrosPara(rng, Lpost, ctx.W), ctx.vib, D, ctx.orto, null, null, ctx.cierre, ctx.trazos, ctx.sep);
         pts = pts.concat(post.slice(1));
       }
       const Lpre = pts2 ? largo * rng.range(0.10, 0.30) : sobra * fPre;
@@ -1012,7 +1044,7 @@
         // se traza hacia atrás desde el arranque y se le da la vuelta
         const p = medio[0];
         const pre = trazar(rng, p.x, p.y, dIn + 180 + rng.range(-14, 14), Lpre,
-                           quiebrosPara(rng, Lpre, ctx.W), ctx.vib, D, ctx.orto, null, null, ctx.cierre, ctx.trazos);
+                           quiebrosPara(rng, Lpre, ctx.W), ctx.vib, D, ctx.orto, null, null, ctx.cierre, ctx.trazos, ctx.sep);
         pre.reverse();
         pts = pre.slice(0, -1).concat(pts);
       }
@@ -1028,7 +1060,7 @@
       const nrm = p.dir + 90 * lado;
       return trazar(rng, p.x + Math.cos(nrm * RAD) * sep, p.y + Math.sin(nrm * RAD) * sep,
                     p.dir + lado * rng.range(7, 26), largo, nq, ctx.vib, D, ctx.orto,
-                    null, null, ctx.cierre, ctx.trazos);
+                    null, null, ctx.cierre, ctx.trazos, ctx.sep);
     }
     if (rel === 'tangencia' && obj) {
       // Se acercan a un mínimo PUNTUAL y se separan: cruzan en ángulo, y el punto
@@ -1042,7 +1074,7 @@
       // el punto de tangencia cae DENTRO del trazo, no en su cabo
       const atras = largo * rng.range(0.25, 0.6);
       return trazar(rng, cx - Math.cos(ang * RAD) * atras, cy - Math.sin(ang * RAD) * atras,
-                    ang, largo, nq, ctx.vib, D, ctx.orto, null, null, ctx.cierre, ctx.trazos);
+                    ang, largo, nq, ctx.vib, D, ctx.orto, null, null, ctx.cierre, ctx.trazos, ctx.sep);
     }
     if (rel === 'continua' && obj) {
       // LA CONTINUACIÓN. Es del autor, y es la que faltaba: «una línea y otra pueden
@@ -1060,7 +1092,7 @@
       const sep = ctx.sep;
       const x0 = p.x + Math.cos(sigue * RAD) * sep, y0 = p.y + Math.sin(sigue * RAD) * sep;
       return trazar(rng, x0, y0, sigue + rng.range(-34, 34), largo, nq, ctx.vib, D, ctx.orto,
-                    null, ctx.rumbos, ctx.cierre, ctx.trazos);
+                    null, ctx.rumbos, ctx.cierre, ctx.trazos, ctx.sep);
     }
     if ((rel === 'caboCabo' || rel === 'caboCuerpo') && obj) {
       // Un extremo mío muere cerca de un extremo suyo (o de su costado), sin
@@ -1072,7 +1104,7 @@
       const x0 = p.x + Math.cos(hacia * RAD) * sep, y0 = p.y + Math.sin(hacia * RAD) * sep;
       // sale ALEJÁNDOSE, si no se echa encima
       return trazar(rng, x0, y0, hacia + rng.range(-52, 52), largo, nq, ctx.vib, D, ctx.orto,
-                    null, ctx.rumbos, ctx.cierre, ctx.trazos);
+                    null, ctx.rumbos, ctx.cierre, ctx.trazos, ctx.sep);
     }
     // suelto, o primer trazo: en cualquier sitio con aire DENTRO DE LA ZONA. Si
     // sangra, puede ARRANCAR fuera — el trazo entra desde detrás del marco en vez
@@ -1087,7 +1119,7 @@
                   : rng.range(0, 360));
     return trazar(rng, rng.range(max(h, z.x0), min(ctx.fw - h, z.x1)),
                        rng.range(max(h, z.y0), min(ctx.fh - h, z.y1)),
-                  dir0, largo, nq, ctx.vib, D, ctx.orto, null, ctx.rumbos, ctx.cierre, ctx.trazos);
+                  dir0, largo, nq, ctx.vib, D, ctx.orto, null, ctx.rumbos, ctx.cierre, ctx.trazos, ctx.sep);
   }
 
   // ¿Cabe? Nunca se tocan: W+g contra todos los demás, y sin cortarse a sí mismo.
@@ -1383,7 +1415,7 @@
         cand.push(alRumbo(rng, cd + lado * salto * RUMBO_PASO[0], ctx.rumbos));
       for (const nd of cand) {
         const cola = trazar(rng, p.x, p.y, nd, falta, quiebrosPara(rng, falta, ctx.W),
-                            ctx.vib, ctx.D, ctx.orto, null, ctx.rumbos, ctx.cierre, ctx.trazos);
+                            ctx.vib, ctx.D, ctx.orto, null, ctx.rumbos, ctx.cierre, ctx.trazos, ctx.sep);
         if (!cola || cola.length < 2) continue;
         const junto = cur.concat(cola.slice(1));
         if (cabeDuro(junto, ctx, sangra, cruza)) {
@@ -1487,7 +1519,7 @@
         const L = largoRef * rng.range(PATA_LARGO[0], PATA_LARGO[1]);
         let pts = trazar(rng, x0, y0, caida + rng.range(-14, 14), ctx.S * L,
                          quiebrosPara(rng, ctx.S * L, ctx.W), ctx.vib, ctx.D, ctx.orto,
-                         null, ctx.rumbos, ctx.cierre, ctx.trazos);
+                         null, ctx.rumbos, ctx.cierre, ctx.trazos, ctx.sep);
         pts = cortarAlVolver(pts, ctx);
         pts = recortar(pts, ctx, false, false);
         if (!pts || largoDe(pts) < ctx.S * LARGO_MIN) continue;
@@ -1520,7 +1552,7 @@
         const nq = quiebrosPara(rng, largo, ctx.W);
         let pts = trazar(rng, px - Math.cos(dir * RAD) * largo * 0.5,
                          py - Math.sin(dir * RAD) * largo * 0.5, dir, largo, nq, ctx.vib,
-                         ctx.D, ctx.orto, null, ctx.rumbos, ctx.cierre, ctx.trazos);
+                         ctx.D, ctx.orto, null, ctx.rumbos, ctx.cierre, ctx.trazos, ctx.sep);
         // el cerco también CRECE hasta donde cabe: ahora se pone después del
         // protagonista, así que casi siempre tiene que ceder algo contra él, y
         // rechazarlo entero dejaba recintos de dos cuerdas.

@@ -2465,6 +2465,39 @@ fueron juntos.
 La batería, verde con el tirón puesto: `canal` 0 rendijas sin halo y 0 holguras de 195,
 `pelo` 0 por debajo de g, `obra` 0/195 en las cuatro, y todos los controles disparando.
 
+### El séquito: acompañar como ESTADO, no como empujón
+
+Un ojo de fuera miró la hoja y dijo lo que faltaba mirar: **`circuito.png` absuelve la
+técnica** —los esqueletos reales vestidos con la banda de la casa son casi
+indistinguibles del original— **y condena la coreografía**. Las referencias no son N
+trazos cerca unos de otros: son *carriles* de 2–4 hebras al pelo que **doblan juntas**.
+Y el tirón, siendo la leva correcta, es un controlador **de rumbo sin consigna de
+distancia**: captura pero no sostiene, y su racha muere en la primera bisagra porque el
+giro del guion dispara ignorando si el punto va acompañado.
+
+Así que el acompañamiento pasa a ser **estado del trazador**. Capturado un vecino —cerca
+y ya más o menos a su rumbo (`SEQ_ANG = 38°`)—, el trazo **suspende su guion privado** y
+viaja por el carril: sigue el rumbo local del vecino con un **servo de distancia** a la
+consigna del grupo (`SEQ_KP` grados por canal de error), y en cada subdivisión sortea
+seguir (`P_SUELTA`) o soltarse. Las co-bisagras salen solas: cuando el vecino dobla, su
+tangente local cambia y el servo dobla detrás.
+
+| | tirón solo | **séquito** | referencias |
+|---|---|---|---|
+| acompañado, en el motor | 26,7 % | **32,0 %** | — |
+| acompañado, del píxel | 26,2 % | **30,9 %** | 37,7 % |
+
+**Y cuatro de las cinco predicciones del diagnóstico fallan, que es lo que hay que
+decir.** Se predijo canal 0,49 → ≤0,35, constancia 0,26 → ≥0,45, racha p90 3,7 → ≥6 W y
+tinta ≥0,20. Medido: **canal 0,48, constancia 0,27, racha 3,6, tinta 0,17** — o sea que
+el servo **captura pero no sostiene el carril**. Sólo el acompañamiento se movió.
+
+El sospechoso es concreto y no es el mecanismo: la consigna está en `D·1,08`, pegada al
+muro que `cabeDuro` rechaza a `D`. Con el temblor encima, cada bajada cruza el muro y el
+trazo se trunca ahí, así que el carril nunca llega a durar. Se prueba subiendo la consigna
+por encima de la amplitud del temblor — y si el canal no se estrecha con eso, entonces sí
+es el mecanismo y no el ajuste.
+
 Al pasar la batería salió lo que el propio `mil.sh` está escrito para que salga —*«un
 control medido contra un artefacto viejo es peor que no tener control: no prueba nada y
 además convence»*— y salió por tres puertas a la vez.
