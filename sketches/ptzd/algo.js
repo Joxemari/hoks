@@ -221,6 +221,7 @@
    * que sólo se ve por su corte. La materia se declara por el filo, no por el
    * relleno — que es exactamente lo que dice la familia de los cortes. */
   const P_FANTASMA = 0.05;
+  const HALO_ANCHO = 0.55;   // en anchuras de gubia, por dentro del contorno
   // Una sajadura APUNTA a otro borde y se queda corta: ni pega en él (sería un
   // corte que suelta) ni se muere en campo abierto (no diría nada). El aire que
   // le queda por delante, en anchuras de gubia.
@@ -1274,7 +1275,11 @@
       ctx.save();
       trazo(); ctx.clip();
       ctx.strokeStyle = filo;
-      ctx.lineWidth = gPx * 2;
+      // Anchura del halo, POR DENTRO. Se traza al doble y se recorta contra la
+      // placa, así que lo que queda es la mitad: `HALO_ANCHO` gubias de banda
+      // interior. Una gubia entera lo empata con la incisión y la placa se lee
+      // como un marco; menos, y se lee como lo que es — el corte que la declara.
+      ctx.lineWidth = gPx * 2 * HALO_ANCHO;
       trazo(); ctx.stroke();
       ctx.restore();
       ctx.lineWidth = gPx;
