@@ -117,19 +117,21 @@
 
   <div class="intro">
     El tiempo se lee de izquierda a derecha: cada columna es un paso del generador y cada fila
-    una obra, la misma semilla en las ocho. <b>Se anota en tres sitios</b>: en la celda (lo que
+    una obra, la misma semilla en todas. <b>Se anota en tres sitios</b>: en la celda (lo que
     le pasa a esa obra en ese paso), en la cabecera de la columna (lo que el paso hace mal
     <i>siempre</i>) y en la cabecera de la fila (lo que le falta a esa obra en su conjunto). La
     columna es la unidad que importa si la sospecha es que un paso se lleva la esencia.
     <b>Ver todo en banda</b> dibuja la tinta ya en los pasos donde sólo hay hilo, para ver en
-    qué se iba a convertir cada estado.
+    qué se iba a convertir cada estado — y aquí eso importa el doble, porque <b>la densidad se
+    decide en el último paso</b>: antes de él la banda no existe, así que en los cinco primeros
+    se dibuja con la anchura que la obra acabará teniendo.
   </div>
 
   <div class="marco"><table id="tabla"></table></div>
 
   <footer>
     <span>la nota se guarda sola, por semilla y paso</span>
-    <span>ocho pasos · cinco obras</span>
+    <span>seis pasos · cinco obras</span>
     <span id="aviso"></span>
   </footer>
 </div>
@@ -138,71 +140,46 @@
 /* EL GENERADOR VA INCRUSTADO. La página es un artefacto suelto y no puede pedir el archivo,
    así que aquí abajo está la misma fuente que `sketches/hrrs/circuito/gen.js`, palabra por
    palabra. Si se toca el generador, se vuelve a incrustar; no se edita aquí. */
-// hrrs — EL CIRCUITO. Dos fases, y el orden lo dictó el autor:
+// hrrs — EL CIRCUITO, en el orden que el autor corrigió viendo la autopsia paso a paso.
 //
-//   FASE 1 · SEMBRAR. «Lo primero es dibujar una serie de puntos, que es el primer trazo.
-//     Unirlo. Luego se dibujan otros trazos que son series de puntos.» Cada trazo se
-//     siembra SIN MIRAR A LOS DEMÁS: líneas de un píxel, con nada aplicado.
+//   1. LOS PUNTOS DEL PRIMER TRAZO. Sólo del primero. «Hay un montón de puntos, cuando en
+//      realidad el primer paso debería ser dibujar los puntos del primer trazo.»
+//   2. UNIR SÓLO ESA LÍNEA. Un trazo de un píxel, y nada más en la hoja.
+//   3. LOS DEMÁS TRAZOS, puntos y línea, YA EN RELACIÓN con lo que hay. «Ahí está la parte
+//      creativa: cómo se dibujan esos trazos o cómo se relacionan. Ahí deberíamos tener
+//      diferentes categorías visuales.» Cuatro: paralela, prolonga, apoyo y suelta.
+//   4. EL CAMPO, sobre la estructura completa. «Una vez tengamos la estructura completa con
+//      líneas ahí, empiezan a tomar efecto factores como la gravedad, el porcentaje de solape
+//      y otras variables. Con eso llegaríamos a una composición que fuese líneas de un píxel,
+//      a falta de trabajar los trazos.»
+//   5. LA DENSIDAD, Y NO ANTES. «En ese momento, y no antes, se le daría densidad al trazo.»
 //
-//   FASE 2 · RELAJAR. «Ahí, ya después de que todos los trazos simples, se empiecen a
-//     aplicar los conceptos de gravedad, atracción, probabilidad de solape.» El campo
-//     actúa sobre el CONJUNTO ENTERO y todos los trazos se mueven a la vez: el
-//     protagonista también, y de ahí sale la cohesión.
+// LO QUE CAMBIA DE VERDAD ES EL PASO 5, y cambia el modelo entero. Antes la anchura de banda se
+// sorteaba AL PRINCIPIO y toda la geometría se medía en unidades de esa anchura: el carril, el
+// canal, el suelo. Si la densidad va al final, es al revés — la composición se trabaja en
+// unidades propias y LA BANDA SE AJUSTA AL HUECO QUE LA COMPOSICIÓN DEJÓ:
 //
-// LAS TRES VARIABLES, suyas, cada una EN SU SITIO —y aquí estaba el error de la vuelta
-// anterior, que las puso las tres punto a punto y el campo deshilachó la forma—:
+//     W = hueco mínimo real / (1 + canal)
 //
-//   GRAVEDAD, DEL TRAZO. «La gravedad que pueda tener cada uno de los trazos». Es una MASA,
-//     y una masa mueve un CUERPO: el trazo se traslada entero, sin cambiar ni un ángulo.
-//     El que pesa se queda; el ligero va. El polo no se coloca: emerge donde hay masa.
+// Y entonces las bandas NO PUEDEN FUNDIRSE, por construcción, sin una sola pasada correctora.
+// Eso importa porque la autopsia demostró que las pasadas correctoras son las que se llevaban
+// la esencia: la relajación dejaba la obra en el objetivo —ejes 0,59 contra 0,49 y
+// acompañamiento 0,53 contra 0,52— y el barrido de solape la bajaba a 0,33 y 0,27 en una sola
+// pasada. Aquí no hay barrido de solape, ni abrir el canal, ni quitar púas. El campo es lo
+// último que toca la geometría, y la banda se corta a medida.
 //
-//   ATRACCIÓN, DEL PUNTO. «No sé si tanto en el trazo o en los puntos del trazo». Ahí sí:
-//     cada punto decide cuánto se deja llevar al carril del vecino, y eso es lo que
-//     paraleliza. Deforma, pero contra un carril, así que ordena en vez de deshilachar.
+// Y CADA CABO TIENE UN DESTINO DECLARADO, que no es lo mismo que una tendencia: «los cabos
+// tienden a terminar en abierto o, si no, terminar contra un cuerpo, ya sea el lateral de un
+// trazo o el final o el inicio de un trazo». Tres destinos, y se sortean por cabo:
 //
-//   PROBABILIDAD DE SOLAPE, DEL PUNTO. «Si dos líneas se han solapado, pero al chequear sus
-//     variables de solape su fuerza no corresponde a solaparse, se paralelizarían y se
-//     rompería el solape». El solape OCURRE primero y se JUSTIFICA después: es un juicio.
+//   ABIERTO   muere al aire, y se aparta de todo para que se lea que muere al aire.
+//   LATERAL   llega y muere contra el costado de otro trazo, a un canal: una T.
+//   CABO      se encuentra con el cabo de otro y los dos se quedan a un canal, enfrentados.
 //
-// EL ALFABETO NO CUANTIZA, ATRAE. Cuantizando —cada tramo al rumbo más próximo— el trazo
-// dobla setenta grados ocho veces, y en las seis dobla treinta grados cinco veces: los
-// trazos de Chillida CURVAN. Así que los rumbos son atractores y la dirección DERIVA hacia
-// ellos con su inercia, y de vez en cuando —una de ocho— hay una ESQUINA de verdad, un salto
-// a otro rumbo. Lo primero da lo orgánico y lo segundo la estructura; cuantizar daba lo
-// segundo dos veces.
-//
-// EL CAMPO Y EL ALFABETO DECIDEN COSAS DISTINTAS, y esto es lo que faltaba. Un campo
-// continuo sobre puntos libres redondea las direcciones, y en las seis media longitud corre
-// sobre los ejes del pliego: relajando a secas los ejes caían de 0,52 a 0,24. Así que cada
-// vuelta se relaja y luego se ENCAUZA —cada tramo deriva hacia el rumbo del alfabeto más
-// próximo, guardando su largo—. El campo dice DÓNDE va el trazo y a quién acompaña; el
-// alfabeto dice EN QUÉ RUMBO corre. Es el paso 3 del autor, «se le dan características al
-// trazo», y de paso es una proyección sobre la restricción, que es lo que la hace converger.
-//
-// EL MARGEN ES EL LÍMITE, no la meta: «el que marca el constraint es el margen entre
-// trazos, que es constante cuando están paralelizados». Así que la gravedad tira de lejos y
-// MUERE en el carril, y del carril adentro solo manda el muelle. Sin esa zona muerta la
-// gravedad es máxima justo donde debía parar y la obra se cierra en un grumo.
-//
-// ── LO QUE FALTA, dicho para que no haya que redescubrirlo ────────────────────────────────
-//
-// EL EJE Y EL DOBLEZ SE PELEAN, y no es un mando mal puesto. Si media longitud va sobre dos
-// ejes perpendiculares hay que doblar noventa grados para pasar de uno al otro, así que subir
-// el eje sube el giro: el barrido va de (ejes 0,35 / giro 40) a (0,48 / 48) y no hay
-// combinación que dé 0,52 con 32. Las seis lo resuelven de otra manera —tiradas de eje LARGAS
-// y transiciones por los oblicuos—, y eso es otra pieza de modelo: el rumbo tendría que durar
-// un tramo declarado, no decidirse tramo a tramo. Hoy: ejes 0,40 contra 0,52, giro 41 contra 32.
-//
-// EL ACOMPAÑAMIENTO SE HA QUEDADO EN 0,38 contra el 0,52 de las seis, y el número no subió al
-// arreglar la geometría: bajó de 0,44 a 0,38. No es una regresión, es que el 0,44 estaba
-// medido sobre bandas que se solapaban —se dibujaba 1,35·W con los centros a 1,30·W como
-// mucho—, así que aquello no era acompañar, era chocar. Dos mecanismos probados y descartados,
-// los dos con el número peor: hacer que la atracción vaya a un SOCIO fijo en vez de al vecino
-// más próximo (0,34), y añadir el socio como tirón de largo alcance (0,38). Lo que sí suma es
-// el desvío del final —el de partir y empalmar—, y suma poco: 0,03, pagando dos codos.
-// La conclusión, medida: acompañar no se consigue empujando trazos que nacieron sueltos. En
-// las seis el trazo NACE acompañando, y eso pide sembrar unos como offset de otros — que
-// choca con «los trazos se siembran sin mirarse», así que hay que preguntárselo a él.
+// Y el reparto no es libre: en las cinco referencias buenas el 18 % de los cabos muere al aire,
+// o sea que el 82 % muere contra algo. Un cabo que muere contra un cuerpo tiene que LLEGAR —el
+// último tramo apunta al cuerpo—, porque si llega de refilón se lee como un roce y no como un
+// encuentro.
 
 function Rng(s) { this.s = (s >>> 0) || 1; }
 Rng.prototype.u = function () {
@@ -216,12 +193,22 @@ Rng.prototype.pick = function (v) { return v[Math.floor(this.u() * v.length)]; }
 
 const RAD = Math.PI / 180;
 const hy = (a, b) => Math.hypot(a, b);
+const corto = (d) => { d = d % 360; if (d > 180) d -= 360; if (d < -180) d += 360; return d; };
 
 function segCorta(a, b, c, d) {
   const o = (p, q, r) => (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
   return ((o(a, b, c) > 0) !== (o(a, b, d) > 0)) && ((o(c, d, a) > 0) !== (o(c, d, b) > 0));
 }
-// el punto más cercano de un trazo, con su tangente: la tangente es la que paraleliza
+function distTramos(a, b, c, d) {
+  if (segCorta(a, b, c, d)) return 0;
+  const dp = (p, q, r) => {
+    const ex = r[0] - q[0], ey = r[1] - q[1], l2 = ex * ex + ey * ey;
+    let u = l2 > 1e-18 ? ((p[0] - q[0]) * ex + (p[1] - q[1]) * ey) / l2 : 0;
+    u = u < 0 ? 0 : u > 1 ? 1 : u;
+    return hy(p[0] - (q[0] + ex * u), p[1] - (q[1] + ey * u));
+  };
+  return Math.min(dp(a, c, d), dp(b, c, d), dp(c, a, b), dp(d, a, b));
+}
 function cercaDe(p, t) {
   let dm = Infinity, r = null;
   for (let i = 0; i < t.length - 1; i++) {
@@ -239,194 +226,385 @@ function largoDe(p) {
   for (let i = 0; i < p.length - 1; i++) L += hy(p[i + 1][0] - p[i][0], p[i + 1][1] - p[i][1]);
   return L;
 }
+// el hueco mínimo real entre trazos distintos: es lo que decide la anchura de la banda
+function huecoMinimo(trazos) {
+  let m = Infinity;
+  for (let k = 0; k < trazos.length; k++)
+    for (let j = k + 1; j < trazos.length; j++)
+      for (let i = 0; i < trazos[k].length - 1; i++)
+        for (let q = 0; q < trazos[j].length - 1; q++) {
+          const d = distTramos(trazos[k][i], trazos[k][i + 1], trazos[j][q], trazos[j][q + 1]);
+          if (d < m) m = d;
+        }
+  return m;
+}
+
+const CANAL = 0.22;   // el canal, en anchuras de banda: medido en las cinco referencias buenas
 
 function circuito(seed, opt) {
   const rng = new Rng(seed);
 
-  // LAS FOTOS. El laboratorio existe para mirar, y una obra que sale mal sale mal EN ALGÚN
-  // PASO: sin poder ver el paso no hay manera de saber cuál. `circuito(seed, {pasos:true})`
-  // devuelve una copia de la geometría en cada estación del recorrido, con cómo hay que
-  // dibujarla —puntos, hilo o banda—, y de ahí salen la autopsia por columnas y `pasos.js`.
-  //
-  // Y con esto se encontró lo que se buscaba: la relajación deja la obra EN EL OBJETIVO de las
-  // referencias, y cada pasada correctora posterior se lo lleva. Ver el README.
   const pasos = (opt && opt.pasos) ? [] : null;
+  let W = 0;    // la anchura de banda no existe hasta el paso 5. A propósito.
   const foto = (etq, modo, nota) => {
     if (!pasos) return;
-    pasos.push({ etq, modo: modo || 'hilo', nota: nota || '',
+    pasos.push({ etq, modo: modo || 'hilo', nota: nota || '', W,
                  trazos: trazos.map(t => t.map(q => [q[0], q[1]])) });
   };
 
   const prop = rng.range(1.02, 1.55), apais = rng.bool(0.5);
   const fw = apais ? prop : 1, fh = apais ? 1 : prop;
 
-  // el alfabeto: dos rumbos anclados al pliego —media longitud va sobre los ejes en las
-  // seis— y dos o cuatro oblicuos, con su error
-  const K = (typeof process !== 'undefined' && process.env.HRRS_K)
-    ? process.env.HRRS_K.split(',').map(Number)
-    : [3.60, 0.34, 0.55, 0.11, 0.55, 9, 0.42, 0.60, 24];
-  const TIRA_EJE   = K[0];   // la cuenca del eje frente al oblicuo
-  const PESO_ALF   = K[1];   // cuánto se lleva el atractor a cada vuelta del encauzado
-  const PESO_PAR   = K[2];   // y cuánto el rumbo del vecino — esto es lo que paraleliza
-  const P_ESQUINA  = K[3];   // cada cuánto la siembra da una esquina de verdad
-  const ATRAE_RUMBO= K[4];   // la deriva de la siembra hacia su rumbo
-  const TEMBLOR    = K[5];   // y su temblor, en grados
-  const PESO_INERCIA=K[6];   // el tramo anterior tira del siguiente: continuidad
-  const P_ESQ_ENC  = K[7];   // (reservado)
-  const TOPE_GIRO  = K[8];   // ningún tramo dobla más de esto en una vuelta
-  const A = (typeof process !== 'undefined' && process.env.HRRS_A)
-    ? process.env.HRRS_A.split(',').map(Number) : [3.0, 0.16, 4.0, 11.0, 55, 3, 62];
-  const ALCANCE_ACOMP = A[0]; // hasta cuántos carriles se considera que hay a quién acompañar
-  const UMBRAL_ACOMP  = A[1]; // y con cuánta atracción en ese punto merece la pena partir
-  const RUN_MIN = A[2], RUN_MAX = A[3];  // el largo del acompañamiento, EN ANCHURAS DE BANDA
-  const TOPE_CRUCE    = A[4]; // más cruzados que esto, no se acompaña: sería una grapa
-  const RONDAS        = A[5]; // cuántos acompañamientos se le ofrecen a cada trazo
-  const TOPE_EMPALME  = A[6]; // más cerrado que esto, el empalme es una grapa: se rechaza
-
+  // EL ALFABETO. Dos rumbos anclados al pliego —en las referencias el 72 % de la longitud corre
+  // a ±20° de los ejes— y dos o cuatro oblicuos, con su error de mano.
   const gira = rng.range(-4, 4);
-  // EL PESO DEL EJE, en la siembra. En las seis el 72 % de la longitud corre a ±20° de los
-  // ejes del pliego; yo iba en el 60 %. La cuenca del encauzado ya tira, pero si la siembra
-  // reparte a partes iguales el encauzado tiene que deshacer la mitad del trabajo — y deshacer
-  // rumbo cuesta giro. Se siembra ya escorado al eje.
-  const P_EJE = (typeof process !== 'undefined' && process.env.HRRS_EJE)
-    ? Number(process.env.HRRS_EJE) : 0.34;
-  const OBL_MIN = (typeof process !== 'undefined' && process.env.HRRS_OBL)
-    ? Number(process.env.HRRS_OBL.split(',')[0]) : 20;
-  const OBL_MAX = (typeof process !== 'undefined' && process.env.HRRS_OBL)
-    ? Number(process.env.HRRS_OBL.split(',')[1]) : 70;
-  const rumbos = [gira, gira + 90], pesoRumbo = [P_EJE, P_EJE];
+  const rumbos = [gira, gira + 90], pesoRumbo = [0.30, 0.30];
   const nObl = rng.int(2, 4);
   for (let i = 0; i < nObl; i++) {
-    rumbos.push(gira + rng.range(OBL_MIN, OBL_MAX) * (rng.bool(0.5) ? 1 : -1));
-    pesoRumbo.push((1 - 2 * P_EJE) / nObl);
+    rumbos.push(gira + rng.range(20, 70) * (rng.bool(0.5) ? 1 : -1));
+    pesoRumbo.push(0.40 / nObl);
   }
   const todos = [], tira = [];
   for (let i = 0; i < rumbos.length; i++) {
-    // LA CUENCA. Rectificar al rumbo MÁS PRÓXIMO reparte por igual, y en las seis los dos ejes
-    // del pliego se llevan media longitud siendo dos rumbos de seis: tiran el triple. Así que
-    // el eje tiene una cuenca más ancha y se queda con los tramos que le pasan cerca.
-    const t = i < 2 ? TIRA_EJE : 1;
+    const t = i < 2 ? 2.6 : 1;                 // la cuenca del eje, más ancha
     todos.push(rumbos[i]); tira.push(t);
     todos.push(rumbos[i] + 180); tira.push(t);
   }
-
-  // la banda fina pesa más: no es invariante de las seis —van de 0,025 a 0,096— es una
-  // preferencia del autor, medida (z = −0,79 sobre 24 obras que eligió sin queja)
-  // La cobertura de tinta de las seis es 24,8 % y la mía 20,1 %, y sale de aquí: con la línea
-  // ya en su sitio, la tinta la pone la banda. Despejando en las seis —línea 5,21 sobre un
-  // pliego de área ~1,28— su banda mediana es 0,061, y yo sorteaba con media 0,0515. Se sube
-  // el rango sin perder la fina, que es la que él prefiere (z = −0,79 sobre 24 obras suyas).
-  const W = rng.range(0.036, 0.086);
-
-  // SEPARACIÓN = BANDA + CANAL, y esto es aritmética, no gusto. Antes la banda se dibujaba a
-  // 1,35·W con los centros a 1,21·W: la banda era MÁS ANCHA que la separación de centros, así
-  // que el foso tenía que morder a los vecinos y donde se juntaban tres quedaba un borrón. W es
-  // la anchura de la tinta, el canal son 0,22 anchuras —medido en las seis— y los centros van
-  // a la suma. El tipo modula esa suma; no la contradice.
-  const CANAL = 0.22;
-  const TIPOS = {
-    denso:   { n: [9, 15], sepK: [1.00, 1.12], atrae: [0.30, 0.55],
-               grav: [0.55, 1.25], solape: [0.10, 0.30] },
-    abierto: { n: [6, 10],  sepK: [1.25, 2.10], atrae: [0.14, 0.32],
-               grav: [0.12, 0.50], solape: [0.02, 0.12] },
-  };
-  const tipo = rng.bool(0.62) ? 'denso' : 'abierto';
-  const T = TIPOS[tipo];
-  const sep = W * (1 + CANAL) * rng.range(T.sepK[0], T.sepK[1]);
-  // el reposo, un pelo por fuera de la línea prohibida: puesto EN `sep` justo, la prueba del
-  // margen lo rechaza y las paralelas se mueren al nacer
-  const carril = sep * 1.02;
-  const mg = W * 0.5 + 0.004;
-  const n = rng.int(T.n[0], T.n[1]);
-  const fuerza = rng.range(T.atrae[0], T.atrae[1]);
-  const G = rng.range(T.grav[0], T.grav[1]);
-  const solMedia = rng.range(T.solape[0], T.solape[1]);
-  // alto a propósito: el autor dice «puede llegar a haber solapes», no que sean la norma,
-  // y las seis no cruzan un solo par de centros en 220 posibles
-  const SOL_UMBRAL = 0.82;
-  const VUELTAS = 18;
-
-  const HOLGURA = 0.45;      // cuánto aire guarda el punto sin fuerza de solape, sobre el carril
-  const TOPE_VUELTA = 100;   // un giro más cerrado que esto no existe en las seis
-  const PASO = 0.105;
-  const ERR_RUMBO = 7;
-
-  // el rumbo más próximo, con la cuenca del eje: a qué atractor cae esta dirección
   const atractor = (a) => {
     let mej = a, dm = Infinity;
     for (let r = 0; r < todos.length; r++) {
-      const d = Math.abs(((todos[r] - a + 540) % 360) - 180) / tira[r];
+      const d = Math.abs(corto(todos[r] - a)) / tira[r];
       if (d < dm) { dm = d; mej = todos[r]; }
     }
     return mej;
   };
-  const corto = (d) => { d = d % 360; if (d > 180) d -= 360; if (d < -180) d += 360; return d; };
-  // paralelo, no misma dirección: dos hebras de la misma cinta corren al revés y acompañan
-  const cortoPar = (d) => { const c = corto(d); return Math.abs(c) > 90 ? corto(d + 180) : c; };
+
+  // LA SEPARACIÓN NOMINAL, en unidades de la COMPOSICIÓN y no de la banda: es lo que separa dos
+  // líneas paralelas. La banda saldrá de aquí al final, no al contrario.
+  const TIPOS = {
+    denso:   { n: [8, 13], sep: [0.055, 0.080], cats: [0.52, 0.14, 0.24, 0.10] },
+    abierto: { n: [5, 9],  sep: [0.085, 0.150], cats: [0.30, 0.18, 0.20, 0.32] },
+  };
+  const tipo = rng.bool(0.62) ? 'denso' : 'abierto';
+  const T = TIPOS[tipo];
+  const sep = rng.range(T.sep[0], T.sep[1]);
+  const mg = sep * 0.55 + 0.010;
+  const n = rng.int(T.n[0], T.n[1]);
+  const PASO = 0.105, ERR = 7, TOPE_VUELTA = 100;
+  // LA ESQUINA, por PASO y no por trazo. En las referencias hay 6,9 quiebros por unidad de
+  // longitud, o sea ~0,7 por paso: con 0,11 el trazo hacía media esquina y salía recto —cuerda
+  // 0,98 contra 0,79—. Un trazo corto con tasa baja de esquina es una raya.
+  const P_ESQ = (typeof process !== 'undefined' && process.env.HRRS_E)
+    ? Number(process.env.HRRS_E) : 0.30;
+  const K_LARGO = (typeof process !== 'undefined' && process.env.HRRS_L)
+    ? Number(process.env.HRRS_L) : 1.4;
+
+  const dentro = (p) => [Math.max(mg, Math.min(fw - mg, p[0])),
+                         Math.max(mg, Math.min(fh - mg, p[1]))];
+  const fuera = (p) => p[0] < mg || p[0] > fw - mg || p[1] < mg || p[1] > fh - mg;
 
   const eligeRumbo = (desde) => {
     if (desde == null) {
       let u = rng.u(), acc = 0, k = 0;
       for (; k < rumbos.length; k++) { acc += pesoRumbo[k]; if (u <= acc) break; }
       return rumbos[Math.min(k, rumbos.length - 1)] + (rng.bool(0.5) ? 0 : 180)
-             + rng.range(-ERR_RUMBO, ERR_RUMBO);
+             + rng.range(-ERR, ERR);
     }
-    // NI VUELTAS ATRÁS. `todos` lleva cada rumbo y su opuesto, así que sin este tope el trazo
-    // podía elegir un candidato a 170° y doblarse sobre sí mismo: 19 % de mis giros pasaban de
-    // 110° contra el 1 % de las seis, y eso convierte un circuito en un garabato. Es el defecto
-    // que más se veía y no salía en ninguno de los quince rasgos que medía.
-    const cand = todos.map(r => ({ r, d: Math.abs(((r - desde + 540) % 360) - 180) }))
-                      .filter(o => o.d > 12 && o.d < TOPE_VUELTA).sort((a, b) => a.d - b.d);
+    const cand = todos.map(r => ({ r, d: Math.abs(corto(r - desde)) }))
+                      .filter(o => o.d > 12 && o.d < TOPE_VUELTA)
+                      .sort((a, b) => a.d - b.d);
     if (!cand.length) return desde;
     const i = rng.bool(0.72) ? 0 : Math.min(cand.length - 1, rng.int(1, 2));
-    return cand[i].r + rng.range(-ERR_RUMBO, ERR_RUMBO);
-  };
-  // REBOTA, NO RECORTA. Recortando contra el pliego los puntos se apilan a lo largo del
-  // borde y la obra se abraza al marco; rebotando, el trazo entra otra vez al papel.
-  const dentro = (p) => {
-    let x = p[0], y = p[1];
-    if (x < mg) x = mg + (mg - x); if (x > fw - mg) x = (fw - mg) - (x - (fw - mg));
-    if (y < mg) y = mg + (mg - y); if (y > fh - mg) y = (fh - mg) - (y - (fh - mg));
-    return [Math.max(mg, Math.min(fw - mg, x)), Math.max(mg, Math.min(fh - mg, y))];
+    return cand[i].r + rng.range(-ERR, ERR);
   };
 
-  // el valor de cada punto: onda lenta, no ruido. Un trazo tiene TRAMOS que tienden a
-  // solaparse, no puntos alternos — con ruido blanco el solape sale y se rompe cada dos
-  // puntos y no se lee como una decisión.
-  function perfil(m, media, amp) {
-    const f = rng.range(0.8, 2.4), p0 = rng.range(0, 6.2832), out = [];
-    for (let i = 0; i < m; i++) {
-      const u = m > 1 ? i / (m - 1) : 0;
-      out.push(Math.max(0, Math.min(1, media + amp * Math.sin(u * f * 6.2832 + p0)
-                                     + rng.range(-0.08, 0.08))));
+  const trazos = [], masas = [], sols = [], atrs = [], cats = [];
+
+  // el paseo: una serie de puntos con la cadencia del alfabeto. Deriva casi siempre y de vez en
+  // cuando hace ESQUINA — en las referencias el 73 % de los tramos dobla menos de 15°, así que
+  // el trazo corre y la esquina es un acontecimiento.
+  const DBG = (typeof process !== 'undefined' && process.env.HRRS_POR)
+    ? { fuera: 0, estorba: 0, nace_fuera: 0, nace_pegado: 0 } : null;
+  function pasea(p0, dir0, largo, evita) {
+    let dir = dir0;
+    if (DBG) {
+      if (fuera(p0)) DBG.nace_fuera++;
+      let m = Infinity;
+      for (const t of trazos) { const c = cercaDe(dentro(p0), t); if (c && c.d < m) m = c.d; }
+      if (m < sep * 0.78) DBG.nace_pegado++;
     }
-    return out;
+    const pts = [dentro(p0)];
+    let hecho = 0, atasco = 0;
+    while (hecho < largo && atasco < 25) {
+      const u = pts[pts.length - 1];
+      // LA INTENCIÓN PRIMERO, y el escape después. Probando primero «seguir recto» y usando el
+      // giro sólo como salida de emergencia, el trazo sale recto por construcción: la cuerda
+      // salía 0,99 contra el 0,79 de las referencias. Lo que el trazo quiere hacer es derivar
+      // hacia su rumbo, o hacer esquina; esquivar es lo que hace cuando no puede.
+      const quiere = rng.bool(P_ESQ)
+        ? eligeRumbo(dir)
+        : dir + corto(atractor(dir) - dir) * 0.55 + rng.range(-9, 9);
+      const cand = [quiere];
+      for (let g = 1; g <= 4; g++) { cand.push(quiere + g * 14); cand.push(quiere - g * 14); }
+      cand.push(eligeRumbo(dir));
+      // y si nada cabe a paso largo, se prueba a paso corto: un trazo que no puede avanzar un
+      // tramo entero puede avanzar medio, y eso NO ES ATASCARSE
+      let puesto = false;
+      for (const fL of [1, 0.6, 0.35]) {
+        const L = Math.min(PASO * rng.range(0.72, 1.5) * fL, largo - hecho);
+        if (L < PASO * 0.20) break;
+        for (const d2 of cand) {
+          const q = [u[0] + Math.cos(d2 * RAD) * L, u[1] + Math.sin(d2 * RAD) * L];
+          if (fuera(q)) { if (DBG) DBG.fuera++; continue; }
+          if (evita && evita(u, q)) { if (DBG) DBG.estorba++; continue; }
+          pts.push(q); dir = d2; hecho += L; puesto = true; break;
+        }
+        if (puesto) break;
+      }
+      if (!puesto) { atasco++; dir = eligeRumbo(dir); continue; }
+      atasco = 0;
+    }
+    return pts;
   }
+  // no cruzar, y no meterse en el canal de nadie: el canal se respeta AL DIBUJAR
+  const estorba = (k) => (a, b) => {
+    for (let j = 0; j < trazos.length; j++) {
+      if (j === k) continue;
+      for (let q = 0; q < trazos[j].length - 1; q++)
+        if (distTramos(a, b, trazos[j][q], trazos[j][q + 1]) < sep * 0.78) return true;
+    }
+    return false;
+  };
 
-  // RECTIFICAR: devolver cada tramo a su rumbo, guardando su largo. Se reconstruye DESDE EL
-  // MEDIO hacia los dos lados, no desde el cabo: desde el cabo el error se acumula y el trazo
-  // entero se va de sitio, y lo que el campo acababa de decidir se pierde.
-  // ENCAUZAR es UNA SOLA DECISIÓN por tramo, y en ella caben las cuatro cosas que hacen
-  // que esto se lea como Chillida y no como un campo de fuerzas:
-  //
-  //   el ALFABETO — el tramo va a un rumbo declarado, no a donde el campo lo dejó;
-  //   el EJE — que tiene la cuenca más ancha, porque en las seis los dos ejes del pliego se
-  //     llevan media longitud siendo dos rumbos de seis;
-  //   la CONTINUIDAD — doblar cuesta. Sin este peaje cada tramo cae en un eje y el siguiente
-  //     en el otro: noventa grados todo el rato, y el giro se iba a 84° contra los 32° suyos;
-  //   el PARALELISMO — y aquí está lo que faltaba. Acompañar no es acercarse: es IR EN EL
-  //     MISMO RUMBO. La atracción del campo mueve el punto perpendicular al vecino y lo deja
-  //     al margen justo, pero cruzado; entonces el tramo se lee como un roce, no como una
-  //     paralela, y el acompañamiento no pasaba de 0,25 contra el 0,52 de las seis. Así que el
-  //     rumbo del vecino entra en el coste, pesado por la ATRACCIÓN DE ESE PUNTO, que es la
-  //     variable del autor. Paralelizar dicho en el alfabeto.
-  //
-  // Y se reconstruye DESDE EL MEDIO hacia los dos lados, no desde el cabo: desde el cabo el
-  // error se acumula y el trazo entero se va de sitio, perdiendo lo que el campo decidió.
-  // las tres escalas tienen que hablarse: el coste del alfabeto se mide en 60° porque es el
-  // hueco típico entre rumbos, y los dos peajes en la vuelta entera
+  // ── 1 y 2. EL PRIMER TRAZO, SOLO ──────────────────────────────────────────────
+  // Es el protagonista: más largo que los demás y sin nadie a quien mirar. La hoja está vacía.
+  {
+    const a = rng.range(0, 6.2832), r = rng.range(0.06, 0.30);
+    const p0 = [0.5 * fw + Math.cos(a) * r * fw, 0.5 * fh + Math.sin(a) * r * fh];
+    const pts = pasea(p0, eligeRumbo(null), rng.range(0.85, 1.45) * K_LARGO, null);
+    trazos.push(pts); masas.push(rng.range(1.5, 2.6)); cats.push('primero');
+  }
+  foto('1 · los puntos del primer trazo', 'puntos',
+       'Sólo el primero. La hoja está vacía y no hay nada que mirar.');
+  foto('2 · unido', 'hilo',
+       'Se une, y ya está: un trazo de un píxel, el protagonista, y nada más en la hoja.');
 
-  const encauza = (pts, err, k, atr) => {
+  // ── 3. LOS DEMÁS, YA EN RELACIÓN — las categorías visuales ────────────────────
+  // «Ahí está la parte creativa: cómo se dibujan esos trazos o cómo se relacionan.» Cuatro
+  // maneras de responderle a lo que ya hay, y el tipo de obra decide con qué frecuencia:
+  //
+  //   PARALELA   nace en el carril del padre, en su dirección, ya acompañando.
+  //   PROLONGA   arranca donde el padre acaba y sigue, con su giro: la línea continúa.
+  //   APOYO      llega y MUERE contra el cuerpo — «los finales tienen que tender a juntarse».
+  //   SUELTA     lejos, con su propio rumbo. Es la que da aire.
+  const CATS = ['paralela', 'prolonga', 'apoyo', 'suelta'];
+  const eligeCat = () => {
+    let u = rng.u(), acc = 0;
+    for (let i = 0; i < CATS.length; i++) { acc += T.cats[i]; if (u <= acc) return CATS[i]; }
+    return 'suelta';
+  };
+  const puntoDe = (t) => {
+    const i = rng.int(0, t.length - 2), f = rng.u();
+    return { p: [t[i][0] + (t[i + 1][0] - t[i][0]) * f, t[i][1] + (t[i + 1][1] - t[i][1]) * f],
+             dir: Math.atan2(t[i + 1][1] - t[i][1], t[i + 1][0] - t[i][0]) / RAD };
+  };
+
+  // EL NACIMIENTO SE COMPRUEBA. El punto de partida se colocaba respecto al PADRE sin mirar a
+  // nadie más, así que tres o cuatro trazos por obra nacían dentro del canal de un TERCERO — y
+  // desde ahí no hay salida: todos los primeros pasos estorban, el trazo se atasca y logra cero
+  // de recorrido. Dos tercios de los trazos morían así, y de ahí salían la mitad de la tinta
+  // (línea 2,8 contra 5,2) y el trazo recto (cuerda 0,98). Se prueban varios nacimientos y, si
+  // ninguno está limpio, la categoría cede: mejor una suelta que un trazo que no existe.
+  const libre = (p) => {
+    for (const t of trazos) { const c = cercaDe(p, t); if (c && c.d < sep * 0.92) return false; }
+    return !fuera(p);
+  };
+  const naceCat = (cat) => {
+    const padre = trazos[rng.bool(0.55) ? 0 : rng.int(0, trazos.length - 1)];
+    if (cat === 'paralela') {
+      const q = puntoDe(padre), lado = rng.bool(0.5) ? 1 : -1;
+      return { p: [q.p[0] + Math.cos((q.dir + 90 * lado) * RAD) * sep * 1.06,
+                   q.p[1] + Math.sin((q.dir + 90 * lado) * RAD) * sep * 1.06],
+               dir: q.dir + (rng.bool(0.5) ? 0 : 180) + rng.range(-ERR, ERR) };
+    }
+    if (cat === 'prolonga') {
+      const cabo = rng.bool(0.5) ? padre[0] : padre[padre.length - 1];
+      const otro = cabo === padre[0] ? padre[1] : padre[padre.length - 2];
+      const d = Math.atan2(cabo[1] - otro[1], cabo[0] - otro[0]) / RAD;
+      return { p: [cabo[0] + Math.cos(d * RAD) * sep * 1.30,
+                   cabo[1] + Math.sin(d * RAD) * sep * 1.30],
+               dir: eligeRumbo(d) };
+    }
+    if (cat === 'apoyo') {
+      const q = puntoDe(padre), lado = rng.bool(0.5) ? 1 : -1;
+      return { p: [q.p[0] + Math.cos((q.dir + 90 * lado) * RAD) * sep * 1.10,
+                   q.p[1] + Math.sin((q.dir + 90 * lado) * RAD) * sep * 1.10],
+               dir: q.dir + 90 * lado + rng.range(-28, 28) };
+    }
+    const a = rng.range(0, 6.2832), r = rng.range(0.14, 0.42);
+    return { p: [0.5 * fw + Math.cos(a) * r * fw, 0.5 * fh + Math.sin(a) * r * fh],
+             dir: eligeRumbo(null) };
+  };
+
+  for (let k = 1; k < n; k++) {
+    let cat = eligeCat(), nac = null;
+    for (let intento = 0; intento < 8 && !nac; intento++) {
+      const c = naceCat(cat);
+      if (libre(c.p)) nac = c;
+    }
+    if (!nac) {
+      cat = 'suelta';
+      for (let intento = 0; intento < 12 && !nac; intento++) {
+        const c = naceCat('suelta');
+        if (libre(c.p)) nac = c;
+      }
+    }
+    if (!nac) continue;                      // la hoja está llena: no se fuerza
+    const largo = rng.range(0.38, 0.95) * K_LARGO;
+    let pts = pasea(nac.p, nac.dir, largo, estorba(-1));
+    if (typeof process !== 'undefined' && process.env.HRRS_PIDE)
+      console.error('pide ' + largo.toFixed(2) + ' logra ' + largoDe(pts).toFixed(2) + '  ' + cat);
+    if (pts.length < 2 || largoDe(pts) < PASO * 1.4) continue;
+    if (cat === 'apoyo') pts.reverse();
+    trazos.push(pts); masas.push(rng.range(0.3, 1.2)); cats.push(cat);
+  }
+  // cada punto trae sus dos variables: cuánto se deja llevar y cuánta fuerza de solape tiene.
+  // Onda lenta y no ruido: un trazo tiene TRAMOS que tienden a arrimarse, no puntos alternos.
+  const fuerza = rng.range(tipo === 'denso' ? 0.34 : 0.16, tipo === 'denso' ? 0.58 : 0.34);
+  const solMedia = rng.range(0.04, 0.26);
+  for (let k = 0; k < trazos.length; k++) {
+    const m = trazos[k].length;
+    const perfil = (media, amp) => {
+      const f = rng.range(0.8, 2.4), p0 = rng.range(0, 6.2832), out = [];
+      for (let i = 0; i < m; i++) {
+        const u = m > 1 ? i / (m - 1) : 0;
+        out.push(Math.max(0, Math.min(1, media + amp * Math.sin(u * f * 6.2832 + p0)
+                                       + rng.range(-0.08, 0.08))));
+      }
+      return out;
+    };
+    atrs.push(perfil(fuerza, rng.range(0.10, 0.30)));
+    sols.push(perfil(solMedia, rng.range(0.10, 0.45)));
+  }
+  foto('3 · los demás trazos', 'hilo',
+       'Puntos y línea de cada uno, ya en relación con lo que hay: paralela, prolonga, apoyo ' +
+       'o suelta. El cruce y el canal se respetan AL DIBUJAR, así que después no hay que ' +
+       'cortar nada.');
+
+  // ── 4. EL DESTINO DE CADA CABO ────────────────────────────────────────────────
+  // Se sortea por cabo y se resuelve como geometría, así que va antes del campo. El último
+  // tramo se REORIENTA para llegar: se apunta al cuerpo y se le da el largo justo para quedarse
+  // a un canal. Si al llegar estorbaría a alguien, o si el giro que pide es una grapa, el cabo
+  // se queda abierto — el destino es una intención, no una orden.
+  const P_ABIERTO = 0.18;          // medido en las cinco referencias buenas
+  const destinos = [];
+  for (let k = 0; k < trazos.length; k++) {
+    destinos.push([null, null]);
+    for (const cual of [0, 1]) {
+      const idx = cual === 0 ? 0 : trazos[k].length - 1;
+      const vec = cual === 0 ? 1 : trazos[k].length - 2;
+      if (trazos[k].length < 3) { destinos[k][cual] = 'abierto'; continue; }
+      if (rng.bool(P_ABIERTO)) { destinos[k][cual] = 'abierto'; continue; }
+      const quiereCabo = rng.bool(0.38);   // contra un cabo o contra el lateral
+
+      // los candidatos: cabos de otros trazos, o el punto más próximo de su cuerpo
+      const cands = [];
+      for (let j = 0; j < trazos.length; j++) {
+        if (j === k || trazos[j].length < 2) continue;
+        if (quiereCabo) {
+          for (const oi of [0, trazos[j].length - 1]) {
+            const o = trazos[j][oi];
+            cands.push({ q: o, d: hy(o[0] - trazos[k][idx][0], o[1] - trazos[k][idx][1]),
+                         clase: 'cabo' });
+          }
+        } else {
+          const c = cercaDe(trazos[k][idx], trazos[j]);
+          if (c) cands.push({ q: [c.qx, c.qy], d: c.d, clase: 'lateral' });
+        }
+      }
+      cands.sort((a, b) => a.d - b.d);
+      let puesto = null;
+      for (const cd of cands.slice(0, 3)) {
+        if (cd.d > sep * 5.0) break;                    // demasiado lejos: no es un encuentro
+        const desde = trazos[k][vec];
+        const dx = cd.q[0] - desde[0], dy = cd.q[1] - desde[1], D = hy(dx, dy);
+        if (D < sep * 1.2) continue;
+        // el largo justo para quedarse a un canal del cuerpo, llegando de frente
+        const L = D - sep * 1.08;
+        const q = dentro([desde[0] + dx / D * L, desde[1] + dy / D * L]);
+        // el giro que pide, contra el tramo anterior: más de 70° es una grapa
+        const ant = cual === 0 ? trazos[k][2] : trazos[k][trazos[k].length - 3];
+        if (ant) {
+          const a1 = Math.atan2(desde[1] - ant[1], desde[0] - ant[0]);
+          const a2 = Math.atan2(q[1] - desde[1], q[0] - desde[0]);
+          if (Math.abs(corto((a2 - a1) / RAD)) > 70) continue;
+        }
+        if (estorba(k)(desde, q)) continue;
+        trazos[k][idx] = q; puesto = cd.clase; break;
+      }
+      destinos[k][cual] = puesto || 'abierto';
+    }
+  }
+  // y el que muere al aire se aparta, para que se lea que muere al aire
+  for (let k = 0; k < trazos.length; k++) {
+    for (const cual of [0, 1]) {
+      if (destinos[k][cual] !== 'abierto') continue;
+      const idx = cual === 0 ? 0 : trazos[k].length - 1;
+      const vec = cual === 0 ? 1 : trazos[k].length - 2;
+      if (trazos[k].length < 3) continue;
+      let mejor = null;
+      for (let j = 0; j < trazos.length; j++) {
+        if (j === k) continue;
+        const c = cercaDe(trazos[k][idx], trazos[j]);
+        if (c && (!mejor || c.d < mejor.d)) mejor = c;
+      }
+      if (!mejor || mejor.d > sep * 2.2) continue;
+      const desde = trazos[k][vec];
+      const d = Math.atan2(trazos[k][idx][1] - desde[1], trazos[k][idx][0] - desde[0]);
+      const L = hy(trazos[k][idx][0] - desde[0], trazos[k][idx][1] - desde[1]);
+      const q = dentro([desde[0] + Math.cos(d) * L * 1.45, desde[1] + Math.sin(d) * L * 1.45]);
+      if (!estorba(k)(desde, q)) trazos[k][idx] = q;
+    }
+  }
+  foto('4 · los cabos rematados', 'hilo',
+       'Cada cabo tiene su destino: abierto, contra el lateral de un trazo, o contra el cabo ' +
+       'de otro. El que muere contra un cuerpo LLEGA —el último tramo apunta— y el que muere ' +
+       'al aire se aparta para que se lea que muere al aire.');
+
+  // ── 5. EL CAMPO, sobre la estructura completa ─────────────────────────────────
+  // Y es LO ÚLTIMO que toca la geometría. La autopsia lo dejó claro: la relajación deja la obra
+  // en el objetivo y cualquier pasada correctora posterior se lo lleva. Así que aquí no hay
+  // ninguna: ni barrido de solape, ni abrir el canal, ni quitar púas.
+  // EL VETO, y es la primitiva que sustituye a los martillos. La autopsia demostró que corregir
+  // después de relajar se lleva la esencia; pero el campo tampoco puede hacer lo que quiera,
+  // porque un cruce no lo rescata ninguna anchura de banda —el hueco se va a cero y con él la
+  // densidad—. La salida no es corregir el resultado: es NO DEJAR LLEGAR AHÍ. Si el
+  // desplazamiento que propone el campo cruzaría a alguien o cerraría el hueco por debajo del
+  // suelo, ese punto no se mueve y se queda donde estaba, que era un sitio válido.
+  //
+  // Vetar conserva; corregir destroza. Es la misma diferencia que hay entre no dar un paso y
+  // darlo y luego arrastrar el pie de vuelta.
+  const SUELO = 0.62;              // el hueco mínimo que el campo puede dejar, en unidades de sep
+  const valeMover = (k, i, q) => {
+    const t = trazos[k];
+    for (const par of [[i - 1, i], [i, i + 1]]) {
+      const a = par[0], b = par[1];
+      if (a < 0 || b > t.length - 1) continue;
+      const p1 = a === i ? q : t[a], p2 = b === i ? q : t[b];
+      for (let j = 0; j < trazos.length; j++) {
+        if (j === k) continue;
+        for (let z = 0; z < trazos[j].length - 1; z++)
+          if (distTramos(p1, p2, trazos[j][z], trazos[j][z + 1]) < sep * SUELO) return false;
+      }
+    }
+    return true;
+  };
+
+  const carril = sep * 1.04;
+  const CERCA = carril * 1.55, ALCANCE = Math.max(fw, fh) * 0.55;
+  const G = rng.range(tipo === 'denso' ? 0.55 : 0.12, tipo === 'denso' ? 1.25 : 0.50);
+  const VUELTAS = 16;
+  const encauza = (pts, k) => {
     const m = pts.length;
     if (m < 2) return pts;
     const L = [], A = [];
@@ -435,35 +613,27 @@ function circuito(seed, opt) {
       const dx = pts[i + 1][0] - pts[i][0], dy = pts[i + 1][1] - pts[i][1];
       L.push(hy(dx, dy));
       const a = Math.atan2(dy, dx) / RAD;
-      // el rumbo del vecino más próximo al medio del tramo, si lo hay
+      // el rumbo del vecino, que es lo que paraleliza dicho en el alfabeto
       let par = null, fpar = 0;
-      if (k != null) {
-        const mid = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2];
-        let mejor = null;
-        for (let j = 0; j < trazos.length; j++) {
-          if (j === k) continue;
-          const c = cercaDe(mid, trazos[j]);
-          if (c && (!mejor || c.d < mejor.d)) mejor = c;
-        }
-        if (mejor && mejor.d < carril * 3.2) {
-          par = mejor.dir / RAD;
-          fpar = atr ? (atr[Math.min(i, atr.length - 1)] || 0) : 0;
-        }
+      const mid = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2];
+      let mejor = null;
+      for (let j = 0; j < trazos.length; j++) {
+        if (j === k) continue;
+        const c = cercaDe(mid, trazos[j]);
+        if (c && (!mejor || c.d < mejor.d)) mejor = c;
       }
-      // NO SE SALTA AL RUMBO: SE VA HACIA ÉL. Una parte del camino al atractor, más otra
-      // parte del camino al rumbo del vecino —esto es paralelizar—, más la inercia del tramo
-      // anterior. Saltando, el trazo dobla 70°; derivando, dobla 30° y sigue siendo suyo.
-      let giroTramo = corto(atractor(a) - a) * PESO_ALF;
-      if (par != null) giroTramo += cortoPar(par - a) * PESO_PAR * fpar;
-      if (prev != null) giroTramo += corto(prev - a) * PESO_INERCIA;
-      if (giroTramo > TOPE_GIRO) giroTramo = TOPE_GIRO;
-      if (giroTramo < -TOPE_GIRO) giroTramo = -TOPE_GIRO;
-      const mej = a + giroTramo;
-      prev = mej;
-      // el error de la mano va con el tramo y no se vuelve a tirar: si se sorteara en cada
-      // vuelta el trazo temblaría distinto cada vez y el temblor no sería suyo. Y sin él todo
-      // cae exactamente en cuatro rumbos —r4 se iba a 0,83 contra el 0,60 de las seis—.
-      A.push(mej);
+      if (mejor && mejor.d < carril * 4.2) {
+        par = mejor.dir / RAD;
+        fpar = atrs[k][Math.min(i, atrs[k].length - 1)] || 0;
+      }
+      let g = corto(atractor(a) - a) * 0.30;
+      if (par != null) {
+        const c = corto(par - a);
+        g += (Math.abs(c) > 90 ? corto(par - a + 180) : c) * 0.55 * fpar;
+      }
+      if (prev != null) g += corto(prev - a) * 0.42;
+      g = Math.max(-24, Math.min(24, g));
+      A.push(a + g); prev = a + g;
     }
     const c = Math.floor((m - 1) / 2);
     const out = new Array(m);
@@ -476,133 +646,70 @@ function circuito(seed, opt) {
                     out[i][1] - Math.sin(A[i - 1] * RAD) * L[i - 1]];
     return out.map(dentro);
   };
-  const ERR = () => rng.range(-ERR_RUMBO, ERR_RUMBO);
-
-  // ── FASE 1. SEMBRAR: series de puntos, sin mirarse entre sí ───────────────────
-  const trazos = [], masas = [], sols = [], atrs = [], errs = [];
-  // Se siembra de más porque la quita-púas y el abrir el canal se llevan recorrido, y la tinta
-  // se mide al final, no al principio. Pero MENOS que antes: el objetivo de largo estaba
-  // inflado por r4 —la referencia que funde, y que al fundirse dio un trazo de 1,45 cuando las
-  // otras cinco van de 0,38 a 1,00—, así que la familia perseguía 0,64 cuando la mediana de las
-  // cinco buenas es 0,568. Subí la siembra dos veces para llegar a un número que no existía.
-  const Lmed = rng.range(0.62, 0.96);
-  for (let k = 0; k < n; k++) {
-    const largo = Lmed * (k === 0 ? rng.range(1.4, 1.8) : rng.range(0.70, 1.30));
-    const a = rng.range(0, 6.2832), r = rng.range(0.08, 0.46);
-    let p = dentro([0.5 * fw + Math.cos(a) * r * fw, 0.5 * fh + Math.sin(a) * r * fh]);
-    let dir = eligeRumbo(null);
-    const pts = [p];
-    let hecho = 0;
-    while (hecho < largo) {
-      const L = Math.min(PASO * rng.range(0.72, 1.5), largo - hecho);
-      const q = pts[pts.length - 1];
-      // AL LLEGAR AL BORDE GIRA EL TRAZO, no se refleja el punto. Reflejando el punto —lo que
-      // hacía— el tramo siguiente sale hacia atrás y en la polilínea eso ES una vuelta atrás:
-      // la siembra metía entre el 16 y el 50 % de giros de más de 110°, cuando las seis tienen
-      // el 1 %. Y de paso era la causa de que las obras se abrazaran al marco. Un trazo que
-      // llega al canto del papel no rebota: dobla.
-      for (let intento = 0; intento < 3; intento++) {
-        const nx = q[0] + Math.cos(dir * RAD) * L, ny = q[1] + Math.sin(dir * RAD) * L;
-        if (nx > mg && nx < fw - mg && ny > mg && ny < fh - mg) break;
-        // se refleja EL RUMBO contra la pared que estorba, y se vuelve a encauzar al alfabeto
-        if (nx <= mg || nx >= fw - mg) dir = 180 - dir;
-        if (ny <= mg || ny >= fh - mg) dir = -dir;
-        dir = atractor(dir) + rng.range(-TEMBLOR, TEMBLOR);
-      }
-      pts.push(dentro([q[0] + Math.cos(dir * RAD) * L, q[1] + Math.sin(dir * RAD) * L]));
-      hecho += L;
-      // LA ESQUINA, de vez en cuando: un salto declarado a otro rumbo. Es lo que da la
-      // estructura; el resto del camino es deriva, que es lo que da el trazo.
-      if (rng.bool(P_ESQUINA)) dir = eligeRumbo(dir);
-      else dir += corto(atractor(dir) - dir) * ATRAE_RUMBO
-                  + rng.range(-TEMBLOR, TEMBLOR);
-    }
-    if (pts.length < 2) continue;
-    trazos.push(pts);
-    // LA MASA: el protagonista pesa más, que es lo que le da a la obra algo a qué agarrarse
-    masas.push(k === 0 ? rng.range(1.5, 2.6) : rng.range(0.3, 1.2));
-    sols.push(perfil(pts.length, solMedia, rng.range(0.10, 0.45)));
-    atrs.push(perfil(pts.length, fuerza, rng.range(0.10, 0.30)));
-    errs.push(pts.slice(0, pts.length - 1).map(ERR));
-  }
-
-  foto('1 · los puntos', 'puntos',
-       'Cada trazo se siembra sin mirar a los demás: una serie de puntos y nada aplicado.');
-  foto('2 · unidos', 'hilo',
-       'Se unen. Aquí la obra ya tiene su longitud y su alfabeto de rumbos, y nada más.');
-
-  // lo que se sembró es lo que la obra pide: el recorte por cruce no reduce la obra, la dobla
-  const objetivo = trazos.map(largoDe);
-
-  // ── FASE 2. RELAJAR ───────────────────────────────────────────────────────────
-  // Todo se calcula sobre la posición de la vuelta anterior y se aplica al final: si se
-  // aplicara sobre la marcha, el orden de los trazos decidiría el resultado y volveríamos a
-  // tener un protagonista congelado y unos sirvientes. Y el paso se enfría vuelta a vuelta,
-  // porque un campo que empuja siempre igual no se asienta, oscila.
-  const CERCA = carril * 1.55;             // de aquí adentro la gravedad calla
-  const ALCANCE = Math.max(fw, fh) * 0.55; // y de aquí afuera no llega
 
   for (let v = 0; v < VUELTAS; v++) {
     const frio = 1 - 0.55 * (v / (VUELTAS - 1));
 
-    // 2a · GRAVEDAD, del trazo: un cuerpo rígido. Se suma el tirón de las otras masas y el
-    // trazo se traslada entero, así que no cambia ni un ángulo suyo. Se divide por la masa
-    // propia porque eso es lo que significa pesar: el pesado aguanta y el ligero cede.
+    // GRAVEDAD, del trazo: una masa mueve un CUERPO, así que el trazo se traslada entero y no
+    // cambia ni un ángulo suyo. Se divide por la masa propia: el pesado aguanta, el ligero cede.
     const tras = [];
     for (let k = 0; k < trazos.length; k++) {
       let gx = 0, gy = 0;
       for (let j = 0; j < trazos.length; j++) {
         if (j === k) continue;
-        // el tirón se mide en el punto del trazo k más próximo a j, que es donde se toca
         let mejor = null;
         for (const p of trazos[k]) {
           const c = cercaDe(p, trazos[j]);
-          if (c && (!mejor || c.d < mejor.d)) mejor = { c, p };
+          if (c && (!mejor || c.d < mejor.c.d)) mejor = { c, p };
         }
         if (!mejor) continue;
         const d = mejor.c.d;
-        if (d <= CERCA || d >= ALCANCE) continue;   // ni dentro del margen ni fuera de alcance
+        if (d <= CERCA || d >= ALCANCE) continue;
         const w = G * masas[j] * (CERCA / d) * (CERCA / d);
-        gx += (mejor.c.qx - mejor.p[0]) / d * w;
-        gy += (mejor.c.qy - mejor.p[1]) / d * w;
+        gx += (mejor.c.qx - mejor.p[0]) / d * w; gy += (mejor.c.qy - mejor.p[1]) / d * w;
       }
       const m = hy(gx, gy), tope = sep * 0.55 * frio / masas[k];
       if (m > tope) { gx = gx / m * tope; gy = gy / m * tope; }
       tras.push([gx, gy]);
     }
     for (let k = 0; k < trazos.length; k++) {
-      if (!hy(tras[k][0], tras[k][1])) continue;
-      trazos[k] = trazos[k].map(p => dentro([p[0] + tras[k][0], p[1] + tras[k][1]]));
+      if (hy(tras[k][0], tras[k][1]) <= 1e-12) continue;
+      const mov = trazos[k].map(p => dentro([p[0] + tras[k][0], p[1] + tras[k][1]]));
+      // el cuerpo se mueve entero o no se mueve: se comprueba trazo contra trazo
+      let vale = true;
+      for (let i = 0; i < mov.length - 1 && vale; i++)
+        for (let j = 0; j < trazos.length && vale; j++) {
+          if (j === k) continue;
+          for (let z = 0; z < trazos[j].length - 1; z++)
+            if (distTramos(mov[i], mov[i + 1], trazos[j][z], trazos[j][z + 1]) < sep * SUELO) {
+              vale = false; break;
+            }
+        }
+      if (vale) trazos[k] = mov;
     }
 
-    // 2b · ATRACCIÓN, del punto: al carril del vecino, con el valor DE ESTE PUNTO. Y su
-    // destino lo elige su fuerza de solape —encima si la tiene, al canal si no—. Más el
-    // muelle del propio trazo, que es la parte de «unir los puntos» que sobrevive al campo.
+    // ATRACCIÓN, del punto, al carril del vecino; y su FUERZA DE SOLAPE decide si se arrima al
+    // canal o guarda aire. Nunca a través: arrimarse tiene un suelo, y ese suelo es el carril.
     const nuevo = trazos.map(t => t.map(p => [p[0], p[1]]));
     for (let k = 0; k < trazos.length; k++) {
       for (let i = 0; i < trazos[k].length; i++) {
         const p = trazos[k][i];
-        let dx = 0, dy = 0;
-        let mejor = null;
+        let dx = 0, dy = 0, mejor = null;
         for (let j = 0; j < trazos.length; j++) {
           if (j === k) continue;
           const c = cercaDe(p, trazos[j]);
           if (c && (!mejor || c.d < mejor.d)) mejor = c;
         }
         if (mejor && mejor.d < carril * 4.0) {
-          // LA FUERZA DE SOLAPE DICE CUÁNTO SE ARRIMA, NO SI SE FUNDE. Antes la meta era 0 —el
-          // punto encima del vecino— y eso es fundir por diseño: el 63 % de las obras salían con
-          // menos piezas de tinta que trazos. Las bandas no se funden NUNCA (el autor: «r4 es un
-          // error»), así que el solape modula el carril entre pegarse al canal y guardar aire.
-          const meta = carril * (1 + (1 - Math.min(1, sols[k][i] / SOL_UMBRAL)) * HOLGURA);
-          const nx = mejor.d > 1e-9 ? (p[0] - mejor.qx) / mejor.d : Math.cos(mejor.dir + Math.PI / 2);
-          const ny = mejor.d > 1e-9 ? (p[1] - mejor.qy) / mejor.d : Math.sin(mejor.dir + Math.PI / 2);
-          const err = meta - mejor.d;
-          dx += nx * err * atrs[k][i]; dy += ny * err * atrs[k][i];
+          const meta = carril * (1 + (1 - Math.min(1, sols[k][i] / 0.82)) * 0.45);
+          const nx = mejor.d > 1e-9 ? (p[0] - mejor.qx) / mejor.d
+                                    : Math.cos(mejor.dir + Math.PI / 2);
+          const ny = mejor.d > 1e-9 ? (p[1] - mejor.qy) / mejor.d
+                                    : Math.sin(mejor.dir + Math.PI / 2);
+          dx += nx * (meta - mejor.d) * atrs[k][i];
+          dy += ny * (meta - mejor.d) * atrs[k][i];
         }
-        // el muelle: fuerte a propósito. El campo tira de cada punto hacia un sitio distinto
-        // y sin esto la polilínea se deshilacha —el giro se iba a 124° contra los 32° de las
-        // seis—. Un trazo es una serie de puntos UNIDA, y la unión es una restricción.
+        // el muelle: un trazo es una serie de puntos UNIDA, y la unión es una restricción
         if (i > 0 && i < trazos[k].length - 1) {
           const a2 = trazos[k][i - 1], b2 = trazos[k][i + 1];
           dx += ((a2[0] + b2[0]) / 2 - p[0]) * 0.42;
@@ -610,457 +717,48 @@ function circuito(seed, opt) {
         }
         const m = hy(dx, dy), tope = sep * 0.45 * frio;
         if (m > tope) { dx = dx / m * tope; dy = dy / m * tope; }
-        nuevo[k][i] = dentro([p[0] + dx, p[1] + dy]);
+        const q = dentro([p[0] + dx, p[1] + dy]);
+        nuevo[k][i] = valeMover(k, i, q) ? q : p;
       }
     }
-    // 2c · RECTIFICAR: el alfabeto corrige lo que el campo redondeó
-    for (let k = 0; k < trazos.length; k++) trazos[k] = encauza(nuevo[k], errs[k], k, atrs[k]);
-  }
-
-  foto('3 · relajado', 'banda',
-       'El campo sobre el conjunto: gravedad del trazo, atracción del punto y el encauzado. ' +
-       'AQUÍ LA OBRA ESTÁ EN EL OBJETIVO — ejes 0,59 contra 0,49 y acompañamiento 0,53 contra ' +
-       '0,52. Todo lo que viene después se lo lleva.');
-
-  // ── REVISAR EL SOLAPE: el que no está justificado se rompe ────────────────────
-  // «Se paralelizarían y se rompería el solape»: no se aparta al azar, se aparta A LO LARGO
-  // DE LA NORMAL DEL VECINO, que es lo que deja las dos hebras paralelas a un margen.
-  for (let v = 0; v < 8; v++) {
-    let roto = false;
     for (let k = 0; k < trazos.length; k++) {
-      for (let i = 0; i < trazos[k].length; i++) {
-        // ya no hay exención: ningún punto «tiene derecho» a solaparse, porque solaparse es
-        // fundir y fundir no ocurre
-        let mejor = null;
-        for (let j = 0; j < trazos.length; j++) {
+      trazos[k] = nuevo[k];
+      const enc = encauza(nuevo[k], k);
+      let vale = true;
+      for (let i = 0; i < enc.length - 1 && vale; i++)
+        for (let j = 0; j < trazos.length && vale; j++) {
           if (j === k) continue;
-          const c = cercaDe(trazos[k][i], trazos[j]);
-          if (c && (!mejor || c.d < mejor.d)) mejor = c;
-        }
-        if (!mejor || mejor.d >= sep) continue;      // no está solapado
-        const nx = mejor.d > 1e-9 ? (trazos[k][i][0] - mejor.qx) / mejor.d
-                                  : Math.cos(mejor.dir + Math.PI / 2);
-        const ny = mejor.d > 1e-9 ? (trazos[k][i][1] - mejor.qy) / mejor.d
-                                  : Math.sin(mejor.dir + Math.PI / 2);
-        trazos[k][i] = dentro([mejor.qx + nx * carril * 1.04, mejor.qy + ny * carril * 1.04]);
-        roto = true;
-      }
-    }
-    if (!roto) break;
-  }
-  // apartar puntos uno a uno deja dientes de sierra, y aquí NO se alisa: se encauza. Alisar
-  // redondea, y lo que redondea se come los ejes; encauzar deja el diente convertido en un
-  // tramo con rumbo, que es lo que hay en las seis.
-  for (let k = 0; k < trazos.length; k++) trazos[k] = encauza(trazos[k], errs[k], k, atrs[k]);
-
-  // LA PÚA. Apartar puntos de uno en uno clava vértices que doblan más de 110°, y las seis
-  // tienen el 1 % de esos. Una púa no es un giro: es un punto mal puesto, así que se quita. Lo
-  // que el trazo pierde de recorrido lo recupera el recrecido, que es su trabajo.
-  //
-  // SE PASA EN LOS TRES SITIOS DONDE SE CLAVAN —el barrido de solape, el recrecido y el
-  // acompañamiento—, porque cada uno mete las suyas: la sonda por fases decía 2 % después de
-  // relajar, 25 % después del solape y 22 % después del recrecido. Pasarla una vez sola dejaba
-  // la mitad puestas, y no se veían en ninguno de los quince rasgos que medía.
-  const quitaPuas = () => {
-    for (let vuelta = 0; vuelta < 6; vuelta++) {
-      let quitada = false;
-      for (let k = 0; k < trazos.length; k++) {
-        const t = trazos[k];
-        for (let i = 1; i < t.length - 1 && t.length > 3; i++) {
-          const a1 = Math.atan2(t[i][1] - t[i - 1][1], t[i][0] - t[i - 1][0]);
-          const a2 = Math.atan2(t[i + 1][1] - t[i][1], t[i + 1][0] - t[i][0]);
-          if (Math.abs(corto((a2 - a1) / RAD)) <= TOPE_VUELTA) continue;
-          t.splice(i, 1); sols[k].splice(i, 1); atrs[k].splice(i, 1);
-          if (errs[k].length > i) errs[k].splice(i, 1);
-          quitada = true; i--;
-        }
-      }
-      if (!quitada) break;
-    }
-  };
-  quitaPuas();
-  foto('4 · solape roto', 'banda',
-       'El solape que no se justifica se rompe apartando al carril, punto por punto, ocho ' +
-       'rondas. ESTE PASO SE LLEVA EL 90 %: ejes 0,59 → 0,33, acompañamiento 0,53 → 0,27, y ' +
-       'no se recupera nunca.');
-
-  // Y el cruce sin justificar cede: los empujones no siempre convergen —apartar un vértice
-  // puede crear el cruce un tramo más allá— y las seis no cruzan un solo par de centros.
-  // SE RECORTA, NO SE BORRA: borrar el trazo entero se llevaba la mitad de la obra (n bajaba
-  // de 10 a 4). Si no queda trazo que valga la pena, se recorta por el otro lado.
-  const cruza = (k, i) => {
-    const t = trazos[k];
-    for (let j = 0; j < trazos.length; j++) {
-      if (j === k) continue;
-      for (let q = 0; q < trazos[j].length - 1; q++)
-        if (segCorta(t[i], t[i + 1], trazos[j][q], trazos[j][q + 1])) return true;
-    }
-    return false;
-  };
-  for (let k = 0; k < trazos.length; k++) {
-    for (let paso = 0; paso < 4; paso++) {
-      const t = trazos[k];
-      let corte = -1;
-      for (let i = 0; i < t.length - 1; i++) {
-        if (cruza(k, i)) { corte = i; break; }   // un cruce ES una fusión: no se exime ninguno
-      }
-      if (corte < 0) break;
-      // el trozo largo se queda: el cruce parte el trazo en dos y sobrevive el que más dice
-      const izq = corte + 1, der = t.length - corte - 1;
-      trazos[k] = (izq >= der ? t.slice(0, izq) : t.slice(corte + 1));
-      const rec = (izq >= der);
-      sols[k] = rec ? sols[k].slice(0, izq) : sols[k].slice(corte + 1);
-      atrs[k] = rec ? atrs[k].slice(0, izq) : atrs[k].slice(corte + 1);
-      errs[k] = rec ? errs[k].slice(0, Math.max(0, izq - 1)) : errs[k].slice(corte + 1);
-      if (trazos[k].length < 2) break;
-    }
-  }
-  foto('5 · cruces cortados', 'banda',
-       'Ningún par de centros se cruza: donde quedaba un cruce el trazo se recorta. Aquí se ' +
-       'pierde cantidad —la línea baja de 8,25 a 4,04—, no esencia.');
-
-  // RECRECER. El recorte se llevaba casi la mitad de la tinta —3,39 de las 6,4 sembradas—, y
-  // un trazo cortado no es un trazo corto: es un trazo que dobla. Así que donde el cruce le
-  // quitó recorrido, el trazo SIGUE, por un rumbo del alfabeto que no cruce a nadie. Es la
-  // misma regla con la que nació, aplicada al cabo nuevo.
-  const chocaTramo = (a, b, k) => {
-    for (let j = 0; j < trazos.length; j++) {
-      if (j === k) continue;
-      for (let q = 0; q < trazos[j].length - 1; q++)
-        if (segCorta(a, b, trazos[j][q], trazos[j][q + 1])) return true;
-    }
-    return false;
-  };
-  for (let k = 0; k < trazos.length; k++) {
-    if (trazos[k].length < 2) continue;
-    let falta = objetivo[k] - largoDe(trazos[k]);
-    let vueltas = 0;
-    while (falta > PASO * 0.5 && vueltas++ < 24) {
-      const t = trazos[k], u = t[t.length - 1], w = t[t.length - 2];
-      const desde = Math.atan2(u[1] - w[1], u[0] - w[0]) / RAD;
-      // el cabo nuevo sigue el trazo: deriva su rumbo, y solo a veces hace esquina
-      const cand = [];
-      for (let g = -TOPE_GIRO; g <= TOPE_GIRO; g += TOPE_GIRO / 3) cand.push({ r: desde + g });
-      // y el cabo nuevo tampoco se da la vuelta: `todos` lleva cada rumbo y su opuesto, y sin
-      // tope el recrecido metía del 13 al 22 % de vueltas atrás — era la fuente principal
-      for (const r of todos) {
-        const d = Math.abs(corto(r - desde));
-        if (d > 12 && d < TOPE_VUELTA) cand.push({ r });
-      }
-      const paso = Math.min(PASO * rng.range(0.72, 1.5), falta);
-      // cuánto lleva doblado ya: sin este tope el trazo esquiva cruces enrollándose sobre sí
-      // mismo y el cierre se va a 0,62 contra el 0,30 de las seis
-      let vuelta = 0;
-      for (let i = 1; i < t.length - 1; i++) {
-        const a1 = Math.atan2(t[i][1] - t[i - 1][1], t[i][0] - t[i - 1][0]);
-        const a2 = Math.atan2(t[i + 1][1] - t[i][1], t[i + 1][0] - t[i][0]);
-        let d = (a2 - a1) / RAD % 360; if (d > 180) d -= 360; if (d < -180) d += 360;
-        vuelta += d;
-      }
-      // EL CABO NUEVO ACOMPAÑA. Antes se pedía margen con todo el mundo y se elegía el giro
-      // más corto: eso es huir, y el acompañamiento bajaba a 0,26. Ahora, entre los rumbos que
-      // caben, gana el que deja el cabo A LA DISTANCIA DE CARRIL de algún trazo — que es lo
-      // mismo que hace el campo, aplicado al trozo que el cruce se llevó.
-      const opciones = [];
-      for (const o of cand) {
-        const ang = (o.r + ERR()) * RAD;
-        const q = dentro([u[0] + Math.cos(ang) * paso, u[1] + Math.sin(ang) * paso]);
-        if (hy(q[0] - u[0], q[1] - u[1]) < paso * 0.55) continue;   // ha rebotado: no vale
-        if (chocaTramo(u, q, k)) continue;
-        let cerca = Infinity;
-        for (let j = 0; j < trazos.length; j++) {
-          if (j === k) continue;
-          const c = cercaDe(q, trazos[j]);
-          if (c && c.d < cerca) cerca = c.d;
-        }
-        if (cerca < sep * 0.96) continue;                            // no cabe: hay margen
-        let giroN = 0;
-        {
-          const a1 = Math.atan2(u[1] - w[1], u[0] - w[0]);
-          const a2 = Math.atan2(q[1] - u[1], q[0] - u[0]);
-          let d = (a2 - a1) / RAD % 360; if (d > 180) d -= 360; if (d < -180) d += 360;
-          giroN = d;
-        }
-        if (Math.abs(vuelta + giroN) > 150) continue;                 // se estaría enrollando
-        // el coste: lo que le falta para acompañar, más un peaje por doblar mucho
-        const coste = Math.abs(cerca - carril) / carril + Math.abs(giroN) / 180 * 0.55;
-        opciones.push({ q, coste });
-      }
-      opciones.sort((a, b) => a.coste - b.coste);
-      let puesto = false;
-      for (const o of opciones) {
-        const q = o.q;
-        t.push(q);
-        sols[k].push(sols[k][sols[k].length - 1]);
-        atrs[k].push(atrs[k][atrs[k].length - 1]);
-        errs[k].push(ERR());
-        falta -= hy(q[0] - u[0], q[1] - u[1]);
-        puesto = true; break;
-      }
-      if (!puesto) break;
-    }
-  }
-
-  for (let k = trazos.length - 1; k >= 0; k--) {
-    if (trazos[k].length < 2 || largoDe(trazos[k]) < PASO * 1.2) {
-      trazos.splice(k, 1); masas.splice(k, 1); sols.splice(k, 1); atrs.splice(k, 1);
-      errs.splice(k, 1);
-    }
-  }
-
-  // ── ABRIR EL CANAL ────────────────────────────────────────────────────────────
-  // LAS BANDAS NO SE FUNDEN NUNCA. Es regla del autor y es absoluta: «r4 es un error, nunca
-  // debe fundir». Y no basta con que los centros no se cruzen ni con separar los VÉRTICES: dos
-  // tramos pueden pasar a menos de una anchura entre vértice y vértice y las bandas se tocan
-  // igual. Medido sobre el píxel, el 63 % de las obras salían con menos piezas de tinta que
-  // trazos. Así que aquí se mide TRAMO CONTRA TRAMO y se abre a empujones hasta que cabe.
-  const distTramos = (a, b, c, d) => {
-    if (segCorta(a, b, c, d)) return 0;
-    const dp = (p, q, r) => {
-      const ex = r[0] - q[0], ey = r[1] - q[1], l2 = ex * ex + ey * ey;
-      let u = l2 > 1e-18 ? ((p[0] - q[0]) * ex + (p[1] - q[1]) * ey) / l2 : 0;
-      u = u < 0 ? 0 : u > 1 ? 1 : u;
-      return hy(p[0] - (q[0] + ex * u), p[1] - (q[1] + ey * u));
-    };
-    return Math.min(dp(a, c, d), dp(b, c, d), dp(c, a, b), dp(d, a, b));
-  };
-  const abreCanal = (vueltas) => {
-    // el suelo, con holgura de verdad. A sep*1,02 el foso del vecino —que mide W+2g— roza el
-    // borde de la banda y la PARTE por la mitad: dos obras de sesenta salían con más piezas de
-    // tinta que trazos. Una banda interrumpida es el mismo defecto que dos fundidas.
-    const MIN = sep * 1.08;
-    for (let v = 0; v < vueltas; v++) {
-      let toco = false;
-      for (let k = 0; k < trazos.length; k++) {
-        for (let i = 0; i < trazos[k].length - 1; i++) {
-          for (let j = 0; j < trazos.length; j++) {
-            if (j === k) continue;
-            for (let q = 0; q < trazos[j].length - 1; q++) {
-              const d = distTramos(trazos[k][i], trazos[k][i + 1], trazos[j][q], trazos[j][q + 1]);
-              if (d >= MIN) continue;
-              // se aparta el tramo entero por su normal, y los DOS lados a la vez: apartar un
-              // vértice solo es lo que clavaba púas
-              const mx = (trazos[k][i][0] + trazos[k][i + 1][0]) / 2;
-              const my = (trazos[k][i][1] + trazos[k][i + 1][1]) / 2;
-              const c = cercaDe([mx, my], trazos[j]);
-              if (!c) continue;
-              let ux, uy;
-              if (c.d > 1e-9) { ux = (mx - c.qx) / c.d; uy = (my - c.qy) / c.d; }
-              else { ux = -Math.sin(c.dir); uy = Math.cos(c.dir); }
-              const emp = (MIN - d) * 0.60;
-              for (const idx of [i, i + 1])
-                trazos[k][idx] = dentro([trazos[k][idx][0] + ux * emp,
-                                         trazos[k][idx][1] + uy * emp]);
-              toco = true;
+          for (let z = 0; z < trazos[j].length - 1; z++)
+            if (distTramos(enc[i], enc[i + 1], trazos[j][z], trazos[j][z + 1]) < sep * SUELO) {
+              vale = false; break;
             }
-          }
         }
-      }
-      if (!toco) return true;
+      if (vale) trazos[k] = enc;
     }
-    return false;
-  };
-  foto('6 · recrecido', 'banda',
-       'Lo que el cruce le quitó de recorrido, el trazo lo sigue por un rumbo que no cruce a ' +
-       'nadie. Recupera la cantidad, no lo otro.');
-
-  abreCanal(14);
-  quitaPuas();
-  abreCanal(6);
-  foto('7 · canal abierto', 'banda',
-       'Las bandas no se funden nunca: se mide tramo contra tramo y se abre a empujones. Es el ' +
-       'mismo martillo que el paso 4, y hace el mismo daño.');
-
-  // ── FASE 3. PARTIR PARA ACOMPAÑAR — Y VA AL FINAL ─────────────────────────────
-  // Iba antes del encauzado y el encauzado lo deshacía: reconstruye la polilínea desde el
-  // medio con los rumbos derivados, así que el tramo que acababa de quedarse pegado al vecino
-  // se despegaba EN BLOQUE, y el acompañamiento bajaba de 0,43 a 0,27. El orden importa: esto
-  // es lo último que se toca.
-  //
-  // Y ES UNA OFERTA, no una orden: cada acompañamiento se prueba y se acepta solo si no cruza
-  // a nadie y no se come el margen. Si rompe algo, el trazo se queda como estaba. Un trazo que
-  // acompaña rompiendo la regla de los centros no acompaña: estorba.
-  const arcoDe = (t) => { const a = [0]; for (let i = 0; i < t.length - 1; i++)
-    a.push(a[i] + hy(t[i + 1][0] - t[i][0], t[i + 1][1] - t[i][1])); return a; };
-  const muestra = (t, arc, s) => {
-    const S = arc[arc.length - 1];
-    s = s < 0 ? 0 : s > S ? S : s;
-    let i = 0; while (i < t.length - 2 && arc[i + 1] < s) i++;
-    const L = Math.max(1e-12, arc[i + 1] - arc[i]), u = (s - arc[i]) / L;
-    const ex = (t[i + 1][0] - t[i][0]) / L, ey = (t[i + 1][1] - t[i][1]) / L;
-    return { x: t[i][0] + (t[i + 1][0] - t[i][0]) * u,
-             y: t[i][1] + (t[i + 1][1] - t[i][1]) * u, ex, ey };
-  };
-  const interp = (v, a, b, t) => v[a] + (v[b] - v[a]) * t;
-
-  // UN TRAZO PUEDE ACOMPAÑAR VARIAS VECES. Él no dijo que fuera una: dijo que donde un punto
-  // se atrae a otro trazo, ese trazo se parte. Eso pasa en todos los puntos donde pasa.
-  const acompanado = trazos.map(t => t.map(() => false));
-  let ofertas = 0, aceptadas = 0; const porQue = {cruce:0, margen:0, grapa:0};
-  for (let k = 0; k < trazos.length; k++)
-  for (let ronda = 0; ronda < RONDAS; ronda++) {
-    const t = trazos[k];
-    if (t.length < 3) continue;
-    // ¿dónde se acerca más este trazo a otro, de lo que aún no acompaña? Ahí es donde la
-    // atracción pide acompañamiento
-    let anc = -1, ad = Infinity, aj = -1;
-    for (let i = 1; i < t.length - 1; i++) {
-      if (acompanado[k][i]) continue;
-      let libre = true;
-      for (let d = -1; d <= 1; d++) if (acompanado[k][i + d]) libre = false;
-      if (!libre) continue;
-      for (let j = 0; j < trazos.length; j++) {
-        if (j === k) continue;
-        const c = cercaDe(t[i], trazos[j]);
-        if (c && c.d < ad) { ad = c.d; anc = i; aj = j; }
-      }
-    }
-    if (anc < 0 || ad > carril * ALCANCE_ACOMP) continue;
-    if (atrs[k][Math.min(anc, atrs[k].length - 1)] < UMBRAL_ACOMP) continue;
-    ofertas++;
-
-    const arc = arcoDe(trazos[aj]);
-    const ca = cercaDe(t[anc], trazos[aj]);
-    if (!ca) continue;
-    // el arco del vecino donde cae el ancla
-    let s0 = 0, dm = Infinity;
-    for (let q = 0; q <= 240; q++) {
-      const S = arc[arc.length - 1], sq = S * q / 240, m = muestra(trazos[aj], arc, sq);
-      const d = hy(t[anc][0] - m.x, t[anc][1] - m.y);
-      if (d < dm) { dm = d; s0 = sq; }
-    }
-    // el rumbo propio en el ancla, y el del vecino ahí: SI VAN MUY CRUZADOS NO SE ACOMPAÑA.
-    // Forzar la paralela de dos trazos en T significa doblar noventa grados dos veces, y eso
-    // no es acompañar: es una grapa.
-    const m0 = muestra(trazos[aj], arc, s0);
-    const mio = Math.atan2(t[Math.min(anc + 1, t.length - 1)][1] - t[anc - 1][1],
-                           t[Math.min(anc + 1, t.length - 1)][0] - t[anc - 1][0]);
-    const suyo = Math.atan2(m0.ey, m0.ex);
-    const cruce = Math.abs(cortoPar((suyo - mio) / RAD));
-    if (cruce > TOPE_CRUCE) continue;
-    const sentido = Math.cos(suyo - mio) >= 0 ? 1 : -1;   // por dónde se anda el vecino
-    // el lado lo fija EL ANCLA y no cada punto: si cada punto eligiera el suyo, el trazo se
-    // cruzaría al vecino a media paralela
-    let lx, ly;
-    if (ca.d > 1e-9) { lx = (t[anc][0] - ca.qx) / ca.d; ly = (t[anc][1] - ca.qy) / ca.d; }
-    else { lx = -m0.ey; ly = m0.ex; }
-
-    // el largo del acompañamiento, EN ANCHURAS DE BANDA — la unidad en la que las seis
-    // coinciden (0,44–0,58); en unidades de lado cada obra dice otra cosa
-    const Lrun = W * rng.range(RUN_MIN, RUN_MAX);
-
-    // PARTIR Y EMPALMAR. No se mezcla: SE EMPALMA. Mezclando —arrastrar cada punto de la
-    // ventana hacia el carril— el trazo se comprime, se enrolla y aparecen cruces: el cierre se
-    // iba a 0,61 y salía un cruce por obra, los primeros de toda la serie. Empalmando, el trazo
-    // DEJA su camino en un punto, corre pegado al vecino el tramo que sea, y vuelve a
-    // engancharse donde estaban sus puntos. Los dos codos —«cambia de rumbo hacia donde estaban
-    // los puntos del trazo original»— son los dos empalmes, y no hay que dibujarlos.
-    const dPto = Math.max(carril * 1.05, PASO * 0.34);
-    const cuantos = Math.max(2, Math.round(Lrun / dPto));
-    const carrilPts = [];
-    for (let c2 = 0; c2 <= cuantos; c2++) {
-      const s = s0 + sentido * (c2 / cuantos - 0.5) * Lrun;
-      const m = muestra(trazos[aj], arc, s);
-      // la normal es LA DEL VECINO EN CADA MUESTRA, con el signo del ancla: así el carril sigue
-      // al vecino cuando dobla, en vez de despegarse
-      let nx = -m.ey, ny = m.ex;
-      if (nx * lx + ny * ly < 0) { nx = -nx; ny = -ny; }
-      carrilPts.push(dentro([m.x + nx * carril, m.y + ny * carril]));
-    }
-    // EL CARRIL ES EL OFFSET DEL VECINO, no «su normal desplazada». En un doblez la paralela de
-    // dentro corta la esquina y se acerca a la otra pata más que el carril: por eso la prueba
-    // del margen tumbaba 91 de 222 propuestas. Se empuja cada punto hasta que su distancia REAL
-    // al vecino sea la del carril — que es el mismo offset con el que el motor grande corta el
-    // canal, donde el corte es la tinta engordada y no una banda más ancha.
-    for (let v2 = 0; v2 < 5; v2++) {
-      for (let i = 0; i < carrilPts.length; i++) {
-        const c = cercaDe(carrilPts[i], trazos[aj]);
-        if (!c || c.d >= carril * 0.999) continue;
-        const ux = c.d > 1e-9 ? (carrilPts[i][0] - c.qx) / c.d : -m0.ey;
-        const uy = c.d > 1e-9 ? (carrilPts[i][1] - c.qy) / c.d : m0.ex;
-        carrilPts[i] = dentro([c.qx + ux * carril, c.qy + uy * carril]);
-      }
-    }
-    // EL EMPALME SE BUSCA. Enganchar siempre en anc±1 hace que el codo de entrada cruce al
-    // vecino una de cuatro veces; probando varios se encuentra el que entra limpio, y el trazo
-    // vuelve «hacia donde estaban los puntos del trazo original» por donde puede.
-    const limpio = (p, q) => {
-      for (let j = 0; j < trazos.length; j++) {
-        if (j === k) continue;
-        for (let z = 0; z < trazos[j].length - 1; z++)
-          if (segCorta(p, q, trazos[j][z], trazos[j][z + 1])) return false;
-      }
-      return true;
-    };
-    // Y SE BUSCA EL MÁS TANGENTE, no el primero que esté limpio. Cogiendo el primero, el codo
-    // de entrada salía de noventa grados y el giro de la obra se iba a 68° contra los 32° de las
-    // seis: acompañaba, pero grapando. El empalme que menos dobla es el que menos se nota, y un
-    // empalme más cerrado que el tope no es un empalme, es una grapa: se rechaza la oferta.
-    const codo = (p, q, r) => {
-      const a1 = Math.atan2(q[1] - p[1], q[0] - p[0]);
-      const a2 = Math.atan2(r[1] - q[1], r[0] - q[0]);
-      return Math.abs(corto((a2 - a1) / RAD));
-    };
-    let a0 = -1, b0 = -1, ca0 = Infinity, cb0 = Infinity;
-    for (let d = 1; d <= 4; d++) {
-      const i = anc - d;
-      if (i < 1 || !limpio(t[i], carrilPts[0])) continue;
-      const c = codo(t[i - 1], t[i], carrilPts[0]);
-      if (c < ca0) { ca0 = c; a0 = i; }
-    }
-    const fin2 = carrilPts.length - 1;
-    for (let d = 1; d <= 4; d++) {
-      const i = anc + d;
-      if (i > t.length - 2 || !limpio(carrilPts[fin2], t[i])) continue;
-      const c = codo(carrilPts[Math.max(0, fin2 - 1)], carrilPts[fin2], t[i]);
-      if (c < cb0) { cb0 = c; b0 = i; }
-    }
-    if (a0 < 0 || b0 < 0) continue;
-    if (Math.max(ca0, cb0) > TOPE_EMPALME) { if (typeof process !== 'undefined' && process.env.HRRS_ACDBG) porQue.grapa++; continue; }
-    const rec = [], recS = [], recA = [], recM = [];
-    const sAt = (i) => sols[k][Math.min(i, sols[k].length - 1)];
-    const aAt = (i) => atrs[k][Math.min(i, atrs[k].length - 1)];
-    for (let i = 0; i <= a0; i++) { rec.push(t[i]); recS.push(sAt(i)); recA.push(aAt(i)); recM.push(acompanado[k][i]); }
-    for (const p of carrilPts) { rec.push(p); recS.push(sAt(anc)); recA.push(aAt(anc)); recM.push(true); }
-    for (let i = b0; i < t.length; i++) { rec.push(t[i]); recS.push(sAt(i)); recA.push(aAt(i)); recM.push(acompanado[k][i]); }
-    if (rec.length < 3) continue;
-
-    // LA PRUEBA. Ni un cruce nuevo, ni un margen comido: si el acompañamiento cuesta eso, no
-    // se acompaña. Es la misma regla que gobierna todo lo demás, aplicada a la propuesta.
-    let vale = true, vale2 = 'cruce';
-    for (let i = 0; i < rec.length - 1 && vale; i++)
-      for (let j = 0; j < trazos.length && vale; j++) {
-        if (j === k) continue;
-        for (let q = 0; q < trazos[j].length - 1; q++)
-          if (segCorta(rec[i], rec[i + 1], trazos[j][q], trazos[j][q + 1])) { vale = false; break; }
-      }
-    // SE JUZGA LO QUE LA OFERTA INTRODUCE, no el trazo entero. Midiendo todo el trazo se
-    // tumbaban 71 propuestas de 217 por puntos que ya estaban cerca ANTES —el ancla es por
-    // definición el punto más próximo a otro trazo—, así que la prueba estaba castigando la
-    // propuesta por el estado que venía a arreglar.
-    if (vale) vale2 = 'margen';
-    for (let i = 0; i < carrilPts.length && vale; i++)
-      for (let j = 0; j < trazos.length && vale; j++) {
-        if (j === k) continue;
-        const c = cercaDe(carrilPts[i], trazos[j]);
-        if (c && c.d < sep * 0.94) vale = false;
-      }
-    if (!vale) { if (typeof process !== 'undefined' && process.env.HRRS_ACDBG) porQue[vale2]++; continue; }
-    trazos[k] = rec; sols[k] = recS; atrs[k] = recA; acompanado[k] = recM;
-    errs[k] = rec.slice(0, rec.length - 1).map(() => 0);
-    aceptadas++;
   }
-  abreCanal(10);
-  quitaPuas();
-  abreCanal(8);
-  foto('8 · acompañado', 'banda',
-       'El desvío: el trazo deja su camino, corre pegado al vecino y vuelve a engancharse ' +
-       'donde estaban sus puntos. Es el último paso, y es una oferta que se prueba.');
-  if (typeof process !== 'undefined' && process.env.HRRS_ACDBG)
-    console.error('ofertas=' + ofertas + ' ok=' + aceptadas + ' cruce=' + porQue.cruce + ' margen=' + porQue.margen + ' grapa=' + porQue.grapa);
+  foto('5 · relajado', 'hilo',
+       'El campo sobre la estructura completa: gravedad del trazo, atracción del punto, fuerza ' +
+       'de solape, y el encauzado devolviendo cada tramo hacia su rumbo. Y aquí se para: es lo ' +
+       'último que toca la geometría.');
 
+  // ── 6. LA DENSIDAD, Y NO ANTES ────────────────────────────────────────────────
+  // «En ese momento, y no antes, se le daría densidad al trazo.» La banda se corta a la medida
+  // del hueco que la composición dejó: separación = banda + canal, así que
+  //
+  //     W = hueco mínimo / (1 + canal)
+  //
+  // y las bandas NO PUEDEN FUNDIRSE, por construcción y sin una sola pasada correctora. Si la
+  // composición quedó apretada en un sitio, la obra entera se dibuja más fina — que es lo que
+  // debe pasar: la banda obedece a la composición y no al revés.
+  if (DBG) console.error('rechazos: fuera=' + DBG.fuera + ' estorba=' + DBG.estorba +
+                         ' | nacen fuera=' + DBG.nace_fuera + ' nacen pegados=' + DBG.nace_pegado);
+  const hueco = huecoMinimo(trazos);
+  W = Math.min(0.098, hueco / (1 + CANAL));
+  foto('6 · con densidad', 'banda',
+       'La banda, cortada a la medida del hueco que dejó la composición. Por eso no puede ' +
+       'fundirse: no hace falta abrir ningún canal, ya cabe.');
 
-  return { trazos, masas, fw, fh, W, sep, rumbos, tipo, fuerza, G, solMedia,
+  return { trazos, masas, cats, destinos, fw, fh, W, sep, hueco, rumbos, tipo, fuerza, G, solMedia,
            polo: [0.5 * fw, 0.5 * fh], seed, pasos };
 }
 'use strict';
@@ -1085,14 +783,16 @@ function dibuja(cx, W, H, obra, pts, modo) {
       cx.beginPath(); cx.arc(z[0], z[1], 0.013, 0, 6.2832); cx.fill();
     }
   } else if (modo === 'banda') {
-    // el mismo vestido que la tanda: foso de W+2g y encima la tinta de W. Separación de
-    // centros = banda + canal, así que la tinta va a W y no engordada.
-    const g = obra.W * 0.22;
+    // LA BANDA LA TRAE EL PASO, no la obra. Ahora la densidad se decide al final, así que antes
+    // de ese paso no existe: si se pidiera a la obra, los pasos anteriores se dibujarían con una
+    // anchura que en ese momento no se había decidido todavía, y la autopsia mentiría.
+    const Wp = obra.__W != null ? obra.__W : obra.W;
+    const g = Wp * 0.22;
     cx.lineJoin = 'round'; cx.lineCap = 'butt';
     for (const q of pts) {
       if (q.length < 2) continue;
-      cx.strokeStyle = '#ffffff'; cx.lineWidth = obra.W + 2 * g; traza(q); cx.stroke();
-      cx.strokeStyle = '#111111'; cx.lineWidth = obra.W;         traza(q); cx.stroke();
+      cx.strokeStyle = '#ffffff'; cx.lineWidth = Wp + 2 * g; traza(q); cx.stroke();
+      cx.strokeStyle = '#111111'; cx.lineWidth = Wp;         traza(q); cx.stroke();
     }
   } else {
     cx.lineWidth = 0.007; cx.lineJoin = 'round'; cx.lineCap = 'round';
@@ -1137,7 +837,7 @@ const avisa = (t) => {
 // De las que ya se han mirado en la hoja de contactos: dos que funcionan y tres que no, que
 // es donde está la pregunta. Con `Otras cinco` se sortean, porque una elección mía no debe
 // ser el único material del juicio.
-const ARRANQUE = [0xb54c8031, 0x2e2a9afd, 0x17153a62, 0x8ff31d2e, 0xcc62608c];
+const ARRANQUE = [0xb54c8031, 0xf1bb979f, 0x8ff31d2e, 0x6a99ee5b, 0x78ddbcd3];
 
 function cargaObras(semillas) {
   est.obras = semillas.map((s) => {
@@ -1235,8 +935,11 @@ function redibuja() {
     if (!o.lienzos) continue;
     for (const l of o.lienzos) {
       const modo = est.banda ? 'banda' : l.paso.modo;
+      // la anchura de ESE paso; si el paso es anterior a la densidad, la del final, para que
+      // «Ver todo en banda» pueda enseñar en qué se iba a convertir cada estado
+      const obra = Object.assign({}, o.c, { __W: l.paso.W > 0 ? l.paso.W : o.c.W });
       dibuja(l.cv.getContext('2d'), l.cv.width / dpr, l.cv.height / dpr,
-             o.c, l.paso.trazos, modo);
+             obra, l.paso.trazos, modo);
     }
   }
 }

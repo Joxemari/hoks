@@ -335,6 +335,86 @@ un dato: no es un fallo de ajuste.
 | **acompañado** | 0,35 | 0,39 | 0,38 | 0,52 | ↑ |
 | cabos al aire | 0,10 | 0,06 | 0,07 | 0,18 | |
 
+## EL ORDEN, corregido por el autor sobre la autopsia
+
+Vio la autopsia paso a paso y reescribió el orden. Es el que está implementado hoy:
+
+1. **Los puntos del primer trazo.** Sólo del primero — *«hay un montón de puntos, cuando en
+   realidad el primer paso debería ser dibujar los puntos del primer trazo»*.
+2. **Unir sólo esa línea.** Un trazo de un píxel y nada más en la hoja.
+3. **Los demás trazos, ya en relación con lo que hay.** *«Ahí está la parte creativa: cómo se
+   dibujan esos trazos o cómo se relacionan. Ahí deberíamos tener diferentes categorías
+   visuales.»* Cuatro: **paralela** (nace en el carril del padre), **prolonga** (arranca donde el
+   padre acaba), **apoyo** (llega y muere contra el cuerpo) y **suelta** (la que da aire).
+4. **El destino de cada cabo**, declarado y sorteado por cabo: *«los cabos tienden a terminar en
+   abierto o, si no, terminar contra un cuerpo, ya sea el lateral de un trazo o el final o el
+   inicio de un trazo»*. **Abierto** (y se aparta, para que se lea que muere al aire),
+   **lateral** (una T contra el costado) o **cabo** (dos finales enfrentados a un canal). El
+   reparto lo pone la medida: 18 % al aire en las cinco referencias buenas, o sea 82 % contra
+   algo. Y el que muere contra un cuerpo **llega** —el último tramo apunta—, porque de refilón se
+   lee como un roce y no como un encuentro.
+5. **El campo**, sobre la estructura completa en líneas de un píxel.
+6. **La densidad, y no antes.** *«En ese momento, y no antes, se le daría densidad al trazo.»*
+
+### El paso 6 cambia el modelo entero
+
+Antes la anchura de banda se sorteaba **al principio** y toda la geometría se medía en unidades
+de ella: el carril, el canal, el suelo. Si la densidad va al final es al revés — la composición
+se trabaja en unidades propias y **la banda se corta a la medida del hueco que la composición
+dejó**:
+
+    W = hueco mínimo real / (1 + canal)
+
+Y entonces **las bandas no pueden fundirse, por construcción**, sin una sola pasada correctora.
+Que es exactamente lo que hacía falta, porque la autopsia había demostrado que las pasadas
+correctoras eran las que se llevaban la esencia. Hoy no hay barrido de solape, ni abrir el canal,
+ni quitar púas: **no queda un solo martillo**.
+
+Lo que sí hay es un **veto**: si el desplazamiento que propone el campo cruzaría a alguien, ese
+punto no se mueve y se queda donde estaba, que era un sitio válido. **Vetar conserva; corregir
+destroza** — la misma diferencia que hay entre no dar un paso y darlo y luego arrastrar el pie de
+vuelta. Los controles dicen cuáles son piezas: quitando el veto del cuerpo rígido colapsan **30
+de 30** obras y quitando el del encauzado **28 de 30**; quitando el de punto a punto, **nada**.
+Ese último se deja anotado como lo que es, en vez de fingir que sostiene algo.
+
+### Y dos cosas que costaron encontrar
+
+- **El nacimiento hay que comprobarlo.** El punto de partida se colocaba respecto al *padre* sin
+  mirar a nadie más, así que tres o cuatro trazos por obra nacían dentro del canal de un
+  **tercero** — y desde ahí no hay salida: todos los primeros pasos estorban, el trazo se atasca
+  y logra **cero** de recorrido. **Dos tercios de los trazos morían así**, y de ahí salían la
+  mitad de la tinta (línea 2,8 contra 5,2) y el trazo recto (cuerda 0,98). El diagnóstico salió
+  de imprimir `pide 0,66 logra 0,00` trazo a trazo.
+- **La intención primero y el escape después.** Probando primero «seguir recto» y usando el giro
+  sólo como salida de emergencia, el trazo sale recto **por construcción**. Lo que un trazo
+  quiere hacer es derivar hacia su rumbo o hacer esquina; esquivar es lo que hace cuando no puede.
+
+### Dónde queda, y qué se ve mal
+
+| rasgo | generador | refs (5) | |
+|---|---|---|---|
+| trazos | 9 | 8,0 | ✔ |
+| línea total | 4,91 | 5,19 | ✔ |
+| largo del trazo | 0,54 | 0,568 | ✔ |
+| polo | 0,41 | 0,38 | ✔ |
+| cruces | **0** | 0 | ✔ |
+| **fusiones** | **0** | 0 | ✔ por construcción |
+| cuerda | 0,84 | 0,79 | casi |
+| quiebros por lado | 10,0 | 6,9 | |
+| ángulo de quiebro | 21,6 | 35 | ↓ |
+| sobre los ejes | 0,34 | 0,49 | ↓ |
+| acompañado | 0,37 | 0,52 | ↑ |
+
+Y dos defectos que se ven a la primera y que los números sólo insinúan:
+
+- **Curvan demasiado.** Las obras leen como **curvas de nivel de un mapa**, no como circuitos
+  angulares. Es el quiebro en 21,6° contra 35 y el modelo de deriva: el trazo se engancha a un
+  rumbo y lo suelta suavemente.
+- **La densidad varía muchísimo de una obra a otra**, de banda gruesa a un pelo. Es la
+  consecuencia directa de «densidad al final»: **un solo punto apretado decide la anchura de la
+  obra entera**. Es lo que hace que la regla se cumpla sin martillos, y es también su fragilidad;
+  el arreglo pasa por que el campo iguale los huecos, no por volver a decidir la banda antes.
+
 ## LA AUTOPSIA: qué paso se lleva la esencia
 
 Intuición del autor: *«tengo la intuición de que en alguno de los pasos perdemos el 90 % de la
