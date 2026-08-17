@@ -61,40 +61,63 @@ otra cosa.
 hebra de arriba y, en cada punto donde debajo hay cuerpo de la otra, exige fondo.
 Cuenta píxeles de **tinta sólida** seguidos. Un hueco es un hueco.
 
-## El punto ciego del fantasma
+## El fantasma, de punto ciego a medido
 
-**Ninguno de estos detectores comprueba una obra fantasma, y conviene decirlo en
-voz alta porque durante un tiempo pareció que sí.**
+Durante un tiempo las obras fantasma se **excluían**, y el README decía en voz alta
+que excluir no es comprobar. Ya no hace falta: `hueco.js` y `m2.js` las miden.
 
-Una cinta fantasma es del color exacto del suelo: no se dibuja con masa, se dibuja
-con su incisión. Por eso su halo no va en color de fondo sino en `filo`, el color
-de la paleta más lejano al suelo — y en casi todas las paletas **`filo` es el mismo
-hex que `fg`**, la cinta. Ahí, dentro de la incisión, hay tinta a propósito.
+Una cinta fantasma es del color exacto del suelo. No se dibuja con masa: se dibuja
+con su incisión, que va en `filo`, el color de la paleta más lejano al suelo. El
+error fue leer eso como *una excepción que hay que excusar*. No lo es —
 
-Eso deja a `hueco.js` sin nada que medir: el halo haciendo su trabajo y un hueco de
-verdad son el mismo color, y ningún test de píxel los separa. Se probó a enseñarle
-el caso —excusar los píxeles de `filo` en obras fantasma— y el resultado fue peor
-que el problema: los falsos positivos bajaron de 146 a 0, **y el control roto dejó
-de disparar también**. Un detector que no puede fallar no está midiendo.
+**en un cruce de fantasma la obra es su propio negativo.** A lo largo de la sonda,
+una obra normal da `tinta | corte | tinta`; una fantasma da exactamente los mismos
+tres tramos con los dos colores cambiados de sitio: el cuerpo es el color del suelo
+y el corte es `filo`. Así que el detector no tiene que aprender un caso especial,
+tiene que **intercambiar los dos colores** en esos cruces. Todo lo demás —los
+umbrales, las rachas, la clase `mezcla` del antialias— se queda igual.
 
-Así que las obras fantasma se **excluyen**, en `mil.sh` y desde ahora también en
-`todo.sh`, que las medía y por tanto reportaba 146 falsos de 172 cruces desde que
-el halo pasó a ser un color puro de la paleta. Excluir no es comprobar: es
-reconocer que aquí no hay comprobación.
+La diferencia entre excusar e intercambiar es la diferencia entre un detector ciego
+y uno que mide, y se ve en el control roto:
+
+| en obras fantasma | falsos en obra buena | control roto (orden invertido) |
+|---|---|---|
+| excusando `filo` | 0 de 172 | **1 de 91** — ciego |
+| intercambiando colores | 0 de 172 | **87 de 91** — mide |
+
+Excusar acepta `filo` *y además* sigue aceptando el fondo. Pero tapar la incisión
+con el cuerpo de la cinta **es** el defecto que buscamos, y ese cuerpo es fondo: al
+aceptarlo, el control roto pasaba por sano. Intercambiando, el fondo dentro de la
+incisión vuelve a ser lo que es, un hueco. En `m2.js` la misma cuenta: el control
+pasó de disparar en el 1,4% de los cruces al 91,8% — el mismo orden que el 97,3%
+que da sobre obras normales.
+
+La otra mitad del arreglo es saber **de qué cinta** es la sección que pasa por
+encima, porque el intercambio sólo vale cuando esa sección es la fantasma: en una
+obra de dos cintas, las demás se siguen midiendo contra el fondo. La cuenta es la
+que ya hacía el algoritmo al pintar — *cuántos saltos ha dejado atrás la sección* —
+y la fantasma es siempre la última.
 
 Y hay una pista falsa que costó un rato: esto **no** empezó cuando se metió el
 fantasma. Empezó cuando su halo dejó de fabricarse mezclando el fondo hacia el
 negro o el blanco. Una mezcla cae en la clase `mezcla` de `hueco.html`, que el
 detector ya ignoraba por ser filo de antialias, así que el caso pasaba **por
-accidente, no por diseño**.
+accidente, no por diseño** — y el día que el halo pasó a ser un color puro de la
+paleta salieron 146 falsos de 172 cruces de golpe.
 
-Lo que cerraría el punto ciego, cuando toque: que `hueco.js` sepa **de qué cinta**
-es la sección que pasa por encima, y excuse `filo` sólo cuando esa sección es la
-fantasma. Entonces las demás cintas de la obra volverían a medirse y el control
-volvería a disparar. No es un cambio de umbral, es pasar el índice de cinta hasta
-el bucle. Mientras tanto, el fantasma se mira a ojo — y `mktest.py` sigue
-construyendo el control `sueloigual`, que **`mil.sh` nunca llega a ejecutar**: eso
-también está pendiente.
+### Dónde sigue sin haber comprobación
+
+Dos bloques mantienen la exclusión, y ahí sí es estructural:
+
+- **Costuras** (`cos.js`). Una costura es una raya mezclada *metida en la tinta*.
+  En una obra fantasma la tinta y el fondo son el mismo hex: `esTinta` y `esFondo`
+  colapsan, cada píxel se descarta y el test sale 0 **por no mirar nada**.
+  Intercambiar colores no lo salva, porque no hay dos clases que intercambiar.
+- **Remates y discos** (`o2.js`). El sondeo busca fondo alrededor del cabo y en una
+  fantasma no lo encuentra por ningún lado, así que marca los cuatro cabos.
+
+Y sigue pendiente lo de siempre: `mktest.py` construye el control `sueloigual`, que
+**`mil.sh` nunca llega a ejecutar**.
 
 ## Las once trampas
 

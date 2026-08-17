@@ -27,9 +27,12 @@ done
 # La batería tiene que cubrir lo que se publica: cuando entró el tipo de tres
 # cintas y el temblor, entraron aquí. Un detector que no ve la tercera cinta no
 # dice nada sobre ella.
-# Las obras FANTASMA se excluyen a mano: su cinta es del color del suelo y los
-# detectores que comparan tinta contra fondo no pueden medirlas por
-# construccion. Tienen su propio control (sueloigual) y se miran aparte.
+# Las obras FANTASMA ya se miden en los bloques 1 y 2: en un cruce de fantasma la
+# obra es su propio negativo —cuerpo del color del suelo, incision en `filo`— y los
+# dos detectores INTERCAMBIAN los colores alli. Siguen fuera de CFGS para que la
+# tanda de las doce configuraciones no las mezcle: van en su propia linea, con su
+# propio control roto, porque un cero sin su control no significa nada.
+# En los bloques 3 y 4 se quedan fuera, y ahi si por construccion: ver sus notas.
 CFGS=('{"fantasma":"no"}' '{"tipo":"suelto","fantasma":"no"}' '{"tipo":"anudado","fantasma":"no"}' '{"tipo":"trama","fantasma":"no"}' '{"tipo":"dos","fantasma":"no"}' '{"tipo":"tres","fantasma":"no"}' '{"corner":"curvas","fantasma":"no"}' '{"ends":"inglete","fantasma":"no"}' '{"temblor":0.2,"fantasma":"no"}' '{"temblor":0.35,"corner":"curvas","fantasma":"no"}' '{"aspecto":1.5,"fantasma":"no"}' '{"tipo":"tres","aspecto":1.5,"fantasma":"no"}')
 POR=85   # 12 configuraciones x 85 = 1.020, mas las cuatro tandas de 250
 
@@ -44,22 +47,32 @@ echo "  1.000 obras con la configuracion por defecto, en cuatro tandas:"
 for o in 0 250 500 750; do node hueco.js trzs_test.js 250 '{"fantasma":"no"}' $o | res; done
 echo "  1.000 mas repartidas entre las once configuraciones:"
 for c in "${CFGS[@]}"; do node hueco.js trzs_test.js $POR "$c" | res; done
-echo "-- CONTROL: orden de pintado invertido (debe disparar)"
+echo "  y 250 fantasma (la incision es \`filo\`; el detector intercambia colores):"
+node hueco.js trzs_test.js 250 '{"fantasma":"si"}' | res
+echo "-- CONTROL: orden de pintado invertido (debe disparar), normales y fantasma"
 node hueco.js trzs_orden.js 125 '{"fantasma":"no"}' | res
+node hueco.js trzs_orden.js 125 '{"fantasma":"si"}' | res
 fi
 
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = mascara ]; then
 echo
 echo "##### 2. LA INCISION por cobertura de mascara (90 x 11 = 990)"
 for c in "${CFGS[@]}"; do printf '  %-30s' "$c"; node m2.js trzs_test.js $POR "$c" 2>&1 | sed -n 2p; done
-echo "-- CONTROLES (deben disparar)"
-printf '  %-30s' 'orden invertido';    node m2.js trzs_orden.js 60 '{"fantasma":"no"}' 2>&1 | sed -n 2p
+printf '  %-30s' '{"fantasma":"si"}'; node m2.js trzs_test.js $POR '{"fantasma":"si"}' 2>&1 | sed -n 2p
+echo "-- CONTROLES (deben disparar), cada uno sobre normales y sobre fantasma"
+printf '  %-30s' 'orden invertido';      node m2.js trzs_orden.js 60 '{"fantasma":"no"}' 2>&1 | sed -n 2p
+printf '  %-30s' 'orden inv. / fantasma'; node m2.js trzs_orden.js 60 '{"fantasma":"si"}' 2>&1 | sed -n 2p
 printf '  %-30s' 'media seccion encima'; node m2.js trzs_mitad.js 60 '{"fantasma":"no"}' 2>&1 | sed -n 2p
+printf '  %-30s' 'media secc. / fantasma'; node m2.js trzs_mitad.js 60 '{"fantasma":"si"}' 2>&1 | sed -n 2p
 fi
 
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = costuras ]; then
 echo
 echo "##### 3. COSTURAS: la raya de 1 px dentro de la tinta (90 x 11 = 990)"
+# La fantasma se queda fuera por construccion, y no se arregla intercambiando
+# colores como en 1 y 2: una costura es una raya mezclada METIDA EN LA TINTA, y en
+# una obra fantasma la tinta y el fondo son el mismo hex. No hay dos clases que
+# separar, asi que el test descarta cada pixel y sale 0 por no mirar nada.
 for c in "${CFGS[@]}"; do printf '  %-30s' "$c"; node cos.js trzs_test.js $POR "$c" 2>&1 | sed -n 2p; done
 echo "-- CONTROL: el cuerpo vuelve a acabar a ras del halo (debe disparar)"
 for c in '{}' '{"tipo":"trama"}' '{"tipo":"dos"}'; do

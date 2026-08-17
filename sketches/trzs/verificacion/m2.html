@@ -42,7 +42,27 @@ window.medir = (seed, pals, extra, capa) => {
 
   const hex = h => [1,3,5].map(k => parseInt(h.substr(k,2),16));
   const F = hex(c.colores.bg);
-  const esFondo = i => Math.abs(dA[i]-F[0])+Math.abs(dA[i+1]-F[1])+Math.abs(dA[i+2]-F[2]) < 60;
+  /* LA FANTASMA CAMBIA DE COLOR LA INCISION, NO LA EXCUSA. Una cinta del color
+   * del suelo no se dibuja con masa sino con su corte: ahi la incision se pinta
+   * en `filo`, el color mas lejano de la paleta. Asi que en esos cruces el
+   * anillo no tiene que encontrar fondo — tiene que encontrar `filo`, y
+   * encontrar FONDO es justamente el defecto, porque el fondo es el cuerpo de la
+   * propia cinta. Sin esto salian 169 "sin corte" de 172 con la incision
+   * perfectamente pintada.
+   *
+   * Se SUSTITUYE el color, no se anade. Aceptar los dos fue el primer intento y
+   * dejo el detector ciego: en una obra fantasma de una sola cinta, invertir el
+   * orden de pintado tapa la incision con el cuerpo de la cinta, que es fondo —
+   * si el fondo tambien vale, el control roto pasa por sano. Aceptando los dos,
+   * el control disparaba en el 1,4% de los cruces; exigiendo `filo`, en el 100%.
+   *
+   * Va condicionado a que la seccion de ARRIBA sea la fantasma: en una obra con
+   * dos cintas, las demas se siguen midiendo contra el fondo, como siempre. */
+  const FILO = (c.colores && c.colores.filo) ? hex(c.colores.filo) : null;
+  const esFantasma = !!(c.colores && c.colores.fantasma);
+  let arribaEsFantasma = false;
+  const cerca = (i,C) => Math.abs(dA[i]-C[0])+Math.abs(dA[i+1]-C[1])+Math.abs(dA[i+2]-C[2]) < 60;
+  const esFondo = i => (arribaEsFantasma && FILO) ? cerca(i,FILO) : cerca(i,F);
 
   const secs = c.plano.secciones.map(([a,b]) => [T.arcoDeParam(m,acum,a), T.arcoDeParam(m,acum,b)]);
   const juntas = (c.plano.juntas||[]).map(j => T.arcoDeParam(m,acum,j));
@@ -77,6 +97,12 @@ window.medir = (seed, pals, extra, capa) => {
              iniH: Math.max(0, !aF && !aJ ? a-caboEn(a) : a),
              finH: Math.min(total, !bF && !bJ ? b+caboEn(b) : b) }; };
   const cual = d => { for (let i=0;i<secs.length;i++) if (d>=secs[i][0]-1e-6 && d<=secs[i][1]+1e-6) return i; return -1; };
+  // DE QUE CINTA ES UNA SECCION: cuantos saltos ha dejado atras. Es la misma
+  // cuenta que hace el algoritmo al pintar, y la fantasma es siempre la ultima.
+  const cintaDeSeccion = i => { if (i < 0) return -1;
+    const t = tramoDe(i); let k = 0;
+    for (const s of saltos) if (t.iniC >= s[1]-1e-6) k++;
+    return k; };
 
   // La máscara sale de la MISMA curva que el render, o todo saldría marcado
   // por una diferencia que no existe en la obra.
@@ -92,6 +118,7 @@ window.medir = (seed, pals, extra, capa) => {
     const alc = (W/2)/sen;
     const iAr = cual(dAr); if (iAr < 0) continue;
     const tAr = tramoDe(iAr);
+    arribaEsFantasma = esFantasma && cintaDeSeccion(iAr) === saltos.length;
 
     // EL ANILLO SE COME SUS DOS FILOS.
     // La máscara es otra rasterización: su borde y el del render no coinciden
