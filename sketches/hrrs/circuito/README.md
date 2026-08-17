@@ -106,6 +106,47 @@ o sea que **el 82 % muere contra el cuerpo**.
 
 Y de paso el generador pasó de un «0,01» que era mentira a un 0,27 que es real.
 
+## Lo que elige el autor, cruzado contra la población
+
+24 semillas elegidas sobre el generador con tipos —sin una sola nota, o sea elegidas sin
+queja— contra 240 al azar del mismo generador (`cruce.js`). En desviaciones típicas de la
+población: por encima de |0,5| la diferencia se ve, por debajo es ruido.
+
+| rasgo | elegidas | población | z | referencias |
+|---|---|---|---|---|
+| **largo del trazo** | **0,50** | 0,39 | **+1,04** | 0,64 |
+| **línea total** | **5,06** | 3,66 | **+0,82** | **5,21** |
+| **anchura de banda** | **0,05** | 0,06 | **−0,79** | 0,05 |
+| **quiebros por lado** | **7,03** | 5,98 | **+0,70** | **7,55** |
+| acompañado | 0,41 | 0,34 | +0,46 | 0,52 |
+| longitud en los ejes | 0,33 | 0,38 | −0,46 | 0,52 |
+| trazos | 10,2 | 8,8 | +0,44 | 7,5 |
+| separación (anchuras) | 1,22 | 1,37 | −0,42 | — |
+| tipo denso | 0,79 | 0,61 | +0,36 | — |
+| cabos al aire | 0,09 | 0,14 | −0,37 | 0,18 |
+
+**Su ojo y las referencias dicen lo mismo.** Elige las de trazo más largo, más línea, banda
+más fina y más quiebros — que son exactamente cuatro de los rasgos que el generador tenía
+peor. Y las que elige **ya alcanzan la línea total de las referencias** (5,06 contra 5,21)
+y casi su cadencia de quiebros (7,03 contra 7,55): está seleccionando la cola buena de mi
+distribución, y esa cola cae donde caen las seis.
+
+No hay que elegir entre «lo que miden las referencias» y «lo que le gusta». Apuntan al
+mismo sitio, y eso vale como validación cruzada del banco de invariantes entero.
+
+Lo que su ojo añade y las referencias no decían: **prefiere la banda fina** (−0,79). Eso
+no es un invariante de la fuente —las seis van de 0,025 a 0,096— es una preferencia suya,
+y como tal se anota aparte.
+
+## Dos avisos de método
+
+- **La semilla no vale sin el código que la hizo.** Las 15 semillas con nota son de la
+  versión anterior del generador; pasadas por el código de hoy dan otra obra. Lo que se
+  guarda tiene que llevar la versión al lado, o el juicio se despega de lo juzgado.
+- **`tipo` no se devolvía**, así que la primera vez que crucé denso contra abierto la
+  columna salió 0,00 en los dos lados. Eso no es un empate: es que no se medía nada. Con
+  el dato puesto sale +0,36 hacia lo denso.
+
 ## Lo que falta, con su causa
 
 - **El largo (0,39 contra 0,64) y la línea (3,22 contra 5,21).** Sin cruces, un trazo que

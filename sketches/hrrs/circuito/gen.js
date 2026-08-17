@@ -283,7 +283,10 @@ function circuito(seed) {
     }
     if (mejor) trazos.push(mejor);
   }
-  return { trazos, fw, fh, W, sep, polo, rumbos, seed };
+  // `tipo` va en la devolución: sin él, cruzar las elegidas contra la población no puede
+  // decir si prefiere los densos o los abiertos — y la primera vez que lo intenté la
+  // columna salió 0,00 en los dos lados, que no es un empate: es que no se medía nada.
+  return { trazos, fw, fh, W, sep, polo, rumbos, tipo, seed };
 }
 
 if (typeof module !== 'undefined') module.exports = { circuito, Rng };
