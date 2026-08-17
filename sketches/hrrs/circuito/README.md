@@ -335,6 +335,72 @@ un dato: no es un fallo de ajuste.
 | **acompañado** | 0,35 | 0,39 | 0,38 | 0,52 | ↑ |
 | cabos al aire | 0,10 | 0,06 | 0,07 | 0,18 | |
 
+## LOS CABOS DE r1 A r6, uno a uno
+
+102 cabos en las seis. `cabos.py` los clasifica sobre los ejes marcados a mano y en **anchuras de
+banda reales** —la única unidad en que las seis se comparan: sus bandas van de 0,0325 a 0,0909 del
+lado corto, casi el triple de una a otra—.
+
+| obra | trazos | cabos | al aire | contra un cabo | contra el costado |
+|---|---|---|---|---|---|
+| r1 | 8 | 16 | 3 (19 %) | 2 | 11 |
+| r2 | 11 | 22 | 4 (18 %) | 10 | 8 |
+| r3 | 7 | 14 | 4 (29 %) | 7 | 3 |
+| r4 | 5 | 10 | 4 (40 %) | 4 | 2 |
+| r5 | 6 | 12 | 2 (17 %) | **10** | **0** |
+| r6 | 14 | 28 | **0** | **23** | 5 |
+| **total** | 51 | **102** | **17 %** | **55 %** | **28 %** |
+
+**1. El remate dominante es cabo contra cabo, no la T.** 55 % contra 28 %. Yo tenía la T como el
+caso normal y el encuentro de dos cabos como la rareza; es al revés. En r5 son 10 de 12 y ni un
+solo costado; en r6, 23 de 28.
+
+**2. No hay un margen: hay TRES, y cada uno es de una situación.** Medidos entre tintas:
+
+| | hueco |
+|---|---|
+| entre dos trazos paralelos | **0,22 W** |
+| cabo contra el costado de otro | **0,48 W** |
+| cabo contra cabo | **1,02 W** |
+
+Un encuentro de dos cabos deja **casi cinco veces** el canal de una paralela. Eso explica por qué
+mis obras se leen apretadas: aplico 0,22 en todas partes.
+
+**3. El ángulo de llegada es BIMODAL, y el centro está vacío.** No es una distribución con
+dispersión: son dos gestos declarados.
+
+| grados | 0-15 | 15-30 | 30-45 | 45-60 | 60-75 | 75-90 |
+|---|---|---|---|---|---|---|
+| contra un cabo | **28** | 2 | 0 | 0 | 0 | **26** |
+| contra el costado | **11** | 0 | 0 | 0 | 3 | **15** |
+
+O el trazo llega **de frente** y se para —una T, o dos cabos enfrentados— o muere **en paralelo**,
+al lado de su vecino, que es el final de un acompañamiento. Entre 30° y 60° no hay **ni uno**.
+
+**4. Y cada obra decide lo suyo.** De 0 cabos al aire en r6 a un 40 % en r4. No es una constante
+global: es una decisión de la obra, como el tipo.
+
+**5. La mitad de los cabos al aire se van del papel.** 8 de 17 están a menos de una anchura del
+borde. Y por obra: r4 tiene 6 cabos de 10 a menos de una anchura del borde, r5 6 de 12, r6 11 de
+28 — contra 1 ó 2 en r1, r2 y r3. **Hay obras que son un recorte de una composición mayor y obras
+que caben enteras en su pliego.** Mi generador rebota contra el margen: nunca puede hacer la
+primera.
+
+**6. Los dos cabos de un trazo hacen lo mismo sólo el 43 % de las veces**, o sea que cada cabo se
+decide por su cuenta. Eso sí lo hago bien.
+
+`cabos.py` imprime la tabla y dibuja la clasificación encima de cada obra, para poder auditarla a
+ojo en vez de creérsela: círculo hueco = al aire, cuadrado = llega de frente, barra = muere en
+paralelo.
+
+### Lo que hay que cambiar
+
+- **Tres márgenes**, no uno.
+- **Dos gestos** de llegada, con el medio prohibido: de frente o en paralelo, nada de 45°.
+- **Cabo contra cabo** como caso principal, no como rareza.
+- **Que el cabo al aire lo sea de verdad**: 0,04 contra 0,17, y encima la mitad de los suyos son
+  trazos que se salen del pliego, cosa que hoy es imposible porque el paseo rebota en el margen.
+
 ## UN TRAZO NO SE CRUZA CONSIGO MISMO — y estaba sin comprobar
 
 Lo cantó tres veces sobre tres obras distintas: *«hay un trazo que se sigue cruzando consigo
