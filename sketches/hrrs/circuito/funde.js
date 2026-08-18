@@ -76,27 +76,51 @@ const LADO = parseInt(process.argv[4] || '900', 10);
       const t = trozos(d, LADO, h);
       // los trozos de menos de 20 px son antialias suelto, no una banda
       const reales = t.tam.filter(x => x >= 20).length;
-      // ¿ES UNA OBRA RECORTE? Si un trazo se sale del pliego y vuelve a entrar, aparece como dos
-      // piezas de tinta, y eso NO es una banda partida: es el recorte. Contarlo como defecto era
-      // un fallo del instrumento —12 obras de 60 marcadas como partidas— no del generador. La
-      // fusión sí se sigue midiendo igual: dos bandas que se tocan se tocan, recortada o no.
-      const recortada = c.trazos.some(q => q.some(p2 =>
-        p2[0] < 0 || p2[1] < 0 || p2[0] > c.fw || p2[1] > c.fh));
-      filas.push({ seed, trazos: c.trazos.length, piezas: reales, tipo: c.tipo, recortada });
+      // CUÁNTAS PIEZAS DEBE DAR CADA TRAZO, y no «cuántos trazos hay». Un trazo que se sale del
+      // pliego y vuelve a entrar deja DOS piezas de tinta, y eso no es una banda partida: es el
+      // borde. Antes eso se apañaba excluyendo la obra entera del recuento de partidas, y ese apaño
+      // dejaba un agujero justo en las obras que ahora son mayoría: si en la misma obra una fusión
+      // se come una pieza (-1) y un trazo que reentra añade otra (+1), la cuenta cuadra y la fusión
+      // no se ve. Así que se cuenta por trazo: los tramos SEGUIDOS que están dentro del pliego.
+      //
+      // Y NO SE SUPONE, SE PINTA. Contar los tramos seguidos que caen dentro del pliego sobra por
+      // arriba: un trazo que asoma poco por el borde vuelve a entrar tan cerca que sus dos partes se
+      // tocan y son UNA pieza. Con esa cuenta salían 24 fusiones de 200 y buena parte eran del
+      // medidor. Así que del trazo que sale se pinta ÉL SOLO y se cuentan sus piezas de verdad; de
+      // los que no salen, una y ya. Es más lento y es la única manera de que el número signifique
+      // dos bandas que se tocan.
+      let esperadas = 0, cortados = 0;
+      const cv2 = document.createElement('canvas');
+      cv2.width = LADO; cv2.height = h;
+      const cx2 = cv2.getContext('2d', { willReadFrequently: true });
+      for (let k2 = 0; k2 < c.trazos.length; k2++) {
+        const q = c.trazos[k2];
+        const sale = q.some(p2 => p2[0] < 0 || p2[1] < 0 || p2[0] > c.fw || p2[1] > c.fh);
+        if (!sale) { esperadas += 1; continue; }
+        cortados++;
+        const solo = Object.assign({}, c, { trazos: [q], semis: [c.semis[k2]],
+                                            contornos: [c.contornos[k2]] });
+        pinta(cx2, LADO, h, solo);
+        const t2 = trozos(cx2.getImageData(0, 0, LADO, h).data, LADO, h);
+        esperadas += Math.max(1, t2.tam.filter(x => x >= 20).length);
+      }
+      filas.push({ seed, trazos: c.trazos.length, esperadas, piezas: reales, tipo: c.tipo,
+                   cortados });
     }
     return filas;
   }, { N, LADO });
 
-  let funden = 0, parten = 0, recs = 0;
+  let funden = 0, parten = 0, conCorte = 0;
   for (const f of res) {
-    if (f.piezas < f.trazos) funden++;
-    if (f.recortada) recs++;
-    else if (f.piezas > f.trazos) parten++;   // en una recortada, más piezas es el recorte
+    if (f.piezas < f.esperadas) funden++;
+    else if (f.piezas > f.esperadas) parten++;
+    if (f.cortados) conCorte++;
   }
   console.log('obras=' + res.length +
               '  FUNDEN=' + funden + ' (' + (100 * funden / res.length).toFixed(0) + '%)' +
-              '  se parten=' + parten + '  (recortadas, sin contar: ' + recs + ')');
-  const mal = res.filter(f => f.piezas < f.trazos).slice(0, 12);
+              '  se parten=' + parten +
+              '  (con algún trazo que sale del pliego: ' + conCorte + ', y se cuenta igual)');
+  const mal = res.filter(f => f.piezas < f.esperadas).slice(0, 12);
   for (const f of mal)
     console.log('  #' + f.seed.toString(16) + '  ' + f.trazos + ' trazos -> ' +
                 f.piezas + ' piezas   (' + f.tipo + ')');

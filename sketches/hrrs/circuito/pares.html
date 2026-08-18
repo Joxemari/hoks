@@ -113,6 +113,7 @@
     <div class="mandos">
       <button class="btn" id="otras">Otras semillas</button>
       <button class="btn suave" id="copiar">Copiar lo elegido</button>
+      <button class="btn suave" id="cero">Empezar de cero</button>
       <span class="cuenta">elegidos <b id="cuantos">0</b>/12</span>
     </div>
   </header>
@@ -1665,7 +1666,7 @@ const PARES = [
 ];
 
 const $ = (id) => document.getElementById(id);
-const LS = 'hrrs-pares', VIEJO = 'hrrs-pares-anterior';
+const LS = 'hrrs-pares', VIEJO = 'hrrs-pares-anterior', LEGADO = 'hrrs-pares-v1';
 
 // LO GUARDADO CADUCA CUANDO CAMBIAN LOS PARES, y esto fue un fallo de verdad: al reanclar la
 // segunda vuelta la página le devolvió sus once votos de la primera ya marcados, sobre unos pares
@@ -1688,6 +1689,12 @@ try {
     localStorage.setItem(VIEJO, JSON.stringify(g));   // por si hiciera falta rescatarlo
   }
 } catch (e) { /* primera vez */ }
+// y la clave de la primera vuelta se archiva y se quita: mientras exista, una versión antigua de
+// esta página guardada en caché la volvería a leer y le devolvería los votos ya marcados
+try {
+  const v = localStorage.getItem(LEGADO);
+  if (v) { localStorage.setItem(VIEJO, v); localStorage.removeItem(LEGADO); }
+} catch (e) {}
 const guarda = () => {
   try { localStorage.setItem(LS, JSON.stringify(est)); } catch (e) {}
 };
@@ -1820,6 +1827,17 @@ function construye() {
 }
 
 const cuenta = () => { $('cuantos').textContent = Object.keys(est.sel).length; };
+
+// EL BOTÓN EXISTE PORQUE LA CADUCIDAD NO BASTA. Si el navegador le sirve una versión anterior de
+// esta página guardada en caché, esa versión no sabe nada de la huella y le devuelve los votos de
+// la primera vuelta ya marcados. Contra eso no hay código que valga en la versión nueva: hace falta
+// una salida que él pueda accionar desde la que tenga delante.
+$('cero').onclick = () => {
+  est.sel = {}; est.notas = {};
+  try { localStorage.removeItem(LEGADO); } catch (e) {}
+  guarda(); construye();
+  avisa('a cero — lo anterior queda archivado');
+};
 
 $('otras').onclick = () => {
   est.semillas++; guarda(); construye();

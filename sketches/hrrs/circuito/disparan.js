@@ -33,19 +33,22 @@ const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const N = parseInt(process.argv[2] || '40', 10);
 
 // los mismos doce de `pares.html`. Si se cambian ahí, se cambian aquí: son la misma pregunta.
+// EL LADO A ES SIEMPRE EL VALOR VIGENTE. Si se queda con el de una vuelta anterior, esto deja de
+// comprobar el par que el autor tiene delante y pasa a comprobar uno que ya no existe.
 const PARES = [
-  ['canal',    { canal: null },       { canal: 0.22 }],
-  ['obl',      { obl: [58, 76] },     { obl: [32, 76] }],
-  ['tramo',    { tramo: [0.66, 1.75] }, { tramo: [1.1, 2.9] }],
-  ['err',      { err: 3 },            { err: 7 }],
-  ['largo',    { largo: 1.30 },       { largo: 1.60 }],
-  ['crece',    { crece: 1.15 },       { crece: 1.35 }],
-  ['pDenso',   { pDenso: 0.62 },      { pDenso: 0.38 }],
-  ['pRecorte', { pRecorte: 0.05 },    { pRecorte: 0.28 }],
-  ['aire',     { aire: 0 },           { aire: 0.35 }],
-  ['nTrazos',  { nTrazos: 1.0 },      { nTrazos: 0.75 }],
-  ['cats',     { cats: null },        { cats: [0.44, 0.14, 0.24, 0.18] }],
-  ['prop',     { prop: null },        { prop: [1.02, 1.15] }],
+  ['canal',    { canal: null },        { canal: 0.22 }],
+  ['obl',      { obl: [58, 76] },      { obl: [32, 76] }],
+  ['tramo',    { tramo: [0.58, 1.55] }, { tramo: [1.1, 2.9] }],
+  ['err',      { err: 3 },             { err: 7 }],
+  ['largo',    { largo: 1.60 },        { largo: 1.20 }],
+  ['crece',    { crece: 1.15 },        { crece: 1.35 }],
+  ['pDenso',   { pDenso: 0.62 },       { pDenso: 0.38 }],
+  ['pRecorte', { pRecorte: 0.05 },     { pRecorte: 0.28 }],
+  ['sale',     { sale: 0.22 },         { sale: 0.45 }],
+  ['aire',     { aire: 0 },            { aire: 0.35 }],
+  ['nTrazos',  { nTrazos: 1.0 },       { nTrazos: 0.75 }],
+  ['cats',     { cats: null },         { cats: [0.24, 0.12, 0.20, 0.44] }],
+  ['prop',     { prop: [1.02, 1.15] }, { prop: [1.02, 1.55] }],
 ];
 
 (async () => {

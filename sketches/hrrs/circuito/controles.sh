@@ -13,7 +13,7 @@
 #   ./controles.sh [n]
 set -u
 cd "$(dirname "$0")"
-N="${1:-40}"
+N="${1:-120}"   # 40 se quedaba corto tres veces seguidas: ver disparan.js
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
 G=gen.js
 fallo=0
@@ -32,16 +32,20 @@ fallo=0
 #   W = min(W, hueco minimo * 0,98) ........ GARANTIZA que no funde, y es esta y solo esta
 #
 # 1. sin el suelo final: se queda el percentil y los pares por debajo se funden
-sed 's|W = Math.min(W, huecoMinimo(trazos) \* 0.98);|// ROTO: sin el suelo que garantiza la regla|' \
+sed 's|W = Math.min(W, huecoMinimo(trazos) / (1 + CANAL));|// ROTO: sin el suelo que garantiza la regla|' \
   "$G" > "$T/sinsuelo.js"
 # 2. sin la reparacion Y con la banda fija: la densidad deja de obedecer a la composicion
 sed -e 's|      if (!peor) break;|      if (!peor) break; if (1) break;  // ROTO|' \
-    -e 's|W = Math.min(W, huecoMinimo(trazos) \* 0.98);|// ROTO: sin el suelo final|' \
+    -e 's|W = Math.min(W, huecoMinimo(trazos) / (1 + CANAL));|// ROTO: sin el suelo final|' \
     -e 's|W = Math.min(0.098, percentil(hs0, P_BANDA));|W = 0.062;  // ROTO: banda fija|' \
   "$G" > "$T/fija.js"
 
 for c in sinsuelo fija; do
   node --check "$T/$c.js" || { echo "CONTROL $c: no compila"; fallo=1; continue; }
+  # UN SED QUE NO ENGANCHA ES UN CONTROL QUE MIENTE, y acaba de pasar: al derivar el suelo del
+  # canal cambió la línea y estos parches se quedaron buscando un texto que ya no existe. El
+  # control habría dicho «no dispara» y yo habría ido a buscar el fallo al generador.
+  if cmp -s "$G" "$T/$c.js"; then echo "CONTROL $c: EL PARCHE NO ENGANCHA (texto cambiado)"; fallo=1; continue; fi
   out=$(node funde.js "$T/$c.js" "$N" 900 | head -1)
   n=$(echo "$out" | sed -n 's/.*FUNDEN=\([0-9]*\).*/\1/p')
   if [ "${n:-0}" -gt 0 ]; then echo "control $c ...... DISPARA   $out"
