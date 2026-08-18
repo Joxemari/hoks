@@ -1665,13 +1665,28 @@ const PARES = [
 ];
 
 const $ = (id) => document.getElementById(id);
-const LS = 'hrrs-pares-v1';
-const est = { semillas: 0, sel: {}, notas: {} };
+const LS = 'hrrs-pares', VIEJO = 'hrrs-pares-anterior';
+
+// LO GUARDADO CADUCA CUANDO CAMBIAN LOS PARES, y esto fue un fallo de verdad: al reanclar la
+// segunda vuelta la página le devolvió sus once votos de la primera ya marcados, sobre unos pares
+// que ya no significan lo mismo. Un «A» de la primera —canal 0,22— no es un «A» de la segunda
+// —canal sorteado—, así que restaurarlo no es recordar: es poner en su boca algo que no dijo.
+//
+// No se arregla subiendo el número de versión a mano, porque eso hay que acordarse de hacerlo y la
+// próxima vez tampoco me acordaré. Se arregla con una HUELLA de los pares: si cambia lo que se
+// pregunta o lo que valen los dos lados, lo guardado deja de aplicar y se aparta —no se borra, se
+// archiva— y la página arranca limpia.
+const HUELLA = PARES.map(p => p.k + '|' + p.a.et + '|' + p.b.et).join('~');
+const est = { huella: HUELLA, semillas: 0, sel: {}, notas: {} };
 try {
   const g = JSON.parse(localStorage.getItem(LS) || '{}');
-  if (g && g.sel) est.sel = g.sel;
-  if (g && g.notas) est.notas = g.notas;
-  if (typeof g.semillas === 'number') est.semillas = g.semillas;
+  if (g && g.huella === HUELLA) {
+    if (g.sel) est.sel = g.sel;
+    if (g.notas) est.notas = g.notas;
+    if (typeof g.semillas === 'number') est.semillas = g.semillas;
+  } else if (g && (g.sel || g.notas)) {
+    localStorage.setItem(VIEJO, JSON.stringify(g));   // por si hiciera falta rescatarlo
+  }
 } catch (e) { /* primera vez */ }
 const guarda = () => {
   try { localStorage.setItem(LS, JSON.stringify(est)); } catch (e) {}
