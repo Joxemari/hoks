@@ -267,19 +267,36 @@ const P_BANDA = 0.25;
 // Vivían en `process.env`, que en una página no existe, así que el artefacto de pares no podía
 // tocar ni uno. Ahora hay tres sitios y en este orden: `opt.mandos` —lo que pasa la página—,
 // el entorno —los barridos de consola, que siguen valiendo— y el valor de la casa.
+// LOS VALORES SON LOS QUE ÉL ELIGIÓ EN LOS DOCE PARES, uno por uno, y de once de los doce salió
+// una decisión. Se anota lo que dijo al lado, porque el número solo no se acuerda de por qué.
 const MANDOS = {
-  canal:    0.22,        // el canal entre dos bandas, en anchuras de banda
-  obl:      [32, 48],    // el rango de los rumbos oblicuos, en grados
-  tramo:    [1.0, 2.6],  // lo que corre un tramo recto antes de doblar
-  err:      7,           // el error de mano del rumbo de un trazo, en grados
-  largo:    0.85,        // el factor del largo de un trazo
-  crece:    1.7,         // hasta cuánto puede engordar la banda al rellenar
-  pDenso:   0.62,        // cada cuánto la obra sale densa en vez de abierta
-  pRecorte: 0.42,        // cada cuánto la obra es el recorte de una composición mayor
-  aire:     1.0,         // factor sobre la tasa de cabos al aire
-  nTrazos:  1.0,         // factor sobre el número de trazos
-  cats:     null,        // la mezcla de categorías; null = la del tipo
-  vueltas:  0,           // las vueltas del campo. Cero por medida: borra las celdas de las cuatro.
+  canal:    null,        // el canal entre dos bandas, en anchuras de banda. NULL = se sortea
+                         // estrecho: «quiero que tenga ambas versiones, ancho y estrecho, pero el
+                         // blanco entre bandas paralelas debería ser estrecho».
+  obl:      [58, 76],    // el rango de los rumbos oblicuos, en grados. Eligió los abiertos.
+  tramo:    [0.66, 1.75],// lo que corre un tramo recto antes de doblar. Eligió la corta, que era
+                         // [1,0 · 2,6], y esto es MÁS CORTO QUE LO QUE ELIGIÓ: con su valor la
+                         // tirada mediana nos salía en 2,4 anchuras y en las seis va de 1,2 a 2,1,
+                         // la del conjunto en 1,5. El par sólo ofrecía «corta» y «larga» una contra
+                         // la otra, así que su voto no podía pedir menos de lo que se le enseñó —
+                         // pero su nota sí lo pide («tiene que tener bastantes dobladuras») y las
+                         // referencias también. Cuando el voto, la nota y la medida apuntan al
+                         // mismo lado, se pasa del valor votado y se dice. Ver `tiradas.js`.
+                         // Y ojo, que además se escala con la anchura de banda, más abajo.
+  err:      3,           // el error de mano del rumbo, en grados: «el a mano tiene su toque pero
+                         // queda desorganizado». Eligió ±3 sobre ±13. Queda apuntado que le ve
+                         // toque al otro: es el candidato a volver, no un cabo suelto.
+  largo:    1.30,        // el factor del largo de un trazo. Eligió el que cruza el pliego.
+  crece:    1.15,        // hasta cuánto engorda la banda: «engorda sólo hasta asegurar márgenes
+                         // más o menos constantes allá donde hay gravedad». Casi constante.
+  pDenso:   0.62,        // «prefiero la densa pero podría ser todo». Se queda como estaba.
+  pRecorte: 0.05,        // eligió que la obra quepa entera. Era 0,42.
+  aire:     0,           // YA NO ES UNA TASA: es lo que se añade a mano por encima de lo que sale
+                         // solo. Ver los cabos, que es la nota que más código cambió.
+  nTrazos:  1.0,         // factor sobre el número de trazos. El ×1,45 que eligió está metido en la
+                         // tabla de tipos: la decisión era «más trazos», no «un factor de 1,45».
+  cats:     null,        // la mezcla de categorías; null = la del tipo, ya corrida hacia la suelta
+  vueltas:  0,           // el campo, apagado. Lo confirmó: «se quedan donde cayeron de primeras».
 };
 const ENV = { canal: 'HRRS_CANAL', obl: 'HRRS_OBL', tramo: 'HRRS_T', err: 'HRRS_ERR',
               largo: 'HRRS_L', vueltas: 'HRRS_V' };
@@ -298,7 +315,7 @@ function mandos(opt) {
 function circuito(seed, opt) {
   const rng = new Rng(seed);
   const M = mandos(opt);
-  const CANAL = M.canal;
+  let CANAL = M.canal;   // si viene un número, manda; si no, se sortea más abajo
 
   const pasos = (opt && opt.pasos) ? [] : null;
   let W = 0;    // la anchura de banda no existe hasta el paso 5. A propósito.
@@ -342,10 +359,20 @@ function circuito(seed, opt) {
   // LA SEPARACIÓN NOMINAL, en unidades de la COMPOSICIÓN y no de la banda: es lo que separa dos
   // líneas paralelas. La banda saldrá de aquí al final, no al contrario.
   const TIPOS = {
-    denso:   { n: [8, 13], sep: [0.055, 0.080], cats: [0.52, 0.14, 0.24, 0.10] },
-    abierto: { n: [5, 9],  sep: [0.085, 0.150], cats: [0.30, 0.18, 0.20, 0.32] },
+    // MÁS TRAZOS —eligió el ×1,45— y LA MEZCLA CORRIDA HACIA LA SUELTA, que eligió también. Del
+    // par de la mezcla salió además una discrepancia que queda sin explicar: A daba 29 % de
+    // sueltas y B 45 %, o sea que las etiquetas eran ciertas, y sin embargo él leyó A como «más
+    // suelta». Lo más probable es que lo que lee como soltura no sea la cuenta de trazos sueltos
+    // sino la de paralelas —A llevaba 27 % y B 21 %, y las paralelas hacen trama—. Se aplica lo
+    // que votó y se deja anotado que la palabra y el número no señalan lo mismo.
+    denso:   { n: [12, 19], sep: [0.055, 0.080], cats: [0.30, 0.12, 0.20, 0.38] },
+    abierto: { n: [7, 13],  sep: [0.085, 0.150], cats: [0.24, 0.12, 0.16, 0.48] },
   };
   const tipo = rng.bool(M.pDenso) ? 'denso' : 'abierto';
+  // EL CANAL NO ES UNA CONSTANTE DE LA FAMILIA, es una decisión de cada obra: «quiero que tenga
+  // ambas versiones, ancho y estrecho, pero el blanco entre bandas paralelas debería ser
+  // estrecho». Así que se sortea sesgado: tres de cada cuatro obras van estrechas.
+  if (CANAL == null) CANAL = rng.bool(0.75) ? rng.range(0.17, 0.25) : rng.range(0.25, 0.36);
   // LA TASA DE CABOS AL AIRE VA CON LA DENSIDAD, y eso lo dicen las seis ordenadas por número de
   // trazos: 14 trazos → 0 %, 11 → 18 %, 8 → 19 %, 7 → 29 %, 6 → 17 %, 5 → 40 %. Cuantos más
   // trazos, menos cabos al aire — y tiene sentido: en una obra apretada un cabo tiene contra qué
@@ -377,7 +404,23 @@ function circuito(seed, opt) {
   const n = Math.max(3, Math.round(rng.int(T.n[0], T.n[1]) * M.nTrazos));
   const PASO = 0.105, ERR = M.err, TOPE_VUELTA = 100;
   // el largo de un TRAMO recto, en pasos. Las referencias corren mucho antes de doblar.
-  const L_TRAMO = M.tramo;
+  // LA TIRADA VA CON LA ANCHURA DE BANDA, y esto salió de una nota suya: «más largo cuanto más
+  // estrecho sea el trazo, quizá en Chillida veo algo así». Se puede comprobar, así que se
+  // comprobó — partiendo los ejes de `mano.json` cada vez que doblan y midiendo cada trozo en
+  // anchuras de su obra:
+  //
+  //     r1  banda 0,033  tirada mediana 2,1 anchuras        r4  0,052  1,9
+  //     r2  banda 0,042  tirada mediana 1,3                 r5  0,091  1,3
+  //     r3  banda 0,054  tirada mediana 1,9                 r6  0,089  1,2
+  //
+  //   correlación banda ↔ tirada: r = -0,67 (umbral 12°), -0,39 (20°), -0,41 (30°)
+  //
+  // El signo es el suyo en los tres umbrales: la banda estrecha corre más. La fuerza es otra cosa
+  // —seis obras y una de ellas la corrompida— así que se aplica el exponente que sale del ajuste,
+  // -0,41, y no más: eso hace que una banda de 0,033 corra un 25 % más que una de 0,062. Suave, y
+  // es lo que seis obras aguantan.
+  const K_TIRADA = Math.pow(0.05 / Math.max(0.02, W_NOM), 0.41);
+  const L_TRAMO = [M.tramo[0] * K_TIRADA, M.tramo[1] * K_TIRADA];
   // LA ESQUINA, por PASO y no por trazo. En las referencias hay 6,9 quiebros por unidad de
   // longitud, o sea ~0,7 por paso: con 0,11 el trazo hacía media esquina y salía recto —cuerda
   // 0,98 contra 0,79—. Un trazo corto con tasa baja de esquina es una raya.
@@ -436,14 +479,15 @@ function circuito(seed, opt) {
   //
   // Así que el destino del cabo se decide ANTES de andar y el paseo se inclina hacia él: entre los
   // rumbos que caben, gana el que acerca. Y cuando llega a tiro, para.
-  function pasea(p0, dir0, largo, evita, meta) {
+  function pasea(p0, dir0, largo, evita, meta, kT) {
     const err = rng.range(-ERR, ERR);
     let dir = dir0 + err;
     const pts = [dentro(p0)];
     let hecho = 0, atasco = 0;
     while (hecho < largo && atasco < 25) {
       // el largo del TRAMO, no del paso: varias anchuras de banda de recta seguida
-      const objetivo = Math.min(largo - hecho, PASO * rng.range(L_TRAMO[0], L_TRAMO[1]));
+      const kt = kT || 1;
+      const objetivo = Math.min(largo - hecho, PASO * rng.range(L_TRAMO[0], L_TRAMO[1]) * kt);
       let dado = 0, puesto = false;
       // se prueba el rumbo que toca y, si no cabe, otros del alfabeto: esquivar es lo que hace
       // el trazo cuando no puede, no lo que quiere hacer
@@ -529,7 +573,11 @@ function circuito(seed, opt) {
   if (!dado) {
     const a = rng.range(0, 6.2832), r = rng.range(0.06, 0.30);
     const p0 = [0.5 * fw + Math.cos(a) * r * fw, 0.5 * fh + Math.sin(a) * r * fh];
-    const pts = pasea(p0, eligeRumbo(null), rng.range(0.85, 1.45) * K_LARGO, null);
+    // EL PRIMERO DOBLA MÁS QUE LOS DEMÁS: «tiene que tener bastantes dobladuras, al menos el
+    // primer trazo, que es el que marca la base de la obra y siguientes trazos». Y es coherente con
+    // el orden que él mismo puso —primero se dibuja el trazo central y los demás se relacionan con
+    // él—: si el primero es una recta, no hay base a la que relacionarse, hay una raya.
+    const pts = pasea(p0, eligeRumbo(null), rng.range(0.85, 1.45) * K_LARGO, null, null, 0.60);
     trazos.push(pts); masas.push(rng.range(1.5, 2.6)); cats.push('primero'); metas[0] = null;
   }
   foto('1 · los puntos del primer trazo', 'puntos',
@@ -756,7 +804,7 @@ function circuito(seed, opt) {
   const D_CABO = W_NOM;              // a una anchura de banda del eje del vecino
   const ANG_FRENTE = 78, ANG_PAR = 8;
   const DBGC = (typeof process !== 'undefined' && process.env.HRRS_CABO)
-    ? { lejos:0, grapa1:0, grapa2:0, corto:0, estorba:0, cruza:0, ok:0, sinCand:0 } : null;
+    ? { lejos:0, grapa1:0, medio:0, corto:0, estorba:0, cruza:0, ok:0, sinCand:0 } : null;
   const destinos = [];
   for (let k = 0; k < trazos.length; k++) {
     destinos.push([null, null]);
@@ -830,65 +878,88 @@ function circuito(seed, opt) {
         while (cands.length && cands[0].delante > 85) cands.shift();
       }
       if (DBGC && !cands.length) DBGC.sinCand++;
-      let puesto = null;
-      for (const cd of cands.slice(0, 4)) {
-        if (cd.d > W_NOM * 7) { if (DBGC) DBGC.lejos++; break; }
-        const desde = trazos[k][vec];
-        // EL SITIO DONDE MUERE LO FIJA EL VECINO, no mi trazo. Se coloca el cabo a una anchura
-        // del eje del vecino por el lado en el que ya estoy, y se mete un CODO para que el último
-        // tramo sea exactamente el gesto —de frente o en paralelo— en vez del ángulo que salga.
-        // Calculándolo al revés —proyectar desde el penúltimo punto— sólo acierta si ese punto ya
-        // estaba en la línea buena, y el 70 % de los cabos se quedaba sin destino.
+      // EL GESTO SE DECLARA, PERO LA ELECCIÓN ENTRE LOS DOS PERMITIDOS LA HACE LA GEOMETRÍA.
+      //
+      // Sorteando de antemano si este cabo llega de frente o en paralelo, el 84 % de los cabos se
+      // quedaba al aire —contra el 17 % de las seis—, y el contador dijo por dónde: las dos grapas.
+      // El último tramo tiene que llegar perpendicular al vecino o pegado a él, y desde el rumbo
+      // con el que el trazo viene, ese gesto pedía doblar más de cien grados. No es un fallo del
+      // remate: es que él eligió los oblicuos abiertos (58–76°) y con el alfabeto separado de los
+      // ejes el gesto declarado cae lejos del rumbo de llegada. Su elección y esta regla se
+      // peleaban, y las dos son suyas.
+      //
+      // Así que no se toca ninguna de las dos: se prueban LOS DOS GESTOS en cada candidato, en el
+      // orden que el sorteo prefería. Los dos son modos permitidos —el ángulo de llegada medido es
+      // bimodal, 0–15° y 75–90°, y el medio sigue prohibido—, así que probar los dos no relaja
+      // ninguna regla; sólo deja de tirar un cabo por no haber preguntado por el otro modo.
+      //
+      // Y el temblor del gesto se tira UNA VEZ, antes de buscar, en vez de dentro del bucle: si se
+      // tira dentro, el número de intentos cambia cuántas veces se llama al azar y entonces tocar
+      // la búsqueda mueve todas las obras. Un mando no puede tener ese efecto secundario.
+      // EL CODO NO SE DIBUJA, PERO SE ESTABA USANDO PARA DESCARTAR. Y ahí estaba el 75 % de los
+      // cabos al aire, que es lo que él vio en el par 9 sin poder nombrarlo: «no veo mucha
+      // diferencia entre ambas, ocurrirá de todo, pero algunos puntos tenderán a tener gravedad y
+      // morirán contra algo, otros al aire».
+      //
+      // La historia: para que el último tramo fuera exactamente el gesto declarado —de frente o en
+      // paralelo al vecino— se metía un vértice extra, el codo. Se quitó midiendo, porque rompía
+      // trece obras de sesenta y se llevaba el acompañamiento de 0,52 a 0,38. Pero se quitó sólo de
+      // la geometría: LOS TRES DESCARTES QUE LO COMPROBABAN SE QUEDARON. Así que el remate calculaba
+      // un codo, lo medía, lo rechazaba por grapa o por estorbo, y tiraba el cabo entero — por un
+      // vértice que no iba a insertar. El 78 % de los cabos moría al aire por eso, y no de hoy: la
+      // versión de antes de los pares daba lo mismo.
+      //
+      // Ahora se comprueba LO QUE SE VA A DIBUJAR, que es el tramo `desde → q`, y nada más. Y la
+      // regla del ángulo de llegada —bimodal, 0–15° y 75–90°, con el medio vacío en las seis— se
+      // aplica también sobre ese tramo en vez de sobre el fantasma: se mide con qué ángulo llega al
+      // vecino y se prohíbe el medio. La regla no se relaja; se aplica donde se ve.
+      //
+      // El gesto preferido sigue sorteándose (52 % de frente, como las seis) pero ya no ES el
+      // rumbo: es el ORDEN en que se prueban los candidatos. Primera pasada, sólo los que llegan
+      // con el gesto preferido; segunda, cualquiera que no caiga en el medio prohibido. Un cabo no
+      // se tira por no haber preguntado por el otro modo.
+      const resto = cual === 0 ? trazos[k].slice(2).reverse() : trazos[k].slice(0, -2);
+      const desde = trazos[k][vec];
+      const anterior = trazos[k][vec === 1 ? 2 : trazos[k].length - 3];
+      const a1 = anterior ? Math.atan2(desde[1] - anterior[1], desde[0] - anterior[0]) : NaN;
+      const prueba = (cd, exigeModo) => {
+        if (cd.d > W_NOM * 7) { if (DBGC) DBGC.lejos++; return null; }
+        // el cabo va a una anchura del eje del vecino, por el lado en el que ya estoy
         let nx = -Math.sin(cd.tang), ny = Math.cos(cd.tang);
         if ((trazos[k][idx][0] - cd.q[0]) * nx + (trazos[k][idx][1] - cd.q[1]) * ny < 0) {
-          nx = -nx; ny = -ny;                              // por el lado en el que ya estoy
+          nx = -nx; ny = -ny;
         }
         const q0 = [cd.q[0] + nx * D_CABO, cd.q[1] + ny * D_CABO];
         const q = recorte ? q0 : dentro(q0);
-        // el rumbo del último tramo: perpendicular al vecino si es de frente, paralelo si no
-        // y el sentido del gesto se ELIGE, no se sortea: el que menos obliga a doblar
-        const salgo = Math.atan2(trazos[k][idx][1] - desde[1], trazos[k][idx][0] - desde[0]);
-        let rumbo;
-        if (deFrente) {
-          rumbo = Math.atan2(-ny, -nx) + rng.range(-1, 1) * (90 - ANG_FRENTE) * RAD;
-        } else {
-          const a = cd.tang, b = cd.tang + Math.PI;
-          rumbo = (Math.abs(corto((a - salgo) / RAD)) <= Math.abs(corto((b - salgo) / RAD)) ? a : b)
-                  + rng.range(-1, 1) * ANG_PAR * RAD;
+        const L2 = hy(q[0] - desde[0], q[1] - desde[1]);
+        if (L2 < W_NOM * 0.4) { if (DBGC) DBGC.corto++; return null; }
+        const a2 = Math.atan2(q[1] - desde[1], q[0] - desde[0]);
+        if (isFinite(a1) && Math.abs(corto((a2 - a1) / RAD)) > 100) {
+          if (DBGC) DBGC.grapa1++; return null;
         }
-        const Lg = W_NOM * rng.range(1.1, 2.2);            // lo que dura el gesto
-        const codo = [q[0] - Math.cos(rumbo) * Lg, q[1] - Math.sin(rumbo) * Lg];
-        // ¿se puede llegar al codo desde donde estoy, sin grapa y sin estorbar?
-        const a1 = Math.atan2(desde[1] - trazos[k][vec === 1 ? 2 : trazos[k].length - 3][1],
-                              desde[0] - trazos[k][vec === 1 ? 2 : trazos[k].length - 3][0]);
-        const a2 = Math.atan2(codo[1] - desde[1], codo[0] - desde[0]);
-        if (isFinite(a1) && Math.abs(corto((a2 - a1) / RAD)) > 100) { if (DBGC) DBGC.grapa1++; continue; }
-        if (Math.abs(corto((rumbo - a2) / RAD)) > 100) { if (DBGC) DBGC.grapa2++; continue; }
-        if (hy(codo[0] - desde[0], codo[1] - desde[1]) < W_NOM * 0.4) { if (DBGC) DBGC.corto++; continue; }
-        if (estorba(k)(desde, codo) || estorba(k)(codo, q)) { if (DBGC) DBGC.estorba++; continue; }
-        const resto = cual === 0 ? trazos[k].slice(2).reverse() : trazos[k].slice(0, -2);
-        if (seCruza(resto.concat([desde]), desde, codo)) { if (DBGC) DBGC.cruza++; continue; }
-        if (seCruza(resto.concat([desde, codo]), codo, q)) { if (DBGC) DBGC.cruza++; continue; }
-        // EL CODO NO ENTRA, y lo dice la medida. Meter un vértice extra para que el último tramo
-        // fuera exactamente el gesto rompía 13 obras de 60 —el contorno se cruzaba consigo mismo y
-        // la banda salía partida en dos— y tiraba el acompañamiento de 0,52 a 0,38, porque un codo
-        // al final de una paralela la deja de ser. Así que el cabo se MUEVE al sitio que le toca y
-        // el gesto se queda en la dirección con la que llega, que a veces no es la declarada.
-        //
-        // Es el cuarto intento de rematar un trazo YA TERMINADO y el cuarto que no sale. La
-        // conclusión, después de medir los cuatro: esto no es un paso que se añade al final, es
-        // parte de cómo se anda el trazo — y andarlo hacia un destino con un ángulo de llegada
-        // declarado es otra pieza de modelo, no un ajuste de ésta.
-        trazos[k][idx] = q;
-        puesto = cd.clase + (deFrente ? ' de frente' : ' en paralelo');
-        if (DBGC) DBGC.ok++;
-        break;
+        // con qué ángulo llega al vecino, entre 0° (tangencial) y 90° (de frente)
+        const bruto = Math.abs(corto((a2 - cd.tang) / RAD));
+        const ll = Math.min(bruto, 180 - bruto);
+        if (ll > 90 - ANG_FRENTE + 22 && ll < ANG_FRENTE - 22) { if (DBGC) DBGC.medio++; return null; }
+        const deFrenteReal = ll >= 45;
+        if (exigeModo != null && deFrenteReal !== exigeModo) return null;
+        if (estorba(k)(desde, q)) { if (DBGC) DBGC.estorba++; return null; }
+        if (seCruza(resto.concat([desde]), desde, q)) { if (DBGC) DBGC.cruza++; return null; }
+        return { q, clase: cd.clase + (deFrenteReal ? ' de frente' : ' en paralelo') };
+      };
+      let puesto = null;
+      for (const exige of [deFrente, null]) {
+        for (const cd of cands.slice(0, 8)) {
+          const r = prueba(cd, exige);
+          if (r) { trazos[k][idx] = r.q; puesto = r.clase; if (DBGC) DBGC.ok++; break; }
+        }
+        if (puesto) break;
       }
       destinos[k][cual] = puesto || 'al aire';
     }
   }
   if (DBGC) console.error('cabos: ok=' + DBGC.ok + ' lejos=' + DBGC.lejos +
-    ' grapa(entrada)=' + DBGC.grapa1 + ' grapa(codo)=' + DBGC.grapa2 + ' corto=' + DBGC.corto +
+    ' grapa=' + DBGC.grapa1 + ' medio prohibido=' + DBGC.medio + ' corto=' + DBGC.corto +
     ' estorba=' + DBGC.estorba + ' cruza=' + DBGC.cruza + ' sinCand=' + DBGC.sinCand);
   // y el que muere al aire se aparta, para que se lea que muere al aire
   for (let k = 0; k < trazos.length; k++) {
@@ -1228,6 +1299,17 @@ function circuito(seed, opt) {
   // Y la lenta y la rápida no son lo mismo ni vienen del mismo sitio: LA LENTA es el relleno —la
   // banda se ensancha donde tiene sitio— y LA RÁPIDA es el filo. Al filo le toca 0,015.
   const SD_FILO = rng.range(0.017, 0.025);
+  // EL CUERPO, que hasta ahora en el generador no existía: lo lento se lo ponía el relleno, y al
+  // elegir él la banda casi constante («engorda sólo hasta asegurar márgenes más o menos constantes
+  // allá donde hay gravedad») lo lento se fue con el relleno y la piel cayó a 0,021 contra los
+  // 0,033 de las cuatro. Su nota no pide una banda matemáticamente constante: pide que el ensanche
+  // sirva al margen y no al espacio libre. Así que lo lento vuelve, pero al CUERPO DEL TRAZO —una
+  // onda larga de la anchura, que es lo que `trazo.js` ya tenía y esto no—, no al relleno.
+  //
+  // Y va bajo el mismo tope que todo lo demás, así que no puede fundir: la banda sigue cortada a
+  // la medida del hueco que dejó la composición.
+  const SD_CUERPO = rng.range(0.018, 0.026);
+  const LAM_CUERPO = rng.range(4.0, 7.0);       // en anchuras de banda
   const COMUN = 0.32;                         // cuánto comparten los dos filos
 
   // ruido correlacionado y determinista: suma de octavas, con su fase.
@@ -1339,14 +1421,24 @@ function circuito(seed, opt) {
     contornos.push(c);
     const A = c === 'limpio' ? 0.62 : c === 'vibrado' ? 1.25 : 0.85;
     const oc = [octavas(), octavas()], oComun = octavas();
+    // el cuerpo: una onda larga común a los dos lados —la banda engorda y adelgaza y el eje no se
+    // mueve— y DE UN SOLO LADO, hacia dentro. Puesta como onda de media cero llegaba a la mitad: el
+    // tope del relleno le recortaba toda la parte positiva, así que la piel medía 0,025 cuando se le
+    // pedía 0,033. Y el recorte tenía razón: una banda no se hincha por encima del canal que la
+    // separa de su vecina, se ESTRECHA desde él. Así que el techo es el sitio que hay y la onda
+    // muerde hacia dentro — que además es lo que él describe, «engorda sólo hasta asegurar márgenes
+    // más o menos constantes». Un seno rectificado de amplitud a tiene sd = a/(2√2).
+    const faseC = rng.range(0, 6.2832);
+    const ampC = SD_CUERPO * 2 * Math.SQRT2 * 2;
     // el largo del trazo en anchuras, que es la unidad del ruido
     const Ltot = largoDe(ejes[k]) / W;
     const tope = semis[k].map(l => [l[0], l[1]]);
     for (let i = 0; i < m; i++) {
       const u = Ltot * (m > 1 ? i / (m - 1) : 0.5);
       const com = evalua(oComun, u);
+      const cuerpo = -ampC * 0.25 * (1 - Math.sin(u / LAM_CUERPO * 6.2832 + faseC));
       for (const s2 of [0, 1]) {
-        let v = (SD_FILO / SD_OCT) * A * (COMUN * com + (1 - COMUN) * evalua(oc[s2], u));
+        let v = cuerpo + (SD_FILO / SD_OCT) * A * (COMUN * com + (1 - COMUN) * evalua(oc[s2], u));
         // la gubia adelgaza en los cabos y engorda en medio. Iba a ±0,12 anchuras, que ella sola
         // se comía cinco veces el presupuesto de variación lenta de las cuatro referencias; y es
         // además la calidad de r2 y r6, que son las dos que él descartó. Se queda, pero apuntada.
