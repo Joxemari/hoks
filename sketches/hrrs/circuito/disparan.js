@@ -6,38 +6,46 @@
  *
  * Así que antes de publicar la página, cada par tiene que demostrar que mueve la obra:
  *
- *   difieren ..... en cuántas semillas cambia algo. Y OJO CON EL CRITERIO: hay mandos que son
- *                  una moneda —`pDenso`, `pRecorte`— y cambiar la probabilidad de 0,62 a 0,20 sólo
- *                  cambia el resultado en las semillas cuyo sorteo cae en medio, o sea el 42 %.
- *                  Pedirles que disparen en la mitad de las semillas era pedirles algo imposible:
- *                  el primer criterio suspendió a tres mandos que funcionan. Lo que hay que exigir
- *                  es que cuando cambien, cambien MUCHO — y que cambien en 3 semillas de 12.
+ *   difieren ..... en cuántas semillas cambia algo. Y OJO CON EL CRITERIO, que ya se ha equivocado
+ *                  dos veces en el mismo sitio: hay mandos que son una MONEDA —`pDenso`,
+ *                  `pRecorte`— y mover su probabilidad de 0,62 a 0,38 sólo cambia el resultado en
+ *                  las semillas cuyo sorteo cae en medio, o sea el 24 %. Pedirles la mitad de las
+ *                  semillas, o un cuarto, es pedirles algo aritméticamente imposible.
+ *                  Un mando MUERTO da exactamente cero —así se cazó `esq`—, así que el corte está
+ *                  en dos: por debajo, muerto. Y por debajo del 20 % se avisa, porque entonces la
+ *                  página tiene que rebuscar semillas y el par deja de representar lo que el mando
+ *                  hace de media: el autor vería tres casos escogidos, no tres casos.
  *   Δ tinta ...... cuánto cambia la tinta media, en puntos
  *   Δ banda ...... y la anchura de banda
  *   Δ forma ...... cuánto se mueve un vértice, en anchuras de banda, MEDIDO SÓLO EN LAS SEMILLAS
  *                  QUE CAMBIAN. Promediarlo sobre todas diluía el efecto con los empates.
+ *
+ * Y CUARENTA SEMILLAS POR DEFECTO, no doce. Con doce, un mando que cambia una obra de cada seis
+ * sale «1 de 12» y suspende por suerte: pasó con `pDenso` y con `pRecorte`, los dos vivos, y me
+ * llevó a abrirles el salto cuando el problema era el tamaño de la muestra. Es la tercera vez en
+ * esta familia que un cero significa «no he mirado bastante» y no «no hay nada».
  *
  *   node disparan.js [semillas]
  */
 const path = require('path');
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 
-const N = parseInt(process.argv[2] || '12', 10);
+const N = parseInt(process.argv[2] || '40', 10);
 
 // los mismos doce de `pares.html`. Si se cambian ahí, se cambian aquí: son la misma pregunta.
 const PARES = [
-  ['canal',    { canal: 0.22 },     { canal: 0.34 }],
-  ['obl',      { obl: [32, 48] },   { obl: [58, 76] }],
-  ['tramo',    { tramo: [1.0, 2.6] }, { tramo: [2.2, 4.6] }],
-  ['err',      { err: 3 },          { err: 13 }],
-  ['largo',    { largo: 0.85 },     { largo: 1.30 }],
-  ['crece',    { crece: 1.70 },     { crece: 1.15 }],
-  ['pDenso',   { pDenso: 0.62 },    { pDenso: 0.20 }],
-  ['pRecorte', { pRecorte: 0.42 },  { pRecorte: 0.05 }],
-  ['aire',     { aire: 1.0 },       { aire: 2.2 }],
-  ['nTrazos',  { nTrazos: 1.0 },    { nTrazos: 1.45 }],
-  ['cats',     { cats: null },      { cats: [0.28, 0.12, 0.18, 0.42] }],
-  ['vueltas',  { vueltas: 0 },      { vueltas: 8 }],
+  ['canal',    { canal: null },       { canal: 0.22 }],
+  ['obl',      { obl: [58, 76] },     { obl: [32, 76] }],
+  ['tramo',    { tramo: [0.66, 1.75] }, { tramo: [1.1, 2.9] }],
+  ['err',      { err: 3 },            { err: 7 }],
+  ['largo',    { largo: 1.30 },       { largo: 1.60 }],
+  ['crece',    { crece: 1.15 },       { crece: 1.35 }],
+  ['pDenso',   { pDenso: 0.62 },      { pDenso: 0.38 }],
+  ['pRecorte', { pRecorte: 0.05 },    { pRecorte: 0.28 }],
+  ['aire',     { aire: 0 },           { aire: 0.35 }],
+  ['nTrazos',  { nTrazos: 1.0 },      { nTrazos: 0.75 }],
+  ['cats',     { cats: null },        { cats: [0.44, 0.14, 0.24, 0.18] }],
+  ['prop',     { prop: null },        { prop: [1.02, 1.15] }],
 ];
 
 (async () => {
@@ -102,15 +110,16 @@ const PARES = [
   for (const f of filas) {
     // dispara si cambia en al menos 3 semillas de 12 Y, cuando cambia, cambia algo que se ve:
     // o la forma, o la tinta. Los mandos de moneda cambian poco a menudo y mucho cuando lo hacen.
-    const flojo = f.dif < Math.max(2, N / 4) || (f.forma < 0.25 && Math.abs(f.dTinta) < 1.0);
+    const muerto = f.dif < 2 || (f.forma < 0.25 && Math.abs(f.dTinta) < 1.0);
+    const raro = !muerto && f.dif / N < 0.20;
     console.log([f.k.padEnd(10),
                  (f.dif + '/' + N).padStart(9),
                  (f.dTinta >= 0 ? '+' : '') + f.dTinta.toFixed(1),
                  (f.dW >= 0 ? '+' : '') + f.dW.toFixed(4),
                  (f.dN >= 0 ? '+' : '') + f.dN.toFixed(1),
                  f.forma.toFixed(2)].map((v, i) => i ? v.padStart(9) : v).join(' ')
-                 + (flojo ? '   NO DISPARA' : ''));
-    if (flojo) fallo = 1;
+                 + (muerto ? '   NO DISPARA' : raro ? '   moneda estrecha: la página rebusca' : ''));
+    if (muerto) fallo = 1;
   }
   console.log(fallo ? '\nHay pares que no mueven la obra: quítalos de pares.html o arréglalos.'
                     : '\nLos doce mueven la obra.');

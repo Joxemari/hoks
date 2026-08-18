@@ -156,6 +156,8 @@ const MANDOS = {
                          // tabla de tipos: la decisión era «más trazos», no «un factor de 1,45».
   cats:     null,        // la mezcla de categorías; null = la del tipo, ya corrida hacia la suelta
   vueltas:  0,           // el campo, apagado. Lo confirmó: «se quedan donde cayeron de primeras».
+  prop:     null,        // la proporción del pliego; null = como siempre, de 1,02 a 1,55. Es la
+                         // única decisión de la composición que no ha pasado por ningún par.
 };
 const ENV = { canal: 'HRRS_CANAL', obl: 'HRRS_OBL', tramo: 'HRRS_T', err: 'HRRS_ERR',
               largo: 'HRRS_L', vueltas: 'HRRS_V' };
@@ -184,7 +186,8 @@ function circuito(seed, opt) {
                  trazos: trazos.map(t => t.map(q => [q[0], q[1]])) });
   };
 
-  const prop = rng.range(1.02, 1.55), apais = rng.bool(0.5);
+  const prop = M.prop ? rng.range(M.prop[0], M.prop[1]) : rng.range(1.02, 1.55);
+  const apais = rng.bool(0.5);
   const fw = (opt && opt.geometria) ? opt.geometria.fw : (apais ? prop : 1);
   const fh = (opt && opt.geometria) ? opt.geometria.fh : (apais ? 1 : prop);
 

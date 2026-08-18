@@ -66,6 +66,7 @@
   .ficha { background: var(--papel); padding: 11px 13px; }
   .ficha .num { font-size: 10px; color: var(--gris); letter-spacing: .1em; }
   .ficha .mando { font-size: 13px; font-weight: 700; margin: 1px 0 4px; text-wrap: balance; }
+  .ficha .ya { font-size: 10.5px; color: var(--marca); margin: 0 0 5px; }
   .ficha .preg { font-size: 11px; color: var(--tinta); line-height: 1.4; }
   .ficha .por { font-size: 10.5px; color: var(--gris); line-height: 1.35; margin-top: 6px; }
   .nota {
@@ -117,14 +118,15 @@
   </header>
 
   <div class="intro">
-    <p>Doce pares, y entre A y B <b>cambia un solo mando</b>. Clic en el lado que prefieras.</p>
-    <p>Cuando eliges una obra entre cinco, dentro hay veinte mandos y <b>yo no sé cuál la hizo
-    buena</b>. Aquí cada clic calibra uno. Y sólo están los de la <b>composición</b>: la piel del
-    trazo ya está clavada por número contra r1, r2, r5 y r6, así que votarla sería gastar tu ojo en
-    algo que hace un script.</p>
-    <p>Tres obras por lado, y no la misma obra con el mando movido —cambiar una regla cambia el
-    orden en que se consume el azar—, así que <b>se compara el carácter, no la instancia</b>. Debajo
-    van los números medidos, para que la etiqueta no pueda mentir sobre lo que se ve.</p>
+    <p><b>Segunda vuelta.</b> De la primera salieron once decisiones y una abstención, y están todas
+    aplicadas: el generador de esta página es el de ahora. Así que <b>el lado A es siempre lo que hace
+    hoy</b> —tu decisión— y el B es la pregunta siguiente, no la que ya contestaste.</p>
+    <p>Cuatro de tus notas no eran valores sino mecanismos, y ésas cambiaron código: el canal se
+    sortea por obra, la tirada va con la anchura de banda (lo comprobé en las seis: cierto, r = −0,67),
+    el primer trazo dobla más, y tu abstención en los cabos destapó que el 78 % moría al aire por un
+    codo que no se dibuja. Cada fila dice qué se decidió y qué queda abierto.</p>
+    <p>Tres obras por lado, y no la misma obra con el mando movido. Debajo van los números medidos,
+    para que la etiqueta no pueda mentir sobre lo que se ve.</p>
   </div>
 
   <div class="filas" id="filas"></div>
@@ -297,6 +299,8 @@ const MANDOS = {
                          // tabla de tipos: la decisión era «más trazos», no «un factor de 1,45».
   cats:     null,        // la mezcla de categorías; null = la del tipo, ya corrida hacia la suelta
   vueltas:  0,           // el campo, apagado. Lo confirmó: «se quedan donde cayeron de primeras».
+  prop:     null,        // la proporción del pliego; null = como siempre, de 1,02 a 1,55. Es la
+                         // única decisión de la composición que no ha pasado por ningún par.
 };
 const ENV = { canal: 'HRRS_CANAL', obl: 'HRRS_OBL', tramo: 'HRRS_T', err: 'HRRS_ERR',
               largo: 'HRRS_L', vueltas: 'HRRS_V' };
@@ -325,7 +329,8 @@ function circuito(seed, opt) {
                  trazos: trazos.map(t => t.map(q => [q[0], q[1]])) });
   };
 
-  const prop = rng.range(1.02, 1.55), apais = rng.bool(0.5);
+  const prop = M.prop ? rng.range(M.prop[0], M.prop[1]) : rng.range(1.02, 1.55);
+  const apais = rng.bool(0.5);
   const fw = (opt && opt.geometria) ? opt.geometria.fw : (apais ? prop : 1);
   const fh = (opt && opt.geometria) ? opt.geometria.fh : (apais ? 1 : prop);
 
@@ -1563,91 +1568,100 @@ function pinta(cx, Wpx, Hpx, o, opt) {
 // orden no es casual: van de lo que más cambia la obra a lo que menos, para que si se abandona a
 // mitad lo contestado siga sirviendo.
 const PARES = [
-  { k: 'canal', mando: 'el canal',
-    preg: '¿Cuánto blanco queda entre dos bandas paralelas?',
-    por: 'Hoy 0,22 anchuras, medido en las cinco buenas. Pero medido sobre fotos de imprenta, ' +
-         'donde la tinta se extiende: el canal real del dibujo pudo ser más ancho.',
-    a: { et: '0,22 · estrecho', m: { canal: 0.22 } },
-    b: { et: '0,34 · ancho',    m: { canal: 0.34 } } },
+  { k: 'canal', mando: 'el canal', ya: 'estrecho, y variable',
+    preg: '¿Que el canal cambie de obra en obra, o que la familia tenga un canal reconocible?',
+    por: 'Pediste las dos versiones con el blanco estrecho, así que ahora se sortea por obra: tres ' +
+         'de cada cuatro entre 0,17 y 0,25 anchuras, el resto hasta 0,36. Lo que eso no contestó es ' +
+         'si la variedad ayuda: un canal fijo hace que dos obras se reconozcan como de la misma mano.',
+    a: { et: 'sorteado estrecho', m: { canal: null } },
+    b: { et: 'fijo en 0,22',      m: { canal: 0.22 } } },
 
-  { k: 'obl', mando: 'los oblicuos',
-    preg: '¿Los rumbos que no son de eje rozan la vertical o se plantan en diagonal?',
-    por: 'En las referencias el 72 % de la longitud corre a ±20° de los ejes, y el quiebro típico ' +
-         'es de 35°. Con oblicuos más abiertos la obra dobla más fuerte.',
-    a: { et: '32–48° · pegados', m: { obl: [32, 48] } },
-    b: { et: '58–76° · abiertos', m: { obl: [58, 76] } } },
+  { k: 'obl', mando: 'los oblicuos', ya: 'abiertos, 58–76°',
+    preg: '¿Todos los oblicuos abiertos, o cada trazo el suyo entre cerrado y abierto?',
+    por: 'Elegiste los abiertos. Con el rango ancho el alfabeto deja de ser tres rumbos y pasa a ser ' +
+         'una franja: hay trazos que rozan el eje y otros que se plantan, en la misma obra.',
+    a: { et: '58–76°, abiertos', m: { obl: [58, 76] } },
+    b: { et: '32–76°, de todo',  m: { obl: [32, 76] } } },
 
-  { k: 'tramo', mando: 'la tirada',
-    preg: '¿Cuánto corre un trazo recto antes de doblar?',
-    por: 'Es lo que separa una obra de tramos largos y pocos quiebros de una de zigzag corto.',
-    a: { et: '1,0–2,6 · corta', m: { tramo: [1.0, 2.6] } },
-    b: { et: '2,2–4,6 · larga', m: { tramo: [2.2, 4.6] } } },
+  { k: 'tramo', mando: 'la tirada y la U', ya: 'corta, 1,8 anchuras',
+    preg: '¿Sobran horquillas? El trazo dobla y vuelve pegado a sí mismo más que en las seis.',
+    por: 'Elegiste la corta y las seis te dieron la razón —medidas igual, su mediana va de 1,2 a 2,1 ' +
+         'anchuras y ahora estamos en 1,8—. El precio se ve en la hoja: muchas U cerradas, el trazo ' +
+         'que sale y vuelve al lado. Alargar la tirada las quita y también quita dobladuras.',
+    a: { et: '0,66–1,75, corta', m: { tramo: [0.66, 1.75] } },
+    b: { et: '1,1–2,9, más suelta', m: { tramo: [1.1, 2.9] } } },
 
-  { k: 'err', mando: 'el error de mano',
-    preg: '¿Los trazos se alinean al alfabeto, o cada uno lleva su desvío?',
-    por: 'El rumbo de cada trazo se sortea del alfabeto y se le suma un error, UNA VEZ por trazo ' +
-         'y no por paso —un temblor por paso es ruido; uno por trazo es la mano de quien lo ' +
-         'dibuja—. Hoy son ±7°. Aquí vivía «la probabilidad de doblar», que resultó ser código ' +
-         'muerto: los dos lados salían idénticos hasta el píxel y lo dijo el comprobador.',
-    a: { et: '±3° · alineado', m: { err: 3 } },
-    b: { et: '±13° · a mano',  m: { err: 13 } } },
+  { k: 'err', mando: 'el error de mano', ya: '±3°, alineado',
+    preg: '¿El medio que no viste? Descartaste ±13° por desorganizado y elegiste ±3°.',
+    por: '«El a mano tiene su toque pero queda desorganizado.» El par sólo tenía los dos extremos, ' +
+         'así que el ±7° que había antes —el que quizá tiene el toque sin el desorden— no se votó.',
+    a: { et: '±3°, alineado', m: { err: 3 } },
+    b: { et: '±7°, el medio', m: { err: 7 } } },
 
-  { k: 'largo', mando: 'el largo',
-    preg: '¿Trazos contenidos, o trazos que cruzan el pliego de lado a lado?',
-    por: 'Un factor sobre el largo. Las seis van de 6 a 18 anchuras, así que hay sitio para las dos.',
-    a: { et: '0,85 · contenido', m: { largo: 0.85 } },
-    b: { et: '1,30 · cruza',     m: { largo: 1.30 } } },
+  { k: 'largo', mando: 'el largo', ya: '1,30, cruza',
+    preg: '¿Aún más largos, o ya está?',
+    por: 'Elegiste los que cruzan el pliego. Con 1,60 un trazo entra y sale por el otro lado casi ' +
+         'siempre, y la obra pasa de ser un grupo de trazos a ser una trama de lado a lado.',
+    a: { et: '1,30, cruza',   m: { largo: 1.30 } },
+    b: { et: '1,60, atraviesa', m: { largo: 1.60 } } },
 
-  { k: 'crece', mando: 'el relleno',
-    preg: '¿La banda engorda donde tiene sitio, o es casi de anchura constante?',
-    por: 'Tu regla era rellenar hasta el margen —«se ve perfectamente en R5 y R6»—. Pero la piel ' +
-         'medida dice que a lo largo de un mismo trazo la anchura casi no cambia. Así que puede ' +
-         'que el ensanche sea de un trazo a otro, y no dentro de uno.',
-    a: { et: '1,70 · engorda',  m: { crece: 1.70 } },
-    b: { et: '1,15 · constante', m: { crece: 1.15 } } },
+  { k: 'crece', mando: 'el relleno', ya: '1,15, casi constante',
+    preg: '¿La banda quiere un poco más de aire para ensancharse, o ninguno?',
+    por: '«Engorda sólo hasta asegurar márgenes más o menos constantes allá donde hay gravedad.» Con ' +
+         '1,15 casi no engorda, y eso trajo dos cosas: las bandas dejaron de fundirse —cero de ' +
+         'cuarenta, tu regla absoluta— y la variación lenta de la piel se fue con el relleno, así que ' +
+         'hubo que devolvérsela al cuerpo del trazo. 1,35 le da algo de sitio otra vez.',
+    a: { et: '1,15, constante', m: { crece: 1.15 } },
+    b: { et: '1,35, respira',   m: { crece: 1.35 } } },
 
-  { k: 'pDenso', mando: 'denso o abierto',
-    preg: '¿La mayoría de las obras salen apretadas, o la mayoría con aire?',
-    por: 'Hoy 62 % densas. Es lo que más cambia la familia entera vista de lejos.',
+  { k: 'pDenso', mando: 'denso o abierto', ya: '62 % densas',
+    preg: '¿Sigue mandando la densa, o que caiga cerca del medio?',
+    por: '«Prefiero la densa pero podría ser todo.» Con más trazos que antes, una obra densa ahora ' +
+         'llena bastante más de lo que llenaba cuando votaste esto.',
     a: { et: '62 % densas', m: { pDenso: 0.62 } },
-    b: { et: '20 % densas', m: { pDenso: 0.20 } } },
+    b: { et: '38 %, manda la abierta', m: { pDenso: 0.38 } } },
 
-  { k: 'pRecorte', mando: 'el recorte',
-    preg: '¿La obra se sale del papel, o cabe entera dentro?',
-    por: 'En r4, r5 y r6 la mitad de los cabos están a menos de una anchura del borde: son el ' +
-         'recorte de una composición mayor. En r1, r2 y r3 no.',
-    a: { et: '42 % recortadas', m: { pRecorte: 0.42 } },
-    b: { et: '5 % recortadas',  m: { pRecorte: 0.05 } } },
+  { k: 'pRecorte', mando: 'el recorte', ya: '5 % recortadas',
+    preg: '¿Cinco de cada cien es demasiado poco?',
+    por: 'Venías de 42 % y elegiste el 5 %, o sea que la obra cabe entera casi siempre. En r4, r5 y ' +
+         'r6 la mitad de los cabos están a menos de una anchura del borde: eran recortes. El 20 % es ' +
+         'un medio que el par no ofrecía.',
+    a: { et: '5 %, cabe entera', m: { pRecorte: 0.05 } },
+    b: { et: '28 %, una de cada cuatro', m: { pRecorte: 0.28 } } },
 
-  { k: 'aire', mando: 'los cabos al aire',
-    preg: '¿Los finales mueren contra algo, o se quedan sueltos en el blanco?',
-    por: 'Medido en las seis: el 17 % muere al aire, y la tasa sube cuando hay menos trazos. Lo ' +
-         'nuestro se queda en el 7–11 %, por debajo, así que puede que falte soltura.',
-    a: { et: '×1,0 · como está', m: { aire: 1.0 } },
-    b: { et: '×2,2 · más sueltos', m: { aire: 2.2 } } },
+  { k: 'aire', mando: 'los cabos al aire', ya: '45 %, y sale solo',
+    preg: '¿Prefieres los cabos que salen ahora, o el número de las seis?',
+    por: 'Tu abstención destapó un fallo: el 78 % de los cabos moría al aire por un codo que no se ' +
+         'dibuja pero se usaba para descartar. Arreglado, ahora sale del sitio que describes —el que ' +
+         'tiene un cuerpo a tiro muere contra él— y da 45 %. LAS SEIS DAN 17 %. Bajarlo del todo ' +
+         'necesita que el paseo apunte a un cuerpo desde el principio, que es otra pieza; lo que ' +
+         'necesito saber es si vas al 17 % o si 45 % es lo que quieres ver.',
+    a: { et: '45 %, como sale',  m: { aire: 0 } },
+    b: { et: 'más sueltos aún',  m: { aire: 0.35 } } },
 
-  { k: 'nTrazos', mando: 'cuántos trazos',
-    preg: '¿Pocos trazos grandes, o muchos y más finos?',
-    por: 'La banda se corta a la medida del hueco que deja la composición, así que más trazos ' +
-         'salen más finos por sí solos. No es sólo cantidad: es otra escala.',
-    a: { et: '×1,00 · como está', m: { nTrazos: 1.0 } },
-    b: { et: '×1,45 · más',       m: { nTrazos: 1.45 } } },
+  { k: 'nTrazos', mando: 'cuántos trazos', ya: '12–19 densa, 7–13 abierta',
+    preg: '¿Se ha pasado? Hay obras que leen como laberinto más que como composición.',
+    por: 'Elegiste el ×1,45 y está aplicado. En la hoja, dos de seis salen muy cargadas. La horquilla ' +
+         'también quedó muy ancha: una obra con 6 trazos y otra con 17.',
+    a: { et: 'como está',   m: { nTrazos: 1.0 } },
+    b: { et: '×0,75, menos', m: { nTrazos: 0.75 } } },
 
-  { k: 'cats', mando: 'la mezcla',
-    preg: '¿Casi todo paralelo y apoyado, o bastante suelto con su propio rumbo?',
-    por: 'Las cuatro maneras de poner un trazo respecto a los que ya están: paralela, prolonga, ' +
-         'apoyo, suelta. La suelta es la que da aire y la que rompe la trama.',
-    a: { et: 'la del tipo',   m: { cats: null } },
-    b: { et: '42 % suelta',   m: { cats: [0.28, 0.12, 0.18, 0.42] } } },
+  { k: 'cats', mando: 'la mezcla', ya: '38–48 % suelta',
+    preg: '¿Vuelve algo de trama, o se queda en suelta?',
+    por: 'Aquí quedó algo sin explicar: elegiste el 42 % de sueltas y a la vez dijiste que la otra te ' +
+         'parecía «más suelta». Los números decían lo contrario (29 % frente a 45 %), así que lo que ' +
+         'lees como soltura no es la cuenta de sueltas — la otra llevaba más PARALELAS, y las ' +
+         'paralelas hacen trama. Este par lo pregunta directamente.',
+    a: { et: 'como está',      m: { cats: null } },
+    b: { et: '44 % paralela',  m: { cats: [0.44, 0.14, 0.24, 0.18] } } },
 
-  { k: 'vueltas', mando: 'el campo',
-    preg: '¿Los trazos se acomodan unos a otros después de colocarse, o se quedan donde cayeron?',
-    por: 'El campo está apagado por medida: aplicado a la geometría real de r1, r2, r3 y r6 borra ' +
-         'las celdas de blanco atrapado de las cuatro, y r6 pierde el 44 % de la tinta. Este par ' +
-         'es para cerrarlo con el ojo y no sólo con el número — tú dijiste que «no está bien ' +
-         'logrado», y quiero saber si es que falta o es que sobra.',
-    a: { et: '0 · apagado', m: { vueltas: 0 } },
-    b: { et: '8 · encendido', m: { vueltas: 8 } } },
+  { k: 'prop', mando: 'el pliego', ya: 'de 1,02 a 1,55',
+    preg: '¿El pliego se estira hasta 1,55, o la familia se queda cerca del cuadrado?',
+    por: 'Es la única decisión de la composición que no ha pasado por ningún par: la proporción del ' +
+         'papel se sortea de 1,02 a 1,55 y el apaisado a cara o cruz. Un formato casi cuadrado le da ' +
+         'a la familia una silueta reconocible; uno que se estira le da variedad.',
+    a: { et: '1,02–1,55, libre', m: { prop: null } },
+    b: { et: '1,02–1,15, cuadrado', m: { prop: [1.02, 1.15] } } },
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -1728,13 +1742,15 @@ function construye() {
     const num = document.createElement('div'); num.className = 'num';
     num.textContent = (i + 1) + ' DE 12';
     const nm = document.createElement('div'); nm.className = 'mando'; nm.textContent = par.mando;
+    const ya = document.createElement('div'); ya.className = 'ya';
+    ya.textContent = 'ahora: ' + par.ya;
     const pg = document.createElement('div'); pg.className = 'preg'; pg.textContent = par.preg;
     const po = document.createElement('div'); po.className = 'por'; po.textContent = par.por;
     const ta = document.createElement('textarea'); ta.className = 'nota';
     ta.value = est.notas[par.k] || '';
     ta.placeholder = 'Qué ves, o qué falta en los dos';
     ta.oninput = () => { est.notas[par.k] = ta.value; guarda(); };
-    fi.append(num, nm, pg, po, ta);
+    fi.append(num, nm, ya, pg, po, ta);
     fila.appendChild(fi);
 
     let obras = null;
