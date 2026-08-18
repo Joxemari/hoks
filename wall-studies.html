@@ -1367,14 +1367,14 @@
       var W=fr.width,Hh=fr.height,running=true;
       var maxR=Math.sqrt(W*W+Hh*Hh);
       var SWEEP=2500, GAP=300, BAND=54, REST=1500, speed=(maxR+BAND)/SWEEP; // one heartbeat: pum-pum, then rest
-      var pulse=null, restUntil=0, pcount=0, SEQ=['mixed','palette','family']; // fixed cadence, loops
+      var pulse=null, restUntil=0, pcount=0, SEQ=['palette','family']; // fixed cadence: always a common thread (never fully mixed)
       // beat 1 (pum) -> flip to a palette colour; beat 2 (pum) -> resolve to ONE final image
       function palPick(){var pal=(pulse.mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null; return (pal&&pal.colors&&pal.colors.length)?pal.colors[(Math.random()*pal.colors.length)|0]:palColor();}
       function flapColor(t){var c=t._c,g=c.getContext('2d');c.width=c.width;g.fillStyle=palPick();g.fillRect(0,0,c.width,c.height);}
       function resolveImg(t){var pal=(pulse.mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null; var fam=(pulse.mode==='family')?pulse.fam:randFam(); render2(t._c,150,150,fam,seed(),pal);}
       function loop(now){ if(!running)return;
         if(!pulse && now>=restUntil){
-          var mode=SEQ[pcount%SEQ.length]; pcount++; if(mode==='palette'&&!PALS.length)mode='mixed';
+          var mode=SEQ[pcount%SEQ.length]; pcount++; if(mode==='palette'&&!PALS.length)mode='family';
           pulse={ox:Math.random()*W, oy:Math.random()*Hh, b:[now, now+GAP], mode:mode, fam:randFam(), palIdx:(Math.random()*Math.max(1,PALS.length))|0};
           desc.textContent='heartbeat · '+(mode==='palette'?'one palette':(mode==='family'?('one family ('+pulse.fam+')'):'mixed'));
           heartbeat(GAP);
