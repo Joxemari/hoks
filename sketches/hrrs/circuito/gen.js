@@ -153,6 +153,12 @@ const MANDOS = {
   pRecorte: 0.05,        // que la OBRA ENTERA sea el recorte de una mayor: raro, lo eligió dos veces
   sale:     0.22,        // ...pero que UN TRAZO se salga del pliego: eso es otra cosa y sí la quiere
   solo:     0.32,        // cuánto tiene que apartarse un trazo DE SÍ MISMO, en separaciones
+  meta:     0,           // qué parte de los trazos anda HACIA un cuerpo declarado desde el principio
+  para:     0.7,         // ...y qué parte PARA al pasar cerca de un buen final, sin ir a buscarlo.
+                         // Medido contra el destino declarado, que es el mecanismo contrario: aquél
+                         // subía el giro de 43° a 50° (las seis: 35°) y no bajaba los cabos al aire;
+                         // éste los baja y el giro no se mueve. Perseguir cuesta el alfabeto; no
+                         // pasarse de largo, no.
   aire:     0,           // YA NO ES UNA TASA: es lo que se añade a mano por encima de lo que sale
                          // solo. Ver los cabos, que es la nota que más código cambió.
   nTrazos:  1.0,         // factor sobre el número de trazos. El ×1,45 que eligió está metido en la
@@ -456,6 +462,29 @@ function circuito(seed, opt) {
       }
       if (!puesto) { atasco++; dir = eligeRumbo(dir) + err; continue; }
       atasco = 0; hecho += dado;
+      // NO SOBREPASAR UN BUEN FINAL. Es lo contrario del destino declarado: aquel elegía un cuerpo
+      // antes de salir y el trazo lo perseguía —y perseguir un punto le quitaba el alfabeto, medido:
+      // el giro se iba de 43° a 50° cuando las seis están en 35°—. Esto no persigue nada. El trazo
+      // anda su camino y, si al dar un paso se encuentra a tiro del cabo o del costado de otro, se
+      // para ahí en vez de seguir de largo. En las seis el 55 % de los cabos muere contra otro cabo,
+      // y eso no se consigue apuntando: se consigue no pasándose.
+      if (M.para > 0 && hecho > largo * 0.35) {
+        const u2 = pts[pts.length - 1];
+        let cerca = false;
+        for (let j = 0; j < trazos.length && !cerca; j++) {
+          const o2 = trazos[j];
+          if (o2 === pts || o2.length < 2) continue;
+          for (const oi of [0, o2.length - 1]) {
+            const d2 = hy(u2[0] - o2[oi][0], u2[1] - o2[oi][1]);
+            if (d2 > W_NOM * 0.9 && d2 < W_NOM * 2.4) { cerca = true; break; }
+          }
+          if (!cerca) {
+            const c2 = cercaDe(u2, o2);
+            if (c2 && c2.d > W_NOM * 0.9 && c2.d < W_NOM * 1.8) cerca = true;
+          }
+        }
+        if (cerca && rng.bool(M.para)) break;
+      }
       // ya está a tiro de su destino: para aquí y que el remate haga el gesto
       if (meta) {
         const u1 = pts[pts.length - 1];
@@ -675,8 +704,14 @@ function circuito(seed, opt) {
     // y 6° de ángulo de quiebro (45,4 → 51,1), y no compró nada donde tenía que comprar: los
     // remates se quedaron en el 19 % con ella y sin ella. Un trazo que persigue un punto deja de
     // seguir su alfabeto, que es lo que le daba el carácter.
+    // EL DESTINO DECLARADO, que estaba apagado con un `if (false)` y una medida que ya no vale.
+    // La medida decía: no compra nada, «los remates se quedaron en el 19 % con ella y sin ella».
+    // Pero se tomó cuando el remate estaba roto por el codo fantasma —descartaba tres de cada
+    // cuatro cabos por un vértice que no dibujaba— así que daba 19 % hiciera lo que hiciera el
+    // paseo. Comparar contra una pieza rota no compara nada. Ahora va detrás de un mando para
+    // poder medirlo otra vez, y en limpio.
     let meta = null;
-    if (false) {
+    if (rng.bool(M.meta)) {
       const j = rng.int(0, trazos.length - 1), o = trazos[j];
       if (o.length >= 2) {
         if (rng.bool(0.66)) {                 // contra un cabo: el 55 % de las seis
@@ -787,20 +822,22 @@ function circuito(seed, opt) {
           }
         }
       }
+      // SE PONEN LAS DOS CLASES SIEMPRE, y la preferencia sortea el ORDEN en que se prueban, no
+      // cuáles existen. Antes se decidía de antemano si este cabo buscaba otro cabo o un costado, y
+      // se construía sólo esa lista: si tocaba «cabo» y no había ninguno cerca —y no los hay, sólo
+      // hay dos por trazo y están desperdigados—, el remate fallaba entero y el cabo se iba al aire
+      // teniendo un costado a dos anchuras. Es el mismo error que el de los gestos, con otra ropa.
       for (let j = 0; j < trazos.length; j++) {
         if (j === k || trazos[j].length < 2) continue;
-        if (quiereCabo) {
-          for (const oi of [0, trazos[j].length - 1]) {
-            const o = trazos[j][oi];
-            const ov = trazos[j][oi === 0 ? 1 : trazos[j].length - 2];
-            cands.push({ q: o, tang: Math.atan2(o[1] - ov[1], o[0] - ov[0]),
-                         d: hy(o[0] - trazos[k][idx][0], o[1] - trazos[k][idx][1]),
-                         clase: 'contra un cabo' });
-          }
-        } else {
-          const c = cercaDe(trazos[k][idx], trazos[j]);
-          if (c) cands.push({ q: [c.qx, c.qy], tang: c.dir, d: c.d, clase: 'contra el costado' });
+        for (const oi of [0, trazos[j].length - 1]) {
+          const o = trazos[j][oi];
+          const ov = trazos[j][oi === 0 ? 1 : trazos[j].length - 2];
+          cands.push({ q: o, tang: Math.atan2(o[1] - ov[1], o[0] - ov[0]),
+                       d: hy(o[0] - trazos[k][idx][0], o[1] - trazos[k][idx][1]),
+                       clase: 'contra un cabo' });
         }
+        const c = cercaDe(trazos[k][idx], trazos[j]);
+        if (c) cands.push({ q: [c.qx, c.qy], tang: c.dir, d: c.d, clase: 'contra el costado' });
       }
       // EL VECINO TIENE QUE ESTAR DELANTE. Ordenando sólo por distancia, el más próximo suele
       // estar detrás del trazo —a su espalda— y llegar hasta él pide doblar cien grados: los dos
@@ -887,9 +924,13 @@ function circuito(seed, opt) {
         if (seCruza(resto.concat([desde]), desde, q)) { if (DBGC) DBGC.cruza++; return null; }
         return { q, clase: cd.clase + (deFrenteReal ? ' de frente' : ' en paralelo') };
       };
+      // y las pasadas van de lo más deseado a lo que haya: primero la clase y el gesto que salieron
+      // en el sorteo, luego la clase con cualquier gesto, y al final cualquier cosa que valga.
+      const claseQuerida = quiereCabo ? 'contra un cabo' : 'contra el costado';
       let puesto = null;
-      for (const exige of [deFrente, null]) {
-        for (const cd of cands.slice(0, 8)) {
+      for (const [clase, exige] of [[claseQuerida, deFrente], [claseQuerida, null], [null, null]]) {
+        for (const cd of cands.slice(0, 12)) {
+          if (clase && cd.clase !== clase) continue;
           const r = prueba(cd, exige);
           if (r) { trazos[k][idx] = r.q; puesto = r.clase; if (DBGC) DBGC.ok++; break; }
         }
