@@ -112,6 +112,44 @@ function huecosPares(trazos) {
 const percentil = (hs, q) => hs.length ? hs[Math.min(hs.length - 1, Math.floor(q * hs.length))] : 0;
 function huecoMinimo(trazos) { const h = huecosPares(trazos); return h.length ? h[0] : Infinity; }
 
+// EL HUECO DE UN TRAZO CONSIGO MISMO. `huecosPares` sólo compara trazos DISTINTOS, así que la
+// derivación de la densidad —la banda se corta al hueco que dejó la composición— nunca miraba los
+// pliegues: un trazo que volvía sobre sí se quedaba con la banda entera y se comía su propio canal.
+// La regla del autor no distingue: «ni entre otro trazo y el mismo, sin que haya un margen».
+//
+// Pliegue y esquina se separan con las dos condiciones, que hicieron falta las dos: giro acumulado
+// ≥ 115° —se ha dado la vuelta— Y recorrido ≥ 2 anchuras entre los dos tramos —se ha ido y ha
+// vuelto—. Sólo con el giro, una esquina cerrada cuenta como pliegue y la banda se corta sin motivo.
+function huecoPropio(trazos, W) {
+  let mn = Infinity;
+  for (const t0 of trazos) {
+    if (t0.length < 4) continue;
+    // ACOTADO A UN NÚMERO FIJO DE PUNTOS, no diezmado por un factor. Esto es un SUELO, no una
+    // medida fina, y va dentro del bucle de reparación: con un factor fijo el coste sigue creciendo
+    // con el eje, y hay obras cuyo eje se dispara —la #3332 colgaba el generador entero—. Con un
+    // tope de 120 puntos el coste es constante pase lo que pase, que es lo que tiene que ser una
+    // pieza que corre doce veces por obra. Lo que se busca es si las dos ramas de un pliegue se
+    // pisan, no dónde exactamente.
+    const TOPE = 120;
+    const paso = Math.max(1, Math.ceil(t0.length / TOPE));
+    const t = paso > 1 ? t0.filter((_, i) => i % paso === 0 || i === t0.length - 1) : t0;
+    const dir = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+    for (let i = 0; i < t.length - 1; i++) {
+      let giro = 0, arco = 0, ult = dir(t[i], t[i + 1]);
+      for (let j = i + 1; j < t.length - 1; j++) {
+        const d = dir(t[j], t[j + 1]);
+        giro += Math.abs(corto(d - ult));
+        arco += hy(t[j][0] - t[j - 1][0], t[j][1] - t[j - 1][1]);
+        ult = d;
+        if (giro < 115 || arco < 2 * W) continue;
+        const g = distTramos(t[i], t[i + 1], t[j], t[j + 1]);
+        if (g < mn) mn = g;
+      }
+    }
+  }
+  return mn;
+}
+
 const CANAL = 0.22;   // el canal, en anchuras de banda: medido en las cinco referencias buenas
 // el percentil de los huecos que da la banda. 0,25 está CALIBRADO contra las obras reales: el p25
 // de los huecos entre los ejes que el autor marcó a mano reproduce la anchura de banda medida con
@@ -152,7 +190,8 @@ const MANDOS = {
   pDenso:   0.62,        // «prefiero la densa pero podría ser todo». Se queda como estaba.
   pRecorte: 0.05,        // que la OBRA ENTERA sea el recorte de una mayor: raro, lo eligió dos veces
   sale:     0.22,        // ...pero que UN TRAZO se salga del pliego: eso es otra cosa y sí la quiere
-  solo:     0.32,        // cuánto tiene que apartarse un trazo DE SÍ MISMO, en separaciones
+  solo:     1.00,        // cuánto tiene que apartarse un trazo DE SÍ MISMO, en separaciones. Uno
+                         // entero: la banda más el canal, igual que entre dos trazos distintos.
   meta:     0,           // qué parte de los trazos anda HACIA un cuerpo declarado desde el principio
   para:     0.7,         // ...y qué parte PARA al pasar cerca de un buen final, sin ir a buscarlo.
                          // Medido contra el destino declarado, que es el mecanismo contrario: aquél
@@ -378,25 +417,42 @@ function circuito(seed, opt) {
   // El error de mano se tira UNA VEZ POR TRAZO y no por paso. Un temblor que se sortea a cada
   // paso es ruido; uno que se sortea una vez es la mano de quien lo dibuja.
   // ¿el tramo u→q cruza o roza al propio trazo ya dibujado?
-  // CUÁNTO SE APARTA UN TRAZO DE SÍ MISMO, y esto estaba estrangulando el generador entero.
+  // CUÁNTO SE APARTA UN TRAZO DE SÍ MISMO. Regla del autor, y es más fuerte de lo que yo entendí:
   //
-  // El paseo se atascaba en el 93 % de los casos con el 31 % del recorrido hecho —sólo 7 de cada
-  // 100 trazos llegaban a su largo— y el 59 % de los rechazos era éste: el trazo contra sí mismo.
-  // Con las tiradas cortas que él eligió, girar acerca el tramo nuevo al anterior de inmediato, así
-  // que la regla le prohibía doblar. Sus dos peticiones —«bastantes dobladuras» y un trazo que no
-  // se cruza— se estaban peleando, y ganaba la que nadie había medido.
+  //   «Nunca debería haber solape entre una y otra, ni entre otro trazo y el mismo, sin que haya un
+  //    margen. No se puede ver una superficie negra porque uno de los trazos haya volteado sobre sí.
+  //    Siempre se tiene que ver que es un trazo.»
   //
-  // Medido en `mano.json`, la distancia mínima de un trazo a sí mismo, en anchuras de banda:
+  // Yo lo había bajado a 0,32 separaciones apoyándome en una medida MAL HECHA. Medí la distancia
+  // mínima de un trazo a sí mismo excluyendo sólo los tramos contiguos, y así UNA ESQUINA CERRADA
+  // —donde el tramo i y el i+2 quedan cerca por el propio giro— cuenta como si el trazo volviera
+  // sobre sí. Salía p10 0,37 anchuras. Exigiendo que los dos tramos estén separados a lo largo del
+  // recorrido, un pliegue de verdad deja:
   //
-  //     r1 0,62   r2 0,60   r3 1,02   r4 0,55   r5 0,37   r6 0,00 (se toca)
-  //     las seis juntas:  p05 0,03   p10 0,37   MEDIANA 0,83   p90 1,40
+  //     arco ≥ 1 anchura → p10 0,97   MEDIANA 1,08        arco ≥ 2 → p10 1,53   mediana 2,04
   //
-  // El generador exigía 0,78 separaciones = 0,95 anchuras, o sea POR ENCIMA DE SU MEDIANA: le
-  // prohibíamos más de la mitad de lo que Chillida hace. Se baja a su p10. Y no rompe la regla de
-  // no fundir, que es sobre trazos DISTINTOS: un trazo pegado a sí mismo sigue siendo una pieza.
+  // O sea: en Chillida un trazo NO se solapa consigo mismo nunca. Lo de 0,37 eran esquinas.
+  //
+  // Y EL GENERADOR TENÍA EL MISMO ERROR, que es lo que estrangulaba el paseo: su comprobación
+  // excluye el tramo contiguo y nada más, así que le prohibía doblar —una esquina le parecía un
+  // pliegue— y por eso hubo que bajar el suelo hasta dejar que el trazo se solapara. Las dos cosas
+  // que él pide, «bastantes dobladuras» y «que no pierda la forma de trazo», no se peleaban: se
+  // peleaban por culpa de esta confusión.
+  //
+  // Se separan por el GIRO ACUMULADO, que es lo que distingue una cosa de la otra: una esquina gira
+  // unos 55° y una vuelta sobre sí gira 180. Mientras el giro acumulado hacia atrás no pase de
+  // MEDIA_VUELTA, esos tramos son la esquina y no se miran; a partir de ahí, el canal entero.
+  const MEDIA_VUELTA = 115;
   const seCruza = (pts, u, q) => {
-    for (let i = 0; i < pts.length - 2; i++)
+    const dir = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+    let giro = 0, ult = dir(u, q);
+    for (let i = pts.length - 2; i >= 0; i--) {
+      const d = dir(pts[i], pts[i + 1]);
+      giro += Math.abs(corto(ult - d));
+      ult = d;
+      if (giro < MEDIA_VUELTA) continue;          // esto es la esquina, no una vuelta
       if (distTramos(u, q, pts[i], pts[i + 1]) < sep * M.solo) return true;
+    }
     return false;
   };
   // EL TRAZO SABE A DÓNDE VA. Rematar un trazo YA TERMINADO no funciona: se andaba hasta agotar
@@ -1290,6 +1346,14 @@ function circuito(seed, opt) {
     // canal que la obra usa en todas partes— por construcción y no por un margen de seguridad
     // inventado. Es la misma cuenta que gobierna W_NOM, y estaba escrita a mano y mal en el único
     // sitio donde de verdad hacía falta.
+    // EL PLIEGUE PROPIO NO ENTRA AQUÍ, y probarlo costó caro. Este suelo es GLOBAL: recorta la
+    // banda de la obra entera. Metiendo el pliegue de un trazo, una sola vuelta apretada —la #3332
+    // tiene una de hueco cero— aniquilaba la banda de todos los demás: W salía 0,00000. Y de paso
+    // colgaba el generador, porque `PASO_FILO` vale W/10 y con W minúsculo el eje se dispara.
+    //
+    // Un pliegue es asunto DE SU TRAZO, así que lo trata el relleno, que mira punto a punto y sólo
+    // adelgaza la banda donde el pliegue aprieta. Lo global es para trazos distintos, donde la
+    // banda entera tiene que caber entre dos ejes.
     W = Math.min(W, huecoMinimo(trazos) / (1 + CANAL));
   }
   const hueco = huecoMinimo(trazos);
@@ -1396,7 +1460,18 @@ function circuito(seed, opt) {
         fino.push([t[i][0] + (t[i + 1][0] - t[i][0]) * z / n2,
                    t[i][1] + (t[i + 1][1] - t[i][1]) * z / n2]);
     }
+    // UN TOPE AL EJE FINO, y no es cosmético. `PASO_FILO` vale W/10, así que si W se recorta mucho
+    // el eje se dispara, y todo lo que viene detrás —el relleno, que mira punto contra punto— es
+    // O(m²): la #3332 colgaba el generador entero por esto. Ayer fue lo mismo con otro disfraz, un
+    // eje de 44.000 puntos. Un eje no necesita más de mil puntos para nada de lo que se hace con él.
+    if (fino.length > 1000) {
+      const p2 = Math.ceil(fino.length / 1000);
+      const corto2 = fino.filter((_, z) => z % p2 === 0 || z === fino.length - 1);
+      fino.length = 0; for (const q of corto2) fino.push(q);
+    }
     ejes.push(fino);
+    const RALO = 5;
+    const finoRalo = fino.filter((_, z) => z % RALO === 0);
     const m = fino.length, sm = [];
     // 2. el sitio que hay a cada lado
     for (let i = 0; i < m; i++) {
@@ -1407,10 +1482,27 @@ function circuito(seed, opt) {
       for (const s2 of [0, 1]) {
         const sg = s2 === 0 ? 1 : -1;
         let libre = Infinity;
+        // EL TRAZO SE MIRA TAMBIÉN A SÍ MISMO. Aquí ponía `if (j === k) continue`, así que el
+        // relleno engordaba las dos ramas de un pliegue una contra otra hasta comerse el canal: el
+        // eje quedaba a 1,22 anchuras —bien— y cada lado crecía hasta 0,575, que suman 1,15, y con
+        // la onda del cuerpo encima se pasaban. Diez obras de cada cien tenían un trazo solapado
+        // consigo mismo y ninguna medida lo veía. Es la regla del autor y no distingue: «ni entre
+        // otro trazo y el mismo, sin que haya un margen».
+        //
+        // Del propio trazo se saltan los tramos vecinos A LO LARGO DEL RECORRIDO —2,5 anchuras a
+        // cada lado— que son la esquina y no un pliegue. Volver dentro de esa ventana exigiría un
+        // radio menor de media anchura, y eso el paseo ya no lo deja.
+        // y el propio trazo se mira DIEZMADO. Este bucle corre por cada punto del eje y por cada
+        // lado, así que mirarse a sí mismo punto a punto cuesta m² por trazo: con un eje de cuatro
+        // mil puntos —los hay— eso cuelga el generador, y colgó la #3332. Uno de cada cinco basta
+        // para un techo, y el índice se reescala para que la ventana de la esquina siga siendo la
+        // misma distancia de recorrido.
+        const VENT_PROPIO = Math.max(4, Math.round(2.5 / 0.10));
         for (let j = 0; j < trazos.length; j++) {
-          if (j === k) continue;
-          const o = trazos[j];
+          const propio = j === k;
+          const o = propio ? finoRalo : trazos[j];
           for (let z = 0; z < o.length - 1; z++) {
+            if (propio && Math.abs(z * RALO - i) < VENT_PROPIO) continue;
             const mx = (o[z][0] + o[z + 1][0]) / 2, my = (o[z][1] + o[z + 1][1]) / 2;
             if ((mx - fino[i][0]) * nx * sg + (my - fino[i][1]) * ny * sg <= 0) continue;
             let d1 = Math.min(hy(fino[i][0] - o[z][0], fino[i][1] - o[z][1]),

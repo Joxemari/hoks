@@ -6,6 +6,13 @@
  * trazos que se salen del pliego es un cálculo aparte y ya se equivocó dos veces; y el número
  * depende del tamaño al que se rasterice y del filtro de motas.
  *
+ * Y MIDE TAMBIÉN EL TRAZO CONTRA SÍ MISMO, que es la misma regla y se me había escapado: «no se
+ * puede ver una superficie negra porque uno de los trazos haya volteado sobre sí; siempre se tiene
+ * que ver que es un trazo». Un trazo que se doblara encima de sí mismo dejaba la obra con el mismo
+ * número de piezas de tinta, así que `funde.js` no lo veía y esto tampoco lo miraba. Se comprueba
+ * sobre el CONTORNO: si el borde de un trazo se cruza con otra parte de su propio borde, la banda
+ * se ha comido a sí misma y ha dejado de ser un trazo.
+ *
  * Esto lo mide sin rasterizar nada: la distancia mínima entre el CONTORNO de un trazo y el de otro.
  * Si es negativa, la tinta se toca; si es positiva, ése es el canal que queda. Un número por obra,
  * exacto, y en anchuras de banda para poder compararlo con las referencias — donde el canal medido
@@ -53,8 +60,55 @@ const caja = (P) => {
 const cajasLejos = (A, B, d) =>
   A[0] - B[2] > d || B[0] - A[2] > d || A[1] - B[3] > d || B[1] - A[3] > d;
 
+// EL CANAL DE UN TRAZO CONSIGO MISMO. La misma regla, dentro del mismo trazo.
+//
+// Antes probé dos medidas y las dos fallan, y conviene dejarlo escrito para no volver:
+//
+//   el CRUCE del contorno ... una horquilla no cruza su propio contorno, porque el borde de dentro
+//                             se recorta al radio de curvatura. Sale «limpio» con la tinta doblada.
+//   el ÁREA perdida ......... una esquina de 140° pierde el 33 % del área legítimamente y una U que
+//                             se toca justo pierde el 5 %. No separa una cosa de la otra.
+//
+// Lo que sí corresponde a lo que él pide —«siempre tiene que haber márgenes, siempre se tiene que
+// ver que es un trazo»— es el hueco entre las dos ramas: la distancia entre dos partes del eje
+// MENOS sus dos semianchuras.
+//
+// Y HACEN FALTA LAS DOS CONDICIONES, giro Y recorrido, que con una sola me equivoqué otra vez. Con
+// sólo el giro acumulado salían 6 obras de 60 «dobladas», y mirando dónde: pares de tramos a 2 y a
+// 11 muestras de distancia, o sea 0,2 a 1,1 anchuras de recorrido. No eran pliegues, eran esquinas
+// tan cerradas que en ese trecho el giro ya pasa de 115°. Una vuelta sobre sí exige haberse ido y
+// haber vuelto: giro ≥ 115° Y recorrido ≥ 2 anchuras entre los dos tramos.
+//
+// Con ese mismo umbral, las seis obras dejan p10 0,53 y mediana 1,04 anchuras de canal propio.
+const MEDIA_VUELTA = 115, ARCO_MIN = 2.0;
+const cortoG = (d) => { d = d % 360; if (d > 180) d -= 360; if (d < -180) d += 360; return d; };
+function canalPropio(t0, semis0, W) {
+  // diezmado por lo mismo que en el generador: un eje trae 450 puntos y esto es O(n²) con
+  // trigonometría dentro. A uno de cada tres, nueve veces más rápido y el pliegue se ve igual.
+  const paso = t0.length > 90 ? 3 : 1;
+  const t = paso > 1 ? t0.filter((_, i) => i % paso === 0 || i === t0.length - 1) : t0;
+  const semis = paso > 1 ? semis0.filter((_, i) => i % paso === 0 || i === semis0.length - 1) : semis0;
+  const dir = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+  const sm = (i) => { const l = semis[Math.min(i, semis.length - 1)]; return Math.max(l[0], l[1]); };
+  let peor = Infinity;
+  for (let i = 0; i < t.length - 1; i++) {
+    let giro = 0, arco = 0, ult = dir(t[i], t[i + 1]);
+    for (let j = i + 1; j < t.length - 1; j++) {
+      const d = dir(t[j], t[j + 1]);
+      giro += Math.abs(cortoG(d - ult));
+      arco += Math.hypot(t[j][0] - t[j - 1][0], t[j][1] - t[j - 1][1]);
+      ult = d;
+      if (giro < MEDIA_VUELTA || arco < ARCO_MIN * W) continue;
+      const g = dSeg(t[i], t[i + 1], t[j], t[j + 1]) - sm(i) - sm(j);
+      if (g < peor) peor = g;
+    }
+  }
+  return peor;
+}
+
 function canalDe(o, cd) {
   const cont = cd || contornoDe;
+  o = o || {};
   const C = [], K = [];
   for (let k = 0; k < o.trazos.length; k++) {
     const c = cont(o, k);
@@ -62,17 +116,48 @@ function canalDe(o, cd) {
     const s = PASO > 1 ? c.filter((_, i) => i % PASO === 0) : c;
     C.push(s); K.push(caja(s));
   }
+  // UNA REJILLA, porque comparar dos contornos de novecientos puntos todos contra todos es un
+  // millón de cuentas por par y con diez trazos la herramienta deja de terminar. Cada segmento se
+  // mete en las celdas que toca —de lado una anchura de banda— y sólo se compara con lo que cae en
+  // su vecindad. No pierde precisión: lo que está a más de una celda no puede ser el mínimo.
+  const LADO = Math.max(1e-6, o.W);
+  const cel = (x, y) => Math.floor(x / LADO) + ',' + Math.floor(y / LADO);
+  const rejilla = (P) => {
+    const m = new Map();
+    for (let i = 0; i < P.length - 1; i++) {
+      const x0 = Math.min(P[i][0], P[i + 1][0]), x1 = Math.max(P[i][0], P[i + 1][0]);
+      const y0 = Math.min(P[i][1], P[i + 1][1]), y1 = Math.max(P[i][1], P[i + 1][1]);
+      for (let cx = Math.floor(x0 / LADO); cx <= Math.floor(x1 / LADO); cx++)
+        for (let cy = Math.floor(y0 / LADO); cy <= Math.floor(y1 / LADO); cy++) {
+          const kk = cx + ',' + cy;
+          if (!m.has(kk)) m.set(kk, []);
+          m.get(kk).push(i);
+        }
+    }
+    return m;
+  };
   let peor = Infinity, par = null;
+  const R = C.map(c => (c ? rejilla(c) : null));
   for (let k = 0; k < C.length; k++) {
     if (!C[k]) continue;
     for (let j = k + 1; j < C.length; j++) {
       if (!C[j] || cajasLejos(K[k], K[j], peor === Infinity ? 1e9 : peor)) continue;
-      const P = C[k], Q = C[j];
-      for (let i = 0; i < P.length - 1; i++)
-        for (let q = 0; q < Q.length - 1; q++) {
-          const d = dSeg(P[i], P[i + 1], Q[q], Q[q + 1]);
-          if (d < peor) { peor = d; par = [k, j]; if (peor <= 0) return { canal: peor, par }; }
+      const P = C[k], Q = C[j], g = R[j];
+      const vistos = new Set();
+      for (let i = 0; i < P.length - 1; i++) {
+        const cx = Math.floor(P[i][0] / LADO), cy = Math.floor(P[i][1] / LADO);
+        for (let ax = -1; ax <= 1; ax++) for (let ay = -1; ay <= 1; ay++) {
+          const lista = g.get((cx + ax) + ',' + (cy + ay));
+          if (!lista) continue;
+          for (const q of lista) {
+            const kk = i * 100000 + q;
+            if (vistos.has(kk)) continue;
+            vistos.add(kk);
+            const d = dSeg(P[i], P[i + 1], Q[q], Q[q + 1]);
+            if (d < peor) { peor = d; par = [k, j]; if (peor <= 0) return { canal: peor, par }; }
+          }
         }
+      }
     }
   }
   return { canal: peor, par };
@@ -139,18 +224,36 @@ for (let i = 0; i < N; i++) {
   const seed = (S0 + i * 37) >>> 0;
   const o = circuito(seed, { grainScale: 0 });
   const { canal, par } = canalDe(o);
-  filas.push({ seed, W: o.W, n: o.trazos.length, canal: canal / o.W, par, tipo: o.tipo });
+  let dobla = 0, propio = Infinity;
+  for (let k = 0; k < o.trazos.length; k++) {
+    const g = canalPropio(o.trazos[k], o.semis[k], o.W);
+    if (isFinite(g)) { if (g < propio) propio = g; if (g <= 0) dobla++; }
+  }
+  filas.push({ seed, W: o.W, n: o.trazos.length, canal: canal / o.W, par, tipo: o.tipo, dobla,
+               propio: isFinite(propio) ? propio / o.W : Infinity });
 }
 const tocan = filas.filter(f => f.canal <= 0);
 const cs = filas.filter(f => isFinite(f.canal)).map(f => f.canal).sort((a, b) => a - b);
 const q = (v) => cs.length ? cs[Math.min(cs.length - 1, Math.floor(v * cs.length))] : NaN;
 
+const doblan = filas.filter(f => f.dobla > 0);
 console.log('obras=' + N + '   SE TOCAN=' + tocan.length +
-            ' (' + (100 * tocan.length / N).toFixed(0) + '%)');
+            ' (' + (100 * tocan.length / N).toFixed(0) + '%)' +
+            '   SE DOBLAN SOBRE SÍ=' + doblan.length +
+            ' (' + (100 * doblan.length / N).toFixed(0) + '%)');
+for (const f of doblan.slice(0, 6))
+  console.log('   se dobla  #' + f.seed.toString(16) + '  ' + f.dobla + ' de ' + f.n +
+              ' trazos   canal propio ' + f.propio.toFixed(3));
+{
+  const ps = filas.map(f => f.propio).filter(isFinite).sort((a, b) => a - b);
+  if (ps.length) console.log('canal de un trazo consigo mismo: mínimo ' + ps[0].toFixed(3) +
+    '   p10 ' + ps[Math.floor(0.1 * ps.length)].toFixed(3) +
+    '   mediana ' + ps[Math.floor(0.5 * ps.length)].toFixed(3));
+}
 console.log('canal entre bandas de trazos distintos, en anchuras:');
 console.log('   mínimo ' + q(0).toFixed(3) + '   p10 ' + q(0.1).toFixed(3) +
             '   mediana ' + q(0.5).toFixed(3) + '   (el canal medido en las seis: 0,22)');
 for (const f of tocan.slice(0, 8))
   console.log('   #' + f.seed.toString(16) + '  trazos ' + f.n + '  canal ' +
               f.canal.toFixed(3) + '  par ' + JSON.stringify(f.par) + '  (' + f.tipo + ')');
-process.exit(tocan.length ? 1 : 0);
+process.exit(tocan.length || doblan.length ? 1 : 0);
