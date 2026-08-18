@@ -656,7 +656,13 @@ function circuito(seed, opt) {
     // exactamente lo contrario de lo que se busca. Se prueban padres, lados y ventanas.
     if (cat === 'paralela') {
       let hecha = null;
-      for (let intento = 0; intento < 12 && !hecha; intento++) {
+      // TREINTA INTENTOS Y NO DOCE. El 88 % de los intentos de paralela muere por estorbo —el
+      // carril del padre se ocupa en cuanto le sale la primera— y con doce sólo se construía el 37 %
+      // de las que se pedían. Con treinta sube al 50 %, las paralelas de la obra pasan del 14 % al
+      // 19 % y el acompañamiento de 48 a 50 (las seis: 57). Probado también aflojar el suelo contra
+      // el padre (0,80 → 0,74 → 0,68) y alargar el tramo que acompaña (0,45 → 0,65 → 0,80 del
+      // padre): ninguna de las dos compra nada, y la segunda empeora el p10. Sólo los intentos.
+      for (let intento = 0; intento < 30 && !hecha; intento++) {
         const padre = trazos[rng.bool(0.45) ? 0 : rng.int(0, trazos.length - 1)];
         if (padre.length < 3) continue;
         const lado = rng.bool(0.5) ? 1 : -1;
