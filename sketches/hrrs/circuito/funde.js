@@ -120,10 +120,13 @@ const LADO = parseInt(process.argv[4] || '900', 10);
               '  FUNDEN=' + funden + ' (' + (100 * funden / res.length).toFixed(0) + '%)' +
               '  se parten=' + parten +
               '  (con algún trazo que sale del pliego: ' + conCorte + ', y se cuenta igual)');
+  for (const f of res.filter(f => f.piezas > f.esperadas).slice(0, 4))
+    console.log('  se parte  #' + f.seed.toString(16) + '  ' + f.piezas + ' piezas de ' +
+                f.esperadas + ' esperadas   (' + f.tipo + ')');
   const mal = res.filter(f => f.piezas < f.esperadas).slice(0, 12);
   for (const f of mal)
     console.log('  #' + f.seed.toString(16) + '  ' + f.trazos + ' trazos -> ' +
-                f.piezas + ' piezas   (' + f.tipo + ')');
+                f.piezas + ' piezas de ' + f.esperadas + ' esperadas   (' + f.tipo + ')');
   await b.close();
   process.exit(funden ? 1 : 0);
 })();

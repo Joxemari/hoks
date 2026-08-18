@@ -152,6 +152,7 @@ const MANDOS = {
   pDenso:   0.62,        // «prefiero la densa pero podría ser todo». Se queda como estaba.
   pRecorte: 0.05,        // que la OBRA ENTERA sea el recorte de una mayor: raro, lo eligió dos veces
   sale:     0.22,        // ...pero que UN TRAZO se salga del pliego: eso es otra cosa y sí la quiere
+  solo:     0.32,        // cuánto tiene que apartarse un trazo DE SÍ MISMO, en separaciones
   aire:     0,           // YA NO ES UNA TASA: es lo que se añade a mano por encima de lo que sale
                          // solo. Ver los cabos, que es la nota que más código cambió.
   nTrazos:  1.0,         // factor sobre el número de trazos. El ×1,45 que eligió está metido en la
@@ -238,8 +239,16 @@ function circuito(seed, opt) {
     // hay debajo es que ninguna de las dos veces estaba eligiendo por la cuenta de sueltas —estaba
     // eligiendo por la imagen— y la etiqueta no le dice lo que va a ver. El par que lo cierre
     // tendrá que preguntarlo sin nombrar la mezcla.
-    denso:   { n: [12, 19], sep: [0.055, 0.080], cats: [0.44, 0.14, 0.24, 0.18] },
-    abierto: { n: [7, 13],  sep: [0.085, 0.150], cats: [0.38, 0.14, 0.20, 0.28] },
+    // EL NÚMERO DE TRAZOS VUELVE A [8,13] Y [5,9], Y NO ES DESHACER SU VOTO: es conservarlo.
+    // Él votó «×1,45, más trazos» mirando obras cuyo paseo se atascaba al 31 % del recorrido —sólo
+    // 7 de cada 100 trazos llegaban a su largo—, así que lo que estaba pidiendo con más trazos era
+    // MÁS TINTA, que era la única manera de conseguirla con el paseo roto. Arreglado el atasco, el
+    // largo dibujado se triplica: con [12,19] la cobertura se va al 38,7 % cuando en las seis la
+    // mediana es 23 % y el máximo 54 %. Devolver la tabla deja la tinta donde a él le gustó —el
+    // ×1,45 sobre el paseo roto y el ×1,00 sobre el arreglado dan casi la misma cobertura— y de
+    // paso vuelve al rango de trazos de las referencias, que es de 5 a 14.
+    denso:   { n: [8, 13], sep: [0.055, 0.080], cats: [0.44, 0.14, 0.24, 0.18] },
+    abierto: { n: [5, 9],  sep: [0.085, 0.150], cats: [0.38, 0.14, 0.20, 0.28] },
   };
   const tipo = rng.bool(M.pDenso) ? 'denso' : 'abierto';
   // EL CANAL NO ES UNA CONSTANTE DE LA FAMILIA, es una decisión de cada obra: «quiero que tenga
@@ -314,7 +323,18 @@ function circuito(seed, opt) {
   // obra es el largo del tramo y nada más. Aquí vivía un `P_ESQ` declarado y nunca usado, herencia
   // de un generador anterior; se fue al ponerlo en un par y ver que los dos lados salían idénticos
   // hasta el píxel. Un mando que no dispara es peor que ninguno: haría votar ruido.
-  const K_LARGO = M.largo;
+  // Y EL LARGO DEL TRAZO TAMBIÉN VA CON LA BANDA, en el sentido contrario que la tirada. Medido en
+  // las seis, el largo medio de un trazo en unidades del pliego:
+  //
+  //     r1 banda 0,033 → 0,65     r4 0,052 → 1,25     r5 0,091 → 0,87
+  //     r2 banda 0,042 → 0,44     r3 0,054 → 0,71     r6 0,089 → 0,54
+  //
+  // El ajuste da largo ∝ banda^0,24: la banda gorda dibuja trazos MÁS LARGOS en el papel, aunque
+  // más cortos medidos en anchuras. Sin esto, nuestras obras finas ponían un 30 % de tinta contra
+  // el 16 % de r1 —dibujaban de más— y las gordas se quedaban cortas. Es una relación floja, como
+  // la de la tirada, y se aplica con el exponente que sale y no más. En el centro del rango no
+  // toca nada, así que el 1,60 que él votó sigue valiendo donde lo votó.
+  const K_LARGO = M.largo * Math.pow(Math.max(0.02, W_NOM) / 0.05, 0.24);
 
   const dentroDe = (m) => (p) => [Math.max(m, Math.min(fw - m, p[0])),
                                   Math.max(m, Math.min(fh - m, p[1]))];
@@ -352,9 +372,25 @@ function circuito(seed, opt) {
   // El error de mano se tira UNA VEZ POR TRAZO y no por paso. Un temblor que se sortea a cada
   // paso es ruido; uno que se sortea una vez es la mano de quien lo dibuja.
   // ¿el tramo u→q cruza o roza al propio trazo ya dibujado?
+  // CUÁNTO SE APARTA UN TRAZO DE SÍ MISMO, y esto estaba estrangulando el generador entero.
+  //
+  // El paseo se atascaba en el 93 % de los casos con el 31 % del recorrido hecho —sólo 7 de cada
+  // 100 trazos llegaban a su largo— y el 59 % de los rechazos era éste: el trazo contra sí mismo.
+  // Con las tiradas cortas que él eligió, girar acerca el tramo nuevo al anterior de inmediato, así
+  // que la regla le prohibía doblar. Sus dos peticiones —«bastantes dobladuras» y un trazo que no
+  // se cruza— se estaban peleando, y ganaba la que nadie había medido.
+  //
+  // Medido en `mano.json`, la distancia mínima de un trazo a sí mismo, en anchuras de banda:
+  //
+  //     r1 0,62   r2 0,60   r3 1,02   r4 0,55   r5 0,37   r6 0,00 (se toca)
+  //     las seis juntas:  p05 0,03   p10 0,37   MEDIANA 0,83   p90 1,40
+  //
+  // El generador exigía 0,78 separaciones = 0,95 anchuras, o sea POR ENCIMA DE SU MEDIANA: le
+  // prohibíamos más de la mitad de lo que Chillida hace. Se baja a su p10. Y no rompe la regla de
+  // no fundir, que es sobre trazos DISTINTOS: un trazo pegado a sí mismo sigue siendo una pieza.
   const seCruza = (pts, u, q) => {
     for (let i = 0; i < pts.length - 2; i++)
-      if (distTramos(u, q, pts[i], pts[i + 1]) < sep * 0.78) return true;
+      if (distTramos(u, q, pts[i], pts[i + 1]) < sep * M.solo) return true;
     return false;
   };
   // EL TRAZO SABE A DÓNDE VA. Rematar un trazo YA TERMINADO no funciona: se andaba hasta agotar
@@ -1126,9 +1162,24 @@ function circuito(seed, opt) {
   // La separación nominal es la escala de la composición, así que la banda se mide contra ella y
   // no contra un número absoluto que no sabe de qué obra se está hablando.
   // Y un techo absoluto, porque en una obra dispersa el percentil 25 cae en un hueco grande y la
-  // banda sale una losa. Las referencias van de 0,032 a 0,042 sobre el lado corto; 0,062 deja
-  // sitio a la variedad sin que ninguna obra se vuelva un bloque.
-  W = Math.min(percentil(hs0, P_BANDA), sep / (1 + CANAL) * 1.10, 0.062);
+  // banda sale una losa.
+  //
+  // EL TECHO ESTABA PUESTO SOBRE UN RANGO MAL CITADO. Decía aquí que «las referencias van de 0,032
+  // a 0,042» y de ahí salía el 0,062. Van de 0,0325 a 0,0909: r5 mide 0,0909 y r6 0,0889, o sea que
+  // con ese techo las dos eran literalmente INGENERABLES. Y eso explica lo que él ve —«las de trazo
+  // gordo todavía no están de Chillida»—, porque además el techo invertía la relación:
+  //
+  //              cobertura de tinta        largo dibujado        (largo x banda / área)
+  //   ellas      15-17 % las finas         casi constante        y 31 % en r5, 54 % en r6
+  //              → correlación banda ↔ cobertura  +0,83
+  //   nosotros   26 % las finas            2,2 en las gordas     y 12,8 % en las gordas
+  //              contra 6,8 en las finas   → la relación al revés
+  //
+  // Lo que pasaba: como W sale del hueco que deja la composición, tocar el techo sólo era posible
+  // en obras MUY DISPERSAS. O sea que «banda gorda» no era una elección sino un síntoma de obra
+  // vacía, justo lo contrario de r5 y r6, que son gordas Y llenas. Subir el techo a 0,095 —un pelo
+  // por encima de r5— devuelve esas dos a la familia.
+  W = Math.min(percentil(hs0, P_BANDA), sep / (1 + CANAL) * 1.10, 0.095);
   {
     const SUELO_W = W * 1.06;      // la banda más un pelo de canal: por debajo, se funde
     for (let v = 0; v < 12; v++) {
@@ -1252,8 +1303,13 @@ function circuito(seed, opt) {
   // la medida del hueco que dejó la composición.
   // subido de 0,018–0,026: al derivar el suelo del canal la banda salió algo más fina y con menos
   // sitio para respirar, y la piel cayó de 0,033 a 0,028. El cuerpo es el mando que existe para eso.
-  const SD_CUERPO = rng.range(0.024, 0.033);
-  const LAM_CUERPO = rng.range(4.0, 7.0);       // en anchuras de banda
+  // Bajado de 0,024–0,033, y acortada su onda: con los trazos ya corriendo su largo entero —antes
+  // se atascaban al 31 %— hay mucho más recorrido donde la onda se ve, y la banda salía festoneada.
+  // La medida lo decía por la ESCALA más que por la amplitud: 0,4–0,6 anchuras contra las 0,3–0,4
+  // de las cuatro referencias, o sea que nuestro respiro era del largo equivocado. Es la lección de
+  // siempre: al arreglar una pieza, lo que estaba calibrado contra la rota deja de estarlo.
+  const SD_CUERPO = rng.range(0.018, 0.026);
+  const LAM_CUERPO = rng.range(2.5, 4.5);       // en anchuras de banda
   const COMUN = 0.32;                         // cuánto comparten los dos filos
 
   // ruido correlacionado y determinista: suma de octavas, con su fase.
