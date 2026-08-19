@@ -191,7 +191,7 @@ if (process.argv[2] === 'refs') {
     const r = motivos(MANO[o].ejes.filter(e => e.length > 1), W[o]);
     fila(o + (W[o] > 0.07 ? ' (gorda)' : ''), r);
     for (const kk in r.cuenta) suma.cuenta[kk] += r.cuenta[kk];
-    suma.largos.push(...r.largos);
+    for (const x of r.largos) suma.largos.push(x);
   }
   console.log(CAB.replace(/./g, '-'));
   fila('las seis', suma);
@@ -207,7 +207,8 @@ for (let i = 0; i < N; i++) {
   const r = motivos(o.trazos, o.W);
   const d = o.W < 0.055 ? fino : gordo;
   for (const kk in r.cuenta) d.cuenta[kk] += r.cuenta[kk];
-  d.largos.push(...r.largos);
+  for (const x of r.largos) d.largos.push(x);   // no `push(...)`: con muchas rachas el
+                                               // desparramado revienta la pila
 }
 console.log('LO NUESTRO (%d obras) — por qué se rompe cada acompañamiento:', N);
 console.log(CAB);
@@ -216,4 +217,4 @@ fila('banda gorda', gordo);
 console.log('\n  las seis: med 1,9  p90 5,9   ABRE 12 %  GIRA 34 %  CAMBIA 33 %  ACABA 21 %' +
             '   (node rompe.js refs)');
 console.log('  al mismo paso no hay hueco: ni de duración ni de motivo. Lo que él ve en las gordas');
-console.log('  está en otra parte —el relleno de los cruces, el trazo que se bifurca— no aquí.');
+console.log('  estaba en el ANCHO DEL CANAL, no en el acompañamiento — ver rendija.py.');

@@ -343,7 +343,22 @@ function circuito(seed, opt) {
   // EL CANAL NO ES UNA CONSTANTE DE LA FAMILIA, es una decisión de cada obra: «quiero que tenga
   // ambas versiones, ancho y estrecho, pero el blanco entre bandas paralelas debería ser
   // estrecho». Así que se sortea sesgado: tres de cada cuatro obras van estrechas.
-  if (CANAL == null) CANAL = rng.bool(0.75) ? rng.range(0.17, 0.25) : rng.range(0.25, 0.36);
+  // Y «ESTRECHO» ES MÁS ESTRECHO DE LO QUE DECÍA ESTA LÍNEA. La rama estrecha llegaba hasta 0,17
+  // porque el canal se había medido como UN número para las seis —0,22— y un número para seis obras
+  // es una media, no una medida. Midiéndolo obra a obra sobre el píxel (`rendija.py`) sale que no es
+  // función de la banda ni de la familia: r5 y r6 tienen la misma banda —0,0909 y 0,0889— y canales
+  // de 0,06 y 0,19, tres veces uno del otro. Es una decisión de cada obra, como ya decía aquí.
+  //
+  // Las cuatro que se pueden medir limpias dan 0,06 (r5), 0,11 (r3), 0,19 (r6) y 0,29 (r1). O sea que
+  // dos de las cuatro caían FUERA de lo que este sorteo podía dar, y una de ellas es justo la que él
+  // nombra: «con líneas finas algo de sentido tiene, tipo r1, r2. Pero en líneas gordas, tipo r5, aún
+  // estamos lejos». En banda gorda dejábamos cuatro veces más blanco entre bandas que r5. Tres de las
+  // cuatro son estrechas y una ancha, que es exactamente el sesgo que él pidió.
+  //
+  // (r2 y r4 no entran: en su foto el muro y el marco se cuelan en la máscara de tinta y la medida se
+  // va al suelo de dos píxeles. Se ve mirando el recorte, no en la tabla — de ahí que la tabla sola
+  // diera 0,062 tres veces, que era el suelo del método y no una medida.)
+  if (CANAL == null) CANAL = rng.bool(0.75) ? rng.range(0.06, 0.20) : rng.range(0.20, 0.32);
   // LA TASA DE CABOS AL AIRE VA CON LA DENSIDAD, y eso lo dicen las seis ordenadas por número de
   // trazos: 14 trazos → 0 %, 11 → 18 %, 8 → 19 %, 7 → 29 %, 6 → 17 %, 5 → 40 %. Cuantos más
   // trazos, menos cabos al aire — y tiene sentido: en una obra apretada un cabo tiene contra qué
@@ -1575,7 +1590,14 @@ function circuito(seed, opt) {
         // mil puntos —los hay— eso cuelga el generador, y colgó la #3332. Uno de cada cinco basta
         // para un techo, y el índice se reescala para que la ventana de la esquina siga siendo la
         // misma distancia de recorrido.
-        const VENT_PROPIO = Math.max(4, Math.round(2.5 / 0.10));
+        // LA VENTANA VALE LO MISMO QUE EL DETECTOR, 2,0 anchuras y no 2,5. `toca.js` mira los
+        // pliegues desde 2,0, así que había medio ancho de banda de recorrido —los que vuelven entre
+        // 2,0 y 2,5— que el detector señalaba y el relleno no llegaba a mirar nunca. Con 2,5 la regla
+        // también sale en cero, pero el peor canal de un trazo consigo mismo se queda en 0,010
+        // anchuras —una centésima, o sea a un redondeo de romperla— y con 2,0 sube a 0,136. Y sobre
+        // todo: el generador y el detector dejan de medir cosas distintas, que es de donde salen los
+        // fantasmas. Aquí salió uno y costó cinco cambios inútiles (ver `toca.js`, control).
+        const VENT_PROPIO = Math.max(4, Math.round(2.0 / 0.10));
         for (let j = 0; j < trazos.length; j++) {
           const propio = j === k;
           const o = propio ? finoRalo : trazos[j];

@@ -89,7 +89,23 @@ function canalPropio(t0, semis0, W) {
   const t = paso > 1 ? t0.filter((_, i) => i % paso === 0 || i === t0.length - 1) : t0;
   const semis = paso > 1 ? semis0.filter((_, i) => i % paso === 0 || i === semis0.length - 1) : semis0;
   const dir = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
-  const sm = (i) => { const l = semis[Math.min(i, semis.length - 1)]; return Math.max(l[0], l[1]); };
+  // EL LADO QUE MIRA AL OTRO, no el más gordo de los dos. Aquí ponía `max(l[0], l[1])`, que es una
+  // cota superior: da igual mientras la banda sea simétrica, pero el relleno engorda CADA LADO POR
+  // SEPARADO —está escrito así a propósito— y con el canal fino la asimetría crece. Restando el lado
+  // gordo cuando el que se asoma al pliegue es el fino, el detector se inventa un solape que en la
+  // tinta no está: perseguí cuatro milésimas de anchura por esto. El lado se elige por el signo de
+  // la normal contra la dirección al otro tramo, con el mismo convenio que `contornoDe` (0 = +n).
+  const nor = (i) => {
+    const a = t[Math.max(0, i - 1)], b = t[Math.min(t.length - 1, i + 1)];
+    const d = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    return [-Math.sin(d), Math.cos(d)];
+  };
+  const med = (i) => [(t[i][0] + t[i + 1][0]) / 2, (t[i][1] + t[i + 1][1]) / 2];
+  const smA = (i, j) => {
+    const l = semis[Math.min(i, semis.length - 1)];
+    const n = nor(i), a = med(i), b = med(j);
+    return ((b[0] - a[0]) * n[0] + (b[1] - a[1]) * n[1]) > 0 ? l[0] : l[1];
+  };
   let peor = Infinity;
   for (let i = 0; i < t.length - 1; i++) {
     let giro = 0, arco = 0, ult = dir(t[i], t[i + 1]);
@@ -99,7 +115,7 @@ function canalPropio(t0, semis0, W) {
       arco += Math.hypot(t[j][0] - t[j - 1][0], t[j][1] - t[j - 1][1]);
       ult = d;
       if (giro < MEDIA_VUELTA || arco < ARCO_MIN * W) continue;
-      const g = dSeg(t[i], t[i + 1], t[j], t[j + 1]) - sm(i) - sm(j);
+      const g = dSeg(t[i], t[i + 1], t[j], t[j + 1]) - smA(i, j) - smA(j, i);
       if (g < peor) peor = g;
     }
   }
@@ -216,13 +232,27 @@ if (process.argv[2] === 'control') {
     if (!ok) fallo = 1;
   }
 
-  console.log('\ny las tres piezas que se creía que sostenían la regla, rotas una a una:');
+  console.log('\ny las piezas que sostienen la regla, rotas una a una:');
   const src = fs.readFileSync(path.resolve(__dirname, 'gen.js'), 'utf8');
+  // LOS CONTROLES CADUCAN CUANDO SE TOCA EL GENERADOR, y dos de estos habían caducado en silencio:
+  // parchean el fuente buscando una línea literal, y esa línea se había reescrito. Un control que no
+  // encuentra su línea no avisa de nada, así que además de arreglarlos, el que no case cuenta como
+  // fallo — que es lo que hace el `fallo = 1` de abajo.
   const rot = [
-    ['suelo de W', 'W = Math.min(W, huecoMinimo(trazos) / (1 + CANAL));', '// ROTO'],
+    ['suelo de W', 'W = Math.min(W, huecoMinimo(trazos, W_NOM) / (1 + CANAL));', '// ROTO'],
     ['tope del relleno', 'lado[s2] = Math.max(W * 0.42, Math.min(W / 2 * CRECE, hasta));',
      'lado[s2] = W / 2 * CRECE;  // ROTO'],
     ['filtro del relleno', 'sm[i][s2] = Math.min(raw[i], a / n3);', 'sm[i][s2] = a / n3;  // ROTO'],
+    // Y LA VENTANA DEL PLIEGUE, que sale en cero a propósito y se queda escrita por eso. Cuando el
+    // detector restaba el lado GORDO de la banda en vez del que mira al pliegue, se inventaba un
+    // solape de cuatro milésimas de anchura; persiguiéndolo toqué cinco piezas del generador —margen
+    // con alcance de filo, margen propio, canal propio con suelo, techo del relleno, esta ventana— y
+    // al arreglar el detector resultó que NINGUNA hacía falta: la regla sale en cero con todas y sin
+    // ninguna. Se quedó sólo ésta, porque alinea el umbral del generador con el de este detector y
+    // mueve el peor canal propio de 0,136 a 0,290. Que salga cero es el dato: no es lo que sostiene
+    // la regla, y así queda dicho.
+    ['ventana del pliegue', 'const VENT_PROPIO = Math.max(4, Math.round(2.0 / 0.10));',
+     'const VENT_PROPIO = Math.max(4, Math.round(2.5 / 0.10));  // ROTO'],
   ];
   for (const [nom, a, b] of rot) {
     if (!src.includes(a)) { console.log('   ' + nom + ': NO ESTÁ LA LÍNEA — el control ha caducado');
@@ -230,12 +260,23 @@ if (process.argv[2] === 'control') {
     const f = path.join(os.tmpdir(), 'gen_roto_' + nom.replace(/\W/g, '') + '.js');
     fs.writeFileSync(f, src.replace(a, b, 1));
     const g2 = require(f);
+    // el pliegue no lo ve `canalDe` —compara trazos DISTINTOS— así que sus controles se miden con
+    // `canalPropio`, que es la pieza que les corresponde. Medir cada rotura con el detector que no
+    // la ve daría cero y parecería que la pieza no hacía falta.
+    const esPliegue = nom.indexOf('pliegue') >= 0;
     let t = 0;
-    for (let i = 0; i < 30; i++)
-      if (canalDe(g2.circuito((2000 + i * 37) >>> 0, { grainScale: 0 }), g2.contornoDe).canal <= 0) t++;
-    console.log('   ' + nom.padEnd(20) + ' se tocan ' + t + ' de 30');
+    for (let i = 0; i < 30; i++) {
+      const o = g2.circuito((2000 + i * 37) >>> 0, { grainScale: 0 });
+      if (esPliegue) {
+        let mn = Infinity;
+        for (let k = 0; k < o.trazos.length; k++)
+          mn = Math.min(mn, canalPropio(o.trazos[k], o.semis[k], o.W));
+        if (mn <= 0) t++;
+      } else if (canalDe(o, g2.contornoDe).canal <= 0) t++;
+    }
+    console.log('   ' + nom.padEnd(20) + (esPliegue ? ' se doblan ' : ' se tocan ') + t + ' de 30');
   }
-  console.log('\nninguna dispara: la regla no cuelga de una línea, cuelga de cuatro a la vez.');
+  console.log('\nsi alguna sale en cero, esa pieza ya no hace falta o el detector no la ve.');
   process.exit(fallo);
 }
 
@@ -272,7 +313,7 @@ for (const f of doblan.slice(0, 6))
 }
 console.log('canal entre bandas de trazos distintos, en anchuras:');
 console.log('   mínimo ' + q(0).toFixed(3) + '   p10 ' + q(0.1).toFixed(3) +
-            '   mediana ' + q(0.5).toFixed(3) + '   (el canal medido en las seis: 0,22)');
+            '   mediana ' + q(0.5).toFixed(3) + '   (las seis, obra a obra: 0,06 r5  0,11 r3  0,19 r6  0,29 r1)');
 for (const f of tocan.slice(0, 8))
   console.log('   #' + f.seed.toString(16) + '  trazos ' + f.n + '  canal ' +
               f.canal.toFixed(3) + '  par ' + JSON.stringify(f.par) + '  (' + f.tipo + ')');
