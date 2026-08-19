@@ -326,12 +326,23 @@
    * Y el `lineJoin` pasa a `miter` con el límite corto, para que nadie vuelva a
    * fabricar un arco por su cuenta al pintar. */
   const CANTO_GIRO = 0.45;                  // rad: por debajo de esto no es esquina, es ondulación
-  const CANTO_MIN = 0.25, CANTO_MAX = 1.25; // el mordisco, en anchuras de gubia
+  /* EL MORDISCO ES PEQUEÑO, y esto se aprendió pasándose. La primera versión
+   * cortaba de 0,25 a 1,25 gubias, y con eso el arco del `lineJoin` se cambió
+   * por una faceta grande — que se lee IGUAL DE CURVA. Se vio comparando contra
+   * `canto: 0`: sin matar la esquina el dibujo salía anguloso, y con el mordisco
+   * gordo salía blando. O sea que el problema no era sólo de dónde venía la
+   * curva, era de TAMAÑO.
+   *
+   * La esquina tiene que quedarse casi entera: lo justo para que no sea el
+   * vértice exacto de un vector, y muy lejos de leerse como un giro. */
+  const CANTO_MIN = 0.10, CANTO_MAX = 0.55; // el mordisco, en anchuras de gubia
   // El punto de en medio, tirando del vértice viejo. En positivo la esquina sale
   // MATADA —dos facetas y un quiebro—, en negativo sale MORDIDA, con el pedazo
   // hundido. Un solo punto y no dos: con dos, los tres tramos se leen otra vez
-  // como una curva, que es justo de lo que se venía huyendo.
-  const CANTO_K_MIN = -0.40, CANTO_K_MAX = 0.55;
+  // como una curva, que es justo de lo que se venía huyendo. Y el rango tira a
+  // negativo a propósito: un mordisco cuenta que faltó materia, un bisel cuenta
+  // que alguien lijó.
+  const CANTO_K_MIN = -0.55, CANTO_K_MAX = 0.30;
   function matarCantos(poly, rng, g, fuerza) {
     const m = poly.length;
     if (m < 8 || !(fuerza > 0) || !(g > 0)) return poly;

@@ -901,15 +901,29 @@ Así que la esquina se mata en el **polígono** y no al pintar:
 - se toman sólo los **máximos locales**: una esquina es un sitio, no los quince
   vértices que la rodean, y cortar quince veces seguidas sería redondearla otra vez;
 - y ahí se le quita un pedazo con **un solo quiebro**, asimétrico: cada lado se
-  corta por su cuenta (0,25 a 1,25 gubias) y el punto de en medio se corre entre
-  0,34 y 0,66 del corte. Con dos puntos de por medio los tres tramos se volvían a
-  leer como una curva, que es de lo que se venía huyendo.
+  corta por su cuenta y el punto de en medio se corre entre 0,34 y 0,66 del corte.
+  Con dos puntos de por medio los tres tramos se volvían a leer como una curva,
+  que es de lo que se venía huyendo.
 
-El punto de en medio tira del vértice viejo con un peso que va de −0,40 a +0,55:
+El punto de en medio tira del vértice viejo con un peso que va de −0,55 a +0,30:
 en positivo la esquina sale **matada**, dos facetas y un quiebro; en negativo sale
-**mordida**, con el pedazo hundido. Y el `lineJoin` pasa a `miter` con
-`miterLimit` 2, para que nadie vuelva a fabricar un arco por su cuenta y para que
-un giro cerrado caiga solo en bisel en vez de sacar una punta de vector.
+**mordida**, con el pedazo hundido. El rango tira a negativo a propósito: un
+mordisco cuenta que faltó materia, un bisel cuenta que alguien lijó. Y el
+`lineJoin` pasa a `miter` con `miterLimit` 2, para que nadie vuelva a fabricar un
+arco por su cuenta y para que un giro cerrado caiga solo en bisel en vez de sacar
+una punta de vector.
+
+**Y EL MORDISCO ES PEQUEÑO —0,10 a 0,55 gubias—, que es lo que costó aprender.**
+La primera versión cortaba de 0,25 a 1,25, y con eso lo único que se hizo fue
+cambiar un arco limpio por una faceta grande: se lee **igual de curva**. Se vio
+comparando contra `canto: 0`, o sea sin matar la esquina: el dibujo crudo salía
+anguloso y el del mordisco gordo salía blando. El problema no era sólo de dónde
+venía la curva, era de **tamaño** — y la lección es que un arreglo puede estar
+bien razonado y mal calibrado, y que eso sólo se ve poniendo al lado la versión
+que no hace nada.
+
+La esquina tiene que quedarse casi entera: lo justo para que no sea el vértice
+exacto de un vector, y muy lejos de leerse como un giro.
 
 Va **al final**, sobre las caras ya en píxeles: la partición, los cortes y las
 guardas se deciden sobre el polígono limpio y el mordisco es lo último que le pasa
@@ -918,10 +932,13 @@ placa se lo hace por su cuenta, así que en una esquina compartida los dos
 mordiscos son distintos y el corte se abre ahí un poco: que es lo que hace una
 gubia de verdad al girar.
 
-**Efecto colateral bueno**: las cuñas *en la cuesta* (por debajo de 62°) bajan del
-1,6% al **0,9%**. Matar el canto emboza justo los ángulos que estaban al borde.
-La que queda por debajo de 45° es la misma de siempre, la punta afeitada, que no
-viene de una esquina del polígono sino del repaso.
+**Y no, no baja las cuñas.** Con el mordisco gordo las *en la cuesta* (por debajo
+de 62°) caían del 1,6% al 0,9%, y estuvo escrito aquí como efecto colateral bueno
+— pero era del tamaño equivocado. Con el mordisco pequeño vuelven al **1,5%**, o
+sea prácticamente donde estaban. Tiene sentido: un mordisco de 0,1 gubias no
+emboza un ángulo, y embozarlo no era el objetivo. La que sigue por debajo de 45°
+es la misma de siempre, la punta afeitada, que no viene de una esquina del
+polígono sino del repaso.
 
 **Y obligó a arreglar la prueba de huella.** `matarCantos` es lo primero de esta
 familia que corre en píxeles, así que la pregunta 3 dejó de cubrir lo que dice
@@ -963,8 +980,10 @@ apaisado, sobre el catálogo real de paletas activas. Todo esto sale de
 cuñas       0,1% de las obras tiene un ángulo por debajo de 45° — y las que salen
             son «la punta afeitada», que está entre los riesgos y que ninguna
             guarda geométrica puede ver
-            0,9% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
-            reparto se amontona (era 1,6% antes de matar el canto)
+            1,5% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
+            reparto se amontona y baila entre bloques. Matar el canto no la mueve
+            —el mordisco es demasiado pequeño para embozar un ángulo—: llegó a
+            0,9% con la primera versión, que cortaba tres veces más y curvaba
             (antes de la 5ª revisión: 20% de las obras, y los peores a 2°, 8°, 12°)
 cortos      0,8% no llega a los cortes que declara su tipo   (era el 20%)
 soldadas    0 · dos placas nunca se tocan — y ya SIN excepción: la fantasma dejó
@@ -1006,7 +1025,9 @@ huella      0 de 180 obras cambia a 760 / 2400 / 4200 px, en los tres formatos
             3.040 reducidos al pequeño — que es lo que hace falta desde que el
             canto se mata en píxeles
 canto       la esquina no la fabrica el `lineJoin`: se mata en el polígono con un
-            solo quiebro, cada lado cortado por su cuenta entre 0,25 y 1,25 gubias
+            solo quiebro, cada lado cortado por su cuenta entre 0,10 y 0,55 gubias
+            — pequeño a propósito, porque a 1,25 la faceta se lee tan curva como
+            el arco que venía a sustituir
 ms          ~30 por pieza a 520 px, con grano y veta
 ```
 
