@@ -1375,7 +1375,19 @@ function circuito(seed, opt) {
   // en obras MUY DISPERSAS. O sea que «banda gorda» no era una elección sino un síntoma de obra
   // vacía, justo lo contrario de r5 y r6, que son gordas Y llenas. Subir el techo a 0,095 —un pelo
   // por encima de r5— devuelve esas dos a la familia.
-  W = Math.min(percentil(hs0, P_BANDA), sep / (1 + CANAL) * 1.10, 0.095);
+  // UNA LISTA VACÍA NO ES UN HUECO DE CERO, ES QUE NADA APRIETA. `huecosPares` se salta los tramos
+  // de los cabos —un encuentro de puntas no pide canal de costado— y a un trazo de cinco puntos se
+  // le saltan TODOS. Cuando toda la obra sale de trazos cortos, la lista vuelve vacía, `percentil`
+  // de una lista vacía da 0, y ese 0 entra aquí como si dos bandas estuvieran pegadas: la banda de
+  // la obra entera se va a cero y la obra sale en blanco. Una de cada 600 semillas, y estaba desde
+  // antes de tocar el canal —#3d94 lo hacía ya— sólo que al cambiar el canal cambia el reparto del
+  // azar y salieron dos. Lo encontró la auditoría, no la comprobación de densidad, que corre sobre
+  // OTRA sucesión de semillas y por eso decía «0 de 40» mientras había una a cero.
+  //
+  // Vacío significa que ningún par de costados limita la banda, así que el límite lo tienen que
+  // poner los otros dos términos: la separación nominal y el techo de 0,095.
+  const limPares = hs0.length ? percentil(hs0, P_BANDA) : Infinity;
+  W = Math.min(limPares, sep / (1 + CANAL) * 1.10, 0.095);
   {
     const SUELO_W = W * 1.06;      // la banda más un pelo de canal: por debajo, se funde
     for (let v = 0; v < 12; v++) {
