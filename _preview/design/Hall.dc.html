@@ -43,7 +43,6 @@
 class Component extends DCLogic {
   componentDidMount(){
     const pal=['#2f4a7a','#c94f3a','#d9b13a','#e9e3d4','#7a6ba8','#3f7a75','#141b28','#b04e72'];
-    const g=this.el?this.el.querySelector('#g'):document.querySelector('#g');
     const host=document.querySelector('#g'); if(!host) return;
     let html='';
     for(let i=0;i<72;i++){ const c=pal[(Math.random()*pal.length)|0]; html+=`<div class="cell" style="background:${c}"></div>`; }

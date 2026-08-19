@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+  <style>
+    :root{ --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983; --body:#26251f; --red:#c0392b;
+      --geo:"League Spartan",Futura,system-ui,sans-serif; --mono:ui-monospace,Menlo,monospace; }
+    *{box-sizing:border-box} body{margin:0}
+    .stage{ width:1280px; min-height:900px; background:var(--paper); color:var(--ink); font-family:var(--geo); }
+    .top{ display:flex; align-items:center; justify-content:space-between; height:56px; padding:0 32px; border-bottom:1px solid var(--line); }
+    .brand{ display:flex; align-items:center; gap:12px; }
+    .logo{ width:26px; height:24px; background:var(--ink); -webkit-mask:radial-gradient(circle at 50% 50%, transparent 5px, #000 6px); }
+    .abadge{ font-family:var(--geo); font-weight:700; font-size:8px; letter-spacing:.12em; text-transform:uppercase; background:var(--red); color:#fff; padding:3px 8px; border-radius:3px; }
+    .wrap{ max-width:900px; margin:0 auto; padding:34px 32px 60px; }
+    h1{ font-weight:700; font-size:40px; text-transform:uppercase; letter-spacing:.02em; margin:0 0 4px; }
+    .sub{ font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--blue); margin-bottom:8px; }
+    .lead{ font-size:16px; line-height:1.7; color:var(--body); max-width:60ch; margin:14px 0 26px; }
+    .sech{ font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut); margin:30px 0 14px; display:flex; align-items:center; gap:10px; }
+    .sech::after{ content:""; flex:1; height:1px; background:var(--line); }
+    .cols{ display:grid; grid-template-columns:1fr 340px; gap:30px; align-items:start; }
+    table{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12px; }
+    th,td{ text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); color:var(--body); }
+    th{ font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); }
+    td.n{ text-align:right; }
+    /* bleed diagram */
+    .diagram{ border:1px solid var(--line); border-radius:12px; padding:18px; background:#fff; }
+    .frame{ position:relative; aspect-ratio:1.414; border:2px solid var(--ink); border-radius:2px; overflow:hidden; background:linear-gradient(135deg,#c94f3a,#2f4a7a); }
+    .safe{ position:absolute; inset:22px; border:1px dashed rgba(255,255,255,.8); }
+    .lbls{ font-family:var(--mono); font-size:10px; color:var(--mut); margin-top:12px; display:flex; flex-direction:column; gap:5px; }
+    .lbls .k{ color:var(--blue); }
+    .rulebox{ border-left:3px solid var(--acid); padding:4px 0 4px 16px; margin:8px 0 0; font-size:14px; line-height:1.6; color:var(--ink); font-weight:600; }
+    .warn{ font-family:var(--mono); font-size:11px; color:var(--red); }
+  </style>
+</helmet>
+<div class="stage">
+  <div class="top"><div class="brand"><div class="logo"></div><span class="abadge">Admin</span></div><div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--mut)">interno · fuera de i18n</div></div>
+  <div class="wrap">
+    <h1>Impresión</h1><div class="sub">del laboratorio al papel · sangre, márgenes, montaje</div>
+    <p class="lead">Cómo sale una obra del laboratorio al papel. "Download PNG" vuelve a renderizar fuera de pantalla al tamaño del pliego (300 dpi) — el lienzo de la página es solo vista previa. Mismo seed + mismo formato = la misma imagen a cualquier tamaño.</p>
+
+    <div class="cols">
+      <div>
+        <div class="sech">Pliegos · 300 dpi</div>
+        <table>
+          <tr><th>Pliego</th><th>mm</th><th class="n">px (300 dpi)</th><th class="n">Mpx</th></tr>
+          <tr><td>A4</td><td>210 × 297</td><td class="n">2480 × 3508</td><td class="n">8.7</td></tr>
+          <tr><td>A3</td><td>297 × 420</td><td class="n">3508 × 4961</td><td class="n">17.4</td></tr>
+          <tr><td>A2</td><td>420 × 594</td><td class="n">4961 × 7016</td><td class="n">34.8</td></tr>
+          <tr><td>A1</td><td>594 × 841</td><td class="n">7016 × 9933</td><td class="n">69.7</td></tr>
+          <tr><td style="color:var(--mut)">A0 · solo muro</td><td style="color:var(--mut)">841 × 1189</td><td class="n" style="color:var(--mut)">9933 × 14043</td><td class="n" style="color:var(--mut)">139.5</td></tr>
+        </table>
+        <div class="rulebox">La regla: el color llega al borde. Ningún píxel blanco en el filo — se mide contra la vara del código, no a ojo.</div>
+        <p class="warn" style="margin-top:14px">⚠ A0 a 300 dpi = 532 MB de lienzo. Solo el muro lo enseña; exportarlo pide decidir antes su dpi.</p>
+      </div>
+      <div class="diagram">
+        <div class="frame"><div class="safe"></div></div>
+        <div class="lbls">
+          <span><span class="k">borde</span> — el color sangra hasta el filo</span>
+          <span><span class="k">- - -</span> — caja de composición (margen de campo)</span>
+          <span>montaje: passe-partout + separador, sin tocar el filo</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic { renderVals(){ return {}; } }
+</script>
+</body>
+</html>

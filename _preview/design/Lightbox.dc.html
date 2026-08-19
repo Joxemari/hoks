@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+  <style>
+    :root{ --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983; --body:#26251f;
+      --geo:"League Spartan",Futura,system-ui,sans-serif; --mono:ui-monospace,Menlo,monospace; }
+    *{box-sizing:border-box} body{margin:0}
+    .lb{ width:1280px; height:820px; background:rgba(250,249,246,.98); display:grid; grid-template-columns:minmax(0,1fr) 340px; font-family:var(--geo); position:relative; }
+    .close{ position:absolute; top:18px; right:20px; font-size:20px; color:var(--ink); }
+    .stage{ display:flex; align-items:center; justify-content:center; padding:56px; }
+    /* the "view in a room" state, since it's the differentiator */
+    .room{ width:100%; height:100%; background:linear-gradient(180deg,#efeee9,#e5e3dd 84%,#d2cfc6 84%,#cdc9c0); position:relative; border-radius:2px; overflow:hidden; box-shadow:0 30px 80px -50px rgba(0,0,0,.5); }
+    .figure{ position:absolute; left:22%; bottom:12%; width:56px; }
+    .head{ width:40px; height:40px; border-radius:50%; background:rgba(10,10,10,.14); margin:0 auto; }
+    .bod{ width:56px; height:250px; border-radius:28px 28px 0 0; background:rgba(10,10,10,.14); margin-top:6px; }
+    .piece{ position:absolute; left:52%; top:26%; width:230px; height:163px; background:#fff; padding:12px; box-shadow:0 22px 50px -28px rgba(0,0,0,.5); }
+    .piece .art{ width:100%; height:100%; background:linear-gradient(135deg,#c94f3a,#2f4a7a); }
+    aside{ border-left:1px solid var(--line); padding:34px; display:flex; flex-direction:column; gap:16px; background:#fff; }
+    h2{ font-weight:700; font-size:26px; letter-spacing:.06em; text-transform:uppercase; margin:6px 0 0; }
+    .rar{ align-self:flex-start; font-family:var(--geo); font-weight:700; font-size:10px; letter-spacing:.12em; text-transform:uppercase; background:var(--acid); padding:4px 9px; border-radius:20px; }
+    .lab{ font-family:var(--mono); font-size:12px; line-height:1.5; color:#3a3a37; display:grid; gap:3px; }
+    .lab .k{ color:var(--mut); text-transform:uppercase; letter-spacing:.1em; font-size:9.5px; margin-top:8px; }
+    .toggle{ margin-top:auto; display:flex; gap:2px; background:#f4f3ef; border-radius:10px; padding:3px; }
+    .toggle span{ flex:1; text-align:center; font-family:var(--geo); font-weight:600; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); padding:9px; border-radius:8px; }
+    .toggle span.on{ background:var(--ink); color:#fff; }
+  </style>
+</helmet>
+<div class="lb">
+  <div class="close">✕</div>
+  <div class="stage">
+    <div class="room">
+      <div class="figure"><div class="head"></div><div class="bod"></div></div>
+      <div class="piece"><div class="art"></div></div>
+    </div>
+  </div>
+  <aside>
+    <h2>PLLS</h2>
+    <span class="rar">uncommon</span>
+    <div class="lab">
+      <span class="k">work</span>PLLS · seed 782297919
+      <span class="k">edition</span>1 / 1 · unique print
+      <span class="k">medium</span>Archival pigment print · A3 · 300 dpi
+      <span class="k">year</span>2026
+      <span class="k">rule</span>capsules given weather
+    </div>
+    <div class="toggle"><span>Work</span><span class="on">View in a room</span></div>
+  </aside>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic { renderVals(){ return {}; } }
+</script>
+</body>
+</html>

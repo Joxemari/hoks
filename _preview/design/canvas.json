@@ -1,24 +1,28 @@
 {
   "pages": [
     { "id": "page-1", "name": "Lector + sistema" },
-    { "id": "page-2", "name": "Operativa" }
+    { "id": "page-2", "name": "Operativa + flujo" }
   ],
   "artboards": [
     { "file": "Main.dc.html",     "page": "page-1", "x": 0,     "y": 0, "w": 1280, "h": 1360, "title": "Sistema" },
     { "file": "Landing.dc.html",  "page": "page-1", "x": 1400,  "y": 0, "w": 1280, "h": 800,  "title": "Landing" },
     { "file": "Hall.dc.html",     "page": "page-1", "x": 2800,  "y": 0, "w": 1280, "h": 820,  "title": "Hall · contact sheet" },
-    { "file": "Family.dc.html",   "page": "page-1", "x": 4200,  "y": 0, "w": 1280, "h": 1560, "title": "Sala de familia" },
-    { "file": "Making.dc.html",   "page": "page-1", "x": 5600,  "y": 0, "w": 1280, "h": 1060, "title": "Making-of" },
-    { "file": "Palettes.dc.html", "page": "page-1", "x": 7000,  "y": 0, "w": 1280, "h": 920,  "title": "Palettes" },
-    { "file": "About.dc.html",    "page": "page-1", "x": 8400,  "y": 0, "w": 1280, "h": 780,  "title": "About" },
+    { "file": "Family.dc.html",   "page": "page-1", "x": 4200,  "y": 0, "w": 1280, "h": 1760, "title": "Sala de familia" },
+    { "file": "Lightbox.dc.html", "page": "page-1", "x": 5600,  "y": 0, "w": 1280, "h": 820,  "title": "Lightbox · en sala" },
+    { "file": "Making.dc.html",   "page": "page-1", "x": 7000,  "y": 0, "w": 1280, "h": 1160, "title": "Making-of" },
+    { "file": "Palettes.dc.html", "page": "page-1", "x": 8400,  "y": 0, "w": 1280, "h": 920,  "title": "Palettes" },
+    { "file": "About.dc.html",    "page": "page-1", "x": 9800,  "y": 0, "w": 1280, "h": 780,  "title": "About" },
 
-    { "file": "Admin.dc.html",    "page": "page-2", "x": 0,     "y": 0, "w": 1280, "h": 900,  "title": "Admin" },
-    { "file": "Lab.dc.html",      "page": "page-2", "x": 1400,  "y": 0, "w": 1280, "h": 820,  "title": "Lab · harness" },
-    { "file": "Wall.dc.html",     "page": "page-2", "x": 2800,  "y": 0, "w": 1280, "h": 820,  "title": "Muro · escala" }
+    { "file": "Flow.dc.html",     "page": "page-2", "x": 0,     "y": 0, "w": 1280, "h": 800,  "title": "El flujo" },
+    { "file": "Admin.dc.html",    "page": "page-2", "x": 1400,  "y": 0, "w": 1280, "h": 900,  "title": "Admin" },
+    { "file": "Lab.dc.html",      "page": "page-2", "x": 2800,  "y": 0, "w": 1280, "h": 820,  "title": "Lab · harness" },
+    { "file": "Wall.dc.html",     "page": "page-2", "x": 4200,  "y": 0, "w": 1280, "h": 820,  "title": "Muro · escala" },
+    { "file": "Post.dc.html",     "page": "page-2", "x": 5600,  "y": 0, "w": 1280, "h": 880,  "title": "Post del día" },
+    { "file": "Impresion.dc.html","page": "page-2", "x": 7000,  "y": 0, "w": 1280, "h": 940,  "title": "Impresión" }
   ],
   "annotations": [
-    { "id": "note-system", "page": "page-1", "x": 0, "y": -150, "w": 460, "text": "El sistema, una vez. Blue + acid sobre paper, League Spartan + mono, nav azul lateral, cartela + terminal de regla + escalera de rareza. Reskin desde nav.js (chrome global) y work-page.js (las 8 salas)." },
-    { "id": "note-op", "page": "page-2", "x": 0, "y": -150, "w": 520, "text": "Operativa re-vestida, misma lógica intacta: admin (auth localStorage + token + Contents API, 7 pestañas), lab (scrub → lote → publicar), muro (solo lectura, escala 1,70 m)." }
+    { "id": "note-system", "page": "page-1", "x": 0, "y": -150, "w": 480, "text": "El sistema, una vez. Blue + acid sobre paper, League Spartan + mono, nav azul lateral, cartela + terminal de regla + escalera de rareza. Reskin desde nav.js (chrome global) y work-page.js (las 8 salas)." },
+    { "id": "note-op", "page": "page-2", "x": 0, "y": -150, "w": 560, "text": "El flujo primero (crear → graduar → validar → lote → publicar → activar → web → pulse), luego la operativa re-vestida con la misma lógica intacta: admin, lab, muro, post, impresión. Lanzadas hoy: PLLS · KRRTK · DTKRT · ECLPS · TRZS." }
   ],
   "launch": { "view": "canvas", "page": "page-1" }
 }

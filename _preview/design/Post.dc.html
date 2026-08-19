@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+  <style>
+    :root{ --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983; --body:#26251f;
+      --geo:"League Spartan",Futura,system-ui,sans-serif; --mono:ui-monospace,Menlo,monospace; }
+    *{box-sizing:border-box} body{margin:0}
+    .stage{ width:1280px; min-height:820px; background:var(--paper); color:var(--ink); font-family:var(--geo); }
+    .top{ display:flex; align-items:center; justify-content:space-between; height:56px; padding:0 32px; border-bottom:1px solid var(--line); }
+    .brand{ display:flex; align-items:center; gap:12px; }
+    .logo{ width:26px; height:24px; background:var(--ink); -webkit-mask:radial-gradient(circle at 50% 50%, transparent 5px, #000 6px); }
+    .abadge{ font-family:var(--geo); font-weight:700; font-size:8px; letter-spacing:.12em; text-transform:uppercase; background:#c0392b; color:#fff; padding:3px 8px; border-radius:3px; }
+    .wrap{ max-width:1040px; margin:0 auto; padding:30px 32px 60px; }
+    h1{ font-weight:700; font-size:40px; text-transform:uppercase; letter-spacing:.02em; margin:0 0 4px; }
+    .sub{ font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--blue); margin-bottom:26px; }
+    .grid{ display:grid; grid-template-columns:420px 1fr; gap:32px; align-items:start; }
+    .card{ border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#fff; }
+    .sqhead{ font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--mut); padding:12px 16px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; }
+    .sq{ width:100%; aspect-ratio:1; background:radial-gradient(120% 90% at 30% 20%, #d9b13a, #c94f3a 60%, #7a3320); position:relative; }
+    .sq .pill{ position:absolute; border-radius:999px; }
+    .sq .plate{ position:absolute; right:12px; bottom:12px; font-family:var(--mono); font-size:10px; color:#fff; background:rgba(10,10,10,.42); padding:5px 9px; border-radius:6px; }
+    .right{ display:flex; flex-direction:column; gap:18px; }
+    .field{ }
+    .flabel{ font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut); margin-bottom:8px; }
+    .caption{ border:1px solid var(--line); border-radius:12px; padding:16px 18px; font-size:16px; line-height:1.7; color:var(--body); background:#fcfcfb; }
+    .caption .tag{ color:var(--blue); }
+    .seg{ display:flex; gap:2px; background:#f4f3ef; border-radius:10px; padding:3px; width:fit-content; }
+    .seg span{ font-family:var(--geo); font-weight:600; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); padding:8px 14px; border-radius:8px; }
+    .seg span.on{ background:var(--ink); color:#fff; }
+    .actions{ display:flex; gap:10px; }
+    .b{ font-family:var(--geo); font-weight:600; font-size:12px; letter-spacing:.1em; text-transform:uppercase; border:1px solid var(--line); border-radius:9px; padding:12px 16px; background:#fff; color:var(--ink); }
+    .b.solid{ background:var(--ink); color:#fff; border-color:var(--ink); }
+    .b.acid{ background:var(--acid); color:var(--ink); border-color:var(--acid); }
+    .note{ font-family:var(--mono); font-size:11px; line-height:1.6; color:var(--mut); }
+  </style>
+</helmet>
+<div class="stage">
+  <div class="top"><div class="brand"><div class="logo"></div><span class="abadge">Admin</span></div><div class="note">↗ site · ↗ hall</div></div>
+  <div class="wrap">
+    <h1>Post del día</h1><div class="sub">un seed al día · misma etiqueta · enlace de vuelta a su sala</div>
+    <div class="grid">
+      <div class="card">
+        <div class="sqhead"><span>Feed · 1080×1080</span><span>PLLS · #83404</span></div>
+        <div class="sq">
+          <div class="pill" style="width:30%;height:42%;left:20%;top:14%;background:#141b28"></div>
+          <div class="pill" style="width:38%;height:24%;left:14%;top:60%;background:#2f4a7a;transform:rotate(-16deg)"></div>
+          <div class="pill" style="width:26%;height:46%;left:58%;top:24%;background:#e9e3d4"></div>
+          <div class="plate">hoks · PLLS · #83404 · 1/1</div>
+        </div>
+      </div>
+      <div class="right">
+        <div class="field"><div class="flabel">Formato</div>
+          <div class="seg"><span class="on">Feed 1:1</span><span>Iteraciones</span><span>Ensamblaje (vídeo)</span></div></div>
+        <div class="field"><div class="flabel">Caption · voz del audit</div>
+          <div class="caption">Una regla, corrida una vez. PLLS #83404 — cápsulas con su clima, grano de película. El residuo del pensamiento.<br><br><span class="tag">#hoks #generativeart #artealgorítmico</span> · hoksart.xyz/plls</div></div>
+        <div class="field"><div class="flabel">Destino</div>
+          <div class="seg"><span class="on">Instagram</span><span>X</span></div></div>
+        <div class="actions"><div class="b">↓ PNG</div><div class="b solid">Copy caption</div><div class="b acid">Pin del día →</div></div>
+        <div class="note">El archivo y el feed son el mismo objeto: cada post enlaza de vuelta a la sala de su seed.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic { renderVals(){ return {}; } }
+</script>
+</body>
+</html>
