@@ -308,6 +308,36 @@
     } catch (e) { msg('⚠ ' + e.message); }
   }
 
+  // ── Botón "atrás" ───────────────────────────────────────────────────────
+  // El admin abre laboratorio y muro en pestaña nueva, así que la flecha del
+  // navegador no vuelve a ningún sitio. Este chip sí: si hay historial, atrás;
+  // si no (pestaña recién abierta), a admin.html. Se inyecta en todo harness y
+  // en el muro —los dos cargan este archivo— sin tocar sus HTML.
+  function injectBack() {
+    if (typeof document === 'undefined' || document.getElementById('hoks-back')) return;
+    const a = document.createElement('button');
+    a.id = 'hoks-back';
+    a.type = 'button';
+    a.textContent = '← atrás';
+    a.title = 'Volver (al panel si vienes de él)';
+    a.style.cssText = 'position:fixed;top:12px;right:14px;z-index:300;' +
+      "font-family:'Courier New',Courier,monospace;font-size:10px;letter-spacing:0.1em;" +
+      'text-transform:uppercase;color:#0a0a0a;background:rgba(251,251,250,0.92);' +
+      'border:1px solid #d8d5cc;border-radius:8px;padding:6px 11px;cursor:pointer;' +
+      'backdrop-filter:saturate(1.2) blur(2px);';
+    a.addEventListener('mouseenter', () => { a.style.borderColor = '#0a0a0a'; });
+    a.addEventListener('mouseleave', () => { a.style.borderColor = '#d8d5cc'; });
+    a.addEventListener('click', () => {
+      if (history.length > 1 && document.referrer) history.back();
+      else location.href = '/hoks/admin.html';
+    });
+    document.body.appendChild(a);
+  }
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectBack);
+    else injectBack();
+  }
+
   global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, mountFormatSelect, loadWorks,
-                     initialSeed, loadAlgos, wallUrl, mountWallLink, formatControls, launch };
+                     initialSeed, loadAlgos, wallUrl, mountWallLink, formatControls, launch, injectBack };
 })(typeof window !== 'undefined' ? window : globalThis);
