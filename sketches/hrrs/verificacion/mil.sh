@@ -21,10 +21,28 @@ FALLOS=0
 
 linea() { printf '\n\033[1m── %s ──\033[0m\n' "$1"; }
 
-build() { python3 mktest.py "$1" "$2" > /dev/null; }
+# Construye una version de prueba y se PLANTA si no puede.
+#
+# El borrado de antes no es cosmetico. `mktest.py` parchea lineas literales de
+# ../algo.js, asi que cuando el algoritmo se reescribe un parche puede dejar de
+# encajar — y si el fichero viejo sigue en disco, el detector se lanza igual y mide
+# el control de HACE DOS VERSIONES. Sale un numero, el numero dispara, y todo el
+# bloque parece comprobado. Un control medido contra un artefacto viejo es peor que
+# no tener control: no prueba nada y ademas convence.
+build() {
+  rm -f "$2"
+  if ! python3 mktest.py "$1" "$2" > /dev/null; then
+    printf '\n\033[1;31m  NO SE PUDO CONSTRUIR EL CONTROL «%s»\033[0m\n' "${1:-sano}"
+    printf '  El parche ya no encaja en algo.js. NO se mide contra el fichero viejo.\n'
+    printf '  Arregla mktest.py antes de creerte los ceros de este bloque.\n'
+    FALLOS=$((FALLOS + 1))
+    return 1
+  fi
+}
 
-# El sano se construye siempre desde ../algo.js tal cual se publica.
-build "" hrrs_test.js
+# El sano se construye siempre desde ../algo.js tal cual se publica. Si esto falla,
+# no hay nada que medir.
+build "" hrrs_test.js || exit 2
 
 corre() {  # corre <detector> <algo> <n> <base> <configs> <etiqueta>
   local out
@@ -34,12 +52,39 @@ corre() {  # corre <detector> <algo> <n> <base> <configs> <etiqueta>
 }
 
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = canal ]; then
+  # LA REGLA GEOMETRICA VALE DONDE NO HAY HALO, y por eso los controles corren en la
+  # configuracion `sin-halo` y no en todas. Corridos en todas median la rama que el
+  # halo no ejecuta -o sea, nada- y salian identicos al sano byte por byte. Un control
+  # que parchea codigo muerto es la peor clase de control: sale verde y no ha mirado.
   linea "canal · la regla 3 exacta sobre la geometria · $N obras"
   corre canal.js hrrs_test.js "$N" 760 ""
-  for r in duro vecino otracinta; do
-    build "$r" "t_$r.js"
+  for r in duro corta rendija; do
+    build "$r" "t_$r.js" || continue
+    printf '\n  CONTROL %s (tiene que disparar, sin-halo):\n' "$r"
+    node canal.js "t_$r.js" 120 760 "sin-halo" 2>/dev/null | grep -E "RENDIJA|^  min"
+  done
+  build holgura t_holgura.js && {
+    printf '\n  CONTROL holgura (tiene que disparar):\n'
+    node canal.js t_holgura.js 120 760 "" 2>/dev/null | grep -E "HOLGURA"
+  }
+fi
+
+if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = pelo ]; then
+  # DONDE VIVE HOY LA GARANTIA. Con halo el canal no se prohibe, se fabrica al pintar,
+  # asi que la afirmacion -el blanco entre dos tintas nunca mide menos de g- ya no es
+  # geometria de ejes: es pixel. `canal.js` mide la regla vieja y aqui se mide la que
+  # rige. Sin este bloque la bateria comprobaba a fondo una regla retirada y no
+  # comprobaba la vigente.
+  linea "pelo · el canal VISIBLE, sobre el pixel · $((N / 4)) obras"
+  corre pelo.js hrrs_test.js "$((N / 4))" 760 ""
+  # `corta` estaba aqui y se ha quitado: desde que el corte es el offset exacto de la
+  # tinta ya no produce ni un par por debajo de g, o sea que no ejercita nada. En su
+  # sitio va `cuna`, que es la construccion de antes -la banda mas gorda, con su bisel-
+  # y que es justo lo que este detector existe para cazar.
+  for r in duro cuna; do
+    build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
-    node canal.js "t_$r.js" 120 760 "" 2>/dev/null | grep -E "INCUMPLEN|SOLAPADAS|^  min"
+    node pelo.js "t_$r.js" 60 760 "" 2>/dev/null | grep -E "^  pelo|por debajo"
   done
 fi
 
@@ -49,7 +94,7 @@ if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = toque ]; then
   linea "toque · la tinta es la geometria · $((N / 4)) obras a 900 px"
   corre toque.js hrrs_test.js "$((N / 4))" 900 ""
   for r in miter cabo; do
-    build "$r" "t_$r.js"
+    build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
     node toque.js "t_$r.js" 60 900 "" 2>/dev/null | grep -E "FUERA|CABO|^  p50"
   done
@@ -58,10 +103,10 @@ fi
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = obra ]; then
   linea "obra · margen, ojos, cadencia y ocupacion · $N obras"
   corre obra.js hrrs_test.js "$N" 760 ""
-  for r in margen rejilla; do
-    build "$r" "t_$r.js"
+  for r in margen garabato pizca; do
+    build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
-    node obra.js "t_$r.js" 120 760 "" 2>/dev/null | grep -E "FUERA DEL CUADRO|MUESTRARIO|LABERINTO|cadencia|dispersion"
+    node obra.js "t_$r.js" 120 760 "" 2>/dev/null | grep -E "ESCAPADO|GARABATO|PIZCAS"
   done
 fi
 

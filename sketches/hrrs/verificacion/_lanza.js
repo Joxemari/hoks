@@ -17,17 +17,29 @@ const REPO = path.join(__dirname, '..', '..', '..');
 // extremos de la gubia y del canal.
 const CONFIGS = [
   { n: 'defecto',    fmt: 'square',     p: {} },
-  { n: 'suelto',     fmt: 'square',     p: { tipo: 'suelto' } },
-  { n: 'plegado',    fmt: 'square',     p: { tipo: 'plegado' } },
-  { n: 'acompanado', fmt: 'square',     p: { tipo: 'acompanado' } },
-  { n: 'trenza',     fmt: 'square',     p: { tipo: 'trenza' } },
+  { n: 'tendido',    fmt: 'square',     p: { tipo: 'tendido' } },
+  { n: 'recinto',    fmt: 'square',     p: { tipo: 'recinto' } },
+  { n: 'haz',        fmt: 'square',     p: { tipo: 'haz' } },
+  { n: 'disperso',   fmt: 'square',     p: { tipo: 'disperso' } },
   { n: 'apaisado',   fmt: 'horizontal', p: {} },
-  { n: 'apais-tren', fmt: 'horizontal', p: { tipo: 'trenza' } },
+  { n: 'apais-haz',  fmt: 'horizontal', p: { tipo: 'haz' } },
   { n: 'cuadro',     fmt: 'horizontal', p: { field: 'square' } },
-  { n: 'gubia-fina', fmt: 'square',     p: { ancho: 0.46, canal: 0.17 } },
+  { n: 'gubia-fina', fmt: 'square',     p: { ancho: 0.52, canal: 0.17 } },
   { n: 'gubia-ancha',fmt: 'square',     p: { ancho: 1.0, canal: 0.26 } },
-  { n: 'sin-reserva',fmt: 'square',     p: { reserva: 0 } },
+  { n: 'vibrada',    fmt: 'square',     p: { vibra: 1 } },
+  // Los dos extremos del sangrado. Tienen que estar: con la probabilidad sorteada
+  // por obra, una tirada al azar casi nunca da el caso limite —todos los trazos
+  // saliendose— que es justo donde el detector de margen se juega algo.
+  { n: 'seca',       fmt: 'square',     p: { sangra: 0 } },
+  { n: 'sangrada',   fmt: 'horizontal', p: { sangra: 1 } },
   { n: 'degradado',  fmt: 'square',     p: { bg: 'gradient' } },
+  // SIN HALO. Faltaba, y es justo el caso que la cabecera de aqui arriba prohibe
+  // olvidar: `params.halo` es publico -lo pone el laboratorio y lo lee `componer`-
+  // y con halo la rama de `cabeDuro` que decide los cruces por geometria (bandaMala,
+  // CRUCE_MIN, juntoAQuiebro) NO SE EJECUTA NUNCA. O sea que media docena de reglas
+  // y su control (`rendija`) llevaban tiempo sin medirse: el control parcheaba codigo
+  // muerto y salia identico al sano, byte por byte, sin que nadie se enterara.
+  { n: 'sin-halo',   fmt: 'square',     p: { halo: 0 } },
 ];
 
 function configs(only) {

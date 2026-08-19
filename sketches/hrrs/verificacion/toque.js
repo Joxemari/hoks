@@ -138,16 +138,44 @@ function medir({ seed, fmt, params, base, extra }) {
     else if (!ink && dd < h - TOL) mordido++;
   }
   // La distancia de verdad, solo de los que fallan: bucle sobre todos los tramos.
+  //
+  // Y AQUI ENTRA EL RELLENO DE ESQUINA. Desde que el negro rellena la esquina hasta
+  // donde le deja el margen —que es lo que hace el original: el blanco es una
+  // incision de anchura fija y la tinta ocupa el resto—, la tinta SI pasa de W/2 del
+  // eje, y a proposito. Pero no en cualquier sitio ni en cualquier cantidad: solo
+  // alrededor de un vertice, y solo hasta la holgura que el algoritmo calculo y
+  // DECLARA en `geo.relleno`. Asi que el detector no afloja el umbral: comprueba que
+  // la tinta de mas cae dentro de lo declarado, vertice por vertice.
+  //
+  // Que la propia holgura no se coma el canal de nadie es otra afirmacion, y se
+  // comprueba en otro sitio (`canal.js`, sobre la geometria). Aqui solo se mide que
+  // el pixel obedece al plan.
+  const rell = g.relleno || [];
   for (const i of sospechosos) {
     const gx = i % NX, gy = (i - gx) / NX;
+    const px = gx + 0.5, py = gy + 0.5;
     let dmin = 1e9;
     for (const pts of g.cintas) {
       for (let k = 0; k < pts.length - 1; k++) {
-        const dd2 = pSeg(gx + 0.5, gy + 0.5, pts[k].x * S + ox, pts[k].y * S,
+        const dd2 = pSeg(px, py, pts[k].x * S + ox, pts[k].y * S,
                          pts[k + 1].x * S + ox, pts[k + 1].y * S);
         if (dd2 < dmin) dmin = dd2;
       }
     }
+    if (dmin <= h + TOL) continue;
+    // ¿lo explica un relleno declarado?
+    let explicado = false;
+    for (let c = 0; c < g.cintas.length && !explicado; c++) {
+      const pts = g.cintas[c], r = rell[c];
+      if (!r) continue;
+      for (let k = 0; k < pts.length; k++) {
+        const lim = r[k] * S;
+        if (lim <= h + TOL) continue;
+        const dv = Math.hypot(px - (pts[k].x * S + ox), py - pts[k].y * S);
+        if (dv <= lim + TOL) { explicado = true; break; }
+      }
+    }
+    if (explicado) { fuera--; continue; }
     if (dmin - h > peorFuera) { peorFuera = dmin - h; fx = gx; fy = gy; }
   }
   // ── El cabo: que el remate sea PLANO (regla 5) ────────────────────────────

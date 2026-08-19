@@ -98,41 +98,47 @@
       <span class="lbl">Type</span>
       <select id="tipo">
         <option value="">Aleatorio (por peso)</option>
-        <option value="suelto">suelto · el recorrido casi desnudo</option>
-        <option value="plegado">plegado · el centro de la familia</option>
-        <option value="acompanado">acompañado · muchas voces al lado</option>
-        <option value="trenza">trenza · el suelo en minoría</option>
+        <option value="tendido">tendido · pocos trazos, largos, tumbados</option>
+        <option value="recinto">recinto · varios rodean un blanco sin cerrarlo</option>
+        <option value="haz">haz · muchos acompañándose en la misma dirección</option>
+        <option value="disperso">disperso · lejos unos de otros, el vacío manda</option>
       </select>
       <span class="hintline">el tipo DECLARA ojos, dispersión y ocupación; luego se
         comprueba sobre el dibujo y se queda el candidato que menos se sale</span>
     </div>
     <div class="group">
-      <span class="lbl">Cintas · <span id="ciV">auto</span></span>
-      <input type="range" id="ci" min="0" max="24" step="1" value="0">
-      <span class="hintline">0 = lo que pida el tipo · hebras que conviven sin tocarse</span>
+      <span class="lbl">Trazos · <span id="ciV">auto</span></span>
+      <input type="range" id="ci" min="0" max="20" step="1" value="0">
+      <span class="hintline">el TOTAL, cerco incluido · 0 = lo que pida el tipo · nunca se tocan</span>
     </div>
     <div class="group">
-      <span class="lbl">Pliegues · <span id="plV">auto</span></span>
-      <input type="range" id="pl" min="-1" max="14" step="1" value="-1">
-      <span class="hintline">horquillas declaradas · −1 = auto · son la fuente del acompañamiento</span>
+      <span class="lbl">Cerco · <span id="plV">auto</span></span>
+      <input type="range" id="pl" min="-1" max="9" step="1" value="-1">
+      <span class="hintline">cuántos de esos rodean el blanco · −1 = auto · menos de 3 no cerca nada</span>
     </div>
     <div class="group">
       <span class="lbl">Gubia (anchura) · <span id="anV">auto</span></span>
       <input type="range" id="an" min="0" max="1" step="0.02" value="0">
-      <span class="hintline">0 = auto · escala el techo de la cinta (0,058 del lado corto)</span>
+      <span class="hintline">0 = auto · escala el techo del trazo (0,058 del lado corto)</span>
     </div>
     <div class="group">
       <span class="lbl">Canal · <span id="caV">auto</span></span>
       <input type="range" id="ca" min="0" max="0.4" step="0.01" value="0">
-      <span class="hintline">0 = auto · el suelo entre dos vueltas, en fracción de la anchura (~1/5)</span>
+      <span class="hintline">0 = auto · el suelo entre dos trazos, en fracción de la anchura (~1/5)</span>
     </div>
     <div class="group">
-      <span class="lbl">Reserva</span>
-      <select id="reserva">
-        <option value="1">Con reserva</option>
-        <option value="0">Sin reserva</option>
+      <span class="lbl">Vibración</span>
+      <select id="vibra">
+        <option value="-1">Auto</option>
+        <option value="1">Vibrada</option>
+        <option value="0">Lisa</option>
       </select>
-      <span class="hintline">la esquina por la que no pasa nada, y por la que se lee todo lo demás</span>
+      <span class="hintline">el temblor del filo · es del material, así que es constante dentro de la obra</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Sangrado · <span id="saV">auto</span></span>
+      <input type="range" id="sa" min="-1" max="100" step="5" value="-1">
+      <span class="hintline">% de trazos que se salen del cuadro · −1 = auto · 0 = ninguno toca el borde</span>
     </div>
     <div class="group">
       <span class="lbl">Batch</span>
@@ -196,16 +202,18 @@ function params() {
     bgProbs:  { gradient: parseInt($('bgP').value, 10) },
     grainScale: parseFloat($('grain').value),
     tipo:       $('tipo').value || null,
-    cintas:     parseInt($('ci').value, 10) || 0,
+    trazos:     parseInt($('ci').value, 10) || 0,
     // −1 es 'auto' y tiene que llegar como null, no como −1: el algoritmo mira
-    // `!= null`, así que un −1 sería una petición de cero pliegues.
-    pliegues:   auto($('pl').value),
+    // `!= null`, así que un −1 sería una petición de cero (que sí es una petición).
+    cerco:      auto($('pl').value),
     ancho:      parseFloat($('an').value) || 0,
     canal:      parseFloat($('ca').value) || 0,
-    reserva:    parseInt($('reserva').value, 10),
+    vibra:      auto($('vibra').value),
+    sangra:     autoF($('sa').value, 100),
   };
 }
 function auto(v) { const n = parseInt(v, 10); return n < 0 ? null : n; }
+function autoF(v, div) { const n = parseFloat(v); return n < 0 ? null : n / div; }
 let palPicker = null;
 function palOpts() { return palPicker ? palPicker.opts() : { palettes: PALETTES }; }
 
@@ -230,8 +238,8 @@ function renderSingle() {
     // `falta` se enseña porque un 0 y un 1,4 son dos cosas distintas: sin verlo
     // no se distingue una pieza que cumple de una que es lo menos malo del seed.
     const oj = res.ojos.length ? res.ojos.slice(0, 4).map(o => (o * 100).toFixed(1) + '%').join(' ') : '—';
-    $('status').textContent = `seed #${seed} · ${res.tipo} · ${res.cintas} cintas · `
-      + `${res.pliegues} pliegues · ${res.pasillos} pasillos (${res.largoPas.toFixed(0)}W) · `
+    $('status').textContent = `seed #${seed} · ${res.tipo} · ${res.cintas} trazos · `
+      + `cerco ${res.pliegues} · ${res.sangrados} fuera · ${res.pasillos} pasillos (${res.largoPas.toFixed(0)}W) · `
       + `ojos ${res.ojos.length} (${oj}) · tinta ${Math.round(res.ocupacion * 100)}% · falta ${res.falta.toFixed(2)}`;
     drawTraits(WORK.traits(res));
   } catch (e) { $('status').textContent = '⚠ ' + e.message; console.error(e); }
@@ -285,7 +293,9 @@ $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh();
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('field').onchange = refresh;
 $('tipo').onchange = refresh;
-$('reserva').onchange = refresh;
+$('vibra').onchange = refresh;
+$('sa').oninput = () => { const v = parseInt($('sa').value, 10);
+  $('saV').textContent = v < 0 ? 'auto' : v + '%'; refresh(); };
 $('ci').oninput = () => { $('ciV').textContent = $('ci').value === '0' ? 'auto' : $('ci').value; refresh(); };
 $('pl').oninput = () => { $('plV').textContent = $('pl').value === '-1' ? 'auto' : $('pl').value; refresh(); };
 $('an').oninput = () => { $('anV').textContent = parseFloat($('an').value) === 0 ? 'auto' : '×' + parseFloat($('an').value).toFixed(2); refresh(); };

@@ -11,19 +11,20 @@
  *               Control: `margen`.
  *   ojos      — cuantos y con que reparto de tamanos. La regla 6 dice que un
  *               recinto con todos los ojos iguales es un laberinto, asi que lo que
- *               se mide es la DISPERSION: ojo mayor / ojo mediano.
- *               Control: `rejilla`.
+ *               se mide es la DISPERSION: ojo mayor / ojo mediano. SIN CONTROL —
+ *               ver la nota de abajo, y no leerlo como verificado.
  *   cadencia  — dispersion de las longitudes de tramo (CV). Es DISTRIBUCIONAL, no
  *               un defecto por obra: una obra con tramos parejos no esta mal, una
  *               FAMILIA en la que todas los tienen parejos si. Y tiene suelo — el
  *               brazo del pliegue mide D/sen(phi) por construccion, asi que un
  *               tercio de los tramos es forzosamente de otra longitud y el CV no
- *               puede bajar a cero por mucho que se rompa el resto. Medido: sano
- *               p50 0,60; con la rejilla 0,30. El control MUEVE LA DISTRIBUCION, y
- *               eso es lo que se comprueba; no hay umbral por obra que separe
- *               limpio (sano min 0,21 contra rejilla p50 0,30, se solapan).
- *   ojos      — el reparto de tamanos NO TIENE CONTROL QUE DISPARE: con la rejilla
- *               sale 9 de 120 contra 6 de 120 sano, que es lo mismo. Asi que estos
+ *               puede bajar a cero por mucho que se rompa el resto.
+ *               HOY TAMPOCO TIENE CONTROL: el que tuvo (`rejilla`) se cayo de
+ *               `mktest.py` al reescribirse el modelo y no se ha vuelto a poner, asi
+ *               que este numero es DESCRIPTIVO igual que el de los ojos. Queda
+ *               escrito aqui, y no borrado, para que no se lea como comprobado.
+ *   ojos      — el reparto de tamanos NO TIENE CONTROL QUE DISPARE: cuando lo tuvo
+ *               salia 9 de 120 contra 6 de 120 sano, que es lo mismo. Asi que estos
  *               numeros son DESCRIPTIVOS y sirven para el triaje del lote, no para
  *               dar nada por comprobado. Queda escrito para que nadie lea el cero
  *               de al lado como si estuviera verificado.
@@ -48,13 +49,58 @@ function medir({ seed, fmt, params, base }) {
   // MARGEN: lo mas cerca que el borde de la cinta llega del borde del cuadro, en
   // fraccion del lado corto. Se mide contra el campo normalizado, que es donde el
   // algoritmo lo decide.
-  let margen = Infinity;
-  for (const pts of g.cintas) for (const p of pts) {
-    margen = Math.min(margen, p.x - h, p.y - h, g.fw - p.x - h, g.fh - p.y - h);
-  }
+  // Y hay que separar el SANGRADO del escape: un trazo puede salirse del cuadro a
+  // proposito (es uno de los ejes de la familia), pero solo hasta el sangrado
+  // declarado. Sin distinguirlos el detector marcaba 20 de 60 obras sanas — el
+  // sangrado leido como defecto.
+  let margen = Infinity, escapes = 0, sangrados = 0;
+  const lim = -(g.SANGRE || 0.09) * Math.min(g.fw, g.fh);
+  g.cintas.forEach((pts, k) => {
+    const sangra = g.sangra && g.sangra[k];
+    let m = Infinity;
+    for (const p of pts) m = Math.min(m, p.x - h, p.y - h, g.fw - p.x - h, g.fh - p.y - h);
+    if (sangra) { sangrados++; if (m < lim) escapes++; }
+    else if (m <= 0) escapes++;
+    margen = Math.min(margen, m);
+  });
 
-  // CADENCIA: coeficiente de variacion de las longitudes de tramo. Con todos los
-  // tramos iguales sale 0, que es el «muestrario».
+  // EL TRAZO LARGO Y SIMPLE: quiebros por trazo, y trazos-pizca. Son las dos
+  // reglas que costaron dos versiones enteras, asi que se miden.
+  // Los quiebros son GIROS DE VERDAD, no vertices: con la vibracion puesta un
+  // tramo se subdivide en muchos puntos con desvios de tres grados, y contarlos
+  // como quiebros marcaba de garabato una obra que va limpia. Se cuenta lo que
+  // cambia la direccion mas de 15 grados.
+  // EL RITMO, no la cuenta. Contar quiebros POR TRAZO no medía lo que decía medir:
+  // un trazo de dos lados de hoja con cinco quiebros es casi una recta y salía bien,
+  // y uno de un palmo con cinco es un garabato y salía igual. Ademas dejaba el
+  // control en CERO de 126 —romper `QUIEBROS` apenas movia la media— porque el
+  // numero por trazo no gobernaba la geometria.
+  //
+  // Lo que hay que medir es cada cuanto gira, en anchuras de banda. Medido en las dos
+  // referencias en alta: una vuelta grande cada 3 anchuras en el grabado y cada 6,7
+  // en el cartel, igual en las bandas largas que en las cortas, porque es una
+  // propiedad del material y no del trazo. OJO con confundir escalas: el temblor y la
+  // deriva son la mano y van seguidos; esto cuenta DECISIONES, no la mano.
+  const QUIEBRO_MIN = 15;
+  let quiebros = 0, pizcas = 0, cortoMin = Infinity, largoTot = 0;
+  for (const pts of g.cintas) {
+    for (let i = 1; i < pts.length - 1; i++) {
+      const a = Math.atan2(pts[i].y - pts[i-1].y, pts[i].x - pts[i-1].x);
+      const b = Math.atan2(pts[i+1].y - pts[i].y, pts[i+1].x - pts[i].x);
+      let d = Math.abs((b - a) * 180 / Math.PI) % 360;
+      if (d > 180) d = 360 - d;
+      if (d > QUIEBRO_MIN) quiebros++;
+    }
+    let L = 0;
+    for (let i = 0; i < pts.length - 1; i++) L += Math.hypot(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y);
+    largoTot += L;
+    if (L < 0.20 * Math.min(g.fw, g.fh)) pizcas++;
+    if (L < cortoMin) cortoMin = L;
+  }
+  // quiebros por cada DIEZ anchuras de trazo. Sano ~3,5 (uno cada 2,8 W).
+  const qm = largoTot > 0 ? quiebros * 10 * g.W / largoTot : 0;
+
+  // CADENCIA: coeficiente de variacion de las longitudes de tramo.
   const largos = [];
   for (const pts of g.cintas)
     for (let i = 0; i < pts.length - 1; i++)
@@ -68,7 +114,8 @@ function medir({ seed, fmt, params, base }) {
   const disp = n >= 2 ? res.ojos[0] / res.ojos[(n - 1) >> 1] : 0;
 
   return { seed, tipo: res.tipo, cintas: res.cintas, vert: res.vert,
-           margen: +margen.toFixed(5), cadencia: +cv2.toFixed(3),
+           margen: +margen.toFixed(5), escapes, sangrados, cadencia: +cv2.toFixed(3),
+           quiebros: +qm.toFixed(2), pizcas, cortoMin: +cortoMin.toFixed(3),
            ojos: n, disp: +disp.toFixed(2),
            area: +(res.ojos.reduce((a, b) => a + b, 0)).toFixed(4),
            ocup: +res.ocupacion.toFixed(4), pliegues: res.pliegues,
@@ -84,13 +131,19 @@ function medir({ seed, fmt, params, base }) {
     const e = rs.find(r => r.err); if (e) console.log('  ' + e.err);
     process.exit(2);
   }
-  const fuera = ok.filter(r => r.margen <= 0);
+  const fuera = ok.filter(r => r.escapes > 0);
   const lab = ok.filter(r => r.ojos >= 2 && r.disp < 1.3);
   const muestrario = ok.filter(r => r.cadencia < 0.10);
   const P = (k, f) => { const s = stats(ok.map(r => r[k])); return f ? f(s) : s; };
   console.log(`\nobra · ${algo} · ${ok.length} obras`);
   console.log(`  margen (fraccion del lado corto, >0 sano): min ${P('margen').min}  p50 ${P('margen').p50}`);
-  console.log(`  OBRAS CON LA CINTA FUERA DEL CUADRO: ${fuera.length} de ${ok.length}`);
+  console.log(`  OBRAS CON UN TRAZO ESCAPADO (fuera sin declararlo): ${fuera.length} de ${ok.length}`);
+  console.log(`  sangrados declarados: ${ok.reduce((a, r) => a + r.sangrados, 0)} trazos`);
+  console.log(`  ritmo: quiebros por 10 anchuras de trazo (~1,9 sano): p50 ${P('quiebros').p50}  max ${P('quiebros').max}`);
+  const garab = ok.filter(r => r.quiebros > 4.5);
+  console.log(`  OBRAS-GARABATO (mas de 4,5 por 10 anchuras): ${garab.length} de ${ok.length}`);
+  const piz = ok.filter(r => r.pizcas > 0);
+  console.log(`  OBRAS CON PIZCAS (trazo < 0,20 del lado corto): ${piz.length} de ${ok.length}`);
   console.log(`  cadencia (CV de longitudes): p50 ${P('cadencia').p50}  min ${P('cadencia').min}`);
   console.log(`  OBRAS-MUESTRARIO (CV < 0,10, degenerado): ${muestrario.length} de ${ok.length}`);
   console.log(`  ojos: p50 ${P('ojos').p50}  p90 ${P('ojos').p90}  max ${P('ojos').max}`);
@@ -104,5 +157,5 @@ function medir({ seed, fmt, params, base }) {
   for (const r of ok) { porTipo[r.tipo] = (porTipo[r.tipo] || 0) + 1; }
   console.log(`  tipos: ${Object.entries(porTipo).map(([k, v]) => k + ' ' + Math.round(v * 100 / ok.length) + '%').join('  ')}`);
   fuera.slice(0, 4).forEach(r => console.log(`    ✗ margen #${r.seed} ${r.cfg} ${r.margen}`));
-  process.exit((fuera.length || muestrario.length) ? 1 : 0);
+  process.exit((fuera.length || garab.length || piz.length) ? 1 : 0);
 })();
