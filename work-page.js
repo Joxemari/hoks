@@ -43,7 +43,7 @@
   color: var(--mut); margin: 0 0 16px; }
 .wk-gen-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
 .wk-live { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
-.wk-canvas-wrap { position: relative; width: 100%; max-width: 460px; }
+.wk-canvas-wrap { position: relative; width: 100%; }
 .wk-side { display: flex; flex-direction: column; gap: 14px; }
 .wk-cartela { border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; background: #fcfcfb; }
 .wk-cartela .sh { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mut); margin-bottom: 12px; }
@@ -60,9 +60,9 @@
 .wk-plate { position: absolute; right: 12px; bottom: 12px; font-family: var(--mono); font-size: 10.5px;
   color: #fff; background: rgba(10,10,10,0.44); padding: 5px 9px; border-radius: 6px;
   letter-spacing: 0.04em; pointer-events: none; }
-.wk-gen { display: inline-flex; align-items: center; gap: 9px; font-family: var(--geo); font-weight: 600;
-  font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink);
-  background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 10px; cursor: pointer; }
+.wk-gen { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; margin-top: 16px;
+  font-family: var(--geo); font-weight: 600; font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid var(--ink); background: var(--ink); color: #fff; padding: 13px 18px; border-radius: 10px; cursor: pointer; }
 .wk-gen:hover { background: #000; }
 .wk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
 .wk-piece { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; cursor: zoom-in; background: #fff; }
@@ -130,20 +130,23 @@
 
       const live = el('div', 'wk-live');
       const cw = el('div', 'wk-canvas-wrap');
-      canvas = el('canvas'); canvas.width = 600; canvas.height = 600;
+      // Lienzo horizontal (DIN), como el mockup: la ficha enseña la obra apaisada.
+      canvas = el('canvas'); canvas.width = 848; canvas.height = 600;
       plate = el('div', 'wk-plate');
       cw.appendChild(canvas); cw.appendChild(plate);
       live.appendChild(cw);
-      genBtn = el('button', 'wk-gen', '↻ ' + esc(t('btn.generate', 'Generate')));
-      genBtn.type = 'button';
-      live.appendChild(genBtn);
 
       const side = el('div', 'wk-side');
       const cart = el('div', 'wk-cartela',
         '<div class="sh">This one</div>' +
         '<div class="cart"><span class="big">' + esc(slug.toUpperCase()) + '</span>' +
         '<div><span class="k">seed</span> <span class="seedval">…</span></div>' +
+        '<div><span class="k">format</span> Horizontal (DIN)</div>' +
         '<div><span class="k">edition</span> 1/1 · unique print</div></div>');
+      // El botón vive DENTRO de la tarjeta "This one", a la derecha, como el mockup.
+      genBtn = el('button', 'wk-gen', '↻ ' + esc(t('btn.generate', 'Generate')));
+      genBtn.type = 'button';
+      cart.appendChild(genBtn);
       const rc = el('div', 'wk-rulecard',
         '<div class="wk-rc-h">' + esc(t('rule.said', 'The rule, said')) + '</div><div class="wk-rc-body"></div>');
       rc.style.display = 'none';
