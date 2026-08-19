@@ -178,6 +178,16 @@ function canalDe(o, cd) {
 // sin significar nada. Se le dan dos bandas de anchura conocida a distancia conocida —igual que
 // `piel.py` se controla con una banda lisa y otra rota— y se comprueba que mide lo que debe:
 // a 2 anchuras de eje tiene que ver 1 anchura de canal, y a 1 anchura tiene que ver cero.
+// una U con las dos ramas a distancia conocida: el canal propio tiene que salir d - 1 anchuras
+function horquilla(d) {
+  const W = 0.05, t = [];
+  for (let x = 0.15; x <= 0.75; x += 0.02) t.push([x, 0.5]);            // ida
+  for (let y = 0.5; y >= 0.5 - d * W; y -= 0.02 * W / 0.02 * 0.02) t.push([0.77, y]);
+  for (let x = 0.75; x >= 0.15; x -= 0.02) t.push([x, 0.5 - d * W]);    // vuelta
+  return { trazos: [t], W, fw: 1, fh: 1, seed: 1, taco: 0, contornos: ['limpio'],
+           semis: [t.map(() => [W / 2, W / 2])] };
+}
+
 function bandasA(d) {
   const W = 0.05, n = 40, t1 = [], t2 = [];
   for (let i = 0; i < n; i++) { const x = 0.1 + i * 0.02; t1.push([x, 0.5]); t2.push([x, 0.5 + d * W]); }
@@ -196,6 +206,16 @@ if (process.argv[2] === 'control') {
                 '   espera ' + esperado.toFixed(2) + (ok ? '   ok' : '   MAL'));
     if (!ok) fallo = 1;
   }
+  console.log('\nel instrumento del pliegue, contra horquillas de ramas conocidas:');
+  for (const [d, esperado] of [[3.0, 2.0], [2.0, 1.0], [1.2, 0.2], [1.0, 0.0]]) {
+    const o = horquilla(d);
+    const m = canalPropio(o.trazos[0], o.semis[0], o.W) / o.W;
+    const ok = Math.abs(m - esperado) < 0.12;
+    console.log('   ramas a ' + d.toFixed(1) + ' anchuras → canal propio ' + m.toFixed(3) +
+                '   espera ' + esperado.toFixed(2) + (ok ? '   ok' : '   MAL'));
+    if (!ok) fallo = 1;
+  }
+
   console.log('\ny las tres piezas que se creía que sostenían la regla, rotas una a una:');
   const src = fs.readFileSync(path.resolve(__dirname, 'gen.js'), 'utf8');
   const rot = [

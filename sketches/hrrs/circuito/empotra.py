@@ -15,6 +15,7 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 EMPOTRES = [
     ('trazo.js', 'fisica.html'),
     ('gen.js',   'pares.html'),
+    ('gen.js',   'tanda.html'),
 ]
 
 

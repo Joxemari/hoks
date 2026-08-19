@@ -1023,7 +1023,16 @@ function circuito(seed, opt) {
       const L = hy(trazos[k][idx][0] - desde[0], trazos[k][idx][1] - desde[1]);
       const q0 = [desde[0] + Math.cos(d) * L * 1.5, desde[1] + Math.sin(d) * L * 1.5];
       const q = recorte ? q0 : dentro(q0);
-      if (!estorba(k)(desde, q) && !seCruza(trazos[k].slice(0, -2), desde, q))
+      // EL TROZO CONTRA EL QUE SE COMPRUEBA DEPENDE DE QUÉ CABO ES. Aquí ponía siempre
+      // `slice(0, -2)`, que es lo correcto para el cabo final y lo equivocado para el inicial: al
+      // apartar el cabo de arranque se comparaba contra el principio del trazo —o sea contra sí
+      // mismo, los puntos de al lado— en vez de contra el resto, y encima al revés, que importa
+      // porque la orientación de la lista es lo que decide qué tramos cuentan como «la esquina».
+      // Resultado: el paso que aparta los cabos del aire era el único que podía doblar un trazo
+      // sobre sí mismo, y lo hacía. La sonda lo señaló: limpio tras el paseo, limpio tras el
+      // remate, negativo justo después de esto.
+      const resto2 = cual === 0 ? trazos[k].slice(2).reverse() : trazos[k].slice(0, -2);
+      if (!estorba(k)(desde, q) && !seCruza(resto2, desde, q))
         trazos[k][idx] = q;
     }
   }

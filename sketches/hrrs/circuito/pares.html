@@ -256,6 +256,44 @@ function huecosPares(trazos) {
 const percentil = (hs, q) => hs.length ? hs[Math.min(hs.length - 1, Math.floor(q * hs.length))] : 0;
 function huecoMinimo(trazos) { const h = huecosPares(trazos); return h.length ? h[0] : Infinity; }
 
+// EL HUECO DE UN TRAZO CONSIGO MISMO. `huecosPares` sólo compara trazos DISTINTOS, así que la
+// derivación de la densidad —la banda se corta al hueco que dejó la composición— nunca miraba los
+// pliegues: un trazo que volvía sobre sí se quedaba con la banda entera y se comía su propio canal.
+// La regla del autor no distingue: «ni entre otro trazo y el mismo, sin que haya un margen».
+//
+// Pliegue y esquina se separan con las dos condiciones, que hicieron falta las dos: giro acumulado
+// ≥ 115° —se ha dado la vuelta— Y recorrido ≥ 2 anchuras entre los dos tramos —se ha ido y ha
+// vuelto—. Sólo con el giro, una esquina cerrada cuenta como pliegue y la banda se corta sin motivo.
+function huecoPropio(trazos, W) {
+  let mn = Infinity;
+  for (const t0 of trazos) {
+    if (t0.length < 4) continue;
+    // ACOTADO A UN NÚMERO FIJO DE PUNTOS, no diezmado por un factor. Esto es un SUELO, no una
+    // medida fina, y va dentro del bucle de reparación: con un factor fijo el coste sigue creciendo
+    // con el eje, y hay obras cuyo eje se dispara —la #3332 colgaba el generador entero—. Con un
+    // tope de 120 puntos el coste es constante pase lo que pase, que es lo que tiene que ser una
+    // pieza que corre doce veces por obra. Lo que se busca es si las dos ramas de un pliegue se
+    // pisan, no dónde exactamente.
+    const TOPE = 120;
+    const paso = Math.max(1, Math.ceil(t0.length / TOPE));
+    const t = paso > 1 ? t0.filter((_, i) => i % paso === 0 || i === t0.length - 1) : t0;
+    const dir = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+    for (let i = 0; i < t.length - 1; i++) {
+      let giro = 0, arco = 0, ult = dir(t[i], t[i + 1]);
+      for (let j = i + 1; j < t.length - 1; j++) {
+        const d = dir(t[j], t[j + 1]);
+        giro += Math.abs(corto(d - ult));
+        arco += hy(t[j][0] - t[j - 1][0], t[j][1] - t[j - 1][1]);
+        ult = d;
+        if (giro < 115 || arco < 2 * W) continue;
+        const g = distTramos(t[i], t[i + 1], t[j], t[j + 1]);
+        if (g < mn) mn = g;
+      }
+    }
+  }
+  return mn;
+}
+
 const CANAL = 0.22;   // el canal, en anchuras de banda: medido en las cinco referencias buenas
 // el percentil de los huecos que da la banda. 0,25 está CALIBRADO contra las obras reales: el p25
 // de los huecos entre los ejes que el autor marcó a mano reproduce la anchura de banda medida con
@@ -277,7 +315,7 @@ const MANDOS = {
                          // estrecho: «quiero que tenga ambas versiones, ancho y estrecho, pero el
                          // blanco entre bandas paralelas debería ser estrecho».
   obl:      [58, 76],    // el rango de los rumbos oblicuos, en grados. Eligió los abiertos.
-  tramo:    [0.66, 1.75],// lo que corre un tramo recto antes de doblar. Eligió la corta, que era
+  tramo:    [0.58, 1.55],// lo que corre un tramo recto antes de doblar. Eligió la corta, que era
                          // [1,0 · 2,6], y esto es MÁS CORTO QUE LO QUE ELIGIÓ: con su valor la
                          // tirada mediana nos salía en 2,4 anchuras y en las seis va de 1,2 a 2,1,
                          // la del conjunto en 1,5. El par sólo ofrecía «corta» y «larga» una contra
@@ -289,19 +327,29 @@ const MANDOS = {
   err:      3,           // el error de mano del rumbo, en grados: «el a mano tiene su toque pero
                          // queda desorganizado». Eligió ±3 sobre ±13. Queda apuntado que le ve
                          // toque al otro: es el candidato a volver, no un cabo suelto.
-  largo:    1.30,        // el factor del largo de un trazo. Eligió el que cruza el pliego.
+  largo:    1.60,        // el factor del largo. Segunda vuelta: eligió el que ATRAVIESA. Venía
+                         // de 0,85 y ha subido dos veces seguidas, así que es dirección, no ajuste.
   crece:    1.15,        // hasta cuánto engorda la banda: «engorda sólo hasta asegurar márgenes
                          // más o menos constantes allá donde hay gravedad». Casi constante.
   pDenso:   0.62,        // «prefiero la densa pero podría ser todo». Se queda como estaba.
-  pRecorte: 0.05,        // eligió que la obra quepa entera. Era 0,42.
+  pRecorte: 0.05,        // que la OBRA ENTERA sea el recorte de una mayor: raro, lo eligió dos veces
+  sale:     0.22,        // ...pero que UN TRAZO se salga del pliego: eso es otra cosa y sí la quiere
+  solo:     1.00,        // cuánto tiene que apartarse un trazo DE SÍ MISMO, en separaciones. Uno
+                         // entero: la banda más el canal, igual que entre dos trazos distintos.
+  meta:     0,           // qué parte de los trazos anda HACIA un cuerpo declarado desde el principio
+  para:     0.7,         // ...y qué parte PARA al pasar cerca de un buen final, sin ir a buscarlo.
+                         // Medido contra el destino declarado, que es el mecanismo contrario: aquél
+                         // subía el giro de 43° a 50° (las seis: 35°) y no bajaba los cabos al aire;
+                         // éste los baja y el giro no se mueve. Perseguir cuesta el alfabeto; no
+                         // pasarse de largo, no.
   aire:     0,           // YA NO ES UNA TASA: es lo que se añade a mano por encima de lo que sale
                          // solo. Ver los cabos, que es la nota que más código cambió.
   nTrazos:  1.0,         // factor sobre el número de trazos. El ×1,45 que eligió está metido en la
                          // tabla de tipos: la decisión era «más trazos», no «un factor de 1,45».
   cats:     null,        // la mezcla de categorías; null = la del tipo, ya corrida hacia la suelta
   vueltas:  0,           // el campo, apagado. Lo confirmó: «se quedan donde cayeron de primeras».
-  prop:     null,        // la proporción del pliego; null = como siempre, de 1,02 a 1,55. Es la
-                         // única decisión de la composición que no ha pasado por ningún par.
+  prop:     [1.02, 1.15],// la proporción del pliego. Segunda vuelta: eligió CASI CUADRADO sobre el
+                         // rango libre de 1,02 a 1,55. La familia tiene silueta, no variedad.
 };
 const ENV = { canal: 'HRRS_CANAL', obl: 'HRRS_OBL', tramo: 'HRRS_T', err: 'HRRS_ERR',
               largo: 'HRRS_L', vueltas: 'HRRS_V' };
@@ -365,14 +413,31 @@ function circuito(seed, opt) {
   // LA SEPARACIÓN NOMINAL, en unidades de la COMPOSICIÓN y no de la banda: es lo que separa dos
   // líneas paralelas. La banda saldrá de aquí al final, no al contrario.
   const TIPOS = {
-    // MÁS TRAZOS —eligió el ×1,45— y LA MEZCLA CORRIDA HACIA LA SUELTA, que eligió también. Del
-    // par de la mezcla salió además una discrepancia que queda sin explicar: A daba 29 % de
-    // sueltas y B 45 %, o sea que las etiquetas eran ciertas, y sin embargo él leyó A como «más
-    // suelta». Lo más probable es que lo que lee como soltura no sea la cuenta de trazos sueltos
-    // sino la de paralelas —A llevaba 27 % y B 21 %, y las paralelas hacen trama—. Se aplica lo
-    // que votó y se deja anotado que la palabra y el número no señalan lo mismo.
-    denso:   { n: [12, 19], sep: [0.055, 0.080], cats: [0.30, 0.12, 0.20, 0.38] },
-    abierto: { n: [7, 13],  sep: [0.085, 0.150], cats: [0.24, 0.12, 0.16, 0.48] },
+    // MÁS TRAZOS —eligió el ×1,45— y LA MEZCLA, QUE ES EL ÚNICO SITIO DONDE SE HA CONTRADICHO.
+    // Conviene dejarlo escrito entero, porque el que lo lea dentro de un mes va a pensar que uno de
+    // los dos números está mal puesto:
+    //
+    //   vuelta 1 ... eligió «42 % suelta» sobre la mezcla del tipo, o sea MENOS paralelas. Y a la
+    //                vez dijo que la otra le parecía «más suelta», cuando llevaba 29 % de sueltas
+    //                contra 45 %. La palabra y el número no señalaban lo mismo.
+    //   vuelta 1 ... nota en los oblicuos: «yo de menos paralizaciones aquí de todos modos».
+    //   vuelta 2 ... eligió «44 % paralela», o sea MÁS paralelas, que es lo contrario.
+    //
+    // Se aplica lo de la vuelta 2 porque es la respuesta directa a la pregunta directa y es la
+    // más reciente. Pero dos de tres apuntan al otro lado, así que esto no está cerrado: lo que
+    // hay debajo es que ninguna de las dos veces estaba eligiendo por la cuenta de sueltas —estaba
+    // eligiendo por la imagen— y la etiqueta no le dice lo que va a ver. El par que lo cierre
+    // tendrá que preguntarlo sin nombrar la mezcla.
+    // EL NÚMERO DE TRAZOS VUELVE A [8,13] Y [5,9], Y NO ES DESHACER SU VOTO: es conservarlo.
+    // Él votó «×1,45, más trazos» mirando obras cuyo paseo se atascaba al 31 % del recorrido —sólo
+    // 7 de cada 100 trazos llegaban a su largo—, así que lo que estaba pidiendo con más trazos era
+    // MÁS TINTA, que era la única manera de conseguirla con el paseo roto. Arreglado el atasco, el
+    // largo dibujado se triplica: con [12,19] la cobertura se va al 38,7 % cuando en las seis la
+    // mediana es 23 % y el máximo 54 %. Devolver la tabla deja la tinta donde a él le gustó —el
+    // ×1,45 sobre el paseo roto y el ×1,00 sobre el arreglado dan casi la misma cobertura— y de
+    // paso vuelve al rango de trazos de las referencias, que es de 5 a 14.
+    denso:   { n: [8, 13], sep: [0.055, 0.080], cats: [0.44, 0.14, 0.24, 0.18] },
+    abierto: { n: [5, 9],  sep: [0.085, 0.150], cats: [0.38, 0.14, 0.20, 0.28] },
   };
   const tipo = rng.bool(M.pDenso) ? 'denso' : 'abierto';
   // EL CANAL NO ES UNA CONSTANTE DE LA FAMILIA, es una decisión de cada obra: «quiero que tenga
@@ -393,6 +458,17 @@ function circuito(seed, opt) {
   // están a menos de una anchura del borde del pliego, contra uno o dos en r1, r2 y r3. En un
   // recorte los trazos SE SALEN del papel; hasta ahora el paseo rebotaba en el margen y eso era
   // imposible ni por accidente.
+  // «Me gusta que algunos trazos puedan salir fuera. Pero NO ES CUESTIÓN DE HACER ZOOM, para nada.
+  // No es lo que estás planteando.» Tiene razón y el planteamiento era mío: `recorte` metía un
+  // margen negativo A LA OBRA ENTERA, así que la composición completa se desbordaba y eso se lee
+  // como el zoom de un cuadro mayor —no como un trazo que se va—. Son dos cosas distintas y las
+  // tenía en una:
+  //
+  //   EL RECORTE ..... la obra entera es el encuadre de una composición mayor. Existe en r4, r5 y
+  //                    r6 —la mitad de sus cabos están a menos de una anchura del borde— y él lo
+  //                    ha dejado en raro las dos veces que se lo he preguntado: 5 %.
+  //   QUE SE SALGA ... la composición cabe, y ALGÚN TRAZO se va por el borde. Es una decisión del
+  //                    trazo, no del pliego, así que ahora se sortea por trazo.
   const recorte = rng.bool(M.pRecorte);
   const T = TIPOS[tipo];
   let sep = rng.range(T.sep[0], T.sep[1]);
@@ -407,6 +483,7 @@ function circuito(seed, opt) {
   // medirse. Es `separación = banda + canal`, despejado.
   const W_NOM = sep / (1 + CANAL);
   const mg = recorte ? -sep * 0.9 : sep * 0.55 + 0.010;
+  const mgFuera = -sep * 0.9;              // el margen del trazo al que se le deja salir
   const n = Math.max(3, Math.round(rng.int(T.n[0], T.n[1]) * M.nTrazos));
   const PASO = 0.105, ERR = M.err, TOPE_VUELTA = 100;
   // el largo de un TRAMO recto, en pasos. Las referencias corren mucho antes de doblar.
@@ -435,11 +512,23 @@ function circuito(seed, opt) {
   // obra es el largo del tramo y nada más. Aquí vivía un `P_ESQ` declarado y nunca usado, herencia
   // de un generador anterior; se fue al ponerlo en un par y ver que los dos lados salían idénticos
   // hasta el píxel. Un mando que no dispara es peor que ninguno: haría votar ruido.
-  const K_LARGO = M.largo;
+  // Y EL LARGO DEL TRAZO TAMBIÉN VA CON LA BANDA, en el sentido contrario que la tirada. Medido en
+  // las seis, el largo medio de un trazo en unidades del pliego:
+  //
+  //     r1 banda 0,033 → 0,65     r4 0,052 → 1,25     r5 0,091 → 0,87
+  //     r2 banda 0,042 → 0,44     r3 0,054 → 0,71     r6 0,089 → 0,54
+  //
+  // El ajuste da largo ∝ banda^0,24: la banda gorda dibuja trazos MÁS LARGOS en el papel, aunque
+  // más cortos medidos en anchuras. Sin esto, nuestras obras finas ponían un 30 % de tinta contra
+  // el 16 % de r1 —dibujaban de más— y las gordas se quedaban cortas. Es una relación floja, como
+  // la de la tirada, y se aplica con el exponente que sale y no más. En el centro del rango no
+  // toca nada, así que el 1,60 que él votó sigue valiendo donde lo votó.
+  const K_LARGO = M.largo * Math.pow(Math.max(0.02, W_NOM) / 0.05, 0.24);
 
-  const dentro = (p) => [Math.max(mg, Math.min(fw - mg, p[0])),
-                         Math.max(mg, Math.min(fh - mg, p[1]))];
-  const fuera = (p) => p[0] < mg || p[0] > fw - mg || p[1] < mg || p[1] > fh - mg;
+  const dentroDe = (m) => (p) => [Math.max(m, Math.min(fw - m, p[0])),
+                                  Math.max(m, Math.min(fh - m, p[1]))];
+  const fueraDe = (m) => (p) => p[0] < m || p[0] > fw - m || p[1] < m || p[1] > fh - m;
+  const dentro = dentroDe(mg), fuera = fueraDe(mg);
 
   const eligeRumbo = (desde) => {
     if (desde == null) {
@@ -472,9 +561,42 @@ function circuito(seed, opt) {
   // El error de mano se tira UNA VEZ POR TRAZO y no por paso. Un temblor que se sortea a cada
   // paso es ruido; uno que se sortea una vez es la mano de quien lo dibuja.
   // ¿el tramo u→q cruza o roza al propio trazo ya dibujado?
+  // CUÁNTO SE APARTA UN TRAZO DE SÍ MISMO. Regla del autor, y es más fuerte de lo que yo entendí:
+  //
+  //   «Nunca debería haber solape entre una y otra, ni entre otro trazo y el mismo, sin que haya un
+  //    margen. No se puede ver una superficie negra porque uno de los trazos haya volteado sobre sí.
+  //    Siempre se tiene que ver que es un trazo.»
+  //
+  // Yo lo había bajado a 0,32 separaciones apoyándome en una medida MAL HECHA. Medí la distancia
+  // mínima de un trazo a sí mismo excluyendo sólo los tramos contiguos, y así UNA ESQUINA CERRADA
+  // —donde el tramo i y el i+2 quedan cerca por el propio giro— cuenta como si el trazo volviera
+  // sobre sí. Salía p10 0,37 anchuras. Exigiendo que los dos tramos estén separados a lo largo del
+  // recorrido, un pliegue de verdad deja:
+  //
+  //     arco ≥ 1 anchura → p10 0,97   MEDIANA 1,08        arco ≥ 2 → p10 1,53   mediana 2,04
+  //
+  // O sea: en Chillida un trazo NO se solapa consigo mismo nunca. Lo de 0,37 eran esquinas.
+  //
+  // Y EL GENERADOR TENÍA EL MISMO ERROR, que es lo que estrangulaba el paseo: su comprobación
+  // excluye el tramo contiguo y nada más, así que le prohibía doblar —una esquina le parecía un
+  // pliegue— y por eso hubo que bajar el suelo hasta dejar que el trazo se solapara. Las dos cosas
+  // que él pide, «bastantes dobladuras» y «que no pierda la forma de trazo», no se peleaban: se
+  // peleaban por culpa de esta confusión.
+  //
+  // Se separan por el GIRO ACUMULADO, que es lo que distingue una cosa de la otra: una esquina gira
+  // unos 55° y una vuelta sobre sí gira 180. Mientras el giro acumulado hacia atrás no pase de
+  // MEDIA_VUELTA, esos tramos son la esquina y no se miran; a partir de ahí, el canal entero.
+  const MEDIA_VUELTA = 115;
   const seCruza = (pts, u, q) => {
-    for (let i = 0; i < pts.length - 2; i++)
-      if (distTramos(u, q, pts[i], pts[i + 1]) < sep * 0.78) return true;
+    const dir = (a, b) => Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+    let giro = 0, ult = dir(u, q);
+    for (let i = pts.length - 2; i >= 0; i--) {
+      const d = dir(pts[i], pts[i + 1]);
+      giro += Math.abs(corto(ult - d));
+      ult = d;
+      if (giro < MEDIA_VUELTA) continue;          // esto es la esquina, no una vuelta
+      if (distTramos(u, q, pts[i], pts[i + 1]) < sep * M.solo) return true;
+    }
     return false;
   };
   // EL TRAZO SABE A DÓNDE VA. Rematar un trazo YA TERMINADO no funciona: se andaba hasta agotar
@@ -487,8 +609,16 @@ function circuito(seed, opt) {
   // rumbos que caben, gana el que acerca. Y cuando llega a tiro, para.
   function pasea(p0, dir0, largo, evita, meta, kT) {
     const err = rng.range(-ERR, ERR);
+    // ¿ESTE TRAZO SE SALE? Es del trazo y no del pliego: el sorteo va aquí, una vez por paseo. Con
+    // el margen negativo el paseo puede irse por el borde en vez de rebotar contra él, y la
+    // composición sigue cabiendo — que es la diferencia que él marcó entre «que salgan trazos» y
+    // «hacer zoom». El primero nunca se sale: es la base de la obra.
+    const seSale = trazos.length > 0 && rng.bool(M.sale);
+    const mgL = seSale ? mgFuera : mg;
+    const dentroL = seSale ? dentroDe(mgL) : dentro;
+    const fueraL = seSale ? fueraDe(mgL) : fuera;
     let dir = dir0 + err;
-    const pts = [dentro(p0)];
+    const pts = [dentroL(p0)];
     let hecho = 0, atasco = 0;
     while (hecho < largo && atasco < 25) {
       // el largo del TRAMO, no del paso: varias anchuras de banda de recta seguida
@@ -518,7 +648,7 @@ function circuito(seed, opt) {
           if (L < PASO * 0.30) break;
           const u = pts[pts.length - 1];
           const q = [u[0] + Math.cos(d2 * RAD) * L, u[1] + Math.sin(d2 * RAD) * L];
-          if (fuera(q)) continue;
+          if (fueraL(q)) continue;
           // UN TRAZO NO SE CRUZA CONSIGO MISMO. Regla del autor, absoluta, y estaba sin
           // comprobar: la función que impide los cruces dice `if (j === k) continue`, o sea que
           // salta el propio trazo. El 55 % de las obras tenía uno, y el autor lo cantó tres veces
@@ -532,6 +662,29 @@ function circuito(seed, opt) {
       }
       if (!puesto) { atasco++; dir = eligeRumbo(dir) + err; continue; }
       atasco = 0; hecho += dado;
+      // NO SOBREPASAR UN BUEN FINAL. Es lo contrario del destino declarado: aquel elegía un cuerpo
+      // antes de salir y el trazo lo perseguía —y perseguir un punto le quitaba el alfabeto, medido:
+      // el giro se iba de 43° a 50° cuando las seis están en 35°—. Esto no persigue nada. El trazo
+      // anda su camino y, si al dar un paso se encuentra a tiro del cabo o del costado de otro, se
+      // para ahí en vez de seguir de largo. En las seis el 55 % de los cabos muere contra otro cabo,
+      // y eso no se consigue apuntando: se consigue no pasándose.
+      if (M.para > 0 && hecho > largo * 0.35) {
+        const u2 = pts[pts.length - 1];
+        let cerca = false;
+        for (let j = 0; j < trazos.length && !cerca; j++) {
+          const o2 = trazos[j];
+          if (o2 === pts || o2.length < 2) continue;
+          for (const oi of [0, o2.length - 1]) {
+            const d2 = hy(u2[0] - o2[oi][0], u2[1] - o2[oi][1]);
+            if (d2 > W_NOM * 0.9 && d2 < W_NOM * 2.4) { cerca = true; break; }
+          }
+          if (!cerca) {
+            const c2 = cercaDe(u2, o2);
+            if (c2 && c2.d > W_NOM * 0.9 && c2.d < W_NOM * 1.8) cerca = true;
+          }
+        }
+        if (cerca && rng.bool(M.para)) break;
+      }
       // ya está a tiro de su destino: para aquí y que el remate haga el gesto
       if (meta) {
         const u1 = pts[pts.length - 1];
@@ -583,7 +736,9 @@ function circuito(seed, opt) {
     // primer trazo, que es el que marca la base de la obra y siguientes trazos». Y es coherente con
     // el orden que él mismo puso —primero se dibuja el trazo central y los demás se relacionan con
     // él—: si el primero es una recta, no hay base a la que relacionarse, hay una raya.
-    const pts = pasea(p0, eligeRumbo(null), rng.range(0.85, 1.45) * K_LARGO, null, null, 0.60);
+    // el 0,60 dejó de bastar cuando el pliego pasó a casi cuadrado: el primero doblaba sólo un 9 %
+    // más que los demás, y lo que él pidió es que se note. `tiradas.js` lo vigila.
+    const pts = pasea(p0, eligeRumbo(null), rng.range(0.85, 1.45) * K_LARGO, null, null, 0.45);
     trazos.push(pts); masas.push(rng.range(1.5, 2.6)); cats.push('primero'); metas[0] = null;
   }
   foto('1 · los puntos del primer trazo', 'puntos',
@@ -701,7 +856,13 @@ function circuito(seed, opt) {
     // exactamente lo contrario de lo que se busca. Se prueban padres, lados y ventanas.
     if (cat === 'paralela') {
       let hecha = null;
-      for (let intento = 0; intento < 12 && !hecha; intento++) {
+      // TREINTA INTENTOS Y NO DOCE. El 88 % de los intentos de paralela muere por estorbo —el
+      // carril del padre se ocupa en cuanto le sale la primera— y con doce sólo se construía el 37 %
+      // de las que se pedían. Con treinta sube al 50 %, las paralelas de la obra pasan del 14 % al
+      // 19 % y el acompañamiento de 48 a 50 (las seis: 57). Probado también aflojar el suelo contra
+      // el padre (0,80 → 0,74 → 0,68) y alargar el tramo que acompaña (0,45 → 0,65 → 0,80 del
+      // padre): ninguna de las dos compra nada, y la segunda empeora el p10. Sólo los intentos.
+      for (let intento = 0; intento < 30 && !hecha; intento++) {
         const padre = trazos[rng.bool(0.45) ? 0 : rng.int(0, trazos.length - 1)];
         if (padre.length < 3) continue;
         const lado = rng.bool(0.5) ? 1 : -1;
@@ -721,7 +882,15 @@ function circuito(seed, opt) {
         metas[trazos.length - 1] = null;
         continue;
       }
-      cat = 'suelta';   // no cabía: cede la categoría antes que perder el trazo
+      // NO CABÍA. Pero caer a `suelta` es caer a la categoría MÁS LEJANA de la que se pedía, y eso
+      // rompía el mando entero: pidiendo 44 % de paralelas salían 24 %, y las sueltas subían de un
+      // 18 % pedido a un 40 % real. O sea que la etiqueta del par nunca decía lo que él iba a ver, y
+      // ahí está la explicación de que se contradijera entre las dos vueltas: la mezcla que eligió
+      // en la segunda sale casi igual que la que rechazó en la primera.
+      //
+      // Una paralela que no cabe sigue queriendo ser un trazo EN RELACIÓN con otro. El apoyo lo es
+      // —llega y muere contra un cuerpo—; la suelta es justo lo contrario. Así que cede a apoyo.
+      cat = 'apoyo';
     }
     for (let intento = 0; intento < 8 && !nac; intento++) {
       const c = naceCat(cat);
@@ -741,8 +910,14 @@ function circuito(seed, opt) {
     // y 6° de ángulo de quiebro (45,4 → 51,1), y no compró nada donde tenía que comprar: los
     // remates se quedaron en el 19 % con ella y sin ella. Un trazo que persigue un punto deja de
     // seguir su alfabeto, que es lo que le daba el carácter.
+    // EL DESTINO DECLARADO, que estaba apagado con un `if (false)` y una medida que ya no vale.
+    // La medida decía: no compra nada, «los remates se quedaron en el 19 % con ella y sin ella».
+    // Pero se tomó cuando el remate estaba roto por el codo fantasma —descartaba tres de cada
+    // cuatro cabos por un vértice que no dibujaba— así que daba 19 % hiciera lo que hiciera el
+    // paseo. Comparar contra una pieza rota no compara nada. Ahora va detrás de un mando para
+    // poder medirlo otra vez, y en limpio.
     let meta = null;
-    if (false) {
+    if (rng.bool(M.meta)) {
       const j = rng.int(0, trazos.length - 1), o = trazos[j];
       if (o.length >= 2) {
         if (rng.bool(0.66)) {                 // contra un cabo: el 55 % de las seis
@@ -853,20 +1028,22 @@ function circuito(seed, opt) {
           }
         }
       }
+      // SE PONEN LAS DOS CLASES SIEMPRE, y la preferencia sortea el ORDEN en que se prueban, no
+      // cuáles existen. Antes se decidía de antemano si este cabo buscaba otro cabo o un costado, y
+      // se construía sólo esa lista: si tocaba «cabo» y no había ninguno cerca —y no los hay, sólo
+      // hay dos por trazo y están desperdigados—, el remate fallaba entero y el cabo se iba al aire
+      // teniendo un costado a dos anchuras. Es el mismo error que el de los gestos, con otra ropa.
       for (let j = 0; j < trazos.length; j++) {
         if (j === k || trazos[j].length < 2) continue;
-        if (quiereCabo) {
-          for (const oi of [0, trazos[j].length - 1]) {
-            const o = trazos[j][oi];
-            const ov = trazos[j][oi === 0 ? 1 : trazos[j].length - 2];
-            cands.push({ q: o, tang: Math.atan2(o[1] - ov[1], o[0] - ov[0]),
-                         d: hy(o[0] - trazos[k][idx][0], o[1] - trazos[k][idx][1]),
-                         clase: 'contra un cabo' });
-          }
-        } else {
-          const c = cercaDe(trazos[k][idx], trazos[j]);
-          if (c) cands.push({ q: [c.qx, c.qy], tang: c.dir, d: c.d, clase: 'contra el costado' });
+        for (const oi of [0, trazos[j].length - 1]) {
+          const o = trazos[j][oi];
+          const ov = trazos[j][oi === 0 ? 1 : trazos[j].length - 2];
+          cands.push({ q: o, tang: Math.atan2(o[1] - ov[1], o[0] - ov[0]),
+                       d: hy(o[0] - trazos[k][idx][0], o[1] - trazos[k][idx][1]),
+                       clase: 'contra un cabo' });
         }
+        const c = cercaDe(trazos[k][idx], trazos[j]);
+        if (c) cands.push({ q: [c.qx, c.qy], tang: c.dir, d: c.d, clase: 'contra el costado' });
       }
       // EL VECINO TIENE QUE ESTAR DELANTE. Ordenando sólo por distancia, el más próximo suele
       // estar detrás del trazo —a su espalda— y llegar hasta él pide doblar cien grados: los dos
@@ -953,9 +1130,13 @@ function circuito(seed, opt) {
         if (seCruza(resto.concat([desde]), desde, q)) { if (DBGC) DBGC.cruza++; return null; }
         return { q, clase: cd.clase + (deFrenteReal ? ' de frente' : ' en paralelo') };
       };
+      // y las pasadas van de lo más deseado a lo que haya: primero la clase y el gesto que salieron
+      // en el sorteo, luego la clase con cualquier gesto, y al final cualquier cosa que valga.
+      const claseQuerida = quiereCabo ? 'contra un cabo' : 'contra el costado';
       let puesto = null;
-      for (const exige of [deFrente, null]) {
-        for (const cd of cands.slice(0, 8)) {
+      for (const [clase, exige] of [[claseQuerida, deFrente], [claseQuerida, null], [null, null]]) {
+        for (const cd of cands.slice(0, 12)) {
+          if (clase && cd.clase !== clase) continue;
           const r = prueba(cd, exige);
           if (r) { trazos[k][idx] = r.q; puesto = r.clase; if (DBGC) DBGC.ok++; break; }
         }
@@ -986,7 +1167,16 @@ function circuito(seed, opt) {
       const L = hy(trazos[k][idx][0] - desde[0], trazos[k][idx][1] - desde[1]);
       const q0 = [desde[0] + Math.cos(d) * L * 1.5, desde[1] + Math.sin(d) * L * 1.5];
       const q = recorte ? q0 : dentro(q0);
-      if (!estorba(k)(desde, q) && !seCruza(trazos[k].slice(0, -2), desde, q))
+      // EL TROZO CONTRA EL QUE SE COMPRUEBA DEPENDE DE QUÉ CABO ES. Aquí ponía siempre
+      // `slice(0, -2)`, que es lo correcto para el cabo final y lo equivocado para el inicial: al
+      // apartar el cabo de arranque se comparaba contra el principio del trazo —o sea contra sí
+      // mismo, los puntos de al lado— en vez de contra el resto, y encima al revés, que importa
+      // porque la orientación de la lista es lo que decide qué tramos cuentan como «la esquina».
+      // Resultado: el paso que aparta los cabos del aire era el único que podía doblar un trazo
+      // sobre sí mismo, y lo hacía. La sonda lo señaló: limpio tras el paseo, limpio tras el
+      // remate, negativo justo después de esto.
+      const resto2 = cual === 0 ? trazos[k].slice(2).reverse() : trazos[k].slice(0, -2);
+      if (!estorba(k)(desde, q) && !seCruza(resto2, desde, q))
         trazos[k][idx] = q;
     }
   }
@@ -1228,9 +1418,24 @@ function circuito(seed, opt) {
   // La separación nominal es la escala de la composición, así que la banda se mide contra ella y
   // no contra un número absoluto que no sabe de qué obra se está hablando.
   // Y un techo absoluto, porque en una obra dispersa el percentil 25 cae en un hueco grande y la
-  // banda sale una losa. Las referencias van de 0,032 a 0,042 sobre el lado corto; 0,062 deja
-  // sitio a la variedad sin que ninguna obra se vuelva un bloque.
-  W = Math.min(percentil(hs0, P_BANDA), sep / (1 + CANAL) * 1.10, 0.062);
+  // banda sale una losa.
+  //
+  // EL TECHO ESTABA PUESTO SOBRE UN RANGO MAL CITADO. Decía aquí que «las referencias van de 0,032
+  // a 0,042» y de ahí salía el 0,062. Van de 0,0325 a 0,0909: r5 mide 0,0909 y r6 0,0889, o sea que
+  // con ese techo las dos eran literalmente INGENERABLES. Y eso explica lo que él ve —«las de trazo
+  // gordo todavía no están de Chillida»—, porque además el techo invertía la relación:
+  //
+  //              cobertura de tinta        largo dibujado        (largo x banda / área)
+  //   ellas      15-17 % las finas         casi constante        y 31 % en r5, 54 % en r6
+  //              → correlación banda ↔ cobertura  +0,83
+  //   nosotros   26 % las finas            2,2 en las gordas     y 12,8 % en las gordas
+  //              contra 6,8 en las finas   → la relación al revés
+  //
+  // Lo que pasaba: como W sale del hueco que deja la composición, tocar el techo sólo era posible
+  // en obras MUY DISPERSAS. O sea que «banda gorda» no era una elección sino un síntoma de obra
+  // vacía, justo lo contrario de r5 y r6, que son gordas Y llenas. Subir el techo a 0,095 —un pelo
+  // por encima de r5— devuelve esas dos a la familia.
+  W = Math.min(percentil(hs0, P_BANDA), sep / (1 + CANAL) * 1.10, 0.095);
   {
     const SUELO_W = W * 1.06;      // la banda más un pelo de canal: por debajo, se funde
     for (let v = 0; v < 12; v++) {
@@ -1253,10 +1458,56 @@ function circuito(seed, opt) {
       const ux = c.d > 1e-9 ? (mx - c.qx) / c.d : Math.cos(c.dir + Math.PI / 2);
       const uy = c.d > 1e-9 ? (my - c.qy) / c.d : Math.sin(c.dir + Math.PI / 2);
       const emp = (SUELO_W - peor.d) * 0.62;
+      // Y EL EMPUJE SE VETA SI EMPEORA A UN TERCERO. Esta reparación apartaba dos vértices sin
+      // mirar a dónde iban, y en 4 obras de 300 el vértice apartado caía encima de OTRO trazo: el
+      // hueco mínimo se iba a 0,00004 y con él la banda a cero, o sea la obra a blanco. Y no era
+      // una obra difícil — antes de la reparación su hueco era 0,054, que da una banda de 0,053
+      // perfectamente buena. La reparación era lo único que la mataba.
+      //
+      // Es la misma lección que ya está escrita dos veces en este archivo y que se me volvió a
+      // escapar por escribirla en un sitio y no en el otro: VETAR CONSERVA, CORREGIR DESTROZA. El
+      // campo lo tiene desde la autopsia; esto no, porque nadie lo miró. Se mide el hueco de los
+      // tramos que tocan a esos dos vértices contra todos los demás trazos, antes y después: si
+      // después es peor, no se mueve y se queda donde estaba, que era un sitio válido.
+      const mideLocal = () => {
+        let m = Infinity;
+        for (const a of [i - 1, i, i + 1]) {
+          if (a < 0 || a + 1 > t.length - 1) continue;
+          for (let j2 = 0; j2 < trazos.length; j2++) {
+            if (j2 === peor.k) continue;
+            for (let q2 = 0; q2 < trazos[j2].length - 1; q2++)
+              m = Math.min(m, distTramos(t[a], t[a + 1], trazos[j2][q2], trazos[j2][q2 + 1]));
+          }
+        }
+        return m;
+      };
+      const antes = mideLocal();
+      const viejo = [[t[i][0], t[i][1]], [t[i + 1][0], t[i + 1][1]]];
       for (const idx of [i, i + 1])
         t[idx] = dentro([t[idx][0] + ux * emp, t[idx][1] + uy * emp]);
+      if (mideLocal() < antes - 1e-9) {
+        t[i] = viejo[0]; t[i + 1] = viejo[1];
+        break;                     // no hay empuje que valga: se deja la composición como estaba
+      }
     }
-    W = Math.min(W, huecoMinimo(trazos) * 0.98);   // y la regla manda: nunca funde
+    // Y LA REGLA MANDA. Pero el 0,98 que había aquí no la cumplía: dejaba un canal del 2 % de la
+    // banda en el par más apretado, y un 2 % a la resolución a la que se mira esto es cero — dos
+    // bandas pegadas. Medido con el detector exacto salían 4 obras de 100 fundidas.
+    //
+    // Lo que tiene que poner aquí es el propio modelo, que ya lo dice: separación = banda + canal.
+    // Despejado, W = hueco / (1 + canal). Así el par más apretado deja un canal de verdad —el mismo
+    // canal que la obra usa en todas partes— por construcción y no por un margen de seguridad
+    // inventado. Es la misma cuenta que gobierna W_NOM, y estaba escrita a mano y mal en el único
+    // sitio donde de verdad hacía falta.
+    // EL PLIEGUE PROPIO NO ENTRA AQUÍ, y probarlo costó caro. Este suelo es GLOBAL: recorta la
+    // banda de la obra entera. Metiendo el pliegue de un trazo, una sola vuelta apretada —la #3332
+    // tiene una de hueco cero— aniquilaba la banda de todos los demás: W salía 0,00000. Y de paso
+    // colgaba el generador, porque `PASO_FILO` vale W/10 y con W minúsculo el eje se dispara.
+    //
+    // Un pliegue es asunto DE SU TRAZO, así que lo trata el relleno, que mira punto a punto y sólo
+    // adelgaza la banda donde el pliegue aprieta. Lo global es para trazos distintos, donde la
+    // banda entera tiene que caber entre dos ejes.
+    W = Math.min(W, huecoMinimo(trazos) / (1 + CANAL));
   }
   const hueco = huecoMinimo(trazos);
 
@@ -1314,8 +1565,15 @@ function circuito(seed, opt) {
   //
   // Y va bajo el mismo tope que todo lo demás, así que no puede fundir: la banda sigue cortada a
   // la medida del hueco que dejó la composición.
+  // subido de 0,018–0,026: al derivar el suelo del canal la banda salió algo más fina y con menos
+  // sitio para respirar, y la piel cayó de 0,033 a 0,028. El cuerpo es el mando que existe para eso.
+  // Bajado de 0,024–0,033, y acortada su onda: con los trazos ya corriendo su largo entero —antes
+  // se atascaban al 31 %— hay mucho más recorrido donde la onda se ve, y la banda salía festoneada.
+  // La medida lo decía por la ESCALA más que por la amplitud: 0,4–0,6 anchuras contra las 0,3–0,4
+  // de las cuatro referencias, o sea que nuestro respiro era del largo equivocado. Es la lección de
+  // siempre: al arreglar una pieza, lo que estaba calibrado contra la rota deja de estarlo.
   const SD_CUERPO = rng.range(0.018, 0.026);
-  const LAM_CUERPO = rng.range(4.0, 7.0);       // en anchuras de banda
+  const LAM_CUERPO = rng.range(2.5, 4.5);       // en anchuras de banda
   const COMUN = 0.32;                         // cuánto comparten los dos filos
 
   // ruido correlacionado y determinista: suma de octavas, con su fase.
@@ -1355,7 +1613,18 @@ function circuito(seed, opt) {
         fino.push([t[i][0] + (t[i + 1][0] - t[i][0]) * z / n2,
                    t[i][1] + (t[i + 1][1] - t[i][1]) * z / n2]);
     }
+    // UN TOPE AL EJE FINO, y no es cosmético. `PASO_FILO` vale W/10, así que si W se recorta mucho
+    // el eje se dispara, y todo lo que viene detrás —el relleno, que mira punto contra punto— es
+    // O(m²): la #3332 colgaba el generador entero por esto. Ayer fue lo mismo con otro disfraz, un
+    // eje de 44.000 puntos. Un eje no necesita más de mil puntos para nada de lo que se hace con él.
+    if (fino.length > 1000) {
+      const p2 = Math.ceil(fino.length / 1000);
+      const corto2 = fino.filter((_, z) => z % p2 === 0 || z === fino.length - 1);
+      fino.length = 0; for (const q of corto2) fino.push(q);
+    }
     ejes.push(fino);
+    const RALO = 5;
+    const finoRalo = fino.filter((_, z) => z % RALO === 0);
     const m = fino.length, sm = [];
     // 2. el sitio que hay a cada lado
     for (let i = 0; i < m; i++) {
@@ -1366,10 +1635,27 @@ function circuito(seed, opt) {
       for (const s2 of [0, 1]) {
         const sg = s2 === 0 ? 1 : -1;
         let libre = Infinity;
+        // EL TRAZO SE MIRA TAMBIÉN A SÍ MISMO. Aquí ponía `if (j === k) continue`, así que el
+        // relleno engordaba las dos ramas de un pliegue una contra otra hasta comerse el canal: el
+        // eje quedaba a 1,22 anchuras —bien— y cada lado crecía hasta 0,575, que suman 1,15, y con
+        // la onda del cuerpo encima se pasaban. Diez obras de cada cien tenían un trazo solapado
+        // consigo mismo y ninguna medida lo veía. Es la regla del autor y no distingue: «ni entre
+        // otro trazo y el mismo, sin que haya un margen».
+        //
+        // Del propio trazo se saltan los tramos vecinos A LO LARGO DEL RECORRIDO —2,5 anchuras a
+        // cada lado— que son la esquina y no un pliegue. Volver dentro de esa ventana exigiría un
+        // radio menor de media anchura, y eso el paseo ya no lo deja.
+        // y el propio trazo se mira DIEZMADO. Este bucle corre por cada punto del eje y por cada
+        // lado, así que mirarse a sí mismo punto a punto cuesta m² por trazo: con un eje de cuatro
+        // mil puntos —los hay— eso cuelga el generador, y colgó la #3332. Uno de cada cinco basta
+        // para un techo, y el índice se reescala para que la ventana de la esquina siga siendo la
+        // misma distancia de recorrido.
+        const VENT_PROPIO = Math.max(4, Math.round(2.5 / 0.10));
         for (let j = 0; j < trazos.length; j++) {
-          if (j === k) continue;
-          const o = trazos[j];
+          const propio = j === k;
+          const o = propio ? finoRalo : trazos[j];
           for (let z = 0; z < o.length - 1; z++) {
+            if (propio && Math.abs(z * RALO - i) < VENT_PROPIO) continue;
             const mx = (o[z][0] + o[z + 1][0]) / 2, my = (o[z][1] + o[z + 1][1]) / 2;
             if ((mx - fino[i][0]) * nx * sg + (my - fino[i][1]) * ny * sg <= 0) continue;
             let d1 = Math.min(hy(fino[i][0] - o[z][0], fino[i][1] - o[z][1]),
@@ -1457,6 +1743,10 @@ function circuito(seed, opt) {
   // Y SE ALISA EL FILO. Sin esto el contorno son cientos de segmentos rectos entre muestras y el
   // borde queda picado; una pasada de media móvil corta lo que queda de serración sin tocar la
   // ondulación, que es la que lleva el carácter.
+  // Y EL ALISADO NO PUEDE DESHACER EL TOPE. La media móvil de abajo puede levantar una semianchura
+  // por encima del sitio que había, así que se guarda el techo y se vuelve a aplicar después: sin
+  // esto el último paso del pipeline es capaz de romper la garantía que puso el anterior.
+  const techo = semis.map(sm => sm.map(l => [l[0], l[1]]));
   for (const sm of semis) {
     for (let v = 0; v < NALISA; v++) {
       const cp = sm.map(l => [l[0], l[1]]);
@@ -1465,6 +1755,10 @@ function circuito(seed, opt) {
           sm[i][s2] = cp[i][s2] * 0.5 + cp[i - 1][s2] * 0.25 + cp[i + 1][s2] * 0.25;
     }
   }
+  for (let k = 0; k < semis.length; k++)
+    for (let i = 0; i < semis[k].length; i++)
+      for (const s2 of [0, 1]) semis[k][i][s2] = Math.min(semis[k][i][s2], techo[k][i][s2]);
+
   trazos.length = 0;
   for (const e of ejes) trazos.push(e);   // el eje fino ES el trazo: el contorno cuelga de él
 
