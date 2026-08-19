@@ -1,0 +1,551 @@
+/* hoks · motor compartido — canvas 2D, sin dependencias, sin build.
+ *
+ * Fuente única de las primitivas que usan TODAS las obras (laboratorio y web):
+ * RNG determinista, helpers de color, mesh gradient, grano de film y utilidades
+ * de paleta. Se carga como <script> normal y expone todo en window.HOKS.
+ *
+ *   <script src="../_engine.js"><\/script>   →   window.HOKS.Rng, .applyGrain, …
+ */
+(function (global) {
+  'use strict';
+
+  // ── RNG (LCG). Mismo seed → mismo resultado. ───────────────────────────────
+  class Rng {
+    constructor(s) { this.s = (s | 0) >>> 0; }
+    next()        { this.s = (Math.imul(1664525, this.s) + 1013904223) >>> 0; return this.s / 4294967296; }
+    int(a, b)     { return Math.floor(a + this.next() * (b - a + 1)); }
+    range(a, b)   { return a + this.next() * (b - a); }
+    bool(p)       { return this.next() < p; }
+    pickFrom(arr) { return arr[this.int(0, arr.length - 1)]; }
+    weighted(items) { let v = this.next(), acc = 0; for (const it of items) { acc += it.prob; if (v < acc) return it; } return items[items.length - 1]; }
+  }
+
+  // ── Color ──────────────────────────────────────────────────────────────────
+  function hexToRgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+  function luma(h) { const [r, g, b] = hexToRgb(h); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; }
+  function lerpColor(c1, c2, t) {
+    const [r1, g1, b1] = hexToRgb(c1), [r2, g2, b2] = hexToRgb(c2);
+    return `rgb(${Math.round(r1 + (r2 - r1) * t)},${Math.round(g1 + (g2 - g1) * t)},${Math.round(b1 + (b2 - b1) * t)})`;
+  }
+  function softLight(base, blend) {
+    if (blend <= 0.5) return base - (1 - 2 * blend) * base * (1 - base);
+    const d = base <= 0.25 ? ((16 * base - 12) * base + 4) * base : Math.sqrt(base);
+    return base + (2 * blend - 1) * (d - base);
+  }
+
+  // ── Mesh gradient: interpolación bilineal de 4 esquinas al azar ─────────────
+  // Se pinta por bandas: a resolución de impresión (decenas de Mpx) una sola
+  // ImageData de todo el lienzo son cientos de MB. La imagen es idéntica.
+  const STRIP_PX = 2e6;   // ~2 Mpx por banda ≈ 8 MB de ImageData
+  function drawMeshGradient(ctx, W, H, colors, rng) {
+    const n = colors.length;
+    const c00 = hexToRgb(colors[rng.int(0, n - 1)]), c10 = hexToRgb(colors[rng.int(0, n - 1)]);
+    const c01 = hexToRgb(colors[rng.int(0, n - 1)]), c11 = hexToRgb(colors[rng.int(0, n - 1)]);
+    const strip = Math.max(1, Math.min(H, Math.floor(STRIP_PX / W)));
+    for (let y0 = 0; y0 < H; y0 += strip) {
+      const h = Math.min(strip, H - y0);
+      const img = ctx.createImageData(W, h), px = img.data;
+      for (let y = 0; y < h; y++) {
+        const ty = (y0 + y) / (H - 1);
+        for (let x = 0; x < W; x++) {
+          const tx = x / (W - 1), i = (y * W + x) * 4;
+          px[i]     = (1 - tx) * (1 - ty) * c00[0] + tx * (1 - ty) * c10[0] + (1 - tx) * ty * c01[0] + tx * ty * c11[0];
+          px[i + 1] = (1 - tx) * (1 - ty) * c00[1] + tx * (1 - ty) * c10[1] + (1 - tx) * ty * c01[1] + tx * ty * c11[1];
+          px[i + 2] = (1 - tx) * (1 - ty) * c00[2] + tx * (1 - ty) * c10[2] + (1 - tx) * ty * c01[2] + tx * ty * c11[2];
+          px[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, y0);
+    }
+  }
+
+  // ── Grano de film (soft-light, teñido hacia la media de la paleta) ──────────
+  const GRAIN_SAMPLES = 3, GRAIN_MAG = 1.0, GRAIN_AMIN = 0.4, GRAIN_AMAX = 0.8;
+
+  // Grano en una pasada, por bandas y con "celda": el ruido se sortea una vez
+  // por bloque de cell×cell píxeles, así el grano conserva su tamaño FÍSICO al
+  // subir de resolución (a 300 dpi un grano de 1 px sería invisible). En
+  // pantalla unit≈1 → cell=1 → exactamente el grano de siempre.
+  //   unit = ladoCorto / ladoCortoDeReferencia de la obra.
+  function grain(ctx, W, H, colors, scale, unit) {
+    scale = scale == null ? 1 : scale;
+    const cell = Math.max(1, Math.round(unit || 1));
+    let aR = 0, aG = 0, aB = 0;
+    for (const h of colors) { const [r, g, b] = hexToRgb(h); aR += r; aG += g; aB += b; }
+    aR /= colors.length; aG /= colors.length; aB /= colors.length;
+    const aL = 0.299 * aR + 0.587 * aG + 0.114 * aB + 1;
+    const kR = 0.6 + (aR / aL) * 0.4, kG = 0.6 + (aG / aL) * 0.4, kB = 0.6 + (aB / aL) * 0.4;
+    const mag = GRAIN_MAG * scale, mn = GRAIN_AMIN * scale, mx = GRAIN_AMAX * scale;
+    const cols = Math.ceil(W / cell);
+    const nR = new Float32Array(cols), nG = new Float32Array(cols), nB = new Float32Array(cols), nA = new Float32Array(cols);
+    const clamp = v => v < 0 ? 0 : v > 255 ? 255 : v | 0;
+    const rows = Math.max(1, Math.floor(STRIP_PX / W / cell)) * cell;   // bandas alineadas a la celda
+    for (let y0 = 0; y0 < H; y0 += rows) {
+      const bh = Math.min(rows, H - y0);
+      const id = ctx.getImageData(0, y0, W, bh), px = id.data;
+      for (let cy = 0; cy < bh; cy += cell) {
+        for (let ci = 0; ci < cols; ci++) {
+          let v = 0; for (let k = 0; k < GRAIN_SAMPLES; k++) v += Math.random();
+          const m = (v / GRAIN_SAMPLES - 0.5) * mag;
+          nR[ci] = 0.5 + m * kR; nG[ci] = 0.5 + m * kG; nB[ci] = 0.5 + m * kB;
+          nA[ci] = mn + Math.random() * (mx - mn);
+        }
+        const yEnd = Math.min(cy + cell, bh);
+        for (let y = cy; y < yEnd; y++) {
+          let i = y * W * 4;
+          for (let x = 0; x < W; x++, i += 4) {
+            const ci = (x / cell) | 0, a = nA[ci];
+            let b = px[i]     / 255; px[i]     = clamp((softLight(b, nR[ci]) * a + b * (1 - a)) * 255);
+            b     = px[i + 1] / 255; px[i + 1] = clamp((softLight(b, nG[ci]) * a + b * (1 - a)) * 255);
+            b     = px[i + 2] / 255; px[i + 2] = clamp((softLight(b, nB[ci]) * a + b * (1 - a)) * 255);
+          }
+        }
+      }
+      ctx.putImageData(id, 0, y0);
+    }
+  }
+
+  function bakeGrain(W, H, colors, scale) {
+    scale = scale == null ? 1 : scale;
+    let aR = 0, aG = 0, aB = 0;
+    for (const h of colors) { const [r, g, b] = hexToRgb(h); aR += r; aG += g; aB += b; }
+    aR /= colors.length; aG /= colors.length; aB /= colors.length;
+    const aL = 0.299 * aR + 0.587 * aG + 0.114 * aB + 1, tR = aR / aL, tG = aG / aL, tB = aB / aL;
+    const mag = GRAIN_MAG * scale, mn = GRAIN_AMIN * scale, mx = GRAIN_AMAX * scale, n = W * H;
+    const R = new Float32Array(n), G = new Float32Array(n), B = new Float32Array(n), A = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      let v = 0; for (let k = 0; k < GRAIN_SAMPLES; k++) v += Math.random();
+      const m = (v / GRAIN_SAMPLES - 0.5) * mag;
+      R[i] = 0.5 + m * (0.6 + tR * 0.4); G[i] = 0.5 + m * (0.6 + tG * 0.4); B[i] = 0.5 + m * (0.6 + tB * 0.4);
+      A[i] = mn + Math.random() * (mx - mn);
+    }
+    return { R, G, B, A };
+  }
+  function applyGrain(ctx, W, H, grain) {
+    const id = ctx.getImageData(0, 0, W, H), px = id.data, n = W * H;
+    for (let i = 0; i < n; i++) {
+      const pi = i * 4, a = grain.A[i], g = [grain.R[i], grain.G[i], grain.B[i]];
+      for (let c = 0; c < 3; c++) {
+        const b = px[pi + c] / 255, bl = softLight(b, g[c]);
+        px[pi + c] = Math.min(255, Math.max(0, ((bl * a + b * (1 - a)) * 255) | 0));
+      }
+    }
+    ctx.putImageData(id, 0, 0);
+  }
+
+  // ── Roles de tinta: dos colores, y se renuncia al resto ─────────────────────
+  // Las paletas de hoks son listas planas: no declaran suelo ni tinta. Las
+  // familias de masa (EVOL, HRRS, y PTZD cuando exista) necesitan DOS colores y
+  // renuncian a los demás — un cuerpo de tres colores deja de ser un cuerpo.
+  //
+  // Esto vivía en `evol/algo.js`. Sube aquí porque HRRS es la TERCERA familia que
+  // lo pide, y `ptzd/README.md` ya lo dejó dicho: «No se copia: se sube a
+  // _engine.js. Es la segunda familia que lo pide; la tercera ya sería tarde». El
+  // bug histórico de PLLS —acabados invisibles durante meses, ocho copias
+  // inline— es exactamente esto.
+  //
+  // La pareja se elige por DISTANCIA DE COLOR, no por luminancia. Con luminancia,
+  // las series Itten (cuatro colores entre 0,31 y 0,44 de luma) daban rojo sobre
+  // rojo: son contrastes de TONO, y ahí el ojo lee la figura perfectamente aunque
+  // el valor sea el mismo. Elegido el par, la luminancia sí decide quién es suelo
+  // — el claro, salvo inversión.
+  function dcolor(a, b) {
+    const x = hexToRgb(a), y = hexToRgb(b);
+    return (Math.abs(x[0] - y[0]) + Math.abs(x[1] - y[1]) + Math.abs(x[2] - y[2])) / 765;
+  }
+
+  // Las DOS decisiones de color se tiran aparte del reparto, y SIEMPRE las dos.
+  // Así el stream del RNG no depende de lo que salga, y el reparto puede volver a
+  // calcularse con otra bandera sin mover ni un vértice — que es lo que necesita
+  // el acoplamiento de la inversión de EVOL.
+  function inkDice(rng, pInv) { return { inv: rng.bool(pInv), crudo: rng.bool(0.5) }; }
+
+  function inkRoles(colors, dd) {
+    const uniq = colors.filter((c, i) => colors.indexOf(c) === i);
+    if (uniq.length < 2) return { suelo: uniq[0] || '#e8e2d0', tinta: '#111111', otra: null, inv: false, papel: 'blanco' };
+
+    let a = uniq[0], b = uniq[1], best = -1;
+    for (let i = 0; i < uniq.length; i++) {
+      for (let j = i + 1; j < uniq.length; j++) {
+        const d = dcolor(uniq[i], uniq[j]);
+        if (d > best) { best = d; a = uniq[i]; b = uniq[j]; }
+      }
+    }
+    const claro = luma(a) >= luma(b) ? a : b;
+    const oscuro = claro === a ? b : a;
+    // La inversión —tinta clara sobre suelo oscuro— existe y es minoría. No es un
+    // negativo: es la otra manera de que el vacío tenga borde.
+    const inv = dd.inv;
+    const tinta = inv ? claro : oscuro;
+    let suelo = inv ? oscuro : claro;
+
+    // EL PAPEL. Elegir el par más distante lleva SIEMPRE al blanco, y el blanco no
+    // es el único suelo posible: las referencias de estas familias están sobre
+    // papel crudo —un tono medio y cálido— y ahí la masa negra pesa distinto,
+    // porque el suelo deja de ser ausencia de tinta y se vuelve material. Si la
+    // paleta tiene un tono medio que aguante el contraste, se usa la mitad de las
+    // veces. No es un ajuste: es qué papel se compra.
+    let papel = 'blanco';
+    if (!inv) {
+      const crudos = uniq.filter(c => c !== tinta && luma(c) >= 0.52 && luma(c) <= 0.93
+                                      && dcolor(c, tinta) > 0.42);
+      if (crudos.length && dd.crudo) {
+        // El más oscuro de los crudos: es el que más se aleja del blanco, que es
+        // justo lo que se busca al pedir papel.
+        suelo = crudos.sort((x, y) => luma(x) - luma(y))[0];
+        papel = 'crudo';
+      }
+    }
+
+    // Segunda tinta: un cuerpo entero en otro color. Tiene que sostenerse solo
+    // —contraste contra el suelo Y diferencia con la primera tinta—, si no se lee
+    // como un error de registro en la impresión.
+    const resto = uniq.filter(c => c !== suelo && c !== tinta);
+    const otra = resto.find(c => dcolor(c, suelo) > 0.34 && dcolor(c, tinta) > 0.30) || null;
+
+    // Y la LISTA de tintas extra, para las familias que superponen capas enteras en
+    // vez de teñir un cuerpo: EVOL teje hasta cuatro tramas, cada una con su tinta.
+    //
+    // Va aparte de 'otra' y con umbrales más flojos a propósito. 'otra' pide mucho
+    // contraste porque es UN cuerpo suelto dentro de la masa principal y, si se
+    // parece, se lee como un error de registro. Una capa entera no tiene ese
+    // problema: se sostiene por su propio recorrido, así que admite tintas más
+    // cercanas. Tocar 'otra' para reaprovecharla habría movido la imagen de las
+    // familias que ya la usan, y eso no se hace al subir algo al motor.
+    const otras = [];
+    for (const c of resto.filter(c => dcolor(c, suelo) > 0.24)
+                         .sort((x, y) => dcolor(y, tinta) - dcolor(x, tinta))) {
+      if (dcolor(c, tinta) < 0.22) continue;
+      if (otras.some(q => dcolor(q, c) < 0.24)) continue;   // dos tintas casi iguales son una
+      otras.push(c);
+      if (otras.length === 3) break;
+    }
+    return { suelo, tinta, otra, otras, inv, papel };
+  }
+
+  // ── Paletas: probabilidad ponderada por edad (lo reciente pesa más) ─────────
+  function ageWeight(created) {
+    if (!created || created < 1e12) return 4;
+    const d = (Date.now() - created) / 86400000;
+    return d < 30 ? 4 : d < 90 ? 2 : d < 180 ? 1 : d < 365 ? 0.4 : 0.15;
+  }
+  // ── Fondo: opción transversal del laboratorio ───────────────────────────────
+  // 'solid' o 'gradient' es una decisión que atraviesa TODAS las obras, no un
+  // parámetro de cada una: es lo que antes justificaba una familia "G" aparte. Cada
+  // algoritmo la respeta a su manera; 'auto' = lo que la obra hace por defecto.
+  //   params.bg → 'auto' | 'solid' | 'gradient'
+  function bgMode(params, dflt) {
+    const v = params && params.bg;
+    return (v && v !== 'auto') ? v : (dflt || 'auto');
+  }
+
+  // En 'auto' el fondo es una TIRADA, no una constante: cada obra trae su
+  // tendencia (KRRTK gradiente, DTKRT plano, PLLS a medias) y el laboratorio la
+  // mueve. Un solo porcentaje —el del gradiente— porque solo hay dos salidas y
+  // así el otro es 100−p: no pueden dejar de sumar 100.
+  //   params.bgProbs = { gradient: 0..100 }
+  // Stream propio: elegir el fondo no puede mover la composición, ni siquiera
+  // en las obras donde el sorteo antes no existía.
+  const BG_STREAM = 0x5EEDB6;
+  // Un LCG sembrado y leído UNA vez no sirve para esto: dos seeds contiguas dan
+  // primeras tiradas que difieren en 0,0004, así que un lote entero de seeds
+  // seguidas cae del mismo lado del umbral y el peso no se cumple. Hace falta
+  // avalancha antes de mirar (murmur3 finalizer): así seeds vecinas dan valores
+  // sin relación.
+  function hash01(x) {
+    x = (x ^ 0x9E3779B9) >>> 0;
+    x = Math.imul(x ^ (x >>> 16), 0x85EBCA6B) >>> 0;
+    x = Math.imul(x ^ (x >>> 13), 0xC2B2AE35) >>> 0;
+    return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+  }
+  function pickBg(seed, params, dfltGradientPct) {
+    const v = params && params.bg;
+    if (v === 'solid' || v === 'gradient') return v;
+    const p = (params && params.bgProbs && params.bgProbs.gradient != null)
+      ? params.bgProbs.gradient : (dfltGradientPct == null ? 50 : dfltGradientPct);
+    if (p >= 100) return 'gradient';
+    if (p <= 0) return 'solid';
+    return hash01((seed ^ BG_STREAM) >>> 0) < p / 100 ? 'gradient' : 'solid';
+  }
+
+  // ── Campo: cuadrado inscrito o nativo del pliego ────────────────────────────
+  // El pliego y el campo son dos decisiones distintas. Un campo CUADRADO puede
+  // ir sobre cualquiera de los tres pliegos —un cuadrado centrado en un DIN es
+  // una imagen, no un accidente— pero también tiene que poder existir la obra
+  // compuesta de verdad en vertical u horizontal. Por eso no se deduce del
+  // formato: se elige.
+  //   params.field → 'sheet' (llena el pliego, por defecto) | 'square'
+  function fieldMode(params, dflt) {
+    const v = params && params.field;
+    return (v === 'square' || v === 'sheet') ? v : (dflt || 'sheet');
+  }
+
+  // ── Retículo: el margen es del SISTEMA, no de cada obra ─────────────────────
+  // Cada familia llevaba su propio margen —KRRTK 16,7%, DTKRT 11%, DTK ninguno—
+  // y eso no es una serie, son decisiones sueltas. Un solo número y una sola
+  // regla para todas las que se apoyan en retículo.
+  //
+  // La celda es cuadrada y el margen, igual en los cuatro lados: eso deja de ser
+  // gratis en un pliego DIN. Con n celdas en el lado corto y n+k en el largo, de
+  // S−2m=n·p y L−2m=(n+k)·p sale p=(L−S)/k — el paso lo fija k y el margen es
+  // consecuencia. Se toma la k cuyo margen cae más cerca del objetivo.
+  const FIELD_MARGIN = 0.11;
+  function fieldGrid(W, H, n, opts) {
+    opts = opts || {};
+    const margin = opts.margin == null ? FIELD_MARGIN : opts.margin;
+    const S = Math.min(W, H), L = Math.max(W, H);
+    let pitch, mg, nL;
+    if (L - S < 1 || fieldMode(opts) === 'square') {   // campo cuadrado: el margen ES el objetivo
+      mg = Math.round(S * margin);
+      pitch = (S - mg * 2) / n;
+      nL = n;
+    } else {
+      let best = null;
+      for (let k = 1; k <= 12; k++) {
+        const p = (L - S) / k, m = (S - n * p) / 2;
+        if (m < S * 0.04) continue;                    // sin margen no hay hoja, hay mancha
+        const d = Math.abs(m - S * margin);
+        if (!best || d < best.d) best = { p, m, k, d };
+      }
+      pitch = best.p; mg = best.m; nL = n + best.k;
+    }
+    const cols = W >= H ? nL : n, rows = W >= H ? n : nL;
+    return { pitch, cols, rows, margin: mg, ox: (W - cols * pitch) / 2, oy: (H - rows * pitch) / 2 };
+  }
+
+  function normalizePalettes(pals) {
+    const w = pals.map(p => ageWeight(p.created)), t = w.reduce((a, b) => a + b, 0) || 1;
+    return pals.map((p, i) => ({ ...p, prob: w[i] / t }));
+  }
+  function palRarity(p) { return p > 0.08 ? 'common' : p > 0.03 ? 'uncommon' : p > 0.01 ? 'rare' : p > 0.003 ? 'superrare' : 'legendary'; }
+
+  // Paletas vivas (solo activas) desde data/, con fallback embebido.
+  const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
+  async function loadPalettes() {
+    try {
+      const data = await fetch(RAW + 'palettes.json?t=' + Date.now()).then(r => r.ok ? r.json() : null);
+      const active = (data || []).filter(p => p.active !== false);
+      return normalizePalettes(active.length ? active : DEFAULTS);
+    } catch (e) { return normalizePalettes(DEFAULTS); }
+  }
+
+  // TODAS las paletas (activas + inactivas) — para el laboratorio, donde se prueba con todo.
+  async function loadAllPalettes() {
+    try {
+      const data = await fetch(RAW + 'palettes.json?t=' + Date.now()).then(r => r.ok ? r.json() : null);
+      return normalizePalettes((data && data.length) ? data : DEFAULTS);
+    } catch (e) { return normalizePalettes(DEFAULTS); }
+  }
+
+  // Fallback mínimo para que el laboratorio funcione sin red.
+  const DEFAULTS = [
+    { id: 1,  name: 'Science', colors: ['#ffe819', '#000000'], created: 1 },
+    { id: 7,  name: 'Troll',   colors: ['#294984', '#6ca0a7', '#ffc789', '#df5f50', '#5a3034', '#fff1dd'], created: 7 },
+    { id: 22, name: 'Homage',  colors: ['#fef9c6', '#ffcc4d', '#f5b800', '#56a1c4', '#4464a1', '#ee726b', '#df5f50', '#5a3034'], created: 22 },
+    { id: 28, name: 'Poet',    colors: ['#f4f3ed', '#efc807', '#ed5d53', '#e2dbb5', '#45291c', '#080b0f'], created: 28 },
+    { id: 31, name: 'Itten I', colors: ['#e8b84b', '#9b7fb6', '#7a6b8a', '#c9a227'], created: 31 },
+  ];
+
+  // ── Formato de lienzo ───────────────────────────────────────────────────────
+  // Toda obra puede darse en tres proporciones: cuadrado (1:1) y las dos DIN
+  // (1:√2, vertical y horizontal). El pliego (A4…A1) fija el tamaño físico; el
+  // cuadrado toma el lado CORTO del pliego, así siempre cabe en la hoja.
+  //
+  // La proporción es del ALGORITMO, no del lienzo: los algoritmos trabajan sobre
+  // W y H, así que la misma seed en el mismo formato da la misma imagen a
+  // cualquier resolución — lo que ves en pantalla es lo que se imprime.
+  const SQRT2 = Math.SQRT2;
+  // Vertical y horizontal son la MISMA obra girada: mismo paso, mismo margen,
+  // filas y columnas intercambiadas. Tener los dos no ampliaba el catálogo, solo
+  // repartía las seeds entre dos orientaciones del mismo pliego. Se genera en
+  // horizontal y se decide en la pared; el laboratorio gira la vista para poder
+  // juzgarlo de pie. fmtDims sigue entendiendo 'vertical' porque hay recetas
+  // guardadas que lo dicen.
+  // Dos listas distintas, y la diferencia importa: ALL_FORMATS es el CATÁLOGO
+  // —todo lo que el motor sabe medir— y FORMATS es lo que una obra ofrece si no
+  // dice otra cosa. Una familia puede existir en una sola proporción: ECLPS es
+  // una fila, y en cuadrado no es la misma obra más corta, es otra. Lo que cada
+  // una habilita se declara en su algo.js (FORMATS) y lo puede cambiar el panel
+  // por works.json, sin tocar código.
+  const ALL_FORMATS = ['square', 'horizontal', 'double'];
+  const FORMATS = ['square', 'horizontal'];
+  // 'double' = dos pliegos apaisados uno al lado del otro (2√2 : 1). Es la única
+  // proporción de la tabla que NO es un DIN, y por eso no se ofrece por defecto:
+  // se imprime en dos hojas, no en una.
+  function formatsFor(work, worksData) {
+    const w = Array.isArray(worksData) ? worksData.find(x => x && x.slug === work) : null;
+    const list = (w && Array.isArray(w.formats) ? w.formats : []).filter(f => ALL_FORMATS.indexOf(f) >= 0);
+    return list.length ? list : null;   // null = que decida quien pregunta
+  }
+  const SHEETS = {            // lado corto × lado largo, en mm
+    A4: [210, 297], A3: [297, 420], A2: [420, 594], A1: [594, 841], A0: [841, 1189],
+  };
+  // A0 está en la tabla porque el MURO tiene que poder medirlo —es 1 m² exacto,
+  // por definición de la serie— pero NO en SHEET_IDS, que es lo que el lote
+  // exporta: a 300 dpi un A0 horizontal son 14043×9933 px, 139,5 Mpx y 532 MB de
+  // lienzo. Sale en Chromium, pero queda por encima del techo de área de canvas
+  // de otros navegadores, así que exportarlo pide antes decidir su dpi (a 150
+  // son 34,9 Mpx y no se nota a esa distancia de lectura). Mirarlo es gratis;
+  // imprimirlo, no.
+  const SHEET_IDS = ['A4', 'A3', 'A2', 'A1'];                    // los que exporta el lote
+  const WALL_SHEET_IDS = ['A4', 'A3', 'A2', 'A1', 'A0'];         // los que enseña el muro
+  const DEFAULT_SHEET = 'A3', DPI = 300;
+  const PREVIEW_SHORT = 760;  // lado corto en pantalla (y de lo que se guarda)
+
+  function fmtDims(fmt, shortSide) {
+    const s = Math.round(shortSide), l = Math.round(s * SQRT2);
+    if (fmt === 'vertical')   return { W: s, H: l };
+    if (fmt === 'horizontal') return { W: l, H: s };
+    if (fmt === 'double')     return { W: l * 2, H: s };
+    return { W: s, H: s };
+  }
+  function previewDims(fmt) { return fmtDims(fmt, PREVIEW_SHORT); }
+  // La proporción NOMINAL del formato más cercano. Una obra que toma decisiones
+  // ENTERAS a partir de la proporción (cuántos elementos caben) no puede leerla
+  // en píxeles: 4961×3508 (A3 horizontal) y 9933×7016 (A1 horizontal) son el
+  // MISMO formato, pero sus cocientes son 1,4142 y 1,4158 porque los milímetros
+  // DIN están redondeados — y esa diferencia basta para cruzar un Math.round y
+  // que la pieza cambie de un pliego a otro. Se lee el formato, no el lienzo.
+  function nominalAspect(W, H) {
+    const a = W / Math.min(W, H);
+    let best = 1, dist = Infinity;
+    for (const f of ALL_FORMATS) {
+      const d = fmtDims(f, 1e6), na = d.W / Math.min(d.W, d.H), e = Math.abs(a - na);
+      if (e < dist) { dist = e; best = na; }
+    }
+    return best;
+  }
+  // Los pliegos que se pueden EXPORTAR dependen del formato, porque el área sí:
+  // 'double' dobla el ancho, así que un A1 doble son 19866×7016 = 139,4 Mpx —
+  // exactamente el A0 que ya está excluido por esa misma razón. Se corta ahí.
+  function sheetIdsFor(fmt) { return fmt === 'double' ? SHEET_IDS.filter(id => id !== 'A1') : SHEET_IDS; }
+  function printDims(fmt, sheet, dpi) {
+    dpi = dpi || DPI;
+    // Un pliego que no esté en la tabla NO puede caer al de por defecto en
+    // silencio: se exportarían A3 con nombre de otra cosa. Se avisa y se sigue.
+    if (!SHEETS[sheet]) console.warn(`[hoks] pliego desconocido "${sheet}" → se usa ${DEFAULT_SHEET}`);
+    const mm = SHEETS[sheet] || SHEETS[DEFAULT_SHEET];
+    const sPx = Math.round(mm[0] / 25.4 * dpi), lPx = Math.round(mm[1] / 25.4 * dpi);
+    if (fmt === 'square')   return { W: sPx, H: sPx, mm: [mm[0], mm[0]], dpi };
+    if (fmt === 'vertical') return { W: sPx, H: lPx, mm: [mm[0], mm[1]], dpi };
+    // 'double' son DOS pliegos apaisados pegados: 2×420 mm de ancho en A3.
+    if (fmt === 'double')   return { W: lPx * 2, H: sPx, mm: [mm[1] * 2, mm[0]], dpi, sheets: 2 };
+    return { W: lPx, H: sPx, mm: [mm[1], mm[0]], dpi };
+  }
+  // Unidad de escala de la obra: cuánto mide este lienzo respecto al de
+  // referencia. Multiplica las constantes en píxeles absolutas de cada algoritmo.
+  function unit(W, H, ref) { return Math.min(W, H) / (ref || PREVIEW_SHORT); }
+
+  function lsGet(k, dflt) { try { return localStorage.getItem(k) || dflt; } catch (e) { return dflt; } }
+  function lsSet(k, v)    { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  const FMT_CSS = `
+.hoks-fmt { display:flex; gap:4px; }
+.hoks-fmt-btn {
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:5px;
+  font-family:'Courier New',Courier,monospace; font-size:8px; font-weight:700;
+  letter-spacing:0.08em; text-transform:uppercase; color:#bbb;
+  background:transparent; border:1px solid #e8e8e8; border-radius:2px;
+  padding:8px 2px 6px; cursor:pointer; transition:border-color .15s, color .15s;
+}
+.hoks-fmt-btn:hover { border-color:#d0d0d0; color:#111; }
+.hoks-fmt-btn.on { border-color:#111; color:#111; }
+.hoks-fmt-ico { border:1.5px solid currentColor; display:block; }
+.hoks-fmt-sel {
+  font-family:'Courier New',Courier,monospace; font-size:10px; letter-spacing:0.06em;
+  text-transform:uppercase; padding:6px 8px; width:100%; color:#111;
+  background:#f7f7f7; border:1px solid #e8e8e8; border-radius:2px; cursor:pointer;
+}
+.hoks-fmt-note { font-size:8px; color:#bbb; letter-spacing:0.06em; line-height:1.6; }
+`;
+  function injectFmtCss() {
+    if (typeof document === 'undefined' || document.getElementById('hoks-fmt-css')) return;
+    const s = document.createElement('style'); s.id = 'hoks-fmt-css'; s.textContent = FMT_CSS;
+    document.head.appendChild(s);
+  }
+
+  const ICO = { square: [15, 15], vertical: [12, 17], horizontal: [17, 12], double: [24, 9] };
+
+  // Control de formato + pliego de impresión para la barra lateral de una obra.
+  //   mountFormat(el, { work:'plls', onChange(fmt){…} }) → { format, sheet, … }
+  function mountFormat(el, opts) {
+    opts = opts || {};
+    const work = opts.work || 'hoks';
+    const kF = 'hoks-fmt-' + work, kS = 'hoks-sheet-' + work;
+    const T = k => (global.HOKSI18N ? global.HOKSI18N.t(k) : k);
+    injectFmtCss();
+
+    // La obra puede ofrecer solo algunos formatos; si no dice nada, los de siempre.
+    const fmts = (Array.isArray(opts.formats) && opts.formats.length) ? opts.formats : FORMATS;
+    let format = opts.format || lsGet(kF, opts.defaultFormat || fmts[0]);
+    if (fmts.indexOf(format) < 0) format = fmts[0];
+    const sheets = sheetIdsFor(format);
+    let sheet = lsGet(kS, opts.defaultSheet || DEFAULT_SHEET);
+    if (sheets.indexOf(sheet) < 0) sheet = sheets.indexOf(DEFAULT_SHEET) >= 0 ? DEFAULT_SHEET : sheets[0];
+
+    el.innerHTML =
+      `<div class="sidebar-label" data-i18n="label.format">${T('label.format')}</div>` +
+      `<div class="hoks-fmt">` + fmts.map(f =>
+        `<button type="button" class="hoks-fmt-btn" data-fmt="${f}">` +
+        `<span class="hoks-fmt-ico" style="width:${ICO[f][0]}px;height:${ICO[f][1]}px"></span>` +
+        `<span data-i18n="format.${f}">${T('format.' + f)}</span></button>`).join('') + `</div>` +
+      `<div class="sidebar-label" style="margin-top:6px" data-i18n="label.print">${T('label.print')}</div>` +
+      `<select class="hoks-fmt-sel" data-role="sheet">` +
+        SHEET_IDS.map(s => `<option value="${s}">${s}</option>`).join('') + `</select>` +
+      `<div class="hoks-fmt-note" data-role="note"></div>`;
+
+    const note = el.querySelector('[data-role=note]'), sel = el.querySelector('[data-role=sheet]');
+    sel.value = sheet;
+
+    function paint() {
+      el.querySelectorAll('.hoks-fmt-btn').forEach(b => b.classList.toggle('on', b.dataset.fmt === format));
+      const d = printDims(format, sheet);
+      note.textContent = `${d.mm[0]} × ${d.mm[1]} mm · ${d.W} × ${d.H} px · ${d.dpi} dpi`;
+    }
+    el.querySelectorAll('.hoks-fmt-btn').forEach(b => b.addEventListener('click', () => {
+      if (b.dataset.fmt === format) return;
+      format = b.dataset.fmt; lsSet(kF, format); paint();
+      if (opts.onChange) opts.onChange(format);
+    }));
+    sel.addEventListener('change', () => { sheet = sel.value; lsSet(kS, sheet); paint(); });
+    if (typeof window !== 'undefined') window.addEventListener('hoks:langchange', paint);
+    paint();
+
+    return {
+      get format() { return format; },
+      get sheet()  { return sheet; },
+      preview() { return previewDims(format); },
+      print()   { return printDims(format, sheet); },
+    };
+  }
+
+  // Render fuera de pantalla al tamaño de impresión y descarga como PNG.
+  //   exportPrint({ name, fmt, sheet, render(ctx, W, H) })
+  function exportPrint(o) {
+    const d = printDims(o.fmt, o.sheet, o.dpi);
+    const cv = document.createElement('canvas');
+    cv.width = d.W; cv.height = d.H;
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    o.render(ctx, d.W, d.H);
+    // Safari (y móviles) devuelven un lienzo vacío por encima de su límite de
+    // área: el fondo siempre se pinta opaco, así que un píxel transparente = fallo.
+    let ok = true;
+    try { ok = ctx.getImageData(0, 0, 1, 1).data[3] > 0; } catch (e) {}
+    if (!ok) { cv.width = cv.height = 0; return Promise.reject(new Error('canvas-too-large')); }
+    return new Promise(res => cv.toBlob(b => {
+      const url = URL.createObjectURL(b), a = document.createElement('a');
+      a.download = `${o.name}.png`; a.href = url; a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); cv.width = cv.height = 0; }, 4000);
+      res(d);
+    }, 'image/png'));
+  }
+
+  global.HOKS = {
+    Rng, hexToRgb, luma, lerpColor, softLight,
+    drawMeshGradient, bakeGrain, applyGrain, grain, bgMode, pickBg, hash01, fieldMode, fieldGrid, FIELD_MARGIN,
+    dcolor, inkDice, inkRoles,
+    ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
+    FORMATS, ALL_FORMATS, formatsFor, SHEETS, SHEET_IDS, sheetIdsFor, WALL_SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,
+    fmtDims, previewDims, printDims, nominalAspect, unit, mountFormat, exportPrint,
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
