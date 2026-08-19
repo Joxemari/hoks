@@ -94,23 +94,52 @@ function largoDe(p) {
 // Lo que eso dice del cuadro: EL CANAL NO ES CONSTANTE. La banda lo es y el canal se estrecha
 // donde dos trazos se juntan. Nuestro modelo suponía separación = banda + canal en todas partes,
 // y no: la separación varía y el canal la absorbe.
-function huecosPares(trazos) {
+// Y NO CUENTAN LOS ENCUENTROS DE CABOS, que es lo que estaba inflando todos los canales de la
+// familia. El hueco de un par lo daba su punto más apretado, y el más apretado suele ser un cabo
+// que muere contra el otro trazo: por medida eso va a UNA anchura eje a eje, más cerca que una
+// paralela, que va a 1,22. Así que un encuentro de cabos arrastraba el percentil, la banda de la
+// obra entera se adelgazaba para caber en él, y donde los trazos de verdad se acompañan quedaba un
+// canal de 0,49 anchuras en vez de 0,22 — el doble, y variando de 0,18 a 0,5 a lo largo del par.
+// Eso es lo que él ve como «márgenes cambiantes» y «mal paralelizados».
+//
+// Un cabo y una paralela son dos relaciones distintas con dos distancias distintas medidas. La
+// densidad la tiene que poner la del acompañamiento, así que los tramos que están a menos de 1,5
+// anchuras nominales de un cabo no entran en la cuenta.
+function huecosPares(trazos, Wnom) {
   const hs = [];
+  const cerca = Wnom ? Wnom * 1.5 : 0;
   for (let k = 0; k < trazos.length; k++)
     for (let j = k + 1; j < trazos.length; j++) {
+      const A = trazos[k], B = trazos[j];
       let m = Infinity;
-      for (let i = 0; i < trazos[k].length - 1; i++)
-        for (let q = 0; q < trazos[j].length - 1; q++) {
-          const d = distTramos(trazos[k][i], trazos[k][i + 1], trazos[j][q], trazos[j][q + 1]);
+      for (let i = 0; i < A.length - 1; i++) {
+        if (cerca && (i < 2 || i > A.length - 4)) continue;      // cabo de A
+        for (let q = 0; q < B.length - 1; q++) {
+          if (cerca && (q < 2 || q > B.length - 4)) continue;    // cabo de B
+          const d = distTramos(A[i], A[i + 1], B[q], B[q + 1]);
           if (d < m) m = d;
         }
+      }
       if (isFinite(m)) hs.push(m);
     }
   hs.sort((a, b) => a - b);
   return hs;
 }
 const percentil = (hs, q) => hs.length ? hs[Math.min(hs.length - 1, Math.floor(q * hs.length))] : 0;
-function huecoMinimo(trazos) { const h = huecosPares(trazos); return h.length ? h[0] : Infinity; }
+// EL SUELO TAMPOCO MIDE BIEN LOS CABOS, y es esto lo que estaba inflando los canales de toda la
+// familia. El suelo coge el hueco MÍNIMO entre pares y corta la banda para que ahí quepa el canal.
+// Pero el mínimo casi siempre lo pone un encuentro de cabos, y en un encuentro de cabos las dos
+// bandas se enfrentan DE PUNTA: cada una acaba ahí, así que no hace falta canal de costado entre
+// ellas. Midiéndolas como si corrieran de costado, la obra entera adelgazaba para dejar un hueco
+// que no hacía falta, y donde los trazos de verdad se acompañan el canal salía 0,49 anchuras en vez
+// de 0,22 — el doble. «Márgenes cambiantes», «mal paralelizados».
+//
+// Los cabos ya tienen su propia distancia, medida y aplicada aparte: el remate los deja a una
+// anchura del eje del vecino. Aquí sólo entra lo que corre de costado.
+function huecoMinimo(trazos, Wnom) {
+  const h = huecosPares(trazos, Wnom);
+  return h.length ? h[0] : Infinity;
+}
 
 // EL HUECO DE UN TRAZO CONSIGO MISMO. `huecosPares` sólo compara trazos DISTINTOS, así que la
 // derivación de la densidad —la banda se corta al hueco que dejó la composición— nunca miraba los
@@ -722,7 +751,16 @@ function circuito(seed, opt) {
         const padre = trazos[rng.bool(0.45) ? 0 : rng.int(0, trazos.length - 1)];
         if (padre.length < 3) continue;
         const lado = rng.bool(0.5) ? 1 : -1;
-        const cuantos = Math.max(2, Math.round((padre.length - 1) * rng.range(0.45, 1.0)));
+        // LA PARALELA ACOMPAÑA CASI TODO EL PADRE, no la mitad. Medido como él lo dice —rachas de
+        // acompañamiento CONTINUO, no puntos con alguien cerca— las seis corren de 1,4 a 4,5
+        // anchuras de mediana y hasta 9 o 10 en el p90; nosotros íbamos a 0,7. «Mal paralelizados»,
+        // «mal relacionados», «márgenes cambiantes»: catorce de sus dieciocho notas.
+        //
+        // Con 0,45 la paralela cubría media longitud del padre y la racha salía corta. Con 0,85 la
+        // mediana sube a 1,4 y el p90 a 5,6, dentro de su rango. Probado también subir la cuota de
+        // paralelas del 44 al 62 %: EMPEORA (0,7), porque más paralelas compitiendo por el mismo
+        // carril se estorban y salen más cortas.
+        const cuantos = Math.max(2, Math.round((padre.length - 1) * rng.range(1.0, 1.0)));
         const desde = rng.int(0, Math.max(0, padre.length - 1 - cuantos));
         const pts = offsetDe(padre, lado, desde, cuantos);
         let ok = pts.length >= 2 && largoDe(pts) > PASO * 1.4;
@@ -1267,7 +1305,7 @@ function circuito(seed, opt) {
   // una cuarta parte de los pares, esos pocos se separan a mano —un puñado de vértices, no la
   // obra— para que la regla de no fundir siga cumpliéndose. Es una reparación LOCAL: la autopsia
   // condenó los martillos globales, no arreglar tres sitios que se sabe cuáles son.
-  const hs0 = huecosPares(trazos);
+  const hs0 = huecosPares(trazos, W_NOM);
   // LA BANDA NO PUEDE SER MÁS ANCHA QUE LA SEPARACIÓN CON LA QUE SE COMPUSO. El tope estaba en
   // 0,098 —casi una décima del pliego— y cuando la composición queda holgada el percentil 25 llega
   // hasta ahí: una obra de trece trazos salía como un RECTÁNGULO NEGRO, la hoja entera de tinta.
@@ -1363,7 +1401,7 @@ function circuito(seed, opt) {
     // Un pliegue es asunto DE SU TRAZO, así que lo trata el relleno, que mira punto a punto y sólo
     // adelgaza la banda donde el pliegue aprieta. Lo global es para trazos distintos, donde la
     // banda entera tiene que caber entre dos ejes.
-    W = Math.min(W, huecoMinimo(trazos) / (1 + CANAL));
+    W = Math.min(W, huecoMinimo(trazos, W_NOM) / (1 + CANAL));
   }
   const hueco = huecoMinimo(trazos);
 
