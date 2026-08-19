@@ -50,6 +50,18 @@
   // A 0,018 son medio píxel en un disco de treinta: se lee como carácter y no
   // como forma, que es justo lo que se pide.
   const DISCO_MANO = 0.018;
+  /* Y LA CINTA NO VA SIEMPRE CONTRA EL MÁXIMO CONTRASTE. Cogiendo siempre el
+   * extremo, la paleta deja de tener obra: gana la misma pareja en todas las
+   * tiradas y quince paletas se leen como cuatro. El contraste de la cinta
+   * contra el suelo es un DIAL y no una constante — del máximo, que grita, al
+   * cero, que es el fantasma y necesita halo, pasando por el medio, que es
+   * donde está la sorpresa. Una de cada cuatro baja del extremo.
+   *
+   * El suelo del dial no es capricho: por debajo de esta distancia la cinta ya
+   * no se sostiene contra el fondo y habría que darle halo, y entonces no es
+   * una cinta de contraste medio — es un fantasma a medias, que es lo peor de
+   * los dos. O se baja del todo o se para aquí. */
+  const SORPRESA_PROB = 0.26, CINTA_MIN_DIST = 0.30;
 
   // ── Aritmética ────────────────────────────────────────────────────────────
   // Los nombres cortos son los de p5 a propósito: el algoritmo viene de ahí y
@@ -157,9 +169,10 @@
   // de la obra y el triaje lo necesita para poder decir "descartas las
   // Mondrian". Perdiéndolo aquí, ese patrón no se puede ni buscar.
 
-  function pickRoles(colors) {
+  let cfgDial = 'auto';
+  function pickRoles(colors, rngColor) {
     const cols = colors.slice().sort((a, b) => lum(a) - lum(b));
-    if (cols.length < 2) return { bg: cols[0] || BG, fg: FG, fg2: FG2, dot: DOT };
+    if (cols.length < 2) return { bg: cols[0] || BG, fg: FG, fg2: FG2, dot: DOT, filo: FG };
 
     // fondo: uno de los dos extremos. El oscuro pesa más — es la
     // dirección en la que esta obra respira mejor.
@@ -168,7 +181,31 @@
     const resto = cols.filter(c => c !== bg);
 
     const porContraste = resto.slice().sort((a, b) => abs(lum(b) - lum(bg)) - abs(lum(a) - lum(bg)));
-    const fg = porContraste[0];
+
+    /* EL FILO: el color de la paleta que más se aparta del suelo. Es lo que se
+     * pinta cuando el halo tiene que separar una cinta del fondo y no sólo de
+     * otra hebra — el caso del fantasma. Antes ahí se fabricaba un tono corrido,
+     * el fondo mezclado hacia el negro o el blanco puros, y eso tiene dos
+     * problemas: no es máximo contraste, es un término medio; y **no es un color
+     * de la paleta**, así que la obra sacaba de la nada un color que la serie no
+     * tiene. Es la misma lección que la segunda cinta ya había aprendido —no
+     * mezclar hacia el extremo— pero el halo se había quedado con la costumbre
+     * vieja. Si la cinta va a ser del color del suelo, lo que la dibuja tiene que
+     * ser lo más lejos que la paleta llegue. */
+    const filo = resto.slice().sort((a, b) => dcolor(b, bg) - dcolor(a, bg))[0]
+              || mixHex(bg, lum(bg) > 0.5 ? '#000000' : '#ffffff', 0.42);
+
+    // La cinta, con su propio azar: una decisión más en el stream principal
+    // correría la geometría de todas las obras ya vistas.
+    let fg = porContraste[0];
+    // El laboratorio puede fijar el dial para poder verlo: `maximo` deja la
+    // cinta siempre en el extremo (lo de antes), `medio` la baja siempre.
+    const dial = (typeof cfgDial === 'string') ? cfgDial : 'auto';
+    if (dial !== 'maximo' && rngColor && porContraste.length > 2
+        && (dial === 'medio' || rngColor.next() < SORPRESA_PROB)) {
+      const medias = porContraste.slice(1).filter(c => dcolor(c, bg) >= CINTA_MIN_DIST);
+      if (medias.length) fg = medias[floor((dial === 'medio' ? 0 : rngColor.next()) * medias.length)];
+    }
 
     // el disco quiere separarse del fondo Y de la cinta
     const dot = porContraste.length > 1
@@ -213,7 +250,7 @@
     let dots = porContraste.filter(c => c !== fg);
     if (!dots.length) dots = [mixHex(fg, oscuro ? '#ffffff' : '#000000', 0.55)];
 
-    return { bg, fg, fg2, fg3, dot, dots };
+    return { bg, fg, fg2, fg3, dot, dots, filo };
   }
 
   // Tres grosores fijos en vez de un slider continuo: el estándar
@@ -473,7 +510,8 @@
               ? cfg.paletas[cfg.lockedIdx]
               : (cfg.paletas && cfg.paletas.length ? rng.weighted(cfg.paletas)
                                                    : { colors: PALETA_BASE, name: "base", prob: 0.05 });
-    const colores = pickRoles(pal.colors);
+    cfgDial = (cfg.dial && cfg.dial !== 'auto') ? cfg.dial : 'auto';
+    const colores = pickRoles(pal.colors, new E.Rng((seed ^ 0x50A17A) >>> 0));
     // Con su propio azar, como la esquina y el remate: una decisión más en el
     // stream principal correría todas las obras ya vistas.
     // El valor se lee, no se convierte a booleano a lo bruto: quien llama a
@@ -1913,7 +1951,7 @@
       const t = tintaDe(k);
       if (typeof t !== 'string') return col.bg;         // tinta en degradado
       if (dcolor(t, col.bg) >= HALO_MIN_DIST) return col.bg;
-      return mixHex(col.bg, lum(col.bg) > 0.5 ? '#000000' : '#ffffff', 0.42);
+      return col.filo || mixHex(col.bg, lum(col.bg) > 0.5 ? '#000000' : '#ffffff', 0.42);
     };
     // Y si alguna cinta lo necesita, el fondo en degradado deja de poder
     // RECORTAR: recortar enseña el suelo, y el problema es justo que el suelo y
@@ -2978,6 +3016,7 @@
     if (params.ends === 'redondos' && (!params.corner || params.corner === 'auto'))
       cfg.corner = 'curvas';
     if (params.fantasma && params.fantasma !== 'auto') cfg.fantasma = params.fantasma;
+    if (params.dial && params.dial !== 'auto') cfg.dial = params.dial;
     if (params.dots && params.dots !== 'auto') cfg.dots = params.dots;
     if (params.reintentos) cfg.reintentos = params.reintentos | 0;
 

@@ -36,9 +36,18 @@ window.costuras = (seed, pals, extra) => {
   // fondo por `bg` se encuentra la cinta entera. Ese 3,5% de obras estaba
   // excluido de la bateria por eso.
   const mismo = (a,b) => String(a).toLowerCase() === String(b).toLowerCase();
-  const bgEsTinta = (rr0.tintas||[]).some(t => mismo(t, c.colores.bg));
+  // Y LA REGLA VA EN LOS DOS SENTIDOS: un tono de corte sólo cuenta como corte
+  // si NO es tinta de nadie. Desde que el halo del fantasma sale de la paleta
+  // —`filo`, el color más lejano al suelo— ese tono es en casi todas el mismo
+  // hex que `fg`. Con una sola cinta no colisiona, porque la fantasma es la
+  // única que se pinta; con dos, aceptarlo a ciegas convertiría el CUERPO de la
+  // otra cinta en corte, y el detector se quedaría ciego justo donde hay algo
+  // que mirar — pareciendo que aprueba, que es la forma peligrosa de fallar.
+  // Es la misma asimetría que ya se le aplica al fondo, por el otro lado.
+  const esTintaDe = (col) => (rr0.tintas||[]).some(t => mismo(t, col));
   const TINTAS = (rr0.tintas||[]).filter(t => typeof t === 'string').map(hex);
-  const CORTES = (rr0.halos||[]).map(hex).concat(bgEsTinta ? [] : [B]);
+  const CORTES = (rr0.halos||[]).filter(h => !esTintaDe(h)).map(hex)
+                   .concat(esTintaDe(c.colores.bg) ? [] : [B]);
   const esTinta = i => TINTAS.some(C => cerca(i,C,30)) ||
                        cerca(i,F,30) || (dosCintas && cerca(i,F2,30));
   const esFondo = i => CORTES.some(C => cerca(i,C,30));

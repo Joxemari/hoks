@@ -20,8 +20,17 @@ window.otros = (seed, pals, extra) => {
   // pregunta en vez de suponer, que es lo unico que permite medir el 3,5% de
   // obras que estaban excluidas de la bateria entera.
   const mismo = (a,b) => String(a).toLowerCase() === String(b).toLowerCase();
-  const bgEsTinta = (r.tintas||[]).some(t => mismo(t, c.colores.bg));
-  const CORTES = (r.halos||[]).map(hex).concat(bgEsTinta ? [] : [hex(c.colores.bg)]);
+  // Y LA REGLA VA EN LOS DOS SENTIDOS: un tono de corte sólo cuenta como corte
+  // si NO es tinta de nadie. Desde que el halo del fantasma sale de la paleta
+  // —`filo`, el color más lejano al suelo— ese tono es en casi todas el mismo
+  // hex que `fg`. Con una sola cinta no colisiona, porque la fantasma es la
+  // única que se pinta; con dos, aceptarlo a ciegas convertiría el CUERPO de la
+  // otra cinta en corte, y el detector se quedaría ciego justo donde hay algo
+  // que mirar — pareciendo que aprueba, que es la forma peligrosa de fallar.
+  // Es la misma asimetría que ya se le aplica al fondo, por el otro lado.
+  const esTintaDe = (col) => (r.tintas||[]).some(t => mismo(t, col));
+  const CORTES = (r.halos||[]).filter(h => !esTintaDe(h)).map(hex)
+                   .concat(esTintaDe(c.colores.bg) ? [] : [hex(c.colores.bg)]);
   const dCol = (px,i,C) => Math.abs(px[i]-C[0])+Math.abs(px[i+1]-C[1])+Math.abs(px[i+2]-C[2]);
 
   // Los remates se miden SIN DISCOS. El detector busca tinta más allá del

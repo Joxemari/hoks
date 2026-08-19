@@ -64,9 +64,12 @@ elif roto == 'sueloigual':
     # halo aparece a lo largo de todo el cuerpo, porque por la vía normal el
     # caso no se alcanza — y un arreglo que no se puede ver disparar no está
     # comprobado, está escrito.
-    a = "    return { bg, fg, fg2, fg3, dot, dots };"
-    assert a in src
-    src = src.replace(a, "    return { bg, fg, fg2: bg, fg3, dot, dots };   // ROTO A PROPOSITO")
+    # Por patron: este return ya ha crecido una vez —`filo` llego con el halo
+    # sacado de la paleta— y el control dejo de construirse entero.
+    m5 = re.search(r'^( *)return \{ bg, fg, fg2(, [a-z0-9]+)* \};$', src, re.M)
+    assert m5, 'no encuentro el return de pickRoles'
+    src = src.replace(m5.group(0), m5.group(0).replace('fg2', 'fg2: bg', 1)
+                      + '   // ROTO A PROPOSITO')
 elif roto == 'costura':
     # El cuerpo vuelve a acabar a ras del halo, que es de donde salía la raya
     # de 1 px. Es el control del bloque de costuras: sin él, su cero no dice
