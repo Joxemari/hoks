@@ -18,9 +18,8 @@
       radial-gradient(120% 90% at 70% 20%, #23324a 0%, #141b28 55%, #0c0c0c 100%); }
     .pill{ position:absolute; border-radius:999px; filter:saturate(.9); }
     .plate{ position:absolute; right:24px; top:22px; font-family:var(--mono); font-size:11px; letter-spacing:.05em; color:#fff; background:rgba(10,10,10,.42); padding:6px 10px; border-radius:7px; }
-    .logo{ position:absolute; left:50%; top:46%; transform:translate(-50%,-50%); font-weight:700; font-size:150px; letter-spacing:.02em; color:var(--acid); text-transform:lowercase; text-shadow:0 10px 46px rgba(0,0,0,.5); }
-    .enter{ position:absolute; left:50%; top:70%; transform:translateX(-50%); font-family:var(--mono); font-size:12px; letter-spacing:.42em; text-transform:uppercase; color:#fff; opacity:.9; }
-    .tag{ position:absolute; left:0; right:0; bottom:26px; text-align:center; font-family:var(--mono); font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:rgba(255,255,255,.4); }
+    .logo{ position:absolute; left:50%; top:44%; transform:translate(-50%,-50%); width:200px; height:364px; background:var(--acid); -webkit-mask:url("logo_tall.png") center/contain no-repeat; mask:url("logo_tall.png") center/contain no-repeat; filter:drop-shadow(0 10px 46px rgba(0,0,0,.5)); }
+    .enter{ position:absolute; left:50%; top:82%; transform:translateX(-50%); font-family:var(--mono); font-size:12px; letter-spacing:.42em; text-transform:uppercase; color:#fff; opacity:.9; }
   </style>
 </helmet>
 <div class="stage">
@@ -31,9 +30,8 @@
     <div class="pill" style="width:150px;height:150px;left:980px;top:150px;background:#e9e3d4"></div>
   </div>
   <div class="plate">hoks · PLLS · #83404 · 1/1</div>
-  <div class="logo">hoks</div>
+  <div class="logo"></div>
   <div class="enter">click to enter ▸</div>
-  <div class="tag">the work paints itself · then it tunes in · one click enters</div>
 </div>
 </x-dc>
 <script data-dc-script data-props='{}'>
