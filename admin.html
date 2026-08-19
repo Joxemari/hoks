@@ -532,7 +532,14 @@ ${GRADUATED.includes(w.slug)?`
 async function toggleWork(i, val) {
   const name = works[i].name;
   works[i].active = val;
-  if (await saveWorks()) toast(name + (val ? ' activated' : ' deactivated'));
+  // Al activar, si la familia aún no tiene año de creación se pide: dejar de
+  // estar "en curso" es justo esto. (Mismo gesto que el botón del lab.)
+  if (val && !works[i].year) {
+    const y = prompt('Año de creación de ' + name + ' (se muestra bajo el nombre):', String(new Date().getFullYear()));
+    const yi = parseInt(y, 10);
+    if (yi >= 2000 && yi <= 2099) works[i].year = yi;
+  }
+  if (await saveWorks()) { renderWorks(); toast(name + (val ? ' activated' : ' deactivated')); }
 }
 // Año de creación de la familia. Las familias en curso no lo llevan; se rellena
 // aquí al lanzar/activar y la página de obra lo muestra bajo el nombre.

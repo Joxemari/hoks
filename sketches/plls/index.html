@@ -164,7 +164,7 @@
       <!-- El muro es una VISTA, no un parámetro: se va a su página y no engorda
            el panel con mandos que no cambian la obra, solo cómo se mira. -->
       <div id="wallLink"></div>
-      <button id="launch" title="Activa esta obra en works.json (requiere sesión admin)">▲ Lanzar a producción</button>
+      <button id="launch" title="Enciende la familia en la web (works.json active) y le pone año si no lo tiene. NO publica obra — eso es publicar el lote. Requiere sesión admin.">▲ Lanzar a producción</button>
       <span class="hintline" id="launchMsg"></span>
     </div>
 
@@ -478,11 +478,30 @@ document.addEventListener('keydown', e => {
 
 // ── LANZAR A PRODUCCIÓN ──
 $('launch').onclick = launchToProduction;
+// Lanzar = ACTIVAR: solo enciende la familia en la web (works.json active). No
+// publica obra — eso es publicar el lote. Por eso aquí: (1) si no hay lote
+// publicado avisa de que se verá como SOON, y (2) si la familia aún no tiene
+// año de creación lo pide al activar, que es cuando deja de estar "en curso".
 async function launchToProduction() {
   const msg = t => { $('launchMsg').textContent = t; };
   const token = localStorage.getItem('hoks-gh-token');
   const isAdmin = sessionStorage.getItem('hoks-admin-session') === '1' || localStorage.getItem('hoks-admin-session') === '1';
   if (!isAdmin || !token) { msg('⚠ Requiere sesión admin con token — entra en /admin.html.'); return; }
+
+  // ¿Hay lote publicado? Activar sin obra deja la sección como SOON.
+  msg('Comprobando galería…');
+  let count = 0;
+  try {
+    const g = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/${WORK_SLUG}.json?t=` + Date.now());
+    if (g.ok) { const arr = await g.json(); count = Array.isArray(arr) ? arr.length : 0; }
+  } catch (e) {}
+  if (count === 0 && !confirm(
+      WORK_SLUG.toUpperCase() + ' no tiene ningún lote publicado todavía.\n\n' +
+      'Lanzar solo la HACE VISIBLE en la web: se verá como SOON hasta que publiques un lote ' +
+      '(publicar el lote es lo que llena la galería). ¿Activar igualmente?')) {
+    msg('Cancelado — publica un lote primero, o actívala igualmente.'); return;
+  }
+
   msg('Leyendo works.json…');
   try {
     const rd = await fetch(`https://api.github.com/repos/${REPO}/contents/data/works.json`, { headers: { Authorization: 'Bearer ' + token } });
@@ -491,12 +510,21 @@ async function launchToProduction() {
     const works = JSON.parse(decodeURIComponent(escape(atob(j.content))));
     const w = works.find(x => x.slug === WORK_SLUG || x.id === WORK_SLUG);
     if (!w) { msg('⚠ "' + WORK_SLUG + '" no está en works.json'); return; }
-    if (w.active === true) { msg('✓ Ya está en producción.'); return; }
+    if (w.active === true && w.year) { msg('✓ Ya está en producción.'); return; }
+
     w.active = true;
+    // Rellenar el año al lanzar si está vacío: "en curso" → con año de creación.
+    if (!w.year) {
+      const y = prompt('Año de creación de ' + WORK_SLUG.toUpperCase() + ' (se muestra bajo el nombre):', String(new Date().getFullYear()));
+      const yi = parseInt(y, 10);
+      if (yi >= 2000 && yi <= 2099) w.year = yi;
+    }
     msg('Activando…');
     const body = { message: `launch ${WORK_SLUG} to production`, content: btoa(unescape(encodeURIComponent(JSON.stringify(works, null, 2)))), sha: j.sha };
     const wr = await fetch(`https://api.github.com/repos/${REPO}/contents/data/works.json`, { method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    msg(wr.ok ? '✓ Lanzado a producción — visible en la landing en ~30s.' : '⚠ Error al escribir (' + wr.status + ')');
+    msg(wr.ok
+      ? '✓ Activada — visible en la landing en ~30s' + (count === 0 ? ' (como SOON hasta publicar un lote).' : '.')
+      : '⚠ Error al escribir (' + wr.status + ')');
   } catch (e) { msg('⚠ ' + e.message); }
 }
 
