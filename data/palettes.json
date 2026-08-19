@@ -633,5 +633,22 @@
     ],
     "notes": "Memphis design style",
     "created": 99
+  },
+  {
+    "id": 100,
+    "name": "Tango",
+    "active": true,
+    "colors": [
+      "#ff5b19",
+      "#161616",
+      "#e5e3d2",
+      "#aecacd"
+    ],
+    "tags": [
+      "warm",
+      "contrast"
+    ],
+    "notes": "Tangerine Tango · Charcoal · Platinum · Powder Blue",
+    "created": 1787100000000
   }
 ]
