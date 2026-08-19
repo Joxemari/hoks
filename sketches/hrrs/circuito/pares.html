@@ -238,23 +238,52 @@ function largoDe(p) {
 // Lo que eso dice del cuadro: EL CANAL NO ES CONSTANTE. La banda lo es y el canal se estrecha
 // donde dos trazos se juntan. Nuestro modelo suponía separación = banda + canal en todas partes,
 // y no: la separación varía y el canal la absorbe.
-function huecosPares(trazos) {
+// Y NO CUENTAN LOS ENCUENTROS DE CABOS, que es lo que estaba inflando todos los canales de la
+// familia. El hueco de un par lo daba su punto más apretado, y el más apretado suele ser un cabo
+// que muere contra el otro trazo: por medida eso va a UNA anchura eje a eje, más cerca que una
+// paralela, que va a 1,22. Así que un encuentro de cabos arrastraba el percentil, la banda de la
+// obra entera se adelgazaba para caber en él, y donde los trazos de verdad se acompañan quedaba un
+// canal de 0,49 anchuras en vez de 0,22 — el doble, y variando de 0,18 a 0,5 a lo largo del par.
+// Eso es lo que él ve como «márgenes cambiantes» y «mal paralelizados».
+//
+// Un cabo y una paralela son dos relaciones distintas con dos distancias distintas medidas. La
+// densidad la tiene que poner la del acompañamiento, así que los tramos que están a menos de 1,5
+// anchuras nominales de un cabo no entran en la cuenta.
+function huecosPares(trazos, Wnom) {
   const hs = [];
+  const cerca = Wnom ? Wnom * 1.5 : 0;
   for (let k = 0; k < trazos.length; k++)
     for (let j = k + 1; j < trazos.length; j++) {
+      const A = trazos[k], B = trazos[j];
       let m = Infinity;
-      for (let i = 0; i < trazos[k].length - 1; i++)
-        for (let q = 0; q < trazos[j].length - 1; q++) {
-          const d = distTramos(trazos[k][i], trazos[k][i + 1], trazos[j][q], trazos[j][q + 1]);
+      for (let i = 0; i < A.length - 1; i++) {
+        if (cerca && (i < 2 || i > A.length - 4)) continue;      // cabo de A
+        for (let q = 0; q < B.length - 1; q++) {
+          if (cerca && (q < 2 || q > B.length - 4)) continue;    // cabo de B
+          const d = distTramos(A[i], A[i + 1], B[q], B[q + 1]);
           if (d < m) m = d;
         }
+      }
       if (isFinite(m)) hs.push(m);
     }
   hs.sort((a, b) => a - b);
   return hs;
 }
 const percentil = (hs, q) => hs.length ? hs[Math.min(hs.length - 1, Math.floor(q * hs.length))] : 0;
-function huecoMinimo(trazos) { const h = huecosPares(trazos); return h.length ? h[0] : Infinity; }
+// EL SUELO TAMPOCO MIDE BIEN LOS CABOS, y es esto lo que estaba inflando los canales de toda la
+// familia. El suelo coge el hueco MÍNIMO entre pares y corta la banda para que ahí quepa el canal.
+// Pero el mínimo casi siempre lo pone un encuentro de cabos, y en un encuentro de cabos las dos
+// bandas se enfrentan DE PUNTA: cada una acaba ahí, así que no hace falta canal de costado entre
+// ellas. Midiéndolas como si corrieran de costado, la obra entera adelgazaba para dejar un hueco
+// que no hacía falta, y donde los trazos de verdad se acompañan el canal salía 0,49 anchuras en vez
+// de 0,22 — el doble. «Márgenes cambiantes», «mal paralelizados».
+//
+// Los cabos ya tienen su propia distancia, medida y aplicada aparte: el remate los deja a una
+// anchura del eje del vecino. Aquí sólo entra lo que corre de costado.
+function huecoMinimo(trazos, Wnom) {
+  const h = huecosPares(trazos, Wnom);
+  return h.length ? h[0] : Infinity;
+}
 
 // EL HUECO DE UN TRAZO CONSIGO MISMO. `huecosPares` sólo compara trazos DISTINTOS, así que la
 // derivación de la densidad —la banda se corta al hueco que dejó la composición— nunca miraba los
@@ -346,13 +375,20 @@ const MANDOS = {
                          // solo. Ver los cabos, que es la nota que más código cambió.
   nTrazos:  1.0,         // factor sobre el número de trazos. El ×1,45 que eligió está metido en la
                          // tabla de tipos: la decisión era «más trazos», no «un factor de 1,45».
+  dura:     3.0,         // cuánto tiene que DURAR una paralela para contar como acompañamiento, en
+                         // anchuras de banda. El suelo estaba en unidades absolutas (1,4 pasos) y
+                         // eso es la explicación de «con líneas finas algo de sentido tiene, tipo
+                         // r1, r2. Pero en líneas gordas, tipo r5, aún estamos lejos»: 1,4 pasos son
+                         // tres anchuras en una banda fina y UNA en una gorda, así que en las gordas
+                         // se colaban trozos de un ancho de largo, que no se leen como que acompañan
+                         // a nadie. La medida del ojo es la anchura, no el papel.
   cats:     null,        // la mezcla de categorías; null = la del tipo, ya corrida hacia la suelta
   vueltas:  0,           // el campo, apagado. Lo confirmó: «se quedan donde cayeron de primeras».
   prop:     [1.02, 1.15],// la proporción del pliego. Segunda vuelta: eligió CASI CUADRADO sobre el
                          // rango libre de 1,02 a 1,55. La familia tiene silueta, no variedad.
 };
 const ENV = { canal: 'HRRS_CANAL', obl: 'HRRS_OBL', tramo: 'HRRS_T', err: 'HRRS_ERR',
-              largo: 'HRRS_L', vueltas: 'HRRS_V' };
+              largo: 'HRRS_L', vueltas: 'HRRS_V', dura: 'HRRS_DURA' };
 function mandos(opt) {
   const M = Object.assign({}, MANDOS, (opt && opt.mandos) || {});
   if (typeof process !== 'undefined' && process.env) {
@@ -436,8 +472,16 @@ function circuito(seed, opt) {
     // mediana es 23 % y el máximo 54 %. Devolver la tabla deja la tinta donde a él le gustó —el
     // ×1,45 sobre el paseo roto y el ×1,00 sobre el arreglado dan casi la misma cobertura— y de
     // paso vuelve al rango de trazos de las referencias, que es de 5 a 14.
-    denso:   { n: [8, 13], sep: [0.055, 0.080], cats: [0.44, 0.14, 0.24, 0.18] },
-    abierto: { n: [5, 9],  sep: [0.085, 0.150], cats: [0.38, 0.14, 0.20, 0.28] },
+    // LA CUOTA DE PARALELAS BAJA DE 0,44 A 0,27 Y ESO CONSERVA SU VOTO, no lo deshace. La paralela
+    // se construía por sorteo —treinta intentos a ciegas, y si un solo tramo estorbaba se tiraba la
+    // paralela entera— así que de un 44 % pedido salía un 24 % real. Él votó mirando ESAS obras: lo
+    // que eligió es la imagen del 24 %, no el número 44. Enumerando (ver la paralela, más abajo) el
+    // mando por fin obedece y un 44 % pedido da un 38 % real: el acompañamiento se va a una mediana
+    // del 68 % cuando en las seis es del 57 % y el máximo de las seis es 63. Pedir el 27 % devuelve
+    // el 24 % real y la mediana al 57 %. Los dos argumentos —su voto y las referencias— caen en el
+    // mismo sitio, que es la única razón para tocar una mezcla que él eligió.
+    denso:   { n: [8, 13], sep: [0.055, 0.080], cats: [0.27, 0.14, 0.41, 0.18] },
+    abierto: { n: [5, 9],  sep: [0.085, 0.150], cats: [0.23, 0.14, 0.35, 0.28] },
   };
   const tipo = rng.bool(M.pDenso) ? 'denso' : 'abierto';
   // EL CANAL NO ES UNA CONSTANTE DE LA FAMILIA, es una decisión de cada obra: «quiero que tenga
@@ -850,32 +894,57 @@ function circuito(seed, opt) {
   for (let k = 1; k < n && !dado; k++) {
     let cat = eligeCat(), nac = null;
 
-    // LA PARALELA SE CONSTRUYE, NO SE PASEA. Y se prueba VARIAS VECES: el carril de un padre se
-    // ocupa en cuanto le sale la primera paralela —a menudo con otra paralela del mismo padre—, así
-    // que con un solo intento se rechazaban nueve de cada diez y caían a `suelta`, que es
-    // exactamente lo contrario de lo que se busca. Se prueban padres, lados y ventanas.
+    // LA PARALELA SE CONSTRUYE, NO SE PASEA — Y SE ENUMERA, NO SE SORTEA.
+    //
+    // Aquí se sorteaba padre, lado y ventana, se comprobaba el offset entero y, si un solo tramo
+    // estorbaba, se tiraba la paralela completa y se volvía a sortear. Treinta veces. El 80 % de
+    // los intentos moría igual —el carril de un padre se ocupa en cuanto le sale la primera
+    // paralela— así que sólo el 20 % de los trazos acababa siendo paralela pidiera la mezcla lo
+    // que pidiera: probado con cuota 44, 60 y 74 %, la cuota REAL no se movía. El techo no era la
+    // cuota: era el todo-o-nada y el sorteo a ciegas.
+    //
+    // Ahora se construye el offset de cada padre por los dos lados, se marca tramo a tramo lo que
+    // cabe y se coge LA RACHA VIABLE MÁS LARGA. Un carril medio ocupado ya no tira la paralela
+    // entera: da el trozo que queda libre, que es justo lo que hace un acompañamiento en las
+    // seis —entra donde puede y dura lo que dura—. El azar sigue eligiendo, pero entre las buenas:
+    // se ordena por largo y se sortea dentro del tercio de cabeza. Declarar la preferencia, no
+    // convertirla en restricción: no se coge siempre la más larga, se coge una de las largas.
     if (cat === 'paralela') {
       let hecha = null;
-      // TREINTA INTENTOS Y NO DOCE. El 88 % de los intentos de paralela muere por estorbo —el
-      // carril del padre se ocupa en cuanto le sale la primera— y con doce sólo se construía el 37 %
-      // de las que se pedían. Con treinta sube al 50 %, las paralelas de la obra pasan del 14 % al
-      // 19 % y el acompañamiento de 48 a 50 (las seis: 57). Probado también aflojar el suelo contra
-      // el padre (0,80 → 0,74 → 0,68) y alargar el tramo que acompaña (0,45 → 0,65 → 0,80 del
-      // padre): ninguna de las dos compra nada, y la segunda empeora el p10. Sólo los intentos.
-      for (let intento = 0; intento < 30 && !hecha; intento++) {
-        const padre = trazos[rng.bool(0.45) ? 0 : rng.int(0, trazos.length - 1)];
-        if (padre.length < 3) continue;
-        const lado = rng.bool(0.5) ? 1 : -1;
-        const cuantos = Math.max(2, Math.round((padre.length - 1) * rng.range(0.45, 1.0)));
-        const desde = rng.int(0, Math.max(0, padre.length - 1 - cuantos));
-        const pts = offsetDe(padre, lado, desde, cuantos);
-        let ok = pts.length >= 2 && largoDe(pts) > PASO * 1.4;
-        for (let i = 0; ok && i < pts.length - 1; i++) {
-          if (estorba(-1, padre)(pts[i], pts[i + 1])) ok = false;
-          // el offset de un trazo que se dobla sobre sí mismo se cruza solo, aunque el padre no
-          else if (seCruza(pts.slice(0, i + 1), pts[i], pts[i + 1])) ok = false;
+      const cands = [];
+      const cabe = [];
+      for (let pi = 0; pi < trazos.length; pi++) if (trazos[pi].length >= 3) cabe.push(pi);
+      // con muchos trazos no hace falta mirarlos todos: el primero siempre —es el cuerpo— y una
+      // muestra del resto, para que el coste no crezca con el cuadrado del número de trazos.
+      const mira = cabe.length <= 6 ? cabe
+        : [cabe[0]].concat(cabe.slice(1).filter(() => rng.bool(5 / cabe.length)));
+      for (const pi of mira) {
+        const padre = trazos[pi];
+        const choca = estorba(-1, padre);
+        for (const lado of [1, -1]) {
+          const full = offsetDe(padre, lado, 0, padre.length - 1);
+          if (full.length < 3) continue;
+          // LA RACHA MÁS LARGA de tramos que caben. `seCruza` se pregunta contra el trozo de la
+          // racha en curso, no contra el offset entero: si la racha se ha cortado, lo de antes ya
+          // no es este trazo y no puede cruzarse con él.
+          let mejor = null, ini = -1;
+          for (let i = 0; i <= full.length - 1; i++) {
+            const ok = i < full.length - 1 && !choca(full[i], full[i + 1]) &&
+                       !(ini >= 0 && seCruza(full.slice(ini, i + 1), full[i], full[i + 1]));
+            if (ok) { if (ini < 0) ini = i; continue; }
+            if (ini >= 0) {
+              const trozo = full.slice(ini, i + 1), L = largoDe(trozo);
+              if (!mejor || L > mejor.L) mejor = { trozo, L };
+              ini = -1;
+            }
+          }
+          if (mejor && mejor.L > W_NOM * M.dura) cands.push(mejor);
         }
-        if (ok) hecha = pts;
+      }
+      if (cands.length) {
+        cands.sort((a, b) => b.L - a.L);
+        const top = cands.slice(0, Math.max(1, Math.ceil(cands.length / 3)));
+        hecha = top[rng.int(0, top.length - 1)].trozo;
       }
       if (hecha) {
         trazos.push(hecha); masas.push(rng.range(0.3, 1.2)); cats.push('paralela');
@@ -1411,7 +1480,7 @@ function circuito(seed, opt) {
   // una cuarta parte de los pares, esos pocos se separan a mano —un puñado de vértices, no la
   // obra— para que la regla de no fundir siga cumpliéndose. Es una reparación LOCAL: la autopsia
   // condenó los martillos globales, no arreglar tres sitios que se sabe cuáles son.
-  const hs0 = huecosPares(trazos);
+  const hs0 = huecosPares(trazos, W_NOM);
   // LA BANDA NO PUEDE SER MÁS ANCHA QUE LA SEPARACIÓN CON LA QUE SE COMPUSO. El tope estaba en
   // 0,098 —casi una décima del pliego— y cuando la composición queda holgada el percentil 25 llega
   // hasta ahí: una obra de trece trazos salía como un RECTÁNGULO NEGRO, la hoja entera de tinta.
@@ -1507,7 +1576,7 @@ function circuito(seed, opt) {
     // Un pliegue es asunto DE SU TRAZO, así que lo trata el relleno, que mira punto a punto y sólo
     // adelgaza la banda donde el pliegue aprieta. Lo global es para trazos distintos, donde la
     // banda entera tiene que caber entre dos ejes.
-    W = Math.min(W, huecoMinimo(trazos) / (1 + CANAL));
+    W = Math.min(W, huecoMinimo(trazos, W_NOM) / (1 + CANAL));
   }
   const hueco = huecoMinimo(trazos);
 
