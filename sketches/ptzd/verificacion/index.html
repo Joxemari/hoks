@@ -62,7 +62,14 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
   <p class="q">¿Da el mismo seed la misma obra a cualquier tamaño? Medir elige —los
   mínimos descartan candidatos—, así que un algoritmo que decidiera en píxeles
   daría una obra distinta en la vista previa y en el A1. Se compara la huella de
-  cada obra a tres lados y en los tres formatos: tiene que salir cero.</p>
+  cada obra a tres lados y en los tres formatos: tiene que salir cero.
+  <b>Y desde que el canto se mata en píxeles, la ficha ya no basta</b>: un mordisco
+  de esquina que dependiera de la resolución dejaría tipo, placas y cortes
+  idénticos y la imagen distinta. Así que la segunda mitad compara la
+  <b>imagen</b> — misma obra a tres lados, todas reducidas a la pequeña, contando
+  los píxeles que cambian de clase. Se erosiona antes de contar: el remuestreo
+  mueve el filo un píxel y eso no es una decisión distinta, mientras que una
+  esquina matada de otra manera son decenas de píxeles con cuerpo.</p>
   <pre id="r3" class="esperando">—</pre>
 </section>
 
@@ -279,6 +286,47 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
                        r.escalones, r.tintas, r.hondura, r.mancha.toFixed(6),
                        r.col.ink, r.col.ground, r.inks.join('/')].join('|');
 
+  /* Y LA IMAGEN, NO SÓLO LA FICHA. La huella de arriba compara campos del
+   * resultado —tipo, placas, cortes…—, y con eso basta mientras TODO se decida
+   * en campo normalizado. Desde que `matarCantos` corre en píxeles ya no basta:
+   * un mordisco de esquina que dependiera de la resolución dejaría la ficha
+   * idéntica y la imagen distinta, que es exactamente el fallo que esta pregunta
+   * dice cazar. Así que además se rasteriza la misma obra a tres lados, se
+   * reducen todas al pequeño y se cuenta cuántos píxeles cambian de clase.
+   *
+   * El remuestreo mueve el filo un píxel, así que se erosiona: sólo cuenta lo
+   * que tiene CUERPO —un píxel con siete vecinos también distintos—. Una esquina
+   * matada de otra manera son decenas de píxeles seguidos; un borde tembloroso
+   * de reducción, ninguno. */
+  function claseA(seed, fmt, lado, base) {
+    const L = lienzo(fmt, lado);
+    const r = pinta(L.ctx, L.W, L.H, seed, { grainScale: 0, veta: 0 });
+    const d0 = HOKS.fmtDims(fmt, base);
+    const P = lienzo(fmt, base);
+    P.ctx.drawImage(L.cv, 0, 0, d0.W, d0.H);
+    const im = P.ctx.getImageData(0, 0, d0.W, d0.H).data;
+    const g = [1, 3, 5].map(k => parseInt(r.col.ground.substr(k, 2), 16));
+    const m = new Uint8Array(d0.W * d0.H);
+    for (let i = 0, k = 0; k < m.length; k++, i += 4)
+      m[k] = (Math.abs(im[i]-g[0]) + Math.abs(im[i+1]-g[1]) + Math.abs(im[i+2]-g[2])) > 110 ? 1 : 0;
+    suelta(L.cv); suelta(P.cv);
+    return { m, W: d0.W, H: d0.H };
+  }
+  function difConCuerpo(a, b) {
+    const { W, H } = a;
+    let n = 0;
+    const dif = new Uint8Array(a.m.length);
+    for (let k = 0; k < dif.length; k++) if (a.m[k] !== b.m[k]) dif[k] = 1;
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      const i = y * W + x;
+      if (!dif[i]) continue;
+      let v = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dif[i + dy*W + dx]) v++;
+      if (v >= 7) n++;
+    }
+    return n;
+  }
+
   async function invariancia(N) {
     const lados = [760, 2400, 4200], fmts = ['square', 'horizontal', 'vertical'];
     const malas = [];
@@ -294,11 +342,31 @@ se toque la gramática. No es una galería: aquí no se mira, se mide.</p>
       if (hs.some(h => h !== hs[0])) malas.push({ fmt, seed: semilla(S0 + i), hs });
       await esperar();
     }
+    // La segunda mitad, sobre el píxel. Menos obras: rasterizar a 3.040 y
+    // reducir cuesta, y aquí lo que se busca es una decisión que cambie con la
+    // escala, que no se esconde en la muestra.
+    const PIX = [760, 1520, 3040];
+    const pixMalas = []; let pn = 0, peor = 0;
+    for (const fmt of ['square', 'horizontal']) for (let i = 0; i < Math.max(4, N >> 2); i++) {
+      const seed = semilla(S0 + 5000 + i);
+      const ref = claseA(seed, fmt, PIX[0], PIX[0]);
+      for (let k = 1; k < PIX.length; k++) {
+        const otro = claseA(seed, fmt, PIX[k], PIX[0]);
+        const d = difConCuerpo(ref, otro);
+        peor = Math.max(peor, d);
+        if (d > 40) pixMalas.push({ seed, fmt, lado: PIX[k], px: d });
+      }
+      pn++;
+      await esperar();
+    }
     return {
-      bien: !malas.length,
+      bien: !malas.length && !pixMalas.length,
       texto: `obras ${n} · lados ${lados.join('/')} · formatos ${fmts.join('/')}\n` +
              `huellas distintas ${malas.length}` +
-             (malas.length ? '\n' + malas.slice(0, 3).map(x => `${x.seed} ${x.fmt}\n  ` + x.hs.join('\n  ')).join('\n') : ''),
+             (malas.length ? '\n' + malas.slice(0, 3).map(x => `${x.seed} ${x.fmt}\n  ` + x.hs.join('\n  ')).join('\n') : '') +
+             `\nsobre el PÍXEL: ${pn} obras · lados ${PIX.join('/')} reducidos a ${PIX[0]}\n` +
+             `peor diferencia con cuerpo ${peor} px  (umbral 40)` +
+             (pixMalas.length ? '\n' + pixMalas.slice(0, 4).map(x => `${x.seed} ${x.fmt} a ${x.lado}: ${x.px} px`).join(' · ') : ''),
     };
   }
 

@@ -880,6 +880,57 @@ Las dos tiradas se calculan **siempre**, se usen o no. Antes, forzar la licencia
 se saltaba su `next()` y el fantasma pasaba a leer el primer tiro en vez del
 segundo: un mando del panel movía la decisión de al lado.
 
+### Octava revisión: la esquina, que era un arco de fábrica
+
+*«Este tipo de curvas nunca deberían ocurrir, parecen infantiles. No quiero 90°,
+que parezca orgánico pero no curvo digital.»* Y tenía una causa de una línea: el
+repaso del contorno se hacía con `lineJoin: 'round'`, y eso **fabrica en cada
+esquina un arco exacto de radio media gubia**. La misma curva en toda la obra y
+en todas las obras.
+
+Lo importante es que **un arco y un ángulo recto son el mismo error con distinto
+signo**: los dos son la forma que sale de *no decidir la forma*. El `round` no
+estaba dibujando una esquina, estaba tapando que no había ninguna decisión sobre
+las esquinas.
+
+Así que la esquina se mata en el **polígono** y no al pintar:
+
+- se busca dónde el contorno gira de verdad, midiendo el giro **sobre una ventana
+  de arco** — vértice contra vértice sólo se mide el temblor del pulso, porque el
+  contorno viene de un paseo con los puntos muy juntos;
+- se toman sólo los **máximos locales**: una esquina es un sitio, no los quince
+  vértices que la rodean, y cortar quince veces seguidas sería redondearla otra vez;
+- y ahí se le quita un pedazo con **un solo quiebro**, asimétrico: cada lado se
+  corta por su cuenta (0,25 a 1,25 gubias) y el punto de en medio se corre entre
+  0,34 y 0,66 del corte. Con dos puntos de por medio los tres tramos se volvían a
+  leer como una curva, que es de lo que se venía huyendo.
+
+El punto de en medio tira del vértice viejo con un peso que va de −0,40 a +0,55:
+en positivo la esquina sale **matada**, dos facetas y un quiebro; en negativo sale
+**mordida**, con el pedazo hundido. Y el `lineJoin` pasa a `miter` con
+`miterLimit` 2, para que nadie vuelva a fabricar un arco por su cuenta y para que
+un giro cerrado caiga solo en bisel en vez de sacar una punta de vector.
+
+Va **al final**, sobre las caras ya en píxeles: la partición, los cortes y las
+guardas se deciden sobre el polígono limpio y el mordisco es lo último que le pasa
+al taco — como en la talla, donde el canto se mata cuando la pieza ya está. Cada
+placa se lo hace por su cuenta, así que en una esquina compartida los dos
+mordiscos son distintos y el corte se abre ahí un poco: que es lo que hace una
+gubia de verdad al girar.
+
+**Efecto colateral bueno**: las cuñas *en la cuesta* (por debajo de 62°) bajan del
+1,6% al **0,9%**. Matar el canto emboza justo los ángulos que estaban al borde.
+La que queda por debajo de 45° es la misma de siempre, la punta afeitada, que no
+viene de una esquina del polígono sino del repaso.
+
+**Y obligó a arreglar la prueba de huella.** `matarCantos` es lo primero de esta
+familia que corre en píxeles, así que la pregunta 3 dejó de cubrir lo que dice
+cubrir: comparaba campos del resultado —tipo, placas, cortes—, y un mordisco que
+dependiera de la resolución deja la ficha idéntica y la imagen distinta. Ahora
+además rasteriza la misma obra a 760, 1.520 y 3.040, las reduce todas a la
+pequeña y cuenta los píxeles que cambian de clase, erosionando antes para no
+contar el filo del remuestreo. **Peor diferencia con cuerpo: 0 px.**
+
 ### Lo que subió al lab
 
 Las variables de color estaban escritas como constantes y decidiéndolo todo sin
@@ -912,8 +963,8 @@ apaisado, sobre el catálogo real de paletas activas. Todo esto sale de
 cuñas       0,1% de las obras tiene un ángulo por debajo de 45° — y las que salen
             son «la punta afeitada», que está entre los riesgos y que ninguna
             guarda geométrica puede ver
-            1,7% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
-            reparto se amontona y baila entre bloques (0,9% y 2,4% sin tocar nada)
+            0,9% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
+            reparto se amontona (era 1,6% antes de matar el canto)
             (antes de la 5ª revisión: 20% de las obras, y los peores a 2°, 8°, 12°)
 cortos      0,8% no llega a los cortes que declara su tipo   (era el 20%)
 soldadas    0 · dos placas nunca se tocan — y ya SIN excepción: la fantasma dejó
@@ -951,6 +1002,11 @@ overall     common 38,8%  uncommon 34,8%  rare 16,2%  superrare 7,2%  legendary 
              pasar las decisiones de color a `hash01`: el sorteo de la licencia
              mueve las tintas, y las tintas son uno de los nueve factores)
 huella      0 de 180 obras cambia a 760 / 2400 / 4200 px, en los tres formatos
+            y sobre el PÍXEL: 0 px con cuerpo de diferencia entre 760, 1.520 y
+            3.040 reducidos al pequeño — que es lo que hace falta desde que el
+            canto se mata en píxeles
+canto       la esquina no la fabrica el `lineJoin`: se mata en el polígono con un
+            solo quiebro, cada lado cortado por su cuenta entre 0,25 y 1,25 gubias
 ms          ~30 por pieza a 520 px, con grano y veta
 ```
 

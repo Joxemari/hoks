@@ -307,6 +307,109 @@
     return hit;
   }
 
+  /* MATAR EL CANTO.
+   *
+   * El repaso se hacía con `lineJoin: 'round'`, y eso fabrica en cada esquina un
+   * ARCO EXACTO de radio media gubia. Sale una curva perfecta, la misma en toda
+   * la obra y en todas las obras, y delata el vector igual que lo delataría un
+   * ángulo recto: no es la esquina de un taco roto, es la esquina de un
+   * rectángulo redondeado. Un arco y un 90° son el mismo error con distinto
+   * signo — los dos son la forma que sale de no decidir la forma.
+   *
+   * Así que la esquina se mata en el POLÍGONO y no al pintar. Se busca dónde el
+   * contorno gira de verdad —midiendo el giro sobre una ventana de arco, porque
+   * el contorno viene de un paseo con los puntos muy juntos y vértice a vértice
+   * todo es ruido— y ahí se le quita un pedazo: una faceta corta, ASIMÉTRICA
+   * (cada lado se corta por su cuenta) y con su temblor por dentro, para que no
+   * salga ni un arco ni un bisel limpio. Un pedazo que se fue.
+   *
+   * Y el `lineJoin` pasa a `miter` con el límite corto, para que nadie vuelva a
+   * fabricar un arco por su cuenta al pintar. */
+  const CANTO_GIRO = 0.45;                  // rad: por debajo de esto no es esquina, es ondulación
+  const CANTO_MIN = 0.25, CANTO_MAX = 1.25; // el mordisco, en anchuras de gubia
+  // El punto de en medio, tirando del vértice viejo. En positivo la esquina sale
+  // MATADA —dos facetas y un quiebro—, en negativo sale MORDIDA, con el pedazo
+  // hundido. Un solo punto y no dos: con dos, los tres tramos se leen otra vez
+  // como una curva, que es justo de lo que se venía huyendo.
+  const CANTO_K_MIN = -0.40, CANTO_K_MAX = 0.55;
+  function matarCantos(poly, rng, g, fuerza) {
+    const m = poly.length;
+    if (m < 8 || !(fuerza > 0) || !(g > 0)) return poly;
+    const acc = [0];
+    for (let i = 0; i < m; i++) acc.push(acc[i] + len(sub(poly[(i + 1) % m], poly[i])));
+    const Per = acc[m];
+    if (Per < g * 6) return poly;
+    const VENT = Math.min(g * 0.9, Per / 10);
+    const enArco = (dd) => {
+      dd = ((dd % Per) + Per) % Per;
+      let i = 0; while (i < m && acc[i + 1] < dd) i++;
+      if (i >= m) i = m - 1;
+      const t = (dd - acc[i]) / Math.max(1e-9, acc[i + 1] - acc[i]);
+      const a = poly[i], b = poly[(i + 1) % m];
+      return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    };
+    // El giro de cada vértice, medido contra lo que hay una ventana antes y
+    // después. Vértice contra vértice sólo se mide el temblor del pulso.
+    const giro = new Array(m);
+    for (let i = 0; i < m; i++) {
+      const v = poly[i];
+      const u1 = norm(sub(v, enArco(acc[i] - VENT))), u2 = norm(sub(enArco(acc[i] + VENT), v));
+      const c = Math.max(-1, Math.min(1, u1[0] * u2[0] + u1[1] * u2[1]));
+      giro[i] = Math.acos(c);
+    }
+    // Sólo los máximos locales: una esquina es UN sitio, no los quince vértices
+    // que la rodean, y cortar quince veces seguidas sería redondearla otra vez.
+    const esquinas = [];
+    for (let i = 0; i < m; i++) {
+      if (giro[i] < CANTO_GIRO) continue;
+      let manda = true;
+      for (let k = 1; k <= 12; k++) {
+        const a = (i - k + m) % m, b = (i + k) % m;
+        if (Math.abs(acc[i] - acc[a]) > VENT && Math.abs(acc[b] - acc[i]) > VENT) break;
+        if (giro[a] > giro[i] || giro[b] > giro[i]) { manda = false; break; }
+      }
+      if (!manda) continue;
+      if (esquinas.length && Math.abs(acc[i] - acc[esquinas[esquinas.length - 1]]) < VENT) continue;
+      esquinas.push(i);
+    }
+    if (!esquinas.length) return poly;
+    // Cada esquina se lleva su mordisco, y los dos lados por separado.
+    const cortes = esquinas.map((i, k) => {
+      const prev = esquinas[(k - 1 + esquinas.length) % esquinas.length];
+      const next = esquinas[(k + 1) % esquinas.length];
+      const hueco = d => { const v = Math.abs(d); return Math.min(v, Per - v) * 0.4; };
+      const tope = Math.max(g * 0.12, Math.min(hueco(acc[i] - acc[prev]), hueco(acc[next] - acc[i])));
+      const d1 = Math.min(tope, g * rng.range(CANTO_MIN, CANTO_MAX) * fuerza);
+      const d2 = Math.min(tope, g * rng.range(CANTO_MIN, CANTO_MAX) * fuerza);
+      return { i, a: acc[i] - d1, b: acc[i] + d2,
+               k: rng.range(CANTO_K_MIN, CANTO_K_MAX), t: rng.range(0.34, 0.66) };
+    });
+    // Se reconstruye el contorno saltándose lo que cae dentro de cada mordisco.
+    const dentro = (d) => {
+      for (const c of cortes) {
+        const a = ((c.a % Per) + Per) % Per, b = ((c.b % Per) + Per) % Per;
+        if (a <= b ? (d > a && d < b) : (d > a || d < b)) return c;
+      }
+      return null;
+    };
+    const out = [];
+    const facetas = new Set();
+    for (let i = 0; i < m; i++) {
+      const c = dentro(acc[i]);
+      if (!c) { out.push(poly[i]); continue; }
+      if (facetas.has(c.i)) continue;
+      facetas.add(c.i);
+      const p1 = enArco(c.a), p2 = enArco(c.b), v = poly[c.i];
+      // Un solo quiebro, y no en el medio: el punto se corre entre 0,34 y 0,66
+      // del corte, así que las dos facetas no miden lo mismo y la esquina no
+      // sale simétrica. Con `k` cerca de cero es un bisel limpio; en positivo se
+      // acerca al vértice viejo y en negativo se hunde por dentro.
+      const bx = p1[0] + (p2[0] - p1[0]) * c.t, by = p1[1] + (p2[1] - p1[1]) * c.t;
+      out.push(p1, [bx + (v[0] - bx) * c.k, by + (v[1] - by) * c.k], p2);
+    }
+    return out.length >= 6 ? out : poly;
+  }
+
   // Ruido coherente sembrado en [-1,1], periódico en n: la onda del pulso.
   function onda(rng, n) {
     const v = []; for (let i = 0; i < n; i++) v.push(rng.range(-1, 1));
@@ -1249,7 +1352,18 @@
     ctx.fillRect(0, 0, W, H);
 
     const gPx = gubia.w * S * SS;
-    const caras = piezas.map(pc => pc.poly.map(p => toPx(add(p, pc.drift))));
+    /* Las caras, ya en píxeles y con el canto matado. Va aquí y no antes a
+     * propósito: la partición, los cortes y las guardas se deciden sobre el
+     * polígono limpio, y el mordisco de la esquina es lo ÚLTIMO que le pasa al
+     * taco — como en la talla, donde el canto se mata cuando la pieza ya está.
+     * Con azar derivado del seed, para que tocar el mando no corra la geometría.
+     * Cada placa se lo hace por su cuenta, así que en una esquina compartida los
+     * dos mordiscos son distintos: el corte se abre ahí un poco, que es lo que
+     * hace una gubia de verdad al girar. */
+    const rgCanto = new E.Rng((seed ^ 0xCA470) >>> 0);
+    const canto = params.canto != null ? +params.canto : 1;
+    const caras = piezas.map(pc =>
+      matarCantos(pc.poly.map(p => toPx(add(p, pc.drift))), rgCanto, gPx, canto));
 
     /* CUÁL ES LA FANTASMA. No la reserva —es contra ella contra lo que se lee
      * todo lo demás— ni una miga, que no se vería ni con halo. La mediana por
@@ -1298,7 +1412,13 @@
     // corte repasando su propio contorno con el color del suelo, así que dos
     // vecinas dejan el corte entero — y el canto exterior también queda cortado,
     // que es lo que le pasa al canto del taco.
-    ctx.lineJoin = 'round';
+    // `miter` y no `round`: el arco de la esquina lo fabricaba el `lineJoin`, y
+    // era el mismo arco en toda la obra. El canto ya viene matado del polígono
+    // (ver `matarCantos`), así que aquí sólo hace falta que nadie invente nada.
+    // El límite corto deja que un giro cerrado caiga solo en bisel en vez de
+    // sacar una punta de vector.
+    ctx.lineJoin = 'miter';
+    ctx.miterLimit = 2;
     ctx.lineWidth = gPx;
     ctx.strokeStyle = col.ground;
     caras.forEach((q, i) => {
