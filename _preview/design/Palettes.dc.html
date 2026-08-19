@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+  <style>
+    :root{ --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983; --body:#26251f;
+      --geo:"League Spartan",Futura,system-ui,sans-serif; --mono:ui-monospace,Menlo,monospace; }
+    *{box-sizing:border-box} body{margin:0}
+    .stage{ width:1280px; background:var(--paper); color:var(--ink); font-family:var(--geo); }
+    .top{ display:flex; align-items:center; justify-content:space-between; height:60px; padding:0 40px; border-bottom:1px solid var(--line); }
+    .logo{ width:30px; height:28px; background:var(--ink); -webkit-mask:radial-gradient(circle at 50% 50%, transparent 6px, #000 7px); }
+    .burger span{ display:block; height:2px; width:26px; background:var(--blue); margin:5px 0; }
+    .page{ padding:34px 40px 60px; }
+    h1{ font-weight:700; font-size:48px; letter-spacing:.02em; text-transform:uppercase; margin:0 0 4px; }
+    .sub{ font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--blue); }
+    .controls{ display:flex; align-items:center; gap:14px; margin:26px 0 10px; }
+    .inp{ font-family:var(--mono); font-size:12px; color:var(--body); border:1px solid var(--line); border-radius:8px; padding:10px 14px; min-width:240px; background:#fff; }
+    .sel{ font-family:var(--mono); font-size:12px; color:var(--body); border:1px solid var(--line); border-radius:8px; padding:10px 14px; background:#fff; }
+    .count{ font-family:var(--mono); font-size:11px; color:var(--mut); margin-left:auto; }
+    /* admin-only usage grid */
+    .usage{ border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:8px 0 24px; background:#fff; }
+    .usage .uh{ font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--mut); display:flex; gap:10px; align-items:center; margin-bottom:12px; }
+    .ubadge{ font-family:var(--geo); font-weight:700; font-size:8px; letter-spacing:.1em; background:#c0392b; color:#fff; padding:2px 7px; border-radius:2px; }
+    .ugrid{ display:grid; grid-template-columns:repeat(24, 1fr); gap:4px; }
+    .ucell{ aspect-ratio:1; border-radius:2px; background:var(--blue); }
+    .rule{ height:1px; background:var(--line); margin:22px 0; }
+    .grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
+    .card{ border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff; }
+    .strip{ height:72px; display:flex; }
+    .strip span{ flex:1; }
+    .cbody{ padding:14px 16px; }
+    .crow{ display:flex; align-items:center; justify-content:space-between; }
+    .cname{ font-weight:700; font-size:16px; letter-spacing:.06em; text-transform:uppercase; }
+    .badge{ font-family:var(--geo); font-weight:700; font-size:9px; letter-spacing:.12em; text-transform:uppercase; padding:4px 9px; border-radius:20px; border:1px solid var(--line); color:var(--body); }
+    .badge.rare{ background:var(--acid); border-color:var(--acid); color:var(--ink); }
+    .tags{ display:flex; gap:6px; margin-top:10px; }
+    .tag{ font-family:var(--mono); font-size:9.5px; letter-spacing:.05em; color:var(--mut); border:1px solid var(--line); border-radius:20px; padding:3px 8px; }
+    .xn{ font-family:var(--mono); font-size:10px; color:var(--mut); margin-top:8px; }
+  </style>
+</helmet>
+<div class="stage">
+  <div class="top"><div class="logo"></div><div class="burger"><span></span><span></span></div></div>
+  <div class="page">
+    <h1>Palettes</h1><div class="sub">the colour, weighted by age · scarcity you can read</div>
+    <div class="controls">
+      <input class="inp" placeholder="search name / tag" />
+      <select class="sel"><option>By probability</option><option>By usage (admin)</option><option>Newest</option></select>
+      <span class="count">36 palettes · 24 active</span>
+    </div>
+    <div class="usage">
+      <div class="uh"><span class="ubadge">Admin</span>Usage grid — one cell per palette · tone by saved works · Copy data (TSV)</div>
+      <div class="ugrid" id="ug"></div>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="strip"><span style="background:#0a0a0a"></span><span style="background:#f7f3f2"></span><span style="background:#0077e1"></span><span style="background:#f5d216"></span><span style="background:#fc3503"></span></div>
+        <div class="cbody"><div class="crow"><div class="cname">Mondrian</div><span class="badge">Common</span></div><div class="tags"><span class="tag">roni kaufman</span></div><div class="xn">×5 · plls, dtkrt</div></div></div>
+      <div class="card"><div class="strip"><span style="background:#1b2a4a"></span><span style="background:#c94f3a"></span><span style="background:#e9e3d4"></span><span style="background:#d9b13a"></span></div>
+        <div class="cbody"><div class="crow"><div class="cname">Itten I</div><span class="badge rare">Rare</span></div><div class="tags"><span class="tag">itten</span><span class="tag">complementary</span></div><div class="xn">×1 · trzs</div></div></div>
+      <div class="card"><div class="strip"><span style="background:#2f4a7a"></span><span style="background:#7a6ba8"></span><span style="background:#3f7a75"></span><span style="background:#b04e72"></span></div>
+        <div class="cbody"><div class="crow"><div class="cname">Troll</div><span class="badge">Uncommon</span></div><div class="tags"><span class="tag">roni kaufman</span></div><div class="xn">×3 · krrtk</div></div></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  componentDidMount(){ const h=document.querySelector('#ug'); if(!h)return; const t=['#e9edff','#b9c4ff','#7d8dff','#3b4cf0','#000ef7']; let s='';
+    for(let i=0;i<72;i++){ s+=`<div class="ucell" style="background:${t[(Math.random()*t.length)|0]}"></div>`; } h.innerHTML=s; }
+  renderVals(){ return {}; }
+}
+</script>
+</body>
+</html>

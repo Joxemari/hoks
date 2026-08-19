@@ -1,0 +1,24 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Lector + sistema" },
+    { "id": "page-2", "name": "Operativa" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html",     "page": "page-1", "x": 0,     "y": 0, "w": 1280, "h": 1360, "title": "Sistema" },
+    { "file": "Landing.dc.html",  "page": "page-1", "x": 1400,  "y": 0, "w": 1280, "h": 800,  "title": "Landing" },
+    { "file": "Hall.dc.html",     "page": "page-1", "x": 2800,  "y": 0, "w": 1280, "h": 820,  "title": "Hall · contact sheet" },
+    { "file": "Family.dc.html",   "page": "page-1", "x": 4200,  "y": 0, "w": 1280, "h": 1560, "title": "Sala de familia" },
+    { "file": "Making.dc.html",   "page": "page-1", "x": 5600,  "y": 0, "w": 1280, "h": 1060, "title": "Making-of" },
+    { "file": "Palettes.dc.html", "page": "page-1", "x": 7000,  "y": 0, "w": 1280, "h": 920,  "title": "Palettes" },
+    { "file": "About.dc.html",    "page": "page-1", "x": 8400,  "y": 0, "w": 1280, "h": 780,  "title": "About" },
+
+    { "file": "Admin.dc.html",    "page": "page-2", "x": 0,     "y": 0, "w": 1280, "h": 900,  "title": "Admin" },
+    { "file": "Lab.dc.html",      "page": "page-2", "x": 1400,  "y": 0, "w": 1280, "h": 820,  "title": "Lab · harness" },
+    { "file": "Wall.dc.html",     "page": "page-2", "x": 2800,  "y": 0, "w": 1280, "h": 820,  "title": "Muro · escala" }
+  ],
+  "annotations": [
+    { "id": "note-system", "page": "page-1", "x": 0, "y": -150, "w": 460, "text": "El sistema, una vez. Blue + acid sobre paper, League Spartan + mono, nav azul lateral, cartela + terminal de regla + escalera de rareza. Reskin desde nav.js (chrome global) y work-page.js (las 8 salas)." },
+    { "id": "note-op", "page": "page-2", "x": 0, "y": -150, "w": 520, "text": "Operativa re-vestida, misma lógica intacta: admin (auth localStorage + token + Contents API, 7 pestañas), lab (scrub → lote → publicar), muro (solo lectura, escala 1,70 m)." }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

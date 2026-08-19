@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+  <style>
+    :root{ --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983;
+      --geo:"League Spartan",Futura,system-ui,sans-serif; --mono:ui-monospace,Menlo,monospace; }
+    *{box-sizing:border-box} body{margin:0}
+    .stage{ width:1280px; height:800px; background:#efece7; font-family:var(--geo); position:relative; }
+    .bar{ position:absolute; top:0; left:0; right:0; height:44px; background:#fff; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:16px; padding:0 24px; font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); z-index:2; }
+    .seg{ display:flex; gap:2px; background:#f4f3ef; border-radius:8px; padding:3px; }
+    .seg span{ padding:5px 10px; border-radius:6px; font-size:10px; color:var(--mut); }
+    .seg span.on{ background:var(--ink); color:#fff; }
+    .room{ position:absolute; top:44px; left:0; right:0; bottom:0; background:linear-gradient(180deg,#efeee9,#e5e3dd 86%,#d2cfc6 86%,#cdc9c0); }
+    .figure{ position:absolute; left:20%; bottom:14%; width:70px; height:360px; transform:translateX(-50%); }
+    .head{ position:absolute; top:0; left:50%; transform:translateX(-50%); width:44px; height:44px; border-radius:50%; background:rgba(10,10,10,.14); }
+    .body{ position:absolute; top:40px; left:50%; transform:translateX(-50%); width:70px; height:320px; border-radius:34px 34px 0 0; background:rgba(10,10,10,.14); }
+    .piece{ position:absolute; left:60%; top:26%; width:260px; height:184px; background:#fff; padding:16px; box-shadow:0 22px 60px -30px rgba(0,0,0,.5); }
+    .piece .art{ width:100%; height:100%; background:linear-gradient(135deg,#c94f3a,#2f4a7a); }
+    .cartela{ position:absolute; left:calc(60% + 290px); top:30%; font-family:var(--mono); font-size:11px; color:#3a3a37; line-height:1.7; }
+    .cartela .nm{ font-weight:700; color:var(--ink); }
+    .ruler{ position:absolute; left:8%; bottom:14%; width:2px; height:360px; background:rgba(10,10,10,.25); }
+    .ruler::before{ content:"1.45 m"; position:absolute; top:36%; left:8px; font-family:var(--mono); font-size:9px; color:var(--mut); white-space:nowrap; }
+    .cap{ position:absolute; bottom:16px; left:0; right:0; text-align:center; font-family:var(--mono); font-size:9px; letter-spacing:.24em; text-transform:uppercase; color:var(--mut); }
+  </style>
+</helmet>
+<div class="stage">
+  <div class="bar">
+    <span>Wall · scale view (read-only)</span>
+    <div class="seg"><span class="on">Single</span><span>Escalera de pliegos</span></div>
+    <span style="margin-left:auto">fig · rule · A3 · 300 dpi</span>
+  </div>
+  <div class="room">
+    <div class="ruler"></div>
+    <div class="figure"><div class="head"></div><div class="body"></div></div>
+    <div class="piece"><div class="art"></div></div>
+    <div class="cartela"><div class="nm">hoks</div>PLLS · seed 782297919<br>1/1 · archival pigment print<br>A3 · 300 dpi · 2026</div>
+    <div class="cap">figure 1.70 m · hang axis 1.45 m · the object, to scale</div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic { renderVals(){ return {}; } }
+</script>
+</body>
+</html>

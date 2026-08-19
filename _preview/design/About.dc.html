@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+  <style>
+    :root{ --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983; --body:#26251f;
+      --geo:"League Spartan",Futura,system-ui,sans-serif; --mono:ui-monospace,Menlo,monospace; }
+    *{box-sizing:border-box} body{margin:0}
+    .stage{ width:1280px; min-height:760px; background:var(--paper); color:var(--ink); font-family:var(--geo); }
+    .top{ display:flex; align-items:center; justify-content:space-between; height:60px; padding:0 40px; border-bottom:1px solid var(--line); }
+    .logo{ width:30px; height:28px; background:var(--ink); -webkit-mask:radial-gradient(circle at 50% 50%, transparent 6px, #000 7px); }
+    .burger span{ display:block; height:2px; width:26px; background:var(--blue); margin:5px 0; }
+    .ab{ max-width:640px; margin:0 auto; padding:90px 24px 100px; }
+    .k{ font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--blue); }
+    h1{ font-weight:700; font-size:54px; text-transform:uppercase; letter-spacing:.02em; margin:14px 0 20px; }
+    p{ font-size:17.5px; line-height:1.8; color:var(--body); }
+    .sign{ font-family:var(--mono); font-size:13px; color:var(--mut); margin-top:26px; }
+    .lang{ font-family:var(--mono); font-size:11px; letter-spacing:.12em; color:var(--mut); }
+    .lang b{ color:var(--ink); }
+  </style>
+</helmet>
+<div class="stage">
+  <div class="top"><div class="logo"></div><div style="display:flex;gap:16px;align-items:center"><span class="lang"><b>EU</b> · EN</span><div class="burger"><span></span><span></span></div></div></div>
+  <div class="ab">
+    <div class="k">About</div><h1>hoks</h1>
+    <p>hoks is the generative practice of an artist trained in computer science, holding a MEng in Design at Stanford University. The work treats code as grammar and rules as form: each family is a single idea — a capsule, a lattice, a dividing square — run through controlled chance until the system, not the hand, composes the image.</p>
+    <p>What is exhibited is the residue of that thinking. What is collected is the rule. Continuity with Elena Asins: structure, seriality, system.</p>
+    <div class="sign">The rule is the work. &nbsp;·&nbsp; jm@joma.es</div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic { renderVals(){ return {}; } }
+</script>
+</body>
+</html>
