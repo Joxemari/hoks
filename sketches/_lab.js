@@ -13,7 +13,8 @@
   // abrirse en el laboratorio. admin.html mantiene su propia copia (es un panel
   // autónomo, no carga scripts externos): al graduar una obra, tocar las dos.
   const GRADUATED = ['plls', 'krrtk', 'dtk', 'dtkrt', 'eclps', 'trzs', 'evol', 'hrrs', 'ptzd'];
-  const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
+  const REPO = 'Joxemari/hoks';
+  const RAW = 'https://raw.githubusercontent.com/' + REPO + '/main/data/';
 
   // works.json una sola vez por página: lo piden el selector de obra y el de
   // formato, y no tiene sentido traerlo dos veces.
@@ -254,6 +255,59 @@
     return on;
   }
 
+  // ── Lanzar a producción = ACTIVAR ──────────────────────────────────────────
+  // Un solo sitio para el gesto que antes vivía copiado en el harness. Lanzar
+  // NO publica obra (eso es publicar el lote): solo pone active:true en
+  // works.json, o sea, enciende la familia en la web. Por eso aquí: si no hay
+  // lote publicado avisa de que se verá como SOON, y si la familia aún no tiene
+  // año de creación lo pide — dejar de estar "en curso" es justo esto.
+  //   HOKSLAB.launch('plls', document.getElementById('launchMsg'))
+  async function launch(slug, msgEl) {
+    const msg = t => { if (msgEl) msgEl.textContent = t; };
+    const token = localStorage.getItem('hoks-gh-token');
+    const isAdmin = sessionStorage.getItem('hoks-admin-session') === '1' ||
+                    localStorage.getItem('hoks-admin-session') === '1';
+    if (!isAdmin || !token) { msg('⚠ Requiere sesión admin con token — entra en /admin.html.'); return; }
+
+    // ¿Hay lote publicado? Activar sin obra deja la sección como SOON.
+    msg('Comprobando galería…');
+    let count = 0;
+    try {
+      const g = await fetch(RAW + slug + '.json?t=' + Date.now());
+      if (g.ok) { const arr = await g.json(); count = Array.isArray(arr) ? arr.length : 0; }
+    } catch (e) {}
+    if (count === 0 && !confirm(
+        slug.toUpperCase() + ' no tiene ningún lote publicado todavía.\n\n' +
+        'Lanzar solo la HACE VISIBLE en la web: se verá como SOON hasta que publiques un lote ' +
+        '(publicar el lote es lo que llena la galería). ¿Activar igualmente?')) {
+      msg('Cancelado — publica un lote primero, o actívala igualmente.'); return;
+    }
+
+    msg('Leyendo works.json…');
+    try {
+      const rd = await fetch(`https://api.github.com/repos/${REPO}/contents/data/works.json`, { headers: { Authorization: 'Bearer ' + token } });
+      if (!rd.ok) { msg('⚠ No se pudo leer works.json (' + rd.status + ')'); return; }
+      const j = await rd.json();
+      const works = JSON.parse(decodeURIComponent(escape(atob(j.content))));
+      const w = works.find(x => x.slug === slug || x.id === slug);
+      if (!w) { msg('⚠ "' + slug + '" no está en works.json'); return; }
+      if (w.active === true && w.year) { msg('✓ Ya está en producción.'); return; }
+
+      w.active = true;
+      if (!w.year) {
+        const y = prompt('Año de creación de ' + slug.toUpperCase() + ' (se muestra bajo el nombre):', String(new Date().getFullYear()));
+        const yi = parseInt(y, 10);
+        if (yi >= 2000 && yi <= 2099) w.year = yi;
+      }
+      msg('Activando…');
+      const body = { message: `launch ${slug} to production`, content: btoa(unescape(encodeURIComponent(JSON.stringify(works, null, 2)))), sha: j.sha };
+      const wr = await fetch(`https://api.github.com/repos/${REPO}/contents/data/works.json`, { method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      msg(wr.ok
+        ? '✓ Activada — visible en la landing en ~30s' + (count === 0 ? ' (como SOON hasta publicar un lote).' : '.')
+        : '⚠ Error al escribir (' + wr.status + ')');
+    } catch (e) { msg('⚠ ' + e.message); }
+  }
+
   global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, mountFormatSelect, loadWorks,
-                     initialSeed, loadAlgos, wallUrl, mountWallLink, formatControls };
+                     initialSeed, loadAlgos, wallUrl, mountWallLink, formatControls, launch };
 })(typeof window !== 'undefined' ? window : globalThis);
