@@ -24,30 +24,63 @@
   'use strict';
 
   const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
+  // Emoji por familia — el mismo lenguaje del canvas de diseño y del nav.
+  const FAM_EM = { plls: '💊', krrtk: '🟥', dtk: '🟥', dtkrt: '🔵', eclps: '🌑', trzs: '🪢', bzrs: '〰️' };
 
+  // Estética del canvas de diseño (Family.dc.html): eyebrow (emoji) + nombre en
+  // League Spartan, narrativa en cuerpo, lienzo vivo con su cartela en la
+  // esquina, y el muro de piezas elegidas. Tokens de :root los pone nav.js.
   const CSS = `
-.wk { max-width: 1100px; margin: 0 auto; padding: 4rem 1.5rem 5rem; }
-.wk-head { display: flex; flex-direction: column; gap: 1.1rem; margin-bottom: 3.5rem; }
-.wk-name { font-size: 13px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; }
-.wk-text { font-size: 12px; line-height: 2; color: #444; max-width: 62ch; white-space: pre-wrap; }
-.wk-live { display: flex; flex-direction: column; align-items: center; gap: 0.7rem; margin-bottom: 4rem; }
-.wk-live canvas { display: block; width: min(80vw, 460px); height: auto; cursor: pointer;
-  outline: 1px solid rgba(0,0,0,0.12); transition: opacity 0.18s; }
+.wk { max-width: 1180px; margin: 0 auto; padding: 34px 40px 70px; width: 100%; }
+.wk-eye { font-size: 28px; line-height: 1; }
+.wk-name { font-family: var(--geo); font-weight: 700; font-size: 56px; letter-spacing: 0.02em;
+  text-transform: uppercase; margin: 8px 0 0; line-height: 1; }
+.wk-year { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; color: var(--blue); margin-top: 10px; }
+.wk-text { font-family: var(--geo); font-size: 16.5px; line-height: 1.72; color: var(--body);
+  max-width: 60ch; margin: 16px 0 0; white-space: pre-wrap; }
+.wk-rule { height: 1px; background: var(--line); margin: 32px 0; }
+.wk-sec { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--mut); margin: 0 0 16px; }
+.wk-gen-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
+.wk-live { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+.wk-canvas-wrap { position: relative; width: 100%; max-width: 460px; }
+.wk-side { display: flex; flex-direction: column; gap: 14px; }
+.wk-cartela { border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; background: #fcfcfb; }
+.wk-cartela .sh { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mut); margin-bottom: 12px; }
+.wk-cartela .cart { font-family: var(--mono); font-size: 12px; line-height: 1.9; color: #3a3a37; border-left: 2px solid var(--blue); padding-left: 14px; }
+.wk-cartela .cart .k { color: var(--mut); text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
+.wk-cartela .cart .big { font-family: var(--geo); font-weight: 700; font-size: 15px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); display: block; margin-bottom: 5px; }
+.wk-rulecard { border: 1px solid #14140f; border-radius: 14px; padding: 15px 17px; background: #0b0b0a; }
+.wk-rc-h { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--acid); margin-bottom: 9px; }
+.wk-rc-body { font-family: var(--mono); font-size: 11.5px; line-height: 1.9; color: #e4e3dc; white-space: pre-wrap; }
+@media (max-width: 820px) { .wk-gen-grid { grid-template-columns: 1fr; } }
+.wk-live canvas { display: block; width: 100%; height: auto; cursor: pointer; border-radius: 4px;
+  outline: 1px solid var(--line); transition: opacity 0.18s; }
 .wk-live canvas:hover { opacity: 0.94; }
-.wk-hint { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #bbb; }
-.wk-sec { font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
-  color: #bbb; margin-bottom: 1.2rem; }
-.wk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
-.wk-piece { border: 1px solid #e8e8e8; cursor: zoom-in; background: #fff; }
+.wk-plate { position: absolute; right: 12px; bottom: 12px; font-family: var(--mono); font-size: 10.5px;
+  color: #fff; background: rgba(10,10,10,0.44); padding: 5px 9px; border-radius: 6px;
+  letter-spacing: 0.04em; pointer-events: none; }
+.wk-gen { display: inline-flex; align-items: center; gap: 9px; font-family: var(--geo); font-weight: 600;
+  font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--ink);
+  background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 10px; cursor: pointer; }
+.wk-gen:hover { background: #000; }
+.wk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.wk-piece { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; cursor: zoom-in; background: #fff; }
 .wk-piece img { width: 100%; display: block; }
-.wk-piece figcaption { font-size: 9px; color: #bbb; letter-spacing: 0.06em; padding: 5px 7px; }
-.wk-empty { font-size: 10px; color: #bbb; letter-spacing: 0.06em; }
-.wk-lb { position: fixed; inset: 0; background: rgba(255,255,255,0.97); display: none;
+.wk-piece figcaption { font-family: var(--mono); font-size: 10px; color: var(--mut); letter-spacing: 0.05em;
+  padding: 8px 10px; display: flex; justify-content: space-between; gap: 8px; }
+.wk-piece figcaption b { color: var(--body); font-weight: 400; }
+.wk-empty { font-family: var(--mono); font-size: 11px; color: var(--mut); letter-spacing: 0.06em; }
+.wk-soon { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 12px;
+  color: var(--mut); letter-spacing: 0.04em; }
+.wk-soon-badge { font-family: var(--geo); font-weight: 700; font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; background: var(--acid); color: var(--ink); padding: 5px 11px; border-radius: 20px; }
+.wk-lb { position: fixed; inset: 0; background: rgba(251,251,250,0.97); display: none;
   align-items: center; justify-content: center; flex-direction: column; gap: 1rem; z-index: 200; cursor: zoom-out; }
 .wk-lb.open { display: flex; }
-.wk-lb img { max-width: min(92vw, 860px); max-height: 78vh; outline: 1px solid rgba(0,0,0,0.12); }
-.wk-lb-cap { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #bbb; }
-@media (max-width: 680px) { .wk { padding: 2.5rem 1rem 3rem; } }
+.wk-lb img { max-width: min(92vw, 860px); max-height: 76vh; outline: 1px solid var(--line); border-radius: 4px; }
+.wk-lb-cap { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--mut); }
+@media (max-width: 680px) { .wk { padding: 24px 18px 40px; } .wk-name { font-size: 40px; } }
 `;
 
   function css() { const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); }
@@ -75,23 +108,55 @@
     const ALGO = global.HOKS && global.HOKS[slug.toUpperCase()];
     const root = el('div', 'wk');
     const head = el('div', 'wk-head');
+    const eye = el('div', 'wk-eye', FAM_EM[slug] || '▦');
     const name = el('h1', 'wk-name', esc(slug.toUpperCase()));
+    // Año de creación (works.json `year`). Las familias en curso aún no lo
+    // tienen: se rellena al lanzar/activar, así que hasta entonces no se pinta.
+    const year = el('div', 'wk-year'); year.style.display = 'none';
     const text = el('p', 'wk-text');
-    head.appendChild(name); head.appendChild(text);
+    head.appendChild(eye); head.appendChild(name); head.appendChild(year); head.appendChild(text);
     root.appendChild(head);
 
-    // ── Lienzo vivo: un clic, otra pieza. Ni panel ni traits ni guardar. ──
-    let canvas = null;
-    let hintSpan = null;
+    // ── Lienzo vivo + su información a la derecha ────────────────────────────
+    //    Izquierda: el lienzo mudo (un clic, otra pieza) con su cartela en la
+    //    esquina y el botón Generate. Derecha: la cartela "This one" (familia ·
+    //    seed vivo · edición) y la regla dicha (el texto de works.json). Sin
+    //    traits ni rareza: eso es lenguaje de edición y vive en el laboratorio.
+    let canvas = null, plate = null, genBtn = null, cartSeed = null, ruleWrap = null, ruleBody = null;
     if (ALGO) {
+      root.appendChild(el('div', 'wk-rule'));
+      root.appendChild(el('div', 'wk-sec', esc(t('hint.canvas', 'Click canvas to generate new variation'))));
+      const gg = el('div', 'wk-gen-grid');
+
       const live = el('div', 'wk-live');
+      const cw = el('div', 'wk-canvas-wrap');
       canvas = el('canvas'); canvas.width = 600; canvas.height = 600;
-      live.appendChild(canvas);
-      hintSpan = el('span', 'wk-hint', esc(t('hint.canvas', 'Click canvas to generate new variation')));
-      live.appendChild(hintSpan);
-      root.appendChild(live);
+      plate = el('div', 'wk-plate');
+      cw.appendChild(canvas); cw.appendChild(plate);
+      live.appendChild(cw);
+      genBtn = el('button', 'wk-gen', '↻ ' + esc(t('btn.generate', 'Generate')));
+      genBtn.type = 'button';
+      live.appendChild(genBtn);
+
+      const side = el('div', 'wk-side');
+      const cart = el('div', 'wk-cartela',
+        '<div class="sh">This one</div>' +
+        '<div class="cart"><span class="big">' + esc(slug.toUpperCase()) + '</span>' +
+        '<div><span class="k">seed</span> <span class="seedval">…</span></div>' +
+        '<div><span class="k">edition</span> 1/1 · unique print</div></div>');
+      const rc = el('div', 'wk-rulecard',
+        '<div class="wk-rc-h">' + esc(t('rule.said', 'The rule, said')) + '</div><div class="wk-rc-body"></div>');
+      rc.style.display = 'none';
+      side.appendChild(cart); side.appendChild(rc);
+
+      gg.appendChild(live); gg.appendChild(side);
+      root.appendChild(gg);
+
+      cartSeed = cart.querySelector('.seedval');
+      ruleWrap = rc; ruleBody = rc.querySelector('.wk-rc-body');
     }
 
+    root.appendChild(el('div', 'wk-rule'));
     const sec = el('div', 'wk-sec', esc(t('label.saved', 'Saved')));
     const grid = el('div', 'wk-grid');
     root.appendChild(sec); root.appendChild(grid);
@@ -116,7 +181,15 @@
         if (!w) return;
         currentWork = w;
         if (w.name) name.textContent = w.name;
+        if (w.year) { year.textContent = w.year; year.style.display = ''; }
         text.textContent = pickText(w.description);
+        // La regla dicha: el texto de cartela de la familia (works.json). Es lo
+        // que va a la derecha del lienzo; si no hay, la tarjeta no se pinta.
+        if (ruleBody) {
+          const said = pickText(w.cartela);
+          if (said) { ruleBody.textContent = said; ruleWrap.style.display = ''; }
+          else if (ruleWrap) ruleWrap.style.display = 'none';
+        }
         document.title = (w.name || slug.toUpperCase()) + ' — hoks';
       })
       .catch(() => {});
@@ -124,9 +197,17 @@
     // ── Cambio de idioma: reescribir las etiquetas dependientes del idioma ──
     // (el nav se re-traduce solo; estas se construyen en JS y hay que refrescarlas)
     global.addEventListener('hoks:langchange', () => {
-      if (hintSpan) hintSpan.textContent = t('hint.canvas', 'Click canvas to generate new variation');
+      const genLabel = root.querySelector('.wk-gen');
+      if (genLabel) genLabel.textContent = '↻ ' + t('btn.generate', 'Generate');
+      const genSec = root.querySelector('.wk-sec');
+      if (genSec && canvas) genSec.textContent = t('hint.canvas', 'Click canvas to generate new variation');
+      const rcH = root.querySelector('.wk-rc-h');
+      if (rcH) rcH.textContent = t('rule.said', 'The rule, said');
       sec.textContent = t('label.saved', 'Saved');
-      if (currentWork) text.textContent = pickText(currentWork.description);
+      if (currentWork) {
+        text.textContent = pickText(currentWork.description);
+        if (ruleBody) { const said = pickText(currentWork.cartela); if (said) ruleBody.textContent = said; }
+      }
     });
 
     // ── Piezas elegidas ──
@@ -142,14 +223,18 @@
       .then(r => r.ok ? r.json() : [])
       .then(list => {
         pieces = Array.isArray(list) ? list : [];
-        if (!pieces.length) { grid.appendChild(el('span', 'wk-empty', '—')); return; }
+        // Familia activa pero aún sin lote publicado: "en curso". Se dice SOON en
+        // vez de dejar un hueco, para que la sección vacía no parezca rota.
+        if (!pieces.length) {
+          grid.appendChild(el('div', 'wk-soon',
+            '<span class="wk-soon-badge">Soon</span> New work is being made for this family.'));
+          return;
+        }
         pieces.forEach((p, i) => {
           const fig = el('figure', 'wk-piece');
           const img = el('img'); img.src = p.dataUrl; img.alt = slug + ' #' + p.seed; img.loading = 'lazy';
-          const d = p.savedAt ? new Date(p.savedAt) : null;
           fig.appendChild(img);
-          fig.appendChild(el('figcaption', null, '#' + esc(p.seed) +
-            (d ? ' · ' + d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '')));
+          fig.appendChild(el('figcaption', null, '<span>#' + esc(p.seed) + '</span><b>1/1</b>'));
           fig.onclick = () => openPiece(i);
           grid.appendChild(fig);
         });
@@ -164,10 +249,14 @@
     let palettes = null;
     function draw() {
       if (!palettes) return;
-      try { ALGO.render(canvas.getContext('2d'), canvas.width, canvas.height, (Math.random() * 0xFFFFFFFF) >>> 0, { palettes }); }
+      const seed = (Math.random() * 0xFFFFFFFF) >>> 0;
+      try { ALGO.render(canvas.getContext('2d'), canvas.width, canvas.height, seed, { palettes }); }
       catch (e) {}
+      if (plate) plate.textContent = 'hoks · ' + slug.toUpperCase() + ' · #' + seed;
+      if (cartSeed) cartSeed.textContent = '#' + seed;
     }
     canvas.addEventListener('click', draw);
+    if (genBtn) genBtn.addEventListener('click', draw);
     global.HOKS.loadPalettes().then(p => { palettes = p; draw(); }).catch(() => {});
   }
 

@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+  <style>
+    :root{ --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983;
+      --geo:"League Spartan",Futura,system-ui,sans-serif; --mono:ui-monospace,Menlo,monospace; }
+    *{box-sizing:border-box} body{margin:0}
+    .stage{ width:1280px; background:var(--paper); font-family:var(--geo); }
+    .top{ display:flex; align-items:center; justify-content:space-between; height:60px; padding:0 40px; border-bottom:1px solid var(--line); }
+    .logo{ width:30px; height:28px; background:var(--ink); -webkit-mask:url("monogram.png") center/contain no-repeat; }
+    .top-r{ display:flex; align-items:center; gap:16px; }
+    .snd{ font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink); background:var(--acid); border-radius:30px; padding:7px 12px; }
+    .burger{ width:26px; } .burger span{ display:block; height:2px; background:var(--blue); margin:5px 0; }
+    .head{ display:flex; align-items:flex-end; justify-content:space-between; padding:26px 40px 8px; }
+    .head h2{ font-weight:700; font-size:34px; letter-spacing:.02em; text-transform:uppercase; margin:0; }
+    .head .desc{ font-family:var(--mono); font-size:11px; color:var(--mut); margin-top:8px; }
+    .thread{ font-family:var(--mono); font-size:11px; letter-spacing:.05em; color:var(--ink); border:1px solid var(--line); border-radius:30px; padding:8px 14px; }
+    .thread b{ color:var(--blue); font-weight:400; }
+    .grid{ display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:5px; padding:14px 40px 44px; }
+    .cell{ aspect-ratio:1; border-radius:2px; }
+  </style>
+</helmet>
+<div class="stage">
+  <div class="top">
+    <div class="logo"></div>
+    <div class="top-r"><span class="snd">♪ Sound</span><div class="burger"><span></span><span></span></div></div>
+  </div>
+  <div class="head">
+    <div><h2>The hall</h2><div class="desc">a pulse sweeps from a zone, then rests</div></div>
+    <div class="thread">common thread — <b>ONE PALETTE · Itten I</b></div>
+  </div>
+  <div class="grid" id="g"></div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  componentDidMount(){
+    const pal=['#2f4a7a','#c94f3a','#d9b13a','#e9e3d4','#7a6ba8','#3f7a75','#141b28','#b04e72'];
+    const host=document.querySelector('#g'); if(!host) return;
+    let html='';
+    for(let i=0;i<72;i++){ const c=pal[(Math.random()*pal.length)|0]; html+=`<div class="cell" style="background:${c}"></div>`; }
+    host.innerHTML=html;
+  }
+  renderVals(){ return {}; }
+}
+</script>
+</body>
+</html>

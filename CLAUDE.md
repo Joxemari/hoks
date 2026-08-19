@@ -12,8 +12,22 @@ controlado: cada pieza nace de una *seed* y un RNG determinista.
 commitea es exactamente lo que se publica. Las obras **graduadas** (plls,
 krrtk, dtk, dtkrt) tienen su algoritmo en `sketches/<obra>/algo.js` (fuente única,
 compartida entre laboratorio y producción); las páginas de las demás series aún
-llevan su JS *inline*. No hay módulos ni dependencias instaladas. Tipografía
-única en todo el sitio: `Courier New` monoespaciada; fondo blanco, tinta `#111`.
+llevan su JS *inline*. No hay módulos ni dependencias instaladas salvo una
+webfont: **League Spartan** (Google Fonts), cargada desde `nav.js`.
+
+**Sistema de diseño (2026).** El sitio dejó atrás el "Courier New único" por un
+lenguaje de dos voces: **League Spartan** (display — títulos, nombres de familia,
+botones) + **Courier New** (captions, datos, operativa). Paleta en tokens `:root`
+que inyecta `nav.js` en todas las páginas: `--paper #fbfbfa`, `--ink #0a0a0a`,
+`--blue #000ef7`, `--acid #dcff32`, `--line #e7e5df`, `--mut #8a8983`,
+`--body #26251f`, `--red #c0392b`. El nav es un **cajón azul** que entra desde la
+derecha (el burger lo abre); la marca es la "o" cruzada pintada a mano
+(`monogram.png` en la raíz, servida same-origin porque una `-webkit-mask`
+cross-origin la bloquean algunos navegadores; `logo_tall.png` es la versión alta
+para landing/About). El canvas de diseño de todas las pantallas vive en
+`_preview/design/` (artboards `*.dc.html`). Ojo: **el laboratorio (`sketches/`)
+no carga `nav.js`**, así que cada harness define sus propios tokens `:root`; hoy
+solo el de PLLS está portado al sistema nuevo, el resto sigue en el look viejo.
 
 ## Estructura
 

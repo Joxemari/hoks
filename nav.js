@@ -8,7 +8,9 @@ const FAVICON = `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,
 // Idioma por defecto: EN. Persistencia: localStorage 'hoks-lang'.
 // ─────────────────────────────────────────────────────────────────────────────
 const LANGS = ['eu', 'es', 'en'];
-const DEFAULT_LANG = 'eu';
+// Arranque en inglés: es el idioma con el statement y los textos validados en
+// Notion. El euskara se reactiva como defecto cuando su copy esté validado.
+const DEFAULT_LANG = 'en';
 // La parte pública es bilingüe euskara / inglés (conmutador en el nav).
 // El diccionario ES se conserva para reactivarlo en el futuro si hiciera falta.
 const SHOW_LANG_SWITCHER = true;
@@ -22,7 +24,7 @@ const DICT = {
     'btn.savebatch': 'Save to Batch', 'btn.download': 'Download PNG',
     'label.palette': 'Palette', 'label.grain': 'Grain', 'label.seed': 'Seed',
     'label.traits': 'Traits', 'label.saved': 'Saved', 'label.overall': 'Overall',
-    'label.format': 'Format', 'label.print': 'Print',
+    'label.format': 'Format', 'label.print': 'Print', 'rule.said': 'The rule, said',
     'format.square': 'Square', 'format.vertical': 'Vertical', 'format.horizontal': 'Horizontal',
     'toast.rendering': 'Rendering print file…',
     'toast.tooLarge': 'Too large for this browser — choose a smaller sheet',
@@ -69,7 +71,7 @@ const DICT = {
     'btn.savebatch': 'Guardar en lote', 'btn.download': 'Descargar PNG',
     'label.palette': 'Paleta', 'label.grain': 'Grano', 'label.seed': 'Semilla',
     'label.traits': 'Rasgos', 'label.saved': 'Guardados', 'label.overall': 'Global',
-    'label.format': 'Formato', 'label.print': 'Impresión',
+    'label.format': 'Formato', 'label.print': 'Impresión', 'rule.said': 'La regla, dicha',
     'format.square': 'Cuadrado', 'format.vertical': 'Vertical', 'format.horizontal': 'Horizontal',
     'toast.rendering': 'Renderizando el archivo de impresión…',
     'toast.tooLarge': 'Demasiado grande para este navegador — elige un pliego menor',
@@ -116,7 +118,7 @@ const DICT = {
     'btn.savebatch': 'Gorde sortan', 'btn.download': 'Deskargatu PNG',
     'label.palette': 'Paleta', 'label.grain': 'Pikorra', 'label.seed': 'Hazia',
     'label.traits': 'Ezaugarriak', 'label.saved': 'Gordeak', 'label.overall': 'Orokorra',
-    'label.format': 'Formatua', 'label.print': 'Inprimaketa',
+    'label.format': 'Formatua', 'label.print': 'Inprimaketa', 'rule.said': 'Araua, esanda',
     'format.square': 'Karratua', 'format.vertical': 'Bertikala', 'format.horizontal': 'Horizontala',
     'toast.rendering': 'Inprimatzeko fitxategia sortzen…',
     'toast.tooLarge': 'Handiegia nabigatzaile honentzat — aukeratu orri txikiagoa',
@@ -211,80 +213,127 @@ function setLang(l) {
 window.HOKSI18N = { get lang() { return LANG; }, langs: LANGS, t, en, tk, tv, apply, setLang };
 document.documentElement.setAttribute('lang', LANG);
 
+// Marca hoks (la "o" cruzada, pintada a mano). Se sirve desde el mismo origen
+// —GitHub Pages, /hoks/— porque una -webkit-mask cross-origin la bloquean
+// algunos navegadores. Ruta absoluta para que valga igual desde la raíz y
+// desde sketches/<obra>/.
+const MONO = '/hoks/monogram.png';
+
+// El sistema de diseño vive aquí, en :root, porque nav.js se carga en todas
+// las páginas: así los tokens (paper/ink/blue/acid/line/mut/body) y la
+// tipografía están disponibles en cualquier <style> de página sin repetirlos.
+// League Spartan (display) + Courier New (captions/operativa) sobre papel.
 const NAV_CSS = `
+:root{
+  --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32;
+  --line:#e7e5df; --mut:#8a8983; --body:#26251f; --red:#c0392b;
+  --geo:"League Spartan","Century Gothic",Futura,system-ui,sans-serif;
+  --mono:"Courier New",ui-monospace,Menlo,monospace;
+}
 *, *::before, *::after { box-sizing: border-box; }
-body { font-family: 'Courier New', Courier, monospace; }
-nav {
+body { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* Barra superior: marca + badge admin a la izquierda, notch/burger a la
+   derecha. El burger abre el cajón azul. */
+nav.hoks-top {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 2rem; height: 52px;
-  background: #fff; border-bottom: 1px solid #e8e8e8;
+  padding: 0 1.6rem; height: 52px;
+  background: var(--paper); border-bottom: 1px solid var(--line);
 }
-.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #111; }
-.nav-logo-dot { width: 14px; height: 14px; border-radius: 50%; background: #111; flex-shrink: 0; }
-.nav-logo-name { font-family: 'Courier New', Courier, monospace; font-size: 12px; font-weight: 400; letter-spacing: 0.08em; color: #111; }
-.nav-links { display: flex; gap: 2.5rem; list-style: none; align-items: center; margin: 0; padding: 0; }
-@media (max-width: 600px) {
-  .nav-links { gap: 1.2rem; }
-  .nav-links a, .nav-work-label { font-size: 10px; letter-spacing: 0.06em; }
-  nav { padding: 0 1rem; }
-  .nav-lang { gap: 0.5rem; padding-left: 0.6rem; }
+.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.nav-logo .mark {
+  width: 27px; height: 25px; background: var(--ink);
+  -webkit-mask: url("${MONO}") center/contain no-repeat;
+          mask: url("${MONO}") center/contain no-repeat;
 }
-.nav-links a, .nav-work-label {
-  font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: 400;
-  letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none;
-  color: #bbb; transition: color 0.15s; cursor: pointer; user-select: none;
+.nav-logo .name {
+  font-family: var(--geo); font-weight: 700; font-size: 15px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink);
 }
-.nav-links a:hover, .nav-links a.active { color: #111; }
-.nav-work-label:hover { color: #111; }
-.nav-work.active > .nav-work-label { color: #111; }
-.nav-work { position: relative; }
-.nav-work-dropdown {
-  position: absolute; top: calc(100% + 12px); right: -16px;
-  background: #fff; border-top: 2px solid #111;
-  border-left: 1px solid #e8e8e8; border-right: 1px solid #e8e8e8; border-bottom: 1px solid #e8e8e8;
-  padding: 8px 0; list-style: none; min-width: 140px;
-  opacity: 0; visibility: hidden; pointer-events: none;
-  transform: translateY(-6px); transition: opacity 0.15s, visibility 0.15s, transform 0.15s;
+.nav-admin-badge {
+  font-family: var(--geo); font-weight: 700; font-size: 8px; letter-spacing: 0.12em;
+  text-transform: uppercase; background: var(--red); color: #fff;
+  padding: 3px 8px; border-radius: 3px; cursor: pointer;
 }
-.nav-work-dropdown.open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
-.nav-work-dropdown::before {
-  content: ''; position: absolute; top: -7px; right: 22px;
-  width: 6px; height: 6px; background: #111;
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+.nav-burger {
+  width: 28px; height: 20px; background: none; border: 0; padding: 0; cursor: pointer;
+  display: flex; flex-direction: column; justify-content: center; gap: 5px;
 }
-.nav-work-dropdown li a {
-  display: block; padding: 7px 20px;
-  font-family: 'Courier New', Courier, monospace; font-size: 11px;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: #bbb; white-space: nowrap; text-decoration: none; transition: color 0.15s;
+.nav-burger span { display: block; height: 2px; background: var(--blue); transition: transform .2s, opacity .2s; }
+
+/* Cajón azul + velo */
+.nav-scrim {
+  position: fixed; inset: 0; z-index: 110; background: rgba(10,10,10,0.32);
+  opacity: 0; visibility: hidden; transition: opacity .22s, visibility .22s;
 }
-.nav-work-dropdown li a:hover, .nav-work-dropdown li a.active { color: #111; }
-.nav-lang { display: flex; align-items: center; gap: 0.75rem; padding-left: 1.2rem; }
-.nav-lang button {
-  font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: 400;
-  letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none;
-  color: #bbb; background: none; border: none; padding: 0; cursor: pointer;
-  transition: color 0.15s; user-select: none;
+.nav-scrim.open { opacity: 1; visibility: visible; }
+.nav-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 120;
+  width: 300px; max-width: 82vw; background: var(--blue); color: #fff;
+  padding: 32px 30px; display: flex; flex-direction: column; gap: 3px;
+  transform: translateX(100%); transition: transform .26s cubic-bezier(.4,0,.2,1);
 }
-.nav-lang button:hover { color: #111; }
-.nav-lang button.active { color: #111; }
-.nav-work-dropdown li a .nav-em { display: inline-block; width: 18px; margin-right: 8px; font-size: 13px; line-height: 1; vertical-align: -1px; }
+.nav-drawer.open { transform: translateX(0); }
+.nav-drawer .d-mark {
+  width: 30px; height: 28px; background: var(--acid); margin-bottom: 22px;
+  -webkit-mask: url("${MONO}") center/contain no-repeat;
+          mask: url("${MONO}") center/contain no-repeat;
+}
+.nav-drawer a {
+  color: #fff; font-family: var(--geo); font-weight: 600; font-size: 16px;
+  letter-spacing: 0.26em; text-transform: uppercase; text-decoration: none;
+  padding: 7px 0; display: flex; align-items: center; gap: 12px;
+  opacity: 0.92; transition: color .15s, opacity .15s; cursor: pointer;
+}
+.nav-drawer a:hover, .nav-drawer a.active { color: var(--acid); opacity: 1; }
+.nav-drawer .d-em { display: inline-block; width: 20px; font-size: 15px; line-height: 1; }
+.nav-drawer .d-sep { height: 1px; background: rgba(255,255,255,0.18); margin: 15px 0; }
+.nav-drawer .d-close {
+  position: absolute; top: 24px; right: 26px; width: 22px; height: 22px;
+  background: none; border: 0; padding: 0; cursor: pointer;
+}
+.nav-drawer .d-close::before, .nav-drawer .d-close::after {
+  content: ''; position: absolute; top: 10px; left: 0; width: 22px; height: 2px; background: #fff;
+}
+.nav-drawer .d-close::before { transform: rotate(45deg); }
+.nav-drawer .d-close::after { transform: rotate(-45deg); }
+.nav-drawer .d-lang { display: flex; gap: 16px; margin-top: 10px; }
+.nav-drawer .d-lang button {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(255,255,255,0.7); background: none; border: 0; padding: 0; cursor: pointer;
+  transition: color .15s;
+}
+.nav-drawer .d-lang button:hover, .nav-drawer .d-lang button.active { color: var(--acid); }
+.nav-drawer .d-who {
+  margin-top: auto; font-family: var(--mono); font-size: 11px; line-height: 1.7;
+  color: rgba(255,255,255,0.72);
+}
+@media (max-width: 600px) { nav.hoks-top { padding: 0 1rem; } }
+
+/* Footer */
 .site-footer {
-  padding: 1.2rem 2rem; border-top: 1px solid #e8e8e8;
-  display: flex; align-items: center; justify-content: space-between;
-  font-family: 'Courier New', Courier, monospace; background: #fff;
+  padding: 1.2rem 1.6rem; border-top: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between; background: var(--paper);
 }
-.footer-copy { font-size: 10px; color: #ccc; letter-spacing: 0.08em; text-transform: uppercase; }
-.footer-links { display: flex; gap: 1.5rem; }
-.footer-links a { font-size: 10px; color: #ccc; text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.15s; }
-.footer-links a:hover { color: #111; }
-body { display: flex; flex-direction: column; min-height: 100vh; }
+.footer-copy { font-family: var(--mono); font-size: 10px; color: var(--mut); letter-spacing: 0.1em; text-transform: uppercase; }
+.footer-links { display: flex; gap: 1.4rem; }
+.footer-links a { font-family: var(--mono); font-size: 10px; color: var(--mut); text-decoration: none; letter-spacing: 0.1em; text-transform: uppercase; transition: color .15s; }
+.footer-links a:hover { color: var(--ink); }
 `;
 
 const style = document.createElement('style');
 style.textContent = NAV_CSS;
 document.head.appendChild(style);
+
+// League Spartan (display) desde Google Fonts. Es la única dependencia externa
+// del sitio; las captions siguen en Courier New (--mono).
+if (!document.querySelector('link[data-hoks-font]')) {
+  document.head.insertAdjacentHTML('beforeend',
+    '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
+    '<link data-hoks-font rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">');
+}
 
 if (!document.querySelector('link[rel="icon"]')) {
   document.head.insertAdjacentHTML('beforeend', FAVICON);
@@ -308,36 +357,46 @@ function workHref(w) { return w.page || ('work.html?w=' + encodeURIComponent(w.s
 window.HOKSNAV = { workHref };
 
 const nav = document.createElement('nav');
+nav.className = 'hoks-top';
 nav.innerHTML = `
-  <div style="display:flex;align-items:center;gap:10px;">
-    <a class="nav-logo" href="index.html">
-      <span class="nav-logo-dot"></span>
-      <span class="nav-logo-name">hoks</span>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a class="nav-logo" href="index.html" aria-label="hoks">
+      <span class="mark"></span>
     </a>
-    <span id="nav-admin-badge" style="display:none;font-family:'Courier New',Courier,monospace;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:#c0392b;color:#fff;padding:2px 7px;border-radius:2px;cursor:pointer;" onclick="window.location.href='admin.html'">ADMIN</span>
+    <span id="nav-admin-badge" class="nav-admin-badge" style="display:none;" onclick="window.location.href='admin.html'">Admin</span>
   </div>
-  <ul class="nav-links">
-    <li class="nav-work${isWork?' active':''}">
-      <span class="nav-work-label" id="nav-work-label" data-i18n="nav.work">Work</span>
-      <!-- Lista de arranque: la de verdad la escribe works.json unas líneas más
-           abajo. Esta se queda si no hay red, y evita el hueco mientras llega. -->
-      <ul class="nav-work-dropdown" id="nav-work-dropdown">
-        <li data-slug="plls"><a href="plls.html"${path==='plls.html'?' class="active"':''}><span class="nav-em">💊</span>PLLS</a></li>
-        <li data-slug="krrtk"><a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}><span class="nav-em">🟥</span>KRRTK</a></li>
-        <li data-slug="dtkrt"><a href="dtkrt.html"${path==='dtkrt.html'?' class="active"':''}><span class="nav-em">🔵</span>DTKRT</a></li>
-        <li data-slug="eclps"><a href="eclps.html"${path==='eclps.html'?' class="active"':''}><span class="nav-em">🌑</span>ECLPS</a></li>
-        <li data-slug="trzs"><a href="trzs.html"${path==='trzs.html'?' class="active"':''}><span class="nav-em">🪢</span>TRZS</a></li>
-
-      </ul>
-    </li>
-    <li><a href="about.html"${isAbout?' class="active"':''} data-i18n="nav.about">About</a></li>
-    <li><a href="palettes.html"${isPalettes?' class="active"':''} data-i18n="nav.palettes">Palettes</a></li>
-    ${SHOW_LANG_SWITCHER ? `<li class="nav-lang" id="nav-lang">
-      <button type="button" data-lang="eu">EU</button>
-      <button type="button" data-lang="en">EN</button>
-    </li>` : ''}
-  </ul>`;
+  <button type="button" class="nav-burger" id="nav-burger" aria-label="Menu"><span></span><span></span><span></span></button>`;
 document.body.insertBefore(nav, document.body.firstChild);
+
+// Velo + cajón azul. El menú (familias, About, Palettes, idioma) vive dentro:
+// una sola superficie que reskinea todas las páginas a la vez.
+const scrim = document.createElement('div');
+scrim.className = 'nav-scrim';
+scrim.id = 'nav-scrim';
+const drawer = document.createElement('aside');
+drawer.className = 'nav-drawer';
+drawer.id = 'nav-drawer';
+drawer.innerHTML = `
+  <button type="button" class="d-close" id="nav-drawer-close" aria-label="Close"></button>
+  <span class="d-mark"></span>
+  <!-- Lista de arranque: la real la escribe works.json más abajo. Se queda si
+       no hay red y evita el hueco mientras llega. -->
+  <div id="nav-fam-list">
+    <a href="plls.html"${path==='plls.html'?' class="active"':''}><span class="d-em">💊</span>PLLS</a>
+    <a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}><span class="d-em">🟥</span>KRRTK</a>
+    <a href="dtkrt.html"${path==='dtkrt.html'?' class="active"':''}><span class="d-em">🔵</span>DTKRT</a>
+    <a href="eclps.html"${path==='eclps.html'?' class="active"':''}><span class="d-em">🌑</span>ECLPS</a>
+    <a href="trzs.html"${path==='trzs.html'?' class="active"':''}><span class="d-em">🪢</span>TRZS</a>
+  </div>
+  <div class="d-sep"></div>
+  <a href="about.html"${isAbout?' class="active"':''} data-i18n="nav.about">About</a>
+  <a href="palettes.html"${isPalettes?' class="active"':''} data-i18n="nav.palettes">Palettes</a>
+  ${SHOW_LANG_SWITCHER ? `<div class="d-lang" id="nav-lang">
+    <button type="button" data-lang="eu">EU</button>
+    <button type="button" data-lang="en">EN</button>
+  </div>` : ''}`;
+document.body.appendChild(scrim);
+document.body.appendChild(drawer);
 
 const _isAdmin = sessionStorage.getItem('hoks-admin-session') === '1' ||
                  localStorage.getItem('hoks-admin-session')   === '1';
@@ -345,6 +404,14 @@ if (_isAdmin) {
   const badge = document.getElementById('nav-admin-badge');
   if (badge) badge.style.display = '';
 }
+
+// ── Abrir / cerrar el cajón ──
+function openDrawer()  { drawer.classList.add('open'); scrim.classList.add('open'); }
+function closeDrawer() { drawer.classList.remove('open'); scrim.classList.remove('open'); }
+document.getElementById('nav-burger').addEventListener('click', e => { e.stopPropagation(); openDrawer(); });
+document.getElementById('nav-drawer-close').addEventListener('click', closeDrawer);
+scrim.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
 // ── Language switcher ──
 function syncSwitcher() {
@@ -356,21 +423,20 @@ document.querySelectorAll('#nav-lang button').forEach(b => {
   b.addEventListener('click', e => { e.stopPropagation(); setLang(b.getAttribute('data-lang')); });
 });
 syncSwitcher();
-apply(nav); // traducir el nav de inmediato (evita parpadeo con idioma no-EN guardado)
+apply(nav); apply(drawer); // traducir de inmediato (evita parpadeo con idioma no-EN guardado)
 
-const workLabel = document.getElementById('nav-work-label');
-const workDropdown = document.getElementById('nav-work-dropdown');
-if (workLabel && workDropdown) {
-  workLabel.addEventListener('click', e => { e.stopPropagation(); workDropdown.classList.toggle('open'); });
-  document.addEventListener('click', () => workDropdown.classList.remove('open'));
-  workDropdown.addEventListener('click', e => e.stopPropagation());
+// Emoji por familia — el mismo lenguaje del canvas de diseño. La lista de
+// arranque los trae escritos; al reescribir desde works.json los recuperamos
+// por slug (works.json no guarda emoji).
+const FAM_EM = { plls:'💊', krrtk:'🟥', dtk:'🟥', dtkrt:'🔵', eclps:'🌑', trzs:'🪢', bzrs:'〰️' };
 
-  // El dropdown SE ESCRIBE desde data/works.json: una entrada por familia
-  // activa, en el orden del catálogo. Antes la lista estaba escrita en este
-  // archivo y works.json solo podía esconder entradas, así que activar una
-  // familia nueva en el panel no la traía al nav — había que venir a tocar
-  // código. Ahora `active` es el único interruptor.
-  // Si el fetch falla se queda la lista de arranque (degradación segura).
+const famList = document.getElementById('nav-fam-list');
+if (famList) {
+  // La lista SE ESCRIBE desde data/works.json: una entrada por familia activa,
+  // en el orden del catálogo. Antes estaba escrita aquí y works.json solo podía
+  // esconder entradas; activar una familia nueva en el panel no la traía al nav.
+  // Ahora `active` es el único interruptor. Si el fetch falla se queda la lista
+  // de arranque (degradación segura).
   fetch('https://raw.githubusercontent.com/Joxemari/hoks/main/data/works.json?t=' + Date.now())
     .then(r => r.ok ? r.json() : null)
     .then(works => {
@@ -382,24 +448,19 @@ if (workLabel && workDropdown) {
       // La página genérica sirve a varias familias, así que para saber cuál se
       // está mirando no basta el nombre del archivo: hay que mirar el ?w=.
       const hereSlug = new URLSearchParams(location.search).get('w');
-      let here = false;
-      workDropdown.innerHTML = live.map(w => {
+      famList.innerHTML = live.map(w => {
         const href = workHref(w);
         const mine = href.split('?')[0] === path &&
                      (href.indexOf('?w=') < 0 || hereSlug === w.slug);
-        if (mine) here = true;
-        return `<li data-slug="${esc(w.slug)}"><a href="${esc(href)}"${mine ? ' class="active"' : ''}>` +
-               `${esc(w.name || w.slug.toUpperCase())}</a></li>`;
+        const em = FAM_EM[w.slug] || '▦';
+        return `<a href="${esc(href)}"${mine ? ' class="active"' : ''}>` +
+               `<span class="d-em">${em}</span>${esc(w.name || w.slug.toUpperCase())}</a>`;
       }).join('');
-      // …y con la lista real ya se sabe si esta página es una obra: en la
-      // adivinanza inicial no cabían las familias que aún no existían.
-      const workLi = workLabel.closest('li');
-      if (workLi) workLi.classList.toggle('active', here || path === 'index.html' || path === '');
     })
     .catch(() => {});
 }
 
-document.querySelectorAll('main, #main-content, .about-wrap, .work-section').forEach(el => el.style.flex = '1');
+document.querySelectorAll('main, #main-content, .about-wrap, .work-section, .wk, .lab-wrap').forEach(el => el.style.flex = '1');
 
 // Footer — Instagram aparece solo cuando esté configurado en site.json
 const footer = document.createElement('footer');

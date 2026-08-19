@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+  <style>
+    :root{ --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983; --body:#26251f;
+      --geo:"League Spartan",Futura,system-ui,sans-serif; --mono:ui-monospace,Menlo,monospace; }
+    *{box-sizing:border-box} body{margin:0}
+    .stage{ width:1280px; min-height:760px; background:var(--paper); color:var(--ink); font-family:var(--geo); padding:40px 44px; }
+    .eyebrow{ font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--mut); }
+    h1{ font-weight:700; font-size:44px; letter-spacing:.01em; text-transform:uppercase; margin:8px 0 4px; }
+    .sub{ font-family:var(--mono); font-size:12px; color:var(--mut); margin-bottom:28px; }
+    .rowlabel{ font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut); margin:22px 0 10px; }
+    .pipe{ display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; }
+    .step{ border:1px solid var(--line); border-radius:12px; padding:16px; background:#fff; position:relative; }
+    .step.gate{ border-color:var(--blue); box-shadow:inset 0 0 0 1px var(--blue); }
+    .sn{ font-family:var(--mono); font-size:11px; color:var(--blue); }
+    .st{ font-weight:700; font-size:17px; letter-spacing:.02em; text-transform:uppercase; margin:6px 0 6px; }
+    .sd{ font-family:var(--mono); font-size:11px; line-height:1.55; color:var(--body); }
+    .where{ font-family:var(--mono); font-size:9.5px; letter-spacing:.04em; color:var(--mut); margin-top:10px; padding-top:8px; border-top:1px solid var(--line); }
+    .where b{ color:var(--blue); font-weight:400; }
+    .gatetag{ position:absolute; top:-9px; right:12px; font-family:var(--geo); font-weight:700; font-size:8px; letter-spacing:.12em; text-transform:uppercase; background:var(--blue); color:#fff; padding:3px 8px; border-radius:20px; }
+    .arrows{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:6px 0; }
+    .arrows span{ text-align:center; color:var(--mut); font-size:14px; }
+    .band{ margin-top:24px; border:1px dashed var(--line); border-radius:12px; padding:16px 18px; background:#fcfcfb; }
+    .bandh{ font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut); margin-bottom:10px; }
+    .files{ display:flex; flex-wrap:wrap; gap:8px; }
+    .f{ font-family:var(--mono); font-size:11px; color:var(--body); border:1px solid var(--line); border-radius:20px; padding:6px 12px; background:#fff; }
+    .f b{ color:var(--blue); font-weight:400; }
+    .note{ font-family:var(--mono); font-size:11px; line-height:1.7; color:var(--mut); margin-top:16px; max-width:96ch; }
+    .acidk{ color:var(--ink); background:var(--acid); padding:1px 5px; border-radius:3px; }
+  </style>
+</helmet>
+<div class="stage">
+  <span class="eyebrow">hoks · el flujo</span>
+  <h1>De la creación al lanzamiento</h1>
+  <div class="sub">crear fuera · endurecer aquí · publicar recetas · mostrar en vivo — dos interruptores marcan el paso a producción</div>
+
+  <div class="rowlabel">Laboratorio (privado · lo opera Claude)</div>
+  <div class="pipe">
+    <div class="step"><div class="sn">01</div><div class="st">Crear</div><div class="sd">Boceto en p5 / OpenProcessing. El flujo creativo vive fuera del repo.</div><div class="where">p5 · OpenProcessing</div></div>
+    <div class="step"><div class="sn">02</div><div class="st">Graduar</div><div class="sd">Portar a canvas-2D puro con HOKS.Rng. Verificado idéntico al píxel.</div><div class="where"><b>sketches/&lt;obra&gt;/algo.js</b> + harness</div></div>
+    <div class="step"><div class="sn">03</div><div class="st">Validar</div><div class="sd">Scrub de seeds · <span class="acidk">g</span> = hoja de contactos (12) · apartar keepers.</div><div class="where">harness · <b>+ / a</b> → lote</div></div>
+    <div class="step gate"><div class="gatetag">Interruptor 1</div><div class="sn">04</div><div class="st">Lote</div><div class="sd">Una lista de <b>recetas</b> (obra, seed, params, paleta) — no imágenes. Puede mezclar obras.</div><div class="where"><b>data/batches.json</b> · 1 commit</div></div>
+  </div>
+
+  <div class="arrows"><span></span><span>→</span><span>→</span><span>→</span></div>
+
+  <div class="rowlabel">Producción (la web · lo commiteado = lo publicado)</div>
+  <div class="pipe">
+    <div class="step gate"><div class="gatetag">Publicar</div><div class="sn">05</div><div class="st">Publicar lote</div><div class="sd">Renderiza cada receta → obra guardada. Apunta la paleta que <b>realmente</b> salió.</div><div class="where"><b>data/&lt;obra&gt;.json</b> + <b>palette-usage.json</b></div></div>
+    <div class="step gate"><div class="gatetag">Interruptor 2</div><div class="sn">06</div><div class="st">Activar</div><div class="sd">El check <b>active</b> es el interruptor de la web entera: landing, nav y sección.</div><div class="where"><b>data/works.json</b> · panel o harness</div></div>
+    <div class="step"><div class="sn">07</div><div class="st">La web</div><div class="sd">Landing → hall (contact sheet) → sala de familia. Lee los JSON en vivo desde raw.</div><div class="where">index · hall · work.html?w=</div></div>
+    <div class="step"><div class="sn">08</div><div class="st">Pulse diario</div><div class="sd">Un seed al día → post → IG/X, con enlace de vuelta a su sala. Archivo y feed, un solo objeto.</div><div class="where">post del día · @hoksart</div></div>
+  </div>
+
+  <div class="band">
+    <div class="bandh">Capa de datos · leída en vivo desde raw.githubusercontent</div>
+    <div class="files">
+      <span class="f"><b>works.json</b> — registro + active</span>
+      <span class="f"><b>&lt;obra&gt;.json</b> — obras guardadas</span>
+      <span class="f"><b>palettes.json</b> — paletas</span>
+      <span class="f"><b>palette-usage.json</b> — índice de uso</span>
+      <span class="f"><b>batches.json</b> — recetas</span>
+      <span class="f"><b>site.json</b> — about / contacto</span>
+    </div>
+  </div>
+
+  <div class="note">Dos interruptores, no uno: <b>publicar un lote</b> crea la obra guardada (galería); <b>active</b> la enciende en la web. Una familia puede estar publicada sin estar activa, o activa con galería vacía (cae a demos). El diseño nuevo entra solo en la capa de presentación — el pipeline no cambia.</div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic { renderVals(){ return {}; } }
+</script>
+</body>
+</html>

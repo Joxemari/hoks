@@ -4,13 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PLLS · lab — hoks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --ink:#111; --ink3:#bbb; --border:#e8e8e8; --surface:#f7f7f7; --f:'Courier New',Courier,monospace; }
-  body { font-family: var(--f); background: #fff; color: var(--ink); display: grid; grid-template-columns: 270px 1fr; height: 100vh; }
+  /* Sistema de diseño hoks. El laboratorio no carga nav.js, así que define aquí
+     sus propios tokens. --f (Courier) para los mandos densos; --geo para el título. */
+  :root { --ink:#0a0a0a; --ink3:#8a8983; --border:#e7e5df; --surface:#f3f1ec; --paper:#fbfbfa;
+    --blue:#000ef7; --acid:#dcff32; --f:'Courier New',Courier,monospace;
+    --geo:"League Spartan","Century Gothic",Futura,system-ui,sans-serif; }
+  body { font-family: var(--f); background: var(--paper); color: var(--ink); display: grid; grid-template-columns: 270px 1fr; height: 100vh; }
   .panel { border-right: 1px solid var(--border); padding: 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; }
-  .lab-title { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
-  .lab-title small { display:block; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; }
+  .lab-title { font-family: var(--geo); font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .lab-title small { display:block; font-family:var(--f); font-size:9px; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; }
   .group { display: flex; flex-direction: column; gap: 6px; }
   .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); }
   .row { display:flex; align-items:center; gap:6px; }
@@ -157,7 +164,7 @@
       <!-- El muro es una VISTA, no un parámetro: se va a su página y no engorda
            el panel con mandos que no cambian la obra, solo cómo se mira. -->
       <div id="wallLink"></div>
-      <button id="launch" title="Activa esta obra en works.json (requiere sesión admin)">▲ Lanzar a producción</button>
+      <button id="launch" title="Enciende la familia en la web (works.json active) y le pone año si no lo tiene. NO publica obra — eso es publicar el lote. Requiere sesión admin.">▲ Lanzar a producción</button>
       <span class="hintline" id="launchMsg"></span>
     </div>
 
@@ -471,27 +478,10 @@ document.addEventListener('keydown', e => {
 
 // ── LANZAR A PRODUCCIÓN ──
 $('launch').onclick = launchToProduction;
-async function launchToProduction() {
-  const msg = t => { $('launchMsg').textContent = t; };
-  const token = localStorage.getItem('hoks-gh-token');
-  const isAdmin = sessionStorage.getItem('hoks-admin-session') === '1' || localStorage.getItem('hoks-admin-session') === '1';
-  if (!isAdmin || !token) { msg('⚠ Requiere sesión admin con token — entra en /admin.html.'); return; }
-  msg('Leyendo works.json…');
-  try {
-    const rd = await fetch(`https://api.github.com/repos/${REPO}/contents/data/works.json`, { headers: { Authorization: 'Bearer ' + token } });
-    if (!rd.ok) { msg('⚠ No se pudo leer works.json (' + rd.status + ')'); return; }
-    const j = await rd.json();
-    const works = JSON.parse(decodeURIComponent(escape(atob(j.content))));
-    const w = works.find(x => x.slug === WORK_SLUG || x.id === WORK_SLUG);
-    if (!w) { msg('⚠ "' + WORK_SLUG + '" no está en works.json'); return; }
-    if (w.active === true) { msg('✓ Ya está en producción.'); return; }
-    w.active = true;
-    msg('Activando…');
-    const body = { message: `launch ${WORK_SLUG} to production`, content: btoa(unescape(encodeURIComponent(JSON.stringify(works, null, 2)))), sha: j.sha };
-    const wr = await fetch(`https://api.github.com/repos/${REPO}/contents/data/works.json`, { method: 'PUT', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    msg(wr.ok ? '✓ Lanzado a producción — visible en la landing en ~30s.' : '⚠ Error al escribir (' + wr.status + ')');
-  } catch (e) { msg('⚠ ' + e.message); }
-}
+// Lanzar = ACTIVAR (works.json active). La lógica vive en _lab.js para que
+// todas las familias compartan el mismo gesto: avisa si no hay lote (→ SOON) y
+// pide el año si falta. No publica obra — eso es publicar el lote.
+function launchToProduction() { return HOKSLAB.launch(SLUG, $('launchMsg')); }
 
 // ── INIT: pinta YA con el fallback (nunca en blanco), luego trae TODAS las paletas ──
 buildWeightSliders();

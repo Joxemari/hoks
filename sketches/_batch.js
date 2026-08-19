@@ -41,20 +41,20 @@
 .hb-item canvas { display:block; height:46px; width:auto; outline:1px solid rgba(0,0,0,0.12); cursor:pointer; }
 .hb-item .hb-x { position:absolute; top:-5px; right:-5px; width:14px; height:14px; line-height:12px;
   text-align:center; font-size:10px; border-radius:50%; border:1px solid var(--border-dark,#d0d0d0);
-  background:#fff; color:var(--ink3,#bbb); cursor:pointer; }
+  background:var(--paper,#fff); color:var(--ink3,#bbb); cursor:pointer; }
 .hb-item .hb-x:hover { color:#c0392b; }
 .hb-item.drift canvas { outline:2px solid #c0392b; }
-.hb-item.pub canvas { outline:2px solid #111; }
+.hb-item.pub canvas { outline:2px solid var(--ink,#111); }
 .hb-empty { font-size:9px; color:var(--ink3,#bbb); letter-spacing:0.06em; padding:14px 0; }
 .hb-note { font-size:9px; color:var(--ink3,#bbb); letter-spacing:0.04em; }
 /* el "+" que aparece sobre cada miniatura de la hoja de contactos */
 .hb-add { position:absolute; top:5px; right:5px; width:22px; height:22px; border-radius:2px;
-  border:none; background:rgba(255,255,255,0.9); color:#111; font-size:14px; line-height:22px;
+  border:none; background:rgba(255,255,255,0.9); color:var(--ink,#111); font-size:14px; line-height:22px;
   text-align:center; cursor:pointer; opacity:0; transition:opacity 0.12s; font-family:inherit; }
 figure:hover .hb-add, .hb-add:focus { opacity:1; }
-.hb-add.done { background:#111; color:#fff; opacity:1; }
+.hb-add.done { background:var(--ink,#111); color:#fff; opacity:1; }
 /* el menú del botón derecho sobre una miniatura */
-.hb-menu { position:fixed; z-index:400; background:#fff; border:1px solid var(--border-dark,#d0d0d0);
+.hb-menu { position:fixed; z-index:400; background:var(--paper,#fff); border:1px solid var(--border-dark,#d0d0d0);
   border-radius:2px; box-shadow:0 3px 14px rgba(0,0,0,0.13); padding:3px; min-width:150px; }
 /* text-transform:none a propósito: el nombre del lote lo escribes tú, no es una
    etiqueta de interfaz, y en versalitas deja de ser el que pusiste. */

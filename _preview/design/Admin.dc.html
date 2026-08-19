@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+  <style>
+    :root{ --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983; --body:#26251f; --red:#c0392b;
+      --geo:"League Spartan",Futura,system-ui,sans-serif; --mono:ui-monospace,Menlo,monospace; }
+    *{box-sizing:border-box} body{margin:0}
+    .stage{ width:1280px; background:var(--paper); color:var(--ink); font-family:var(--geo); }
+    .top{ display:flex; align-items:center; justify-content:space-between; height:56px; padding:0 32px; border-bottom:1px solid var(--line); }
+    .brand{ display:flex; align-items:center; gap:12px; }
+    .logo{ width:26px; height:24px; background:var(--ink); -webkit-mask:url("monogram.png") center/contain no-repeat; }
+    .abadge{ font-family:var(--geo); font-weight:700; font-size:8px; letter-spacing:.12em; text-transform:uppercase; background:var(--red); color:#fff; padding:3px 8px; border-radius:3px; }
+    .toplinks{ display:flex; gap:18px; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); }
+    .saving{ font-family:var(--mono); font-size:10px; color:var(--acid); background:var(--ink); padding:5px 10px; border-radius:20px; }
+    .tabs{ display:flex; gap:2px; padding:12px 32px 0; border-bottom:1px solid var(--line); }
+    .tab{ font-family:var(--geo); font-weight:600; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut); padding:11px 15px; border-radius:8px 8px 0 0; }
+    .tab.on{ background:var(--blue); color:#fff; }
+    .wrap{ max-width:1000px; margin:0 auto; padding:28px 32px 60px; }
+    .bar{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+    .h{ font-weight:700; font-size:24px; text-transform:uppercase; letter-spacing:.02em; }
+    .add{ font-family:var(--geo); font-weight:600; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#fff; background:var(--ink); border-radius:9px; padding:10px 14px; margin-left:auto; }
+    .fam{ border:1px solid var(--line); border-radius:12px; padding:18px 20px; background:#fff; margin-bottom:14px; }
+    .frow{ display:flex; align-items:center; gap:16px; }
+    .fem{ font-size:22px; } .fname{ font-weight:700; font-size:18px; letter-spacing:.06em; text-transform:uppercase; }
+    .fslug{ font-family:var(--mono); font-size:10.5px; color:var(--mut); }
+    .lab{ font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; color:var(--blue); margin-left:6px; }
+    .spacer{ flex:1; }
+    /* active toggle */
+    .toggle{ display:inline-flex; align-items:center; gap:9px; font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--body); }
+    .sw{ width:40px; height:22px; border-radius:20px; background:var(--acid); position:relative; }
+    .sw::after{ content:""; position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:var(--ink); }
+    .sw.off{ background:#e7e5df; } .sw.off::after{ right:auto; left:2px; background:#fff; border:1px solid var(--line); }
+    .fbody{ margin-top:14px; display:grid; grid-template-columns:1fr 220px; gap:16px; }
+    .field{ }
+    .flabel{ font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin-bottom:6px; }
+    .ta{ width:100%; border:1px solid var(--line); border-radius:8px; padding:11px 13px; font-family:var(--mono); font-size:12px; color:var(--body); background:var(--paper); line-height:1.6; }
+    .fmts{ display:flex; gap:8px; flex-wrap:wrap; }
+    .fchip{ font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; border:1px solid var(--line); border-radius:20px; padding:6px 11px; color:var(--mut); }
+    .fchip.on{ background:var(--ink); color:#fff; border-color:var(--ink); }
+    .save{ font-family:var(--geo); font-weight:600; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#fff; background:var(--blue); border-radius:9px; padding:11px 14px; text-align:center; margin-top:10px; }
+  </style>
+</helmet>
+<div class="stage">
+  <div class="top">
+    <div class="brand"><div class="logo"></div><span class="abadge">Admin</span></div>
+    <div style="display:flex; align-items:center; gap:18px">
+      <div class="toplinks"><span>↗ site</span><span>↗ hall</span><span>↗ post del día</span><span>↗ lab</span></div>
+      <span class="saving">saving…</span>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab on">Works</div><div class="tab">Palettes</div><div class="tab">Gallery</div><div class="tab">Batches</div><div class="tab">Impresión</div><div class="tab">Site</div><div class="tab">Security</div>
+  </div>
+  <div class="wrap">
+    <div class="bar"><div class="h">Families</div><div class="add">+ Add family</div></div>
+
+    <div class="fam">
+      <div class="frow">
+        <span class="fem">💊</span><span class="fname">PLLS</span><span class="fslug">plls · 1414×1000</span><span class="lab">↗ Lab</span>
+        <span class="spacer"></span>
+        <span class="toggle">Active <span class="sw"></span></span>
+      </div>
+      <div class="fbody">
+        <div class="field"><div class="flabel">Narrative (about this family)</div>
+          <div class="ta">The capsules of PLLS given weather: mesh-gradient ground, film-grain skin. A capsule is a distance between two points, given a thickness.</div>
+          <div class="save">Save &amp; publish</div></div>
+        <div class="field"><div class="flabel">Formats</div>
+          <div class="fmts"><span class="fchip">Square</span><span class="fchip on">Horizontal</span><span class="fchip">Double</span></div>
+          <div class="flabel" style="margin-top:16px">Cartela · EU / ES / EN</div>
+          <div class="ta" style="font-size:11px">Kapsulak, eguraldiaren mende…</div></div>
+      </div>
+    </div>
+
+    <div class="fam">
+      <div class="frow">
+        <span class="fem">🔵</span><span class="fname">DTKRT</span><span class="fslug">dtkrt · 1414×1000</span><span class="lab">↗ Lab</span>
+        <span class="spacer"></span>
+        <span class="toggle">Active <span class="sw"></span></span>
+      </div>
+    </div>
+
+    <div class="fam" style="opacity:.72">
+      <div class="frow">
+        <span class="fem">🌑</span><span class="fname">ECLPS</span><span class="fslug">eclps · double</span><span class="lab">↗ Lab</span>
+        <span class="spacer"></span>
+        <span class="toggle">Active <span class="sw off"></span></span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic { renderVals(){ return {}; } }
+</script>
+</body>
+</html>

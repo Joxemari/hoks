@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+  <style>
+    :root{ --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983; --body:#26251f;
+      --geo:"League Spartan","Century Gothic",Futura,system-ui,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+    *{box-sizing:border-box}
+    body{ margin:0; background:var(--paper); color:var(--ink); font-family:var(--geo); }
+    a{ color:var(--blue); } a:hover{ color:#000ac2; }
+    .sheet{ padding:44px 48px 56px; }
+    .eyebrow{ font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--mut); }
+    h1{ font-family:var(--geo); font-weight:700; font-size:64px; letter-spacing:.01em; text-transform:uppercase; line-height:.94; margin:10px 0 0; }
+    .sub{ font-family:var(--mono); font-size:12.5px; color:var(--mut); margin:14px 0 0; }
+    .rule{ height:1px; background:var(--line); margin:34px 0; }
+    .sech{ font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--mut); margin:0 0 16px; display:flex; align-items:center; gap:10px; }
+    .sech::after{ content:""; flex:1; height:1px; background:var(--line); }
+    .cols{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:44px; }
+    /* color chips */
+    .swatches{ display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:12px; }
+    .sw{ display:flex; flex-direction:column; gap:8px; }
+    .sw .chip{ height:66px; border-radius:8px; border:1px solid var(--line); }
+    .sw .nm{ font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; color:var(--body); }
+    .sw .hex{ font-family:var(--mono); font-size:10px; color:var(--mut); }
+    /* type ramp */
+    .ramp{ display:flex; flex-direction:column; gap:14px; }
+    .ramp .lbl{ font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--mut); text-transform:uppercase; }
+    .display{ font-family:var(--geo); font-weight:700; text-transform:uppercase; letter-spacing:.02em; line-height:1; }
+    /* components */
+    .comp-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:26px; }
+    .card{ border:1px solid var(--line); border-radius:14px; padding:20px; background:#fff; }
+    .btn{ font-family:var(--geo); font-weight:600; font-size:12.5px; letter-spacing:.1em; text-transform:uppercase; border:1px solid var(--ink); background:var(--ink); color:#fff; padding:13px 16px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; gap:9px; }
+    .btn.ghost{ background:#fff; color:var(--ink); }
+    .btn.acid{ background:var(--acid); color:var(--ink); border-color:var(--acid); border-radius:30px; }
+    .cartela{ font-family:var(--mono); font-size:12px; line-height:1.85; color:#3a3a37; border-left:2px solid var(--blue); padding-left:14px; }
+    .cartela .k{ color:var(--mut); text-transform:uppercase; letter-spacing:.1em; font-size:10px; }
+    .cartela .big{ font-family:var(--geo); font-weight:700; font-size:15px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink); }
+    .rulecard{ border:1px solid #14140f; border-radius:14px; padding:15px 16px; background:#0b0b0a; }
+    .rc-h{ font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--acid); }
+    .rc-code{ font-family:var(--mono); font-size:11px; line-height:1.85; color:#e4e3dc; white-space:pre; margin:10px 0 0; }
+    .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+    .chip-r{ font-family:var(--geo); font-weight:700; font-size:10px; letter-spacing:.12em; text-transform:uppercase; padding:5px 11px; border-radius:20px; border:1px solid var(--line); color:var(--body); }
+    .chip-r.goose{ background:var(--acid); border-color:var(--acid); color:var(--ink); }
+    .toast{ display:inline-flex; align-items:center; gap:10px; background:var(--ink); color:#fff; font-family:var(--mono); font-size:11px; letter-spacing:.06em; padding:11px 16px; border-radius:10px; }
+    .toast .dot{ width:7px; height:7px; border-radius:50%; background:var(--acid); }
+    /* the blue drawer nav, shown as a specimen */
+    .navspec{ position:relative; height:300px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#0c0c0c; }
+    .navspec .paper{ position:absolute; inset:0; background:var(--paper); }
+    .navspec .drawer{ position:absolute; top:0; bottom:0; right:0; width:230px; background:var(--blue); padding:26px 22px; display:flex; flex-direction:column; gap:9px; }
+    .navspec .drawer .nm{ width:26px; height:26px; background:var(--acid); border-radius:3px; margin-bottom:12px; -webkit-mask:url("monogram.png") center/contain no-repeat; }
+    .navspec .drawer a{ color:#fff; font-family:var(--geo); font-weight:600; font-size:15px; letter-spacing:.32em; text-transform:uppercase; text-decoration:none; opacity:.92; display:flex; gap:10px; align-items:center; }
+    .navspec .drawer a.on{ color:var(--acid); }
+    .navspec .drawer small{ font-family:var(--mono); font-size:9px; letter-spacing:.14em; opacity:.7; }
+    .navspec .drawer .who{ margin-top:auto; font-family:var(--mono); font-size:10px; color:rgba(255,255,255,.7); line-height:1.7; }
+    .navspec .burger{ position:absolute; top:18px; right:246px; width:26px; height:18px; }
+    .navspec .burger span{ display:block; height:2px; background:var(--blue); margin:5px 0; }
+    .navspec .em{ width:18px; }
+    .note{ font-family:var(--mono); font-size:11px; line-height:1.7; color:var(--mut); max-width:52ch; }
+  </style>
+</helmet>
+
+<div class="sheet">
+  <span class="eyebrow">hoks · design system</span>
+  <h1>The system</h1>
+  <p class="sub">One visual language across every screen. League Spartan (geometric) + monospaced captions · blue + acid on paper.</p>
+
+  <div class="rule"></div>
+
+  <div class="sech">Palette</div>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:#fbfbfa"></div><span class="nm">Paper</span><span class="hex">#FBFBFA</span></div>
+    <div class="sw"><div class="chip" style="background:#0a0a0a"></div><span class="nm">Ink</span><span class="hex">#0A0A0A</span></div>
+    <div class="sw"><div class="chip" style="background:#000ef7"></div><span class="nm">Blue</span><span class="hex">#000EF7</span></div>
+    <div class="sw"><div class="chip" style="background:#dcff32"></div><span class="nm">Acid</span><span class="hex">#DCFF32</span></div>
+    <div class="sw"><div class="chip" style="background:#e7e5df"></div><span class="nm">Line</span><span class="hex">#E7E5DF</span></div>
+    <div class="sw"><div class="chip" style="background:#8a8983"></div><span class="nm">Muted</span><span class="hex">#8A8983</span></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="cols">
+    <div>
+      <div class="sech">Type</div>
+      <div class="ramp">
+        <div><span class="lbl">Display · League Spartan 700</span><div class="display" style="font-size:44px">HOKS</div></div>
+        <div><span class="lbl">Heading · 700</span><div class="display" style="font-size:26px">Selected works</div></div>
+        <div><span class="lbl">Body · 17px / 1.75</span><div style="font-size:17px; line-height:1.75; color:var(--body); max-width:44ch">I combine digital and physical art through algorithmic systems.</div></div>
+        <div><span class="lbl">Caption · mono</span><div style="font-family:var(--mono); font-size:12px; letter-spacing:.08em; color:var(--mut)">hoks · PLLS · #48213 · 1/1</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="sech">The blue drawer nav</div>
+      <div class="navspec">
+        <div class="paper"></div>
+        <div class="burger"><span></span><span></span></div>
+        <div class="drawer">
+          <div class="nm"></div>
+          <a class="on"><span class="em">▦</span>All</a>
+          <a><span class="em">💊</span>PLLS</a>
+          <a><span class="em">🔵</span>DTKRT</a>
+          <a><span class="em">🟥</span>KRRTK</a>
+          <a style="opacity:.4"><span class="em">🌑</span>ECLPS <small>soon</small></a>
+          <div style="height:10px"></div>
+          <a style="font-size:13px; letter-spacing:.28em">About</a>
+        </div>
+      </div>
+      <p class="note" style="margin-top:12px">A notch/burger opens the blue panel from the right. Lives in <b>nav.js</b> — reskins every page at once.</p>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="sech">Components</div>
+  <div class="comp-grid">
+    <div class="card">
+      <div style="font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--mut); margin-bottom:12px">This one · specimen</div>
+      <div class="cartela"><div class="big">PLLS</div>
+        <div><span class="k">seed</span> 149260437</div>
+        <div><span class="k">format</span> Horizontal (DIN)</div>
+        <div><span class="k">edition</span> 1/1 · unique print</div>
+        <div><span class="k">rarity</span> uncommon</div></div>
+      <div style="height:14px"></div>
+      <button class="btn" style="width:100%">↻ Generate a new one</button>
+    </div>
+    <div class="rulecard">
+      <div class="rc-h">The rule</div>
+      <pre class="rc-code">capsule = (p1,p2,thick)  · a distance
+n = weighted(archetype)  · 4 moods
+place = try 24×, else overlap
+skin  = 1 of 7 finishes
+ground → film grain</pre>
+    </div>
+    <div class="card">
+      <div style="font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--mut); margin-bottom:12px">Buttons</div>
+      <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center">
+        <button class="btn">Primary</button>
+        <button class="btn ghost">Ghost</button>
+        <button class="btn acid">Enter →</button>
+      </div>
+      <div style="height:18px"></div>
+      <div style="font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--mut); margin-bottom:10px">Rarity ladder</div>
+      <div class="chips">
+        <span class="chip-r">Common</span><span class="chip-r">Uncommon</span><span class="chip-r">Rare</span><span class="chip-r">Signal</span><span class="chip-r goose">Goose</span>
+      </div>
+    </div>
+    <div class="card" style="display:flex; flex-direction:column; gap:16px; justify-content:center">
+      <div class="toast"><span class="dot"></span>Published · one commit</div>
+      <div style="display:flex; gap:2px; background:#f4f3ef; border-radius:10px; padding:3px; width:fit-content">
+        <span class="btn ghost" style="border:0; border-radius:8px; background:var(--ink); color:#fff">Work</span>
+        <span class="btn ghost" style="border:0; border-radius:8px; color:var(--mut)">View in a room</span>
+      </div>
+      <p class="note">Museum cartela · code terminal · rarity ladder · view-in-a-room — the same parts recur on every screen.</p>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic { renderVals(){ return {}; } }
+</script>
+</body>
+</html>

@@ -4,10 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>evol · lab — hoks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --ink:#111; --ink3:#bbb; --border:#e8e8e8; --surface:#f7f7f7; --f:'Courier New',Courier,monospace; }
-  body { font-family: var(--f); background: #fff; color: var(--ink); display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+  :root { --ink:#0a0a0a; --ink3:#8a8983; --border:#e7e5df; --surface:#f3f1ec; --paper:#fbfbfa; --blue:#000ef7; --acid:#dcff32; --f:'Courier New',Courier,monospace; --geo:"League Spartan","Century Gothic",Futura,system-ui,sans-serif; }
+  body { font-family: var(--f); background: var(--paper); color: var(--ink); display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
   .panel { border-right: 1px solid var(--border); padding: 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; }
   .lab-title { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
   .lab-title small { display:block; font-weight:400; color:var(--ink3); letter-spacing:0.1em; margin-top:3px; text-transform:none; }
@@ -35,6 +38,7 @@
   .dots { display:inline-flex; gap:2px; vertical-align:middle; margin-right:5px; }
   .dot { width:8px; height:8px; border-radius:50%; display:inline-block; border:0.5px solid rgba(0,0,0,0.1); }
   .score { font-size:11px; letter-spacing:0.14em; color:var(--ink); word-break:break-all; }
+  .lab-title { font-family: var(--geo); font-size: 13px; letter-spacing: 0.1em; }
 </style>
 </head>
 <body>

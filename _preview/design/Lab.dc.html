@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+  <style>
+    :root{ --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983; --body:#26251f;
+      --geo:"League Spartan",Futura,system-ui,sans-serif; --mono:ui-monospace,Menlo,monospace; }
+    *{box-sizing:border-box} body{margin:0}
+    .stage{ width:1280px; height:800px; background:var(--paper); color:var(--ink); font-family:var(--geo); display:flex; }
+    .panel{ width:280px; border-right:1px solid var(--line); padding:20px 18px; display:flex; flex-direction:column; gap:16px; overflow:hidden; }
+    .plabel{ font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--mut); }
+    .ctrl{ display:flex; flex-direction:column; gap:6px; }
+    .sel, .seed{ font-family:var(--mono); font-size:12px; color:var(--body); border:1px solid var(--line); border-radius:8px; padding:9px 12px; background:#fff; }
+    .palrow{ display:flex; height:26px; border-radius:6px; overflow:hidden; border:1px solid var(--line); }
+    .palrow span{ flex:1; }
+    .slider{ height:4px; border-radius:4px; background:var(--line); position:relative; }
+    .slider::after{ content:""; position:absolute; top:-5px; left:60%; width:14px; height:14px; border-radius:50%; background:var(--ink); }
+    .params{ border:1px solid var(--line); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:10px; }
+    .row{ display:flex; align-items:center; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--body); }
+    .btns{ display:flex; flex-direction:column; gap:8px; margin-top:auto; }
+    .b{ font-family:var(--geo); font-weight:600; font-size:11px; letter-spacing:.1em; text-transform:uppercase; border:1px solid var(--line); border-radius:8px; padding:10px; text-align:center; color:var(--body); background:#fff; }
+    .b.solid{ background:var(--ink); color:#fff; border-color:var(--ink); }
+    .b.acid{ background:var(--acid); color:var(--ink); border-color:var(--acid); }
+    .main{ flex:1; display:flex; flex-direction:column; }
+    .stagebar{ height:44px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; padding:0 22px; font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); }
+    .viewseg{ display:flex; gap:2px; background:#f4f3ef; border-radius:8px; padding:3px; }
+    .viewseg span{ padding:5px 10px; border-radius:6px; font-size:10px; color:var(--mut); }
+    .viewseg span.on{ background:var(--ink); color:#fff; }
+    .canvas{ flex:1; display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:1fr; gap:8px; padding:18px 22px; background:#f2f0ec; }
+    .t{ border-radius:2px; }
+    .batch{ height:96px; border-top:1px solid var(--line); display:flex; align-items:center; gap:10px; padding:0 22px; }
+    .bt{ width:64px; height:64px; border-radius:3px; border:2px solid var(--acid); }
+    .bmeta{ font-family:var(--mono); font-size:10px; color:var(--mut); }
+    .pub{ margin-left:auto; font-family:var(--geo); font-weight:700; font-size:11px; letter-spacing:.12em; text-transform:uppercase; background:var(--acid); color:var(--ink); border-radius:8px; padding:11px 16px; }
+  </style>
+</helmet>
+<div class="stage">
+  <div class="panel">
+    <div class="ctrl"><div class="plabel">Work</div><div class="sel">💊 PLLS ▾ · scrub the seed</div></div>
+    <div class="ctrl"><div class="plabel">Palette</div><div class="palrow"><span style="background:#1b2a4a"></span><span style="background:#c94f3a"></span><span style="background:#e9e3d4"></span><span style="background:#d9b13a"></span></div></div>
+    <div class="ctrl"><div class="plabel">Seed</div><div class="seed">782 297 919 · ⌫ ← → space</div></div>
+    <div class="ctrl"><div class="plabel">Background · grain</div><div class="slider"></div></div>
+    <div class="params">
+      <div class="plabel">PLLS params</div>
+      <div class="row"><span>Archetype</span><span>Scatter</span></div>
+      <div class="row"><span>Pill count</span><span>6</span></div>
+      <div class="row"><span>Grosor</span><span>0.72</span></div>
+      <div class="slider"></div>
+    </div>
+    <div class="btns">
+      <div class="b solid">Save PNG · Cartela A5</div>
+      <div class="b">＋ Add to batch</div>
+      <div class="b">▤ Ver en el muro</div>
+      <div class="b acid">▲ Lanzar a producción</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="stagebar">
+      <div class="viewseg"><span>Single</span><span class="on">Grid</span><span>Batch</span></div>
+      <span>g · grid de obras (12 seeds)</span>
+      <span style="margin-left:auto">Traits · Scatter · blend · common</span>
+    </div>
+    <div class="canvas" id="c"></div>
+    <div class="batch">
+      <div class="plabel" style="writing-mode:vertical-rl; transform:rotate(180deg)">Batch · 3</div>
+      <div class="bt" style="background:#c94f3a"></div>
+      <div class="bt" style="background:#2f4a7a"></div>
+      <div class="bt" style="background:#d9b13a"></div>
+      <div class="bmeta">recetas · un commit al publicar<br>→ data/plls.json + palette-usage</div>
+      <div class="pub">▲ Publish batch</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  componentDidMount(){ const h=document.querySelector('#c'); if(!h)return; const p=['#8a7a2a','#d9b13a','#c94f3a','#7a6ba8','#2f4a7a','#e9e3d4','#3f7a75','#b04e72','#141b28']; let s='';
+    for(let i=0;i<12;i++){ s+=`<div class="t" style="background:${p[(Math.random()*p.length)|0]}"></div>`; } h.innerHTML=s; }
+  renderVals(){ return {}; }
+}
+</script>
+</body>
+</html>
