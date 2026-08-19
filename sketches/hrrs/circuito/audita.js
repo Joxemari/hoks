@@ -151,6 +151,16 @@ function medidas(o) {
   m.vecinos = R.vecinos;             // cuántos trazos a la vez, allí donde hay alguien
   m.socios = R.socios;               // cuántos socios distintos tiene un trazo a lo largo de sí
 
+  // EL HAZ, que es la dimensión que encontró la diferencia de verdad y por eso está aquí. Dos trazos
+  // van EN EL MISMO HAZ si se acompañan a distancia de canal durante dos anchuras seguidas —no un
+  // instante: seguidas, o cualquier cruce contaría—. Los haces son las componentes conexas de esa
+  // relación, y lo que importa es el MAYOR: sus obras tienen uno que se traga casi todo (los 8 trazos
+  // de r1 en uno solo, 9 de los 14 de r6) mientras las nuestras se desmigaban en grupitos. Ninguna de
+  // las otras veinte columnas lo decía, porque todas miran rasgos y ésta mira la ESTRUCTURA.
+  const H = haces(T, W, sep);
+  m.hazMayor = 100 * H.mayor / T.length;
+  m.sueltos = 100 * H.sueltos / T.length;
+
   // los cruces de eje: en las cuatro casi no hay, y conviene que se vea
   let cr = 0;
   for (let i = 0; i < T.length; i++) for (let j = i + 1; j < T.length; j++)
@@ -165,6 +175,47 @@ function medidas(o) {
   m.aCabo = C.aCabo;
   m.aire = C.aire;
   return m;
+}
+
+// los haces: componentes conexas de «se acompañan de corrido durante dos anchuras»
+function haces(T, W, sep) {
+  const n = T.length;
+  const junto = Array.from({ length: n }, () => new Set());
+  for (let k = 0; k < n; k++) {
+    const t = T[k], corrido = {};
+    for (let i = 0; i < t.length - 1; i++) {
+      const L = hy(t[i + 1][0] - t[i][0], t[i + 1][1] - t[i][1]);
+      if (L < 1e-12) continue;
+      const mid = [(t[i][0] + t[i + 1][0]) / 2, (t[i][1] + t[i + 1][1]) / 2];
+      const mio = Math.atan2(t[i + 1][1] - t[i][1], t[i + 1][0] - t[i][0]) * 180 / Math.PI;
+      for (let j = 0; j < n; j++) {
+        if (j === k || T[j].length < 2) continue;
+        const c = cercaDe(mid, T[j]);
+        let ok = false;
+        if (c && c.d >= sep * 0.7 && c.d <= sep * 1.9) {
+          const dif = Math.abs(corto(c.dir - mio));
+          ok = Math.min(dif, 180 - dif) < 25;
+        }
+        // DE CORRIDO: el contador se pone a cero en cuanto se pierde. Sumando sin más, dos trazos que
+        // se rozan en veinte sitios distintos acabarían «en el mismo haz» sin haber corrido juntos.
+        if (ok) {
+          corrido[j] = (corrido[j] || 0) + L;
+          if (corrido[j] >= 2 * W) { junto[k].add(j); junto[j].add(k); }
+        } else corrido[j] = 0;
+      }
+    }
+  }
+  const visto = new Array(n).fill(false);
+  let mayor = 0, sueltos = 0;
+  for (let k = 0; k < n; k++) {
+    if (visto[k]) continue;
+    let c = 0; const pila = [k]; visto[k] = true;
+    while (pila.length) { const x = pila.pop(); c++;
+      for (const y of junto[x]) if (!visto[y]) { visto[y] = true; pila.push(y); } }
+    if (c > mayor) mayor = c;
+    if (c === 1) sueltos++;
+  }
+  return { mayor, sueltos };
 }
 
 function seCortan(a, b, c, d) {
@@ -284,6 +335,8 @@ const DIMS = [
   ['acaba', 'roturas por ACABARSE el trazo (%)', 0],
   ['vecinos', 'vecinos a la vez', 2],
   ['socios', 'socios por trazo', 1],
+  ['hazMayor', 'el haz mayor (% de los trazos)', 0],
+  ['sueltos', 'trazos fuera de todo haz (%)', 0],
   ['cruces', 'cruces de eje por obra', 1],
   ['mueren', 'cabos que mueren contra algo (%)', 0],
   ['aCabo', 'cabos contra otro cabo (%)', 0],
@@ -305,7 +358,7 @@ if (process.argv[2] === 'control') {
     const igual = (Number.isNaN(x) && Number.isNaN(y)) || Math.abs(x - y) < 1e-9;
     if (!igual) { console.log('   MAL  ' + k + ': ' + x + ' vs ' + y); mal = 1; }
   }
-  console.log('la misma obra por las dos puertas: ' + (mal ? 'NO COINCIDE' : 'idéntica en las 20 dimensiones'));
+  console.log('la misma obra por las dos puertas: ' + (mal ? 'NO COINCIDE' : 'idéntica en las ' + DIMS.length + ' dimensiones'));
 
   // y el control ROTO: la misma obra remuestreada quince veces más fina, que es exactamente la
   // diferencia que hay entre sus ejes y los nuestros. Las medidas integrales tienen que aguantar;
@@ -377,6 +430,7 @@ console.log('  ' + '-'.repeat(34) + '  -----  -----  -----  -----  │  --------
             '-'.repeat(23) + '  ' + '-'.repeat(20));
 
 const fuera = [];
+let flojas = 0, hechas = 0;
 for (const [k, et, dec] of DIMS) {
   const vs0 = REFS.map(r => ref[r][k]);
   const vs = vs0.filter(x => !Number.isNaN(x));
@@ -386,6 +440,7 @@ for (const [k, et, dec] of DIMS) {
   // encogimiento de hombros: caer «dentro» de eso no dice nada de nosotros. Se marca cuando el
   // ancho del sobre pasa del propio valor medio, que es donde deja de constreñir.
   const flojo = (hi - lo) > Math.abs((hi + lo) / 2);
+  hechas++; if (flojo) flojas++;
   const mios = nues.map(m => m[k]).filter(x => !Number.isNaN(x));
   const p10 = pct(mios, 0.1), med = pct(mios, 0.5), p90 = pct(mios, 0.9);
   // el veredicto: ¿cae nuestra mediana dentro del sobre de las cuatro? Y si no, ¿cuánto se pasa,
@@ -422,9 +477,14 @@ for (const [orden, et, vd, lo, hi, med, dec] of fuera)
   console.log('  ' + (orden >= 1 ? '· ' : '  ') + et.padEnd(34) + ' ' + vd +
               '   (ellas ' + lo.toFixed(dec) + '-' + hi.toFixed(dec) +
               ', nosotros ' + med.toFixed(dec) + ')');
-console.log('\nNUEVE DE LAS VEINTE LLEVAN «SOBRE FLOJO», y eso hay que leerlo antes que los veredictos:');
+// los recuentos del pie SE CUENTAN, no se escriben a mano. Estaban a mano y decían «nueve de las
+// veinte» cuando ya eran veintitrés dimensiones — la clase de desajuste que hace desconfiar de toda
+// la tabla.
+console.log('\n' + flojas + ' DE LAS ' + hechas + ' LLEVAN «SOBRE FLOJO», y eso va antes que los veredictos:');
 console.log('cuatro obras que van del 13 al 83 % no definen un sobre. Caer dentro de ésas no prueba');
-console.log('nada; las que aprietan son las otras once.');
-console.log('\nY lo que esta tabla NO puede ver: son veinte distribuciones POR SEPARADO. Estar dentro');
-console.log('de las veinte no es parecerse — lo que falta es cómo se relacionan los trazos entre sí,');
-console.log('y eso no está en ninguna columna. La piel del filo va aparte: `python3 piel.py fotos`.');
+console.log('nada; las que aprietan son las otras ' + (hechas - flojas) + '.');
+console.log('\nY lo que esta tabla mide son ' + hechas + ' distribuciones POR SEPARADO: estar dentro de');
+console.log('todas no es parecerse. Con veinte de veintiuna dentro las obras seguían leyéndose');
+console.log('distintas, y lo que faltaba —el haz— no lo decía ninguna columna hasta que se añadió.');
+console.log('Así que el aviso sigue en pie para lo que aún no se le haya ocurrido a nadie medir.');
+console.log('La piel del filo va aparte: `python3 piel.py fotos`.');
