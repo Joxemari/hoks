@@ -172,7 +172,7 @@
   let cfgDial = 'auto';
   function pickRoles(colors, rngColor) {
     const cols = colors.slice().sort((a, b) => lum(a) - lum(b));
-    if (cols.length < 2) return { bg: cols[0] || BG, fg: FG, fg2: FG2, dot: DOT, filo: FG };
+    if (cols.length < 2) return { bg: cols[0] || BG, fg: FG, fg2: FG2, dot: DOT };
 
     // fondo: uno de los dos extremos. El oscuro pesa más — es la
     // dirección en la que esta obra respira mejor.
@@ -182,18 +182,6 @@
 
     const porContraste = resto.slice().sort((a, b) => abs(lum(b) - lum(bg)) - abs(lum(a) - lum(bg)));
 
-    /* EL FILO: el color de la paleta que más se aparta del suelo. Es lo que se
-     * pinta cuando el halo tiene que separar una cinta del fondo y no sólo de
-     * otra hebra — el caso del fantasma. Antes ahí se fabricaba un tono corrido,
-     * el fondo mezclado hacia el negro o el blanco puros, y eso tiene dos
-     * problemas: no es máximo contraste, es un término medio; y **no es un color
-     * de la paleta**, así que la obra sacaba de la nada un color que la serie no
-     * tiene. Es la misma lección que la segunda cinta ya había aprendido —no
-     * mezclar hacia el extremo— pero el halo se había quedado con la costumbre
-     * vieja. Si la cinta va a ser del color del suelo, lo que la dibuja tiene que
-     * ser lo más lejos que la paleta llegue. */
-    const filo = resto.slice().sort((a, b) => dcolor(b, bg) - dcolor(a, bg))[0]
-              || mixHex(bg, lum(bg) > 0.5 ? '#000000' : '#ffffff', 0.42);
 
     // La cinta, con su propio azar: una decisión más en el stream principal
     // correría la geometría de todas las obras ya vistas.
@@ -250,7 +238,7 @@
     let dots = porContraste.filter(c => c !== fg);
     if (!dots.length) dots = [mixHex(fg, oscuro ? '#ffffff' : '#000000', 0.55)];
 
-    return { bg, fg, fg2, fg3, dot, dots, filo };
+    return { bg, fg, fg2, fg3, dot, dots };
   }
 
   // Tres grosores fijos en vez de un slider continuo: el estándar
@@ -1947,11 +1935,34 @@
     // suelo y no sólo de otra hebra. El orden de pintado, los solapes y los
     // cabos no cambian NADA — una cinta del color del suelo se dibuja como
     // cualquier otra.
+    // EL CORTE DEL FANTASMA NO PUEDE SALIR DE LA PALETA, y se intentó.
+    //
+    // La idea era buena: si la cinta va del color del suelo, lo que la dibuja
+    // debería ser el color más lejano que la serie tenga —`filo`— en vez de un
+    // tono fabricado mezclando el fondo hacia el negro o el blanco puros. Un
+    // color de la paleta en vez de uno inventado.
+    //
+    // No se sostiene, y la razón es estructural: en una serie de dos tintas, el
+    // color más lejano al suelo ES el de la otra cinta. Entonces la incisión del
+    // fantasma se pinta del color del cuerpo vecino, deja de leerse como corte y
+    // se lee como una tercera cinta. Medido en cuatro obras de dos cintas, el
+    // halo del fantasma salía exactamente igual que la tinta de la otra:
+    // #8ab540, #7a6b8a, #226699, #161616.
+    //
+    // Se probó a elegir el filo entre lo que la paleta deja libre —lo más lejano
+    // al suelo que no sea tinta de ninguna otra cinta pintada— y sale peor: de 2
+    // obras de 72 con costura a 72 de 72, y de 3 huecos a 118. Cuando la paleta
+    // tiene tres colores y dos son tinta, lo que queda no separa de nada.
+    //
+    // El tono corrido no era una costumbre vieja: es el único corte que se puede
+    // GARANTIZAR distinto de todas las tintas, porque no sale de la paleta. Para
+    // una incisión —que existe para distinguir— eso no es un defecto, es el
+    // requisito.
     const haloDe = (k) => {
       const t = tintaDe(k);
       if (typeof t !== 'string') return col.bg;         // tinta en degradado
       if (dcolor(t, col.bg) >= HALO_MIN_DIST) return col.bg;
-      return col.filo || mixHex(col.bg, lum(col.bg) > 0.5 ? '#000000' : '#ffffff', 0.42);
+      return mixHex(col.bg, lum(col.bg) > 0.5 ? '#000000' : '#ffffff', 0.42);
     };
     // Y si alguna cinta lo necesita, el fondo en degradado deja de poder
     // RECORTAR: recortar enseña el suelo, y el problema es justo que el suelo y

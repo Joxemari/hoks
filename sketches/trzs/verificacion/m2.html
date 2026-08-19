@@ -51,16 +51,16 @@ window.medir = (seed, pals, extra, capa) => {
   // incisión rellena por el cuerpo de al lado. Con eso el control caía del 97%
   // al 1,7% sin que se notara, que es como se queda ciego un detector.
   const mismo = (a,b) => String(a).toLowerCase() === String(b).toLowerCase();
-  // Y LA REGLA VA EN LOS DOS SENTIDOS: un tono de corte sólo cuenta como corte
-  // si NO es tinta de nadie. Desde que el halo del fantasma sale de la paleta
-  // —`filo`, el color más lejano al suelo— ese tono es en casi todas el mismo
-  // hex que `fg`. Con una sola cinta no colisiona, porque la fantasma es la
-  // única que se pinta; con dos, aceptarlo a ciegas convertiría el CUERPO de la
-  // otra cinta en corte, y el detector se quedaría ciego justo donde hay algo
-  // que mirar — pareciendo que aprueba, que es la forma peligrosa de fallar.
-  // Es la misma asimetría que ya se le aplica al fondo, por el otro lado.
+  // Y NO SE FILTRA POR SER TINTA DE ALGUIEN: un color puede ser las dos cosas.
+  // En una obra fantasma de dos cintas el fondo es a la vez el corte de la cinta
+  // normal y la tinta del fantasma. Filtrarlo —que se probó, buscando que un
+  // tono de corte no pudiera ser tinta— se lleva por delante la incisión
+  // legítima de la otra cinta y la obra entera se lee como rota: 72 de 72 obras
+  // y 88.646 px de costura. La lista de cortes son los halos TAL CUAL, más el
+  // fondo si no es tinta de nadie; y se pregunta por el corte ANTES que por la
+  // tinta, que es lo que resuelve el empate donde lo hay.
   const esTintaDe = (col) => (r.tintas||[]).some(t => mismo(t, col));
-  const CORTES = (r.halos||[]).filter(h => !esTintaDe(h)).map(hex)
+  const CORTES = (r.halos||[]).map(hex)
                    .concat(esTintaDe(c.colores.bg) ? [] : [hex(c.colores.bg)]);
   const esFondo = i => CORTES.some(F =>
     Math.abs(dA[i]-F[0])+Math.abs(dA[i+1]-F[1])+Math.abs(dA[i+2]-F[2]) < 60);
