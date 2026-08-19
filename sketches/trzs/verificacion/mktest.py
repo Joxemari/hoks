@@ -75,18 +75,24 @@ elif roto == 'costura':
     assert a in src
     src = src.replace(a, "    const sobra = 0;   // ROTO A PROPOSITO")
 elif roto == 'cara':
-    # Quita la incisión de la CARA del cabo: el halo del cuerpo se traza a
-    # hueso, así que sin ese disco el final de la cinta es el único filo de la
-    # obra sin corte y se suelda a lo que tenga delante. Es el control del
-    # bloque de remates: con la incisión puesta, el control de `remate`
-    # (holgura 0) ya casi no dispara —el disco corta igual— y un cero sin
-    # control no significa nada.
-    m3 = re.search(r'^( *)ctx\.beginPath\(\); ctx\.arc\(p\.x, p\.y, wR / 2 \+ gap, 0, TWO_PI\); ctx\.fill\(\);$',
-                   src, re.M)
-    assert m3, 'no encuentro el disco de la incision del cabo'
-    src = src.replace(m3.group(0), m3.group(1) + '/* ROTO A PROPOSITO: sin incision en la cara del cabo */')
+    # Quita la incision de la CARA del cabo entera. Sin ella, el final de la
+    # cinta es el unico filo de la obra sin corte y se suelda a lo que tenga
+    # delante. Es el control del bloque de remates: el de `remate` (holgura 0)
+    # ya casi no dispara —la cara corta igual— y un cero sin control no
+    # significa nada.
+    #
+    # Se rompe el BLOQUE, no una linea suya. Anclado al `ctx.arc` del disco
+    # dejo de disparar en cuanto la cara a escuadra paso a ser un rectangulo y
+    # el arco se quedo solo para el remate redondo: el control seguia
+    # aplicandose, seguia sin fallar el assert, y no rompia nada. Un control que
+    # deja de disparar en silencio es peor que no tenerlo.
+    m3 = re.search(r"^( *)if \(pasada === 'halo'\) \{\n(?:.*\n)*?\1\}\n", src, re.M)
+    assert m3, 'no encuentro el bloque de la incision de la cara del cabo'
+    assert 'wR / 2 + gap' in m3.group(0), 'el bloque encontrado no es el de la cara del cabo'
+    src = src.replace(m3.group(0),
+                      m3.group(1) + '/* ROTO A PROPOSITO: sin incision en la cara del cabo */\n')
     # Y ademas se abre la holgura, como en `remate`: con la holgura normal los
-    # cabos casi nunca caen contra otra hebra, asi que quitar el disco solo no
+    # cabos casi nunca caen contra otra hebra, asi que quitar la cara sola no
     # dispara. Roto = el cabo puede caer donde sea Y sin corte en la cara.
     for a, b in [("    remateMin:    1.0,         // holgura",
                   "    remateMin:    0,         // ROTO A PROPOSITO // holgura"),
