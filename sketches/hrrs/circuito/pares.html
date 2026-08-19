@@ -255,6 +255,19 @@ function huecosPares(trazos, Wnom) {
   for (let k = 0; k < trazos.length; k++)
     for (let j = k + 1; j < trazos.length; j++) {
       const A = trazos[k], B = trazos[j];
+      // PROBADO AQUÍ Y REVERTIDO, que quede escrito. Al hacer que el apoyo naciera por el costado, su
+      // cabo empezó a morir junto a una banda que sigue de largo, y ese encuentro —punta contra
+      // costado— es invisible para este cálculo, que se salta el tramo si CUALQUIERA de los dos es un
+      // cabo. El canal mínimo entre bandas se fue a 0,004 anchuras. Así que probé a saltar sólo punta
+      // contra punta: el mínimo subió a 0,076, pero la banda de TODAS las obras adelgazó —mediana
+      // 0,0635 → 0,0555— y el canal efectivo se fue a 0,376 cuando las cuatro van de 0,062 a 0,288.
+      // O sea que arreglaba el punto más apretado echando blanco por toda la obra, que es justo lo
+      // que él critica en las líneas gordas.
+      //
+      // El motivo es de escala y ya está escrito dos veces en este archivo: este suelo es GLOBAL y
+      // recorta la banda de la obra entera, así que no puede gobernarlo un encuentro local. Un cabo
+      // pegado a un costado es asunto de ESE punto, y de eso se ocupa el relleno, que mira punto a
+      // punto. Ahí está el arreglo, no aquí.
       let m = Infinity;
       for (let i = 0; i < A.length - 1; i++) {
         if (cerca && (i < 2 || i > A.length - 4)) continue;      // cabo de A
@@ -480,8 +493,15 @@ function circuito(seed, opt) {
     // del 68 % cuando en las seis es del 57 % y el máximo de las seis es 63. Pedir el 27 % devuelve
     // el 24 % real y la mediana al 57 %. Los dos argumentos —su voto y las referencias— caen en el
     // mismo sitio, que es la única razón para tocar una mezcla que él eligió.
-    denso:   { n: [8, 13], sep: [0.055, 0.080], cats: [0.27, 0.14, 0.41, 0.18] },
-    abierto: { n: [5, 9],  sep: [0.085, 0.150], cats: [0.23, 0.14, 0.35, 0.28] },
+    // Y EL APOYO CEDE 0,18 A LA SUELTA, porque el apoyo ya no es lo que era. Cuando llegaba de
+    // frente contra el cuerpo no acompañaba a nadie, así que su cuota no contaba para la relación;
+    // ahora nace por el costado y corre al lado del padre antes de morir, o sea que cuenta. Con la
+    // cuota de antes la obra se pasaba: acompañamiento 67 % contra su 43-65, roturas por cambio de
+    // socio 40 % contra su 21-36, y los cabos al aire a cero cuando en r1, r2 y r5 son el 17-19 %.
+    // Traspasando 0,18 al que da aire, las cuatro medidas entran a la vez —63,6 / 37,5 / 5 % de
+    // cabos al aire, y el 95 % de los cabos sigue muriendo contra algo— sin tocar el haz.
+    denso:   { n: [8, 13], sep: [0.055, 0.080], cats: [0.27, 0.14, 0.23, 0.36] },
+    abierto: { n: [5, 9],  sep: [0.085, 0.150], cats: [0.23, 0.14, 0.17, 0.46] },
   };
   const tipo = rng.bool(M.pDenso) ? 'denso' : 'abierto';
   // EL CANAL NO ES UNA CONSTANTE DE LA FAMILIA, es una decisión de cada obra: «quiero que tenga
@@ -853,10 +873,26 @@ function circuito(seed, opt) {
                dir: eligeRumbo(d) };
     }
     if (cat === 'apoyo') {
+      // EL APOYO LLEGA POR EL COSTADO, NO DE FRENTE. Nacía en el canal del padre y salía a
+      // `q.dir + 90°`: perpendicular, o sea embistiéndolo. Muere contra el cuerpo —para eso está—
+      // pero no lo acompaña ni una anchura antes de morir, así que toca sin juntarse.
+      //
+      // Y eso es lo que la auditoría acabó señalando. Midiendo los HACES —grupos de trazos que se
+      // acompañan a distancia de canal durante dos anchuras seguidas— sus obras tienen UN haz que se
+      // traga casi todo: 8 de 8 trazos en r1, 7 de 11 en r2, 9 de 14 en r6, más algún suelto de
+      // verdad. Las nuestras se desmigaban en grupitos, con el haz mayor en 4. Y de los 78 trazos
+      // que quedaban fuera de todo haz, 37 eran apoyos: ninguna paralela, porque la paralela se
+      // construye pegada por definición.
+      //
+      // Así que el apoyo nace mirando A LO LARGO del padre y no contra él: arranca en el canal,
+      // corre a su lado lo que su propio alfabeto le deje, y se va a morir donde le toque. Es la
+      // diferencia entre tocar y encajarse — «las bandas de r5 se envuelven». No se convierte en una
+      // paralela: la paralela es una copia rígida del padre y esto es un paseo, que empieza al lado
+      // y se despega en cuanto el rumbo se le tuerce.
       const q = puntoDe(padre), lado = rng.bool(0.5) ? 1 : -1;
       return { p: [q.p[0] + Math.cos((q.dir + 90 * lado) * RAD) * sep * 1.10,
                    q.p[1] + Math.sin((q.dir + 90 * lado) * RAD) * sep * 1.10],
-               dir: q.dir + 90 * lado + rng.range(-28, 28) };
+               dir: q.dir + (rng.bool(0.5) ? 0 : 180) + rng.range(-34, 34) };
     }
     const a = rng.range(0, 6.2832), r = rng.range(0.14, 0.42);
     return { p: [0.5 * fw + Math.cos(a) * r * fw, 0.5 * fh + Math.sin(a) * r * fh],
@@ -1772,7 +1808,16 @@ function circuito(seed, opt) {
         }
         const ALCANCE = W * 3.2;
         const hasta = (isFinite(libre) && libre < ALCANCE) ? (libre - MARGEN) / 2 : W / 2;
-        lado[s2] = Math.max(W * 0.42, Math.min(W / 2 * CRECE, hasta));
+        // EL SUELO DE LA BANDA NO PUEDE GANARLE AL SITIO QUE HAY. `hasta` dice cuánto cabe dejando el
+        // canal; el suelo de 0,42 se lo saltaba, así que en el punto más apretado las dos bandas se
+        // quedaban con su 0,42 por lado y se comían el canal: 0,004 anchuras de blanco donde el cabo
+        // de un apoyo muere junto a una banda que sigue. El suelo está para que la banda no se
+        // deshinche —«el grosor es demasiado variable»— y para eso vale contra el campo abierto; en un
+        // apretón manda el sitio, porque el margen es la regla y el grosor parejo es un gusto. Se
+        // conserva un mínimo absoluto de 0,22 para que la banda no desaparezca del todo: por debajo
+        // de eso el problema es de la composición y no del relleno.
+        lado[s2] = Math.min(Math.max(W * 0.42, Math.min(W / 2 * CRECE, hasta)),
+                            Math.max(W * 0.22, hasta));
       }
       sm.push(lado);
     }

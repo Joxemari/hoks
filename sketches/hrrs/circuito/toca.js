@@ -24,6 +24,7 @@
  *
  *   node toca.js [obras] [semilla0]
  *   node toca.js control            rompe la garantía y comprueba que entonces SÍ se tocan
+ *   node toca.js refs               qué canal mínimo dejan las cuatro, por este mismo detector
  */
 const fs = require('fs');
 const os = require('os');
@@ -240,7 +241,9 @@ if (process.argv[2] === 'control') {
   // fallo — que es lo que hace el `fallo = 1` de abajo.
   const rot = [
     ['suelo de W', 'W = Math.min(W, huecoMinimo(trazos, W_NOM) / (1 + CANAL));', '// ROTO'],
-    ['tope del relleno', 'lado[s2] = Math.max(W * 0.42, Math.min(W / 2 * CRECE, hasta));',
+    ['tope del relleno',
+     'lado[s2] = Math.min(Math.max(W * 0.42, Math.min(W / 2 * CRECE, hasta)),\n' +
+     '                            Math.max(W * 0.22, hasta));',
      'lado[s2] = W / 2 * CRECE;  // ROTO'],
     ['filtro del relleno', 'sm[i][s2] = Math.min(raw[i], a / n3);', 'sm[i][s2] = a / n3;  // ROTO'],
     // Y LA VENTANA DEL PLIEGUE, que sale en cero a propósito y se queda escrita por eso. Cuando el
@@ -277,7 +280,55 @@ if (process.argv[2] === 'control') {
     console.log('   ' + nom.padEnd(20) + (esPliegue ? ' se doblan ' : ' se tocan ') + t + ' de 30');
   }
   console.log('\nsi alguna sale en cero, esa pieza ya no hace falta o el detector no la ve.');
+  // Y «SUELO DE W» ES HOY UNO DE ESOS CEROS, con explicación. Rompiéndolo se tocaban 1 o 2 obras de
+  // 30; ahora ninguna, porque el tope del relleno pasó a mirar el sitio que hay punto a punto y ya
+  // sostiene solo el caso que antes sostenía el suelo global. El suelo sigue haciendo falta para
+  // OTRA cosa —la banda de la obra sale de él, y sin él la densidad no se deriva de la composición—
+  // pero para el toque ya no es la pieza que manda. Un cero con motivo escrito, no un cero a secas.
+  console.log('«suelo de W» sale en cero desde que el tope del relleno mira el sitio punto a punto:');
+  console.log('sigue derivando la banda de la composición, pero el toque ya no cuelga de él.');
   process.exit(fallo);
+}
+
+// LAS SUYAS POR EL MISMO DETECTOR. La regla es de él y el número que la vigila es el canal mínimo,
+// así que hace falta saber cuánto vale ESE número en las referencias — si no, un 0,004 no se sabe si
+// es un fallo nuestro o algo que ellas también hacen. Se meten sus ejes por `opt.geometria`, que
+// existe justo para esto: el motor no siembra nada y sólo les aplica el campo y la densidad.
+if (process.argv[2] === 'refs') {
+  const MANO = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'mano.json'), 'utf8'));
+  // Y CON EL CANAL DE CADA UNA, no con uno sorteado. La primera versión de esto llamaba a
+  // `circuito(7, {geometria})` y el motor SORTEA su canal a partir de la semilla, así que lo que
+  // salía era «su geometría con nuestro canal cualquiera» — y yo lo leí como su canal. Un 0,153 así
+  // no dice nada de ellas. El canal de cada una está medido sobre el píxel (`rendija.py fotos`);
+  // r2 no se puede medir —en su foto entra el muro— y va con el de por defecto, dicho aquí.
+  const CANAL_FOTO = { r1: 0.288, r5: 0.062, r6: 0.188 };
+  console.log('LAS CUATRO por el mismo detector: su geometría Y su canal.');
+  console.log('obra  canal   trazos   canal mínimo entre bandas   canal propio mínimo');
+  for (const nom of ['r1', 'r2', 'r5', 'r6']) {
+    const d = MANO[nom], S = d.S || Math.min(d.px[0], d.px[1]);
+    const cn = CANAL_FOTO[nom];
+    const o = circuito(7, { grainScale: 0, mandos: cn != null ? { canal: cn } : {}, geometria:
+      { trazos: d.ejes.filter(e => e.length > 1), fw: d.px[0] / S, fh: d.px[1] / S } });
+    const { canal } = canalDe(o);
+    let propio = Infinity;
+    for (let k = 0; k < o.trazos.length; k++) {
+      const g = canalPropio(o.trazos[k], o.semis[k], o.W);
+      if (isFinite(g) && g < propio) propio = g;
+    }
+    console.log('  ' + nom + '   ' + (cn != null ? cn.toFixed(3) : 'sorteo') + '      ' +
+                String(o.trazos.length).padStart(2) + '            ' +
+                (canal / o.W).toFixed(3).padStart(6) + '                  ' +
+                (isFinite(propio) ? (propio / o.W).toFixed(3) : '  —  '));
+  }
+  console.log('\nEl mínimo entre bandas escala con el canal elegido, que es lo que tiene que pasar:');
+  console.log('r5 con canal 0,062 deja 0,103, y r1 con 0,288 deja 0,307. Nuestras cuarenta obras,');
+  console.log('con canales de 0,06 a 0,32, dejan 0,076 de mínimo — el caso comparable es el de r5.');
+  console.log('\nY UN AVISO QUE SALE DE AQUÍ: en r6 el canal propio sale NEGATIVO (-0,84). No es cosa');
+  console.log('de r6, es de nuestro relleno: aplicado a su geometría, engorda la banda hasta que las');
+  console.log('dos ramas de un pliegue suyo se pisan. Sobre nuestra propia geometría no pasa —0 de 40');
+  console.log('con mínimo 0,108— así que es un caso extremo que el relleno no aguanta, no un fallo');
+  console.log('vivo. Queda dicho para que ese -0,84 no se lea como que las referencias se solapan.');
+  process.exit(0);
 }
 
 const filas = [];
