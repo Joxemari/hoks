@@ -925,6 +925,24 @@ que no hace nada.
 La esquina tiene que quedarse casi entera: lo justo para que no sea el vértice
 exacto de un vector, y muy lejos de leerse como un giro.
 
+**Y el mordisco no crece con el filo, que es la otra mitad del asunto.** La pista
+vino de mirar: *«cuando el trazo es más grueso la curvatura se acentúa, y cuando
+es más fino queda mejor»*. Es literal — todo lo que trataba la esquina estaba
+medido en gubias, el arco viejo incluido, así que con `ancha` la esquina salía
+**dos veces y media** la de `fina`. Puestas las tres en fila, con filo fino las
+tres versiones son casi la misma imagen y con filo gordo el arco se come la
+esquina.
+
+La razón para separarlos no es de calibrado, es que **son dos cosas**: el ancho
+del corte lo pone la HERRAMIENTA y el pedazo que salta lo pone la MADERA. Una
+gubia gorda no arranca una esquina más grande, arranca un corte más ancho. Así
+que el mordisco se mide contra la gubia media y no pasa de ahí: con `fina` y
+`media` sigue siendo proporcional —que es donde ya funcionaba— y con `ancha` deja
+de crecer.
+
+Lo que sí sigue atado al filo es la **ventana** con la que se busca la esquina:
+qué cuenta como esquina es cosa de la escala a la que se está cortando.
+
 Va **al final**, sobre las caras ya en píxeles: la partición, los cortes y las
 guardas se deciden sobre el polígono limpio y el mordisco es lo último que le pasa
 al taco — como en la talla, donde el canto se mata cuando la pieza ya está. Cada
@@ -1027,7 +1045,9 @@ huella      0 de 180 obras cambia a 760 / 2400 / 4200 px, en los tres formatos
 canto       la esquina no la fabrica el `lineJoin`: se mata en el polígono con un
             solo quiebro, cada lado cortado por su cuenta entre 0,10 y 0,55 gubias
             — pequeño a propósito, porque a 1,25 la faceta se lee tan curva como
-            el arco que venía a sustituir
+            el arco que venía a sustituir. Y con TOPE en la gubia media: el corte
+            lo ancha la herramienta, el pedazo que salta lo pone la madera, y con
+            `ancha` la esquina salía 2,5 veces la de `fina`
 ms          ~30 por pieza a 520 px, con grano y veta
 ```
 

@@ -335,6 +335,19 @@
    *
    * La esquina tiene que quedarse casi entera: lo justo para que no sea el
    * vértice exacto de un vector, y muy lejos de leerse como un giro. */
+  /* Y EL MORDISCO NO CRECE CON EL FILO. Todo lo que trataba la esquina estaba en
+   * gubias —el arco viejo medía media gubia de radio, el mordisco va de 0,10 a
+   * 0,55—, así que con `ancha` la esquina salía dos veces y media la de `fina` y
+   * ahí es donde se leía curvo. Con filo fino no se notaba nunca.
+   *
+   * La razón para separarlos no es de calibrado, es que son dos cosas: el ancho
+   * del corte lo pone la HERRAMIENTA y el pedazo que salta lo pone la MADERA.
+   * Una gubia gorda no arranca una esquina más grande, arranca un corte más
+   * ancho. Así que el mordisco se mide contra la gubia media y no pasa de ahí —
+   * con fina y media sigue siendo proporcional, que es donde ya funcionaba, y
+   * con ancha deja de crecer. Lo que sí sigue atado al filo es la VENTANA con la
+   * que se busca la esquina: qué cuenta como esquina es cosa de la escala a la
+   * que se está cortando. */
   const CANTO_MIN = 0.10, CANTO_MAX = 0.55; // el mordisco, en anchuras de gubia
   // El punto de en medio, tirando del vértice viejo. En positivo la esquina sale
   // MATADA —dos facetas y un quiebro—, en negativo sale MORDIDA, con el pedazo
@@ -343,7 +356,10 @@
   // negativo a propósito: un mordisco cuenta que faltó materia, un bisel cuenta
   // que alguien lijó.
   const CANTO_K_MIN = -0.55, CANTO_K_MAX = 0.30;
-  function matarCantos(poly, rng, g, fuerza) {
+  function matarCantos(poly, rng, g, fuerza, tope) {
+    // `g` es el filo: con él se busca la esquina. `tope` es lo más grande que
+    // puede ser el pedazo que salta, y lo pone la madera, no la herramienta.
+    const mordisco = Math.min(g, tope == null ? g : tope);
     const m = poly.length;
     if (m < 8 || !(fuerza > 0) || !(g > 0)) return poly;
     const acc = [0];
@@ -389,9 +405,9 @@
       const prev = esquinas[(k - 1 + esquinas.length) % esquinas.length];
       const next = esquinas[(k + 1) % esquinas.length];
       const hueco = d => { const v = Math.abs(d); return Math.min(v, Per - v) * 0.4; };
-      const tope = Math.max(g * 0.12, Math.min(hueco(acc[i] - acc[prev]), hueco(acc[next] - acc[i])));
-      const d1 = Math.min(tope, g * rng.range(CANTO_MIN, CANTO_MAX) * fuerza);
-      const d2 = Math.min(tope, g * rng.range(CANTO_MIN, CANTO_MAX) * fuerza);
+      const sitio = Math.max(g * 0.12, Math.min(hueco(acc[i] - acc[prev]), hueco(acc[next] - acc[i])));
+      const d1 = Math.min(sitio, mordisco * rng.range(CANTO_MIN, CANTO_MAX) * fuerza);
+      const d2 = Math.min(sitio, mordisco * rng.range(CANTO_MIN, CANTO_MAX) * fuerza);
       return { i, a: acc[i] - d1, b: acc[i] + d2,
                k: rng.range(CANTO_K_MIN, CANTO_K_MAX), t: rng.range(0.34, 0.66) };
     });
@@ -1374,7 +1390,8 @@
     const rgCanto = new E.Rng((seed ^ 0xCA470) >>> 0);
     const canto = params.canto != null ? +params.canto : 1;
     const caras = piezas.map(pc =>
-      matarCantos(pc.poly.map(p => toPx(add(p, pc.drift))), rgCanto, gPx, canto));
+      matarCantos(pc.poly.map(p => toPx(add(p, pc.drift))), rgCanto, gPx, canto,
+                  GUBIAS[1].w * S * SS));   // el tope: la gubia media de ESTA obra
 
     /* CUÁL ES LA FANTASMA. No la reserva —es contra ella contra lo que se lee
      * todo lo demás— ni una miga, que no se vería ni con halo. La mediana por
