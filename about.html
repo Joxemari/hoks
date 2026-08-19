@@ -26,6 +26,13 @@ body { background: var(--paper); color: var(--ink); font-family: var(--geo); }
   font-family: var(--geo); font-size: 17.5px; line-height: 1.8; color: var(--body);
   white-space: pre-line; margin: 0; visibility: hidden;
 }
+.about-exh { margin-top: 40px; }
+.about-exh .lbl { font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--blue); margin-bottom: 10px; }
+.about-exh p { font-family: var(--geo); font-size: 16px; line-height: 1.72; color: var(--body); margin: 0; }
+.about-quote { margin: 18px 0 0; border-left: 2px solid var(--acid); padding-left: 16px;
+  font-family: var(--geo); font-size: 17px; line-height: 1.55; color: var(--ink); }
+.about-quote cite { display: block; margin-top: 10px; font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.06em; color: var(--mut); font-style: normal; }
 .about-coda { margin-top: 52px; padding-top: 38px; border-top: 1px solid var(--line);
   display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; }
 .about-coda .mark { display: block; height: 150px; width: auto; }
@@ -40,6 +47,13 @@ body { background: var(--paper); color: var(--ink); font-family: var(--geo); }
   <div class="about-wrap">
     <div class="about-eye">hoks - algorithmic art</div>
     <p id="about-text"></p>
+    <div class="about-exh">
+      <div class="lbl">Exhibited</div>
+      <p>First shown in September 2023 in Palo Alto, at Stanford University, around a single question: <em>what makes the artwork — the visuals, or the system behind them?</em></p>
+      <blockquote class="about-quote">“Your exhibition has done a pretty successful job in making me think further.”
+        <cite>David Kelley · founder of IDEO and the Stanford d.school (Hasso Plattner Institute of Design)</cite>
+      </blockquote>
+    </div>
     <div class="about-coda">
       <img class="mark" src="logo_tall.png" alt="hoks">
       <p class="about-contact" id="about-contact"></p>
