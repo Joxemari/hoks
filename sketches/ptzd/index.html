@@ -129,11 +129,6 @@
       <span class="hintline">los cortes que abren y no dividen</span>
     </div>
     <div class="group">
-      <span class="lbl">Canto · <span id="cantoV">1.00</span></span>
-      <input type="range" id="canto" min="0" max="200" step="5" value="100">
-      <span class="hintline">el mordisco de la esquina. 0 = esquina cruda, sin matar</span>
-    </div>
-    <div class="group">
       <span class="lbl">Deriva · <span id="derivaV">auto</span></span>
       <input type="range" id="deriva" min="0" max="120" step="5" value="-1">
       <span class="hintline">cuánto se aparta cada pieza, en centésimas de gubia</span>
@@ -252,7 +247,6 @@ function params() {
   const c = parseInt($('cortes').value, 10); if (c > 0) p.cortes = c;
   const j = parseInt($('saj').value, 10);    if (j >= 0) p.sajaduras = j;
   const d = parseInt($('deriva').value, 10); if (d >= 0) p.deriva = d / 100;
-  const ct = parseInt($('canto').value, 10); if (ct !== 100) p.canto = ct / 100;
   if ($('tintas').value) p.tintas = parseInt($('tintas').value, 10);
   const v = parseInt($('veta').value, 10);   if (v >= 0) p.veta = v / 100;
   const f = parseInt($('faltan').value, 10); if (f >= 0) p.faltan = f;
@@ -374,7 +368,6 @@ $('gubia').onchange = refresh;
 $('cortes').oninput = () => { $('cortesV').textContent = $('cortes').value === '0' ? 'auto' : $('cortes').value; refresh(); };
 $('saj').oninput    = () => { $('sajV').textContent    = $('saj').value === '-1'   ? 'auto' : $('saj').value;    refresh(); };
 $('deriva').oninput = () => { $('derivaV').textContent = $('deriva').value === '-1' ? 'auto' : ($('deriva').value / 100).toFixed(2); refresh(); };
-$('canto').oninput  = () => { $('cantoV').textContent  = ($('canto').value / 100).toFixed(2); refresh(); };
 $('tintas').onchange = refresh;
 $('veta').oninput   = () => { $('vetaV').textContent   = $('veta').value === '-5'  ? 'auto' : ($('veta').value / 100).toFixed(2); refresh(); };
 $('faltan').oninput = () => { $('faltanV').textContent = $('faltan').value === '-1' ? 'auto' : $('faltan').value; refresh(); };

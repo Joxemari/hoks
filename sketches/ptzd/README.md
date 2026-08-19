@@ -880,91 +880,71 @@ Las dos tiradas se calculan **siempre**, se usen o no. Antes, forzar la licencia
 se saltaba su `next()` y el fantasma pasaba a leer el primer tiro en vez del
 segundo: un mando del panel movía la decisión de al lado.
 
-### Octava revisión: la esquina, que era un arco de fábrica
+### Octava revisión: la esquina la decide la gubia, y no en proporción
 
 *«Este tipo de curvas nunca deberían ocurrir, parecen infantiles. No quiero 90°,
-que parezca orgánico pero no curvo digital.»* Y tenía una causa de una línea: el
-repaso del contorno se hacía con `lineJoin: 'round'`, y eso **fabrica en cada
-esquina un arco exacto de radio media gubia**. La misma curva en toda la obra y
-en todas las obras.
+que parezca orgánico pero no curvo digital.»* Y luego, mirando las tres gubias en
+fila: *«fina — arco con lineJoin; media y ancha, cruda.»*
 
-Lo importante es que **un arco y un ángulo recto son el mismo error con distinto
-signo**: los dos son la forma que sale de *no decidir la forma*. El `round` no
-estaba dibujando una esquina, estaba tapando que no había ninguna decisión sobre
-las esquinas.
+Ahí está la regla, y no es la que yo había supuesto. La causa era una línea —el
+repaso se hacía con `lineJoin: 'round'`, que **fabrica en cada esquina un arco
+exacto de radio media gubia**— pero el arreglo no es quitarlo: es **darle a cada
+gubia su gesto**.
 
-Así que la esquina se mata en el **polígono** y no al pintar:
+```js
+ctx.lineJoin = gubia.key === 'fina' ? 'round' : 'miter';
+```
 
-- se busca dónde el contorno gira de verdad, midiendo el giro **sobre una ventana
-  de arco** — vértice contra vértice sólo se mide el temblor del pulso, porque el
-  contorno viene de un paseo con los puntos muy juntos;
-- se toman sólo los **máximos locales**: una esquina es un sitio, no los quince
-  vértices que la rodean, y cortar quince veces seguidas sería redondearla otra vez;
-- y ahí se le quita un pedazo con **un solo quiebro**, asimétrico: cada lado se
-  corta por su cuenta y el punto de en medio se corre entre 0,34 y 0,66 del corte.
-  Con dos puntos de por medio los tres tramos se volvían a leer como una curva,
-  que es de lo que se venía huyendo.
+Con la gubia **fina** se gira dentro del corte sin levantarla, y la esquina sale
+redonda del propio filo: el radio es el de la herramienta, pequeño, y por eso no
+se lee como una curva dibujada. Con una gubia **ancha** no se gira — se levanta,
+se vuelve a entrar, y donde se cruzan los dos cortes hay una **esquina**, no un
+giro.
 
-El punto de en medio tira del vértice viejo con un peso que va de −0,55 a +0,30:
-en positivo la esquina sale **matada**, dos facetas y un quiebro; en negativo sale
-**mordida**, con el pedazo hundido. El rango tira a negativo a propósito: un
-mordisco cuenta que faltó materia, un bisel cuenta que alguien lijó. Y el
-`lineJoin` pasa a `miter` con `miterLimit` 2, para que nadie vuelva a fabricar un
-arco por su cuenta y para que un giro cerrado caiga solo en bisel en vez de sacar
-una punta de vector.
+El error del `round` para las tres no era el redondeo: era **aplicar el mismo
+gesto a herramientas que no lo comparten**. Como el arco medía media gubia, con
+`ancha` salía dos veces y media el de `fina` y el dibujo se volvía infantil. La
+respuesta no es escalar el tratamiento, es cambiarlo.
 
-**Y EL MORDISCO ES PEQUEÑO —0,10 a 0,55 gubias—, que es lo que costó aprender.**
-La primera versión cortaba de 0,25 a 1,25, y con eso lo único que se hizo fue
-cambiar un arco limpio por una faceta grande: se lee **igual de curva**. Se vio
-comparando contra `canto: 0`, o sea sin matar la esquina: el dibujo crudo salía
-anguloso y el del mordisco gordo salía blando. El problema no era sólo de dónde
-venía la curva, era de **tamaño** — y la lección es que un arreglo puede estar
-bien razonado y mal calibrado, y que eso sólo se ve poniendo al lado la versión
-que no hace nada.
+**Y una vuelta que sobró, que también vale escribir.** Antes de esto se probó a
+matar el canto en el polígono: buscar dónde el contorno gira de verdad —midiendo
+el giro sobre una ventana de arco, porque vértice a vértice sólo se mide el
+temblor del pulso— y quitarle un pedazo con un quiebro asimétrico. Funcionaba, y
+dio dos lecciones antes de retirarse:
 
-La esquina tiene que quedarse casi entera: lo justo para que no sea el vértice
-exacto de un vector, y muy lejos de leerse como un giro.
+1. **El tamaño importaba más que el sitio.** La primera versión cortaba de 0,25 a
+   1,25 gubias y lo único que hizo fue cambiar un arco limpio por una faceta
+   grande — que se lee *igual de curva*. Sólo se vio poniendo al lado la versión
+   que no hace nada.
+2. **La curvatura era proporcional al filo**, y de ahí salió la pregunta correcta:
+   si con fina no se nota y con ancha sí, el tratamiento no puede ser el mismo.
 
-**Y el mordisco no crece con el filo, que es la otra mitad del asunto.** La pista
-vino de mirar: *«cuando el trazo es más grueso la curvatura se acentúa, y cuando
-es más fino queda mejor»*. Es literal — todo lo que trataba la esquina estaba
-medido en gubias, el arco viejo incluido, así que con `ancha` la esquina salía
-**dos veces y media** la de `fina`. Puestas las tres en fila, con filo fino las
-tres versiones son casi la misma imagen y con filo gordo el arco se come la
-esquina.
+El mordisco está en el historial por si alguna vez hace falta. Con la regla de la
+gubia sobra: la fina ya tiene su redondeo y las otras dos piden esquina limpia. El
+`miterLimit` se queda en 2, para que un giro muy cerrado caiga solo en bisel en
+vez de sacar una punta de vector.
 
-La razón para separarlos no es de calibrado, es que **son dos cosas**: el ancho
-del corte lo pone la HERRAMIENTA y el pedazo que salta lo pone la MADERA. Una
-gubia gorda no arranca una esquina más grande, arranca un corte más ancho. Así
-que el mordisco se mide contra la gubia media y no pasa de ahí: con `fina` y
-`media` sigue siendo proporcional —que es donde ya funcionaba— y con `ancha` deja
-de crecer.
+### Lo que la vuelta del canto dejó en la batería
 
-Lo que sí sigue atado al filo es la **ventana** con la que se busca la esquina:
-qué cuenta como esquina es cosa de la escala a la que se está cortando.
+Dejar la esquina cruda en `media` y `ancha` **cuesta algo, y es honrado decirlo**:
+las cuñas *en la cuesta* (por debajo de 62°) suben del 1,6% al **1,9%**. No es una
+regresión escondida, es aritmética: el detector cuenta ángulos y acabamos de dejar
+de redondearlos. El umbral que decide —45°— no se mueve: sigue en el **0,1%**, y
+la única que queda es la de siempre, la punta afeitada, que no viene de una
+esquina del polígono sino del repaso.
 
-Va **al final**, sobre las caras ya en píxeles: la partición, los cortes y las
-guardas se deciden sobre el polígono limpio y el mordisco es lo último que le pasa
-al taco — como en la talla, donde el canto se mata cuando la pieza ya está. Cada
-placa se lo hace por su cuenta, así que en una esquina compartida los dos
-mordiscos son distintos y el corte se abre ahí un poco: que es lo que hace una
-gubia de verdad al girar.
+Y la vuelta obligó a **arreglar la prueba de huella**, que se queda aunque el
+mordisco se haya ido. `matarCantos` fue lo primero de esta familia que corría en
+píxeles, y ahí se vio que la pregunta 3 no cubría lo que dice cubrir: comparaba
+campos del resultado —tipo, placas, cortes—, así que cualquier decisión tomada en
+píxeles dejaría la ficha idéntica y la imagen distinta. Ahora además rasteriza la
+misma obra a 760, 1.520 y 3.040, las reduce todas a la pequeña y cuenta los
+píxeles que cambian de clase, erosionando antes para no contar el filo del
+remuestreo. **Peor diferencia con cuerpo: 0 px.**
 
-**Y no, no baja las cuñas.** Con el mordisco gordo las *en la cuesta* (por debajo
-de 62°) caían del 1,6% al 0,9%, y estuvo escrito aquí como efecto colateral bueno
-— pero era del tamaño equivocado. Con el mordisco pequeño vuelven al **1,5%**, o
-sea prácticamente donde estaban. Tiene sentido: un mordisco de 0,1 gubias no
-emboza un ángulo, y embozarlo no era el objetivo. La que sigue por debajo de 45°
-es la misma de siempre, la punta afeitada, que no viene de una esquina del
-polígono sino del repaso.
-
-**Y obligó a arreglar la prueba de huella.** `matarCantos` es lo primero de esta
-familia que corre en píxeles, así que la pregunta 3 dejó de cubrir lo que dice
-cubrir: comparaba campos del resultado —tipo, placas, cortes—, y un mordisco que
-dependiera de la resolución deja la ficha idéntica y la imagen distinta. Ahora
-además rasteriza la misma obra a 760, 1.520 y 3.040, las reduce todas a la
-pequeña y cuenta los píxeles que cambian de clase, erosionando antes para no
-contar el filo del remuestreo. **Peor diferencia con cuerpo: 0 px.**
+Es la mejor herencia de un cambio que no se quedó: el arreglo se fue y el
+instrumento que lo vigilaba se queda, tapando un agujero que llevaba abierto
+desde el principio.
 
 ### Lo que subió al lab
 
@@ -998,10 +978,10 @@ apaisado, sobre el catálogo real de paletas activas. Todo esto sale de
 cuñas       0,1% de las obras tiene un ángulo por debajo de 45° — y las que salen
             son «la punta afeitada», que está entre los riesgos y que ninguna
             guarda geométrica puede ver
-            1,5% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
-            reparto se amontona y baila entre bloques. Matar el canto no la mueve
-            —el mordisco es demasiado pequeño para embozar un ángulo—: llegó a
-            0,9% con la primera versión, que cortaba tres veces más y curvaba
+            1,9% por debajo de 62°, que es la cifra blanda: el umbral cae donde el
+            reparto se amontona y baila entre bloques. Subió del 1,6% al dejar la
+            esquina cruda en media y ancha, y es aritmética: el detector cuenta
+            ángulos y se dejó de redondearlos
             (antes de la 5ª revisión: 20% de las obras, y los peores a 2°, 8°, 12°)
 cortos      0,8% no llega a los cortes que declara su tipo   (era el 20%)
 soldadas    0 · dos placas nunca se tocan — y ya SIN excepción: la fantasma dejó
@@ -1042,12 +1022,10 @@ huella      0 de 180 obras cambia a 760 / 2400 / 4200 px, en los tres formatos
             y sobre el PÍXEL: 0 px con cuerpo de diferencia entre 760, 1.520 y
             3.040 reducidos al pequeño — que es lo que hace falta desde que el
             canto se mata en píxeles
-canto       la esquina no la fabrica el `lineJoin`: se mata en el polígono con un
-            solo quiebro, cada lado cortado por su cuenta entre 0,10 y 0,55 gubias
-            — pequeño a propósito, porque a 1,25 la faceta se lee tan curva como
-            el arco que venía a sustituir. Y con TOPE en la gubia media: el corte
-            lo ancha la herramienta, el pedazo que salta lo pone la madera, y con
-            `ancha` la esquina salía 2,5 veces la de `fina`
+canto       la esquina la decide la gubia: `round` con la fina, que gira dentro
+            del corte, y `miter` con media y ancha, que no giran — se levantan y
+            se vuelve a entrar. El mismo `round` para las tres daba una esquina
+            2,5 veces mayor con ancha que con fina, y ahí se leía infantil
 ms          ~30 por pieza a 520 px, con grano y veta
 ```
 
