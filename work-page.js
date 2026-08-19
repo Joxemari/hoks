@@ -60,6 +60,10 @@
   padding: 8px 10px; display: flex; justify-content: space-between; gap: 8px; }
 .wk-piece figcaption b { color: var(--body); font-weight: 400; }
 .wk-empty { font-family: var(--mono); font-size: 11px; color: var(--mut); letter-spacing: 0.06em; }
+.wk-soon { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 12px;
+  color: var(--mut); letter-spacing: 0.04em; }
+.wk-soon-badge { font-family: var(--geo); font-weight: 700; font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; background: var(--acid); color: var(--ink); padding: 5px 11px; border-radius: 20px; }
 .wk-lb { position: fixed; inset: 0; background: rgba(251,251,250,0.97); display: none;
   align-items: center; justify-content: center; flex-direction: column; gap: 1rem; z-index: 200; cursor: zoom-out; }
 .wk-lb.open { display: flex; }
@@ -176,7 +180,13 @@
       .then(r => r.ok ? r.json() : [])
       .then(list => {
         pieces = Array.isArray(list) ? list : [];
-        if (!pieces.length) { grid.appendChild(el('span', 'wk-empty', '—')); return; }
+        // Familia activa pero aún sin lote publicado: "en curso". Se dice SOON en
+        // vez de dejar un hueco, para que la sección vacía no parezca rota.
+        if (!pieces.length) {
+          grid.appendChild(el('div', 'wk-soon',
+            '<span class="wk-soon-badge">Soon</span> New work is being made for this family.'));
+          return;
+        }
         pieces.forEach((p, i) => {
           const fig = el('figure', 'wk-piece');
           const img = el('img'); img.src = p.dataUrl; img.alt = slug + ' #' + p.seed; img.loading = 'lazy';
