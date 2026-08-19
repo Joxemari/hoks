@@ -8,7 +8,9 @@ const FAVICON = `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,
 // Idioma por defecto: EN. Persistencia: localStorage 'hoks-lang'.
 // ─────────────────────────────────────────────────────────────────────────────
 const LANGS = ['eu', 'es', 'en'];
-const DEFAULT_LANG = 'eu';
+// Arranque en inglés: es el idioma con el statement y los textos validados en
+// Notion. El euskara se reactiva como defecto cuando su copy esté validado.
+const DEFAULT_LANG = 'en';
 // La parte pública es bilingüe euskara / inglés (conmutador en el nav).
 // El diccionario ES se conserva para reactivarlo en el futuro si hiciera falta.
 const SHOW_LANG_SWITCHER = true;

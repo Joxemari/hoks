@@ -1,5 +1,7 @@
 {
-  "aboutText": "hoks is the work of Joxemari Gallastegi, a generative artist based in Donostia. He studied at Stanford University, where he presented his first solo exhibition.\n\nThe work begins where a rule is written. Each series is a small system — a grammar of modules, geometry and controlled chance — and every piece is one sentence that grammar can utter: a seed, a deterministic sequence, an image. Same seed, same image. Nothing is retouched.\n\nThere is a virtue in modularity: a module explains nothing on its own. It asks for repetition, for contact, for a shared edge. The unit is kept deliberately poor so that the field can be rich — meaning does not live in the pieces but between them.\n\nWhat reaches the screen is not the subject of the work but its residue: the visible trace of a system thinking. The series matter more than the pieces; the rules matter more than the series.\n\nUna línea de producción que solo fabrica originales: producir en serie lo irrepetible.",
+  "aboutText": {
+    "en": "Trained in computer science, with an MEng in Design at Stanford University, I build production lines that make originals. What is visible is only a shadow: the residue of a system's thinking. The essence resides where it isn't seen — in the discard, in the void."
+  },
   "footerEmail": "joxemgallastegi@gmail.com",
   "footerInstagram": ""
 }
