@@ -18,10 +18,11 @@
     .burger span{ display:block; height:2px; width:26px; background:var(--blue); margin:5px 0; }
     .ab{ max-width:640px; margin:0 auto; padding:90px 24px 100px; }
     .k{ font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--blue); }
-    .mark{ width:120px; height:218px; background:var(--ink); -webkit-mask:url("logo_tall.png") center/contain no-repeat; mask:url("logo_tall.png") center/contain no-repeat; margin:18px 0 8px; }
-    .desc{ font-family:var(--mono); font-size:12px; letter-spacing:.06em; color:var(--blue); text-transform:uppercase; margin:0 0 22px; }
-    p{ font-size:17.5px; line-height:1.8; color:var(--body); }
-    .sign{ font-family:var(--mono); font-size:13px; color:var(--mut); margin-top:26px; }
+    .desc{ font-family:var(--mono); font-size:12.5px; letter-spacing:.04em; color:var(--body); margin:14px 0 26px; }
+    p{ font-size:17.5px; line-height:1.8; color:var(--body); margin:0; }
+    .coda{ margin-top:52px; padding-top:38px; border-top:1px solid var(--line); display:flex; align-items:flex-end; justify-content:space-between; gap:30px; }
+    .mark{ display:block; height:190px; width:auto; }
+    .sign{ font-family:var(--mono); font-size:13px; color:var(--mut); white-space:nowrap; }
     .lang{ font-family:var(--mono); font-size:11px; letter-spacing:.12em; color:var(--mut); }
     .lang b{ color:var(--ink); }
   </style>
@@ -30,10 +31,9 @@
   <div class="top"><div class="logo"></div><div style="display:flex;gap:16px;align-items:center"><span class="lang"><b>EU</b> · EN</span><div class="burger"><span></span><span></span></div></div></div>
   <div class="ab">
     <div class="k">hoks — algorithmic art</div>
-    <div class="mark"></div>
     <div class="desc">I combine digital and physical art through algorithmic systems.</div>
     <p>Trained in computer science, with an MEng in Design at Stanford University, I build production lines that make originals. What is visible is only a shadow: the residue of a system's thinking. The essence resides where it isn't seen — in the discard, in the void.</p>
-    <div class="sign">jm@joma.es</div>
+    <div class="coda"><img class="mark" src="logo_tall.png" alt="hoks"><div class="sign">jm@joma.es</div></div>
   </div>
 </div>
 </x-dc>
