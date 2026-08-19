@@ -41,8 +41,19 @@
 .wk-rule { height: 1px; background: var(--line); margin: 32px 0; }
 .wk-sec { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
   color: var(--mut); margin: 0 0 16px; }
+.wk-gen-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
 .wk-live { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
-.wk-canvas-wrap { position: relative; width: min(80vw, 460px); }
+.wk-canvas-wrap { position: relative; width: 100%; max-width: 460px; }
+.wk-side { display: flex; flex-direction: column; gap: 14px; }
+.wk-cartela { border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; background: #fcfcfb; }
+.wk-cartela .sh { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mut); margin-bottom: 12px; }
+.wk-cartela .cart { font-family: var(--mono); font-size: 12px; line-height: 1.9; color: #3a3a37; border-left: 2px solid var(--blue); padding-left: 14px; }
+.wk-cartela .cart .k { color: var(--mut); text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
+.wk-cartela .cart .big { font-family: var(--geo); font-weight: 700; font-size: 15px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); display: block; margin-bottom: 5px; }
+.wk-rulecard { border: 1px solid #14140f; border-radius: 14px; padding: 15px 17px; background: #0b0b0a; }
+.wk-rc-h { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--acid); margin-bottom: 9px; }
+.wk-rc-body { font-family: var(--mono); font-size: 11.5px; line-height: 1.9; color: #e4e3dc; white-space: pre-wrap; }
+@media (max-width: 820px) { .wk-gen-grid { grid-template-columns: 1fr; } }
 .wk-live canvas { display: block; width: 100%; height: auto; cursor: pointer; border-radius: 4px;
   outline: 1px solid var(--line); transition: opacity 0.18s; }
 .wk-live canvas:hover { opacity: 0.94; }
@@ -106,13 +117,17 @@
     head.appendChild(eye); head.appendChild(name); head.appendChild(year); head.appendChild(text);
     root.appendChild(head);
 
-    // ── Lienzo vivo: un clic, otra pieza. Sin panel ni traits ni guardar; solo
-    //    su cartela en la esquina (familia · seed) para que se lea que es una
-    //    máquina y no un cuadro. El botón Generate hace lo mismo que el clic. ──
-    let canvas = null, plate = null, genBtn = null;
+    // ── Lienzo vivo + su información a la derecha ────────────────────────────
+    //    Izquierda: el lienzo mudo (un clic, otra pieza) con su cartela en la
+    //    esquina y el botón Generate. Derecha: la cartela "This one" (familia ·
+    //    seed vivo · edición) y la regla dicha (el texto de works.json). Sin
+    //    traits ni rareza: eso es lenguaje de edición y vive en el laboratorio.
+    let canvas = null, plate = null, genBtn = null, cartSeed = null, ruleWrap = null, ruleBody = null;
     if (ALGO) {
       root.appendChild(el('div', 'wk-rule'));
       root.appendChild(el('div', 'wk-sec', esc(t('hint.canvas', 'Click canvas to generate new variation'))));
+      const gg = el('div', 'wk-gen-grid');
+
       const live = el('div', 'wk-live');
       const cw = el('div', 'wk-canvas-wrap');
       canvas = el('canvas'); canvas.width = 600; canvas.height = 600;
@@ -122,7 +137,23 @@
       genBtn = el('button', 'wk-gen', '↻ ' + esc(t('btn.generate', 'Generate')));
       genBtn.type = 'button';
       live.appendChild(genBtn);
-      root.appendChild(live);
+
+      const side = el('div', 'wk-side');
+      const cart = el('div', 'wk-cartela',
+        '<div class="sh">This one</div>' +
+        '<div class="cart"><span class="big">' + esc(slug.toUpperCase()) + '</span>' +
+        '<div><span class="k">seed</span> <span class="seedval">…</span></div>' +
+        '<div><span class="k">edition</span> 1/1 · unique print</div></div>');
+      const rc = el('div', 'wk-rulecard',
+        '<div class="wk-rc-h">' + esc(t('rule.said', 'The rule, said')) + '</div><div class="wk-rc-body"></div>');
+      rc.style.display = 'none';
+      side.appendChild(cart); side.appendChild(rc);
+
+      gg.appendChild(live); gg.appendChild(side);
+      root.appendChild(gg);
+
+      cartSeed = cart.querySelector('.seedval');
+      ruleWrap = rc; ruleBody = rc.querySelector('.wk-rc-body');
     }
 
     root.appendChild(el('div', 'wk-rule'));
@@ -152,6 +183,13 @@
         if (w.name) name.textContent = w.name;
         if (w.year) { year.textContent = w.year; year.style.display = ''; }
         text.textContent = pickText(w.description);
+        // La regla dicha: el texto de cartela de la familia (works.json). Es lo
+        // que va a la derecha del lienzo; si no hay, la tarjeta no se pinta.
+        if (ruleBody) {
+          const said = pickText(w.cartela);
+          if (said) { ruleBody.textContent = said; ruleWrap.style.display = ''; }
+          else if (ruleWrap) ruleWrap.style.display = 'none';
+        }
         document.title = (w.name || slug.toUpperCase()) + ' — hoks';
       })
       .catch(() => {});
@@ -163,8 +201,13 @@
       if (genLabel) genLabel.textContent = '↻ ' + t('btn.generate', 'Generate');
       const genSec = root.querySelector('.wk-sec');
       if (genSec && canvas) genSec.textContent = t('hint.canvas', 'Click canvas to generate new variation');
+      const rcH = root.querySelector('.wk-rc-h');
+      if (rcH) rcH.textContent = t('rule.said', 'The rule, said');
       sec.textContent = t('label.saved', 'Saved');
-      if (currentWork) text.textContent = pickText(currentWork.description);
+      if (currentWork) {
+        text.textContent = pickText(currentWork.description);
+        if (ruleBody) { const said = pickText(currentWork.cartela); if (said) ruleBody.textContent = said; }
+      }
     });
 
     // ── Piezas elegidas ──
@@ -210,6 +253,7 @@
       try { ALGO.render(canvas.getContext('2d'), canvas.width, canvas.height, seed, { palettes }); }
       catch (e) {}
       if (plate) plate.textContent = 'hoks · ' + slug.toUpperCase() + ' · #' + seed;
+      if (cartSeed) cartSeed.textContent = '#' + seed;
     }
     canvas.addEventListener('click', draw);
     if (genBtn) genBtn.addEventListener('click', draw);
