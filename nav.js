@@ -241,7 +241,7 @@ nav.hoks-top {
 }
 .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .nav-logo .mark {
-  width: 22px; height: 20px; background: var(--ink);
+  width: 27px; height: 25px; background: var(--ink);
   -webkit-mask: url("${MONO}") center/contain no-repeat;
           mask: url("${MONO}") center/contain no-repeat;
 }
@@ -358,9 +358,8 @@ const nav = document.createElement('nav');
 nav.className = 'hoks-top';
 nav.innerHTML = `
   <div style="display:flex;align-items:center;gap:12px;">
-    <a class="nav-logo" href="index.html">
+    <a class="nav-logo" href="index.html" aria-label="hoks">
       <span class="mark"></span>
-      <span class="name">hoks</span>
     </a>
     <span id="nav-admin-badge" class="nav-admin-badge" style="display:none;" onclick="window.location.href='admin.html'">Admin</span>
   </div>
@@ -393,8 +392,7 @@ drawer.innerHTML = `
   ${SHOW_LANG_SWITCHER ? `<div class="d-lang" id="nav-lang">
     <button type="button" data-lang="eu">EU</button>
     <button type="button" data-lang="en">EN</button>
-  </div>` : ''}
-  <div class="d-who">Joxemari Gallastegi<br>Donostia · Stanford</div>`;
+  </div>` : ''}`;
 document.body.appendChild(scrim);
 document.body.appendChild(drawer);
 

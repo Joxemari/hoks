@@ -15,31 +15,35 @@
 <meta name="twitter:description" content="Generative art systems built with code and controlled randomness.">
 <meta name="twitter:image" content="https://joxemari.github.io/hoks/preview.png">
 <style>
+/* Tokens (:root) y League Spartan los pone nav.js. Estética del mockup
+   About.dc.html: columna estrecha, statement en cuerpo, y la marca pintada a
+   mano de coda junto al contacto. */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #fff; color: #111; }
-.about-wrap { padding: 10rem 2rem 6rem; max-width: 640px; margin: 0 auto; }
+body { background: var(--paper); color: var(--ink); font-family: var(--geo); }
+.about-wrap { padding: 8rem 1.5rem 6rem; max-width: 640px; margin: 0 auto; }
+.about-eye { font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--blue); margin-bottom: 22px; }
 #about-text {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: clamp(0.9rem, 1.8vw, 1.1rem);
-  font-weight: 400; line-height: 1.8; color: #111;
-  margin-bottom: 3rem; letter-spacing: 0.01em;
-  white-space: pre-line;
-  visibility: hidden;
+  font-family: var(--geo); font-size: 17.5px; line-height: 1.8; color: var(--body);
+  white-space: pre-line; margin: 0; visibility: hidden;
 }
-.about-contact {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 11px; color: #aaa;
-  letter-spacing: 0.1em; text-transform: uppercase;
-}
-.about-contact a { color: #111; text-decoration: none; border-bottom: 1px solid #111; }
+.about-coda { margin-top: 52px; padding-top: 38px; border-top: 1px solid var(--line);
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; }
+.about-coda .mark { display: block; height: 150px; width: auto; }
+.about-contact { font-family: var(--mono); font-size: 12px; color: var(--mut); letter-spacing: 0.08em; white-space: nowrap; margin: 0; }
+.about-contact a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--ink); }
+@media (max-width: 600px) { .about-coda { flex-direction: column; align-items: flex-start; gap: 22px; } .about-coda .mark { height: 120px; } }
 </style>
 </head>
 <body>
 <script src="nav.js"></script>
 <main>
   <div class="about-wrap">
+    <div class="about-eye">hoks — algorithmic art</div>
     <p id="about-text"></p>
-    <p class="about-contact" id="about-contact"></p>
+    <div class="about-coda">
+      <img class="mark" src="logo_tall.png" alt="hoks">
+      <p class="about-contact" id="about-contact"></p>
+    </div>
   </div>
 </main>
 <script>
