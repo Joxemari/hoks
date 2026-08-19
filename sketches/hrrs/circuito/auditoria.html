@@ -1,0 +1,231 @@
+<title>HRRS contra Chillida</title>
+<style>
+:root{
+  --hoja:#fff; --tinta:#111; --gris:#8a857c; --linea:#ddd8cc; --tenue:#f4f1e9;
+  --papel:#e8e2d4; --obra:#2a2521; --sobre:#e4ddcb; --barra:#111;
+  --paso:1.5rem;
+  --mono:'Courier New','Nimbus Mono PS','Liberation Mono',monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --hoja:#16130f; --tinta:#e8e2d4; --gris:#918a7d; --linea:#332e26; --tenue:#1e1a15;
+    --papel:#e8e2d4; --obra:#2a2521; --sobre:#39322a; --barra:#e8e2d4;
+  }
+}
+:root[data-theme="dark"]{
+  --hoja:#16130f; --tinta:#e8e2d4; --gris:#918a7d; --linea:#332e26; --tenue:#1e1a15;
+  --papel:#e8e2d4; --obra:#2a2521; --sobre:#39322a; --barra:#e8e2d4;
+}
+*{box-sizing:border-box}
+body{background:var(--hoja);color:var(--tinta);font-family:var(--mono);
+  font-size:15px;line-height:1.62;margin:0;padding:clamp(1.5rem,5vw,4.5rem) clamp(1rem,4vw,3rem) 5rem;
+  -webkit-font-smoothing:antialiased}
+.pagina{display:flex;flex-direction:column;gap:calc(var(--paso)*1.8);max-width:1180px}
+/* el texto se lee en 66ch; la tabla NO vive dentro de esa medida, o queda atrapada en ella:
+   max-width en un hijo no escapa del padre, y la tabla salía recortada por la mitad. */
+.col{display:flex;flex-direction:column;gap:var(--paso)}
+.medida{max-width:66ch}
+h1{font-size:clamp(1.6rem,4.4vw,2.5rem);line-height:1.12;font-weight:700;letter-spacing:-.02em;
+  margin:0;text-wrap:balance}
+h2{font-size:1rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin:0;
+  padding-bottom:.4rem;border-bottom:1px solid var(--tinta)}
+h3{font-size:.95rem;font-weight:700;margin:0 0 .3rem}
+p{margin:0}
+.eyebrow{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gris);margin:0}
+.entrada{font-size:1.06rem;color:var(--tinta)}
+small,.pie{font-size:.8rem;color:var(--gris);line-height:1.55}
+b.k{font-weight:700}
+/* la banda y el canal: el objeto que audita esta página, usado como regla de sección */
+.canal{height:11px;display:flex;flex-direction:column;gap:2px;margin:.6rem 0 0}
+.canal i{display:block;height:4px;background:var(--obra)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .canal i{background:var(--papel)}}
+:root[data-theme="dark"] .canal i{background:var(--papel)}
+/* resumen */
+.cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:.9rem}
+.cifra{background:var(--hoja);border:1px solid var(--linea);padding:1rem 1.1rem;
+  display:flex;flex-direction:column;gap:.3rem}
+.cifra .v{font-size:1.9rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.cifra .q{font-size:.76rem;color:var(--gris);line-height:1.45}
+/* tabla */
+.marco{overflow-x:auto;border:1px solid var(--linea);background:var(--hoja)}
+table{border-collapse:collapse;width:100%;min-width:860px;font-size:.82rem;
+  font-variant-numeric:tabular-nums}
+thead th{text-align:right;font-weight:700;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--gris);padding:.7rem .5rem;border-bottom:1px solid var(--tinta);white-space:nowrap;
+  vertical-align:bottom}
+thead th.izq{text-align:left}
+tbody th{text-align:left;font-weight:400;padding:.5rem .7rem .5rem .8rem;white-space:nowrap}
+tbody td{padding:.5rem .5rem;text-align:right;white-space:nowrap}
+tbody tr+tr th,tbody tr+tr td{border-top:1px solid var(--linea)}
+tbody tr:hover th,tbody tr:hover td{background:var(--tenue)}
+.num{font-variant-numeric:tabular-nums}
+.fuerte{font-weight:700}
+.sobre{color:var(--gris)}
+.sobre .g{padding:0 .1em}
+.sin{color:var(--linea)}
+.grupo{border-left:1px solid var(--linea)}
+.flag{display:inline-block;margin-left:.6rem;font-size:.64rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--gris);border:1px solid var(--linea);padding:.05rem .35rem;
+  vertical-align:.1em;cursor:help}
+/* la tira: sobre de las cuatro, nuestra barra, y las cuatro marcas */
+.tiraC{width:20%;min-width:168px;padding-right:.9rem!important}
+.tira{position:relative;height:22px}
+.tira i{position:absolute;display:block}
+.sobreB{top:6px;height:10px;background:var(--sobre)}
+.bar{top:9px;height:4px;background:var(--barra);opacity:.32}
+.med{top:4px;width:2px;height:14px;background:var(--barra)}
+.ref{top:0;width:1px;height:22px;background:var(--gris)}
+.ref b{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.vd{text-align:left!important;color:var(--gris);font-size:.76rem;white-space:nowrap;
+  padding-right:.9rem!important}
+.glifo{display:inline-block;width:1.2em;color:var(--tinta)}
+tr.e-borde .glifo,tr.e-bajo .glifo,tr.e-alto .glifo{color:var(--tinta)}
+tr.e-bajo th,tr.e-alto th{font-weight:700}
+/* leyenda */
+.leyenda{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.9rem 2rem;
+  font-size:.78rem;color:var(--gris)}
+.leyenda div{display:flex;gap:.6rem;align-items:flex-start}
+.mini{position:relative;flex:0 0 62px;height:18px;margin-top:.15rem}
+.mini i{position:absolute;display:block}
+.dl{border-top:1px solid var(--linea);padding-top:.9rem;display:grid;
+  grid-template-columns:minmax(9rem,auto) 1fr;gap:.35rem 1.5rem;font-size:.85rem}
+.dl dt{font-weight:700;margin:0}
+.dl dd{margin:0;color:var(--gris)}
+ul{margin:0;padding-left:1.15rem;display:flex;flex-direction:column;gap:.5rem}
+li::marker{color:var(--gris)}
+a{color:var(--tinta);text-decoration-thickness:1px;text-underline-offset:.2em}
+a:focus-visible,[title]:focus-visible{outline:2px solid var(--tinta);outline-offset:2px}
+</style>
+
+<div class="pagina">
+  <header class="col medida" style="gap:.7rem">
+    <p class="eyebrow">hoks · laboratorio · hrrs</p>
+    <h1>HRRS contra Chillida</h1>
+    <p class="entrada">Veintiuna dimensiones medidas con el mismo código sobre cuatro obras de
+    Chillida y sobre cuarenta nuestras. Diecinueve caen dentro. La tabla dice también por qué
+    eso no basta.</p>
+    <div class="canal" aria-hidden="true"><i></i><i></i></div>
+  </header>
+
+  <section class="col medida" style="gap:.8rem">
+    <h2>El corpus</h2>
+    <p>Cuatro obras y no seis. <b class="k">r3</b> lo descartó él —«ya hemos dicho que era raro»—
+    y <b class="k">r4</b> tiene la geometría corrompida por las bandas fundidas: da una piel de
+    0,130 cuando las otras tres dan 0,034, y una rectitud de 0,23 cuando ninguna baja de 0,40.
+    De <b class="k">r2</b> se usan los ejes pero no la fotografía: en ella entra el muro, la
+    máscara de tinta se lo come y todo lo que se mide sobre el píxel cae al suelo del método.</p>
+    <p>Las medidas van en <b class="k">anchuras de banda</b>, que es la única unidad en la que las
+    cuatro se comparan entre sí: sus bandas van de 0,0325 a 0,0909 del lado corto, casi el triple
+    de una a otra.</p>
+  </section>
+
+  <section class="col" style="gap:.9rem">
+    <h2 class="medida">El resultado</h2>
+    <div class="cifras">
+      <div class="cifra"><span class="v">19/21</span><span class="q">dimensiones con nuestra
+        mediana dentro del sobre que dibujan las cuatro</span></div>
+      <div class="cifra"><span class="v">13</span><span class="q">de ellas aprietan de verdad;
+        las otras 8 tienen el sobre tan ancho que caer dentro no prueba nada</span></div>
+      <div class="cifra"><span class="v">2</span><span class="q">fuera o rozando: los vecinos a
+        la vez, y las roturas por cambio de socio</span></div>
+      <div class="cifra"><span class="v">0</span><span class="q">obras con dos bandas tocándose
+        — su regla absoluta, medida sobre el contorno</span></div>
+    </div>
+  </section>
+
+  <section class="col" style="gap:.9rem">
+    <h2>Las veintiuna dimensiones</h2>
+    <div class="marco">
+      <table>
+        <thead>
+          <tr>
+            <th class="izq">dimensión</th>
+            <th>r1</th><th>r2</th><th>r5</th><th>r6</th>
+            <th class="grupo">las cuatro</th>
+            <th class="grupo">p10</th><th>mediana</th><th>p90</th>
+            <th class="izq grupo">sobre · nosotros</th>
+            <th class="izq">veredicto</th>
+          </tr>
+        </thead>
+        <tbody>
+<tr class="e-dentro"><th scope=row>trazos por obra</th><td class="num">8</td><td class="num">11</td><td class="num">6</td><td class="num">14</td><td class="num sobre">6<span class=g>–</span>14</td><td class="num">5</td><td class="num fuerte">8</td><td class="num">11</td><td class=tiraC><div class=tira><i class=sobreB style="left:17.59%;width:74.07%"></i><i class=bar style="left:8.33%;width:55.56%"></i><i class=med style="left:36.11%"></i><i class="ref" style="left:36.11%"><b>r1</b></i><i class="ref" style="left:63.89%"><b>r2</b></i><i class="ref" style="left:17.59%"><b>r5</b></i><i class="ref" style="left:91.67%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro flojo"><th scope=row>largo de un trazo (anchuras)<span class="flag" title="las cuatro referencias se separan más que su propio valor medio: caer dentro de este sobre no prueba nada">sobre flojo</span></th><td class="num">17.7</td><td class="num">9.1</td><td class="num">11.5</td><td class="num">5.9</td><td class="num sobre">5.9<span class=g>–</span>17.7</td><td class="num">5.8</td><td class="num fuerte">9.5</td><td class="num">12.9</td><td class=tiraC><div class=tira><i class=sobreB style="left:8.76%;width:82.91%"></i><i class=bar style="left:8.33%;width:49.99%"></i><i class=med style="left:34.49%"></i><i class="ref" style="left:91.67%"><b>r1</b></i><i class="ref" style="left:31.12%"><b>r2</b></i><i class="ref" style="left:48.09%"><b>r5</b></i><i class="ref" style="left:8.76%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro"><th scope=row>largo dibujado total (anchuras)</th><td class="num">159.8</td><td class="num">116.4</td><td class="num">57.4</td><td class="num">84.2</td><td class="num sobre">57.4<span class=g>–</span>159.8</td><td class="num">40.9</td><td class="num fuerte">85.8</td><td class="num">149.8</td><td class=tiraC><div class=tira><i class=sobreB style="left:19.90%;width:71.77%"></i><i class=bar style="left:8.33%;width:76.29%"></i><i class=med style="left:39.80%"></i><i class="ref" style="left:91.67%"><b>r1</b></i><i class="ref" style="left:61.24%"><b>r2</b></i><i class="ref" style="left:19.90%"><b>r5</b></i><i class="ref" style="left:38.70%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro flojo"><th scope=row>cobertura de tinta (%)<span class="flag" title="las cuatro referencias se separan más que su propio valor medio: caer dentro de este sobre no prueba nada">sobre flojo</span></th><td class="num">16.4</td><td class="num">15.2</td><td class="num">31.3</td><td class="num">54.5</td><td class="num sobre">15.2<span class=g>–</span>54.5</td><td class="num">24.2</td><td class="num fuerte">33.0</td><td class="num">45.2</td><td class=tiraC><div class=tira><i class=sobreB style="left:8.33%;width:83.33%"></i><i class=bar style="left:27.35%;width:44.64%"></i><i class=med style="left:46.13%"></i><i class="ref" style="left:10.94%"><b>r1</b></i><i class="ref" style="left:8.33%"><b>r2</b></i><i class="ref" style="left:42.54%"><b>r5</b></i><i class="ref" style="left:91.67%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro"><th scope=row>cuerda / largo  (1 = recta)</th><td class="num">0.61</td><td class="num">0.82</td><td class="num">0.86</td><td class="num">0.80</td><td class="num sobre">0.61<span class=g>–</span>0.86</td><td class="num">0.75</td><td class="num fuerte">0.82</td><td class="num">0.89</td><td class=tiraC><div class=tira><i class=sobreB style="left:8.33%;width:74.58%"></i><i class=bar style="left:49.23%;width:42.43%"></i><i class=med style="left:68.65%"></i><i class="ref" style="left:8.33%"><b>r1</b></i><i class="ref" style="left:69.16%"><b>r2</b></i><i class="ref" style="left:82.91%"><b>r5</b></i><i class="ref" style="left:63.19%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro"><th scope=row>proporción del pliego</th><td class="num">1.03</td><td class="num">1.33</td><td class="num">1.51</td><td class="num">1.22</td><td class="num sobre">1.03<span class=g>–</span>1.51</td><td class="num">1.03</td><td class="num fuerte">1.06</td><td class="num">1.09</td><td class=tiraC><div class=tira><i class=sobreB style="left:8.33%;width:83.33%"></i><i class=bar style="left:8.46%;width:10.24%"></i><i class=med style="left:13.58%"></i><i class="ref" style="left:8.33%"><b>r1</b></i><i class="ref" style="left:60.60%"><b>r2</b></i><i class="ref" style="left:91.67%"><b>r5</b></i><i class="ref" style="left:41.43%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro flojo"><th scope=row>canal entre bandas (anchuras)<span class="flag" title="las cuatro referencias se separan más que su propio valor medio: caer dentro de este sobre no prueba nada">sobre flojo</span></th><td class="num">0.288</td><td class="num"><span class=sin>—</span></td><td class="num">0.062</td><td class="num">0.188</td><td class="num sobre">0.062<span class=g>–</span>0.288</td><td class="num">0.082</td><td class="num fuerte">0.207</td><td class="num">0.502</td><td class=tiraC><div class=tira><i class=sobreB style="left:8.33%;width:42.85%"></i><i class=bar style="left:12.07%;width:79.59%"></i><i class=med style="left:35.77%"></i><i class="ref" style="left:51.18%"><b>r1</b></i><i class="ref" style="left:8.33%"><b>r5</b></i><i class="ref" style="left:32.22%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro"><th scope=row>concentración de rumbo (%)</th><td class="num">16</td><td class="num">20</td><td class="num">33</td><td class="num">31</td><td class="num sobre">16<span class=g>–</span>33</td><td class="num">22</td><td class="num fuerte">30</td><td class="num">38</td><td class=tiraC><div class=tira><i class=sobreB style="left:8.33%;width:65.34%"></i><i class=bar style="left:31.92%;width:59.75%"></i><i class=med style="left:63.28%"></i><i class="ref" style="left:8.33%"><b>r1</b></i><i class="ref" style="left:26.32%"><b>r2</b></i><i class="ref" style="left:73.67%"><b>r5</b></i><i class="ref" style="left:66.70%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro"><th scope=row>ángulo de quiebro (°)</th><td class="num">48</td><td class="num">49</td><td class="num">50</td><td class="num">63</td><td class="num sobre">48<span class=g>–</span>63</td><td class="num">43</td><td class="num fuerte">50</td><td class="num">64</td><td class=tiraC><div class=tira><i class=sobreB style="left:27.41%;width:60.58%"></i><i class=bar style="left:8.33%;width:83.33%"></i><i class=med style="left:37.44%"></i><i class="ref" style="left:27.41%"><b>r1</b></i><i class="ref" style="left:32.70%"><b>r2</b></i><i class="ref" style="left:36.27%"><b>r5</b></i><i class="ref" style="left:87.99%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro"><th scope=row>tirada entre quiebros (anchuras)</th><td class="num">2.7</td><td class="num">2.0</td><td class="num">1.9</td><td class="num">1.3</td><td class="num sobre">1.3<span class=g>–</span>2.7</td><td class="num">1.0</td><td class="num fuerte">2.0</td><td class="num">3.7</td><td class=tiraC><div class=tira><i class=sobreB style="left:17.73%;width:44.32%"></i><i class=bar style="left:8.33%;width:83.33%"></i><i class=med style="left:39.00%"></i><i class="ref" style="left:62.05%"><b>r1</b></i><i class="ref" style="left:38.51%"><b>r2</b></i><i class="ref" style="left:37.07%"><b>r5</b></i><i class="ref" style="left:17.73%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro"><th scope=row>acompañamiento (% del largo)</th><td class="num">57</td><td class="num">43</td><td class="num">65</td><td class="num">57</td><td class="num sobre">43<span class=g>–</span>65</td><td class="num">42</td><td class="num fuerte">57</td><td class="num">77</td><td class=tiraC><div class=tira><i class=sobreB style="left:11.72%;width:51.65%"></i><i class=bar style="left:8.33%;width:83.33%"></i><i class=med style="left:45.10%"></i><i class="ref" style="left:44.87%"><b>r1</b></i><i class="ref" style="left:11.72%"><b>r2</b></i><i class="ref" style="left:63.37%"><b>r5</b></i><i class="ref" style="left:43.99%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro flojo"><th scope=row>racha de acompañamiento (anchuras)<span class="flag" title="las cuatro referencias se separan más que su propio valor medio: caer dentro de este sobre no prueba nada">sobre flojo</span></th><td class="num">4.0</td><td class="num">1.0</td><td class="num">2.0</td><td class="num">1.0</td><td class="num sobre">1.0<span class=g>–</span>4.0</td><td class="num">1.0</td><td class="num fuerte">2.0</td><td class="num">3.5</td><td class=tiraC><div class=tira><i class=sobreB style="left:8.33%;width:83.33%"></i><i class=bar style="left:8.33%;width:69.09%"></i><i class=med style="left:35.39%"></i><i class="ref" style="left:91.67%"><b>r1</b></i><i class="ref" style="left:8.33%"><b>r2</b></i><i class="ref" style="left:35.06%"><b>r5</b></i><i class="ref" style="left:8.33%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro flojo"><th scope=row>racha, p90 (anchuras)<span class="flag" title="las cuatro referencias se separan más que su propio valor medio: caer dentro de este sobre no prueba nada">sobre flojo</span></th><td class="num">8.0</td><td class="num">3.8</td><td class="num">4.9</td><td class="num">2.3</td><td class="num sobre">2.3<span class=g>–</span>8.0</td><td class="num">3.8</td><td class="num fuerte">5.8</td><td class="num">10.9</td><td class=tiraC><div class=tira><i class=sobreB style="left:8.33%;width:54.89%"></i><i class=bar style="left:22.07%;width:69.59%"></i><i class=med style="left:41.98%"></i><i class="ref" style="left:63.23%"><b>r1</b></i><i class="ref" style="left:22.42%"><b>r2</b></i><i class="ref" style="left:33.67%"><b>r5</b></i><i class="ref" style="left:8.33%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-disperso"><th scope=row>roturas por CAMBIO de socio (%)</th><td class="num">36</td><td class="num">21</td><td class="num">36</td><td class="num">32</td><td class="num sobre">21<span class=g>–</span>36</td><td class="num">11</td><td class="num fuerte">26</td><td class="num">50</td><td class=tiraC><div class=tira><i class=sobreB style="left:30.44%;width:32.00%"></i><i class=bar style="left:8.33%;width:83.33%"></i><i class=med style="left:40.08%"></i><i class="ref" style="left:62.45%"><b>r1</b></i><i class="ref" style="left:30.44%"><b>r2</b></i><i class="ref" style="left:61.05%"><b>r5</b></i><i class="ref" style="left:53.65%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>más disperso</td></tr><tr class="e-dentro"><th scope=row>roturas por ACABARSE el trazo (%)</th><td class="num">14</td><td class="num">21</td><td class="num">14</td><td class="num">35</td><td class="num sobre">14<span class=g>–</span>35</td><td class="num">12</td><td class="num fuerte">27</td><td class="num">43</td><td class=tiraC><div class=tira><i class=sobreB style="left:12.75%;width:59.00%"></i><i class=bar style="left:8.33%;width:83.33%"></i><i class=med style="left:47.94%"></i><i class="ref" style="left:12.75%"><b>r1</b></i><i class="ref" style="left:33.80%"><b>r2</b></i><i class="ref" style="left:14.51%"><b>r5</b></i><i class="ref" style="left:71.75%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-borde"><th scope=row>vecinos a la vez</th><td class="num">1.29</td><td class="num">1.47</td><td class="num">1.34</td><td class="num">1.76</td><td class="num sobre">1.29<span class=g>–</span>1.76</td><td class="num">1.03</td><td class="num fuerte">1.26</td><td class="num">2.00</td><td class=tiraC><div class=tira><i class=sobreB style="left:30.22%;width:40.80%"></i><i class=bar style="left:8.33%;width:83.33%"></i><i class=med style="left:28.42%"></i><i class="ref" style="left:30.22%"><b>r1</b></i><i class="ref" style="left:46.13%"><b>r2</b></i><i class="ref" style="left:35.07%"><b>r5</b></i><i class="ref" style="left:71.02%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▫</span>en el borde</td></tr><tr class="e-dentro"><th scope=row>socios por trazo</th><td class="num">3.0</td><td class="num">2.6</td><td class="num">1.7</td><td class="num">2.9</td><td class="num sobre">1.7<span class=g>–</span>3.0</td><td class="num">1.2</td><td class="num fuerte">2.1</td><td class="num">2.8</td><td class=tiraC><div class=tira><i class=sobreB style="left:29.94%;width:61.73%"></i><i class=bar style="left:8.33%;width:74.92%"></i><i class=med style="left:51.98%"></i><i class="ref" style="left:91.67%"><b>r1</b></i><i class="ref" style="left:74.83%"><b>r2</b></i><i class="ref" style="left:29.94%"><b>r5</b></i><i class="ref" style="left:88.36%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro flojo"><th scope=row>cruces de eje por obra<span class="flag" title="las cuatro referencias se separan más que su propio valor medio: caer dentro de este sobre no prueba nada">sobre flojo</span></th><td class="num">0.0</td><td class="num">0.0</td><td class="num">1.0</td><td class="num">0.0</td><td class="num sobre">0.0<span class=g>–</span>1.0</td><td class="num">0.0</td><td class="num fuerte">0.0</td><td class="num">0.0</td><td class=tiraC><div class=tira><i class=sobreB style="left:8.33%;width:83.33%"></i><i class=bar style="left:8.33%;width:0.60%"></i><i class=med style="left:8.33%"></i><i class="ref" style="left:8.33%"><b>r1</b></i><i class="ref" style="left:8.33%"><b>r2</b></i><i class="ref" style="left:91.67%"><b>r5</b></i><i class="ref" style="left:8.33%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro"><th scope=row>cabos que mueren contra algo (%)</th><td class="num">81</td><td class="num">82</td><td class="num">83</td><td class="num">100</td><td class="num sobre">81<span class=g>–</span>100</td><td class="num">80</td><td class="num fuerte">95</td><td class="num">100</td><td class=tiraC><div class=tira><i class=sobreB style="left:13.54%;width:78.13%"></i><i class=bar style="left:8.33%;width:83.33%"></i><i class=med style="left:70.83%"></i><i class="ref" style="left:13.54%"><b>r1</b></i><i class="ref" style="left:15.91%"><b>r2</b></i><i class="ref" style="left:22.22%"><b>r5</b></i><i class="ref" style="left:91.67%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro flojo"><th scope=row>cabos contra otro cabo (%)<span class="flag" title="las cuatro referencias se separan más que su propio valor medio: caer dentro de este sobre no prueba nada">sobre flojo</span></th><td class="num">13</td><td class="num">45</td><td class="num">83</td><td class="num">82</td><td class="num sobre">13<span class=g>–</span>83</td><td class="num">50</td><td class="num fuerte">71</td><td class="num">91</td><td class=tiraC><div class=tira><i class=sobreB style="left:8.33%;width:75.28%"></i><i class=bar style="left:48.19%;width:43.48%"></i><i class=med style="left:70.96%"></i><i class="ref" style="left:8.33%"><b>r1</b></i><i class="ref" style="left:43.36%"><b>r2</b></i><i class="ref" style="left:83.62%"><b>r5</b></i><i class="ref" style="left:82.35%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr><tr class="e-dentro flojo"><th scope=row>cabos al aire (%)<span class="flag" title="las cuatro referencias se separan más que su propio valor medio: caer dentro de este sobre no prueba nada">sobre flojo</span></th><td class="num">19</td><td class="num">18</td><td class="num">17</td><td class="num">0</td><td class="num sobre">0<span class=g>–</span>19</td><td class="num">0</td><td class="num fuerte">6</td><td class="num">20</td><td class=tiraC><div class=tira><i class=sobreB style="left:8.33%;width:78.13%"></i><i class=bar style="left:8.33%;width:83.33%"></i><i class=med style="left:31.48%"></i><i class="ref" style="left:86.46%"><b>r1</b></i><i class="ref" style="left:84.09%"><b>r2</b></i><i class="ref" style="left:77.78%"><b>r5</b></i><i class="ref" style="left:8.33%"><b>r6</b></i></div></td><td class=vd><span class=glifo>▪</span>dentro</td></tr>        </tbody>
+      </table>
+    </div>
+    <div class="leyenda">
+      <div>
+        <span class="mini" aria-hidden="true">
+          <i class="sobreB" style="left:14%;width:52%"></i>
+          <i class="ref" style="left:14%"></i><i class="ref" style="left:33%"></i>
+          <i class="ref" style="left:52%"></i><i class="ref" style="left:66%"></i>
+        </span>
+        <span>La banda de papel es el <b class="k">sobre</b>: de la referencia más baja a la más
+        alta. Las cuatro rayas finas son r1, r2, r5 y r6, cada una donde cae.</span>
+      </div>
+      <div>
+        <span class="mini" aria-hidden="true">
+          <i class="bar" style="left:10%;width:70%"></i><i class="med" style="left:44%"></i>
+        </span>
+        <span>La barra tendida es <b class="k">nuestro p10 al p90</b> en cuarenta obras, y el
+        trazo vertical, nuestra mediana.</span>
+      </div>
+      <div>
+        <span><b class="k">▪ dentro</b> · <b class="k">▫ en el borde</b>, la mediana justo en el
+        canto · <b class="k">◂ ▸ fuera</b>, por debajo o por encima. El veredicto es un glifo y no
+        un color: ninguna dimensión tiene «mejor», sólo dentro y fuera.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="col medida" style="gap:.9rem">
+    <h2>Lo que la tabla no puede ver</h2>
+    <p>Son veintiuna distribuciones <b class="k">por separado</b>. Estar dentro de las veintiuna no es
+    parecerse: describe cada rasgo aislado y no dice nada de cómo se combinan. Y ahí está lo que
+    todavía se ve distinto — cada trazo nuestro es su propio meandro puesto <em>al lado</em> de los
+    otros, donde las bandas de r5 se envuelven y se encajan. Eso no tiene columna.</p>
+    <p>Ocho de las veintiuna llevan <b class="k">sobre flojo</b>: las cuatro referencias se
+    separan más que su propio valor medio. Los cabos contra otro cabo van del 13 % en r1 al 83 %
+    en r5 — un sobre así no define una familia, describe cuatro obras que no se parecen en eso.
+    Caer dentro es información nula, y por eso está marcado.</p>
+    <div class="canal" aria-hidden="true"><i></i><i></i></div>
+  </section>
+
+  <section class="col medida" style="gap:.9rem">
+    <h2>Las dos que no caen</h2>
+    <dl class="dl">
+      <dt>vecinos a la vez</dt>
+      <dd>1,26 contra su 1,29–1,76. Allí donde un trazo tiene a alguien al lado, ellas tienen algo
+      más de compañía que nosotros. Es el mismo dedo señalando lo de arriba: sus trazos se agrupan
+      en haces y los nuestros van de dos en dos.</dd>
+      <dt>roturas por cambio de socio</dt>
+      <dd>La mediana cae dentro (26 % contra su 21–36 %) pero nuestra dispersión es el doble de la
+      suya: hay obras nuestras al 11 % y otras al 50 %. Ellas son más parejas entre sí de lo que
+      nosotros somos entre nosotros.</dd>
+    </dl>
+  </section>
+
+  <section class="col medida" style="gap:.9rem">
+    <h2>Lo que encontró la auditoría</h2>
+    <p>Una obra en blanco. La <b class="k">#bdc</b> salía con la banda a cero, y la causa estaba
+    latente desde antes: el cálculo del hueco se salta los tramos de los cabos —un encuentro de
+    puntas no pide canal de costado— y a un trazo de cinco puntos se le saltan todos. En una obra
+    de trazos cortos la lista vuelve vacía, y el percentil de una lista vacía daba 0. Un hueco de
+    cero es lo mismo que dos bandas pegadas, así que la banda de la obra entera se iba a cero.
+    <b class="k">Una lista vacía no es un hueco de cero: es que nada aprieta.</b></p>
+    <p>Y la comprobación que existe justo para eso no la vio, con toda la razón: corría sobre otra
+    sucesión de semillas que el resto del taller, así que sus ciento veinte obras estaban limpias
+    mientras las cuarenta de las demás herramientas tenían una a cero. Una comprobación que mira
+    otra población que el resto puede dar verde mientras otra da rojo.</p>
+  </section>
+
+  <footer class="col medida" style="gap:.5rem">
+    <div class="canal" aria-hidden="true"><i></i><i></i></div>
+    <p class="pie"><b class="k">node audita.js</b> reproduce la tabla; <b class="k">node audita.js
+    control</b> la comprueba contra dos casos conocidos: la misma obra por las dos puertas tiene
+    que dar lo mismo en las veintiuna dimensiones —si no, la tabla mide la puerta y no la obra— y la
+    misma obra remuestreada quince veces más fina tiene que aguantar, que es la diferencia real
+    entre sus ejes marcados a mano y los nuestros. Todo lo que se decide tramo a tramo se mide al
+    mismo paso, un ancho de banda, por ese mismo motivo.</p>
+    <p class="pie">Las fotografías de las obras de Chillida no están en el repositorio ni en esta
+    página: son obra suya y esto se publica. Sólo viajan los números.</p>
+  </footer>
+</div>

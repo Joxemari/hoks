@@ -327,7 +327,12 @@ if (process.argv[2] === 'control') {
   process.exit(mal);
 }
 
-const N = parseInt(process.argv[2] || '40', 10);
+// EL MODO `json`, para que una página pueda enseñar esta tabla sin que nadie copie los números a
+// mano. Copiar a mano es como se desincronizan las cosas en este repo —ya pasó con el generador
+// dentro de los artefactos, ver `empotra.py`— y una auditoría con números caducados es peor que no
+// tenerla. Sale lo mismo que la tabla, en crudo.
+const JSON_OUT = process.argv[2] === 'json';
+const N = parseInt((JSON_OUT ? process.argv[3] : process.argv[2]) || '40', 10);
 const { circuito } = require(GEN);
 
 const ref = {};
@@ -338,6 +343,30 @@ for (let i = 0; i < N; i++) {
   const o = circuito((2000 + i * 37) >>> 0, { grainScale: 0 });
   nues.push(medidas({ trazos: o.trazos, W: o.W, fw: o.fw != null ? o.fw : 1,
                       fh: o.fh != null ? o.fh : 1, canal: o.sep / o.W - 1 }));
+}
+
+if (JSON_OUT) {
+  const filas = [];
+  for (const [k, et, dec] of DIMS) {
+    const vs0 = REFS.map(r => ref[r][k]);
+    const vs = vs0.filter(x => !Number.isNaN(x));
+    if (!vs.length) continue;
+    const lo = Math.min(...vs), hi = Math.max(...vs);
+    const mios = nues.map(m => m[k]).filter(x => !Number.isNaN(x));
+    const ancho = Math.max(hi - lo, 1e-9);
+    const med = pct(mios, 0.5);
+    let estado = 'dentro', exceso = 0;
+    if (med < lo || med > hi) {
+      exceso = med < lo ? (lo - med) / ancho : (med - hi) / ancho;
+      estado = exceso < 0.10 ? 'borde' : (med < lo ? 'bajo' : 'alto');
+    } else if ((pct(mios, 0.9) - pct(mios, 0.1)) > 2.2 * ancho) estado = 'disperso';
+    filas.push({ clave: k, etiqueta: et, dec,
+                 refs: REFS.map((r, i) => ({ obra: r, v: Number.isNaN(vs0[i]) ? null : vs0[i] })),
+                 lo, hi, p10: pct(mios, 0.1), med, p90: pct(mios, 0.9),
+                 estado, exceso, flojo: (hi - lo) > Math.abs((hi + lo) / 2) });
+  }
+  console.log(JSON.stringify({ obras: N, refs: REFS, filas }, null, 1));
+  process.exit(0);
 }
 
 console.log('AUDITORÍA — ' + N + ' obras nuestras contra r1, r2, r5 y r6');
