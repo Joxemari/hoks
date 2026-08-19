@@ -4,12 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>hoks — admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Sistema de diseño hoks. --geo (League Spartan) para títulos/pestañas/botones;
+   --f (Courier New) para datos y captions, la voz operativa de siempre. */
 :root {
-  --f: 'Courier New', Courier, monospace; --ink: #111; --ink3: #bbb;
-  --bg: #fff; --surface: #f7f7f7; --border: #e8e8e8; --border-dark: #ccc;
-  --r: 2px; --red: #c0392b;
+  --f: 'Courier New', Courier, monospace;
+  --geo: "League Spartan", "Century Gothic", Futura, system-ui, sans-serif;
+  --ink: #0a0a0a; --ink3: #8a8983;
+  --bg: #fbfbfa; --surface: #f3f1ec; --border: #e7e5df; --border-dark: #d8d5cc;
+  --blue: #000ef7; --acid: #dcff32; --r: 6px; --red: #c0392b;
 }
 body { font-family: var(--f); background: var(--bg); color: var(--ink); min-height: 100vh; }
 #login-screen { display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:1.5rem;padding:2rem; }
@@ -23,9 +30,9 @@ body { font-family: var(--f); background: var(--bg); color: var(--ink); min-heig
 #admin-screen { display:none; }
 header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:52px;background:#fff;border-bottom:1px solid var(--border); }
 .header-logo { display:flex;align-items:center;gap:10px; }
-.header-dot { width:12px;height:12px;border-radius:50%;background:var(--ink); }
-.header-name { font-size:11px;letter-spacing:0.08em; }
-.header-badge { font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--red);border:1px solid var(--red);border-radius:2px;padding:2px 7px; }
+.header-dot { width:22px;height:20px;background:var(--ink);-webkit-mask:url("/hoks/monogram.png") center/contain no-repeat;mask:url("/hoks/monogram.png") center/contain no-repeat; }
+.header-name { font-family:var(--geo);font-weight:700;font-size:15px;letter-spacing:0.14em;text-transform:uppercase; }
+.header-badge { font-family:var(--geo);font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;background:var(--red);color:#fff;border-radius:3px;padding:3px 8px; }
 .header-right { display:flex;align-items:center;gap:1.5rem; }
 .header-nav a { font-size:11px;letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;color:var(--ink3);transition:color 0.15s; }
 .header-nav a:hover { color:var(--ink); }
@@ -35,14 +42,14 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
 .btn-logout:hover { color:var(--ink);border-color:var(--border-dark); }
 .admin-layout { max-width:1000px;margin:0 auto;padding:80px 2rem 6rem; }
 .tabs { display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:2.5rem; }
-.tab-btn { font-family:var(--f);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:12px 20px;cursor:pointer;color:var(--ink3);transition:color 0.15s;margin-bottom:-1px; }
+.tab-btn { font-family:var(--geo);font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;padding:12px 20px;cursor:pointer;color:var(--ink3);transition:color 0.15s;margin-bottom:-1px; }
 .tab-btn:hover { color:var(--ink); }
-.tab-btn.active { color:var(--ink);border-bottom-color:var(--ink); }
+.tab-btn.active { color:var(--ink);border-bottom-color:var(--blue); }
 .tab-panel { display:none; }
 .tab-panel.active { display:block; }
 .section-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem; }
 .section-title { font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink3); }
-.btn { font-family:var(--f);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:8px 16px;cursor:pointer;transition:opacity 0.15s;white-space:nowrap; }
+.btn { font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;background:var(--ink);color:#fff;border:none;border-radius:var(--r);padding:9px 18px;cursor:pointer;transition:opacity 0.15s;white-space:nowrap; }
 .btn:hover { opacity:0.75; }
 .btn-outline { background:none;color:var(--ink);border:1px solid var(--border-dark); }
 .btn-outline:hover { opacity:1;border-color:var(--ink); }
@@ -481,6 +488,9 @@ function renderWorks() {
           <div style="font-size:12px;font-weight:700;letter-spacing:0.06em;">${esc(w.name)} <span style="font-size:9px;color:var(--ink3);font-weight:400;">${esc(w.slug)}</span></div>
           <div style="font-size:9px;color:var(--ink3);margin-top:2px;">${esc(w.canvas||'')} &middot; ${esc(workHref(w))}</div>
         </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;">
+          Year <input type="number" id="year-${i}" value="${w.year||''}" placeholder="—" min="2000" max="2099" onchange="saveWorkYear(${i})" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:5px 7px;font-family:var(--f);font-size:10px;color:var(--ink);outline:none;">
+        </label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;">
           <input type="checkbox" ${w.active?'checked':''} onchange="toggleWork(${i},this.checked)"> Active
         </label>
@@ -523,6 +533,13 @@ async function toggleWork(i, val) {
   const name = works[i].name;
   works[i].active = val;
   if (await saveWorks()) toast(name + (val ? ' activated' : ' deactivated'));
+}
+// Año de creación de la familia. Las familias en curso no lo llevan; se rellena
+// aquí al lanzar/activar y la página de obra lo muestra bajo el nombre.
+async function saveWorkYear(i) {
+  const v = parseInt($('year-'+i).value, 10);
+  if (v >= 2000 && v <= 2099) works[i].year = v; else delete works[i].year;
+  if (await saveWorks()) toast(works[i].name + ' · year ' + (works[i].year || 'cleared'));
 }
 async function deleteWork(i) {
   if (!confirm('Delete ' + works[i].name + '?')) return;
