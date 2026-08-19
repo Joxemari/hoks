@@ -183,9 +183,9 @@
   const WALL_CSS = `
 .wall-link { display:block; font-family:'Courier New',Courier,monospace; font-size:10px;
   font-weight:700; letter-spacing:0.1em; text-transform:uppercase; text-align:center;
-  color:#bbb; text-decoration:none; border:1px dashed #e8e8e8; border-radius:2px;
+  color:#8a8983; text-decoration:none; border:1px dashed #e7e5df; border-radius:6px;
   padding:8px; cursor:pointer; transition:color .15s, border-color .15s; }
-.wall-link:hover, .wall-link:focus-visible { color:#111; border-color:#d0d0d0; }
+.wall-link:hover, .wall-link:focus-visible { color:#0a0a0a; border-color:#d8d5cc; }
 `;
   let wallCssDone = false;
   function injectWallCss() {
