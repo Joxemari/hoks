@@ -100,6 +100,11 @@ tr.on td { color: var(--ink); font-weight: 700; }
   color: var(--ink2); font-size: 12px; }
 .warn b { color: var(--mark); }
 
+/* Detalle del sitio de firma: el fondo real, aumentado, con un trazo del valor
+   de cada lápiz encima. Es donde se responde la única pregunta — ¿se ve? */
+.det { display: block; width: 100%; height: auto; border: 1px solid var(--border); }
+.caption { font-size: 10px; color: var(--ink3); line-height: 1.6; }
+
 #denied { max-width: 420px; margin: 6rem auto; text-align: center;
   display: flex; flex-direction: column; gap: 0.8rem; }
 
@@ -321,10 +326,139 @@ tr.on td { color: var(--ink); font-weight: 700; }
 
   <hr>
 
-  <!-- ── 3. MONTAJE ────────────────────────────────────────── -->
+  <!-- ── 3. FIRMA ──────────────────────────────────────────── -->
   <section>
     <div class="sec-head">
-      <div class="eyebrow">03 · Montaje</div>
+      <div class="eyebrow">03 · Firma</div>
+      <h2>A mano, sobre la tinta</h2>
+    </div>
+    <div class="rule-box">
+      <div class="big">La firma va a mano, en el frente, sobre la tinta. En el archivo no hay
+        firma: ni en <code>algo.js</code>, ni en la exportación, ni en el lote.</div>
+      <div class="small">Lo que cambia con el fondo es la <b>mina, no el gesto</b>: grafito
+        sobre fondo claro, lápiz blanco sobre fondo oscuro. El laboratorio dice cuál, midiendo
+        el sitio. Al dorso, a lápiz: familia, seed, pliego y fecha.</div>
+    </div>
+
+    <p>La regla 01 decide esto antes de que haya nada que decidir: si el fondo va a sangre,
+      <b>no hay reserva de papel donde firmar</b>. El margen blanco de la estampa clásica
+      —numeración a la izquierda, firma a la derecha— aquí no existe: la firma no cae sobre
+      papel, cae sobre obra. Es lo que hace Chillida en los grabados sobre fondo ocre —
+      grafito encima del color, y debajo la estampilla.</p>
+
+    <p><b>Por qué no impresa.</b> Una firma que sale del código no acredita nada: mismo seed
+      + mismo <code>algo.js</code> = la misma firma, mil veces, en cualquier ordenador. Sería
+      una figura más del dibujo —la «firma en plancha» de la obra gráfica, que precisamente
+      por eso nunca sustituyó a la de lápiz—. Y aquí pesa el doble: todo lo visible en esta
+      casa sale de una regla y un seed, así que la mano es lo único irrepetible que toca la
+      pieza, y lo único que separa el archivo del objeto. Pedirle al sistema que imprima la
+      firma es pedirle que certifique que no es el sistema.</p>
+
+    <h2 style="margin-top:0.8rem">Dónde cabe la mano <span style="font-weight:400;color:var(--ink3)">— medido, no supuesto</span></h2>
+    <p>Sobre la tinta la pregunta deja de ser de gusto: <b>¿se ve?</b> Un grafito necesita
+      fondo claro, y el fondo aquí lo pone la paleta, que cambia en cada tirada. Medidas las
+      <b>21 obras guardadas</b> en <code>data/</code> sobre la banda inferior, con la caja de
+      firma real —58 × 14 mm, retirada 14 mm del canto—, contra dos criterios: firmar siempre
+      en la esquina, o <b>buscar</b> el sitio pieza a pieza.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Criterio</th><th>Zona limpia</th><th>Grafito</th><th>Justo</th><th>Lápiz blanco</th></tr></thead>
+        <tbody>
+          <tr><td>Esquina fija abajo dcha.</td><td>15 / 21</td><td>13 / 21</td><td>3 / 21</td><td>5 / 21</td></tr>
+          <tr class="on"><td>Sitio buscado</td><td>18 / 21</td><td>15 / 21</td><td>3 / 21</td><td>3 / 21</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><b>Zona limpia</b> = la caja no cae encima de un borde de figura; firmar a caballo de
+      dos formas se lee como un descuido. <b>Grafito / justo / lápiz blanco</b> = la luz que
+      hay debajo (L ≥ 105, ≥ 70, por debajo). Buscar el sitio gana en todo, pero lo que arregla
+      es la <b>composición</b>, no la luz: rescata tres piezas de firmar sobre una figura y dos
+      del fondo oscuro, y ahí se acaba. La luz la pone la paleta, y contra eso no hay búsqueda
+      que valga.</p>
+    <p><b>Tres de veintiuna tienen la banda entera oscura</b>, y ninguna posición lo arregla.
+      Pero no se quedan sin firma: se quedan sin <b>grafito</b>. Ahí el lápiz blanco se lee
+      igual de bien que el grafito en las claras —se ve en el detalle de abajo, que es el fondo
+      real y no una simulación—. Lo constante de la serie es el gesto; la mina la elige el
+      fondo, como el papel elige la tinta.</p>
+    <p class="warn"><b>El sello seco no es la firma.</b> Tienta usarlo de comodín —se lee
+      sobre cualquier color, porque es relieve y no pigmento— pero un sello es una matriz:
+      repite idéntico, igual que la firma impresa, y cae exactamente en la misma objeción. Sirve
+      como <b>marca de la casa</b>, junto a la firma y nunca en su lugar. La estampilla de
+      Chillida está debajo de su firma, no en vez de ella.</p>
+
+    <p style="font-size:11px;color:var(--ink3)">Lo mide <code>sketches/_firma.js</code>, que
+      no firma nada: promedia la luz en 1:4 —para que el grano no cuente como figura—, recorre
+      la banda inferior y devuelve el sitio y los milímetros desde el canto. La regla de
+      elección es léxica: de las cajas quietas, la de más a la derecha donde el grafito se vea;
+      si en ninguna se ve bien, donde al menos se vea; si en ninguna, la de más a la derecha
+      igualmente, y ahí entra el lápiz blanco. La derecha solo se abandona a cambio de que la
+      marca exista.
+      El sitio se calcula <b>para el pliego que se va a imprimir</b>: como la caja no escala
+      con el papel, en A4 ocupa el doble de imagen que en A1 y el hueco tranquilo no tiene por
+      qué caer en el mismo punto. Aquí se enseña sobre A3, el pliego por defecto.</p>
+
+    <div class="demos">
+      <div class="demo">
+        <div class="stage">
+          <canvas id="cv-f-plls" width="536" height="379"></canvas>
+          <canvas id="ov-f-plls" class="ovl" width="536" height="379"></canvas>
+        </div>
+        <canvas id="det-f-plls" class="det" width="536" height="96"></canvas>
+        <div class="demo-meta"><b>PLLS</b><span id="seed-f-plls">—</span></div>
+        <div class="readout">
+          <div class="row" id="r-f-plls-L"><span>luz del sitio</span><span>—</span></div>
+          <div class="row" id="r-f-plls-q"><span>zona limpia</span><span>—</span></div>
+          <div class="row" id="r-f-plls-t"><span>herramienta</span><span>—</span></div>
+          <div class="row" id="r-f-plls-mm"><span>del canto dcha. / inf.</span><span>—</span></div>
+        </div>
+        <div class="btn-row"><button class="btn" onclick="rollFirmaPLLS()">Otra tirada</button></div>
+      </div>
+
+      <div class="demo">
+        <div class="stage">
+          <canvas id="cv-f-dtkrt" width="536" height="379"></canvas>
+          <canvas id="ov-f-dtkrt" class="ovl" width="536" height="379"></canvas>
+        </div>
+        <canvas id="det-f-dtkrt" class="det" width="536" height="96"></canvas>
+        <div class="demo-meta"><b>DTKRT</b><span id="seed-f-dtkrt">—</span></div>
+        <div class="readout">
+          <div class="row" id="r-f-dtkrt-L"><span>luz del sitio</span><span>—</span></div>
+          <div class="row" id="r-f-dtkrt-q"><span>zona limpia</span><span>—</span></div>
+          <div class="row" id="r-f-dtkrt-t"><span>herramienta</span><span>—</span></div>
+          <div class="row" id="r-f-dtkrt-mm"><span>del canto dcha. / inf.</span><span>—</span></div>
+        </div>
+        <div class="btn-row"><button class="btn" onclick="rollFirmaDTKRT()">Otra tirada</button></div>
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn" id="btn-modo" onclick="toggleFirma()">Ver la opción impresa</button></div>
+    <p class="caption">Arriba, el sitio que sale de medir la pieza. Abajo, ese mismo sitio
+      aumentado sobre el fondo real, con dos trazos encima: el de arriba tiene el valor del
+      <b>grafito</b>, el de abajo el del <b>lápiz blanco</b>. No imitan una firma —solo ponen
+      en el papel la única pregunta que importa—. El botón cambia a la firma <b>impresa</b>,
+      que está ahí para poder descartarla mirándola, no de palabra: nadie la llama desde
+      <code>algo.js</code>.</p>
+
+    <h2 style="margin-top:0.8rem">Cómo se firma</h2>
+    <div class="spec-list">
+      <div class="spec-row"><b>Frente</b><span>Grafito 2B sobre fondo claro; lápiz blanco de pigmento sobre fondo oscuro. El sitio lo da el laboratorio, en mm desde el canto derecho e inferior. Nada de 6B —reluce sobre tinta— ni bolígrafo ni rotulador.</span></div>
+      <div class="spec-row"><b>Relieve</b><span>Sello seco bajo la firma, opcional y siempre <b>además</b> de ella. Marca de la casa, no rúbrica.</span></div>
+      <div class="spec-row"><b>Dorso</b><span>A lápiz, abajo a la izquierda: familia, <code>#seed</code>, pliego y fecha. El seed tiene diez cifras: su sitio es el dorso, no el frente.</span></div>
+      <div class="spec-row"><b>Cartela</b><span>Lo demás —paleta, regla, fragmento de código— ya lo imprime <code>_cartela.js</code>. No se repite en la obra.</span></div>
+      <div class="spec-row"><b>Cuándo</b><span>Después de imprimir y guillotinar, antes de montar. El montaje flotante no tapa nada, así que la firma queda vista.</span></div>
+    </div>
+    <p class="warn"><b>Queda una decisión abierta, y no es técnica:</b> la edición. Cada seed
+      es una pieza distinta, así que lo natural es que no haya tirada —cada estampa es única y
+      lo que la nombra es el seed—. Pero nada impide reimprimir el mismo seed, y eso hay que
+      decidirlo antes de vender la primera, no después. Mientras no esté decidido, el frente no
+      lleva número.</p>
+  </section>
+
+  <hr>
+
+  <!-- ── 4. MONTAJE ────────────────────────────────────────── -->
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">04 · Montaje</div>
       <h2>La presencia es tamaño, no blanco</h2>
     </div>
     <p>La misma obra a A3 en los tres montajes. Lo que cambia no es la obra: es el tamaño del
@@ -350,10 +484,10 @@ tr.on td { color: var(--ink); font-weight: 700; }
 
   <hr>
 
-  <!-- ── 4. ESPACIADORES ───────────────────────────────────── -->
+  <!-- ── 5. ESPACIADORES ───────────────────────────────────── -->
   <section>
     <div class="sec-head">
-      <div class="eyebrow">04 · Espaciadores</div>
+      <div class="eyebrow">05 · Espaciadores</div>
       <h2>El papel no puede tocar el cristal</h2>
     </div>
     <p>Con humedad la tinta se pega al vidrio de forma irreversible y condensa. El paspartú
@@ -419,10 +553,10 @@ tr.on td { color: var(--ink); font-weight: 700; }
 
   <hr>
 
-  <!-- ── 5. IMPRESORA ──────────────────────────────────────── -->
+  <!-- ── 6. IMPRESORA ──────────────────────────────────────── -->
   <section>
     <div class="sec-head">
-      <div class="eyebrow">05 · Máquina</div>
+      <div class="eyebrow">06 · Máquina</div>
       <h2>Canon PIXMA iP8750 — qué puede y qué no</h2>
     </div>
     <div class="tw">
@@ -446,10 +580,10 @@ tr.on td { color: var(--ink); font-weight: 700; }
 
   <hr>
 
-  <!-- ── 6. FICHA ──────────────────────────────────────────── -->
+  <!-- ── 7. FICHA ──────────────────────────────────────────── -->
   <section>
     <div class="sec-head">
-      <div class="eyebrow">06 · Ficha</div>
+      <div class="eyebrow">07 · Ficha</div>
       <h2>Para el marquista</h2>
     </div>
     <div class="spec-list">
@@ -459,16 +593,17 @@ tr.on td { color: var(--ink); font-weight: 700; }
       <div class="spec-row"><b>Separación</b><span>Espaciador de 4 mm en todo el perímetro. El papel no toca el cristal.</span></div>
       <div class="spec-row"><b>Marco</b><span>Aluminio anodizado mate, cara 9 mm, negro o plata natural. Rebaje ≥ 14 mm.</span></div>
       <div class="spec-row"><b>Cristal</b><span>Normal 2 mm hasta A3. Antirreflectante a partir de A2 o si hay ventana enfrente.</span></div>
+      <div class="spec-row"><b>Firma</b><span>La obra va firmada a mano en el frente, abajo a la derecha, sobre la propia imagen. No recortar por ahí y no cubrirla: el flotante la deja vista.</span></div>
       <div class="spec-row"><b>Resultado</b><span>528 × 405 mm.</span></div>
     </div>
   </section>
 
   <hr>
 
-  <!-- ── 7. PROVEEDORES ────────────────────────────────────── -->
+  <!-- ── 8. PROVEEDORES ────────────────────────────────────── -->
   <section>
     <div class="sec-head">
-      <div class="eyebrow">07 · Sourcing</div>
+      <div class="eyebrow">08 · Sourcing</div>
       <h2>Dónde</h2>
     </div>
     <div class="links">
@@ -516,6 +651,7 @@ tr.on td { color: var(--ink); font-weight: 700; }
 
 <script src="nav.js"></script>
 <script src="sketches/_engine.js?v=1"></script>
+<script src="sketches/_firma.js?v=1"></script>
 <script src="sketches/plls/algo.js?v=1"></script>
 <script src="sketches/dtkrt/algo.js?v=1"></script>
 <script>
@@ -626,7 +762,90 @@ tr.on td { color: var(--ink); font-weight: 700; }
     cornerSwatches(cornEl, ctx, W, H);
   }
 
+  // ── Sitio de la firma ───────────────────────────────────────────────────
+  // El módulo mide y devuelve el sitio; aquí solo se pinta. La marca va en el
+  // lienzo de ENCIMA, nunca en el de la obra: si acabara en el píxel sería una
+  // firma impresa, que es justo lo que la sección descarta.
+  var modo = 'mano', FIRMA = {};
+
+  function els(slug) {
+    return { cv: $('cv-f-' + slug), ov: $('ov-f-' + slug), det: $('det-f-' + slug),
+             seed: $('seed-f-' + slug), L: $('r-f-' + slug + '-L'), q: $('r-f-' + slug + '-q'),
+             t: $('r-f-' + slug + '-t'), mm: $('r-f-' + slug + '-mm') };
+  }
+  function put(row, txt, hit) {
+    row.lastElementChild.textContent = txt;
+    row.classList.toggle('hit', !!hit);
+  }
+
+  // Un trazo del VALOR de un lápiz sobre el fondo real. No imita una firma: solo
+  // pone encima la única pregunta que importa — ¿se ve?
+  function trazo(g, s, color, at) {
+    var y = s.y + s.h * at, n = 36;
+    g.save();
+    g.strokeStyle = color; g.lineWidth = Math.max(1, s.h * 0.05);
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath();
+    for (var i = 0; i <= n; i++) {
+      var t = i / n, x = s.x + s.w * 0.05 + s.w * 0.66 * t;
+      var yy = y + Math.sin(t * 7.6) * s.h * 0.15 * (1 - t * 0.4);
+      if (i) g.lineTo(x, yy); else g.moveTo(x, yy);
+    }
+    g.stroke();
+    g.restore();
+  }
+
+  function detalle(cv, src, s) {
+    var g = cv.getContext('2d'), W = cv.width, H = cv.height;
+    g.clearRect(0, 0, W, H);
+    var pad = s.h * 0.85;
+    var sx = Math.max(0, s.x - pad), sy = Math.max(0, s.y - pad);
+    var sw = Math.min(src.width - sx, s.w + pad * 2), sh = Math.min(src.height - sy, s.h + pad * 2);
+    // Llena el ancho y recorta por arriba y abajo: el detalle existe para juzgar
+    // si el trazo se ve, y para eso hace falta aumento, no aire a los lados.
+    var k = W / sw;
+    var dw = W, dh = sh * k, dx = 0, dy = (H - dh) / 2;
+    g.drawImage(src, sx, sy, sw, sh, dx, dy, dw, dh);
+    var z = { x: dx + (s.x - sx) * k, y: dy + (s.y - sy) * k, w: s.w * k, h: s.h * k, L: s.L };
+    if (modo === 'impresa') { window.HOKSFIRMA.printed(g, z, { text: 'hoks' }); return; }
+    trazo(g, z, '#3d3d3d', 0.40);   // valor del grafito 2B bruñido
+    trazo(g, z, '#f2f2f2', 0.86);   // valor del lápiz blanco
+  }
+
+  function pintaFirma(slug) {
+    var st = FIRMA[slug]; if (!st) return;
+    var e = els(slug), s = st.spot, g = e.ov.getContext('2d');
+    g.clearRect(0, 0, e.ov.width, e.ov.height);
+    e.seed.textContent = '#' + st.seed;
+    if (!s) { put(e.L, 'sin sitio', true); return; }
+    if (modo === 'mano') window.HOKSFIRMA.mark(g, s, { label: 'firma' });
+    else window.HOKSFIRMA.printed(g, s, { text: 'hoks' });
+    put(e.L, Math.round(s.L) + ' / 255');
+    put(e.q, s.crowded ? 'no — hay figura dentro' : 'sí', s.crowded);
+    put(e.t, s.tool === 'grafito' ? 'grafito' : s.tool === 'justo' ? 'grafito, justo' : 'lápiz blanco',
+        s.tool === 'blanco');
+    put(e.mm, s.mm.right + ' / ' + s.mm.bottom + ' mm');
+    detalle(e.det, e.cv, s);
+  }
+
+  function runFirma(slug, algo, seed) {
+    if (!palettes || !algo) return;
+    var e = els(slug), W = e.cv.width, H = e.cv.height;
+    var ctx = e.cv.getContext('2d', { willReadFrequently: true });
+    algo.render(ctx, W, H, seed, { palettes: palettes });
+    FIRMA[slug] = { seed: seed, spot: window.HOKSFIRMA.spot(ctx, W, H) };
+    pintaFirma(slug);
+  }
+
   var rnd = function () { return (Math.random() * 0xFFFFFFFF) >>> 0; };
+
+  window.rollFirmaPLLS  = function () { runFirma('plls',  window.HOKS && window.HOKS.PLLS,  rnd()); };
+  window.rollFirmaDTKRT = function () { runFirma('dtkrt', window.HOKS && window.HOKS.DTKRT, rnd()); };
+  window.toggleFirma = function () {
+    modo = modo === 'mano' ? 'impresa' : 'mano';
+    $('btn-modo').textContent = modo === 'mano' ? 'Ver la opción impresa' : 'Volver a la firma a mano';
+    pintaFirma('plls'); pintaFirma('dtkrt');
+  };
 
   window.rollPLLS = function () {
     run('plls', window.HOKS && window.HOKS.PLLS, $('cv-plls'), $('ov-plls'),
@@ -641,6 +860,8 @@ tr.on td { color: var(--ink); font-weight: 700; }
     palettes = p;
     window.rollPLLS();
     window.rollDTKRT();
+    window.rollFirmaPLLS();
+    window.rollFirmaDTKRT();
   }).catch(function () {});
 })();
 </script>
