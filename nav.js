@@ -1,5 +1,7 @@
 (function() {
-const FAVICON = `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><circle cx='50' cy='50' r='40' fill='%23111'/></svg>">`;
+// Favicon de marca: el monograma (la "o" cruzada) en ácido sobre azul, como el
+// avatar de Notion. Servido same-origin desde la raíz.
+const FAVICON = `<link rel="icon" type="image/png" href="/hoks/favicon.png">`;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // i18n — trilingüe EU / ES / EN. Se aloja aquí porque nav.js se carga (bloqueando
@@ -287,6 +289,12 @@ nav.hoks-top {
   opacity: 0.92; transition: color .15s, opacity .15s; cursor: pointer;
 }
 .nav-drawer a:hover, .nav-drawer a.active { color: var(--acid); opacity: 1; }
+/* Familias en curso (sin año / sin lote): salen atenuadas y marcadas "soon",
+   como en el mockup. Siguen siendo enlace: su sala enseña el badge SOON. */
+.nav-drawer a.soon { opacity: 0.45; }
+.nav-drawer a.soon:hover { opacity: 0.7; }
+.nav-drawer a small { font-family: var(--mono); font-weight: 400; font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; margin-left: 8px; opacity: 0.85; }
 .nav-drawer .d-em { display: inline-block; width: 20px; font-size: 15px; line-height: 1; }
 .nav-drawer .d-sep { height: 1px; background: rgba(255,255,255,0.18); margin: 15px 0; }
 .nav-drawer .d-close {
@@ -316,7 +324,7 @@ nav.hoks-top {
   padding: 1.2rem 1.6rem; border-top: 1px solid var(--line);
   display: flex; align-items: center; justify-content: space-between; background: var(--paper);
 }
-.footer-copy { font-family: var(--mono); font-size: 10px; color: var(--mut); letter-spacing: 0.1em; text-transform: uppercase; }
+.footer-copy { font-family: var(--mono); font-size: 10px; color: var(--mut); letter-spacing: 0.1em; }
 .footer-links { display: flex; gap: 1.4rem; }
 .footer-links a { font-family: var(--mono); font-size: 10px; color: var(--mut); text-decoration: none; letter-spacing: 0.1em; text-transform: uppercase; transition: color .15s; }
 .footer-links a:hover { color: var(--ink); }
@@ -385,8 +393,8 @@ drawer.innerHTML = `
     <a href="plls.html"${path==='plls.html'?' class="active"':''}><span class="d-em">💊</span>PLLS</a>
     <a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}><span class="d-em">🟥</span>KRRTK</a>
     <a href="dtkrt.html"${path==='dtkrt.html'?' class="active"':''}><span class="d-em">🔵</span>DTKRT</a>
-    <a href="eclps.html"${path==='eclps.html'?' class="active"':''}><span class="d-em">🌑</span>ECLPS</a>
-    <a href="trzs.html"${path==='trzs.html'?' class="active"':''}><span class="d-em">🪢</span>TRZS</a>
+    <a class="soon${path==='eclps.html'?' active':''}" href="eclps.html"><span class="d-em">🌑</span>ECLPS <small>soon</small></a>
+    <a class="soon${path==='trzs.html'?' active':''}" href="trzs.html"><span class="d-em">🪢</span>TRZS <small>soon</small></a>
   </div>
   <div class="d-sep"></div>
   <a href="about.html"${isAbout?' class="active"':''} data-i18n="nav.about">About</a>
@@ -453,8 +461,13 @@ if (famList) {
         const mine = href.split('?')[0] === path &&
                      (href.indexOf('?w=') < 0 || hereSlug === w.slug);
         const em = FAM_EM[w.slug] || '▦';
-        return `<a href="${esc(href)}"${mine ? ' class="active"' : ''}>` +
-               `<span class="d-em">${em}</span>${esc(w.name || w.slug.toUpperCase())}</a>`;
+        // Sin año = familia en curso (sin lote publicado): sale "soon", como el
+        // mockup. El año se rellena al lanzar/activar, y ahí deja de ser soon.
+        const soon = !w.year;
+        const cls = [soon ? 'soon' : '', mine ? 'active' : ''].filter(Boolean).join(' ');
+        return `<a href="${esc(href)}"${cls ? ` class="${cls}"` : ''}>` +
+               `<span class="d-em">${em}</span>${esc(w.name || w.slug.toUpperCase())}` +
+               `${soon ? ' <small>soon</small>' : ''}</a>`;
       }).join('');
     })
     .catch(() => {});
