@@ -12,46 +12,92 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 /* Tokens (:root) los pone nav.js. La rejilla es casi todo obra; el único
-   "chrome" son las etiquetas y el hint, en Courier (--mono) sobre papel. */
-body { background: var(--paper); color: var(--ink); height: 100vh; overflow: hidden; }
-#wrap {
-  position: fixed; top: 52px; left: 0; right: 0; bottom: 0;
-  overflow: hidden; cursor: grab; touch-action: none; background: var(--paper);
+   "chrome" son las etiquetas y la cabecera de la sala, en --mono sobre papel. */
+/* ── THE HALL ── contact-sheet del mockup Hall.dc.html: rejilla plana de 12
+   columnas sobre papel, con un pulso que barre desde una zona y descansa. */
+body { background: var(--paper); color: var(--ink); }
+.hall { padding: 78px 40px 40px; min-height: 100vh; }
+.hall-head {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 20px;
+  padding-bottom: 16px;
 }
-#wrap.grabbing { cursor: grabbing; }
-#board { position: absolute; top: 0; left: 0; will-change: transform; }
+.hall-title { font-family: var(--geo); font-weight: 700; font-size: 34px;
+  letter-spacing: 0.02em; text-transform: uppercase; line-height: 1; margin: 0; }
+.hall-desc { font-family: var(--mono); font-size: 11px; color: var(--mut);
+  margin-top: 9px; letter-spacing: 0.04em; }
+.hall-thread { font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em;
+  color: var(--ink); border: 1px solid var(--line); border-radius: 30px;
+  padding: 8px 14px; white-space: nowrap; text-transform: uppercase; }
+.hall-thread b { color: var(--blue); font-weight: 400; }
+.hall-grid { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); gap: 5px; }
 .cell {
-  position: absolute; cursor: pointer;
-  transition: transform 0.55s cubic-bezier(0.23,1,0.32,1), opacity 0.4s ease;
-  perspective: 600px; perspective-origin: 50% 50%;
+  position: relative; aspect-ratio: 1; border-radius: 2px; overflow: hidden;
+  background: #f0ece5; cursor: pointer; will-change: transform, filter;
+  transition: transform 0.5s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, filter 0.5s;
 }
-.cell-inner {
-  width: 100%; height: 100%; background: #f5f0ea;
-  border: 1px solid rgba(0,0,0,0.09); overflow: hidden; position: relative;
-  transform-origin: 50% 10%; transform: none; transform-style: preserve-3d;
-  transition: transform 0.4s cubic-bezier(0.23,1,0.32,1), border-color 0.2s;
-}
-.cell:hover .cell-inner { border-color: rgba(0,0,0,0.2); }
-.cell-inner canvas, .cell-inner img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cell canvas, .cell img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cell:hover { transform: scale(1.07); z-index: 5; box-shadow: 0 8px 30px rgba(10,10,10,0.22); }
+.cell.pulse { transform: scale(1.05); filter: brightness(1.16) saturate(1.1); z-index: 3; }
 .cell-label {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  background: rgba(251,251,250,0.96); padding: 5px 8px;
-  font-family: var(--mono);
-  font-size: 9px; color: var(--mut); letter-spacing: 0.08em; text-transform: uppercase;
-  opacity: 0; transition: opacity 0.18s;
+  position: absolute; left: 0; right: 0; bottom: 0;
+  background: rgba(251,251,250,0.95); padding: 4px 6px;
+  font-family: var(--mono); font-size: 8px; color: var(--mut); letter-spacing: 0.06em;
+  text-transform: uppercase; opacity: 0; transition: opacity 0.18s;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
 }
 .cell:hover .cell-label { opacity: 1; }
-.hint {
-  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-  font-family: var(--mono);
-  font-size: 9px; color: var(--mut); letter-spacing: 0.14em; text-transform: uppercase;
-  pointer-events: none; transition: opacity 0.6s; z-index: 10;
+
+/* Sound toggle — en la barra superior, a la izquierda del burger (mockup). El
+   pulso, cuando el sonido está encendido, dispara notas: música del sistema. */
+.hall-sound {
+  position: fixed; top: 12px; right: 66px; z-index: 105;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink); background: var(--acid); border: 0; border-radius: 30px;
+  padding: 8px 13px; cursor: pointer;
 }
+.hall-sound.off { background: transparent; color: var(--mut); border: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) { .cell.pulse { transform: none; } }
+
+/* ── SPLASH ── entrada del mockup Landing.dc.html: obra viva a sangre, la marca
+   pintada en ácido y "click to enter". Se cruza una vez por sesión; después se
+   entra directo a la rejilla (volver desde About no re-splashea). */
+#splash {
+  position: fixed; inset: 0; z-index: 200; background: #0c0c0c;
+  overflow: hidden; cursor: pointer;
+  transition: opacity 0.7s cubic-bezier(0.23,1,0.32,1);
+}
+#splash.gone { opacity: 0; pointer-events: none; }
+#splashArt { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#splash .splash-logo {
+  position: absolute; left: 50%; top: 45%; transform: translate(-50%,-50%);
+  width: 200px; height: 364px; background: var(--acid);
+  -webkit-mask: url("logo_tall.png") center/contain no-repeat;
+          mask: url("logo_tall.png") center/contain no-repeat;
+  filter: drop-shadow(0 10px 46px rgba(0,0,0,0.5));
+}
+#splash .splash-plate {
+  position: absolute; right: 22px; top: 20px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; color: #fff;
+  background: rgba(10,10,10,0.42); padding: 6px 10px; border-radius: 7px;
+}
+#splash .splash-enter {
+  position: absolute; left: 50%; top: 83%; transform: translateX(-50%);
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.42em;
+  text-transform: uppercase; color: #fff; opacity: 0.9; white-space: nowrap;
+  animation: splashPulse 2.6s ease-in-out infinite;
+}
+@keyframes splashPulse { 0%,100% { opacity: 0.55; } 50% { opacity: 0.95; } }
 
 /* ── MOBILE ── */
+@media (max-width: 1000px) { .hall-grid { grid-template-columns: repeat(8, minmax(0,1fr)); } .hall { padding: 72px 22px 34px; } }
 @media (max-width: 600px) {
-  .hint { bottom: 10px; font-size: 8px; }
+  .hall-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .hall-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .hall-title { font-size: 26px; }
+  .hall-thread { display: none; }
+  .hall-sound { right: 62px; }
+  #splash .splash-logo { width: 132px; height: 240px; }
+  #splash .splash-enter { top: 86%; letter-spacing: 0.32em; font-size: 11px; }
 }
 </style>
 </head>
@@ -64,14 +110,29 @@ body { background: var(--paper); color: var(--ink); height: 100vh; overflow: hid
      reducida más abajo. -->
 <script src="sketches/_engine.js?v=1"></script>
 <style>
-  /* Override nav.js defaults — landing needs fixed full-bleed layout */
-  body { min-height: unset !important; display: block !important; overflow: hidden !important; }
-  .site-footer { display: none !important; }
+  /* La sala fluye y hace scroll (contact sheet alto); nav.js pone nav y footer. */
+  body { display: block !important; }
 </style>
 
-<div id="wrap"><div id="board"></div></div>
+<div id="splash">
+  <canvas id="splashArt"></canvas>
+  <div class="splash-plate" id="splashPlate">hoks · PLLS · 1/1</div>
+  <div class="splash-logo"></div>
+  <div class="splash-enter"><span data-i18n="index.enter">click to enter</span> ▸</div>
+</div>
 
-<div class="hint" id="hint" data-i18n="index.hint">drag to explore</div>
+<button class="hall-sound off" id="soundBtn" aria-pressed="false">♪ <span data-i18n="hall.sound">Sound</span></button>
+
+<main class="hall">
+  <div class="hall-head">
+    <div>
+      <h2 class="hall-title" data-i18n="hall.title">The hall</h2>
+      <div class="hall-desc" data-i18n="hall.desc">a pulse sweeps from a zone, then rests</div>
+    </div>
+    <div class="hall-thread" id="hallThread"><span data-i18n="hall.thread">common thread</span> — <b data-i18n="hall.threadval">code + chance</b></div>
+  </div>
+  <div class="hall-grid" id="grid"></div>
+</main>
 
 <script>
 const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
@@ -283,142 +344,144 @@ async function drawFnFor(slug) {
 const FAM = {};
 function famList() { return Object.keys(FAM); }
 
-// ── GRID ─────────────────────────────────────────────────────────────────────
-const GAP=5, COLS=9, ROWS=10;
-const wrap  = document.getElementById('wrap');
-const board = document.getElementById('board');
-const hint  = document.getElementById('hint');
-
-// UNIT fills viewport width exactly: COLS*UNIT + (COLS-1)*GAP = wrap.clientWidth
-// But we want no edge gap, so: COLS*(UNIT+GAP) - GAP = wrap.clientWidth
-// → UNIT = (wrap.clientWidth + GAP) / COLS - GAP
-const UNIT = Math.floor((wrap.clientWidth + GAP) / COLS - GAP);
-const BOARD_W = COLS*(UNIT+GAP) - GAP;  // exact viewport width
-const BOARD_H = ROWS*(UNIT+GAP) - GAP;
-
-board.style.width  = BOARD_W+'px';
-board.style.height = BOARD_H+'px';
-
-// Start at top-left (no horizontal pan needed — grid is viewport-wide)
-let panX = 0;
-let panY = 0;
+// ── GRID (contact sheet) ─────────────────────────────────────────────────────
+// Rejilla plana sobre papel, como el mockup Hall.dc.html. El layout lo pone CSS
+// grid (12 columnas); aquí solo se llenan celdas con obra real o demo.
+const grid = document.getElementById('grid');
 let cellObjs = [];
 
-function updateBoard(){ board.style.transform = `translate3d(${-panX}px,${-panY}px,0)`; }
-
-function updateCells(){
-  const cx=panX+wrap.clientWidth/2, cy=panY+wrap.clientHeight/2;
-  const vw=wrap.clientWidth, vh=wrap.clientHeight;
-  cellObjs.forEach(({el,cX,cY,hovered})=>{
-    if(hovered) return;
-    const dx=cX-cx, dy=cY-cy;
-    const edgeX=Math.max(0,Math.abs(dx)-vw*.33);
-    const edgeY=Math.max(0,Math.abs(dy)-vh*.33);
-    const rx=Math.max(-7,Math.min(7, Math.sign(dy)*edgeY*.04));
-    const ry=Math.max(-7,Math.min(7,-Math.sign(dx)*edgeX*.04));
-    const fade=Math.max(0.4,1-(edgeX+edgeY)*0.0012);
-    el.style.transform=`rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
-    el.style.opacity=fade.toFixed(3);
-  });
-}
-
 function buildGrid(works) {
-  board.innerHTML = ''; cellObjs = [];
+  grid.innerHTML = ''; cellObjs = [];
+  const slots = [...works].sort(() => Math.random() - .5);
 
-  // works: array of {type, dataUrl, seed, savedAt, idx}
-  // Shuffle, then pad with fallbacks to fill COLS×ROWS
-  const shuffled = [...works].sort(() => Math.random() - .5);
-  const total = COLS * ROWS;
-  const slots = [];
-  const drawable = famList().filter(s => FAM[s].draw);
-
-  for (let i = 0; i < total; i++) {
-    if (i < shuffled.length) {
-      slots.push(shuffled[i]);
-    } else if (drawable.length) {
-      // fallback: pick series cycling
-      const type = drawable[i % drawable.length];
-      slots.push({ type, fallback: true, seed: (Math.random() * 0xFFFFFFFF) >>> 0, idx: null });
-    }
-  }
-
-  slots.forEach((work, i) => {
-    const col = i % COLS, row = Math.floor(i / COLS);
-    const x = col*(UNIT+GAP), y = row*(UNIT+GAP);
-    const cX = x+UNIT/2, cY = y+UNIT/2;
-
+  slots.forEach(work => {
+    const fam = FAM[work.type] || {};
     const cell = document.createElement('div');
     cell.className = 'cell';
-    cell.style.cssText = `left:${x}px;top:${y}px;width:${UNIT}px;height:${UNIT}px;`;
 
-    const inner = document.createElement('div');
-    inner.className = 'cell-inner';
-
-    const fam = FAM[work.type] || {};
     if (work.fallback) {
       const canvas = document.createElement('canvas');
       const [cw,ch] = fam.res || [320,320];
       canvas.width = cw; canvas.height = ch;
-      fam.draw(canvas, work.seed);
-      inner.appendChild(canvas);
+      if (fam.draw) fam.draw(canvas, work.seed);
+      cell.appendChild(canvas);
     } else {
       const img = new Image();
       img.src = work.dataUrl;
-      inner.appendChild(img);
+      cell.appendChild(img);
     }
 
     const label = fam.name || work.type.toUpperCase();
     const lbl = document.createElement('div');
     lbl.className = 'cell-label';
-    if (work.fallback) {
-      lbl.textContent = `${label} · demo`;
-    } else {
-      const d = work.savedAt ? new Date(work.savedAt) : new Date();
-      const dateStr = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'});
-      lbl.textContent = `${label} · #${work.seed} · ${dateStr}`;
-    }
-    inner.appendChild(lbl);
-    cell.appendChild(inner);
-    board.appendChild(cell);
-
-    const obj = { el:cell, cX, cY, hovered:false, type:work.type, idx:work.idx, fallback:!!work.fallback };
-    cellObjs.push(obj);
+    lbl.textContent = work.fallback ? `${label} · demo` : `${label} · #${work.seed}`;
+    cell.appendChild(lbl);
+    grid.appendChild(cell);
+    cellObjs.push(cell);
 
     cell.addEventListener('click', () => {
-      if (dragged) return;
       // A dónde lleva la celda lo dice works.json, y la regla es la del nav:
       // página propia si la familia la tiene, genérica si no.
-      const page = HOKSNAV.workHref({ page: fam.page, slug: obj.type });
-      const url = obj.idx === null ? BASE + page
-        : BASE + page + (page.indexOf('?') < 0 ? '?' : '&') + 'i=' + obj.idx;
+      const page = HOKSNAV.workHref({ page: fam.page, slug: work.type });
+      const url = work.idx == null ? BASE + page
+        : BASE + page + (page.indexOf('?') < 0 ? '?' : '&') + 'i=' + work.idx;
       window.location.href = url;
-    });
-
-    cell.addEventListener('mouseenter', ()=>{
-      obj.hovered = true;
-      cellObjs.forEach(o=>{ if(o.el!==cell) o.el.style.zIndex='0'; });
-      cell.style.transition='transform 0.3s cubic-bezier(0.23,1,0.32,1)';
-      cell.style.transform='rotateX(0deg) rotateY(0deg)';
-      cell.style.opacity='1';
-      cell.style.zIndex='20';
-      inner.style.transform='rotateX(-12deg)';
-    });
-    cell.addEventListener('mouseleave', ()=>{
-      obj.hovered = false;
-      cell.style.zIndex='';
-      cellObjs.forEach(o=>{ o.el.style.zIndex=''; });
-      cell.style.transition='transform 0.55s cubic-bezier(0.23,1,0.32,1)';
-      inner.style.transform='none';
-      updateCells();
     });
   });
 
-  updateBoard(); updateCells();
+  startPulse();
 }
 
+// ── PULSE ── un pulso nace en una celda y barre hacia fuera por vecindad, luego
+// descansa (la desc del mockup: "a pulse sweeps from a zone, then rests"). Si el
+// sonido está encendido, cada celda que se enciende suena.
+function gridCols() {
+  const t = getComputedStyle(grid).gridTemplateColumns;
+  return t ? t.split(' ').filter(Boolean).length : 12;
+}
+let pulseTimer = null;
+function startPulse() {
+  if (pulseTimer) clearTimeout(pulseTimer);
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function sweep() {
+    const cells = cellObjs;
+    if (cells.length && !document.hidden) {
+      const cols = gridCols();
+      const origin = (Math.random() * cells.length) | 0;
+      const ox = origin % cols, oy = (origin / cols) | 0;
+      cells.forEach((el, i) => {
+        const x = i % cols, y = (i / cols) | 0;
+        const d = Math.hypot(x - ox, y - oy);
+        if (d > 6.5) return;                 // el pulso se agota: una zona, no todo
+        const delay = d * 95 + Math.random() * 40;
+        setTimeout(() => {
+          el.classList.add('pulse');
+          playNote(d);
+          setTimeout(() => el.classList.remove('pulse'), 520);
+        }, delay);
+      });
+    }
+    schedule();
+  }
+  function schedule() { pulseTimer = setTimeout(sweep, 3600 + Math.random() * 2800); }
+  if (!reduce) schedule();
+}
+
+// ── SOUND ── música del sistema: WebAudio, sin assets. El pulso dispara notas de
+// una pentatónica; la distancia al origen elige grado y octava. Apagado por
+// defecto (y el navegador exige un gesto: el propio toggle lo es).
+let audio = null, soundOn = false, masterGain = null;
+const SCALE = [0, 3, 5, 7, 10];
+function ensureAudio() {
+  if (audio) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  audio = new AC();
+  masterGain = audio.createGain();
+  masterGain.gain.value = 0; masterGain.connect(audio.destination);
+}
+function playNote(d) {
+  if (!soundOn || !audio) return;
+  const t = audio.currentTime;
+  const deg = SCALE[((Math.round(d) % SCALE.length) + SCALE.length) % SCALE.length];
+  const oct = d < 2 ? 12 : d < 4 ? 0 : -12;
+  const freq = 261.63 * Math.pow(2, (deg + oct) / 12);
+  const osc = audio.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
+  const g = audio.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.13, t + 0.03);
+  g.gain.exponentialRampToValueAtTime(0.0008, t + 0.9);
+  osc.connect(g); g.connect(masterGain);
+  osc.start(t); osc.stop(t + 0.95);
+}
+function toggleSound() {
+  ensureAudio();
+  const btn = document.getElementById('soundBtn');
+  if (!audio) return;
+  soundOn = !soundOn;
+  if (soundOn && audio.state === 'suspended') audio.resume();
+  masterGain.gain.linearRampToValueAtTime(soundOn ? 0.85 : 0, audio.currentTime + 0.25);
+  if (btn) { btn.classList.toggle('off', !soundOn); btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false'); }
+}
+const soundBtn = document.getElementById('soundBtn');
+if (soundBtn) soundBtn.addEventListener('click', toggleSound);
+
 // ── LOAD REAL WORKS ───────────────────────────────────────────────────────────
-const TOTAL = 90; // 9 cols × 10 rows
-const PER_SERIES = 13; // up to 13 saved works per series
+const TOTAL = 120; // ~12 cols × 10 rows — contact sheet fills and scrolls a little
+const PER_SERIES = 16; // up to N saved works per family
+
+// fetch con timeout: si la red se cuelga (proxy, conexión mala), la sala no se
+// queda vacía — cae a demos vivas. Sin esto, un fetch pendiente colgaba load().
+function fetchJSON(url, ms) {
+  return new Promise(res => {
+    const ctl = ('AbortController' in window) ? new AbortController() : null;
+    const to = setTimeout(() => { if (ctl) ctl.abort(); res(null); }, ms);
+    fetch(url, ctl ? { signal: ctl.signal } : undefined)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { clearTimeout(to); res(d); })
+      .catch(() => { clearTimeout(to); res(null); });
+  });
+}
 
 async function load() {
   // 1. El catálogo lo pone works.json: activar una familia en el panel tiene
@@ -426,13 +489,11 @@ async function load() {
   //    SERIES escrita en el archivo, así que una familia nueva quedaba fuera
   //    aunque estuviese activa — activarla no la traía a la rejilla.
   let catalogue = FALLBACK_WORKS;
-  try {
-    const worksData = await fetch(RAW + 'works.json?t=' + Date.now()).then(r => r.ok ? r.json() : null);
-    if (Array.isArray(worksData)) {
-      const live = worksData.filter(w => w && w.active && w.slug);
-      if (live.length) catalogue = live;
-    }
-  } catch(e) {}
+  const worksData = await fetchJSON(RAW + 'works.json?t=' + Date.now(), 6000);
+  if (Array.isArray(worksData)) {
+    const live = worksData.filter(w => w && w.active && w.slug);
+    if (live.length) catalogue = live;
+  }
 
   // 2. Resolver cada familia: cómo se dibuja su demo y a qué proporción. La
   //    que no sepa dibujarse (sin graduar y sin demo escrita) se queda igual en
@@ -445,8 +506,7 @@ async function load() {
 
   // 3. Fetch saved works for active families
   const fetches = series.map(type =>
-    fetch(RAW + type + '.json?t=' + Date.now())
-      .then(r => r.ok ? r.json() : []).catch(() => [])
+    fetchJSON(RAW + type + '.json?t=' + Date.now(), 8000)
       .then(items => Array.isArray(items) ? items.map((item, idx) => ({ ...item, type, idx })) : [])
   );
   const results = await Promise.all(fetches);
@@ -471,37 +531,55 @@ async function load() {
   buildGrid(all);
 }
 
-// ── DRAG ─────────────────────────────────────────────────────────────────────
-let dragging=false, startX, startY, startPX, startPY, dragged=false;
+// ── SPLASH ─────────────────────────────────────────────────────────────────────
+// La entrada del mockup: una obra viva a sangre (cápsulas PLLS sobre suelo
+// oscuro, seed nueva por sesión), la marca en ácido y "click to enter". No es un
+// recorte de la rejilla: es el gesto de entrar. Se cruza una vez por sesión.
+function renderSplash(canvas, seed){
+  const ctx=canvas.getContext('2d'), W=canvas.width, H=canvas.height, rng=new Rng(seed);
+  const g=ctx.createRadialGradient(W*0.7,H*0.2,0, W*0.7,H*0.2, Math.max(W,H));
+  g.addColorStop(0,'#23324a'); g.addColorStop(0.55,'#141b28'); g.addColorStop(1,'#0c0c0c');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  const pal=getActivePalette(rng), colors=pal.colors, u=Math.min(W,H), n=rng.int(5,9);
+  for(let i=0;i<n;i++){
+    const len=rng.range(u*0.14,u*0.40), th=rng.range(u*0.09,u*0.22);
+    const cx=rng.range(W*0.08,W*0.92), cy=rng.range(H*0.14,H*0.86);
+    const ang=rng.bool(0.55)?0:rng.range(-Math.PI/2,Math.PI/2);
+    const x1=cx-Math.cos(ang)*len/2, y1=cy-Math.sin(ang)*len/2;
+    const x2=cx+Math.cos(ang)*len/2, y2=cy+Math.sin(ang)*len/2;
+    ctx.strokeStyle=rng.pickFrom(colors); ctx.globalAlpha=rng.range(0.72,1);
+    ctx.lineWidth=th; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  const v=ctx.createRadialGradient(W/2,H*0.45,u*0.18, W/2,H*0.45, Math.max(W,H)*0.72);
+  v.addColorStop(0,'rgba(12,12,12,0)'); v.addColorStop(1,'rgba(12,12,12,0.58)');
+  ctx.fillStyle=v; ctx.fillRect(0,0,W,H);
+  return pal;
+}
 
-wrap.addEventListener('mousedown', e=>{
-  dragging=true; dragged=false;
-  startX=e.clientX; startY=e.clientY; startPX=panX; startPY=panY;
-  wrap.classList.add('grabbing'); e.preventDefault();
-});
-window.addEventListener('mousemove', e=>{
-  if(!dragging) return;
-  const dx=e.clientX-startX, dy=e.clientY-startY;
-  if(Math.abs(dx)>4||Math.abs(dy)>4){ dragged=true; hint.style.opacity='0'; }
-  panX=Math.max(0,Math.min(BOARD_W-wrap.clientWidth, startPX-dx));
-  panY=Math.max(0,Math.min(BOARD_H-wrap.clientHeight,startPY-dy));
-  updateBoard(); updateCells();
-});
-window.addEventListener('mouseup', ()=>{ dragging=false; wrap.classList.remove('grabbing'); });
-
-wrap.addEventListener('touchstart', e=>{
-  const t=e.touches[0]; dragging=true; dragged=false;
-  startX=t.clientX; startY=t.clientY; startPX=panX; startPY=panY;
-},{passive:true});
-wrap.addEventListener('touchmove', e=>{
-  if(!dragging) return;
-  const t=e.touches[0], dx=t.clientX-startX, dy=t.clientY-startY;
-  if(Math.abs(dx)>4||Math.abs(dy)>4) dragged=true;
-  panX=Math.max(0,Math.min(BOARD_W-wrap.clientWidth, startPX-dx));
-  panY=Math.max(0,Math.min(BOARD_H-wrap.clientHeight,startPY-dy));
-  updateBoard(); updateCells();
-},{passive:true});
-wrap.addEventListener('touchend', ()=>{ dragging=false; });
+const splash = document.getElementById('splash');
+function enterSite(){
+  if(!splash || splash.classList.contains('gone')) return;
+  splash.classList.add('gone');
+  try { sessionStorage.setItem('hoks_entered','1'); } catch(e){}
+  setTimeout(()=>{ splash.style.display='none'; }, 720);
+}
+function initSplash(){
+  if(!splash) return;
+  let entered=false; try { entered=!!sessionStorage.getItem('hoks_entered'); } catch(e){}
+  if(entered){ splash.style.display='none'; return; }
+  const c=document.getElementById('splashArt');
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  c.width=Math.round(window.innerWidth*dpr); c.height=Math.round(window.innerHeight*dpr);
+  const seed=(Math.random()*0xFFFFFFFF)>>>0;
+  renderSplash(c, seed);
+  const plate=document.getElementById('splashPlate');
+  if(plate) plate.textContent = 'hoks · PLLS · #'+seed+' · 1/1';
+  ['click','keydown','wheel','touchstart'].forEach(ev =>
+    window.addEventListener(ev, enterSite, { once:true, passive:true }));
+}
+initSplash();
 
 load();
 </script>
