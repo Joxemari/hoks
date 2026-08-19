@@ -159,8 +159,8 @@
       <span class="hintline" id="fantHint">del sorteo, no de las obras: además pide ≥3 placas y sitio para el anillo</span>
     </div>
     <div class="group">
-      <span class="lbl">Halo · <span id="haloV">0.55</span></span>
-      <input type="range" id="halo" min="0" max="150" step="5" value="55">
+      <span class="lbl">Halo · <span id="haloV">1.00</span></span>
+      <input type="range" id="halo" min="0" max="180" step="5" value="100">
       <span class="hintline">gubias, por DENTRO. El canal de suelo va entero por fuera de él</span>
     </div>
     <div class="group">
@@ -258,7 +258,7 @@ function params() {
   if ($('lic').value)  p.licencia = $('lic').value === '1';
   const pf = parseInt($('pFant').value, 10); if (pf !== 5)  p.pFantasma = pf / 100;
   const pl = parseInt($('pLic').value, 10);  if (pl !== 20) p.pLicencia = pl / 100;
-  const ha = parseInt($('halo').value, 10);  if (ha !== 55) p.halo = ha / 100;
+  const ha = parseInt($('halo').value, 10);  if (ha !== 100) p.halo = ha / 100;
   return p;
 }
 let palPicker = null;

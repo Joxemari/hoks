@@ -824,6 +824,33 @@ que ya se está usando— el halo es **del mismo color que la masa de al lado**.
 canal, la placa se suelda visualmente a ella y vuelve a leerse como un agujero. El
 canal no es un margen estético ahí: es lo único que declara que hay dos cosas.
 
+**Y luego el marco seguía leyéndose corrido, con la cara ya en su sitio.** Mirando
+una obra amarilla y azul: «el marco del fantasma se ve desplazado frente al eje de
+los otros objetos». Lo primero fue medirlo, porque parecía otro fallo de
+colocación — y no lo era. Caminando hacia dentro desde el contorno de cada placa
+hasta encontrar su materia, en siete obras:
+
+```
+placas normales, suelo hasta su cara     p50 6 px
+la fantasma, suelo hasta la cara del halo p50 6 px      (media gubia = 6,1)
+```
+
+**La cara del halo ya caía exactamente en la misma línea que la de cualquier otra
+placa.** Geométricamente no había nada que corregir. Lo que fallaba es que con
+0,55 gubias el halo es una **banda fina, y una banda fina no se lee por su cara:
+se lee por su centro**. El ojo ponía el borde del fantasma media anchura más
+adentro de donde estaba, y la placa entera parecía corrida respecto a sus vecinas.
+
+Así que el arreglo no es recolocar nada, es **ensanchar hacia dentro**: el halo
+pasa a **una gubia**, el mismo peso que el canal que tiene delante. Deja de leerse
+como una raya dibujada —que además delataba el vector, justo lo que la familia
+evita— y pasa a leerse como materia con una cara. La cara no se ha movido ni un
+píxel; lo que se ha movido es cuál de sus dos bordes manda.
+
+Y confirma por qué no vale hacerlo al revés: pegando el halo al eje, el filo se
+mete en el canal, toca la tinta de la vecina y la fantasma se suelda. Es de donde
+veníamos.
+
 **Y el sorteo del fantasma no sorteaba.** Al ir a enseñar su probabilidad en el
 lab salió que no había tal probabilidad. Las dos decisiones de color se tomaban
 con `new Rng(seed ^ K).next()`, y un LCG arranca casi donde se le siembra: es el
@@ -896,8 +923,14 @@ soldadas    0 · dos placas nunca se tocan — y ya SIN excepción: la fantasma 
 fantasma    sorteo 5% → 4,3% de las obras (4.000 tiradas). El hueco son las que
             no tienen tres placas o a ninguna le cabe el anillo con hueco dentro:
             forzando el sorteo al 100%, la placa sale en el 86,8%. La anchura del
-            halo casi no lo mueve (4,33% con 0,55 gubias · 4,22% con 1,50), porque
-            la guarda escala con él y la mayoría de las placas la pasan de sobra
+            halo casi no lo mueve (4,33% con 0,55 gubias · 4,30% con 1,00 · 4,22%
+            con 1,50), porque la guarda escala con él y la mayoría de las placas la
+            pasan de sobra
+halo        la cara exterior cae a media gubia del eje, igual que la de cualquier
+            otra placa: 6 px contra 6 px medidos en siete obras. Su anchura es
+            1,00 gubias, y eso es de LECTURA y no de gusto — con 0,55 la banda es
+            fina, el ojo la lee por su centro en vez de por su cara, y el marco
+            parece corrido aunque no lo esté
 recortadas  0 · ninguna obra toca el borde del pliego
 contraste   distancia de color tinta/suelo: min 140 · p50 254 · cero por debajo de
             110, que es el suelo que el propio algoritmo le exige al papel crudo

@@ -227,7 +227,26 @@
    * placa fantasma— es bastante menor y sólo se sabe midiendo. Se mide en
    * `verificacion/` y el lab la enseña al lado del mando. */
   const P_FANTASMA = 0.05;
-  const HALO_ANCHO = 0.55;   // en anchuras de gubia, por dentro del contorno
+  /* LA ANCHURA DEL HALO, EN GUBIAS, POR DENTRO DEL CONTORNO.
+   *
+   * Una gubia, no media. Y la razón no es de gusto, es de LECTURA. La cara
+   * exterior del halo cae exactamente donde cae la cara de cualquier otra placa
+   * —media gubia hacia dentro del eje del corte, medido y comprobado: 6 px
+   * contra 6 px en siete obras—, o sea que geométricamente el halo ya estaba en
+   * línea con todo lo demás. Pero con 0,55 el halo es una BANDA FINA, y una
+   * banda fina no se lee por su cara: se lee por su centro. El ojo pone el borde
+   * del fantasma media anchura más adentro de donde está, y la placa entera
+   * parece corrida respecto al eje de sus vecinas.
+   *
+   * Con una gubia el halo pesa lo mismo que el canal que tiene delante, deja de
+   * leerse como una raya dibujada y pasa a leerse como materia con una cara. La
+   * cara no se ha movido ni un píxel — lo que se ha movido es cuál de sus dos
+   * bordes manda. Por eso el arreglo es ensanchar HACIA DENTRO y no recolocar.
+   *
+   * Y por eso mismo no vale hacerlo al revés, pegando el halo al eje: ahí el
+   * filo se mete en el canal, toca la tinta de la vecina y la fantasma se suelda
+   * — que es de donde veníamos. */
+  const HALO_ANCHO = 1.0;
   // Una sajadura APUNTA a otro borde y se queda corta: ni pega en él (sería un
   // corte que suelta) ni se muere en campo abierto (no diría nada). El aire que
   // le queda por delante, en anchuras de gubia.
