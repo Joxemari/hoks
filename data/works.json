@@ -11,6 +11,7 @@
       "eu": "PLLSen kapsulak atmosfera emanda: sare-degradatuzko hondoa, film-pikorrezko azala. Kapsula bat ez da forma bat — bi punturen arteko distantzia bat da, lodiera batekin. Lanaren egungo norabidea."
     },
     "page": "plls.html",
+    "makingof": "making.html?w=plls",
     "canvas": "square · vertical · horizontal (DIN)",
     "formats": [
       "square",
@@ -35,6 +36,7 @@
       "eu": "Karratuak. Karratu bat, behin eta berriz, zatitu ala ez erabakitzen. Azpibanaketa errekurtsiboa atalase baten aurka — egitura apaingarri bakar gisa. Atmosfera ezarpen bat da, ez beste obra bat: azpiko degradatua eta gaineko pikorra ezerezera jaits daitezke, eta araua ez da aldatzen."
     },
     "page": "krrtk.html",
+    "makingof": "making.html?w=krrtk",
     "canvas": "square · vertical · horizontal (DIN)",
     "formats": [
       "square",
@@ -93,6 +95,7 @@
       "eu": "Sare bat, bitan irakurria. Maskara boolear batek erabakitzen du zein gelaxkak duten zirkulua; gelaxkaz gelaxka hazitako eskualde batek erabakitzen du horietako zeinek partekatzen duten lurra. Blokeak ez du apaintzen — birmarkatu egiten du: zirkulu berak gauza bat esan nahi du eremuan eta beste bat eskualdearen barruan."
     },
     "page": "dtkrt.html",
+    "makingof": "making.html?w=dtkrt",
     "canvas": "square · vertical · horizontal (DIN)",
     "formats": [
       "square",

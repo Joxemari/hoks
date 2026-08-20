@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>making of — hoks</title>
+<meta property="og:title" content="hoks — making of">
+<meta property="og:description" content="An illustrated essay — how a hoks system is built, every figure rendered from the real code.">
+<meta property="og:image" content="https://joxemari.github.io/hoks/preview.png?v=2">
+<meta property="og:type" content="article">
+</head>
+<body>
+<!-- Cáscara: nav.js pone tokens, fuente, nav y footer; making-page.js pinta el
+     ensayo leído de data/makingof/<slug>.md. El slug llega por ?w=. -->
+<script src="nav.js"></script>
+<script src="making-page.js"></script>
+<script>
+  var w = new URLSearchParams(location.search).get('w');
+  if (w) HOKSMAKING.init(w); else HOKSMAKING.missing();
+</script>
+</body>
+</html>
