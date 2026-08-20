@@ -315,7 +315,7 @@
       ts.forEach(function(t){ var r=t.getBoundingClientRect(); t._x=r.left-fr.left+r.width/2; t._y=r.top-fr.top+r.height/2; t._c0=-1e9; t._c1=-1e9; });
       var W=fr.width, Hh=fr.height, running=true, maxR=Math.sqrt(W*W+Hh*Hh);
       var SWEEP=2500, GAP=300, BAND=54, REST=1500, speed=(maxR+BAND)/SWEEP;
-      var pulse=null, restUntil=0, pcount=0, SEQ=['palette','family'];
+      var pulse=null, restUntil=0, pcount=0, SEQ=['family','palette'];
       function palPick(){ var pal=(pulse.mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null; return (pal&&pal.colors&&pal.colors.length)?pal.colors[(Math.random()*pal.colors.length)|0]:palColor(); }
       function flapColor(t){ var c=t._c,g=c.getContext('2d'); c.width=c.width; g.fillStyle=palPick(); g.fillRect(0,0,c.width,c.height); }
       function resolveImg(t){ var pal=(pulse.mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null; var fam=(pulse.mode==='family')?pulse.fam:randFam(); draw(t._c,150,150,fam,seed(),pal); t._w=FAM[fam]&&FAM[fam].w; }
