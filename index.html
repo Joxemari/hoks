@@ -254,12 +254,13 @@
   function objStart(ops,w,h){ for(var i=0;i<ops.length;i++){ var o=ops[i]; if(!o.m)continue; if(PATHOP[o.m])return i;
       if((o.m==='fillRect'||o.m==='rect')&&o.a&&o.a.length>=4){ var x=o.a[0],y=o.a[1],ww=o.a[2],hh=o.a[3]; if(!(Math.abs(x)<2&&Math.abs(y)<2&&ww>=w*0.98&&hh>=h*0.98))return i; } } return ops.length; }
   function ex(rc,o){ if(o.p!==undefined){ try{rc[o.p]=o.v;}catch(e){} } else { try{ rc[o.m].apply(rc,o.a); }catch(e){} } }
-  var firstPaint=true;
   function paintCycle(){ if(!carRun||!ACTIVE.length)return; var d=landscape(), w=d[0], h=d[1];
     var fam=randSplashFam(), s=seed(), pal=splashPal();
-    // First frame lands COMPLETE and vivid — the entry never opens on black.
-    // After a hold, the loop shows the piece painting itself (ground → objects).
-    if(firstPaint || reduce){ firstPaint=false; draw(ca,w,h,fam,s,pal); holdT=setTimeout(paintCycle, 2600); return; }
+    // Reduced motion: land the piece complete. Otherwise every piece — the first
+    // one too — PAINTS ITSELF: the ground appears, then the objects one by one.
+    // (No black opening: the splash only uses bright palettes and colour-ground
+    // families, and the ground is the first thing drawn.)
+    if(reduce){ draw(ca,w,h,fam,s,pal); holdT=setTimeout(paintCycle, 2600); return; }
     var rec=record(fam,w,h,s,pal), rc=rec.rc, ops=rec.ops;
     rc.setTransform(1,0,0,1,0,0); rc.globalAlpha=1; rc.globalCompositeOperation='source-over'; rc.fillStyle='#0c0c0c'; rc.fillRect(0,0,w,h);
     ca.width=w; ca.height=h; var vc=ca.getContext('2d');
@@ -270,7 +271,7 @@
     clearInterval(landT);
     landT=setInterval(function(){ for(var k=0;k<per&&ci<chunks.length;k++,ci++){ var ch=chunks[ci]; for(var q=0;q<ch.length;q++)ex(rc,ch[q]); } blit();
       if(ci>=chunks.length){ clearInterval(landT); landT=null; holdT=setTimeout(paintCycle,2400); } }, iv); }
-  function startCar(){ if(carRun)return; carRun=true; firstPaint=true; paintCycle(); }
+  function startCar(){ if(carRun)return; carRun=true; paintCycle(); }
   function stopCar(){ carRun=false; clearInterval(landT); landT=null; clearTimeout(holdT); holdT=null; }
   function tune(){ [[document.querySelector('.logo-mark'),'glitchLogo .86s steps(1,end)'],[document.querySelector('.tvstatic'),'glitchSnow .86s steps(1,end)']].forEach(function(pr){ var el=pr[0]; if(!el)return; el.style.animation='none'; void el.offsetWidth; el.style.animation=pr[1]; }); }
 
