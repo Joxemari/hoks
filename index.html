@@ -5,583 +5,377 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>hoks</title>
 <meta property="og:title" content="hoks">
-<meta property="og:description" content="Generative art">
+<meta property="og:description" content="Generative art — code and controlled chance.">
 <meta property="og:image" content="https://joxemari.github.io/hoks/preview.png">
 <meta property="og:url" content="https://joxemari.github.io/hoks/">
 <meta property="og:type" content="website">
+<link rel="icon" type="image/png" href="/hoks/favicon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+<!--
+  Landing = el prototipo acordado (_preview): la obra se PINTA sola (se graban
+  las llamadas de dibujo del algoritmo y se reproducen: primero el fondo, luego
+  cada objeto), el logo sintoniza con glitch + nieve de TV, y un clic entra a la
+  SALA — un contact sheet donde un pulso barre desde una zona y descansa,
+  fundiendo las celdas que toca a un hilo común (una paleta / una familia). El
+  groove AEREA (hall-loop.wav) arranca al entrar y palpita en cada pulso.
+
+  Esta página es autónoma a propósito (no carga nav.js): trae su propio cascarón,
+  como el mockup. Las celdas y el cajón enlazan a las páginas reales de obra.
+-->
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-/* Tokens (:root) los pone nav.js. La rejilla es casi todo obra; el único
-   "chrome" son las etiquetas y la cabecera de la sala, en --mono sobre papel. */
-/* ── THE HALL ── contact-sheet del mockup Hall.dc.html: rejilla plana de 12
-   columnas sobre papel, con un pulso que barre desde una zona y descansa. */
-body { background: var(--paper); color: var(--ink); }
-.hall { padding: 78px 40px 40px; min-height: 100vh; }
-.hall-head {
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 20px;
-  padding-bottom: 16px;
-}
-.hall-title { font-family: var(--geo); font-weight: 700; font-size: 34px;
-  letter-spacing: 0.02em; text-transform: uppercase; line-height: 1; margin: 0; }
-.hall-desc { font-family: var(--mono); font-size: 11px; color: var(--mut);
-  margin-top: 9px; letter-spacing: 0.04em; }
-.hall-thread { font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em;
-  color: var(--ink); border: 1px solid var(--line); border-radius: 30px;
-  padding: 8px 14px; white-space: nowrap; text-transform: uppercase; }
-.hall-thread b { color: var(--blue); font-weight: 400; }
-.hall-grid { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); gap: 5px; }
-.cell {
-  position: relative; aspect-ratio: 1; border-radius: 2px; overflow: hidden;
-  background: #f0ece5; cursor: pointer; will-change: transform, filter;
-  transition: transform 0.5s cubic-bezier(0.23,1,0.32,1), box-shadow 0.3s, filter 0.5s;
-}
-.cell canvas, .cell img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.cell:hover { transform: scale(1.07); z-index: 5; box-shadow: 0 8px 30px rgba(10,10,10,0.22); }
-.cell.pulse { transform: scale(1.05); filter: brightness(1.16) saturate(1.1); z-index: 3; }
-.cell-label {
-  position: absolute; left: 0; right: 0; bottom: 0;
-  background: rgba(251,251,250,0.95); padding: 4px 6px;
-  font-family: var(--mono); font-size: 8px; color: var(--mut); letter-spacing: 0.06em;
-  text-transform: uppercase; opacity: 0; transition: opacity 0.18s;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
-}
-.cell:hover .cell-label { opacity: 1; }
+  :root{
+    --paper:#ffffff; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --scrim:rgba(0,0,0,.3);
+    --line:#e9e7e1; --mut:#8a8983; --body:#26251f;
+    --geo:"League Spartan","Century Gothic",Futura,"Trebuchet MS",system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --ease-nav:cubic-bezier(.87,.17,.18,.85); --ease-links:cubic-bezier(.015,.85,.225,1); --navw:min(86vw,350px);
+    --logo:url('/hoks/logo_tall.png'); --omark:url('/hoks/monogram.png');
+  }
+  *{box-sizing:border-box} html,body{margin:0;height:100%}
+  body{font-family:var(--geo); background:var(--paper); color:var(--ink); overflow:hidden}
+  a{color:inherit; text-decoration:none}
 
-/* Sound toggle — en la barra superior, a la izquierda del burger (mockup). El
-   pulso, cuando el sonido está encendido, dispara notas: música del sistema. */
-.hall-sound {
-  position: fixed; top: 12px; right: 66px; z-index: 105;
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
-  color: var(--ink); background: var(--acid); border: 0; border-radius: 30px;
-  padding: 8px 13px; cursor: pointer;
-}
-.hall-sound.off { background: transparent; color: var(--mut); border: 1px solid var(--line); }
-@media (prefers-reduced-motion: reduce) { .cell.pulse { transform: none; } }
+  /* ── Splash carousel ── */
+  #carousel{position:fixed; inset:0; background:#0c0c0c; cursor:pointer; transition:opacity .8s ease; z-index:70; overflow:hidden}
+  .parallax{position:absolute; inset:0; transform:scale(1.05); transition:transform .6s cubic-bezier(.22,.61,.36,1)}
+  .stage{position:absolute; inset:0; animation:kenburns 19s ease-in-out infinite alternate}
+  #carousel canvas{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:opacity 1.2s ease}
+  @keyframes kenburns{from{transform:scale(1) translate(0,0)} to{transform:scale(1.06) translate(-1.3%,-1%)}}
+  .scrim{position:absolute; inset:0; background:var(--scrim); z-index:2; pointer-events:none}
+  .lockup{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:3; display:flex; flex-direction:column; align-items:center; gap:min(3.4vh,30px); pointer-events:none; text-align:center}
+  .logo-mark{height:clamp(300px,52vh,600px); aspect-ratio:764/1388; background:var(--acid); -webkit-mask:var(--logo) center/contain no-repeat; mask:var(--logo) center/contain no-repeat; filter:drop-shadow(0 10px 46px rgba(0,0,0,.5)); animation:signal 1.9s steps(1,end) both}
+  /* signal-acquiring flicker — the logo tunes in like a TV finding its channel, then locks */
+  @keyframes signal{
+    0%,6%{opacity:0} 10%{opacity:.55; transform:translate(-2px,1px)} 15%{opacity:.18}
+    23%{opacity:.9; transform:none} 29%{opacity:.35; transform:translate(-1px,0)}
+    39%{opacity:1; transform:none} 47%{opacity:.5}
+    59%{opacity:1; transform:none} 71%{opacity:.72} 83%{opacity:1} 100%{opacity:1; transform:none} }
+  .tvstatic{position:absolute; inset:0; z-index:2; pointer-events:none; opacity:0; background-color:#0a0a0a; background-size:170px 170px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='3' intercept='-1.45'/%3E%3CfeFuncG type='linear' slope='3' intercept='-1.45'/%3E%3CfeFuncB type='linear' slope='3' intercept='-1.45'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation:snow 1.9s steps(1,end) both}
+  @keyframes snow{ 0%{opacity:.32} 20%{opacity:.14} 40%{opacity:.26} 60%{opacity:.1} 80%{opacity:.16} 100%{opacity:0} }
+  /* the click: logo vibrates/glitches in time with the static burst */
+  @keyframes glitchLogo{ 0%{opacity:1;transform:none} 10%{opacity:.5;transform:translate(-3px,1px)} 20%{opacity:1;transform:translate(2px,-1px)}
+    32%{opacity:.44;transform:translate(-2px,0)} 45%{opacity:1;transform:translate(2px,0)} 58%{opacity:.58;transform:translate(-2px,0)}
+    72%{opacity:1;transform:none} 85%{opacity:.78} 100%{opacity:1;transform:none} }
+  @keyframes glitchSnow{ 0%{opacity:.4} 18%{opacity:.14} 36%{opacity:.3} 55%{opacity:.1} 75%{opacity:.2} 100%{opacity:0} }
+  .enter{font-family:var(--geo); font-size:12px; letter-spacing:.42em; text-transform:uppercase; color:#fff; opacity:.92; padding-left:.42em}
+  @keyframes blink{50%{opacity:.25}} .enter b{animation:blink 2.4s ease-in-out infinite; font-weight:400}
 
-/* ── SPLASH ── entrada del mockup Landing.dc.html: obra viva a sangre, la marca
-   pintada en ácido y "click to enter". Se cruza una vez por sesión; después se
-   entra directo a la rejilla (volver desde About no re-splashea). */
-#splash {
-  position: fixed; inset: 0; z-index: 200; background: #0c0c0c;
-  overflow: hidden; cursor: pointer;
-  transition: opacity 0.7s cubic-bezier(0.23,1,0.32,1);
-}
-#splash.gone { opacity: 0; pointer-events: none; }
-#splashArt { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-#splash .splash-logo {
-  position: absolute; left: 50%; top: 45%; transform: translate(-50%,-50%);
-  width: 200px; height: 364px; background: var(--acid);
-  -webkit-mask: url("logo_tall.png") center/contain no-repeat;
-          mask: url("logo_tall.png") center/contain no-repeat;
-  filter: drop-shadow(0 10px 46px rgba(0,0,0,0.5));
-}
-#splash .splash-plate {
-  position: absolute; right: 22px; top: 20px;
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; color: #fff;
-  background: rgba(10,10,10,0.42); padding: 6px 10px; border-radius: 7px;
-}
-#splash .splash-enter {
-  position: absolute; left: 50%; top: 83%; transform: translateX(-50%);
-  font-family: var(--mono); font-size: 12px; letter-spacing: 0.42em;
-  text-transform: uppercase; color: #fff; opacity: 0.9; white-space: nowrap;
-  animation: splashPulse 2.6s ease-in-out infinite;
-}
-@keyframes splashPulse { 0%,100% { opacity: 0.55; } 50% { opacity: 0.95; } }
+  /* ── Header ── */
+  #top{position:fixed; top:0; left:0; right:0; height:64px; z-index:50; display:none; align-items:center; justify-content:space-between; padding:0 clamp(20px,4vw,52px)}
+  body.entered #top{display:flex}
+  .logo{border:0; cursor:pointer; padding:0; display:block; height:34px; aspect-ratio:393/370; background:var(--ink); -webkit-mask:var(--omark) center/contain no-repeat; mask:var(--omark) center/contain no-repeat}
+  .top-r{display:flex; align-items:center; gap:16px}
+  .snd{font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut); background:none; border:1px solid var(--line); border-radius:30px; padding:7px 12px; cursor:pointer}
+  .snd.on{color:#0a0a0a; background:var(--acid); border-color:var(--acid)}
+  .burger{background:none; border:0; cursor:pointer; width:30px; height:26px; position:relative; padding:0}
+  .burger span{position:absolute; left:4px; right:4px; height:2px; background:var(--blue); transition:transform .4s var(--ease-nav), opacity .3s ease}
+  .burger span:nth-child(1){top:9px} .burger span:nth-child(2){top:16px}
+  body.nav-open .burger span:nth-child(1){transform:translateY(3.5px) rotate(45deg); background:#fff}
+  body.nav-open .burger span:nth-child(2){transform:translateY(-3.5px) rotate(-45deg); background:#fff}
 
-/* ── MOBILE ── */
-@media (max-width: 1000px) { .hall-grid { grid-template-columns: repeat(8, minmax(0,1fr)); } .hall { padding: 72px 22px 34px; } }
-@media (max-width: 600px) {
-  .hall-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
-  .hall-head { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .hall-title { font-size: 26px; }
-  .hall-thread { display: none; }
-  .hall-sound { right: 62px; }
-  #splash .splash-logo { width: 132px; height: 240px; }
-  #splash .splash-enter { top: 86%; letter-spacing: 0.32em; font-size: 11px; }
-}
+  /* ── Slide-out nav (right, blue) ── */
+  #nav{position:fixed; top:0; bottom:0; right:calc(-1 * var(--navw)); width:var(--navw); background:var(--blue); z-index:40; opacity:0; padding:96px clamp(28px,4vw,44px) 40px; transition:right .4s var(--ease-nav), opacity .4s var(--ease-nav); display:flex; flex-direction:column}
+  body.nav-open #nav{right:0; opacity:1}
+  #nav ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px}
+  #nav .sep{height:22px}
+  #nav a{display:flex; align-items:center; gap:14px; color:#fff; font-family:var(--geo); font-weight:600; font-size:17.5px; letter-spacing:.4em; line-height:2.14; text-transform:uppercase; cursor:pointer; opacity:0; transform:translateX(26px); transition:transform .9s var(--ease-links), opacity .6s var(--ease-links), color .2s ease}
+  body.nav-open #nav a{opacity:.92; transform:none} body.nav-open #nav a:hover{opacity:1}
+  body.nav-open #nav a.soon{opacity:.4} #nav a.soon{cursor:default}
+  #nav a .em{width:20px; font-size:15px; letter-spacing:0}
+  #nav a.active{color:var(--acid)}
+  #nav a .tag{font-family:var(--mono); font-size:9px; letter-spacing:.14em; opacity:.8; margin-left:2px}
+  body.nav-open #nav li:nth-child(1) a{transition-delay:.10s} body.nav-open #nav li:nth-child(2) a{transition-delay:.14s}
+  body.nav-open #nav li:nth-child(3) a{transition-delay:.18s} body.nav-open #nav li:nth-child(4) a{transition-delay:.22s}
+  body.nav-open #nav li:nth-child(5) a{transition-delay:.26s} body.nav-open #nav li:nth-child(6) a{transition-delay:.30s}
+  body.nav-open #nav li:nth-child(8) a{transition-delay:.36s} body.nav-open #nav li:nth-child(9) a{transition-delay:.40s}
+  #nav .nav-mark{position:absolute; top:30px; left:clamp(28px,4vw,44px); width:38px; aspect-ratio:393/370; background:var(--acid); -webkit-mask:var(--omark) center/contain no-repeat; mask:var(--omark) center/contain no-repeat; opacity:0; transform:translateY(-6px) rotate(-4deg); transition:opacity .5s var(--ease-links) .12s, transform .6s var(--ease-links) .12s}
+  body.nav-open #nav .nav-mark{opacity:1; transform:none}
+  #nav .who{margin-top:auto; font-family:var(--mono); font-size:11px; letter-spacing:.05em; color:rgba(255,255,255,.7); line-height:1.8}
+  #scrim2{position:fixed; inset:0; background:rgba(0,0,0,.28); z-index:35; opacity:0; visibility:hidden; transition:opacity .4s ease, visibility .4s}
+  body.nav-open #scrim2{opacity:1; visibility:visible}
+
+  /* ── Interior shell + hall ── */
+  #site{position:fixed; inset:0; display:none; background:var(--paper); color:var(--ink); z-index:10}
+  body.entered #site{display:block}
+  #view-hall{position:absolute; inset:0}
+  #hdesc{position:absolute; top:64px; left:0; right:0; height:38px; display:flex; align-items:center; gap:14px; padding:0 clamp(20px,4vw,52px); font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; color:var(--mut); text-transform:uppercase; border-bottom:1px solid var(--line); background:var(--paper); z-index:2}
+  #hdesc .lbl{color:var(--ink); font-weight:400}
+  #frame{position:absolute; top:102px; left:0; right:0; bottom:0; overflow-y:auto; padding:12px}
+  #view-hall .wall{display:grid; gap:var(--g,2px); grid-template-columns:repeat(auto-fill,minmax(var(--m,84px),1fr))}
+  #view-hall .tile{position:relative; margin:0; cursor:pointer} #view-hall .tile canvas{width:100%; aspect-ratio:1; display:block; background:#f2f0ec}
+  #view-hall .tile::after{content:''; position:absolute; inset:0; box-shadow:inset 0 0 0 2px var(--acid); opacity:0; transition:opacity .18s; pointer-events:none} #view-hall .tile:hover::after{opacity:1}
+
+  @media (prefers-reduced-motion:reduce){ .stage{animation:none} }
 </style>
 </head>
 <body>
-<script src="nav.js"></script>
-<!-- Los algo.js de las familias graduadas NO se listan aquí: se piden solos,
-     uno por familia activa, cuando works.json dice cuáles son. Escritos a mano
-     eran una lista más que había que venir a tocar para que una familia nueva
-     saliera en la rejilla. Las familias veteranas conservan su reimplementación
-     reducida más abajo. -->
-<script src="sketches/_engine.js?v=1"></script>
-<style>
-  /* La sala fluye y hace scroll (contact sheet alto); nav.js pone nav y footer. */
-  body { display: block !important; }
-</style>
 
-<div id="splash">
-  <canvas id="splashArt"></canvas>
-  <div class="splash-plate" id="splashPlate">hoks · PLLS · 1/1</div>
-  <div class="splash-logo"></div>
-  <div class="splash-enter"><span data-i18n="index.enter">click to enter</span> ▸</div>
+<!-- ── SPLASH ── -->
+<div id="carousel">
+  <div class="parallax" id="parallax"><div class="stage"><canvas id="ca"></canvas></div></div>
+  <div class="scrim"></div>
+  <div class="tvstatic"></div>
+  <div class="lockup"><div class="logo-mark" role="img" aria-label="hoks"></div><div class="enter" id="enterHint">click to enter <b>&#9656;</b></div></div>
 </div>
 
-<button class="hall-sound off" id="soundBtn" aria-pressed="false">♪ <span data-i18n="hall.sound">Sound</span></button>
-
-<main class="hall">
-  <div class="hall-head">
-    <div>
-      <h2 class="hall-title" data-i18n="hall.title">The hall</h2>
-      <div class="hall-desc" data-i18n="hall.desc">a pulse sweeps from a zone, then rests</div>
-    </div>
-    <div class="hall-thread" id="hallThread"><span data-i18n="hall.thread">common thread</span> — <b data-i18n="hall.threadval">code + chance</b></div>
+<!-- ── HEADER ── -->
+<header id="top">
+  <button class="logo" id="logo" aria-label="hoks — home"></button>
+  <div class="top-r">
+    <button class="snd on" id="sndBtn" title="sound">&#9834; Sound</button>
+    <button class="burger" id="burger" aria-label="menu"><span></span><span></span></button>
   </div>
-  <div class="hall-grid" id="grid"></div>
-</main>
+</header>
 
+<!-- ── NAV DRAWER ── -->
+<div id="scrim2"></div>
+<nav id="nav" aria-label="main">
+  <div class="nav-mark"></div>
+  <ul id="navlist"></ul>
+  <div class="who">hoks · Joxemari Gallastegi<br>Donostia — Stanford</div>
+</nav>
+
+<!-- ── INTERIOR: THE HALL ── -->
+<div id="site">
+  <section id="view-hall">
+    <div id="hdesc"><span>Contact sheet</span><span class="lbl" id="hlbl"></span></div>
+    <div id="frame"></div>
+  </section>
+</div>
+
+<script src="sketches/_engine.js?v=1"></script>
 <script>
-const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
-const BASE = 'https://joxemari.github.io/hoks/';
+(function(){
+  var RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
+  var BASE = '';  // same-origin relative
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-// ── RNG ──────────────────────────────────────────────────────────────────────
-class Rng {
-  constructor(s) { this.s = (s|0) >>> 0; }
-  next()        { this.s = ((Math.imul(1664525,this.s)+1013904223)>>>0); return this.s/4294967296; }
-  int(a,b)      { return Math.floor(a + this.next()*(b-a+1)); }
-  range(a,b)    { return a + this.next()*(b-a); }
-  bool(p)       { return this.next() < p; }
-  pickFrom(arr) { return arr[this.int(0,arr.length-1)]; }
-  weighted(arr) { let v=this.next(),acc=0; for(const i of arr){acc+=i.prob;if(v<acc)return i;} return arr[arr.length-1]; }
-}
+  // Emoji + fallback catalogue (used offline / before works.json lands).
+  var EM = {plls:'💊',krrtk:'🟥',dtk:'🟥',dtkrt:'🔵',eclps:'🌑',trzs:'🪢',bzrs:'〰️'};
+  var FALLBACK = [
+    {slug:'plls', name:'PLLS', page:'plls.html',  year:2024},
+    {slug:'krrtk',name:'KRRTK',page:'krrtk.html', year:2023},
+    {slug:'dtkrt',name:'DTKRT',page:'dtkrt.html', year:2025},
+    {slug:'eclps',name:'ECLPS',page:'eclps.html'},
+    {slug:'trzs', name:'TRZS', page:'trzs.html'}
+  ];
+  function workHref(w){ return w.page ? w.page : ('work.html?w=' + w.slug); }
 
-// ── PALETTES (fallback for demo mode) ────────────────────────────────────────
-const DEFAULTS = [
-  {id:1, name:"Science",    active:true,colors:["#ffe819","#000000"],created:1},
-  {id:2, name:"Mondrian",   active:true,colors:["#0a0a0a","#f7f3f2","#0077e1","#f5d216","#fc3503"],created:2},
-  {id:3, name:"Paint",      active:true,colors:["#b30000","#e6cf00","#1283b3","#fafafa","#0a0a0a"],created:3},
-  {id:4, name:"Morning",    active:true,colors:["#ffd919","#262104","#fffbe6"],created:4},
-  {id:5, name:"Evening",    active:true,colors:["#ff4f19","#15084d","#5ce6e6"],created:5},
-  {id:6, name:"Marble",     active:true,colors:["#218ad4","#76df55","#0b1435","#ffffff"],created:6},
-  {id:7, name:"Troll",      active:true,colors:["#294984","#6ca0a7","#ffc789","#df5f50","#5a3034","#fff1dd"],created:7},
-  {id:8, name:"Meta",       active:true,colors:["#226699","#dd2e44","#ffcc4d"],created:8},
-  {id:9, name:"Splash",     active:true,colors:["#32312e","#795330","#c7ae82","#f5f2e3"],created:9},
-  {id:10,name:"Sheets",     active:true,colors:["#025760","#7fd0d3","#b3ead7","#eff7f5","#fae9c1","#f8ca75","#e88d44"],created:10},
-  {id:11,name:"Her",        active:true,colors:["#cd1440","#fafafa"],created:11},
-  {id:12,name:"Fans",       active:true,colors:["#000000","#83a6bc","#faece1","#bab1a8"],created:12},
-  {id:13,name:"Light",      active:true,colors:["#00b2b4","#fdd35b","#3b4696","#f4737d","#333333"],created:13},
-  {id:14,name:"Escape",     active:true,colors:["#f3e17e","#dd483c","#4b8a5f","#0d150b","#faf8e2"],created:14},
-  {id:15,name:"Play",       active:true,colors:["#e20404","#fcd202","#ffffff","#000000"],created:15},
-  {id:16,name:"Repetition", active:true,colors:["#2c2060","#4bd3e5","#fffbe6","#ffd919","#ff4f19"],created:16},
-  {id:17,name:"North",      active:true,colors:["#dc060e","#ffd400","#0064b0","#001a5b","#ffffff"],created:17},
-  {id:18,name:"Commit",     active:true,colors:["#563d7c","#0096d8","#f4e361","#f24679"],created:18},
-  {id:19,name:"Wheel",      active:true,colors:["#ffe140","#ffa922","#1bc0c6","#2484ae","#134e6e"],created:19},
-  {id:20,name:"Edit",       active:true,colors:["#1c1c1c","#f47a9d","#f4ea7a","#f2f2f2"],created:20},
-  {id:28,name:"Poet",       active:true,colors:["#f4f3ed","#efc807","#ed5d53","#e2dbb5","#45291c","#080b0f"],created:28},
-  {id:29,name:"Daily",      active:true,colors:["#131314","#272829","#ffe18e","#fff0c6"],created:29},
-  {id:30,name:"Podcast",    active:true,colors:["#584594","#e488b7","#d74c41","#f0d235","#36ad63","#69bcea","#fdfdfd"],created:30},
-];
-function ageWeight(ms){if(!ms||ms<1000)return 1;const d=(Date.now()-ms)/86400000;return d<30?4:d<90?2:d<180?1:d<365?0.4:0.15;}
-const PALETTES=(()=>{const w=DEFAULTS.map(p=>ageWeight(p.created)),t=w.reduce((a,b)=>a+b,0);return DEFAULTS.map((p,i)=>({...p,prob:w[i]/t}));})();
-function getActivePalette(rng){return rng.weighted(PALETTES.filter(p=>p.active!==false));}
-function hexToRgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
-function lerpColor(c1,c2,t){const[r1,g1,b1]=hexToRgb(c1),[r2,g2,b2]=hexToRgb(c2);return`rgb(${Math.round(r1+(r2-r1)*t)},${Math.round(g1+(g2-g1)*t)},${Math.round(b1+(b2-b1)*t)})`;}
-function softLight(a,b){return a<0.5?2*a*b+a*a*(1-2*b):Math.sqrt(a)*(2*b-1)+2*a*(1-b);}
-
-// ── FALLBACK DRAW ALGORITHMS ──────────────────────────────────────────────────
-function drawBZRS(canvas,seed){
-  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,rng=new Rng(seed);
-  const pal=getActivePalette(rng),colors=pal.colors,m=Math.round(W*0.0833);
-  ctx.fillStyle=colors[rng.int(0,colors.length-1)];ctx.fillRect(0,0,W,H);
-  const nc=rng.int(750,1250),sx=m,ex=W-m,cd=(H-2*m)/nc,c1=colors[rng.int(0,colors.length-1)],c2=colors[rng.int(0,colors.length-1)];
-  ctx.lineWidth=Math.max(0.5,W/600);ctx.save();
-  const curves=[];
-  for(let i=0;i<nc;i++){curves.push({sy:m+i*cd,ey:rng.range(m,H-m),cp1x:rng.range(sx-m,sx),cp1y:0,cp2x:0,cp2y:0,t:i/nc});curves[i].cp1y=curves[i].sy+rng.range(-m,m);curves[i].cp2x=rng.range(ex,ex+m);curves[i].cp2y=curves[i].ey+rng.range(-m,m);}
-  for(let i=0;i<nc;i++){const c=curves[i];ctx.strokeStyle=lerpColor(c1,c2,c.t);ctx.beginPath();ctx.moveTo(sx,c.sy);ctx.bezierCurveTo(c.cp1x,c.cp1y,c.cp2x,c.cp2y,ex,c.ey);ctx.stroke();}
-  ctx.restore();
-}
-function drawMesh(ctx,W,H,colors,rng){
-  const n=colors.length,c00=hexToRgb(colors[rng.int(0,n-1)]),c10=hexToRgb(colors[rng.int(0,n-1)]),c01=hexToRgb(colors[rng.int(0,n-1)]),c11=hexToRgb(colors[rng.int(0,n-1)]);
-  const img=ctx.createImageData(W,H),px=img.data;
-  for(let y=0;y<H;y++){const ty=y/(H-1);for(let x=0;x<W;x++){const tx=x/(W-1),idx=(y*W+x)*4;px[idx]=Math.round((1-tx)*(1-ty)*c00[0]+tx*(1-ty)*c10[0]+(1-tx)*ty*c01[0]+tx*ty*c11[0]);px[idx+1]=Math.round((1-tx)*(1-ty)*c00[1]+tx*(1-ty)*c10[1]+(1-tx)*ty*c01[1]+tx*ty*c11[1]);px[idx+2]=Math.round((1-tx)*(1-ty)*c00[2]+tx*(1-ty)*c10[2]+(1-tx)*ty*c01[2]+tx*ty*c11[2]);px[idx+3]=255;}}
-  ctx.putImageData(img,0,0);
-}
-function applyGrain(ctx,W,H,colors){
-  let aR=0,aG=0,aB=0;for(const h of colors){const[r,g,b]=hexToRgb(h);aR+=r;aG+=g;aB+=b;}aR/=colors.length;aG/=colors.length;aB/=colors.length;
-  const l=0.299*aR+0.587*aG+0.114*aB+1,tR=aR/l,tG=aG/l,tB=aB/l,n=W*H;
-  const gR=new Float32Array(n),gG=new Float32Array(n),gB=new Float32Array(n),gA=new Float32Array(n);
-  for(let i=0;i<n;i++){let v=0;for(let k=0;k<3;k++)v+=Math.random();const mv=(v/3-.5);gR[i]=.5+mv*(.6+tR*.4);gG[i]=.5+mv*(.6+tG*.4);gB[i]=.5+mv*(.6+tB*.4);gA[i]=.4+Math.random()*.4;}
-  const img=ctx.getImageData(0,0,W,H),px=img.data;
-  for(let i=0;i<n;i++){const pi=i*4,a=gA[i];for(let c=0;c<3;c++){const base=px[pi+c]/255,gr=[gR[i],gG[i],gB[i]][c],bl=softLight(base,gr);px[pi+c]=Math.min(255,Math.max(0,((bl*a+base*(1-a))*255)|0));}}
-  ctx.putImageData(img,0,0);
-}
-function drawKRRTKG(canvas,seed){
-  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,rng=new Rng(seed);
-  const pal=getActivePalette(rng),colors=pal.colors,margin=Math.round(W*0.1667),a=W-margin*2;
-  drawMesh(ctx,W,H,colors,new Rng(seed^0xDEADBEEF));
-  let sq=[{x:margin,y:margin,size:a,color:colors[rng.int(0,colors.length-1)]}],si=0;
-  while(si<sq.length){const s=sq[si];if(s.size>a/4){const n=s.size/2;sq.push({x:s.x,y:s.y,size:n,color:colors[rng.int(0,colors.length-1)]},{x:s.x+n,y:s.y,size:n,color:colors[rng.int(0,colors.length-1)]},{x:s.x,y:s.y+n,size:n,color:colors[rng.int(0,colors.length-1)]},{x:s.x+n,y:s.y+n,size:n,color:colors[rng.int(0,colors.length-1)]});sq.splice(sq.length-1,1);}si++;}
-  sq.forEach(s=>{if(rng.next()>0.6){const[r,g,b]=hexToRgb(s.color);ctx.fillStyle=`rgba(${r},${g},${b},0.72)`;ctx.fillRect(s.x,s.y,s.size,s.size);}});
-  applyGrain(ctx,W,H,colors);
-}
-function drawDTKG(canvas,seed){
-  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,rng=new Rng(seed);
-  const pal=getActivePalette(rng),colors=pal.colors;
-  drawMesh(ctx,W,H,colors,new Rng(seed^0xDEADBEEF));
-  const n=rng.int(1,7),size=W/(n*1.1),gW=n*size*1.1,ox=(W-gW)/2,oy=(H-gW)/2;
-  const comp=[];for(let i=0;i<n;i++){comp.push([]);for(let j=0;j<n;j++)comp[i].push(rng.next());}
-  ctx.save();ctx.translate(ox,oy);
-  for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(comp[i][j]<=0.8){const[r,g,b]=hexToRgb(colors[rng.int(0,colors.length-1)]);ctx.fillStyle=`rgba(${r},${g},${b},0.72)`;ctx.beginPath();ctx.arc((i+.5)*size*1.1,(j+.5)*size*1.1,size/2,0,Math.PI*2);ctx.fill();}
-  ctx.restore();applyGrain(ctx,W,H,colors);
-}
-const ARCHETYPES=[{name:"Scattered",prob:.60,sizeMin:.30,sizeMax:.45,pillMin:5,pillMax:12},{name:"Dense",prob:.25,sizeMin:.20,sizeMax:.35,pillMin:10,pillMax:20},{name:"Solo",prob:.15,sizeMin:.40,sizeMax:.60,pillMin:1,pillMax:4}];
-const FINISH_PROBS={Solo:{solid:.38,multiply:.38,translucent:.08,outline:.08,grain:.04,gradient:.04},Scattered:{solid:.425,multiply:.425,translucent:.0375,outline:.0375,grain:.0375,gradient:.0375},Dense:{solid:.46,multiply:.46,translucent:.02,outline:.01,grain:.025,gradient:.025}};
-const OVERLAP_TOL={Solo:.15,Scattered:.35,Dense:.60},GRAIN_TILE=16,OFF_WHITE='#f5f0ea';
-function pickFinish(rng,arch){const p=FINISH_PROBS[arch];let v=rng.next(),acc=0;for(const[s,w]of Object.entries(p)){acc+=w;if(v<acc)return s;}return'solid';}
-function pillsOverlap(ax,ay,aHL,at,bx,by,bHL,bt,tol){const dist=Math.hypot(ax-bx,ay-by),reach=(at+bt)/2+Math.min(aHL,bHL)*.5;return Math.max(0,reach-dist)/((at/2+bt/2))>tol;}
-function pillPath(ctx,x1,y1,x2,y2,t){const r=t/2,a=Math.atan2(y2-y1,x2-x1);ctx.beginPath();ctx.arc(x1,y1,r,a+Math.PI/2,a+Math.PI*1.5);ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2);ctx.closePath();}
-function drawGrainPill(ctx,x1,y1,x2,y2,t,color,rng){
-  const[r,g,b]=hexToRgb(color),alt=rng.bool(.5)?'#0a0a0a':'#eff7f5',angle=Math.atan2(y2-y1,x2-x1),cx=(x1+x2)/2,cy=(y1+y2)/2,hl=Math.hypot(x2-x1,y2-y1)/2+t/2,hw=t/2;
-  const C=[[cx+Math.cos(angle)*hl-Math.sin(angle)*hw,cy+Math.sin(angle)*hl+Math.cos(angle)*hw],[cx+Math.cos(angle)*hl+Math.sin(angle)*hw,cy+Math.sin(angle)*hl-Math.cos(angle)*hw],[cx-Math.cos(angle)*hl-Math.sin(angle)*hw,cy-Math.sin(angle)*hl+Math.cos(angle)*hw],[cx-Math.cos(angle)*hl+Math.sin(angle)*hw,cy-Math.sin(angle)*hl-Math.cos(angle)*hw]];
-  const xs=C.map(c=>c[0]),ys=C.map(c=>c[1]);
-  const minX=Math.floor(Math.min(...xs)/GRAIN_TILE)*GRAIN_TILE,maxX=Math.ceil(Math.max(...xs)/GRAIN_TILE)*GRAIN_TILE;
-  const minY=Math.floor(Math.min(...ys)/GRAIN_TILE)*GRAIN_TILE,maxY=Math.ceil(Math.max(...ys)/GRAIN_TILE)*GRAIN_TILE;
-  ctx.save();pillPath(ctx,x1,y1,x2,y2,t);ctx.clip();
-  for(let tx=minX;tx<maxX;tx+=GRAIN_TILE)for(let ty=minY;ty<maxY;ty+=GRAIN_TILE){const col=Math.round(tx/GRAIN_TILE),row=Math.round(ty/GRAIN_TILE);ctx.fillStyle=(col+row)%2===0?`rgb(${r},${g},${b})`:alt;ctx.fillRect(tx,ty,GRAIN_TILE,GRAIN_TILE);}
-  ctx.restore();
-}
-function drawPill(ctx,x1,y1,x2,y2,t,color,style,rng,colors){
-  const[r,g,b]=hexToRgb(color);ctx.save();
-  if(style==='solid'||style==='multiply'){ctx.globalCompositeOperation=style==='multiply'?'multiply':'source-over';ctx.strokeStyle=`rgb(${r},${g},${b})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
-  else if(style==='translucent'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=`rgba(${r},${g},${b},${rng.range(.22,.55)})`;ctx.lineWidth=t;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
-  else if(style==='outline'){const bw=Math.max(5,t*.06),oc=rng.bool(.5)?'#0a0a0a':'#eff7f5';ctx.globalCompositeOperation='source-over';pillPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fill();pillPath(ctx,x1,y1,x2,y2,t);ctx.strokeStyle=oc;ctx.lineWidth=bw;ctx.stroke();}
-  else if(style==='grain'){drawGrainPill(ctx,x1,y1,x2,y2,t,color,rng);}
-  else if(style==='gradient'){ctx.globalCompositeOperation='source-over';const a=Math.atan2(y2-y1,x2-x1),px=-Math.sin(a),py=Math.cos(a),h=t/2;const grad=ctx.createLinearGradient((x1+x2)/2+px*h,(y1+y2)/2+py*h,(x1+x2)/2-px*h,(y1+y2)/2-py*h);const[r2,g2,b2]=hexToRgb(rng.pickFrom(colors));grad.addColorStop(0,`rgb(${r},${g},${b})`);grad.addColorStop(1,`rgb(${r2},${g2},${b2})`);pillPath(ctx,x1,y1,x2,y2,t);ctx.fillStyle=grad;ctx.fill();}
-  ctx.restore();
-}
-
-// ── DRAW: PLLSG (pills on mesh gradient + grain) ─────────────────────────────
-const PILL_ALPHA_G = 0.72;
-function drawPLLSG(canvas,seed){
-  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,rng=new Rng(seed);
-  const arch=rng.weighted(ARCHETYPES),pal=getActivePalette(rng),colors=pal.colors;
-  drawMesh(ctx,W,H,colors,new Rng(seed^0xDEADBEEF));
-  const sizePct=rng.range(arch.sizeMin,arch.sizeMax),maxSize=Math.min(W,H)*sizePct;
-  const thickness=maxSize*.7,numShapes=rng.int(arch.pillMin,arch.pillMax),tol=OVERLAP_TOL[arch.name];
-  const pills=[],placed=[];
-  for(let i=0;i<numShapes;i++){
-    const hl=maxSize/4,mg=thickness/2;let cx,cy,angle,ok=false;
-    for(let att=0;att<20;att++){angle=rng.range(0,Math.PI*2);const dx=Math.cos(angle)*hl,dy=Math.sin(angle)*hl;cx=rng.range(mg+Math.abs(dx),W-mg-Math.abs(dx));cy=rng.range(mg+Math.abs(dy),H-mg-Math.abs(dy));let bad=false;for(const p of placed)if(pillsOverlap(cx,cy,hl,thickness,p.cx,p.cy,p.hl,p.t,tol)){bad=true;break;}if(!bad){ok=true;break;}}
-    if(!ok){angle=rng.range(0,Math.PI*2);const dx=Math.cos(angle)*hl,dy=Math.sin(angle)*hl;cx=rng.range(mg+Math.abs(dx),W-mg-Math.abs(dx));cy=rng.range(mg+Math.abs(dy),H-mg-Math.abs(dy));}
-    placed.push({cx,cy,hl,t:thickness});
-    pills.push({cx,cy,hl,angle,color:rng.pickFrom(colors),style:pickFinish(rng,arch.name),thickness});
-  }
-  ctx.globalCompositeOperation='source-over';
-  for(const pill of pills){
-    const x1=pill.cx-Math.cos(pill.angle)*pill.hl,y1=pill.cy-Math.sin(pill.angle)*pill.hl;
-    const x2=pill.cx+Math.cos(pill.angle)*pill.hl,y2=pill.cy+Math.sin(pill.angle)*pill.hl;
-    const [r,g,b]=hexToRgb(pill.color);
-    // Draw with alpha so gradient shows through
-    ctx.save();ctx.strokeStyle=`rgba(${r},${g},${b},${PILL_ALPHA_G})`;
-    ctx.lineWidth=pill.thickness;ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();
-  }
-  applyGrain(ctx,W,H,colors);
-}
-
-// ── DEMOS ESCRITAS AQUÍ ──────────────────────────────────────────────────────
-// Solo las familias anteriores al algo.js compartido: su demo es una versión
-// reducida del algoritmo, con el look publicado (el que traía la G). Una
-// familia graduada NO entra en esta tabla — su celda usa el algo.js de verdad,
-// que se pide solo. Vaciarla es la dirección: cada entrada que se va es una
-// reimplementación menos que mantener a mano.
-const DEMOS = {plls:drawPLLSG,krrtk:drawKRRTKG,dtk:drawDTKG,bzrs:drawBZRS};
-
-// El lienzo de la celda va en la proporción de la OBRA, no en la de la rejilla
-// (que recorta con object-fit): una fila metida en un cuadrado deja de ser una
-// fila. Sale del formato que la familia declara en works.json; aquí solo se
-// apunta la excepción, que es PLLS —declara cuadrado y horizontal, y su demo
-// nació apaisada—.
-const CELL_BY_FORMAT = {square:[320,320], horizontal:[452,320], vertical:[320,452], double:[640,226]};
-const CRES = {plls:[566,400]};
-function cellRes(w) {
-  if (CRES[w.slug]) return CRES[w.slug];
-  const f = (Array.isArray(w.formats) && w.formats[0]) || 'square';
-  return CELL_BY_FORMAT[f] || CELL_BY_FORMAT.square;
-}
-
-// Sin red no hay catálogo, así que la rejilla cae a las familias que estaban
-// publicadas en el último despliegue — no a "todas las que existieron".
-const FALLBACK_WORKS = [
-  {slug:'plls', name:'PLLS', page:'plls.html',  formats:['square','horizontal']},
-  {slug:'krrtk',name:'KRRTK',page:'krrtk.html', formats:['square']},
-  {slug:'dtkrt',name:'DTKRT',page:'dtkrt.html', formats:['square']},
-  {slug:'eclps',name:'ECLPS',page:'eclps.html', formats:['double']},
-  {slug:'trzs', name:'TRZS', page:'trzs.html',  formats:['horizontal','square']},
-];
-
-// ── ALGO.JS BAJO DEMANDA ─────────────────────────────────────────────────────
-// Una familia graduada trae su algoritmo; la landing no tiene por qué llevar
-// una copia reducida. Se pide el archivo y, si no está (familia sin graduar),
-// esa familia se queda sin celdas demo — sus piezas guardadas siguen saliendo,
-// que son imágenes y no necesitan algoritmo.
-const _algos = {};
-function loadAlgo(slug) {
-  if (_algos[slug]) return _algos[slug];
-  const up = slug.toUpperCase();
-  if (window.HOKS && HOKS[up]) return (_algos[slug] = Promise.resolve(HOKS[up]));
-  return (_algos[slug] = new Promise(res => {
-    const s = document.createElement('script');
-    s.src = 'sketches/' + slug + '/algo.js?v=1';
-    s.onload  = () => res((window.HOKS && HOKS[up]) || null);
-    s.onerror = () => res(null);
-    document.head.appendChild(s);
-  }));
-}
-async function drawFnFor(slug) {
-  if (DEMOS[slug]) return DEMOS[slug];
-  const algo = await loadAlgo(slug);
-  if (!algo || typeof algo.render !== 'function') return null;
-  return (canvas, seed) => algo.render(canvas.getContext('2d'), canvas.width, canvas.height, seed,
-    {palettes: PALETTES.filter(p => p.active !== false)});
-}
-
-// Catálogo resuelto: slug → {name, page, res, draw}. Lo llena load().
-const FAM = {};
-function famList() { return Object.keys(FAM); }
-
-// ── GRID (contact sheet) ─────────────────────────────────────────────────────
-// Rejilla plana sobre papel, como el mockup Hall.dc.html. El layout lo pone CSS
-// grid (12 columnas); aquí solo se llenan celdas con obra real o demo.
-const grid = document.getElementById('grid');
-let cellObjs = [];
-
-function buildGrid(works) {
-  grid.innerHTML = ''; cellObjs = [];
-  const slots = [...works].sort(() => Math.random() - .5);
-
-  slots.forEach(work => {
-    const fam = FAM[work.type] || {};
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-
-    if (work.fallback) {
-      const canvas = document.createElement('canvas');
-      const [cw,ch] = fam.res || [320,320];
-      canvas.width = cw; canvas.height = ch;
-      if (fam.draw) fam.draw(canvas, work.seed);
-      cell.appendChild(canvas);
-    } else {
-      const img = new Image();
-      img.src = work.dataUrl;
-      cell.appendChild(img);
-    }
-
-    const label = fam.name || work.type.toUpperCase();
-    const lbl = document.createElement('div');
-    lbl.className = 'cell-label';
-    lbl.textContent = work.fallback ? `${label} · demo` : `${label} · #${work.seed}`;
-    cell.appendChild(lbl);
-    grid.appendChild(cell);
-    cellObjs.push(cell);
-
-    cell.addEventListener('click', () => {
-      // A dónde lleva la celda lo dice works.json, y la regla es la del nav:
-      // página propia si la familia la tiene, genérica si no.
-      const page = HOKSNAV.workHref({ page: fam.page, slug: work.type });
-      const url = work.idx == null ? BASE + page
-        : BASE + page + (page.indexOf('?') < 0 ? '?' : '&') + 'i=' + work.idx;
-      window.location.href = url;
+  function fetchJSON(url, ms){
+    return new Promise(function(res){
+      var ctl = ('AbortController' in window) ? new AbortController() : null;
+      var to = setTimeout(function(){ if(ctl)ctl.abort(); res(null); }, ms);
+      fetch(url, ctl ? {signal:ctl.signal} : undefined)
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){ clearTimeout(to); res(d); })
+        .catch(function(){ clearTimeout(to); res(null); });
     });
-  });
+  }
+  function loadScript(src){
+    return new Promise(function(res){ var s=document.createElement('script'); s.src=src;
+      s.onload=function(){res(true);}; s.onerror=function(){res(false);}; document.head.appendChild(s); });
+  }
 
-  startPulse();
-}
+  var H = window.HOKS || {};
+  var FAM = {};          // UP -> {slug,name,page,em}
+  var ACTIVE = [];       // list of UP family names that can render
 
-// ── PULSE ── un pulso nace en una celda y barre hacia fuera por vecindad, luego
-// descansa (la desc del mockup: "a pulse sweeps from a zone, then rests"). Si el
-// sonido está encendido, cada celda que se enciende suena.
-function gridCols() {
-  const t = getComputedStyle(grid).gridTemplateColumns;
-  return t ? t.split(' ').filter(Boolean).length : 12;
-}
-let pulseTimer = null;
-function startPulse() {
-  if (pulseTimer) clearTimeout(pulseTimer);
-  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function sweep() {
-    const cells = cellObjs;
-    if (cells.length && !document.hidden) {
-      const cols = gridCols();
-      const origin = (Math.random() * cells.length) | 0;
-      const ox = origin % cols, oy = (origin / cols) | 0;
-      cells.forEach((el, i) => {
-        const x = i % cols, y = (i / cols) | 0;
-        const d = Math.hypot(x - ox, y - oy);
-        if (d > 6.5) return;                 // el pulso se agota: una zona, no todo
-        const delay = d * 95 + Math.random() * 40;
-        setTimeout(() => {
-          el.classList.add('pulse');
-          playNote(d);
-          setTimeout(() => el.classList.remove('pulse'), 520);
-        }, delay);
-      });
+  // palettes for the contact-sheet flashes (common thread)
+  var PALS = [], COLORS = [];
+  function palColor(){ return COLORS.length ? COLORS[(Math.random()*COLORS.length)|0] : '#dcff32'; }
+
+  function seed(){ return (Math.random()*1e9)>>>0; }
+  function randFam(){ return ACTIVE[(Math.random()*ACTIVE.length)|0]; }
+  function draw(cv,w,h,fam,s,pal){
+    cv.width=w; cv.height=h; var ctx=cv.getContext('2d');
+    var o={ params:{ field:(w===h?'square':'sheet'), grainScale:1 } };
+    if(pal){ o.palettes=[pal]; o.locked=true; o.lockedIdx=0; }
+    try{ H[fam].render(ctx,w,h,s,o); }
+    catch(e){ try{ H.PLLS.render(ctx,w,h,s,o); }catch(_){ ctx.fillStyle='#efeee9'; ctx.fillRect(0,0,w,h); } }
+  }
+
+  // ── AUDIO: AEREA groove ─────────────────────────────────────────────────────
+  var actx=null, buf=null, srcNode=null, gainN=null, sndOn=true, grooveOpen=false;
+  var sndBtn=document.getElementById('sndBtn');
+  var SND_FLOOR=0.16, SND_PEAK=0.62;
+  function ensureAudio(){
+    if(!actx){
+      var AC=window.AudioContext||window.webkitAudioContext; if(!AC)return;
+      actx=new AC(); gainN=actx.createGain(); gainN.gain.value=0.0001; gainN.connect(actx.destination);
+      fetch('hall-loop.wav').then(function(r){ return r.arrayBuffer(); })
+        .then(function(ab){ actx.decodeAudioData(ab, function(b){ buf=b; if(sndOn && grooveOpen) playLoop(); }, function(){}); })
+        .catch(function(){});
     }
-    schedule();
+    if(actx.state==='suspended') actx.resume();
   }
-  function schedule() { pulseTimer = setTimeout(sweep, 3600 + Math.random() * 2800); }
-  if (!reduce) schedule();
-}
+  function playLoop(){ if(!buf||srcNode)return; srcNode=actx.createBufferSource(); srcNode.buffer=buf; srcNode.loop=true; srcNode.connect(gainN); srcNode.start();
+    var now=actx.currentTime; gainN.gain.cancelScheduledValues(now); gainN.gain.setTargetAtTime(SND_FLOOR, now, 0.5); }
+  function pulseAccent(){ if(!actx||!sndOn||!grooveOpen||!srcNode)return; var t=actx.currentTime, g=gainN.gain;
+    g.cancelScheduledValues(t); g.setValueAtTime(Math.max(0.0001,g.value), t);
+    g.linearRampToValueAtTime(SND_PEAK, t+0.06);           // pum — swell
+    g.exponentialRampToValueAtTime(SND_FLOOR, t+1.5); }    // then decay
+  function setSound(on){ sndOn=on; sndBtn.classList.toggle('on',on);
+    if(on){ ensureAudio(); if(buf && grooveOpen) playLoop(); }
+    else if(actx){ var now=actx.currentTime; gainN.gain.cancelScheduledValues(now); gainN.gain.setTargetAtTime(0.0001,now,0.25); } }
+  sndBtn.addEventListener('click', function(e){ e.stopPropagation(); setSound(!sndOn); });
+  // landing "power on" — a burst of tuning static that resolves into the groove
+  function landingSignal(){ if(!actx)return; var t=actx.currentTime, dur=0.86, n=Math.floor(actx.sampleRate*dur);
+    var bf=actx.createBuffer(1,n,actx.sampleRate), ch=bf.getChannelData(0); for(var i=0;i<n;i++)ch[i]=(Math.random()*2-1)*0.9;
+    var src=actx.createBufferSource(); src.buffer=bf; var bp=actx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1900; bp.Q.value=0.6;
+    var g=actx.createGain(), gv=g.gain; gv.setValueAtTime(0.0001,t);
+    var pts=[[0.02,0.3],[0.09,0.06],[0.15,0.26],[0.22,0.05],[0.31,0.2],[0.41,0.05],[0.52,0.13],[0.64,0.04],[0.76,0.1],[0.86,0.0001]];
+    pts.forEach(function(p){ gv.exponentialRampToValueAtTime(Math.max(0.0001,p[1]), t+p[0]); });
+    src.connect(bp); bp.connect(g); g.connect(actx.destination); src.start(t); src.stop(t+dur); }
 
-// ── SOUND ── música del sistema: WebAudio, sin assets. El pulso dispara notas de
-// una pentatónica; la distancia al origen elige grado y octava. Apagado por
-// defecto (y el navegador exige un gesto: el propio toggle lo es).
-let audio = null, soundOn = false, masterGain = null;
-const SCALE = [0, 3, 5, 7, 10];
-function ensureAudio() {
-  if (audio) return;
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return;
-  audio = new AC();
-  masterGain = audio.createGain();
-  masterGain.gain.value = 0; masterGain.connect(audio.destination);
-}
-function playNote(d) {
-  if (!soundOn || !audio) return;
-  const t = audio.currentTime;
-  const deg = SCALE[((Math.round(d) % SCALE.length) + SCALE.length) % SCALE.length];
-  const oct = d < 2 ? 12 : d < 4 ? 0 : -12;
-  const freq = 261.63 * Math.pow(2, (deg + oct) / 12);
-  const osc = audio.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
-  const g = audio.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.13, t + 0.03);
-  g.gain.exponentialRampToValueAtTime(0.0008, t + 0.9);
-  osc.connect(g); g.connect(masterGain);
-  osc.start(t); osc.stop(t + 0.95);
-}
-function toggleSound() {
-  ensureAudio();
-  const btn = document.getElementById('soundBtn');
-  if (!audio) return;
-  soundOn = !soundOn;
-  if (soundOn && audio.state === 'suspended') audio.resume();
-  masterGain.gain.linearRampToValueAtTime(soundOn ? 0.85 : 0, audio.currentTime + 0.25);
-  if (btn) { btn.classList.toggle('off', !soundOn); btn.setAttribute('aria-pressed', soundOn ? 'true' : 'false'); }
-}
-const soundBtn = document.getElementById('soundBtn');
-if (soundBtn) soundBtn.addEventListener('click', toggleSound);
+  // ── SPLASH: the work PAINTS ITSELF ─────────────────────────────────────────
+  var ca=document.getElementById('ca'), landT=null, holdT=null, carRun=false;
+  function landscape(){ var vw=Math.max(window.innerWidth,1), vh=Math.max(window.innerHeight,1); var ar=Math.max(vw/vh,1.34); var w=Math.min(vw,1600), h=Math.round(w/ar); return [w,h]; }
+  var PATHOP={arc:1,ellipse:1,moveTo:1,lineTo:1,quadraticCurveTo:1,bezierCurveTo:1,arcTo:1,roundRect:1};
+  var COMMIT={fill:1,stroke:1,fillRect:1,strokeRect:1,drawImage:1,putImageData:1,fillText:1,strokeText:1};
+  var STYLE=['fillStyle','strokeStyle','globalAlpha','globalCompositeOperation','lineWidth','lineCap','lineJoin','miterLimit','font','textAlign','textBaseline','shadowBlur','shadowColor','shadowOffsetX','shadowOffsetY','lineDashOffset','filter','imageSmoothingEnabled','imageSmoothingQuality'];
+  function record(fam,w,h,s){ var fc=document.createElement('canvas'); fc.width=w; fc.height=h; var rc=fc.getContext('2d'); var ops=[];
+    var proxy=new Proxy(rc,{ get:function(t,k){ var v=t[k]; if(typeof v==='function'){ return function(){ var a=Array.prototype.slice.call(arguments); var r=v.apply(t,a); ops.push({m:k,a:a}); return r; }; } return v; },
+      set:function(t,k,val){ if(STYLE.indexOf(k)>=0)ops.push({p:k,v:val}); try{t[k]=val;}catch(e){} return true; } });
+    try{ H[fam].render(proxy,w,h,s,{params:{field:'sheet',grainScale:1}}); }catch(e){}
+    return {rc:rc,ops:ops}; }
+  function objStart(ops,w,h){ for(var i=0;i<ops.length;i++){ var o=ops[i]; if(!o.m)continue; if(PATHOP[o.m])return i;
+      if((o.m==='fillRect'||o.m==='rect')&&o.a&&o.a.length>=4){ var x=o.a[0],y=o.a[1],ww=o.a[2],hh=o.a[3]; if(!(Math.abs(x)<2&&Math.abs(y)<2&&ww>=w*0.98&&hh>=h*0.98))return i; } } return ops.length; }
+  function ex(rc,o){ if(o.p!==undefined){ try{rc[o.p]=o.v;}catch(e){} } else { try{ rc[o.m].apply(rc,o.a); }catch(e){} } }
+  function paintCycle(){ if(!carRun||!ACTIVE.length)return; var d=landscape(), w=d[0], h=d[1]; var rec=record(randFam(),w,h,seed()); var rc=rec.rc, ops=rec.ops;
+    rc.setTransform(1,0,0,1,0,0); rc.globalAlpha=1; rc.globalCompositeOperation='source-over'; rc.fillStyle='#0c0c0c'; rc.fillRect(0,0,w,h);
+    ca.width=w; ca.height=h; var vc=ca.getContext('2d');
+    function blit(){ vc.setTransform(1,0,0,1,0,0); vc.clearRect(0,0,w,h); vc.drawImage(rc.canvas,0,0); }
+    var oi=objStart(ops,w,h), i=0; for(;i<oi;i++)ex(rc,ops[i]); blit();          // ground appears first
+    if(reduce){ for(;i<ops.length;i++)ex(rc,ops[i]); blit(); return; }
+    var chunks=[],cur=[]; for(var j=oi;j<ops.length;j++){ cur.push(ops[j]); if(ops[j].m&&COMMIT[ops[j].m]){ chunks.push(cur); cur=[]; } } if(cur.length)chunks.push(cur);
+    var steps=Math.min(chunks.length,22)||1, per=Math.ceil(chunks.length/steps), iv=Math.max(95,Math.round(2900/steps)), ci=0;
+    clearInterval(landT);
+    landT=setInterval(function(){ for(var k=0;k<per&&ci<chunks.length;k++,ci++){ var ch=chunks[ci]; for(var q=0;q<ch.length;q++)ex(rc,ch[q]); } blit();
+      if(ci>=chunks.length){ clearInterval(landT); landT=null; holdT=setTimeout(paintCycle,2000); } }, iv); }
+  function startCar(){ if(carRun)return; carRun=true; paintCycle(); }
+  function stopCar(){ carRun=false; clearInterval(landT); landT=null; clearTimeout(holdT); holdT=null; }
+  function tune(){ [[document.querySelector('.logo-mark'),'glitchLogo .86s steps(1,end)'],[document.querySelector('.tvstatic'),'glitchSnow .86s steps(1,end)']].forEach(function(pr){ var el=pr[0]; if(!el)return; el.style.animation='none'; void el.offsetWidth; el.style.animation=pr[1]; }); }
 
-// ── LOAD REAL WORKS ───────────────────────────────────────────────────────────
-const TOTAL = 120; // ~12 cols × 10 rows — contact sheet fills and scrolls a little
-const PER_SERIES = 16; // up to N saved works per family
+  var par=document.getElementById('parallax'), carousel=document.getElementById('carousel');
+  if(!reduce){ carousel.addEventListener('mousemove',function(e){ var r=carousel.getBoundingClientRect(); var dx=(e.clientX/r.width-0.5), dy=(e.clientY/r.height-0.5); par.style.transform='scale(1.05) translate('+(-dx*1.8)+'%,'+(-dy*1.8)+'%)'; });
+    carousel.addEventListener('mouseleave',function(){ par.style.transform='scale(1.05)'; }); }
+  var rzT; window.addEventListener('resize',function(){ clearTimeout(rzT); rzT=setTimeout(function(){ if(document.body.classList.contains('entered'))return; stopCar(); startCar(); },220); });
 
-// fetch con timeout: si la red se cuelga (proxy, conexión mala), la sala no se
-// queda vacía — cae a demos vivas. Sin esto, un fetch pendiente colgaba load().
-function fetchJSON(url, ms) {
-  return new Promise(res => {
-    const ctl = ('AbortController' in window) ? new AbortController() : null;
-    const to = setTimeout(() => { if (ctl) ctl.abort(); res(null); }, ms);
-    fetch(url, ctl ? { signal: ctl.signal } : undefined)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { clearTimeout(to); res(d); })
-      .catch(() => { clearTimeout(to); res(null); });
-  });
-}
+  // ── ENTER: static burst → hall, groove starts inside ────────────────────────
+  var body=document.body;
+  function enter(){ if(body.classList.contains('entered'))return; ensureAudio(); stopCar();
+    body.classList.add('entered'); grooveOpen=true; try{ sessionStorage.setItem('hoks_entered','1'); }catch(e){}
+    if(sndOn && buf) playLoop();
+    contact();
+    requestAnimationFrame(function(){ carousel.style.opacity=0; });
+    setTimeout(function(){ carousel.style.display='none'; }, 850); }
+  function toEntrance(){ body.classList.remove('entered'); closeNav(); stopHall(); grooveOpen=false;
+    if(actx&&gainN){ var now=actx.currentTime; gainN.gain.cancelScheduledValues(now); gainN.gain.setTargetAtTime(0.0001,now,0.2); }
+    try{ sessionStorage.removeItem('hoks_entered'); }catch(e){}
+    carousel.style.display='block'; requestAnimationFrame(function(){ carousel.style.opacity=1; }); startCar(); }
+  carousel.addEventListener('click', function(){
+    if(body.classList.contains('entered'))return;
+    ensureAudio(); if(sndOn) landingSignal();   // static plays on the click
+    tune();                                     // logo vibrates in sync
+    enter(); });
+  document.getElementById('logo').addEventListener('click', toEntrance);
 
-async function load() {
-  // 1. El catálogo lo pone works.json: activar una familia en el panel tiene
-  //    que bastar para que salga aquí. Antes esta lista se cruzaba con una
-  //    SERIES escrita en el archivo, así que una familia nueva quedaba fuera
-  //    aunque estuviese activa — activarla no la traía a la rejilla.
-  let catalogue = FALLBACK_WORKS;
-  const worksData = await fetchJSON(RAW + 'works.json?t=' + Date.now(), 6000);
-  if (Array.isArray(worksData)) {
-    const live = worksData.filter(w => w && w.active && w.slug);
-    if (live.length) catalogue = live;
-  }
-
-  // 2. Resolver cada familia: cómo se dibuja su demo y a qué proporción. La
-  //    que no sepa dibujarse (sin graduar y sin demo escrita) se queda igual en
-  //    el catálogo: sus piezas guardadas son imágenes y salen sin algoritmo.
-  await Promise.all(catalogue.map(async w => {
-    FAM[w.slug] = { name: w.name || w.slug.toUpperCase(), page: w.page, res: cellRes(w),
-                    draw: await drawFnFor(w.slug) };
-  }));
-  const series = famList();
-
-  // 3. Fetch saved works for active families
-  const fetches = series.map(type =>
-    fetchJSON(RAW + type + '.json?t=' + Date.now(), 8000)
-      .then(items => Array.isArray(items) ? items.map((item, idx) => ({ ...item, type, idx })) : [])
-  );
-  const results = await Promise.all(fetches);
-
-  // 4. Up to PER_SERIES per family, shuffled
-  const real = [];
-  results.forEach(items => {
-    const shuffled = [...items].sort(() => Math.random() - .5);
-    real.push(...shuffled.slice(0, PER_SERIES));
-  });
-  real.sort(() => Math.random() - .5);
-
-  // 5. Pad to TOTAL with fallbacks (active families only)
-  const drawable = series.filter(s => FAM[s].draw);
-  const all = [...real];
-  let si = 0;
-  while (drawable.length && all.length < TOTAL) {
-    all.push({ type: drawable[si % drawable.length], fallback: true, seed: (Math.random() * 0xFFFFFFFF) >>> 0, idx: null });
-    si++;
+  // ── NAV ─────────────────────────────────────────────────────────────────────
+  function closeNav(){ body.classList.remove('nav-open'); }
+  document.getElementById('burger').addEventListener('click', function(e){ e.stopPropagation(); body.classList.toggle('nav-open'); });
+  document.getElementById('scrim2').addEventListener('click', closeNav);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+  function buildNav(cat){
+    var ul=document.getElementById('navlist'); var html='';
+    html+='<li><a id="nav-all"><span class="em">&#9638;</span>All</a></li>';
+    cat.forEach(function(w){ var soon=!w.year; html+='<li><a href="'+workHref(w)+'" class="'+(soon?'soon':'')+'"><span class="em">'+(EM[w.slug]||'')+'</span>'+(w.name||w.slug.toUpperCase())+(soon?' <span class="tag">soon</span>':'')+'</a></li>'; });
+    html+='<li class="sep"></li>';
+    html+='<li><a href="palettes.html">Palettes</a></li>';
+    html+='<li><a href="about.html">About</a></li>';
+    ul.innerHTML=html;
+    document.getElementById('nav-all').addEventListener('click', function(){ closeNav(); if(!body.classList.contains('entered'))enter(); document.getElementById('frame').scrollTop=0; });
   }
 
-  buildGrid(all);
-}
-
-// ── SPLASH ─────────────────────────────────────────────────────────────────────
-// La entrada del mockup: una obra viva a sangre (cápsulas PLLS sobre suelo
-// oscuro, seed nueva por sesión), la marca en ácido y "click to enter". No es un
-// recorte de la rejilla: es el gesto de entrar. Se cruza una vez por sesión.
-function renderSplash(canvas, seed){
-  const ctx=canvas.getContext('2d'), W=canvas.width, H=canvas.height, rng=new Rng(seed);
-  const g=ctx.createRadialGradient(W*0.7,H*0.2,0, W*0.7,H*0.2, Math.max(W,H));
-  g.addColorStop(0,'#23324a'); g.addColorStop(0.55,'#141b28'); g.addColorStop(1,'#0c0c0c');
-  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  const pal=getActivePalette(rng), colors=pal.colors, u=Math.min(W,H), n=rng.int(5,9);
-  for(let i=0;i<n;i++){
-    const len=rng.range(u*0.14,u*0.40), th=rng.range(u*0.09,u*0.22);
-    const cx=rng.range(W*0.08,W*0.92), cy=rng.range(H*0.14,H*0.86);
-    const ang=rng.bool(0.55)?0:rng.range(-Math.PI/2,Math.PI/2);
-    const x1=cx-Math.cos(ang)*len/2, y1=cy-Math.sin(ang)*len/2;
-    const x2=cx+Math.cos(ang)*len/2, y2=cy+Math.sin(ang)*len/2;
-    ctx.strokeStyle=rng.pickFrom(colors); ctx.globalAlpha=rng.range(0.72,1);
-    ctx.lineWidth=th; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  // ── HALL: contact sheet ─────────────────────────────────────────────────────
+  var frame=document.getElementById('frame'), hlbl=document.getElementById('hlbl'), rafId=0, hallStop=null;
+  function tile(w,h){ var f=document.createElement('figure'); f.className='tile'; var c=document.createElement('canvas'); f.appendChild(c); draw(c,w,h,randFam(),seed()); f._c=c; return f; }
+  function stopHall(){ if(rafId){cancelAnimationFrame(rafId);rafId=0;} if(hallStop){hallStop();hallStop=null;} }
+  function contact(){ stopHall(); frame.innerHTML=''; frame.scrollTop=0;
+    if(!ACTIVE.length){ return; }
+    var w=document.createElement('div'); w.className='wall';
+    var ts=[]; for(var i=0;i<176;i++){ var t=tile(150,150);
+      (function(t){ t.addEventListener('click',function(){ if(t._w){ location.href = BASE + workHref(t._w); } }); })(t);
+      w.appendChild(t); ts.push(t); }
+    frame.appendChild(w);
+    hlbl.textContent='a pulse sweeps from a zone, then rests';
+    if(reduce){ ts.forEach(function(t){ var f=randFam(); draw(t._c,150,150,f,seed()); t._w=FAM[f]&&FAM[f].w; }); return; }
+    requestAnimationFrame(function(){
+      var fr=frame.getBoundingClientRect();
+      ts.forEach(function(t){ var r=t.getBoundingClientRect(); t._x=r.left-fr.left+r.width/2; t._y=r.top-fr.top+r.height/2; t._c0=-1e9; t._c1=-1e9; });
+      var W=fr.width, Hh=fr.height, running=true, maxR=Math.sqrt(W*W+Hh*Hh);
+      var SWEEP=2500, GAP=300, BAND=54, REST=1500, speed=(maxR+BAND)/SWEEP;
+      var pulse=null, restUntil=0, pcount=0, SEQ=['palette','family'];
+      function palPick(){ var pal=(pulse.mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null; return (pal&&pal.colors&&pal.colors.length)?pal.colors[(Math.random()*pal.colors.length)|0]:palColor(); }
+      function flapColor(t){ var c=t._c,g=c.getContext('2d'); c.width=c.width; g.fillStyle=palPick(); g.fillRect(0,0,c.width,c.height); }
+      function resolveImg(t){ var pal=(pulse.mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null; var fam=(pulse.mode==='family')?pulse.fam:randFam(); draw(t._c,150,150,fam,seed(),pal); t._w=FAM[fam]&&FAM[fam].w; }
+      function loop(now){ if(!running)return;
+        if(!pulse && now>=restUntil){ var mode=SEQ[pcount%SEQ.length]; pcount++; if(mode==='palette'&&!PALS.length)mode='family';
+          pulse={ox:Math.random()*W, oy:Math.random()*Hh, b:[now,now+GAP], mode:mode, fam:randFam(), palIdx:(Math.random()*Math.max(1,PALS.length))|0};
+          var pn=(pulse.mode==='palette'&&PALS[pulse.palIdx])?PALS[pulse.palIdx].name:'';
+          hlbl.textContent=(mode==='palette'?('one palette'+(pn?' — '+pn:'')):('one family — '+pulse.fam));
+          pulseAccent(); setTimeout(pulseAccent, GAP); }
+        if(pulse){ var done=true;
+          for(var bi=0;bi<pulse.b.length;bi++){ var rad=(now-pulse.b[bi])*speed; if(rad<0){done=false;continue;} if(rad<=maxR+BAND)done=false;
+            for(var i2=0;i2<ts.length;i2++){ var t=ts[i2]; var dx=t._x-pulse.ox,dy=t._y-pulse.oy; var d=Math.sqrt(dx*dx+dy*dy);
+              if(Math.abs(d-rad)<BAND){ if(bi===0){ if(now-t._c0>250){t._c0=now; flapColor(t);} } else { if(now-t._c1>250){t._c1=now; resolveImg(t);} } } } }
+          if(done){ pulse=null; restUntil=now+REST; } }
+        rafId=requestAnimationFrame(loop); }
+      hallStop=function(){ running=false; };
+      rafId=requestAnimationFrame(loop);
+    });
   }
-  ctx.globalAlpha=1;
-  const v=ctx.createRadialGradient(W/2,H*0.45,u*0.18, W/2,H*0.45, Math.max(W,H)*0.72);
-  v.addColorStop(0,'rgba(12,12,12,0)'); v.addColorStop(1,'rgba(12,12,12,0.58)');
-  ctx.fillStyle=v; ctx.fillRect(0,0,W,H);
-  return pal;
-}
 
-const splash = document.getElementById('splash');
-function enterSite(){
-  if(!splash || splash.classList.contains('gone')) return;
-  splash.classList.add('gone');
-  try { sessionStorage.setItem('hoks_entered','1'); } catch(e){}
-  setTimeout(()=>{ splash.style.display='none'; }, 720);
-}
-function initSplash(){
-  if(!splash) return;
-  let entered=false; try { entered=!!sessionStorage.getItem('hoks_entered'); } catch(e){}
-  if(entered){ splash.style.display='none'; return; }
-  const c=document.getElementById('splashArt');
-  const dpr=Math.min(2,window.devicePixelRatio||1);
-  c.width=Math.round(window.innerWidth*dpr); c.height=Math.round(window.innerHeight*dpr);
-  const seed=(Math.random()*0xFFFFFFFF)>>>0;
-  renderSplash(c, seed);
-  const plate=document.getElementById('splashPlate');
-  if(plate) plate.textContent = 'hoks · PLLS · #'+seed+' · 1/1';
-  ['click','keydown','wheel','touchstart'].forEach(ev =>
-    window.addEventListener(ev, enterSite, { once:true, passive:true }));
-}
-initSplash();
+  // ── BOOT ────────────────────────────────────────────────────────────────────
+  function famUP(w){ return (w.slug||'').toUpperCase(); }
+  (async function boot(){
+    // 1. catalogue from works.json (active families), fallback offline
+    var cat = FALLBACK;
+    var worksData = await fetchJSON(RAW + 'works.json?t=' + Date.now(), 6000);
+    if(Array.isArray(worksData)){
+      var live = worksData.filter(function(w){ return w && w.active && w.slug; });
+      if(live.length) cat = live.map(function(w){ return {slug:w.slug, name:w.name||w.slug.toUpperCase(), page:w.page, year:w.year}; });
+    }
+    buildNav(cat);
 
-load();
+    // 2. palettes for the flashes
+    var palData = await fetchJSON(RAW + 'palettes.json?t=' + Date.now(), 6000);
+    try{
+      var raw = (Array.isArray(palData) && palData.length) ? palData : (H.DEFAULTS||[]);
+      PALS = (H.normalizePalettes ? H.normalizePalettes(raw) : raw).filter(function(p){ return p && p.active!==false && p.colors && p.colors.length; });
+    }catch(e){ PALS = []; }
+    if(!PALS.length && H.DEFAULTS){ try{ PALS = H.normalizePalettes(H.DEFAULTS); }catch(e){} }
+    COLORS=[]; PALS.forEach(function(p){ (p.colors||[]).forEach(function(c){ if(COLORS.indexOf(c)<0)COLORS.push(c); }); });
+    if(COLORS.length<4) COLORS=['#dcff32','#000ef7','#ff4f19','#ffd919','#111111','#f5f0ea'];
+
+    // 3. load each family's algorithm; keep those that render
+    await Promise.all(cat.map(function(w){
+      var up = famUP(w);
+      if(H[up]) { FAM[up]={slug:w.slug,name:w.name,page:w.page,w:w}; return Promise.resolve(); }
+      return loadScript('sketches/'+w.slug+'/algo.js?v=1').then(function(){ H=window.HOKS||H; if(H[up]) FAM[up]={slug:w.slug,name:w.name,page:w.page,w:w}; });
+    }));
+    ACTIVE = Object.keys(FAM);
+    if(!ACTIVE.length){ // last resort: try graduated families directly
+      ['PLLS','KRRTK','DTKRT','TRZS'].forEach(function(up){ if(H[up]) { FAM[up]={slug:up.toLowerCase(),name:up,page:up.toLowerCase()+'.html',w:{slug:up.toLowerCase(),page:up.toLowerCase()+'.html'}}; } });
+      ACTIVE = Object.keys(FAM);
+    }
+
+    // 4. splash, or straight to hall if we've entered this session already
+    var entered=false; try{ entered=!!sessionStorage.getItem('hoks_entered'); }catch(e){}
+    if(entered){ carousel.style.display='none'; body.classList.add('entered'); grooveOpen=true; contact(); }
+    else { startCar(); }
+  })();
+})();
 </script>
 </body>
 </html>
