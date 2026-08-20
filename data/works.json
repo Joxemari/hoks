@@ -5,7 +5,11 @@
     "slug": "plls",
     "active": true,
     "year": 2024,
-    "description": "The capsules of PLLS given weather: mesh-gradient ground, film-grain skin. The current direction of the work.",
+    "description": {
+      "en": "The capsules of PLLS given weather: mesh-gradient ground, film-grain skin. A capsule is not a shape — it is a distance between two points, given a thickness. The current direction of the work.",
+      "es": "Las cápsulas de PLLS dotadas de atmósfera: fondo de degradado en malla, piel de grano de película. Una cápsula no es una forma — es una distancia entre dos puntos, con un grosor. La dirección actual del trabajo.",
+      "eu": "PLLSen kapsulak atmosfera emanda: sare-degradatuzko hondoa, film-pikorrezko azala. Kapsula bat ez da forma bat — bi punturen arteko distantzia bat da, lodiera batekin. Lanaren egungo norabidea."
+    },
     "page": "plls.html",
     "canvas": "square · vertical · horizontal (DIN)",
     "formats": [
@@ -25,7 +29,11 @@
     "slug": "krrtk",
     "active": true,
     "year": 2023,
-    "description": "Karratuak. A square deciding, again and again, whether to divide. Recursive subdivision against a threshold — structure as the only ornament. Atmosphere is a setting, not another work: the gradient beneath and the grain above can be lowered to nothing, and the rule is unchanged.",
+    "description": {
+      "en": "Karratuak. A square deciding, again and again, whether to divide. Recursive subdivision against a threshold — structure as the only ornament. Atmosphere is a setting, not another work: the gradient beneath and the grain above can be lowered to nothing, and the rule is unchanged.",
+      "es": "Karratuak. Un cuadrado decidiendo, una y otra vez, si dividirse. Subdivisión recursiva contra un umbral — la estructura como único ornamento. La atmósfera es un ajuste, no otra obra: el degradado debajo y el grano encima pueden bajarse a nada, y la regla no cambia.",
+      "eu": "Karratuak. Karratu bat, behin eta berriz, zatitu ala ez erabakitzen. Azpibanaketa errekurtsiboa atalase baten aurka — egitura apaingarri bakar gisa. Atmosfera ezarpen bat da, ez beste obra bat: azpiko degradatua eta gaineko pikorra ezerezera jaits daitezke, eta araua ez da aldatzen."
+    },
     "page": "krrtk.html",
     "canvas": "square · vertical · horizontal (DIN)",
     "formats": [
@@ -79,7 +87,11 @@
     "slug": "dtkrt",
     "active": true,
     "year": 2025,
-    "description": "One lattice read twice. A boolean mask decides which cells hold a circle; a region grown cell by cell decides which of them share a ground. The block does not decorate — it reframes: the same circle means one thing on the field and another inside the region.",
+    "description": {
+      "en": "One lattice read twice. A boolean mask decides which cells hold a circle; a region grown cell by cell decides which of them share a ground. The block does not decorate — it reframes: the same circle means one thing on the field and another inside the region.",
+      "es": "Una malla leída dos veces. Una máscara booleana decide qué celdas tienen círculo; una región crecida celda a celda decide cuáles comparten un suelo. El bloque no decora — reencuadra: el mismo círculo significa una cosa en el campo y otra dentro de la región.",
+      "eu": "Sare bat, bitan irakurria. Maskara boolear batek erabakitzen du zein gelaxkak duten zirkulua; gelaxkaz gelaxka hazitako eskualde batek erabakitzen du horietako zeinek partekatzen duten lurra. Blokeak ez du apaintzen — birmarkatu egiten du: zirkulu berak gauza bat esan nahi du eremuan eta beste bat eskualdearen barruan."
+    },
     "page": "dtkrt.html",
     "canvas": "square · vertical · horizontal (DIN)",
     "formats": [
@@ -97,7 +109,11 @@
     "name": "ECLPS",
     "slug": "eclps",
     "active": true,
-    "description": "A single row of circles on one axis. The step between centres never changes; what changes is which of them are drawn. The grid stays perfect — the irregularity is all absence.",
+    "description": {
+      "en": "A single row of circles on one axis. The step between centres never changes; what changes is which of them are drawn. The grid stays perfect — the irregularity is all absence.",
+      "es": "Una sola fila de círculos en un eje. El paso entre centros no cambia nunca; lo que cambia es cuáles se dibujan. La retícula sigue perfecta — la irregularidad es toda ausencia.",
+      "eu": "Zirkulu-lerro bakarra ardatz batean. Zentroen arteko urratsa ez da inoiz aldatzen; aldatzen dena da zein marrazten diren. Sareta perfektu jarraitzen du — irregulartasuna hutsune hutsa da."
+    },
     "page": "eclps.html",
     "canvas": "double · dos pliegos apaisados (2√2:1)",
     "formats": [
@@ -114,7 +130,11 @@
     "name": "TRZS",
     "slug": "trzs",
     "active": true,
-    "description": "One continuous ribbon crosses the frame again and again; coming back in, it meets what it already wrote. Depth is not the order of drawing: it is settled crossing by crossing, over and under in turn, the way a knot diagram is read. What parts the strands is not an outline but an incision — the cut where the ground shows through.",
+    "description": {
+      "en": "One continuous ribbon crosses the frame again and again; coming back in, it meets what it already wrote. Depth is not the order of drawing: it is settled crossing by crossing, over and under in turn, the way a knot diagram is read. What parts the strands is not an outline but an incision — the cut where the ground shows through.",
+      "es": "Una cinta continua cruza el marco una y otra vez; al volver a entrar, se encuentra con lo que ya escribió. La profundidad no es el orden del dibujo: se decide cruce a cruce, encima y debajo por turnos, como se lee un diagrama de nudos. Lo que separa las hebras no es un contorno sino una incisión — el corte por donde se ve el suelo.",
+      "eu": "Zinta jarraitu batek behin eta berriz zeharkatzen du markoa; berriro sartzean, dagoeneko idatzitakoarekin egiten du topo. Sakonera ez da marrazketaren ordena: gurutzagunez gurutzagune erabakitzen da, gainetik eta azpitik txandaka, korapilo-diagrama bat irakurtzen den bezala. Hariak banatzen dituena ez da ingerada bat, ebakidura bat baizik — lurra ikusten den ebakia."
+    },
     "page": "trzs.html",
     "canvas": "horizontal (DIN) · square",
     "formats": [
