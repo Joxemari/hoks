@@ -43,15 +43,12 @@
   @keyframes kenburns{from{transform:scale(1) translate(0,0)} to{transform:scale(1.06) translate(-1.3%,-1%)}}
   .scrim{position:absolute; inset:0; background:var(--scrim); z-index:2; pointer-events:none}
   .lockup{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:3; display:flex; flex-direction:column; align-items:center; gap:min(3.4vh,30px); pointer-events:none; text-align:center}
-  .logo-mark{height:clamp(300px,52vh,600px); aspect-ratio:764/1388; background:var(--acid); -webkit-mask:var(--logo) center/contain no-repeat; mask:var(--logo) center/contain no-repeat; filter:drop-shadow(0 10px 46px rgba(0,0,0,.5)); animation:signal 1.9s steps(1,end) both}
-  /* signal-acquiring flicker — the logo tunes in like a TV finding its channel, then locks */
-  @keyframes signal{
-    0%,6%{opacity:0} 10%{opacity:.55; transform:translate(-2px,1px)} 15%{opacity:.18}
-    23%{opacity:.9; transform:none} 29%{opacity:.35; transform:translate(-1px,0)}
-    39%{opacity:1; transform:none} 47%{opacity:.5}
-    59%{opacity:1; transform:none} 71%{opacity:.72} 83%{opacity:1} 100%{opacity:1; transform:none} }
+  .logo-mark{height:clamp(300px,52vh,600px); aspect-ratio:764/1388; background:var(--acid); -webkit-mask:var(--logo) center/contain no-repeat; mask:var(--logo) center/contain no-repeat; filter:drop-shadow(0 10px 46px rgba(0,0,0,.5)); animation:logoIn 1s ease both}
+  /* the logo simply fades in on load — no static. The TV flash is reserved for
+     the click, where it doubles as "powering on" the sound. */
+  @keyframes logoIn{ from{opacity:0} to{opacity:1} }
   .tvstatic{position:absolute; inset:0; z-index:2; pointer-events:none; opacity:0; background-color:#0a0a0a; background-size:170px 170px;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='3' intercept='-1.45'/%3E%3CfeFuncG type='linear' slope='3' intercept='-1.45'/%3E%3CfeFuncB type='linear' slope='3' intercept='-1.45'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation:snow 1.9s steps(1,end) both}
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='3' intercept='-1.45'/%3E%3CfeFuncG type='linear' slope='3' intercept='-1.45'/%3E%3CfeFuncB type='linear' slope='3' intercept='-1.45'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
   @keyframes snow{ 0%{opacity:.32} 20%{opacity:.14} 40%{opacity:.26} 60%{opacity:.1} 80%{opacity:.16} 100%{opacity:0} }
   /* the click: logo vibrates/glitches in time with the static burst */
   @keyframes glitchLogo{ 0%{opacity:1;transform:none} 10%{opacity:.5;transform:translate(-3px,1px)} 20%{opacity:1;transform:translate(2px,-1px)}
@@ -133,13 +130,13 @@
 <nav id="nav" aria-label="main">
   <div class="nav-mark"></div>
   <ul id="navlist"></ul>
-  <div class="who">hand coded goods<br>hoks · Joxemari Gallastegi<br>Donostia — Stanford</div>
+  <div class="who">hand coded goods<br>hoks · Donostia</div>
 </nav>
 
 <!-- ── INTERIOR: THE HALL ── -->
 <div id="site">
   <section id="view-hall">
-    <div id="hdesc"><span>Contact sheet</span><span class="lbl" id="hlbl"></span></div>
+    <div id="hdesc"><span>hand coded goods</span><span class="lbl" id="hlbl"></span></div>
     <div id="frame"></div>
   </section>
 </div>
@@ -182,11 +179,16 @@
   var ACTIVE = [];       // list of UP family names that can render
 
   // palettes for the contact-sheet flashes (common thread)
-  var PALS = [], COLORS = [];
+  var PALS = [], COLORS = [], SPLASHPALS = [], SPLASH_FAM = [];
   function palColor(){ return COLORS.length ? COLORS[(Math.random()*COLORS.length)|0] : '#dcff32'; }
+  function palLuma(p){ var s=0,c=p.colors||[]; c.forEach(function(h){ h=(''+h).replace('#',''); var r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); s+=(0.299*r+0.587*g+0.114*b)/255; }); return c.length? s/c.length : 0; }
+  // The splash never opens on black: only bright palettes and the colour-ground
+  // families feed it (ECLPS's dark grounds stay in the hall).
+  function splashPal(){ var a=SPLASHPALS.length?SPLASHPALS:PALS; return a.length? a[(Math.random()*a.length)|0] : null; }
 
   function seed(){ return (Math.random()*1e9)>>>0; }
   function randFam(){ return ACTIVE[(Math.random()*ACTIVE.length)|0]; }
+  function randSplashFam(){ var a=SPLASH_FAM.length?SPLASH_FAM:ACTIVE; return a[(Math.random()*a.length)|0]; }
   function draw(cv,w,h,fam,s,pal){
     cv.width=w; cv.height=h; var ctx=cv.getContext('2d');
     var o={ params:{ field:(w===h?'square':'sheet'), grainScale:1 } };
@@ -199,16 +201,19 @@
   var actx=null, buf=null, srcNode=null, gainN=null, sndOn=true, grooveOpen=false;
   var sndBtn=document.getElementById('sndBtn');
   var SND_FLOOR=0.16, SND_PEAK=0.62;
-  function ensureAudio(){
-    if(!actx){
-      var AC=window.AudioContext||window.webkitAudioContext; if(!AC)return;
-      actx=new AC(); gainN=actx.createGain(); gainN.gain.value=0.0001; gainN.connect(actx.destination);
-      fetch('hall-loop.wav').then(function(r){ return r.arrayBuffer(); })
-        .then(function(ab){ actx.decodeAudioData(ab, function(b){ buf=b; if(sndOn && grooveOpen) playLoop(); }, function(){}); })
-        .catch(function(){});
-    }
-    if(actx.state==='suspended') actx.resume();
+  // Create the context + decode the groove as early as possible so it is READY
+  // by the time the visitor clicks. The context starts suspended (no gesture yet)
+  // and is resumed on the click, where the groove then starts immediately.
+  function initAudio(){
+    if(actx) return;
+    var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    try{ actx=new AC(); }catch(e){ actx=null; return; }
+    gainN=actx.createGain(); gainN.gain.value=0.0001; gainN.connect(actx.destination);
+    fetch('hall-loop.wav').then(function(r){ return r.arrayBuffer(); })
+      .then(function(ab){ actx.decodeAudioData(ab, function(b){ buf=b; if(sndOn && grooveOpen) playLoop(); }, function(){}); })
+      .catch(function(){});
   }
+  function resumeAudio(){ initAudio(); if(actx && actx.state==='suspended') actx.resume(); }
   function playLoop(){ if(!buf||srcNode)return; srcNode=actx.createBufferSource(); srcNode.buffer=buf; srcNode.loop=true; srcNode.connect(gainN); srcNode.start();
     var now=actx.currentTime; gainN.gain.cancelScheduledValues(now); gainN.gain.setTargetAtTime(SND_FLOOR, now, 0.5); }
   function pulseAccent(){ if(!actx||!sndOn||!grooveOpen||!srcNode)return; var t=actx.currentTime, g=gainN.gain;
@@ -216,7 +221,7 @@
     g.linearRampToValueAtTime(SND_PEAK, t+0.06);           // pum — swell
     g.exponentialRampToValueAtTime(SND_FLOOR, t+1.5); }    // then decay
   function setSound(on){ sndOn=on; sndBtn.classList.toggle('on',on);
-    if(on){ ensureAudio(); if(buf && grooveOpen) playLoop(); }
+    if(on){ resumeAudio(); if(buf && grooveOpen) playLoop(); }
     else if(actx){ var now=actx.currentTime; gainN.gain.cancelScheduledValues(now); gainN.gain.setTargetAtTime(0.0001,now,0.25); } }
   sndBtn.addEventListener('click', function(e){ e.stopPropagation(); setSound(!sndOn); });
   // landing "power on" — a burst of tuning static that resolves into the groove
@@ -234,26 +239,32 @@
   var PATHOP={arc:1,ellipse:1,moveTo:1,lineTo:1,quadraticCurveTo:1,bezierCurveTo:1,arcTo:1,roundRect:1};
   var COMMIT={fill:1,stroke:1,fillRect:1,strokeRect:1,drawImage:1,putImageData:1,fillText:1,strokeText:1};
   var STYLE=['fillStyle','strokeStyle','globalAlpha','globalCompositeOperation','lineWidth','lineCap','lineJoin','miterLimit','font','textAlign','textBaseline','shadowBlur','shadowColor','shadowOffsetX','shadowOffsetY','lineDashOffset','filter','imageSmoothingEnabled','imageSmoothingQuality'];
-  function record(fam,w,h,s){ var fc=document.createElement('canvas'); fc.width=w; fc.height=h; var rc=fc.getContext('2d'); var ops=[];
+  function record(fam,w,h,s,pal){ var fc=document.createElement('canvas'); fc.width=w; fc.height=h; var rc=fc.getContext('2d'); var ops=[];
     var proxy=new Proxy(rc,{ get:function(t,k){ var v=t[k]; if(typeof v==='function'){ return function(){ var a=Array.prototype.slice.call(arguments); var r=v.apply(t,a); ops.push({m:k,a:a}); return r; }; } return v; },
       set:function(t,k,val){ if(STYLE.indexOf(k)>=0)ops.push({p:k,v:val}); try{t[k]=val;}catch(e){} return true; } });
-    try{ H[fam].render(proxy,w,h,s,{params:{field:'sheet',grainScale:1}}); }catch(e){}
+    var o={params:{field:'sheet',grainScale:1}}; if(pal){ o.palettes=[pal]; o.locked=true; o.lockedIdx=0; }
+    try{ H[fam].render(proxy,w,h,s,o); }catch(e){}
     return {rc:rc,ops:ops}; }
   function objStart(ops,w,h){ for(var i=0;i<ops.length;i++){ var o=ops[i]; if(!o.m)continue; if(PATHOP[o.m])return i;
       if((o.m==='fillRect'||o.m==='rect')&&o.a&&o.a.length>=4){ var x=o.a[0],y=o.a[1],ww=o.a[2],hh=o.a[3]; if(!(Math.abs(x)<2&&Math.abs(y)<2&&ww>=w*0.98&&hh>=h*0.98))return i; } } return ops.length; }
   function ex(rc,o){ if(o.p!==undefined){ try{rc[o.p]=o.v;}catch(e){} } else { try{ rc[o.m].apply(rc,o.a); }catch(e){} } }
-  function paintCycle(){ if(!carRun||!ACTIVE.length)return; var d=landscape(), w=d[0], h=d[1]; var rec=record(randFam(),w,h,seed()); var rc=rec.rc, ops=rec.ops;
+  var firstPaint=true;
+  function paintCycle(){ if(!carRun||!ACTIVE.length)return; var d=landscape(), w=d[0], h=d[1];
+    var fam=randSplashFam(), s=seed(), pal=splashPal();
+    // First frame lands COMPLETE and vivid — the entry never opens on black.
+    // After a hold, the loop shows the piece painting itself (ground → objects).
+    if(firstPaint || reduce){ firstPaint=false; draw(ca,w,h,fam,s,pal); holdT=setTimeout(paintCycle, 2600); return; }
+    var rec=record(fam,w,h,s,pal), rc=rec.rc, ops=rec.ops;
     rc.setTransform(1,0,0,1,0,0); rc.globalAlpha=1; rc.globalCompositeOperation='source-over'; rc.fillStyle='#0c0c0c'; rc.fillRect(0,0,w,h);
     ca.width=w; ca.height=h; var vc=ca.getContext('2d');
     function blit(){ vc.setTransform(1,0,0,1,0,0); vc.clearRect(0,0,w,h); vc.drawImage(rc.canvas,0,0); }
     var oi=objStart(ops,w,h), i=0; for(;i<oi;i++)ex(rc,ops[i]); blit();          // ground appears first
-    if(reduce){ for(;i<ops.length;i++)ex(rc,ops[i]); blit(); return; }
     var chunks=[],cur=[]; for(var j=oi;j<ops.length;j++){ cur.push(ops[j]); if(ops[j].m&&COMMIT[ops[j].m]){ chunks.push(cur); cur=[]; } } if(cur.length)chunks.push(cur);
     var steps=Math.min(chunks.length,22)||1, per=Math.ceil(chunks.length/steps), iv=Math.max(95,Math.round(2900/steps)), ci=0;
     clearInterval(landT);
     landT=setInterval(function(){ for(var k=0;k<per&&ci<chunks.length;k++,ci++){ var ch=chunks[ci]; for(var q=0;q<ch.length;q++)ex(rc,ch[q]); } blit();
-      if(ci>=chunks.length){ clearInterval(landT); landT=null; holdT=setTimeout(paintCycle,2000); } }, iv); }
-  function startCar(){ if(carRun)return; carRun=true; paintCycle(); }
+      if(ci>=chunks.length){ clearInterval(landT); landT=null; holdT=setTimeout(paintCycle,2400); } }, iv); }
+  function startCar(){ if(carRun)return; carRun=true; firstPaint=true; paintCycle(); }
   function stopCar(){ carRun=false; clearInterval(landT); landT=null; clearTimeout(holdT); holdT=null; }
   function tune(){ [[document.querySelector('.logo-mark'),'glitchLogo .86s steps(1,end)'],[document.querySelector('.tvstatic'),'glitchSnow .86s steps(1,end)']].forEach(function(pr){ var el=pr[0]; if(!el)return; el.style.animation='none'; void el.offsetWidth; el.style.animation=pr[1]; }); }
 
@@ -264,7 +275,7 @@
 
   // ── ENTER: static burst → hall, groove starts inside ────────────────────────
   var body=document.body;
-  function enter(){ if(body.classList.contains('entered'))return; ensureAudio(); stopCar();
+  function enter(){ if(body.classList.contains('entered'))return; resumeAudio(); stopCar();
     body.classList.add('entered'); grooveOpen=true; try{ sessionStorage.setItem('hoks_entered','1'); }catch(e){}
     if(sndOn && buf) playLoop();
     contact();
@@ -276,7 +287,7 @@
     carousel.style.display='block'; requestAnimationFrame(function(){ carousel.style.opacity=1; }); startCar(); }
   carousel.addEventListener('click', function(){
     if(body.classList.contains('entered'))return;
-    ensureAudio(); if(sndOn) landingSignal();   // static plays on the click
+    resumeAudio(); if(sndOn) landingSignal();   // static plays on the click
     tune();                                     // logo vibrates in sync
     enter(); });
   document.getElementById('logo').addEventListener('click', toEntrance);
@@ -323,7 +334,7 @@
         if(!pulse && now>=restUntil){ var mode=SEQ[pcount%SEQ.length]; pcount++; if(mode==='palette'&&!PALS.length)mode='family';
           pulse={ox:Math.random()*W, oy:Math.random()*Hh, b:[now,now+GAP], mode:mode, fam:randFam(), palIdx:(Math.random()*Math.max(1,PALS.length))|0};
           var pn=(pulse.mode==='palette'&&PALS[pulse.palIdx])?PALS[pulse.palIdx].name:'';
-          hlbl.textContent=(mode==='palette'?('one palette'+(pn?' — '+pn:'')):('one family — '+pulse.fam));
+          hlbl.textContent=(mode==='palette'?('palette'+(pn?' '+pn:'')):('family '+pulse.fam));
           pulseAccent(); setTimeout(pulseAccent, GAP); }
         if(pulse){ var done=true;
           for(var bi=0;bi<pulse.b.length;bi++){ var rad=(now-pulse.b[bi])*speed; if(rad<0){done=false;continue;} if(rad<=maxR+BAND)done=false;
@@ -357,6 +368,8 @@
     if(!PALS.length && H.DEFAULTS){ try{ PALS = H.normalizePalettes(H.DEFAULTS); }catch(e){} }
     COLORS=[]; PALS.forEach(function(p){ (p.colors||[]).forEach(function(c){ if(COLORS.indexOf(c)<0)COLORS.push(c); }); });
     if(COLORS.length<4) COLORS=['#dcff32','#000ef7','#ff4f19','#ffd919','#111111','#f5f0ea'];
+    SPLASHPALS = PALS.filter(function(p){ return palLuma(p) > 0.42; });
+    if(!SPLASHPALS.length) SPLASHPALS = PALS.slice();
 
     // 3. load each family's algorithm; keep those that render
     await Promise.all(cat.map(function(w){
@@ -369,10 +382,16 @@
       ['PLLS','KRRTK','DTKRT','TRZS'].forEach(function(up){ if(H[up]) { FAM[up]={slug:up.toLowerCase(),name:up,page:up.toLowerCase()+'.html',w:{slug:up.toLowerCase(),page:up.toLowerCase()+'.html'}}; } });
       ACTIVE = Object.keys(FAM);
     }
+    // Splash opens on colour-ground families; ECLPS's dark grounds stay in the hall.
+    SPLASH_FAM = ACTIVE.filter(function(f){ return f!=='ECLPS'; });
+    if(!SPLASH_FAM.length) SPLASH_FAM = ACTIVE.slice();
 
-    // 4. splash, or straight to hall if we've entered this session already
+    // 4. decode the groove now so it is ready when the visitor clicks
+    initAudio();
+
+    // 5. splash, or straight to hall if we've entered this session already
     var entered=false; try{ entered=!!sessionStorage.getItem('hoks_entered'); }catch(e){}
-    if(entered){ carousel.style.display='none'; body.classList.add('entered'); grooveOpen=true; contact(); }
+    if(entered){ carousel.style.display='none'; body.classList.add('entered'); grooveOpen=true; resumeAudio(); if(sndOn && buf) playLoop(); contact(); }
     else { startCar(); }
   })();
 })();
