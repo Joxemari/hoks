@@ -16,16 +16,16 @@
   const FAM_EM = { plls: '💊', krrtk: '🟥', dtk: '🟥', dtkrt: '🔵', eclps: '🌑', trzs: '🪢', bzrs: '〰️' };
 
   const CSS = `
-.mo-wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(18px,5vw,64px) 90px; }
+.mo-wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 40px 90px; }
 .mo-back { display: inline-block; margin: 24px 0 0; font-family: var(--geo); font-weight: 700; font-size: 12px;
   letter-spacing: 0.14em; text-transform: uppercase; color: var(--blue); text-decoration: none; }
 .mo-back:hover { color: #000ac2; }
-.mo-hero { display: grid; grid-template-columns: 180px minmax(0,600px); gap: 60px; justify-content: end;
+.mo-hero { display: grid; grid-template-columns: 180px minmax(0,600px); gap: 60px; justify-content: center;
   align-items: end; padding: clamp(28px,6vh,64px) 0 clamp(18px,3vh,34px); }
 .mo-eye { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mut); }
 .mo-h1 { font-family: var(--geo); font-weight: 700; font-size: clamp(38px,6.6vw,74px); letter-spacing: 0.005em;
   text-transform: uppercase; line-height: 0.96; margin: 14px 0 0; }
-.mo-sec { display: grid; grid-template-columns: 180px minmax(0,600px); gap: 60px; justify-content: end;
+.mo-sec { display: grid; grid-template-columns: 180px minmax(0,600px); gap: 60px; justify-content: center;
   align-items: start; padding: clamp(30px,5vh,58px) 0; }
 .mo-sec + .mo-sec { border-top: 1px solid var(--line); }
 .mo-rail { position: sticky; top: 74px; text-align: right; }
