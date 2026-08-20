@@ -254,6 +254,10 @@ function render() {
   if(srt==='name')    list.sort((a,b) => a.name.localeCompare(b.name));
   if(srt==='colors')  list.sort((a,b) => b.colors.length-a.colors.length);
   if(srt==='usage')   list.sort((a,b) => uses(b)-uses(a));
+  // Las paletas retiradas siempre al final: van en gris, y abrir con ellas
+  // (prob 0 se colaba como "la más rara") dejaba la página lavada. Sort estable:
+  // conserva el orden elegido dentro de cada grupo.
+  list.sort((a,b) => (a.active===false?1:0) - (b.active===false?1:0));
   const active = list.filter(p => p.active !== false).length;
   document.getElementById('count').textContent = T('palettes.count').replace('%1', list.length).replace('%2', active);
   const grid = document.getElementById('grid');
