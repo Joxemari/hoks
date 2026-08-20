@@ -487,7 +487,7 @@ document.querySelectorAll('main, #main-content, .about-wrap, .work-section, .wk,
 const footer = document.createElement('footer');
 footer.className = 'site-footer';
 footer.innerHTML = `
-  <span class="footer-copy">© 2026 hoks</span>
+  <span class="footer-copy">© 2026 hoks · hand coded goods</span>
   <div class="footer-links" id="footer-links">
     <a href="mailto:joxemgallastegi@gmail.com" data-i18n="footer.contact">Contact</a>
   </div>`;
