@@ -150,8 +150,8 @@
   function pickText(v) {
     if (!v) return '';
     if (typeof v === 'string') return v;
-    const lang = (global.HOKSI18N && global.HOKSI18N.lang) || 'eu';
-    return v[lang] || v.eu || v.en || v.es || '';
+    const lang = (global.HOKSI18N && global.HOKSI18N.lang) || 'en';
+    return v[lang] || v.en || v.es || v.eu || '';
   }
   function t(key, fallback) {
     try { const s = global.HOKSI18N.t(key); return s === key ? fallback : s; } catch (e) { return fallback; }

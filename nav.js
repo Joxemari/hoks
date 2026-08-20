@@ -11,7 +11,7 @@ const FAVICON = `<link rel="icon" type="image/png" href="/hoks/favicon.png">`;
 // ─────────────────────────────────────────────────────────────────────────────
 const LANGS = ['eu', 'es', 'en'];
 // Euskara por defecto: el statement ya está validado en las tres lenguas.
-const DEFAULT_LANG = 'eu';
+const DEFAULT_LANG = 'en';
 // La parte pública es bilingüe euskara / inglés (conmutador en el nav).
 // El diccionario ES se conserva para reactivarlo en el futuro si hiciera falta.
 const SHOW_LANG_SWITCHER = true;
@@ -199,7 +199,7 @@ function readLang() {
   return LANGS.includes(l) ? l : DEFAULT_LANG;
 }
 // Con el conmutador oculto se ignora cualquier valor guardado y se fija el
-// idioma por defecto (euskara), para que la web pública sea siempre euskara.
+// idioma por defecto. La web abre en inglés; el visitante puede cambiarlo.
 let LANG = SHOW_LANG_SWITCHER ? readLang() : DEFAULT_LANG;
 
 function t(key) {
