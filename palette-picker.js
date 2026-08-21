@@ -26,7 +26,7 @@
   'use strict';
 
   const CSS = `
-.hokspal { position: relative; width: 100%; font-family: var(--f, 'Courier New', Courier, monospace); }
+.hokspal { position: relative; width: 100%; font-family: var(--mono, ui-monospace, Menlo, monospace); }
 .hokspal-trigger { display: flex; align-items: center; gap: 7px; width: 100%; padding: 6px 9px;
   background: var(--surface, #f7f7f7); border: 1px solid var(--border, #e8e8e8); border-radius: var(--r, 2px);
   cursor: pointer; font-family: inherit; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
