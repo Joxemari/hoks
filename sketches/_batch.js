@@ -215,7 +215,9 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     }
     function add(seed) {
       const b = openBatch();
-      if (!b) { toast('Sin lote abierto'); return false; }
+      // Sin lote abierto, apartar no debe morir en silencio: se crea uno
+      // (pide nombre) y la pieza entra ya dentro. El primer "+" abre lote.
+      if (!b) { return !!create(seed); }
       return addTo(b.id, seed);
     }
     function create(seed) {
