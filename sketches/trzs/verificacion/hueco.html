@@ -53,12 +53,20 @@ window.huecos = (seed, pals, extra) => {
   // incisión rellena por el cuerpo de al lado. Con eso el control caía del 97%
   // al 1,7% sin que se notara, que es como se queda ciego un detector.
   const mismo = (a,b) => String(a).toLowerCase() === String(b).toLowerCase();
-  const bgEsTinta = (r.tintas||[]).some(t => mismo(t, c.colores.bg));
+  // Y NO SE FILTRA POR SER TINTA DE ALGUIEN: un color puede ser las dos cosas.
+  // En una obra fantasma de dos cintas el fondo es a la vez el corte de la cinta
+  // normal y la tinta del fantasma. Filtrarlo —que se probó, buscando que un
+  // tono de corte no pudiera ser tinta— se lleva por delante la incisión
+  // legítima de la otra cinta y la obra entera se lee como rota: 72 de 72 obras
+  // y 88.646 px de costura. La lista de cortes son los halos TAL CUAL, más el
+  // fondo si no es tinta de nadie; y se pregunta por el corte ANTES que por la
+  // tinta, que es lo que resuelve el empate donde lo hay.
+  const esTintaDe = (col) => (r.tintas||[]).some(t => mismo(t, col));
   // Y la TINTA tambien se pregunta, no se supone: en una obra fantasma el
-  // cuerpo va del color del suelo, asi que buscandolo por `fg` no se encuentra
-  // y el detector no ve ni la tinta ni el hueco.
+  // cuerpo va del color del suelo, asi que buscandolo por `fg` no se encuentra.
   const TINTAS = (r.tintas||[]).filter(t => typeof t === 'string').map(hex);
-  const CORTES = (r.halos||[]).map(hex).concat(bgEsTinta ? [] : [hex(c.colores.bg)]);
+  const CORTES = (r.halos||[]).map(hex)
+                   .concat(esTintaDe(c.colores.bg) ? [] : [hex(c.colores.bg)]);
   const clase = (x,y) => { x=Math.round(x); y=Math.round(y);
     if (x<0||y<0||x>=S||y>=S) return 'fondo';
     const i=4*(y*S+x);
