@@ -260,6 +260,63 @@ Doble canal de "publicación":
    admin.html escribe esos JSON commiteando a `main` por la Contents API (token
    PAT en `localStorage`), así que se actualizan sin tocar el código.
 
+## Buscadores y agentes
+
+El sitio se lee de dos maneras: con navegador y sin él. Un buscador puede
+renderizar JavaScript —a veces—; los *fetchers* de agente (`GPTBot`,
+`ClaudeBot`, `PerplexityBot`, `ChatGPT-User`…) **no lo ejecutan**: piden el
+documento y leen lo que llega. Como aquí todo lo pinta el JS con datos traídos
+de `raw.githubusercontent.com`, un cascarón de familia era, para ellos, un
+`<title>` y nada más.
+
+**La regla, una sola:** lo que tiene que leer una máquina va **estático en el
+HTML**. Si un dato solo existe después de un `fetch` o de que corra `nav.js`,
+para ese lector no existe. Por eso las cabeceras no se inyectan: se escriben en
+cada archivo, aunque se repitan.
+
+De ahí lo que hay hoy:
+
+- **`robots.txt`** — declara la frontera taller/obra y apunta al sitemap. Ojo:
+  en un *project page* (`joxemari.github.io/hoks/`) **es inerte**, porque
+  `robots.txt` solo se lee en la raíz del origen, que es otro repo. Lo que de
+  verdad mantiene el taller fuera del índice es el `<meta name="robots"
+  content="noindex">` de esas páginas, que sí viaja en el documento. El archivo
+  pasa a valer el día que haya dominio propio.
+- **`sitemap.xml`** — las once URLs públicas, con `lastmod`. Es estático porque
+  no hay paso de build, y hace falta porque `making.html?w=…` no se descubre
+  sola: nadie enlaza a una URL con query desde HTML.
+- **`llms.txt`** — la gramática en prosa: qué es una familia, un *seed*, una
+  paleta, un pliego, y dónde están los JSON. Es una **convención propuesta, no
+  un estándar**: nadie garantiza que se lea. Está por coherencia y porque cuesta
+  cero, no porque vaya a traer visitas.
+- **Cabeceras** — `description`, canonical, OG/Twitter y **JSON-LD** en las
+  cinco familias activas, la landing, About y Palettes. La familia se declara
+  `CreativeWorkSeries` (una familia es una serie, no un cuadro), la persona
+  `Person`, y el ensayo cuelga de su familia por `subjectOf`.
+- **`lang`** — `nav.js` abre en inglés (`DEFAULT_LANG`), así que el `lang="eu"`
+  estático de los cascarones mentía a quien no ejecuta JS. Las públicas dicen
+  `en`; `nav.js` lo reescribe al cambiar de idioma.
+
+**Al activar una familia** el clic en el panel ya no basta del todo: sigue
+bastando para la web, pero para las máquinas hay que (1) quitar su `noindex`,
+(2) añadir su URL a `sitemap.xml` y (3) darle cabecera al cascarón. Es el
+peaje de no tener build; si algún día molesta, la salida es generar sitemap y
+cabeceras al publicar, no inyectarlos con JS.
+
+**Lo que queda pendiente**, por orden de lo que de verdad pesa:
+
+1. **Narrativa estática en el HTML.** Es el arreglo de fondo: hoy un agente lee
+   la `description` de la cabecera, no la obra. Choca con la fuente única de
+   `data/works.json`, y esa decisión —o el panel escribe también el HTML, o el
+   HTML pasa a ser el canónico— está sin tomar.
+2. **Un PNG por pieza publicada, con `alt` de verdad.** La obra es `<canvas>`:
+   no existe para un agente ni para un lector de pantalla. La imagen ya está en
+   los `data/*.json` en base64; lo que falta es sacarla a archivo y enseñarla en
+   un `<img>`. Mientras no esté, todas las `og:image` son el mismo `preview.png`.
+3. **URLs por idioma + `hreflang`.** El statement existe en euskara, castellano
+   e inglés, pero en una sola URL con el idioma en `localStorage`: solo se puede
+   indexar uno. Arreglarlo es cambio de estructura, no de cabecera.
+
 ## Workflow
 
 Trabajar **directamente sobre `main`** y hacer **push directo**. Sin ramas de
