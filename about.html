@@ -57,6 +57,19 @@ body { background: var(--paper); color: var(--ink); font-family: var(--geo); }
 .about-contact { font-family: var(--mono); font-size: 12px; color: var(--mut); letter-spacing: 0.08em; white-space: nowrap; margin: 0; }
 .about-contact a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--ink); }
 @media (max-width: 600px) { .about-coda { flex-direction: column; align-items: flex-start; gap: 22px; } .about-coda .mark { height: 120px; } }
+
+/* El statement, dicho como programa. Voz mono del sistema; la sintaxis colorea
+   (keyword azul, string tinta, comentario gris) y el código opera lo que la
+   prosa de arriba enuncia. Estático y en inglés: el código es inglés. */
+.about-code { font-family: var(--mono); font-size: 13.5px; line-height: 1.85; color: var(--ink);
+  margin: 46px 0 0; padding: 22px 24px; background: #fff; border: 1px solid var(--line);
+  border-radius: 10px; overflow-x: auto; white-space: pre; }
+.about-code .kw { color: var(--blue); }
+.about-code .fn { color: var(--ink); font-weight: 700; }
+.about-code .str { color: var(--body); }
+.about-code .cm { color: var(--mut); }
+.about-code .pu { color: var(--mut); }
+@media (max-width: 600px) { .about-code { font-size: 11.5px; padding: 16px 16px; } }
 </style>
 </head>
 <body>
@@ -65,6 +78,14 @@ body { background: var(--paper); color: var(--ink); font-family: var(--geo); }
   <div class="about-wrap">
     <div class="about-eye">hoks - algorithmic art</div>
     <p id="about-text"></p>
+    <pre class="about-code"><span class="kw">const</span> school  <span class="pu">=</span> <span class="str">"Stanford University"</span><span class="pu">;</span>
+<span class="kw">let</span>   balance <span class="pu">=</span> <span class="pu">[</span>code<span class="pu">,</span> manufacturing<span class="pu">,</span> art<span class="pu">];</span>   <span class="cm">// the tightrope</span>
+<span class="kw">let</span>   home    <span class="pu">=</span> <span class="str">"Donostia | San Francisco"</span><span class="pu">;</span>
+<span class="kw">function</span> <span class="fn">line</span><span class="pu">(</span>seed<span class="pu">)</span> <span class="pu">{</span>                 <span class="cm">// a production line that makes originals</span>
+  <span class="kw">const</span> piece <span class="pu">=</span> <span class="fn">system</span><span class="pu">(</span>seed<span class="pu">);</span>         <span class="cm">// same seed → same piece</span>
+  <span class="fn">keep</span><span class="pu">(</span>one<span class="pu">);</span> <span class="fn">discard</span><span class="pu">(</span>rest<span class="pu">);</span>           <span class="cm">// the essence is in the discard</span>
+  <span class="kw">return</span> <span class="fn">shadow</span><span class="pu">(</span>piece<span class="pu">);</span>               <span class="cm">// what's visible is only the residue</span>
+<span class="pu">}</span></pre>
     <div class="about-coda">
       <img class="mark" src="logo_tall.png" alt="hoks">
       <p class="about-contact" id="about-contact"></p>
