@@ -13,3 +13,7 @@
 #hoks-static blockquote{margin:1.6rem 0;padding-left:1rem;border-left:2px solid #dcff32;white-space:pre-line;color:#0a0a0a}
 #hoks-static nav{margin-top:2.4rem;padding-top:1.2rem;border-top:1px solid #e7e5df;font:400 11px/2 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.08em}
 #hoks-static nav a{color:#000ef7;margin-right:1.1rem}
+#hoks-static h2{font-size:1rem;letter-spacing:.06em;margin:2.2rem 0 .8rem;text-transform:uppercase}
+#hoks-static ul{margin:0 0 1.4rem;padding-left:1.1rem}
+#hoks-static li{margin:0 0 .5rem}
+#hoks-static a{color:#000ef7}

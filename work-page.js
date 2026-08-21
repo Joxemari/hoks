@@ -158,13 +158,6 @@
   }
 
   function init(slug) {
-    // El bloque estático (#hoks-static) lo escribe static-gen.js para quien NO
-    // ejecuta JavaScript: agentes, rastreadores, navegador con el JS apagado.
-    // Aquí sí lo hay, así que se retira antes de pintar — si no, la narrativa
-    // saldría dos veces. Ver CLAUDE.md § Buscadores y agentes.
-    const stat = document.getElementById('hoks-static');
-    if (stat) stat.remove();
-
     css();
     const ALGO = global.HOKS && global.HOKS[slug.toUpperCase()];
     const root = el('div', 'wk');

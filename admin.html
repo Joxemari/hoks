@@ -515,9 +515,29 @@ async function saveWorks() {
 //
 // Solo se toca lo que hay entre los marcadores de static-gen.js. Un cascarón sin
 // marcadores es un cascarón que alguien escribió a mano: se deja en paz.
-async function syncStatic() {
+async function syncStatic(what) {
   if (!window.HOKSGEN) { toast('static-gen.js did not load — static pages NOT updated'); return; }
   const done = [];
+  // Un bloque de una página fija: se escribe solo si de verdad cambia.
+  const fixed = async (file, block) => {
+    const f = await ghReadFile(file);
+    if (!f || f.text.indexOf(HOKSGEN.MARK.bodyA) < 0) return;
+    const next = HOKSGEN.applyBody(f.text, block);
+    if (next !== f.text && await ghPutText(file, next, 'static: ' + file, f.sha)) done.push(file);
+  };
+
+  // Las paletas y el statement solo mueven su propia página.
+  if (what === 'palettes') {
+    await fixed('palettes.html', HOKSGEN.palettesBody(pals));
+    if (done.length) toast('Static pages updated: ' + done.join(', '));
+    return;
+  }
+  if (what === 'site') {
+    await fixed('about.html', HOKSGEN.aboutBody(site));
+    if (done.length) toast('Static pages updated: ' + done.join(', '));
+    return;
+  }
+
   for (const w of works) {
     if (!HOKSGEN.isShell(w)) continue;              // cae a work.html?w=…: no hay cascarón
     const f = await ghReadFile(w.page);
@@ -528,6 +548,16 @@ async function syncStatic() {
     if (next === f.text) continue;
     if (await ghPutText(w.page, next, 'static: ' + w.slug + ' desde works.json', f.sha)) done.push(w.page);
   }
+  // La landing enseña el catálogo, así que también sale de works.json.
+  await fixed('index.html', HOKSGEN.homeBody(works));
+
+  // llms.txt: la prosa a mano, la lista generada.
+  const ll = await ghReadFile('llms.txt');
+  if (ll && ll.text.indexOf(HOKSGEN.LLMS.a) >= 0) {
+    const nextLl = HOKSGEN.applyLlms(ll.text, works);
+    if (nextLl !== ll.text && await ghPutText('llms.txt', nextLl, 'llms: desde works.json', ll.sha)) done.push('llms.txt');
+  }
+
   const sm = await ghReadFile('sitemap.xml'), nextSm = HOKSGEN.sitemap(works);
   if (sm && sm.text !== nextSm) {
     if (await ghPutText('sitemap.xml', nextSm, 'sitemap: desde works.json', sm.sha)) done.push('sitemap.xml');
@@ -744,6 +774,9 @@ async function persistPals(msg){
   const ok=await ghFetch('data/palettes.json',pals,msg);
   if(!ok){pals=await ghRead('palettes.json')||[];}
   renderPalettes();
+  // palettes.html enseña el catálogo también en estático, para quien no ejecuta
+  // JS: si cambia la paleta, cambia esa página.
+  if(ok) await syncStatic('palettes');
   return ok;
 }
 async function togglePal(i,val){const n=pals[i].name;pals[i].active=val;if(await persistPals(`toggle palette: ${n}`))toast(val?'Palette activated':'Deactivated');}
@@ -959,7 +992,10 @@ function loadSiteForm(){
 }
 async function saveSiteContent(){
   const data={aboutText:{en:$('about-text-input').value.trim(),es:$('about-text-es').value.trim(),eu:$('about-text-eu').value.trim()},footerEmail:$('email-input').value.trim(),footerInstagram:$('instagram-input').value.trim()};
-  const ok=await ghFetch('data/site.json',data,'update site content');if(ok)toast('Published ✓ — live in ~30s');
+  const ok=await ghFetch('data/site.json',data,'update site content');
+  // El statement va estático en about.html: es el texto que de verdad dice quién
+  // firma esto, y sin esto un agente leía siete palabras.
+  if(ok){ site=data; await syncStatic('site'); toast('Published ✓ — live in ~30s'); }
 }
 
 // ── SECURITY ──────────────────────────────────────────

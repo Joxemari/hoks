@@ -33,22 +33,26 @@ surface for any reader. Served from the `main` branch.
 - [palettes.json](https://raw.githubusercontent.com/Joxemari/hoks/main/data/palettes.json): every palette with its colours, tags and whether it is still in play.
 - [site.json](https://raw.githubusercontent.com/Joxemari/hoks/main/data/site.json): the artist statement, in Basque, Spanish and English.
 
+[//]: # (HOKS:AUTO-LIST)
+
 ## Works
 
-- [PLLS](https://joxemari.github.io/hoks/plls.html) (2024): capsules given weather. A capsule is a distance between two points, given a thickness.
-- [KRRTK](https://joxemari.github.io/hoks/krrtk.html) (2023): *Karratuak*. A square deciding, again and again, whether to divide.
-- [DTKRT](https://joxemari.github.io/hoks/dtkrt.html) (2025): one lattice read twice — presence, then belonging.
-- [ECLPS](https://joxemari.github.io/hoks/eclps.html): a single row of circles. The step never changes; the irregularity is all absence.
-- [TRZS](https://joxemari.github.io/hoks/trzs.html): one ribbon crossing the frame until it meets what it already wrote.
+- [PLLS](https://joxemari.github.io/hoks/plls.html) (2024): The capsules of PLLS given weather: mesh-gradient ground, film-grain skin.
+- [KRRTK](https://joxemari.github.io/hoks/krrtk.html) (2023): Karratuak. A square deciding, again and again, whether to divide.
+- [DTKRT](https://joxemari.github.io/hoks/dtkrt.html) (2025): One lattice read twice.
+- [ECLPS](https://joxemari.github.io/hoks/eclps.html): A single row of circles on one axis.
+- [TRZS](https://joxemari.github.io/hoks/trzs.html): One continuous ribbon crosses the frame again and again.
 
 ## Essays
 
-Written from the real code — every figure in them is rendered by the algorithm
-it describes, not drawn for the occasion.
+Written from the real code — every figure is rendered by the algorithm it
+describes, not drawn for the occasion.
 
 - [Making of PLLS](https://joxemari.github.io/hoks/making.html?w=plls)
 - [Making of KRRTK](https://joxemari.github.io/hoks/making.html?w=krrtk)
 - [Making of DTKRT](https://joxemari.github.io/hoks/making.html?w=dtkrt)
+
+[//]: # (/HOKS:AUTO-LIST)
 
 ## Optional
 

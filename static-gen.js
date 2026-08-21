@@ -203,9 +203,118 @@
     L.push('    <a href="about.html">About</a>');
     L.push('    <a href="palettes.html">Palettes</a>');
     L.push('  </nav>');
+    return closeBlock(L);
+  }
+
+  // Un cierre común para los cuatro bloques: el div, y pegado a él el script
+  // que lo retira. Va DENTRO del bloque generado porque así corre en el momento
+  // en que el parser acaba de leer el div: no hay parpadeo, no depende de nav.js
+  // —un script no puede retirar un elemento que aún no se ha parseado— y vale
+  // también en la landing, que es autónoma y no lo carga. Si el JS no llega, el
+  // bloque se queda: eso es el respaldo, no un fallo.
+  function closeBlock(L) {
     L.push('</div>');
+    L.push('<script>(function(){var e=document.getElementById(\'hoks-static\');'
+           + 'if(e)e.parentNode.removeChild(e);})();<\/script>');
     L.push(MARK.bodyB);
     return L.join('\n');
+  }
+
+  // ── las páginas fijas ─────────────────────────────────────────────────────
+  // Su CABECERA se queda a mano: es editorial y no se deriva de ningún JSON.
+  // Lo que sí se genera es el bloque de contenido, porque eso sale de
+  // works.json / site.json / palettes.json y a mano se desincroniza.
+  //
+  // La landing era el peor caso del sitio: la página a la que apunta todo, y
+  // para un lector sin JS, dieciséis palabras y ni un h1. Lo pinta todo el JS.
+  function homeBody(works) {
+    const L = [];
+    L.push(MARK.bodyA);
+    L.push('<!-- Generado desde data/works.json por static-gen.js. NO editar a mano.');
+    L.push('     Lo que se lee sin JavaScript: la landing lo pinta todo con JS, así que');
+    L.push('     sin esto no había ni un título ni la lista de familias. -->');
+    L.push('<div id="hoks-static">');
+    L.push('  <div class="s-eye">hoks — hand coded goods</div>');
+    L.push('  <h1>hoks</h1>');
+    L.push('  <p>Generative art by Joxemari Gallastegi. Each family is a rule, not a');
+    L.push('     picture: an algorithm, a seed, a deterministic RNG and a palette chosen');
+    L.push('     by weight. What you see is the residue of a system at work.</p>');
+    L.push('  <p class="s-meta">Every piece exists square, vertical and horizontal — not a');
+    L.push('     crop: the algorithm is given other dimensions and recomposes. Same seed,');
+    L.push('     same image, at any size.</p>');
+    L.push('  <h2>Families</h2>');
+    L.push('  <ul>');
+    (works || []).filter(function (w) { return w.active; }).forEach(function (w) {
+      const d = firstSentence(pick(w.description, 'en'));
+      L.push('    <li><a href="' + esc(href(w)) + '">' + esc(name(w)) + '</a>' +
+             (w.year ? ' <span class="s-meta">' + esc(w.year) + '</span>' : '') +
+             (d ? ' — ' + esc(d) + '.' : '') + '</li>');
+    });
+    L.push('  </ul>');
+    L.push('  <nav>');
+    L.push('    <a href="about.html">About</a>');
+    L.push('    <a href="palettes.html">Palettes</a>');
+    (works || []).forEach(function (w) {
+      if (w.active && w.makingof) L.push('    <a href="' + esc(w.makingof) + '">Making of ' + esc(name(w)) + '</a>');
+    });
+    L.push('  </nav>');
+    return closeBlock(L);
+  }
+
+  // El statement, que es el texto que de verdad dice quién firma esto, vivía
+  // solo en site.json y lo pintaba el JS: siete palabras para un agente.
+  // Va en los tres idiomas. El correo NO: la web se lo enseña a un humano en
+  // el footer, y ponerlo en el HTML crudo es regalárselo a los cosechadores.
+  function aboutBody(site) {
+    const L = [];
+    L.push(MARK.bodyA);
+    L.push('<!-- Generado desde data/site.json por static-gen.js. NO editar a mano. -->');
+    L.push('<div id="hoks-static">');
+    L.push('  <div class="s-eye">hoks — about</div>');
+    L.push('  <h1>Joxemari Gallastegi</h1>');
+    L.push('  <p class="s-meta">hoks — hand coded goods · Donostia / San Francisco</p>');
+    const txt = (site && site.aboutText) || {};
+    LANGS.forEach(function (lang) {
+      const v = typeof txt === 'string' ? (lang === 'en' ? txt : '') : (txt[lang] || '');
+      if (!v) return;
+      String(v).split(/\n\s*\n/).forEach(function (par) {
+        const p = par.replace(/\s+/g, ' ').trim();
+        if (p) L.push('  <p lang="' + lang + '">' + esc(p) + '</p>');
+      });
+    });
+    L.push('  <nav>');
+    L.push('    <a href="index.html">hoks</a>');
+    L.push('    <a href="palettes.html">Palettes</a>');
+    L.push('  </nav>');
+    return closeBlock(L);
+  }
+
+  // Las paletas son dato, y un dato se lee bien en texto: nombre y colores.
+  // Las retiradas se cuentan pero no se listan — dejaron de estar en juego.
+  function palettesBody(palettes) {
+    const list = (palettes || []).filter(function (p) { return p.active; });
+    const off = (palettes || []).length - list.length;
+    const L = [];
+    L.push(MARK.bodyA);
+    L.push('<!-- Generado desde data/palettes.json por static-gen.js. NO editar a mano. -->');
+    L.push('<div id="hoks-static">');
+    // Sin <h1>: esta página ya trae el suyo escrito en el HTML, y dos h1 con el
+    // mismo texto es lo que se ve cuando nadie ha mirado el documento crudo.
+    L.push('  <div class="s-eye">hoks — palettes</div>');
+    L.push('  <p>The colour catalogue behind every piece. A palette is chosen by weight at');
+    L.push('     draw time — recent ones are likelier — so the colour of a piece is part of');
+    L.push('     the throw, not a setting. ' + list.length + ' in play, ' + off + ' retired.</p>');
+    L.push('  <ul>');
+    list.forEach(function (p) {
+      L.push('    <li>' + esc(p.name || ('#' + p.id)) + ' — ' +
+             esc((p.colors || []).join(' ')) + '</li>');
+    });
+    L.push('  </ul>');
+    L.push('  <nav>');
+    L.push('    <a href="index.html">hoks</a>');
+    L.push('    <a href="about.html">About</a>');
+    L.push('  </nav>');
+    return closeBlock(L);
   }
 
   // ── aplicar a un cascarón ─────────────────────────────────────────────────
@@ -220,6 +329,9 @@
   function apply(html, w, works) {
     return splice(splice(html, MARK.headA, MARK.headB, head(w)),
                   MARK.bodyA, MARK.bodyB, body(w, works));
+  }
+  function applyBody(html, block) {
+    return splice(html, MARK.bodyA, MARK.bodyB, block);
   }
 
   // ── sitemap ───────────────────────────────────────────────────────────────
@@ -245,7 +357,43 @@
     return L.join('\n') + '\n';
   }
 
-  const API = { head: head, body: body, apply: apply, sitemap: sitemap,
+  // ── llms.txt ──────────────────────────────────────────────────────────────
+  // La prosa se escribe a mano: qué es una familia, un seed, un pliego. Lo que
+  // se genera es la lista, que es lo que se desincroniza al activar una familia.
+  const LLMS = { a: '[//]: # (HOKS:AUTO-LIST)', b: '[//]: # (/HOKS:AUTO-LIST)' };
+  function llmsList(works) {
+    const act = (works || []).filter(function (w) { return w.active; });
+    const L = [LLMS.a, ''];
+    L.push('## Works');
+    L.push('');
+    act.forEach(function (w) {
+      const d = firstSentence(pick(w.description, 'en'));
+      L.push('- [' + name(w) + '](' + BASE + href(w) + ')' +
+             (w.year ? ' (' + w.year + ')' : '') + (d ? ': ' + d + '.' : ''));
+    });
+    const essays = act.filter(function (w) { return w.makingof; });
+    if (essays.length) {
+      L.push('');
+      L.push('## Essays');
+      L.push('');
+      L.push('Written from the real code — every figure is rendered by the algorithm it');
+      L.push('describes, not drawn for the occasion.');
+      L.push('');
+      essays.forEach(function (w) {
+        L.push('- [Making of ' + name(w) + '](' + BASE + w.makingof + ')');
+      });
+    }
+    L.push('');
+    L.push(LLMS.b);
+    return L.join('\n');
+  }
+  function applyLlms(text, works) {
+    return splice(text, LLMS.a, LLMS.b, llmsList(works));
+  }
+
+  const API = { head: head, body: body, apply: apply, applyBody: applyBody,
+                homeBody: homeBody, aboutBody: aboutBody, palettesBody: palettesBody,
+                sitemap: sitemap, applyLlms: applyLlms, LLMS: LLMS,
                 isShell: isShell, href: href, MARK: MARK, BASE: BASE };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   root.HOKSGEN = API;

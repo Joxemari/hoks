@@ -15,7 +15,8 @@ const require = createRequire(import.meta.url);
 const GEN = require(path.join(ROOT, 'static-gen.js'));
 const CHECK = process.argv.includes('--check');
 
-const works = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/works.json'), 'utf8'));
+const readJson = rel => JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
+const works = readJson('data/works.json');
 let changed = 0, drift = 0;
 
 function write(rel, next) {
@@ -36,6 +37,25 @@ for (const w of works) {
   if (!src.includes(GEN.MARK.headA)) { console.log('sin marcadores, se salta:', w.page); continue; }
   write(w.page, GEN.apply(src, w, works));
 }
+// Las páginas fijas: su cabecera es editorial y se queda a mano; lo que se
+// genera es el bloque de contenido, que sale de un JSON y a mano se
+// desincroniza. Ver CLAUDE.md § Buscadores y agentes.
+const site = readJson('data/site.json');
+const palettes = readJson('data/palettes.json');
+for (const [file, block] of [['index.html', GEN.homeBody(works)],
+                             ['about.html', GEN.aboutBody(site)],
+                             ['palettes.html', GEN.palettesBody(palettes)]]) {
+  const abs = path.join(ROOT, file);
+  const src = fs.readFileSync(abs, 'utf8');
+  if (!src.includes(GEN.MARK.bodyA)) { console.log('sin marcadores, se salta:', file); continue; }
+  write(file, GEN.applyBody(src, block));
+}
+
+// llms.txt: la prosa a mano, la lista generada.
+const llms = fs.readFileSync(path.join(ROOT, 'llms.txt'), 'utf8');
+if (llms.includes(GEN.LLMS.a)) write('llms.txt', GEN.applyLlms(llms, works));
+else console.log('sin marcadores, se salta: llms.txt');
+
 write('sitemap.xml', GEN.sitemap(works));
 
 if (CHECK) {

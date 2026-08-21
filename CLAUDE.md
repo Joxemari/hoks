@@ -102,10 +102,11 @@ solo el de PLLS está portado al sistema nuevo, el resto sigue en el look viejo.
   `work.html`, que es el mismo cascarón sin obra fija: lee el slug del `?w=`,
   pide su algo.js y llama a lo mismo.
 - **`static-gen.js`** — El HTML que lee una máquina: cabecera, JSON-LD y el
-  bloque `#hoks-static` de una página de familia, más `sitemap.xml`. Lo llama
-  `admin.html` al guardar (y `tools/static.mjs` desde node). Ver § Buscadores y
-  agentes: las páginas de familia son artefacto derivado de `works.json`, no se
-  editan a mano.
+  bloque `#hoks-static` de una página de familia; el bloque de la landing, About
+  y Palettes; la lista de `llms.txt`; y `sitemap.xml`. Lo llama `admin.html` al
+  guardar familias, paletas o contenido (y `tools/static.mjs` desde node). Ver
+  § Buscadores y agentes: eso es artefacto derivado de los JSON de `data/`, no
+  se edita a mano.
 - **`usage.js`** — Registro de uso de paletas (`data/palette-usage.json`).
   `HOKSUSAGE.load()` / `.counts()` los lee (palettes.html, solo con sesión
   admin); `.recordMany()` añade filas al **publicar un lote** desde el
@@ -303,6 +304,22 @@ lo edita a mano.
   página de familia no tenía *ni un enlace*: era un callejón sin salida para un
   lector y para un rastreador. `work-page.js` lo retira al arrancar, así que
   nadie lo ve dos veces.
+- **Las páginas fijas** — `index.html`, `about.html` y `palettes.html` llevan
+  también su bloque. La **cabecera de una fija se queda a mano**: es editorial y
+  no se deriva de ningún JSON. Lo que se genera es el contenido, porque eso sale
+  de `works.json` / `site.json` / `palettes.json` y a mano se desincroniza. La
+  landing era el peor caso del sitio —la página a la que apunta todo, y para un
+  lector sin JS dieciséis palabras y ni un `h1`—; el statement de About vivía
+  solo en `site.json`, siete palabras. El **correo no entra** en el bloque: la
+  web se lo enseña a un humano en el footer, y ponerlo en el HTML crudo es
+  regalárselo a los cosechadores.
+- **El retirado** — el `<script>` que borra `#hoks-static` va **dentro del
+  bloque generado**, pegado al `</div>`. No en `nav.js`: un script no puede
+  retirar un elemento que el parser aún no ha leído (así fallaba en About y
+  Palettes, donde el bloque va después), y hacerlo en `DOMContentLoaded` da
+  parpadeo. Pegado al div corre en el instante en que el div acaba de parsearse,
+  y vale también en la landing, que es autónoma y no carga `nav.js`. Si el JS no
+  llega, el bloque se queda: eso es el respaldo, no un fallo.
 - **`assets/og/<slug>.jpg`** — una tarjeta 1200×630 por familia activa, la obra
   centrada sobre papel. Es lo que hace que la obra **exista** para quien no puede
   mirar un `<canvas>`: agente o lector de pantalla. Las de PLLS y KRRTK son la
@@ -328,7 +345,10 @@ lo edita a mano.
 - **`llms.txt`** — la gramática en prosa: qué es una familia, un *seed*, una
   paleta, un pliego, y dónde están los JSON. Es una **convención propuesta, no
   un estándar**: nadie garantiza que se lea. Está por coherencia y porque cuesta
-  cero, no porque vaya a traer visitas. Se escribe a mano.
+  cero, no porque vaya a traer visitas. La prosa —qué es una familia, un *seed*,
+  un pliego— se escribe a mano; **la lista de obras y ensayos se genera** entre
+  marcadores de markdown, porque es justo lo que se desincroniza al activar una
+  familia.
 - **`lang`** — `nav.js` abre en inglés (`DEFAULT_LANG`), así que el `lang="eu"`
   estático de los cascarones mentía a quien no ejecuta JS. Las públicas dicen
   `en`; `nav.js` lo reescribe al cambiar de idioma.
@@ -344,6 +364,17 @@ Sin `page`, cae a `work.html?w=<slug>` y no hay nada que pegar — pero tampoco 
 bloque estático: esa página es genérica y el slug llega por URL, así que su
 cabecera no puede ser por familia sin paso de build.
 
+**Cómo se comprueba.** No por inspección: se pide el documento crudo y se
+cuenta lo que trae, que es exactamente lo que ve un agente
+(`fetch` + quitar `script`/`style`/etiquetas). Hoy:
+
+| palabras en crudo | landing | about | palettes | familia |
+|---|---|---|---|---|
+| antes | 16 | 7 | 27 | 0 |
+| ahora | 151 | 391 | 192 | 159–230 |
+
+Las familias traen además su imagen con `alt` y de siete a ocho enlaces.
+
 **Lo que queda pendiente:**
 
 1. **URLs por idioma + `hreflang`.** El statement existe en euskara, castellano e
@@ -351,10 +382,12 @@ cabecera no puede ser por familia sin paso de build.
    indexar uno. El bloque estático ya trae los tres marcados con `lang`, que es
    un parche honesto, no la solución. Arreglarlo de verdad es cambio de
    estructura.
-2. **`making.html` y `work.html`.** Las dos reciben el slug por `?w=`, así que su
-   cabecera y su texto no pueden ser por pieza sin build. Los ensayos están en el
-   sitemap y se indexarán por lo que renderice el buscador, no por lo que diga el
-   documento.
+2. **`making.html` — el agujero que queda.** Cuatro palabras en crudo, y detrás
+   hay tres ensayos enteros en `data/makingof/*.md`: es el contenido más largo
+   del sitio y el único que sigue invisible. No se arregla con un bloque, porque
+   el slug llega por `?w=` y el archivo es uno: pide **un cascarón por ensayo**,
+   y entonces la URL cambia — decisión de quien firma. `work.html` tiene el
+   mismo problema y hoy importa menos: ninguna familia activa cae en ella.
 3. **Obra publicada por familia.** Cuando DTKRT, ECLPS y TRZS tengan lote, sus
    tarjetas `og` dejan de ser un render provisional. Y una imagen por *pieza*
    —no por familia— sigue sin existir.
