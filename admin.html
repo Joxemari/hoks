@@ -375,6 +375,7 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
         <div class="field"><label>About Text (EU)</label><textarea id="about-text-eu" rows="5"></textarea></div>
         <div class="field"><label>Contact Email</label><input type="email" id="email-input"></div>
         <div class="field"><label>Instagram URL</label><input type="url" id="instagram-input"></div>
+        <div class="field"><label>X (Twitter) URL</label><input type="url" id="x-input"></div>
         <button class="btn" onclick="saveSiteContent()" style="width:fit-content">Save & Publish</button>
       </div>
     </div>
@@ -955,10 +956,10 @@ function loadSiteForm(){
   const a=site.aboutText;
   if(a&&typeof a==='object'){$('about-text-input').value=a.en||'';$('about-text-es').value=a.es||'';$('about-text-eu').value=a.eu||'';}
   else{$('about-text-input').value=a||'';$('about-text-es').value='';$('about-text-eu').value='';}
-  $('email-input').value=site.footerEmail||'';$('instagram-input').value=site.footerInstagram||'';
+  $('email-input').value=site.footerEmail||'';$('instagram-input').value=site.footerInstagram||'';$('x-input').value=site.footerX||'';
 }
 async function saveSiteContent(){
-  const data={aboutText:{en:$('about-text-input').value.trim(),es:$('about-text-es').value.trim(),eu:$('about-text-eu').value.trim()},footerEmail:$('email-input').value.trim(),footerInstagram:$('instagram-input').value.trim()};
+  const data={aboutText:{en:$('about-text-input').value.trim(),es:$('about-text-es').value.trim(),eu:$('about-text-eu').value.trim()},footerEmail:$('email-input').value.trim(),footerInstagram:$('instagram-input').value.trim(),footerX:$('x-input').value.trim()};
   const ok=await ghFetch('data/site.json',data,'update site content');if(ok)toast('Published ✓ — live in ~30s');
 }
 

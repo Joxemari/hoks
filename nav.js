@@ -524,14 +524,17 @@ fetch('https://raw.githubusercontent.com/Joxemari/hoks/main/data/site.json?t=' +
   .then(r => r.ok ? r.json() : null)
   .then(d => {
     const fl = document.getElementById('footer-links');
-    if (fl && d?.footerInstagram) {
+    if (!fl) return;
+    const social = (url, label) => {
       const a = document.createElement('a');
-      a.href = d.footerInstagram;
+      a.href = url;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
-      a.textContent = 'Instagram';
+      a.textContent = label;
       fl.appendChild(a);
-    }
+    };
+    if (d?.footerInstagram) social(d.footerInstagram, 'Instagram');
+    if (d?.footerX) social(d.footerX, 'X');
   })
   .catch(() => {});
 
