@@ -58,8 +58,8 @@ Banco (rota, no repitas siempre `//`):
   `x-header.png`. Tarjeta de compartir / OG: `preview.jpg`.
 - Bio (EN): `hand coded goods / generative systems · code as grammar, chance as
   form / Donostia ↔ San Francisco`.
-- **El link vive SOLO en la bio.** Nunca en el pie (IG no lo hace clicable y el
-  dominio va a cambiar — hoy `joxemari.github.io/hoks`, futuro `hoks.design`/`.art`).
+- **El link vive SOLO en la bio.** Nunca en el pie (IG no lo hace clicable).
+  Dominio: **`hoks.design`** (comprado en Namecheap; apunta a GitHub Pages).
 
 ## 6 · Reglas de publicación
 

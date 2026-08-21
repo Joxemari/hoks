@@ -24,7 +24,7 @@ con lo que ya dejó escrito. La profundidad no es el orden de dibujo: se decide
 Fase 2. Determinista (`seed` → imagen). Un solo archivo, `sketch.js`: núcleo
 generativo + UI de laboratorio. Se pega entero en OpenProcessing, y también se
 sirve como página desde este mismo directorio:
-**`joxemari.github.io/hoks/sketches/iterations2/`**.
+**`hoks.design/sketches/iterations2/`**.
 
 p5 va vendorizado aquí a propósito, no por CDN: en este repo lo commiteado es
 exactamente lo que se publica. Servido desde hoks no hay protección de bucles

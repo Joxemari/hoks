@@ -5,14 +5,14 @@
      making.html?w=… no se descubre sola: nadie enlaza a una query desde
      HTML. Ver CLAUDE.md § Buscadores y agentes. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://joxemari.github.io/hoks/</loc></url>
-  <url><loc>https://joxemari.github.io/hoks/about.html</loc></url>
-  <url><loc>https://joxemari.github.io/hoks/palettes.html</loc></url>
-  <url><loc>https://joxemari.github.io/hoks/plls.html</loc></url>
-  <url><loc>https://joxemari.github.io/hoks/krrtk.html</loc></url>
-  <url><loc>https://joxemari.github.io/hoks/dtkrt.html</loc></url>
-  <url><loc>https://joxemari.github.io/hoks/trzs.html</loc></url>
-  <url><loc>https://joxemari.github.io/hoks/making.html?w=plls</loc></url>
-  <url><loc>https://joxemari.github.io/hoks/making.html?w=krrtk</loc></url>
-  <url><loc>https://joxemari.github.io/hoks/making.html?w=dtkrt</loc></url>
+  <url><loc>https://hoks.design/</loc></url>
+  <url><loc>https://hoks.design/about.html</loc></url>
+  <url><loc>https://hoks.design/palettes.html</loc></url>
+  <url><loc>https://hoks.design/plls.html</loc></url>
+  <url><loc>https://hoks.design/krrtk.html</loc></url>
+  <url><loc>https://hoks.design/dtkrt.html</loc></url>
+  <url><loc>https://hoks.design/trzs.html</loc></url>
+  <url><loc>https://hoks.design/making.html?w=plls</loc></url>
+  <url><loc>https://hoks.design/making.html?w=krrtk</loc></url>
+  <url><loc>https://hoks.design/making.html?w=dtkrt</loc></url>
 </urlset>

@@ -257,7 +257,7 @@ redeploy de Pages.
 
 **GitHub Pages servido desde la rama `main`, raíz del repo.** No hay workflow de
 Actions, ni `_config.yml`, ni compilación: cada push a `main` redespliega
-`https://joxemari.github.io/hoks/` automáticamente. Lo commiteado = lo publicado.
+`https://hoks.design/` automáticamente. Lo commiteado = lo publicado.
 
 Doble canal de "publicación":
 1. **Código/páginas** → GitHub Pages (rama `main`).
@@ -316,7 +316,7 @@ lo edita a mano.
   cada cascarón: el CSS sí lo pide un navegador con el JS apagado, y a un agente
   le da igual.
 - **`robots.txt`** — declara la frontera taller/obra y apunta al sitemap. Ojo:
-  en un *project page* (`joxemari.github.io/hoks/`) **es inerte**, porque
+  en un *project page* (`hoks.design/`) **es inerte**, porque
   `robots.txt` solo se lee en la raíz del origen, que es otro repo. Lo que de
   verdad mantiene el taller fuera del índice es el `noindex` de esas páginas,
   que sí viaja en el documento. El archivo pasa a valer el día que haya dominio
