@@ -73,11 +73,19 @@
       </div>
       <div class="row">
         <button class="btn solid" id="copy">Copiar pie</button>
-        <button class="btn acid" id="dl1080">Descargar 1080 (IG)</button>
-        <button class="btn" id="dl2048">2048 (hi-res)</button>
+        <button class="btn acid" id="dl45" title="Pieza 4:5 (1080×1350), sin recorte en el grid">Descargar 4:5 (IG)</button>
+        <button class="btn" id="dlDet" title="Detalle 4:5 de la pieza">Detalle 4:5</button>
+        <button class="btn" id="dl2048" title="Pieza cuadrada a 2048, para archivo/impresión">2048 · pieza</button>
         <button class="btn" id="vidItr" title="El sistema escupe seeds">Vídeo ⟳</button>
-        <button class="btn" id="vidAsm" title="La pieza se pinta sola">Vídeo ✎</button>
+        <button class="btn" id="vidAsm" title="La pieza se pinta sola (making-of), 4:5">Vídeo ✎</button>
         <span class="flash" id="flash">✓ copiado</span>
+      </div>
+      <div>
+        <div class="lab">Hashtags · primer comentario</div>
+        <div class="row" style="align-items:center; gap:10px">
+          <code id="tags" style="font-family:var(--mono); font-size:11px; color:var(--mut); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap"></code>
+          <button class="btn" id="copyTags">Copiar hashtags</button>
+        </div>
       </div>
       <div class="hint" id="prov"></div>
     </div>
@@ -1362,10 +1370,24 @@
   function render(f,cv,px,s){cv.width=px;cv.height=px;var ctx=cv.getContext('2d');var o={params:{field:'square',grainScale:1}};
     try{H[f].render(ctx,px,px,s,o);}catch(e){try{H.PLLS.render(ctx,px,px,s,o);}catch(_){ctx.fillStyle='#efeee9';ctx.fillRect(0,0,px,px);}}}
 
-  var LINES=["One of one.","The rule is the work. This is its shadow.","A system's residue.","Chosen, then kept.","Producing the unrepeatable, in series.","What is visible is only a shadow.","One system, read once more.","The line only makes originals.","Not the image — the rule behind it.","Kept. The rest, discarded.","Seeded, grown, chosen.","The essence is in the discard.","Mass-produced. Unrepeatable."];
+  // 4:5 para IG (1080×1350): la pieza cuadrada matada sobre su propio fondo
+  // (color muestreado de la esquina), sin recorte en el grid. Ver BRAND.md §8.
+  function groundOf(sq){ try{ var d=sq.getContext('2d').getImageData(2,2,1,1).data; return 'rgb('+d[0]+','+d[1]+','+d[2]+')'; }catch(e){ return '#fbfbfa'; } }
+  function render45(f,cv,W,s){ var H=Math.round(W*5/4); var sq=document.createElement('canvas'); render(f,sq,W,s);
+    cv.width=W; cv.height=H; var x=cv.getContext('2d'); x.fillStyle=groundOf(sq); x.fillRect(0,0,W,H); x.drawImage(sq,0,Math.round((H-W)/2)); }
+  // Detalle 4:5: recorte central de la pieza escalado a pantalla completa.
+  function renderDetail(f,cv,W,s){ var H=Math.round(W*5/4); var sq=document.createElement('canvas'); render(f,sq,1080,s);
+    cv.width=W; cv.height=H; var x=cv.getContext('2d'); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high';
+    var cw=Math.round(1080*0.56), ch=Math.round(cw*5/4), cx=Math.round((1080-cw)/2), cy=Math.round((1080-ch)/2);
+    x.drawImage(sq, cx,cy,cw,ch, 0,0,W,H); }
+
+  var LINES=["one of one.","the rule is the work. this is its shadow.","a system's residue.","chosen, then kept.","producing the unrepeatable, in series.","what is visible is only a shadow.","one system, read once more.","the line only makes originals.","not the image — the rule behind it.","kept. the rest, discarded.","seeded, grown, chosen.","the essence is in the discard.","mass-produced. unrepeatable."];
   var TAGS="#generativeart #algorithmicart #codeart #hoks";
+  // Voz del sistema (BRAND.md): minúscula, sello en notación p5 (randomSeed),
+  // familia en MAYÚSCULA, y los hashtags NO van en el pie (van al primer
+  // comentario, campo aparte).
   function caption(f,s){ var line=LINES[(Math.random()*LINES.length)|0];
-    return line+"\n\n"+f+" · seed "+s+" · 1/1\n\n"+TAGS; }
+    return line+"\n\nrandomSeed("+s+") · "+f+" · 1/1"; }
 
   var grid=document.getElementById('grid'), panel=document.getElementById('panel'),
       big=document.getElementById('big'), cap=document.getElementById('cap'),
@@ -1389,7 +1411,8 @@
     fig.classList.add('sel'); sel={fam:f,seed:s};
     render(f,big,900,s);
     cap.value=caption(f,s);
-    prov.textContent=f+' · seed '+s+' · 1/1';
+    var tg=document.getElementById('tags'); if(tg) tg.textContent=TAGS;
+    prov.textContent='randomSeed('+s+') · '+f+' · 1/1';
     panel.classList.add('on');
     panel.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
@@ -1399,6 +1422,10 @@
       a.download=name; document.body.appendChild(a); a.click();
       setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},1500); }, 'image/png');
   }
+  function download45(name){ if(!sel)return; var c=document.createElement('canvas'); render45(sel.fam,c,1080,sel.seed);
+    c.toBlob(function(blob){ saveBlob(blob,name); },'image/png'); }
+  function downloadDetail(name){ if(!sel)return; var c=document.createElement('canvas'); renderDetail(sel.fam,c,1080,sel.seed);
+    c.toBlob(function(blob){ saveBlob(blob,name); },'image/png'); }
   function flash(){ var f=document.getElementById('flash'); f.classList.add('show'); setTimeout(function(){f.classList.remove('show');},1200); }
 
   // ── VÍDEO (feed-fábrica en el navegador) ──────────────────────────────────
@@ -1431,9 +1458,12 @@
   function recordVideo(mode){
     if(!sel || _recording) return;
     var mime=bestVideoMime(); if(!mime){ alert('Este navegador no puede grabar vídeo (MediaRecorder no disponible).'); return; }
-    var ext=mime.indexOf('mp4')>=0?'mp4':'webm', px=1080;
-    var c=document.createElement('canvas'); c.width=px; c.height=px; var vc=c.getContext('2d');
-    render(sel.fam,c,px,sel.seed);
+    var ext=mime.indexOf('mp4')>=0?'mp4':'webm', px=1080, H=Math.round(px*5/4);
+    var sqTmp=document.createElement('canvas'); render(sel.fam,sqTmp,px,sel.seed); var ground=groundOf(sqTmp);
+    var c=document.createElement('canvas'); c.width=px; c.height=H; var vc=c.getContext('2d');
+    var YOFF=Math.round((H-px)/2);
+    function blit(src){ vc.fillStyle=ground; vc.fillRect(0,0,px,H); vc.drawImage(src,0,YOFF); }
+    blit(sqTmp);
     var stream=c.captureStream(30), rec;
     try{ rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12000000}); }catch(e){ try{ rec=new MediaRecorder(stream); }catch(_){ alert('No se pudo iniciar la grabación.'); return; } }
     var chunks=[]; rec.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
@@ -1443,20 +1473,20 @@
     rec.start();
     if(mode==='iterations'){
       var seeds=[sel.seed]; for(var i=1;i<32;i++){ seeds.push((((sel.seed>>>0)*2654435761 + i*40503)>>>0)%1e9); }
-      var i2=0, iv=setInterval(function(){ render(sel.fam,c,px,seeds[i2%seeds.length]); i2++; if(i2>=seeds.length){ clearInterval(iv); setTimeout(function(){rec.stop();},160); } },125);
+      var i2=0, iv=setInterval(function(){ render(sel.fam,sqTmp,px,seeds[i2%seeds.length]); blit(sqTmp); i2++; if(i2>=seeds.length){ clearInterval(iv); setTimeout(function(){rec.stop();},160); } },125);
     } else {
       var r=_record(sel.fam,px,sel.seed), ops=r.ops, rc=r.rc, oi=_objStart(ops,px);
       rc.setTransform(1,0,0,1,0,0); rc.globalAlpha=1; rc.globalCompositeOperation='source-over';
       var chs=[],cur=[]; for(var j=oi;j<ops.length;j++){cur.push(ops[j]); if(ops[j].m&&_C[ops[j].m]){chs.push(cur);cur=[];}} if(cur.length)chs.push(cur);
-      var k=0; for(;k<oi;k++)_ex(rc,ops[k]); vc.clearRect(0,0,px,px); vc.drawImage(rc.canvas,0,0);
+      var k=0; for(;k<oi;k++)_ex(rc,ops[k]); blit(rc.canvas);
       // Ritmo por DURACIÓN, no por nº de trazos: el reveal dura ~4,6 s aunque la
       // familia tenga pocas piezas (KRRTK son ~13 y antes duraba 0,3 s).
       var ci=0, frame=0, TF=140; function _eo(t){ return 1-Math.pow(1-t,3); }
       var iv2=setInterval(function(){ frame++;
         var target=Math.min(chs.length, Math.round(chs.length*_eo(frame/TF)));
         while(ci<target){ var ch=chs[ci++]; for(var z=0;z<ch.length;z++)_ex(rc,ch[z]); }
-        vc.clearRect(0,0,px,px); vc.drawImage(rc.canvas,0,0);
-        if(frame>=TF){ while(ci<chs.length){ var ch2=chs[ci++]; for(var z2=0;z2<ch2.length;z2++)_ex(rc,ch2[z2]); } vc.clearRect(0,0,px,px); vc.drawImage(rc.canvas,0,0); clearInterval(iv2); setTimeout(function(){rec.stop();},900); } },33);
+        blit(rc.canvas);
+        if(frame>=TF){ while(ci<chs.length){ var ch2=chs[ci++]; for(var z2=0;z2<ch2.length;z2++)_ex(rc,ch2[z2]); } blit(rc.canvas); clearInterval(iv2); setTimeout(function(){rec.stop();},900); } },33);
     }
   }
 
@@ -1467,8 +1497,11 @@
       build(); });
   });
   document.getElementById('regen').addEventListener('click', build);
-  document.getElementById('dl1080').addEventListener('click', function(){ download(1080, (sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-1080.png'); });
+  document.getElementById('dl45').addEventListener('click', function(){ download45((sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-1080x1350.png'); });
+  document.getElementById('dlDet').addEventListener('click', function(){ downloadDetail((sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-detalle-1080x1350.png'); });
   document.getElementById('dl2048').addEventListener('click', function(){ download(2048, (sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-2048.png'); });
+  document.getElementById('copyTags').addEventListener('click', function(){ var t=TAGS;
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(flash,function(){flash();}); } else { flash(); } });
   document.getElementById('vidItr').addEventListener('click', function(){ recordVideo('iterations'); });
   document.getElementById('vidAsm').addEventListener('click', function(){ recordVideo('assembling'); });
   document.getElementById('copy').addEventListener('click', function(){
