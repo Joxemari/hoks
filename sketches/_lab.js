@@ -320,7 +320,7 @@
     a.type = 'button';
     a.textContent = '← atrás';
     a.title = 'Volver (al panel si vienes de él)';
-    a.style.cssText = 'position:fixed;top:12px;right:14px;z-index:300;' +
+    a.style.cssText = 'position:fixed;bottom:12px;right:14px;z-index:300;' +
       "font-family:'Courier New',Courier,monospace;font-size:10px;letter-spacing:0.1em;" +
       'text-transform:uppercase;color:#0a0a0a;background:rgba(251,251,250,0.92);' +
       'border:1px solid #d8d5cc;border-radius:8px;padding:6px 11px;cursor:pointer;' +
@@ -329,7 +329,7 @@
     a.addEventListener('mouseleave', () => { a.style.borderColor = '#d8d5cc'; });
     a.addEventListener('click', () => {
       if (history.length > 1 && document.referrer) history.back();
-      else location.href = '/hoks/admin.html';
+      else location.href = '/admin.html';
     });
     document.body.appendChild(a);
   }
