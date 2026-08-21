@@ -22,7 +22,8 @@
     "cartela": {
       "eu": "Kapsula bat ez da forma: bi punturen arteko distantzia bat da, lodiera batekin.\nKolokatzea ez da apaingarria: elkarren gainean zenbat egon daitezkeen erabakitzen du arauak.",
       "en": "A capsule is not a shape: it is a distance between two points, given a thickness.\nPlacement is not arrangement: the rule decides how much they may overlap."
-    }
+    },
+    "ogImage": true
   },
   {
     "id": "krrtk",
@@ -47,7 +48,8 @@
     "cartela": {
       "eu": "Karratu bat, behin eta berriz, zatitu ala ez erabakitzen.\nLauetan zatitzen da, eta laugarrena beti botatzen: hutsune hori da serieak esaten duena.",
       "en": "A square deciding, again and again, whether to divide.\nIt splits in four and always discards the fourth: that missing quarter is what the series says."
-    }
+    },
+    "ogImage": true
   },
   {
     "id": "dtk",
@@ -105,7 +107,8 @@
     "cartela": {
       "eu": "Hazi bat, eta ondokoetara hedatzea. Ez dago forma-katalogorik.\nBarrak, eleak eta eskailerak arauaren ondorio dira, ez marrazki bat.",
       "en": "A seed cell, then spread to its neighbours. There is no catalogue of shapes.\nBars, ells and staircases are consequences of the rule, not a drawing."
-    }
+    },
+    "ogImage": true
   },
   {
     "id": "eclps",
@@ -126,7 +129,8 @@
     "cartela": {
       "es": "El paso entre centros no cambia nunca. Lo que cambia es cuál de los círculos se calla.\nLa retícula no se rompe: el ritmo está hecho de ausencias.",
       "en": "The step between centres never changes. What changes is which circle falls silent.\nThe lattice never breaks: the rhythm is made of absences."
-    }
+    },
+    "ogImage": true
   },
   {
     "id": "trzs",
@@ -148,7 +152,8 @@
     "cartela": {
       "eu": "Gainetik eta azpitik ez dira bi geruza: ibilbideari jarraituz txandakatzen dira.\nGurutzagune bakoitzetik bi aldiz igarotzen da, eta bigarrenak lehenaren kontrakoa dio.",
       "en": "Over and under are not two layers: they alternate as the line is walked.\nEvery crossing is passed twice, and the second pass says the opposite of the first."
-    }
+    },
+    "ogImage": true
   },
   {
     "id": "evol",

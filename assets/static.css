@@ -1,0 +1,15 @@
+/* assets/static.css — el bloque que se lee sin JavaScript.
+ *
+ * Solo lo ve quien no ejecuta JS: work-page.js retira #hoks-static en
+ * cuanto arranca. Va en un archivo y no repetido en cada cascarón porque
+ * el CSS sí lo pide un navegador con el JS apagado, y a un agente le da
+ * igual. Lo enlaza static-gen.js. */
+#hoks-static{max-width:640px;margin:0 auto;padding:4rem 1.5rem;font:400 15px/1.65 "League Spartan","Century Gothic",Futura,system-ui,sans-serif;color:#26251f}
+#hoks-static h1{font-size:2.5rem;letter-spacing:.02em;margin:0 0 .6rem}
+#hoks-static .s-eye{font:400 11px/1 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.18em;color:#000ef7;margin-bottom:1.4rem;text-transform:uppercase}
+#hoks-static .s-meta{font:400 11px/1.6 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.08em;color:#8a8983;margin:0 0 1.6rem}
+#hoks-static p{margin:0 0 1.1rem}
+#hoks-static img{width:100%;height:auto;border:1px solid #e7e5df;margin:0 0 1.6rem}
+#hoks-static blockquote{margin:1.6rem 0;padding-left:1rem;border-left:2px solid #dcff32;white-space:pre-line;color:#0a0a0a}
+#hoks-static nav{margin-top:2.4rem;padding-top:1.2rem;border-top:1px solid #e7e5df;font:400 11px/2 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.08em}
+#hoks-static nav a{color:#000ef7;margin-right:1.1rem}
