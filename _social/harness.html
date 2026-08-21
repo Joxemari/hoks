@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <!-- Banco de render para los vídeos de feed-fábrica. No es una página del
+       sitio: lo abre make-videos.mjs para capturar fotogramas. Carga el motor
+       y los algo.js reales, así que los vídeos SON la obra, no una imitación. -->
+  <style> html,body{margin:0;background:#0c0c0c} #c{display:block} </style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script src="../sketches/_engine.js?v=1"></script>
+<script src="../sketches/plls/algo.js?v=1"></script>
+<script src="../sketches/krrtk/algo.js?v=1"></script>
+<script src="../sketches/dtkrt/algo.js?v=1"></script>
+<script src="../sketches/trzs/algo.js?v=1"></script>
+<script src="../sketches/eclps/algo.js?v=1"></script>
+<script>
+var H=window.HOKS, C=document.getElementById('c'), CX=C.getContext('2d');
+var PALS=(H.normalizePalettes?H.normalizePalettes(H.DEFAULTS):H.DEFAULTS)||[];
+function rgb(h){h=(''+h).replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function luma(p){var a=p.colors||[],s=0;a.forEach(function(h){var c=rgb(h);s+=(0.299*c[0]+0.587*c[1]+0.114*c[2])/255;});return a.length?s/a.length:1;}
+var BRIGHT=PALS.filter(function(p){return luma(p)>0.42;}); if(!BRIGHT.length)BRIGHT=PALS.slice();
+function palByName(n){ for(var i=0;i<PALS.length;i++) if(PALS[i].name===n) return PALS[i]; return null; }
+function optsFor(w,h,pal){ var o={params:{field:(w===h?'square':'sheet'),grainScale:1}}; if(pal){o.palettes=[pal];o.locked=true;o.lockedIdx=0;} return o; }
+window.full=function(fam,seed,palName){ var pal=palName?palByName(palName):BRIGHT[(seed>>>3)%BRIGHT.length]; var w=C.width,h=C.height;
+  try{H[fam].render(CX,w,h,seed,optsFor(w,h,pal));}catch(e){CX.fillStyle='#111';CX.fillRect(0,0,w,h);} };
+
+// ── record / replay: se graban las llamadas de dibujo y se reproducen (fondo
+//    primero, luego cada objeto), como el splash de la landing ──
+var PATHOP={arc:1,ellipse:1,moveTo:1,lineTo:1,quadraticCurveTo:1,bezierCurveTo:1,arcTo:1,roundRect:1};
+var COMMIT={fill:1,stroke:1,fillRect:1,strokeRect:1,drawImage:1,putImageData:1,fillText:1,strokeText:1};
+var STYLE=['fillStyle','strokeStyle','globalAlpha','globalCompositeOperation','lineWidth','lineCap','lineJoin','miterLimit','font','textAlign','textBaseline','shadowBlur','shadowColor','shadowOffsetX','shadowOffsetY','lineDashOffset','filter','imageSmoothingEnabled','imageSmoothingQuality'];
+var OPS,OI,CHUNKS;
+function record(fam,w,h,s,pal){ var fc=document.createElement('canvas'); fc.width=w; fc.height=h; var rc=fc.getContext('2d'); var ops=[];
+  var proxy=new Proxy(rc,{get:function(t,k){var v=t[k]; if(typeof v==='function'){return function(){var a=[].slice.call(arguments);var r=v.apply(t,a);ops.push({m:k,a:a});return r;};} return v;},
+    set:function(t,k,val){if(STYLE.indexOf(k)>=0)ops.push({p:k,v:val}); try{t[k]=val;}catch(e){} return true;}});
+  try{H[fam].render(proxy,w,h,s,optsFor(w,h,pal));}catch(e){}
+  return ops; }
+function objStart(ops,w,h){ for(var i=0;i<ops.length;i++){var o=ops[i];if(!o.m)continue;if(PATHOP[o.m])return i;
+  if((o.m==='fillRect'||o.m==='rect')&&o.a&&o.a.length>=4){var x=o.a[0],y=o.a[1],ww=o.a[2],hh=o.a[3];if(!(Math.abs(x)<2&&Math.abs(y)<2&&ww>=w*0.98&&hh>=h*0.98))return i;}} return ops.length; }
+function ex(rc,o){ if(o.p!==undefined){try{rc[o.p]=o.v;}catch(e){}} else {try{rc[o.m].apply(rc,o.a);}catch(e){}} }
+window.setup=function(fam,seed,palName){ var pal=palName?palByName(palName):BRIGHT[(seed>>>3)%BRIGHT.length]; var w=C.width,h=C.height;
+  OPS=record(fam,w,h,seed,pal); OI=objStart(OPS,w,h);
+  CHUNKS=[]; var cur=[]; for(var j=OI;j<OPS.length;j++){cur.push(OPS[j]); if(OPS[j].m&&COMMIT[OPS[j].m]){CHUNKS.push(cur);cur=[];}} if(cur.length)CHUNKS.push(cur);
+  return CHUNKS.length; };
+window.step=function(frac){ var w=C.width,h=C.height; var fc=document.createElement('canvas'); fc.width=w; fc.height=h; var rc=fc.getContext('2d');
+  rc.fillStyle='#0c0c0c'; rc.fillRect(0,0,w,h);
+  var i=0; for(;i<OI;i++)ex(rc,OPS[i]);
+  var k=Math.round(frac*CHUNKS.length);
+  for(var c=0;c<k;c++){var ch=CHUNKS[c];for(var q=0;q<ch.length;q++)ex(rc,ch[q]);}
+  CX.setTransform(1,0,0,1,0,0); CX.clearRect(0,0,w,h); CX.drawImage(rc.canvas,0,0); };
+window.resize=function(w,h){ C.width=w; C.height=h; };
+window.__ready=true;
+</script>
+</body>
+</html>

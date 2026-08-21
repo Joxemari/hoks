@@ -20,11 +20,11 @@
 :root { --r: 12px; }
 body { font-family: var(--geo); background: var(--paper); color: var(--ink); min-height: 100vh; padding-bottom: 6rem; }
 /* Cabecera de página: título display + sub-línea mono azul. */
-.page-head { width: 100%; max-width: 1100px; margin: 34px auto 0; padding: 0 2rem; }
+.page-head { width: 100%; max-width: 1180px; margin: 34px auto 0; padding: 0 2rem; }
 .page-head h1 { font-family: var(--geo); font-weight: 700; font-size: 48px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--ink); margin: 0 0 4px; }
 .page-head .sub { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--blue); }
 .controls {
-  max-width: 1100px; margin: 26px auto 0;
+  max-width: 1180px; margin: 26px auto 0;
   padding: 1.2rem 2rem;
   display: flex; gap: 14px; align-items: center;
   border-bottom: 1px solid var(--line);
@@ -46,7 +46,7 @@ body { font-family: var(--geo); background: var(--paper); color: var(--ink); min
 .count { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mut); white-space: nowrap; margin-left: auto; }
 /* Rejilla de uso: una celda por paleta, tono azul según cuántas obras guardadas la usan. */
 /* width:100% porque nav.js pone el body en flex column: si no, encoge al contenido. */
-.usage { width: 100%; max-width: 1100px; margin: 24px auto 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--r); background: #fff; }
+.usage { width: 100%; max-width: 1180px; margin: 24px auto 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--r); background: #fff; }
 .usage-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
 .usage-title { font-family: var(--geo); font-weight: 700; font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; background: var(--red); color: #fff; padding: 2px 7px; border-radius: 2px; }
 .usage-sub { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mut); }
@@ -66,7 +66,7 @@ body { font-family: var(--geo); background: var(--paper); color: var(--ink); min
 .usage-copy { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mut); background: none; border: 1px solid var(--line); border-radius: 2px; padding: 3px 8px; cursor: pointer; margin-left: auto; transition: color 0.12s, border-color 0.12s; }
 .usage-copy:hover { color: var(--ink); border-color: var(--blue); }
 .usage-chip { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: 0.08em; color: var(--body); border: 1px solid var(--mut); border-radius: 20px; padding: 1px 6px; flex-shrink: 0; }
-.grid { max-width: 1100px; margin: 24px auto 0; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+.grid { max-width: 1180px; margin: 24px auto 0; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
 .palette-card { background: #fff; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.15s; }
 .palette-card:hover { border-color: var(--blue); }
 .palette-card.inactive { filter: grayscale(1); opacity: 0.45; }

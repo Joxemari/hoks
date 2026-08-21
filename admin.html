@@ -438,7 +438,8 @@ const $=id=>document.getElementById(id);
 // ── GITHUB ────────────────────────────────────────────
 function getToken(){return localStorage.getItem(TOKEN_KEY)||'';}
 async function ghFetch(path,content,msg){
-  const token=getToken();if(!token){toast('No GitHub token');return false;}
+  const token=getToken();
+  if(!token){ toast('Add your GitHub token first — Security tab'); try{ switchTab('security'); const el=$('gh-token-input'); if(el){ el.scrollIntoView({block:'center'}); el.focus(); } }catch(e){} return false; }
   showSaving(true);
   let sha;
   try{const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{headers:{'Authorization':'Bearer '+token}});if(r.ok)sha=(await r.json()).sha;}catch(e){}
@@ -551,6 +552,7 @@ async function toggleWork(i, val) {
     if (yi >= 2000 && yi <= 2099) works[i].year = yi;
   }
   if (await saveWorks()) { renderWorks(); toast(name + (val ? ' activated' : ' deactivated')); }
+  else { works[i].active = !val; renderWorks(); }   // no se guardó: la casilla vuelve al estado real
 }
 // Año de creación de la familia. Las familias en curso no lo llevan; se rellena
 // aquí al lanzar/activar y la página de obra lo muestra bajo el nombre.

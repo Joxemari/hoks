@@ -228,7 +228,7 @@
   var ACTIVE = [];       // list of UP family names that can render
 
   // palettes for the contact-sheet flashes (common thread)
-  var PALS = [], COLORS = [], SPLASHPALS = [], SPLASH_FAM = [];
+  var PALS = [], COLORS = [], SPLASHPALS = [], SPLASH_FAM = [], HALL_FAM = [];
   function palColor(){ return COLORS.length ? COLORS[(Math.random()*COLORS.length)|0] : '#dcff32'; }
   function palLuma(p){ var s=0,c=p.colors||[]; c.forEach(function(h){ h=(''+h).replace('#',''); var r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16); s+=(0.299*r+0.587*g+0.114*b)/255; }); return c.length? s/c.length : 0; }
   // The splash never opens on black: only bright palettes and the colour-ground
@@ -238,6 +238,10 @@
   function seed(){ return (Math.random()*1e9)>>>0; }
   function randFam(){ return ACTIVE[(Math.random()*ACTIVE.length)|0]; }
   function randSplashFam(){ var a=SPLASH_FAM.length?SPLASH_FAM:ACTIVE; return a[(Math.random()*a.length)|0]; }
+  // El muro repinta cientos de celdas en vivo; TRZS tarda ~600 ms por render
+  // (analiza el nudo) y congelaría el hilo, así que queda fuera del muro (sigue
+  // teniendo su página). El resto va a 2-6 ms.
+  function randHallFam(){ var a=HALL_FAM.length?HALL_FAM:ACTIVE; return a[(Math.random()*a.length)|0]; }
   function draw(cv,w,h,fam,s,pal){
     cv.width=w; cv.height=h; var ctx=cv.getContext('2d');
     var o={ params:{ field:(w===h?'square':'sheet'), grainScale:1 } };
@@ -360,37 +364,48 @@
 
   // ── HALL: contact sheet ─────────────────────────────────────────────────────
   var frame=document.getElementById('frame'), hlbl=document.getElementById('hlbl'), rafId=0, hallStop=null;
-  function tile(w,h){ var f=document.createElement('figure'); f.className='tile'; var c=document.createElement('canvas'); f.appendChild(c); draw(c,w,h,randFam(),seed()); f._c=c; return f; }
+  // Celda vacía (fondo CSS #f2f0ec): NO se pinta al crearla. Pintar las 176 de
+  // golpe congelaba el hilo ~3 s al entrar; ahora se rellenan a presupuesto por
+  // frame en el bucle, y el muro se puebla en ~1 s (un buen "revelado").
+  function tile(){ var f=document.createElement('figure'); f.className='tile'; var c=document.createElement('canvas'); c.width=150; c.height=150; f.appendChild(c); f._c=c; return f; }
   function stopHall(){ if(rafId){cancelAnimationFrame(rafId);rafId=0;} if(hallStop){hallStop();hallStop=null;} }
   function contact(){ stopHall(); frame.innerHTML=''; frame.scrollTop=0;
     if(!ACTIVE.length){ return; }
     var w=document.createElement('div'); w.className='wall';
-    var ts=[]; for(var i=0;i<176;i++){ var t=tile(150,150);
+    var ts=[]; for(var i=0;i<176;i++){ var t=tile();
       (function(t){ t.addEventListener('click',function(){ if(t._w){ location.href = BASE + workHref(t._w); } }); })(t);
       w.appendChild(t); ts.push(t); }
     frame.appendChild(w);
     hlbl.textContent='a pulse sweeps from a zone, then rests';
-    if(reduce){ ts.forEach(function(t){ var f=randFam(); draw(t._c,150,150,f,seed()); t._w=FAM[f]&&FAM[f].w; }); return; }
     requestAnimationFrame(function(){
       var fr=frame.getBoundingClientRect();
       ts.forEach(function(t){ var r=t.getBoundingClientRect(); t._x=r.left-fr.left+r.width/2; t._y=r.top-fr.top+r.height/2; t._c0=-1e9; t._c1=-1e9; });
       var W=fr.width, Hh=fr.height, running=true, maxR=Math.sqrt(W*W+Hh*Hh);
       var SWEEP=2500, GAP=300, BAND=54, REST=1500, speed=(maxR+BAND)/SWEEP;
-      var pulse=null, restUntil=0, pcount=0, SEQ=['family','palette'];
-      function palPick(){ var pal=(pulse.mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null; return (pal&&pal.colors&&pal.colors.length)?pal.colors[(Math.random()*pal.colors.length)|0]:palColor(); }
-      function flapColor(t){ var c=t._c,g=c.getContext('2d'); c.width=c.width; g.fillStyle=palPick(); g.fillRect(0,0,c.width,c.height); }
-      function resolveImg(t){ var pal=(pulse.mode==='palette'&&PALS.length)?PALS[pulse.palIdx]:null; var fam=(pulse.mode==='family')?pulse.fam:randFam(); draw(t._c,150,150,fam,seed(),pal); t._w=FAM[fam]&&FAM[fam].w; }
+      var pulse=null, restUntil=0, pcount=0, SEQ=['family','palette'], resolveQ=[];
+      // relleno inicial: cada celda se encola para pintarse a presupuesto/frame
+      ts.forEach(function(t){ resolveQ.push({ t:t, mode:'family', fam:randHallFam(), palIdx:0 }); });
+      function palPick(mode,palIdx){ var pal=(mode==='palette'&&PALS.length)?PALS[palIdx]:null; return (pal&&pal.colors&&pal.colors.length)?pal.colors[(Math.random()*pal.colors.length)|0]:palColor(); }
+      function flapColor(t,mode,palIdx){ var c=t._c,g=c.getContext('2d'); c.width=c.width; g.fillStyle=palPick(mode,palIdx); g.fillRect(0,0,c.width,c.height); }
+      function resolveImg(t,mode,fam,palIdx){ var pal=(mode==='palette'&&PALS.length)?PALS[palIdx]:null; var fm=(mode==='family')?fam:randHallFam(); draw(t._c,150,150,fm,seed(),pal); t._w=FAM[fm]&&FAM[fm].w; }
       function loop(now){ if(!running)return;
-        if(!pulse && now>=restUntil){ var mode=SEQ[pcount%SEQ.length]; pcount++; if(mode==='palette'&&!PALS.length)mode='family';
-          pulse={ox:Math.random()*W, oy:Math.random()*Hh, b:[now,now+GAP], mode:mode, fam:randFam(), palIdx:(Math.random()*Math.max(1,PALS.length))|0};
+        if(!reduce && !pulse && now>=restUntil){ var mode=SEQ[pcount%SEQ.length]; pcount++; if(mode==='palette'&&!PALS.length)mode='family';
+          pulse={ox:Math.random()*W, oy:Math.random()*Hh, b:[now,now+GAP], mode:mode, fam:randHallFam(), palIdx:(Math.random()*Math.max(1,PALS.length))|0};
           var pn=(pulse.mode==='palette'&&PALS[pulse.palIdx])?PALS[pulse.palIdx].name:'';
           hlbl.textContent=(mode==='palette'?('palette'+(pn?' '+pn:'')):('family '+pulse.fam));
           pulseAccent(); setTimeout(pulseAccent, GAP); }
         if(pulse){ var done=true;
           for(var bi=0;bi<pulse.b.length;bi++){ var rad=(now-pulse.b[bi])*speed; if(rad<0){done=false;continue;} if(rad<=maxR+BAND)done=false;
             for(var i2=0;i2<ts.length;i2++){ var t=ts[i2]; var dx=t._x-pulse.ox,dy=t._y-pulse.oy; var d=Math.sqrt(dx*dx+dy*dy);
-              if(Math.abs(d-rad)<BAND){ if(bi===0){ if(now-t._c0>250){t._c0=now; flapColor(t);} } else { if(now-t._c1>250){t._c1=now; resolveImg(t);} } } } }
+              if(Math.abs(d-rad)<BAND){ if(bi===0){ if(now-t._c0>250){t._c0=now; flapColor(t,pulse.mode,pulse.palIdx);} }
+                else { if(now-t._c1>250 && !t._q){ t._c1=now; t._q=true; resolveQ.push({t:t,mode:pulse.mode,fam:pulse.fam,palIdx:pulse.palIdx}); } } } } }
           if(done){ pulse=null; restUntil=now+REST; } }
+        // Presupuesto de render: como mucho N obras completas por frame. Un
+        // barrido cruza muchas celdas a la vez; sin esto se renderizaban decenas
+        // en un solo frame y el hilo se congelaba (~2,6 s). Se encola y se drena.
+        var budget=6;
+        while(resolveQ.length && budget-->0){ var it=resolveQ.shift(); it.t._q=false; resolveImg(it.t,it.mode,it.fam,it.palIdx); }
+        if(reduce && !resolveQ.length){ return; }   // sin movimiento: para al llenarse
         rafId=requestAnimationFrame(loop); }
       hallStop=function(){ running=false; };
       rafId=requestAnimationFrame(loop);
@@ -433,8 +448,13 @@
       ACTIVE = Object.keys(FAM);
     }
     // Splash opens on colour-ground families; ECLPS's dark grounds stay in the hall.
-    SPLASH_FAM = ACTIVE.filter(function(f){ return f!=='ECLPS'; });
+    // El splash graba el algoritmo completo a ~1600px por un Proxy (caro). Las
+    // familias más pesadas (TRZS anuda; ECLPS va oscuro) se quedan fuera del
+    // auto-pintado para que la entrada no dé tirones.
+    SPLASH_FAM = ACTIVE.filter(function(f){ return f!=='ECLPS' && f!=='TRZS'; });
     if(!SPLASH_FAM.length) SPLASH_FAM = ACTIVE.slice();
+    HALL_FAM = ACTIVE.filter(function(f){ return f!=='TRZS'; });
+    if(!HALL_FAM.length) HALL_FAM = ACTIVE.slice();
 
     // 4. decode the groove now so it is ready when the visitor clicks
     initAudio();
