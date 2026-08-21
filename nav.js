@@ -259,13 +259,14 @@ const MONO = '/hoks/monogram.png';
 // El sistema de diseño vive aquí, en :root, porque nav.js se carga en todas
 // las páginas: así los tokens (paper/ink/blue/acid/line/mut/body) y la
 // tipografía están disponibles en cualquier <style> de página sin repetirlos.
-// League Spartan (display) + Courier New (captions/operativa) sobre papel.
+// League Spartan (display) + mono moderna (SF Mono / JetBrains Mono, captions/operativa)
+// sobre papel. La voz mono ya NO es Courier New: se alinea con el mockup aprobado.
 const NAV_CSS = `
 :root{
   --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32;
   --line:#e7e5df; --mut:#8a8983; --body:#26251f; --red:#c0392b;
-  --geo:"League Spartan","Century Gothic",Futura,system-ui,sans-serif;
-  --mono:"Courier New",ui-monospace,Menlo,monospace;
+  --geo:"League Spartan","Century Gothic",Futura,"Trebuchet MS",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
 }
 *, *::before, *::after { box-sizing: border-box; }
 body { display: flex; flex-direction: column; min-height: 100vh; }
@@ -370,7 +371,7 @@ style.textContent = NAV_CSS;
 document.head.appendChild(style);
 
 // League Spartan (display) desde Google Fonts. Es la única dependencia externa
-// del sitio; las captions siguen en Courier New (--mono).
+// del sitio; las captions van en la mono del sistema (--mono: SF Mono / JetBrains Mono).
 if (!document.querySelector('link[data-hoks-font]')) {
   document.head.insertAdjacentHTML('beforeend',
     '<link rel="preconnect" href="https://fonts.googleapis.com">' +
@@ -524,14 +525,17 @@ fetch('https://raw.githubusercontent.com/Joxemari/hoks/main/data/site.json?t=' +
   .then(r => r.ok ? r.json() : null)
   .then(d => {
     const fl = document.getElementById('footer-links');
-    if (fl && d?.footerInstagram) {
+    if (!fl) return;
+    const social = (url, label) => {
       const a = document.createElement('a');
-      a.href = d.footerInstagram;
+      a.href = url;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
-      a.textContent = 'Instagram';
+      a.textContent = label;
       fl.appendChild(a);
-    }
+    };
+    if (d?.footerInstagram) social(d.footerInstagram, 'Instagram');
+    if (d?.footerX) social(d.footerX, 'X');
   })
   .catch(() => {});
 
