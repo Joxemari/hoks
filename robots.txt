@@ -1,6 +1,6 @@
 # hoks — robots.txt
 #
-# OJO: en un project page de GitHub Pages (joxemari.github.io/hoks/) este archivo
+# OJO: en un project page de GitHub Pages (hoks.design/) este archivo
 # es INERTE. robots.txt solo se lee en la raíz del origen —
 # joxemari.github.io/robots.txt — que pertenece a otro repo. Queda aquí porque
 # es correcto el día que haya dominio propio (CNAME), y porque declara la
@@ -21,4 +21,4 @@ Allow: /
 # GPTBot, ClaudeBot, PerplexityBot ni los demás. Si algún día se quiere cerrar
 # la puerta, se cierra aquí y en un solo sitio.
 
-Sitemap: https://joxemari.github.io/hoks/sitemap.xml
+Sitemap: https://hoks.design/sitemap.xml

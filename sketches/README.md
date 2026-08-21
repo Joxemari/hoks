@@ -370,7 +370,7 @@ Con servidor local (para que el `fetch` de paletas no choque con `file://`):
 python -m http.server      # → http://localhost:8000/sketches/<obra>/
 ```
 
-También publicados: `https://joxemari.github.io/hoks/sketches/<obra>/`.
+También publicados: `https://hoks.design/sketches/<obra>/`.
 
 | tecla     | acción                                  |
 |-----------|------------------------------------------|

@@ -15,7 +15,7 @@
 (function (root) {
   'use strict';
 
-  const BASE = 'https://joxemari.github.io/hoks/';
+  const BASE = 'https://hoks.design/';
   const LANGS = ['en', 'es', 'eu'];   // en primero: nav.js abre en inglés
 
   const PERSON = {

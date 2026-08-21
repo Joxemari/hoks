@@ -206,7 +206,7 @@
 
     // Pie
     ctx.font = `400 ${pt(6.6)}px ${MONO}`; ctx.fillStyle = '#bbb';
-    ctx.fillText('joxemari.github.io/hoks', x, H - MARGIN * k);
+    ctx.fillText('hoks.design', x, H - MARGIN * k);
     return ctx;
   }
 
