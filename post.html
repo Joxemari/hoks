@@ -1407,7 +1407,17 @@
   // mismos que el generador _social: iterations (escupe seeds) y assembling (se
   // pinta sola). Los MP4 finos de campaña salen del generador; esto es el atajo.
   var _recording=false;
-  function bestVideoMime(){ var C=['video/mp4;codecs=avc1.640028','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm']; for(var i=0;i<C.length;i++){ try{ if(window.MediaRecorder && MediaRecorder.isTypeSupported(C[i])) return C[i]; }catch(e){} } return ''; }
+  // Solo MP4 con H.264 de verdad (avc1/h264); NO 'video/mp4' a secas, que en
+  // Chrome mete VP9 en un contenedor .mp4 que Instagram no acepta. Si no hay
+  // H.264, se cae a WebM honesto (bien en X/web).
+  function bestVideoMime(){
+    if(!window.MediaRecorder) return '';
+    var mp4=['video/mp4;codecs=avc1.640028','video/mp4;codecs=avc1.4d0028','video/mp4;codecs=avc1.42E01E','video/mp4;codecs=avc1','video/mp4;codecs=h264'];
+    var webm=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+    for(var i=0;i<mp4.length;i++){ try{ if(MediaRecorder.isTypeSupported(mp4[i])) return mp4[i]; }catch(e){} }
+    for(var j=0;j<webm.length;j++){ try{ if(MediaRecorder.isTypeSupported(webm[j])) return webm[j]; }catch(e){} }
+    return '';
+  }
   function saveBlob(blob,name){ var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},1500); }
   var _P={arc:1,ellipse:1,moveTo:1,lineTo:1,quadraticCurveTo:1,bezierCurveTo:1,arcTo:1,roundRect:1};
   var _C={fill:1,stroke:1,fillRect:1,strokeRect:1,drawImage:1,putImageData:1,fillText:1,strokeText:1};
@@ -1439,9 +1449,14 @@
       rc.setTransform(1,0,0,1,0,0); rc.globalAlpha=1; rc.globalCompositeOperation='source-over';
       var chs=[],cur=[]; for(var j=oi;j<ops.length;j++){cur.push(ops[j]); if(ops[j].m&&_C[ops[j].m]){chs.push(cur);cur=[];}} if(cur.length)chs.push(cur);
       var k=0; for(;k<oi;k++)_ex(rc,ops[k]); vc.clearRect(0,0,px,px); vc.drawImage(rc.canvas,0,0);
-      var ci=0, steps=Math.min(chs.length,120)||1, per=Math.ceil(chs.length/steps);
-      var iv2=setInterval(function(){ for(var q=0;q<per&&ci<chs.length;q++,ci++){var ch=chs[ci];for(var z=0;z<ch.length;z++)_ex(rc,ch[z]);} vc.clearRect(0,0,px,px); vc.drawImage(rc.canvas,0,0);
-        if(ci>=chs.length){ clearInterval(iv2); setTimeout(function(){rec.stop();},900); } },33);
+      // Ritmo por DURACIÓN, no por nº de trazos: el reveal dura ~4,6 s aunque la
+      // familia tenga pocas piezas (KRRTK son ~13 y antes duraba 0,3 s).
+      var ci=0, frame=0, TF=140; function _eo(t){ return 1-Math.pow(1-t,3); }
+      var iv2=setInterval(function(){ frame++;
+        var target=Math.min(chs.length, Math.round(chs.length*_eo(frame/TF)));
+        while(ci<target){ var ch=chs[ci++]; for(var z=0;z<ch.length;z++)_ex(rc,ch[z]); }
+        vc.clearRect(0,0,px,px); vc.drawImage(rc.canvas,0,0);
+        if(frame>=TF){ while(ci<chs.length){ var ch2=chs[ci++]; for(var z2=0;z2<ch2.length;z2++)_ex(rc,ch2[z2]); } vc.clearRect(0,0,px,px); vc.drawImage(rc.canvas,0,0); clearInterval(iv2); setTimeout(function(){rec.stop();},900); } },33);
     }
   }
 
