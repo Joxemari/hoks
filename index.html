@@ -179,7 +179,7 @@
 <nav id="nav" aria-label="main">
   <div class="nav-mark"></div>
   <ul id="navlist"></ul>
-  <div class="who">hand coded goods<br>hoks · Donostia</div>
+  <div class="who">hand coded goods<br>hoks · &lt;&lt;my foundry&gt;&gt;</div>
 </nav>
 
 <!-- ── INTERIOR: THE HALL ── -->
@@ -288,7 +288,7 @@
 
   // ── SPLASH: the work PAINTS ITSELF ─────────────────────────────────────────
   var ca=document.getElementById('ca'), landT=null, holdT=null, carRun=false;
-  function landscape(){ var vw=Math.max(window.innerWidth,1), vh=Math.max(window.innerHeight,1); var ar=Math.max(vw/vh,1.34); var w=Math.min(vw,1600), h=Math.round(w/ar); return [w,h]; }
+  function landscape(){ var dpr=Math.min(window.devicePixelRatio||1,2); var vw=Math.max(window.innerWidth,1), vh=Math.max(window.innerHeight,1); var ar=Math.max(vw/vh,1.34); var w=Math.min(Math.round(vw*dpr),1600), h=Math.round(w/ar); return [w,h]; }
   var PATHOP={arc:1,ellipse:1,moveTo:1,lineTo:1,quadraticCurveTo:1,bezierCurveTo:1,arcTo:1,roundRect:1};
   var COMMIT={fill:1,stroke:1,fillRect:1,strokeRect:1,drawImage:1,putImageData:1,fillText:1,strokeText:1};
   var STYLE=['fillStyle','strokeStyle','globalAlpha','globalCompositeOperation','lineWidth','lineCap','lineJoin','miterLimit','font','textAlign','textBaseline','shadowBlur','shadowColor','shadowOffsetX','shadowOffsetY','lineDashOffset','filter','imageSmoothingEnabled','imageSmoothingQuality'];
