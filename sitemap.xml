@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- hoks — sitemap. Solo obra publicada: las familias `active` de
+     data/works.json, los ensayos de data/makingof/ y las tres páginas
+     fijas. Al activar una familia en el panel hay que añadirla aquí:
+     el sitemap es estático porque el sitio no tiene paso de build, y
+     una URL con ?w= a la que nadie enlaza en HTML no se descubre sola.
+     Ver CLAUDE.md § Buscadores y agentes. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://joxemari.github.io/hoks/</loc>
+    <lastmod>2026-08-20</lastmod>
+  </url>
+  <url>
+    <loc>https://joxemari.github.io/hoks/about.html</loc>
+    <lastmod>2026-08-19</lastmod>
+  </url>
+  <url>
+    <loc>https://joxemari.github.io/hoks/palettes.html</loc>
+    <lastmod>2026-08-20</lastmod>
+  </url>
+  <url>
+    <loc>https://joxemari.github.io/hoks/plls.html</loc>
+    <lastmod>2026-08-12</lastmod>
+  </url>
+  <url>
+    <loc>https://joxemari.github.io/hoks/krrtk.html</loc>
+    <lastmod>2026-08-12</lastmod>
+  </url>
+  <url>
+    <loc>https://joxemari.github.io/hoks/dtkrt.html</loc>
+    <lastmod>2026-08-12</lastmod>
+  </url>
+  <url>
+    <loc>https://joxemari.github.io/hoks/eclps.html</loc>
+    <lastmod>2026-08-19</lastmod>
+  </url>
+  <url>
+    <loc>https://joxemari.github.io/hoks/trzs.html</loc>
+    <lastmod>2026-08-14</lastmod>
+  </url>
+  <url>
+    <loc>https://joxemari.github.io/hoks/making.html?w=plls</loc>
+    <lastmod>2026-08-20</lastmod>
+  </url>
+  <url>
+    <loc>https://joxemari.github.io/hoks/making.html?w=krrtk</loc>
+    <lastmod>2026-08-20</lastmod>
+  </url>
+  <url>
+    <loc>https://joxemari.github.io/hoks/making.html?w=dtkrt</loc>
+    <lastmod>2026-08-20</lastmod>
+  </url>
+</urlset>
