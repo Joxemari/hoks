@@ -133,7 +133,7 @@
   // miniatura si la imagen pesa como pesaba el PNG (1,2 MB). Una familia con su
   // propia tarjeta no lo necesita; las demás caen aquí, que es mejor que un 404.
   function ogImage(w) {
-    return BASE + (w.ogImage ? 'assets/og/' + w.slug + '.jpg' : 'preview.jpg?v=4');
+    return BASE + (w.ogImage ? 'assets/og/' + w.slug + '.jpg' : 'preview.jpg?v=5');
   }
   // El alt describe la IMAGEN, no repite la regla entera: la primera frase de
   // la descripción es la que dice qué se está viendo. Un alt de 300 caracteres
