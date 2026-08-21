@@ -1,7 +1,7 @@
 (function() {
 // Favicon de marca: el monograma (la "o" cruzada) en ácido sobre azul, como el
 // avatar de Notion. Servido same-origin desde la raíz.
-const FAVICON = `<link rel="icon" type="image/png" href="/hoks/favicon.png">`;
+const FAVICON = `<link rel="icon" type="image/png" href="/favicon.png">`;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // i18n — trilingüe EU / ES / EN. Se aloja aquí porque nav.js se carga (bloqueando
@@ -254,7 +254,7 @@ document.documentElement.setAttribute('lang', LANG);
 // —GitHub Pages, /hoks/— porque una -webkit-mask cross-origin la bloquean
 // algunos navegadores. Ruta absoluta para que valga igual desde la raíz y
 // desde sketches/<obra>/.
-const MONO = '/hoks/monogram.png';
+const MONO = '/monogram.png';
 
 // El sistema de diseño vive aquí, en :root, porque nav.js se carga en todas
 // las páginas: así los tokens (paper/ink/blue/acid/line/mut/body) y la
