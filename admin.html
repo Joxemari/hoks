@@ -427,6 +427,12 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
 </div>
 <div class="toast" id="toast"></div>
 
+<!-- El generador de las páginas estáticas. admin.html es un panel autónomo y no
+     carga scripts del sitio; esta es la excepción, y tiene motivo: el HTML que
+     lee una máquina lo escribe este panel, y si generase por su cuenta habría
+     dos implementaciones y la deriva no se vería hasta leer el archivo
+     publicado. Ver CLAUDE.md § Buscadores y agentes. -->
+<script src="static-gen.js"></script>
 <script>
 const PWD_KEY='hoks-admin-pwd', SESSION_KEY='hoks-admin-session', TOKEN_KEY='hoks-gh-token';
 const BATCH_KEY='hoks-batches';   // solo lectura: lotes del sistema anterior
@@ -450,6 +456,32 @@ async function ghFetch(path,content,msg){
   if(!r.ok){const d=await r.json();toast('GitHub error: '+(d.message||r.status));return false;}
   return true;
 }
+// UTF-8 ↔ base64: la Contents API habla base64 y btoa/atob solo latin1.
+function b64enc(text){return btoa(unescape(encodeURIComponent(text)));}
+function b64dec(b64){return decodeURIComponent(escape(atob(String(b64).replace(/\s/g,''))));}
+
+// Lee un archivo del repo (no de data/: esto es código, y hace falta su sha
+// para poder reescribirlo).
+async function ghReadFile(path){
+  const token=getToken(); if(!token) return null;
+  try{
+    const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{headers:{'Authorization':'Bearer '+token}});
+    if(!r.ok) return null;
+    const d=await r.json();
+    return {sha:d.sha, text:b64dec(d.content)};
+  }catch(e){ return null; }
+}
+async function ghPutText(path,text,msg,sha){
+  const token=getToken(); if(!token) return false;
+  showSaving(true);
+  const body={message:msg,content:b64enc(text)};
+  if(sha)body.sha=sha;
+  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  showSaving(false);
+  if(!r.ok){const d=await r.json().catch(()=>({}));toast('GitHub error: '+(d.message||r.status));return false;}
+  return true;
+}
+
 async function ghRead(path){const r=await fetch(RAW_BASE+path+'?t='+Date.now());if(!r.ok)return null;return r.json();}
 function showSaving(v){$('saving').classList.toggle('show',v);}
 
@@ -469,7 +501,38 @@ async function loadWorks() {
 async function saveWorks() {
   const ok = await ghFetch('data/works.json', works, 'update works');
   if (!ok) { works = await ghRead('works.json') || []; renderWorks(); }
+  if (ok) await syncStatic();
   return ok;
+}
+
+// Las páginas de familia son ARTEFACTO DERIVADO de works.json. Lo que tiene que
+// leer una máquina —cabecera, JSON-LD, la narrativa misma— va estático en el
+// HTML, porque los fetchers de agente no ejecutan JS; y la fuente única sigue
+// siendo works.json, así que el HTML lo escribe este panel al guardar y nadie lo
+// edita a mano. Lo mismo con sitemap.xml, que se deriva de qué familias están
+// activas. Así activar una familia sigue siendo un clic: sin esto, había que
+// tocar tres archivos a mano cada vez.
+//
+// Solo se toca lo que hay entre los marcadores de static-gen.js. Un cascarón sin
+// marcadores es un cascarón que alguien escribió a mano: se deja en paz.
+async function syncStatic() {
+  if (!window.HOKSGEN) { toast('static-gen.js did not load — static pages NOT updated'); return; }
+  const done = [];
+  for (const w of works) {
+    if (!HOKSGEN.isShell(w)) continue;              // cae a work.html?w=…: no hay cascarón
+    const f = await ghReadFile(w.page);
+    if (!f || f.text.indexOf(HOKSGEN.MARK.headA) < 0) continue;
+    let next;
+    try { next = HOKSGEN.apply(f.text, w, works); }
+    catch (e) { toast('static: ' + w.page + ' — ' + e.message); continue; }
+    if (next === f.text) continue;
+    if (await ghPutText(w.page, next, 'static: ' + w.slug + ' desde works.json', f.sha)) done.push(w.page);
+  }
+  const sm = await ghReadFile('sitemap.xml'), nextSm = HOKSGEN.sitemap(works);
+  if (sm && sm.text !== nextSm) {
+    if (await ghPutText('sitemap.xml', nextSm, 'sitemap: desde works.json', sm.sha)) done.push('sitemap.xml');
+  }
+  if (done.length) toast('Static pages updated: ' + done.join(', '));
 }
 
 

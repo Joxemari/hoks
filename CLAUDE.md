@@ -101,6 +101,11 @@ solo el de PLLS está portado al sistema nuevo, el resto sigue en el look viejo.
   piezas elegidas y lienzo vivo mudo. La usan los cascarones (`HOKSWORK.init`) y
   `work.html`, que es el mismo cascarón sin obra fija: lee el slug del `?w=`,
   pide su algo.js y llama a lo mismo.
+- **`static-gen.js`** — El HTML que lee una máquina: cabecera, JSON-LD y el
+  bloque `#hoks-static` de una página de familia, más `sitemap.xml`. Lo llama
+  `admin.html` al guardar (y `tools/static.mjs` desde node). Ver § Buscadores y
+  agentes: las páginas de familia son artefacto derivado de `works.json`, no se
+  editan a mano.
 - **`usage.js`** — Registro de uso de paletas (`data/palette-usage.json`).
   `HOKSUSAGE.load()` / `.counts()` los lee (palettes.html, solo con sesión
   admin); `.recordMany()` añade filas al **publicar un lote** desde el
@@ -271,51 +276,88 @@ de `raw.githubusercontent.com`, un cascarón de familia era, para ellos, un
 
 **La regla, una sola:** lo que tiene que leer una máquina va **estático en el
 HTML**. Si un dato solo existe después de un `fetch` o de que corra `nav.js`,
-para ese lector no existe. Por eso las cabeceras no se inyectan: se escriben en
-cada archivo, aunque se repitan.
+para ese lector no existe.
 
-De ahí lo que hay hoy:
+Pero la narrativa vive en `data/works.json`, que es su fuente única, así que la
+salida no es duplicarla: **el HTML de una página de familia es un artefacto
+derivado**. Lo escribe el panel al guardar la familia, entre marcadores, y nadie
+lo edita a mano.
 
+- **`static-gen.js`** — el generador, **compartido a propósito**. `admin.html` es
+  un panel autónomo y no carga scripts del sitio; esta es la excepción, y tiene
+  motivo: si el panel generase por un lado y las herramientas por otro, dos
+  implementaciones darían dos HTML y la deriva no se vería hasta leer el archivo
+  publicado. Produce la cabecera, el bloque estático y el sitemap. Vale en
+  navegador (`window.HOKSGEN`) y en node (`module.exports`).
+- **`tools/static.mjs`** — el mismo generador sin pasar por el panel:
+  `node tools/static.mjs` rellena, `--check` dice si lo commiteado es lo que el
+  generador produce hoy. Útil cuando lo único que cambia es el HTML derivado y
+  no hace falta token.
+- **Marcadores** — `<!-- HOKS:AUTO-HEAD -->` en el `<head>` y
+  `<!-- HOKS:AUTO-BODY -->` en el `<body>`. **Solo se toca lo que hay entre
+  ellos.** Un cascarón sin marcadores es un cascarón escrito a mano y se deja en
+  paz (`bzrs.html`, que es la heredada congelada).
+- **El bloque estático** — `#hoks-static`: nombre, año, pliegos, la imagen con
+  su `alt`, la descripción **en los tres idiomas**, la cartela y —esto es lo que
+  faltaba— **enlaces**. `nav.js` construye el nav entero, así que sin JS una
+  página de familia no tenía *ni un enlace*: era un callejón sin salida para un
+  lector y para un rastreador. `work-page.js` lo retira al arrancar, así que
+  nadie lo ve dos veces.
+- **`assets/og/<slug>.jpg`** — una tarjeta 1200×630 por familia activa, la obra
+  centrada sobre papel. Es lo que hace que la obra **exista** para quien no puede
+  mirar un `<canvas>`: agente o lector de pantalla. Las de PLLS y KRRTK son la
+  pieza publicada tal cual (no se re-renderiza el seed: `data/*.json` no guarda
+  la paleta y la elección por peso dependía de qué paletas estaban activas ese
+  día, así que manda el píxel publicado). Las tres sin lote son un render con
+  seed fijo, **provisionales**: en cuanto haya lote se cambian por obra
+  publicada. El campo `ogImage` de `works.json` dice quién tiene la suya; sin él
+  se cae a `preview.png`, que es mejor que un 404.
+- **`assets/static.css`** — el estilo de ese bloque, en archivo y no repetido en
+  cada cascarón: el CSS sí lo pide un navegador con el JS apagado, y a un agente
+  le da igual.
 - **`robots.txt`** — declara la frontera taller/obra y apunta al sitemap. Ojo:
   en un *project page* (`joxemari.github.io/hoks/`) **es inerte**, porque
   `robots.txt` solo se lee en la raíz del origen, que es otro repo. Lo que de
-  verdad mantiene el taller fuera del índice es el `<meta name="robots"
-  content="noindex">` de esas páginas, que sí viaja en el documento. El archivo
-  pasa a valer el día que haya dominio propio.
-- **`sitemap.xml`** — las once URLs públicas, con `lastmod`. Es estático porque
-  no hay paso de build, y hace falta porque `making.html?w=…` no se descubre
-  sola: nadie enlaza a una URL con query desde HTML.
+  verdad mantiene el taller fuera del índice es el `noindex` de esas páginas,
+  que sí viaja en el documento. El archivo pasa a valer el día que haya dominio
+  propio.
+- **`sitemap.xml`** — generado, **sin `lastmod` a propósito**: la única fecha que
+  el panel conoce es "hoy", y ponerla en cada URL cada vez que se guarda es
+  justo el `lastmod` que los buscadores aprenden a ignorar. Hace falta porque
+  `making.html?w=…` no se descubre sola: nadie enlaza a una query desde HTML.
 - **`llms.txt`** — la gramática en prosa: qué es una familia, un *seed*, una
   paleta, un pliego, y dónde están los JSON. Es una **convención propuesta, no
   un estándar**: nadie garantiza que se lea. Está por coherencia y porque cuesta
-  cero, no porque vaya a traer visitas.
-- **Cabeceras** — `description`, canonical, OG/Twitter y **JSON-LD** en las
-  cinco familias activas, la landing, About y Palettes. La familia se declara
-  `CreativeWorkSeries` (una familia es una serie, no un cuadro), la persona
-  `Person`, y el ensayo cuelga de su familia por `subjectOf`.
+  cero, no porque vaya a traer visitas. Se escribe a mano.
 - **`lang`** — `nav.js` abre en inglés (`DEFAULT_LANG`), así que el `lang="eu"`
   estático de los cascarones mentía a quien no ejecuta JS. Las públicas dicen
   `en`; `nav.js` lo reescribe al cambiar de idioma.
 
-**Al activar una familia** el clic en el panel ya no basta del todo: sigue
-bastando para la web, pero para las máquinas hay que (1) quitar su `noindex`,
-(2) añadir su URL a `sitemap.xml` y (3) darle cabecera al cascarón. Es el
-peaje de no tener build; si algún día molesta, la salida es generar sitemap y
-cabeceras al publicar, no inyectarlos con JS.
+**Activar una familia sigue siendo un clic.** El panel guarda `works.json` y
+acto seguido reescribe los cascarones y el sitemap: el `noindex` se cae solo
+—lo pone el generador cuando `active` es falso—, la URL entra en el sitemap y la
+narrativa aparece en el HTML. Un commit por archivo que de verdad cambie.
 
-**Lo que queda pendiente**, por orden de lo que de verdad pesa:
+**Al añadir una familia nueva con cascarón propio**, lo único que hay que hacer
+a mano es pegar los dos pares de marcadores; a partir de ahí lo llena el panel.
+Sin `page`, cae a `work.html?w=<slug>` y no hay nada que pegar — pero tampoco hay
+bloque estático: esa página es genérica y el slug llega por URL, así que su
+cabecera no puede ser por familia sin paso de build.
 
-1. **Narrativa estática en el HTML.** Es el arreglo de fondo: hoy un agente lee
-   la `description` de la cabecera, no la obra. Choca con la fuente única de
-   `data/works.json`, y esa decisión —o el panel escribe también el HTML, o el
-   HTML pasa a ser el canónico— está sin tomar.
-2. **Un PNG por pieza publicada, con `alt` de verdad.** La obra es `<canvas>`:
-   no existe para un agente ni para un lector de pantalla. La imagen ya está en
-   los `data/*.json` en base64; lo que falta es sacarla a archivo y enseñarla en
-   un `<img>`. Mientras no esté, todas las `og:image` son el mismo `preview.png`.
-3. **URLs por idioma + `hreflang`.** El statement existe en euskara, castellano
-   e inglés, pero en una sola URL con el idioma en `localStorage`: solo se puede
-   indexar uno. Arreglarlo es cambio de estructura, no de cabecera.
+**Lo que queda pendiente:**
+
+1. **URLs por idioma + `hreflang`.** El statement existe en euskara, castellano e
+   inglés, pero en una sola URL con el idioma en `localStorage`: solo se puede
+   indexar uno. El bloque estático ya trae los tres marcados con `lang`, que es
+   un parche honesto, no la solución. Arreglarlo de verdad es cambio de
+   estructura.
+2. **`making.html` y `work.html`.** Las dos reciben el slug por `?w=`, así que su
+   cabecera y su texto no pueden ser por pieza sin build. Los ensayos están en el
+   sitemap y se indexarán por lo que renderice el buscador, no por lo que diga el
+   documento.
+3. **Obra publicada por familia.** Cuando DTKRT, ECLPS y TRZS tengan lote, sus
+   tarjetas `og` dejan de ser un render provisional. Y una imagen por *pieza*
+   —no por familia— sigue sin existir.
 
 ## Workflow
 
