@@ -75,6 +75,8 @@
         <button class="btn solid" id="copy">Copiar pie</button>
         <button class="btn acid" id="dl1080">Descargar 1080 (IG)</button>
         <button class="btn" id="dl2048">2048 (hi-res)</button>
+        <button class="btn" id="vidItr" title="El sistema escupe seeds">Vídeo ⟳</button>
+        <button class="btn" id="vidAsm" title="La pieza se pinta sola">Vídeo ✎</button>
         <span class="flash" id="flash">✓ copiado</span>
       </div>
       <div class="hint" id="prov"></div>
@@ -1399,6 +1401,50 @@
   }
   function flash(){ var f=document.getElementById('flash'); f.classList.add('show'); setTimeout(function(){f.classList.remove('show');},1200); }
 
+  // ── VÍDEO (feed-fábrica en el navegador) ──────────────────────────────────
+  // Graba el lienzo con MediaRecorder. Prefiere MP4 (H.264) donde el navegador
+  // lo permite (Safari, Chrome reciente); si no, cae a WebM. Dos formatos, los
+  // mismos que el generador _social: iterations (escupe seeds) y assembling (se
+  // pinta sola). Los MP4 finos de campaña salen del generador; esto es el atajo.
+  var _recording=false;
+  function bestVideoMime(){ var C=['video/mp4;codecs=avc1.640028','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm']; for(var i=0;i<C.length;i++){ try{ if(window.MediaRecorder && MediaRecorder.isTypeSupported(C[i])) return C[i]; }catch(e){} } return ''; }
+  function saveBlob(blob,name){ var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},1500); }
+  var _P={arc:1,ellipse:1,moveTo:1,lineTo:1,quadraticCurveTo:1,bezierCurveTo:1,arcTo:1,roundRect:1};
+  var _C={fill:1,stroke:1,fillRect:1,strokeRect:1,drawImage:1,putImageData:1,fillText:1,strokeText:1};
+  var _S=['fillStyle','strokeStyle','globalAlpha','globalCompositeOperation','lineWidth','lineCap','lineJoin','miterLimit','font','textAlign','textBaseline','shadowBlur','shadowColor','shadowOffsetX','shadowOffsetY','lineDashOffset','filter','imageSmoothingEnabled','imageSmoothingQuality'];
+  function _record(f,px,s){ var fc=document.createElement('canvas'); fc.width=px; fc.height=px; var rc=fc.getContext('2d'); var ops=[];
+    var proxy=new Proxy(rc,{get:function(t,k){var v=t[k]; if(typeof v==='function'){return function(){var a=[].slice.call(arguments);var r=v.apply(t,a);ops.push({m:k,a:a});return r;};} return v;},
+      set:function(t,k,val){if(_S.indexOf(k)>=0)ops.push({p:k,v:val}); try{t[k]=val;}catch(e){} return true;}});
+    try{H[f].render(proxy,px,px,s,{params:{field:'square',grainScale:1}});}catch(e){} return {rc:rc,ops:ops}; }
+  function _objStart(ops,px){ for(var i=0;i<ops.length;i++){var o=ops[i];if(!o.m)continue;if(_P[o.m])return i;if((o.m==='fillRect'||o.m==='rect')&&o.a&&o.a.length>=4){var x=o.a[0],y=o.a[1],w=o.a[2],h=o.a[3];if(!(Math.abs(x)<2&&Math.abs(y)<2&&w>=px*0.98&&h>=px*0.98))return i;}} return ops.length; }
+  function _ex(rc,o){ if(o.p!==undefined){try{rc[o.p]=o.v;}catch(e){}} else {try{rc[o.m].apply(rc,o.a);}catch(e){}} }
+  function recordVideo(mode){
+    if(!sel || _recording) return;
+    var mime=bestVideoMime(); if(!mime){ alert('Este navegador no puede grabar vídeo (MediaRecorder no disponible).'); return; }
+    var ext=mime.indexOf('mp4')>=0?'mp4':'webm', px=1080;
+    var c=document.createElement('canvas'); c.width=px; c.height=px; var vc=c.getContext('2d');
+    render(sel.fam,c,px,sel.seed);
+    var stream=c.captureStream(30), rec;
+    try{ rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:12000000}); }catch(e){ try{ rec=new MediaRecorder(stream); }catch(_){ alert('No se pudo iniciar la grabación.'); return; } }
+    var chunks=[]; rec.ondataavailable=function(e){ if(e.data&&e.data.size) chunks.push(e.data); };
+    var btns=[document.getElementById('vidItr'),document.getElementById('vidAsm')];
+    _recording=true; btns.forEach(function(b){if(b){b.disabled=true;b.style.opacity=.5;}});
+    rec.onstop=function(){ saveBlob(new Blob(chunks,{type:mime}), sel.fam.toLowerCase()+'-'+sel.seed+'-'+mode+'.'+ext); _recording=false; btns.forEach(function(b){if(b){b.disabled=false;b.style.opacity='';}}); flash(); };
+    rec.start();
+    if(mode==='iterations'){
+      var seeds=[sel.seed]; for(var i=1;i<32;i++){ seeds.push((((sel.seed>>>0)*2654435761 + i*40503)>>>0)%1e9); }
+      var i2=0, iv=setInterval(function(){ render(sel.fam,c,px,seeds[i2%seeds.length]); i2++; if(i2>=seeds.length){ clearInterval(iv); setTimeout(function(){rec.stop();},160); } },125);
+    } else {
+      var r=_record(sel.fam,px,sel.seed), ops=r.ops, rc=r.rc, oi=_objStart(ops,px);
+      rc.setTransform(1,0,0,1,0,0); rc.globalAlpha=1; rc.globalCompositeOperation='source-over';
+      var chs=[],cur=[]; for(var j=oi;j<ops.length;j++){cur.push(ops[j]); if(ops[j].m&&_C[ops[j].m]){chs.push(cur);cur=[];}} if(cur.length)chs.push(cur);
+      var k=0; for(;k<oi;k++)_ex(rc,ops[k]); vc.clearRect(0,0,px,px); vc.drawImage(rc.canvas,0,0);
+      var ci=0, steps=Math.min(chs.length,120)||1, per=Math.ceil(chs.length/steps);
+      var iv2=setInterval(function(){ for(var q=0;q<per&&ci<chs.length;q++,ci++){var ch=chs[ci];for(var z=0;z<ch.length;z++)_ex(rc,ch[z]);} vc.clearRect(0,0,px,px); vc.drawImage(rc.canvas,0,0);
+        if(ci>=chs.length){ clearInterval(iv2); setTimeout(function(){rec.stop();},900); } },33);
+    }
+  }
+
   // family selector
   Array.prototype.forEach.call(document.querySelectorAll('#fam button'),function(b){
     b.addEventListener('click',function(){ fam=b.getAttribute('data-f');
@@ -1408,6 +1454,8 @@
   document.getElementById('regen').addEventListener('click', build);
   document.getElementById('dl1080').addEventListener('click', function(){ download(1080, (sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-1080.png'); });
   document.getElementById('dl2048').addEventListener('click', function(){ download(2048, (sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-2048.png'); });
+  document.getElementById('vidItr').addEventListener('click', function(){ recordVideo('iterations'); });
+  document.getElementById('vidAsm').addEventListener('click', function(){ recordVideo('assembling'); });
   document.getElementById('copy').addEventListener('click', function(){
     var t=cap.value;
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(flash, function(){cap.select();flash();}); }
