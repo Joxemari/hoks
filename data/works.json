@@ -114,7 +114,7 @@
     "id": "eclps",
     "name": "ECLPS",
     "slug": "eclps",
-    "active": true,
+    "active": false,
     "description": {
       "en": "A single row of circles on one axis. The step between centres never changes; what changes is which of them are drawn. The grid stays perfect — the irregularity is all absence.",
       "es": "Una sola fila de círculos en un eje. El paso entre centros no cambia nunca; lo que cambia es cuáles se dibujan. La retícula sigue perfecta — la irregularidad es toda ausencia.",
