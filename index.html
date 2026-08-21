@@ -376,7 +376,19 @@
   function contact(){ stopHall(); frame.innerHTML=''; frame.scrollTop=0;
     if(!ACTIVE.length){ return; }
     var w=document.createElement('div'); w.className='wall';
-    var ts=[]; for(var i=0;i<176;i++){ var t=tile();
+    // El muro DEBE llenar el marco en CUALQUIER pantalla. Con 176 celdas fijas de
+    // 84px, un monitor ancho las derramaba en pocas filas y dejaba medio lienzo en
+    // blanco (lo que se vio en pantalla grande). Se mide el marco y se calcula la
+    // celda (mayor cuanto más ancho), las columnas y las filas que hacen falta para
+    // cubrir el alto; se generan exactamente esas celdas.
+    var fr0=frame.getBoundingClientRect();
+    var availW=Math.max(1, fr0.width-24), availH=Math.max(1, fr0.height-24);
+    var cell=Math.max(84, Math.min(150, Math.round(availW/16)));
+    var cols=Math.max(2, Math.round(availW/cell));
+    var rows=Math.ceil(availH/(availW/cols))+1;
+    var count=Math.min(cols*rows, 520);
+    w.style.gridTemplateColumns='repeat('+cols+',1fr)';
+    var ts=[]; for(var i=0;i<count;i++){ var t=tile();
       (function(t){ t.addEventListener('click',function(){ if(t._w){ location.href = BASE + workHref(t._w); } }); })(t);
       w.appendChild(t); ts.push(t); }
     frame.appendChild(w);
@@ -415,6 +427,15 @@
       rafId=requestAnimationFrame(loop);
     });
   }
+  // Re-tejer el muro si cambia el ANCHO (no el alto: en móvil la barra de URL
+  // dispara resize de puro alto y no queremos reconstruir por eso). Solo dentro
+  // del hall. Así el muro sigue llenando la pantalla al girar o redimensionar.
+  var _rzT, _lastW=window.innerWidth;
+  window.addEventListener('resize', function(){
+    if(!document.body.classList.contains('entered')) return;
+    var wn=window.innerWidth; if(Math.abs(wn-_lastW)<40) return; _lastW=wn;
+    clearTimeout(_rzT); _rzT=setTimeout(contact, 250);
+  });
 
   // ── BOOT ────────────────────────────────────────────────────────────────────
   function famUP(w){ return (w.slug||'').toUpperCase(); }
