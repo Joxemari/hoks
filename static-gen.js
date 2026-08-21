@@ -129,8 +129,11 @@
   // Una por familia, en assets/og/. La obra es <canvas>: sin este archivo no
   // existe para un agente ni para un lector de pantalla. Si la familia aún no
   // tiene la suya, cae al preview general — mejor eso que un 404 en og:image.
+  // El recurso general es preview.jpg, no el PNG: WhatsApp y X no enseñan la
+  // miniatura si la imagen pesa como pesaba el PNG (1,2 MB). Una familia con su
+  // propia tarjeta no lo necesita; las demás caen aquí, que es mejor que un 404.
   function ogImage(w) {
-    return BASE + (w.ogImage ? 'assets/og/' + w.slug + '.jpg' : 'preview.png?v=2');
+    return BASE + (w.ogImage ? 'assets/og/' + w.slug + '.jpg' : 'preview.jpg?v=3');
   }
   // El alt describe la IMAGEN, no repite la regla entera: la primera frase de
   // la descripción es la que dice qué se está viendo. Un alt de 300 caracteres
