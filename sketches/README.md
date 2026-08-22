@@ -376,7 +376,44 @@ pliego. Esto es una **foto**: luz, sombra, tela y cristal, para **publicar**. So
 dos oficios distintos y por eso son dos páginas — la primera versión de esta
 intentó ser las dos cosas, y un alzado con cotas no se puede poner en Instagram.
 
-Cuatro soportes, y todos salen del mismo sitio:
+### Lo primero: `tu foto`
+
+**Una escena sintética nunca va a ser una foto.** Por muy afinada que esté la
+luz, está dibujada, y se lee como render. Lo único que da fotorrealismo es que
+debajo haya una **fotografía de verdad** — y entonces el trabajo no es dibujar la
+luz, es *tomarla prestada*.
+
+Eso es la escena `foto`, y es la que hay que usar para publicar:
+
+1. Sueltas una imagen en la ventana (arrastrar, pegar o el botón). Foto del móvil,
+   plantilla de maqueta comprada, lo que sea.
+2. Arrastras las **cuatro esquinas** hasta el plano donde va la obra: la pared, el
+   pecho de la camiseta, la funda, la pantalla.
+3. La obra se proyecta ahí con **homografía** —perspectiva completa, no un
+   trapecio— y coge de la propia foto cuatro cosas:
+
+   | mando      | qué hace                                                          |
+   |------------|-------------------------------------------------------------------|
+   | Luz        | la sombra de la foto **multiplica** la obra y su brillo va en `screen`. La referencia se calcula **dentro del plano marcado**, no en el cuadro entero |
+   | Pliegue    | la obra se **dobla** siguiendo el gradiente de luminancia: donde la foto tiene un pliegue, la impresión se dobla |
+   | Textura    | la propia foto en gris, en `overlay` y a resolución completa: la trama del tejido y el diente del papel entran en la tinta |
+   | Grano      | ruido sobre la capa de la obra para **igualar** el de la foto. Una obra generada es perfectamente limpia y una foto no, y esa diferencia delata un montaje antes que la perspectiva |
+
+   `Multiplicar` es el atajo bueno cuando lo de debajo es claro (camiseta cruda,
+   papel), porque la tinta deja pasar la trama. Sobre oscuro se come la obra.
+
+**La foto no sale del navegador.** No se sube, no se commitea, no se guarda: lo
+único que se recuerda son las cuatro esquinas, en `localStorage` y por archivo,
+para que volver a la misma foto sea un clic. El repo es público y una foto dentro
+—propia o ajena— es un problema que no hace falta tener.
+
+El encuadre `Foto` respeta la proporción de tu imagen; recortar la foto de alguien
+a 4:5 sin avisar es decidir por él dónde está el encuadre.
+
+### Y cuatro escenas sintéticas
+
+Para salir del paso sin foto, o para una prueba rápida. Son **renders**, y se
+nota: valen para ver la obra sobre algo, no para publicar.
 
 | escena     | qué es                          | qué la hace creíble                       |
 |------------|---------------------------------|-------------------------------------------|
@@ -399,7 +436,14 @@ misma pieza fotografiada otra vez, no otra pieza.
 Una maqueta no convence por tener el objeto bien dibujado: convence por la luz.
 Tres piezas hacen casi todo:
 
-- **`warp`** — la obra sobre un plano girado, con perspectiva **proyectiva**. La
+- **`warpFree`** — la obra sobre un quad **cualquiera**, el que marca la mano
+  sobre la foto. Canvas 2D solo sabe transformar afín, así que se parte el
+  cuadrado en rejilla, se pasan sus esquinas por la **homografía** y cada celda
+  se pinta como dos triángulos afines; con rejilla suficiente el error es
+  subpíxel. El triángulo de recorte se dilata medio píxel desde su centro, o se
+  ven las costuras entre celdas.
+- **`warp`** — el caso sencillo: plano girado sobre UN eje, que es lo que hacen
+  las escenas sintéticas. Perspectiva **proyectiva** igualmente. La
   coordenada de textura se interpola en 1/z (y aquí 1/z es el alto proyectado del
   borde); interpolada linealmente, la imagen no se comprime hacia el lado lejano
   y el resultado se lee como un trapecio pintado. Va recortada al propio quad,
@@ -431,14 +475,14 @@ como un `algo.js`, para que la vista previa y el archivo sean la misma imagen.
 
 **Lo que falta:**
 
-1. **Tote y pañuelo.** El pañuelo pide seda cayendo, que es el caso difícil: una
-   tela colgada, no extendida.
-2. **Interior amueblado.** Hoy `pared` es una pared con una rama delante. Un salón
-   —sofá, lámpara, suelo— es otra escena, no un ajuste de esta.
-3. **Foto propia.** Todo esto es sintético: se dibuja la luz, no se fotografía.
-   Para una foto de verdad la vía es soltar una imagen en la página y marcar las
-   cuatro esquinas del plano — el `warp` ya sabe hacer el resto—. Es el camino a
-   fotorrealismo real y no está hecho.
+1. **Un plano curvo.** La homografía coloca la obra sobre un PLANO. Una taza, una
+   manga, una botella son cilindros, y ahí el quad no llega: haría falta una
+   malla, no cuatro esquinas.
+2. **Máscara de oclusión.** Si por delante del plano pasa algo —un brazo, un
+   pliegue que se levanta, una mano—, la obra se pinta encima. Se arregla
+   pintando a mano una máscara sobre la foto, y no está hecho.
+3. **Tote y pañuelo sintéticos.** El pañuelo pide seda cayendo, que es el caso
+   difícil. Con el montador dejan de hacer falta: es cuestión de una foto.
 
 ## Usar el harness (paso 3)
 

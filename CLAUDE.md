@@ -158,10 +158,20 @@ recortada al quad), `displace` (la impresión se **dobla** con los pliegues que 
 tocan; sin esto es una pegatina, siempre) y `grade` (luz, temperatura y grano al
 final y sobre todo el cuadro, que es el defecto compartido que dice que hay una
 sola foto). Una sola luz para todas las escenas, el objeto en su propio lienzo
-para que la sombra sea de la silueta, y nada paralelo al canto. Todo es
-**sintético**: se dibuja la luz, no se fotografía — para fotorrealismo de verdad
-falta poder soltar una foto propia y marcarle las cuatro esquinas, que el `warp`
-ya sabe hacer.
+para que la sombra sea de la silueta, y nada paralelo al canto.
+
+Pero esas cuatro son **renders**, y se nota. Lo que da fotorrealismo es la escena
+**`foto`**, que es la que se usa para publicar: sueltas una imagen (móvil,
+plantilla comprada), arrastras las **cuatro esquinas** hasta el plano —pared,
+pecho, funda— y la obra se proyecta ahí por **homografía** tomando prestada la
+luz de la propia fotografía: su sombra multiplica y su brillo va en screen (con
+la referencia medida **dentro del plano**, no en el cuadro entero), el gradiente
+de luminancia la **dobla**, la foto en gris y en overlay le mete la trama a
+resolución completa, y un grano igualado tapa la diferencia entre una obra
+perfectamente limpia y una foto que no lo es. **La foto no sale del navegador**:
+no se sube ni se commitea —el repo es público—, solo se recuerdan las cuatro
+esquinas por archivo. Lo que no llega: un plano curvo (una taza es un cilindro,
+no un quad) y la máscara para lo que pase por delante.
 
 El circuito completo: **lab → lote → publicar → galería**. Se mira la hoja de
 contactos, se aparta con `+` o `a`, y el lote —una lista de *recetas*, no de

@@ -29,6 +29,7 @@
   const TAU = Math.PI * 2;
 
   const list = [
+    { id: 'foto',     label: 'Tu foto',  sub: 'montaje sobre foto', needsPhoto: true },
     { id: 'pared',    label: 'Pared',    sub: 'el pliego colgado' },
     { id: 'camiseta', label: 'Camiseta', sub: 'plano, sobre mesa' },
     { id: 'vinilo',   label: 'Vinilo',   sub: 'funda de 315 mm' },
@@ -75,6 +76,99 @@
     const n = M.noiseField(F, F, { scale: 1.9, octaves: 2, seed: seed + 9 });
     M.shade(c, n, F, F, { gain: 2.2, bias: 0.5, dark: 0.055, light: 0.05 });
     return c;
+  }
+
+  // ── 0 · Tu foto ─────────────────────────────────────────────────────────────
+  // El montaje de verdad. Las otras escenas dibujan la luz; esta la TOMA
+  // PRESTADA de una fotografía, que es la única manera de que el resultado sea
+  // una foto y no un render. El orden importa y es este:
+  //
+  //   1 · la foto, encajada en el encuadre
+  //   2 · la obra proyectada en el quad que ha marcado la mano (homografía)
+  //   3 · la obra DOBLADA por el gradiente de luminancia de la foto — donde la
+  //       foto tiene un pliegue, la impresión se dobla; sin esto es una pegatina
+  //   4 · la luz de la foto encima de la obra: su sombra y su brillo, no otros
+  //   5 · grano en la capa de la obra, no en el cuadro: la foto ya trae el suyo,
+  //       y lo que hay que hacer es igualarlo, no añadirlo dos veces
+  //
+  // La foto no se guarda en ningún sitio: vive en el navegador y se acabó. El
+  // repo es público y una foto ajena dentro es un problema de licencia; una foto
+  // propia tampoco tiene por qué estar en un repo de código.
+  function coverRect(iw, ih, W, H) {
+    const s = Math.max(W / iw, H / ih);
+    const w = iw * s, h = ih * s;
+    return { x: (W - w) / 2, y: (H - h) / 2, w, h };
+  }
+
+  function foto(ctx, W, H, art, o) {
+    const ph = o.photo;
+    if (!ph) {
+      // Sin foto la escena no existe. Se dice, y no se pinta un sucedáneo.
+      ctx.fillStyle = '#e4dfd5'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#8a8983';
+      ctx.font = `${Math.round(Math.min(W, H) * 0.030)}px 'Courier New',monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('suelta una foto aquí', W / 2, H / 2 - Math.min(W, H) * 0.02);
+      ctx.font = `${Math.round(Math.min(W, H) * 0.021)}px 'Courier New',monospace`;
+      ctx.fillText('y marca las cuatro esquinas del plano', W / 2, H / 2 + Math.min(W, H) * 0.025);
+      return;
+    }
+
+    const rect = coverRect(ph.width, ph.height, W, H);
+    ctx.drawImage(ph, rect.x, rect.y, rect.w, rect.h);
+
+    const { field, fw, fh } = M.lumField(ph, rect, W, H);
+
+    // El quad llega normalizado (0..1 del encuadre): así sobrevive al cambio de
+    // tamaño entre la vista previa y el archivo, que es todo el asunto.
+    const q = o.quad.map((v, i) => (i % 2 ? v * H : v * W));
+
+    let layer = M.makeCanvas(W, H);
+    M.warpFree(layer, art, q, { steps: 16 });
+
+    if (o.fold > 0) layer = M.displace(layer, field, fw, fh, { amount: Math.min(W, H) * 0.05 * o.fold });
+
+    if (o.light > 0) {
+      // La referencia sale de dentro del plano marcado, no del cuadro entero.
+      const bias = M.meanIn(field, fw, fh, q, W, H);
+      M.shadeLight(layer, field, fw, fh, { bias, gain: 1.5, dark: 1.15 * o.light, light: 0.5 * o.light });
+    }
+    // Textura fina, a resolución COMPLETA. El campo de luz va a 360 px porque
+    // para sombra y pliegue sobra, pero a esa resolución la trama del tejido y
+    // el diente del papel ya no existen — y son justo lo que hace que la tinta
+    // parezca metida en la superficie. Así que la propia foto, en gris y en
+    // `overlay`, se pasa por encima de la obra: transfiere el detalle sin tocar
+    // el color. Ni overlay ni multiply respetan el recorte, así que después hay
+    // que devolverle el alfa.
+    if (o.texture > 0) {
+      const keep = M.makeCanvas(W, H);
+      keep.getContext('2d').drawImage(layer, 0, 0);
+      const lc = layer.getContext('2d');
+      lc.save();
+      lc.globalCompositeOperation = 'overlay';
+      lc.globalAlpha = 0.45 * o.texture;
+      lc.filter = 'grayscale(1)';
+      lc.drawImage(ph, rect.x, rect.y, rect.w, rect.h);
+      lc.filter = 'none';
+      lc.globalAlpha = 1;
+      lc.globalCompositeOperation = 'destination-in';
+      lc.drawImage(keep, 0, 0);
+      lc.restore();
+    }
+
+    // Grano igualado: una obra generada es perfectamente limpia y una foto no.
+    // La diferencia de ruido entre las dos capas es lo que delata un montaje
+    // antes que la perspectiva.
+    if (o.noise > 0) M.grain(layer.getContext('2d'), W, H, 14 * o.noise, o.seed || 1);
+
+    ctx.save();
+    ctx.globalAlpha = o.opacity == null ? 1 : o.opacity;
+    // `multiply` es el atajo bueno cuando lo de debajo es claro —una camiseta
+    // cruda, papel— porque la tinta deja pasar la trama. Sobre oscuro se come la
+    // obra, y entonces manda el modo normal con la luz de la foto encima.
+    if (o.blend === 'multiply') ctx.globalCompositeOperation = 'multiply';
+    ctx.drawImage(layer, 0, 0);
+    ctx.restore();
   }
 
   // ── 1 · Pared ───────────────────────────────────────────────────────────────
@@ -578,7 +672,7 @@
     }
   }
 
-  const SCENES = { pared, camiseta, vinilo, reloj };
+  const SCENES = { foto, pared, camiseta, vinilo, reloj };
 
   function render(ctx, W, H, art, o) {
     o = o || {};
@@ -586,8 +680,10 @@
     ctx.save();
     fn(ctx, W, H, art, o);
     ctx.restore();
-    // El acabado, siempre y para todas: es lo que las hace la misma foto.
-    if (o.finish !== false) {
+    // El acabado, para las escenas SINTÉTICAS: es lo que las hace la misma foto.
+    // Sobre un montaje no va — la fotografía ya trae su viñeta, su temperatura y
+    // su grano, y ponerle otros encima es fotografiar una foto.
+    if (o.finish !== false && o.scene !== 'foto') {
       M.grade(ctx.canvas, { seed: o.seed, lx: 0.28, ly: 0.12,
                             grainAmount: o.scene === 'pared' ? 8 : 10 });
     }

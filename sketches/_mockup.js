@@ -175,6 +175,183 @@
     ctx.restore();
   }
 
+  // ── Homografía libre ────────────────────────────────────────────────────────
+  // `warp` resuelve el plano girado sobre UN eje, que es lo que hacen las escenas
+  // sintéticas. Cuando las cuatro esquinas las pone una persona sobre una foto,
+  // el quad es cualquiera y hace falta la proyectiva completa.
+  //
+  // Canvas 2D solo sabe transformar afín, así que se parte el cuadrado en una
+  // rejilla, se pasan sus esquinas por la homografía y cada celda se pinta como
+  // dos triángulos afines. Con rejilla suficiente el error de cada celda es
+  // subpíxel y el resultado es proyectivo. El triángulo de recorte se dilata
+  // medio píxel desde su centro: sin eso se ven las costuras entre celdas.
+  //
+  //   quad: [x0,y0, x1,y1, x2,y2, x3,y3]  en orden TL, TR, BR, BL.
+  function homography(q) {
+    const [x0, y0, x1, y1, x2, y2, x3, y3] = q;
+    const sx = x0 - x1 + x2 - x3, sy = y0 - y1 + y2 - y3;
+    let a, b, c, d, e, f, g, h;
+    if (Math.abs(sx) < 1e-9 && Math.abs(sy) < 1e-9) {
+      // Los cuatro puntos forman un paralelogramo: no hay fuga, es afín.
+      a = x1 - x0; b = x2 - x1; c = x0;
+      d = y1 - y0; e = y2 - y1; f = y0; g = 0; h = 0;
+    } else {
+      const dx1 = x1 - x2, dx2 = x3 - x2, dy1 = y1 - y2, dy2 = y3 - y2;
+      const den = dx1 * dy2 - dx2 * dy1;
+      g = (sx * dy2 - dx2 * sy) / den;
+      h = (dx1 * sy - sx * dy1) / den;
+      a = x1 - x0 + g * x1; b = x3 - x0 + h * x3; c = x0;
+      d = y1 - y0 + g * y1; e = y3 - y0 + h * y3; f = y0;
+    }
+    return (u, v) => {
+      const w = g * u + h * v + 1;
+      return { x: (a * u + b * v + c) / w, y: (d * u + e * v + f) / w };
+    };
+  }
+
+  function tri(ctx, img, s0, s1, s2, d0, d1, d2, pad) {
+    const cx = (d0.x + d1.x + d2.x) / 3, cy = (d0.y + d1.y + d2.y) / 3;
+    const ex = p => {
+      const ux = p.x - cx, uy = p.y - cy, l = Math.hypot(ux, uy) || 1;
+      return { x: p.x + ux / l * pad, y: p.y + uy / l * pad };
+    };
+    const e0 = ex(d0), e1 = ex(d1), e2 = ex(d2);
+    const det = (s1.x - s0.x) * (s2.y - s0.y) - (s2.x - s0.x) * (s1.y - s0.y);
+    if (!det) return;
+    const a = ((d1.x - d0.x) * (s2.y - s0.y) - (d2.x - d0.x) * (s1.y - s0.y)) / det;
+    const b = ((d2.x - d0.x) * (s1.x - s0.x) - (d1.x - d0.x) * (s2.x - s0.x)) / det;
+    const c = ((d1.y - d0.y) * (s2.y - s0.y) - (d2.y - d0.y) * (s1.y - s0.y)) / det;
+    const dd = ((d2.y - d0.y) * (s1.x - s0.x) - (d1.y - d0.y) * (s2.x - s0.x)) / det;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(e0.x, e0.y); ctx.lineTo(e1.x, e1.y); ctx.lineTo(e2.x, e2.y);
+    ctx.closePath(); ctx.clip();
+    ctx.transform(a, c, b, dd, d0.x - a * s0.x - b * s0.y, d0.y - c * s0.x - dd * s0.y);
+    ctx.drawImage(img, 0, 0);
+    ctx.restore();
+  }
+
+  function warpFree(dst, src, quad, o) {
+    o = o || {};
+    const ctx = dst.getContext ? dst.getContext('2d') : dst;
+    const N = o.steps || 14, pad = o.pad == null ? 0.6 : o.pad;
+    const H = homography(quad), sw = src.width, sh = src.height;
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    for (let j = 0; j < N; j++) {
+      for (let i = 0; i < N; i++) {
+        const u0 = i / N, u1 = (i + 1) / N, v0 = j / N, v1 = (j + 1) / N;
+        const p00 = H(u0, v0), p10 = H(u1, v0), p11 = H(u1, v1), p01 = H(u0, v1);
+        const s00 = { x: u0 * sw, y: v0 * sh }, s10 = { x: u1 * sw, y: v0 * sh };
+        const s11 = { x: u1 * sw, y: v1 * sh }, s01 = { x: u0 * sw, y: v1 * sh };
+        tri(ctx, src, s00, s10, s11, p00, p10, p11, pad);
+        tri(ctx, src, s00, s11, s01, p00, p11, p01, pad);
+      }
+    }
+    ctx.restore();
+  }
+
+  // ── La luz que ya está en la foto ───────────────────────────────────────────
+  // Esta es la pieza que hace que un montaje sea una foto y no un pegote: la
+  // obra no lleva su propia iluminación, lleva la de la fotografía sobre la que
+  // se posa. Se saca la luminancia de la propia imagen, se centra en su media
+  // —así lo más oscuro que la media ensombrece y lo más claro ilumina— y luego
+  // eso mismo sirve para dos cosas: sombrear la obra y DOBLARLA, porque el
+  // gradiente de esa luminancia es, justamente, donde hay un pliegue.
+  //
+  // A baja resolución a propósito: para sombra y pliegue sobra, y leer el cuadro
+  // entero a tamaño de publicación en cada repintado no lo aguanta nadie.
+  function lumField(img, rect, W, H, short) {
+    short = short || 360;
+    const k = short / Math.min(W, H);
+    const fw = Math.max(2, Math.round(W * k)), fh = Math.max(2, Math.round(H * k));
+    const c = makeCanvas(fw, fh), cx = c.getContext('2d', { willReadFrequently: true });
+    cx.imageSmoothingQuality = 'high';
+    cx.drawImage(img, rect.x * k, rect.y * k, rect.w * k, rect.h * k);
+    const D = cx.getImageData(0, 0, fw, fh).data;
+    const out = new Float32Array(fw * fh);
+    let sum = 0;
+    for (let i = 0; i < out.length; i++) {
+      const j = i * 4;
+      // Rec. 709: la luminancia percibida, no la media de los canales — con la
+      // media, un azul saturado pesa lo mismo que un amarillo y las sombras
+      // salen donde no están.
+      const v = (0.2126 * D[j] + 0.7152 * D[j + 1] + 0.0722 * D[j + 2]) / 255;
+      out[i] = v; sum += v;
+    }
+    return { field: out, fw, fh, mean: sum / out.length };
+  }
+
+  // La media de referencia tiene que salir de DENTRO del plano, no del cuadro
+  // entero: con una camiseta clara sobre fondo oscuro, la media global cae muy
+  // por debajo del tejido y entonces la tela entera queda "por encima de la
+  // media" — resultado, la obra se aclara de punta a punta y sale lavada. El
+  // quad es convexo, así que basta con el test del signo de los cuatro cruces.
+  function meanIn(field, fw, fh, quad, W, H) {
+    const q = quad.map((v, i) => (i % 2 ? v / H * fh : v / W * fw));
+    const xs = [q[0], q[2], q[4], q[6]], ys = [q[1], q[3], q[5], q[7]];
+    const x0 = Math.max(0, Math.floor(Math.min(...xs))), x1 = Math.min(fw - 1, Math.ceil(Math.max(...xs)));
+    const y0 = Math.max(0, Math.floor(Math.min(...ys))), y1 = Math.min(fh - 1, Math.ceil(Math.max(...ys)));
+    const side = (ax, ay, bx, by, px, py) => (bx - ax) * (py - ay) - (by - ay) * (px - ax);
+    let sum = 0, n = 0;
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const p = x + 0.5, r = y + 0.5;
+        const a = side(q[0], q[1], q[2], q[3], p, r), b = side(q[2], q[3], q[4], q[5], p, r);
+        const c = side(q[4], q[5], q[6], q[7], p, r), d = side(q[6], q[7], q[0], q[1], p, r);
+        if ((a >= 0 && b >= 0 && c >= 0 && d >= 0) || (a <= 0 && b <= 0 && c <= 0 && d <= 0)) {
+          sum += field[y * fw + x]; n++;
+        }
+      }
+    }
+    return n ? sum / n : 0.5;
+  }
+
+  // ── La luz de la foto, sobre la obra ───────────────────────────────────────
+  // `shade` mezcla en normal hacia negro y hacia blanco, que vale para una
+  // superficie sintética pero LAVA una imagen: aclarar hacia blanco desatura, y
+  // las paletas de hoks viven de la saturación.
+  //
+  // Esto hace lo que hace una maqueta de verdad: la sombra MULTIPLICA (la tinta
+  // bajo una sombra es la tinta por un factor < 1, que es literalmente lo que
+  // pasa con la luz) y el brillo va en `screen`. Y al final se recupera el alfa
+  // original, porque ni multiply ni screen respetan el recorte por sí solos:
+  // donde el destino es transparente, pintan igual.
+  function shadeLight(target, field, fw, fh, o) {
+    o = o || {};
+    const w = target.width, h = target.height;
+    const bias = o.bias == null ? 0.5 : o.bias;
+    const kd = o.dark == null ? 1.0 : o.dark, kl = o.light == null ? 0.55 : o.light;
+    const gain = o.gain == null ? 1 : o.gain;
+
+    const keep = makeCanvas(w, h);
+    keep.getContext('2d').drawImage(target, 0, 0);
+
+    const dm = makeCanvas(fw, fh), dc = dm.getContext('2d');
+    const sm = makeCanvas(fw, fh), sc = sm.getContext('2d');
+    const di = dc.createImageData(fw, fh), si = sc.createImageData(fw, fh);
+    const D = di.data, S = si.data;
+    for (let i = 0; i < field.length; i++) {
+      const dev = (field[i] - bias) * gain;
+      const j = i * 4;
+      // Sombra: blanco = no toca. Brillo: negro = no toca.
+      const dv = clamp(1 + Math.min(0, dev) * kd, 0, 1) * 255;
+      const sv = clamp(Math.max(0, dev) * kl, 0, 1) * 255;
+      D[j] = D[j + 1] = D[j + 2] = dv; D[j + 3] = 255;
+      S[j] = S[j + 1] = S[j + 2] = sv; S[j + 3] = 255;
+    }
+    dc.putImageData(di, 0, 0); sc.putImageData(si, 0, 0);
+
+    const ctx = target.getContext('2d');
+    ctx.save();
+    ctx.imageSmoothingQuality = 'high';
+    ctx.globalCompositeOperation = 'multiply'; ctx.drawImage(dm, 0, 0, w, h);
+    ctx.globalCompositeOperation = 'screen';   ctx.drawImage(sm, 0, 0, w, h);
+    ctx.globalCompositeOperation = 'destination-in'; ctx.drawImage(keep, 0, 0);
+    ctx.restore();
+  }
+
   // ── Desplazamiento ──────────────────────────────────────────────────────────
   // La obra impresa sobre tela se dobla con la tela. Se lee el gradiente del
   // campo y se muestrea la obra desplazada por él: es un desplazamiento de
@@ -318,6 +495,7 @@
     ctx.restore();
   }
 
-  global.HOKSMOCK = { rng, noiseField, foldField, sub, warp, displace, shade, shadow,
-                      grade, grain, weave, makeCanvas, clamp, lerp, smooth };
+  global.HOKSMOCK = { rng, noiseField, foldField, sub, warp, warpFree, homography,
+                      lumField, meanIn, shadeLight, displace, shade, shadow, grade,
+                      grain, weave, makeCanvas, clamp, lerp, smooth };
 })(typeof window !== 'undefined' ? window : globalThis);
