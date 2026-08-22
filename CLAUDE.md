@@ -142,8 +142,36 @@ que mueve la imagen llega por URL y es de solo lectura: si hay que cambiar la
 obra, se vuelve al lab. Lo que viaja es la **receta**, la
 misma de los harnesses y `_batch.js`, serializada entera, así que un parámetro
 nuevo llega al muro sin tocar nada. El enlace lo pone
-`HOKSLAB.mountWallLink()`, una línea por harness. No metas mandos de mirar en
-el panel de generar: esa separación es el motivo de que exista la página.
+`HOKSLAB.mountViewLinks()`, una línea por harness (que monta los dos: muro y
+objetos). No metas mandos de mirar en el panel de generar: esa separación es el
+motivo de que existan estas páginas.
+
+**`_objects/` + `_mockup.js` — las fotos.** El muro es un **alzado**: mide, para
+decidir el pliego. Esto es una **foto**: la obra sobre la cosa —pared, camiseta,
+vinilo, reloj—, para **publicar**. Dos oficios distintos, dos páginas: un alzado
+con cotas no se puede poner en Instagram. Sale a 1080 px con 4:5 por defecto
+(BRAND.md § 8) y guardar vuelve a renderizar a tamaño de publicación. La **toma**
+es un azar aparte del de la obra: los pliegues, las hojas y el grano cambian con
+`Espacio`; la pieza, no. Lo que hace que parezca una foto vive en `_mockup.js` y
+son tres cosas: `warp` (perspectiva **proyectiva** —interpolar la textura en 1/z—
+recortada al quad), `displace` (la impresión se **dobla** con los pliegues que le
+tocan; sin esto es una pegatina, siempre) y `grade` (luz, temperatura y grano al
+final y sobre todo el cuadro, que es el defecto compartido que dice que hay una
+sola foto). Una sola luz para todas las escenas, el objeto en su propio lienzo
+para que la sombra sea de la silueta, y nada paralelo al canto.
+
+Pero esas cuatro son **renders**, y se nota. Lo que da fotorrealismo es la escena
+**`foto`**, que es la que se usa para publicar: sueltas una imagen (móvil,
+plantilla comprada), arrastras las **cuatro esquinas** hasta el plano —pared,
+pecho, funda— y la obra se proyecta ahí por **homografía** tomando prestada la
+luz de la propia fotografía: su sombra multiplica y su brillo va en screen (con
+la referencia medida **dentro del plano**, no en el cuadro entero), el gradiente
+de luminancia la **dobla**, la foto en gris y en overlay le mete la trama a
+resolución completa, y un grano igualado tapa la diferencia entre una obra
+perfectamente limpia y una foto que no lo es. **La foto no sale del navegador**:
+no se sube ni se commitea —el repo es público—, solo se recuerdan las cuatro
+esquinas por archivo. Lo que no llega: un plano curvo (una taza es un cilindro,
+no un quad) y la máscara para lo que pase por delante.
 
 El circuito completo: **lab → lote → publicar → galería**. Se mira la hoja de
 contactos, se aparta con `+` o `a`, y el lote —una lista de *recetas*, no de

@@ -149,7 +149,7 @@
       <button class="ghost" id="cartela">↓ Cartela A5 (c)</button>
       <button class="ghost" id="sheet">▦ Grid de obras (g)</button>
       <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
-      <div id="wallLink"></div>
+      <div id="viewLinks"></div>
     </div>
     <div class="group"><span class="lbl">Traits</span><div class="traits" id="traits"></div></div>
   </aside>
@@ -345,7 +345,7 @@ const fmtSel = HOKSLAB.mountFormatSelect($('fmt'), SLUG, {
 });
 FORMAT = $('fmt').value;
 $('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
-HOKSLAB.mountWallLink($('wallLink'), () => ({
+HOKSLAB.mountViewLinks($('viewLinks'), () => ({
   work: SLUG, seed: seed >>> 0, format: FORMAT, params: params(),
   palSel: palPicker ? palPicker.selection : 'auto',
 }));

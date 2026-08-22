@@ -49,6 +49,13 @@ sketches/
   _wall/            ← el MURO: la pieza a escala sobre una pared. Página aparte,
                       se abre desde el enlace del panel y recibe la receta por
                       URL. Solo tiene mandos que NO cambian la obra.
+  _mockup.js        ← el taller de fotografía: campos de pliegues, perspectiva
+                      proyectiva, desplazamiento, sombras y grado. Lo que hace que
+                      una maqueta parezca una foto es la LUZ, y está aquí.
+  _objects/         ← las FOTOS: la obra sobre la cosa —pared, camiseta, vinilo,
+                      reloj— para publicar. Salida a 1080 px, 4:5 por defecto.
+                      Misma receta por URL, mismas reglas: aquí no se genera.
+                      Las escenas, en su escenas.js.
   _template/        ← esqueleto para graduar una obra nueva
   plls/            ← graduada (algo.js + harness)
   krrtk/           ← graduada (porte fiel, verificado op-a-op)
@@ -353,14 +360,129 @@ parámetros de generar en un cajón con parámetros de mirar.
 
 Lo que viaja es la **receta**, la misma que ya usan los cinco harnesses y
 `_batch.js`, serializada entera: un parámetro nuevo en una obra llega al muro sin
-tocar nada. El enlace lo pone `HOKSLAB.mountWallLink()` — una línea por harness —
-y recalcula el `href` al posarse encima, no en cada refresh, para seguir siendo
-un enlace de verdad.
+tocar nada. Los enlaces los pone `HOKSLAB.mountViewLinks()` —una línea por
+harness, los dos destinos: el muro y las fotos— y recalculan el `href` al posarse
+encima, no en cada refresh, para seguir siendo enlaces de verdad.
 
 ```
 ../_wall/?r=<receta JSON urlencoded>            ← lo que pone el enlace del panel
 ../_wall/?work=dtkrt&seed=123&fmt=horizontal    ← forma legible, a mano
 ```
+
+## Las fotos (`_objects/`)
+
+El muro es un **alzado**: mide, con figura, regla y cotas, para decidir el
+pliego. Esto es una **foto**: luz, sombra, tela y cristal, para **publicar**. Son
+dos oficios distintos y por eso son dos páginas — la primera versión de esta
+intentó ser las dos cosas, y un alzado con cotas no se puede poner en Instagram.
+
+### Lo primero: `tu foto`
+
+**Una escena sintética nunca va a ser una foto.** Por muy afinada que esté la
+luz, está dibujada, y se lee como render. Lo único que da fotorrealismo es que
+debajo haya una **fotografía de verdad** — y entonces el trabajo no es dibujar la
+luz, es *tomarla prestada*.
+
+Eso es la escena `foto`, y es la que hay que usar para publicar:
+
+1. Sueltas una imagen en la ventana (arrastrar, pegar o el botón). Foto del móvil,
+   plantilla de maqueta comprada, lo que sea.
+2. Arrastras las **cuatro esquinas** hasta el plano donde va la obra: la pared, el
+   pecho de la camiseta, la funda, la pantalla.
+3. La obra se proyecta ahí con **homografía** —perspectiva completa, no un
+   trapecio— y coge de la propia foto cuatro cosas:
+
+   | mando      | qué hace                                                          |
+   |------------|-------------------------------------------------------------------|
+   | Luz        | la sombra de la foto **multiplica** la obra y su brillo va en `screen`. La referencia se calcula **dentro del plano marcado**, no en el cuadro entero |
+   | Pliegue    | la obra se **dobla** siguiendo el gradiente de luminancia: donde la foto tiene un pliegue, la impresión se dobla |
+   | Textura    | la propia foto en gris, en `overlay` y a resolución completa: la trama del tejido y el diente del papel entran en la tinta |
+   | Grano      | ruido sobre la capa de la obra para **igualar** el de la foto. Una obra generada es perfectamente limpia y una foto no, y esa diferencia delata un montaje antes que la perspectiva |
+
+   `Multiplicar` es el atajo bueno cuando lo de debajo es claro (camiseta cruda,
+   papel), porque la tinta deja pasar la trama. Sobre oscuro se come la obra.
+
+**La foto no sale del navegador.** No se sube, no se commitea, no se guarda: lo
+único que se recuerda son las cuatro esquinas, en `localStorage` y por archivo,
+para que volver a la misma foto sea un clic. El repo es público y una foto dentro
+—propia o ajena— es un problema que no hace falta tener.
+
+El encuadre `Foto` respeta la proporción de tu imagen; recortar la foto de alguien
+a 4:5 sin avisar es decidir por él dónde está el encuadre.
+
+### Y cuatro escenas sintéticas
+
+Para salir del paso sin foto, o para una prueba rápida. Son **renders**, y se
+nota: valen para ver la obra sobre algo, no para publicar.
+
+| escena     | qué es                          | qué la hace creíble                       |
+|------------|---------------------------------|-------------------------------------------|
+| `pared`    | el pliego colgado, en una sala  | el paño de luz, la sombra corta y algo desenfocado delante |
+| `camiseta` | plano cenital sobre mesa        | el estampado se DESPLAZA con los pliegues |
+| `vinilo`   | funda de 315 mm, girada         | el brillo cruzado del plastificado        |
+| `reloj`    | esfera de 38 mm                 | el reflejo del cristal y el aro en cónico |
+
+**Encuadre y salida.** 4:5 (1080 × 1350) por defecto, porque el grid de Instagram
+recorta un cuadrado (BRAND.md § 8); también 1:1 y 9:16. Guardar **vuelve a
+renderizar** al tamaño de publicación, como el PNG de impresión del motor: lo que
+se ve es lo que se guarda, con más píxeles. Y hay botón de copiar al portapapeles.
+
+**La toma es un azar aparte.** La obra tiene su seed y la foto tiene la suya —los
+pliegues, las hojas, el grano—. `Espacio` cambia de toma sin tocar la obra: la
+misma pieza fotografiada otra vez, no otra pieza.
+
+### Por qué parece una foto (`_mockup.js`)
+
+Una maqueta no convence por tener el objeto bien dibujado: convence por la luz.
+Tres piezas hacen casi todo:
+
+- **`warpFree`** — la obra sobre un quad **cualquiera**, el que marca la mano
+  sobre la foto. Canvas 2D solo sabe transformar afín, así que se parte el
+  cuadrado en rejilla, se pasan sus esquinas por la **homografía** y cada celda
+  se pinta como dos triángulos afines; con rejilla suficiente el error es
+  subpíxel. El triángulo de recorte se dilata medio píxel desde su centro, o se
+  ven las costuras entre celdas.
+- **`warp`** — el caso sencillo: plano girado sobre UN eje, que es lo que hacen
+  las escenas sintéticas. Perspectiva **proyectiva** igualmente. La
+  coordenada de textura se interpola en 1/z (y aquí 1/z es el alto proyectado del
+  borde); interpolada linealmente, la imagen no se comprime hacia el lado lejano
+  y el resultado se lee como un trapecio pintado. Va recortada al propio quad,
+  porque el dibujo se hace en tiras y si no el canto sale en escalera.
+- **`displace`** — la obra impresa se **dobla** con lo que hay debajo. Sin esto la
+  impresión es una pegatina, siempre, y se nota justo en los bordes rectos. Y son
+  LOS pliegues de esa prenda, no unos nuevos: un campo aparte para el estampado
+  daba una tela con dos telas dentro.
+- **`grade`** — caída de luz, temperatura y grano, al final y sobre TODO el
+  cuadro. Una cámara mete el mismo defecto en todo lo que entra por el objetivo, y
+  ese defecto compartido es lo que dice que hay una sola foto.
+
+Reglas comunes: **una sola luz** (arriba a la izquierda, en todas las escenas);
+el objeto se construye en su propio lienzo y se coloca con sombra, para que la
+sombra sea de la silueta y no de una caja; **nada axial** —dos grados de giro
+separan una foto de un diagrama—; y todo medido contra `W`, `H` o `min(W,H)`,
+como un `algo.js`, para que la vista previa y el archivo sean la misma imagen.
+
+```
+../_objects/?r=<receta JSON urlencoded>            ← lo que pone el enlace del panel
+../_objects/?work=dtkrt&seed=123&fmt=horizontal    ← forma legible, a mano
+```
+
+| tecla     | acción                          |
+|-----------|---------------------------------|
+| `Espacio` | otra toma (misma obra)          |
+| `←` / `→` | soporte anterior / siguiente    |
+| `s`       | guardar PNG a tamaño de publicación |
+
+**Lo que falta:**
+
+1. **Un plano curvo.** La homografía coloca la obra sobre un PLANO. Una taza, una
+   manga, una botella son cilindros, y ahí el quad no llega: haría falta una
+   malla, no cuatro esquinas.
+2. **Máscara de oclusión.** Si por delante del plano pasa algo —un brazo, un
+   pliegue que se levanta, una mano—, la obra se pinta encima. Se arregla
+   pintando a mano una máscara sobre la foto, y no está hecho.
+3. **Tote y pañuelo sintéticos.** El pañuelo pide seda cayendo, que es el caso
+   difícil. Con el montador dejan de hacer falta: es cuestión de una foto.
 
 ## Usar el harness (paso 3)
 

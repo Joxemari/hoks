@@ -159,16 +159,17 @@
     });
   }
 
-  // ── Enlace al muro ─────────────────────────────────────────────────────────
-  // El muro es una VISTA, no un parámetro: no cambia ni un píxel de la obra,
-  // solo dice de qué tamaño es el objeto. Por eso vive en su propia página y el
-  // panel solo pone un enlace — meter aquí pliego, ancho de pared y referencias
-  // sería engordar los mandos de generar con mandos de mirar.
+  // ── Enlaces a las páginas de MIRAR ─────────────────────────────────────────
+  // El muro y las fotos son VISTAS, no parámetros: ninguna cambia un píxel de la
+  // obra. El muro es el ALZADO —cuánto mide, para decidir el pliego—; las fotos
+  // son la FOTO —la obra sobre la cosa, para publicar—. Por eso viven en sus
+  // propias páginas y el panel solo pone enlaces: meter aquí pliego, soporte y
+  // encuadre sería engordar los mandos de generar con mandos de mirar.
   //
-  // Lo que viaja es la RECETA, que ya es el contrato común de los cinco
-  // harnesses y de _batch.js. Se serializa entera en vez de campo a campo: así
-  // un parámetro nuevo en una obra llega al muro sin tocar nada.
-  function wallUrl(recipe) {
+  // Lo que viaja es la RECETA, que ya es el contrato común de los harnesses y de
+  // _batch.js. Se serializa entera en vez de campo a campo: así un parámetro
+  // nuevo en una obra llega a las dos páginas sin tocar nada.
+  function recipeParam(recipe) {
     const r = {
       work:   recipe.work,
       seed:   recipe.seed >>> 0,
@@ -176,47 +177,97 @@
       params: recipe.params || {},
       palSel: recipe.palSel == null ? 'auto' : recipe.palSel,
     };
-    return '../_wall/?r=' + encodeURIComponent(JSON.stringify(r));
+    return '?r=' + encodeURIComponent(JSON.stringify(r));
+  }
+  function wallUrl(recipe)    { return '../_wall/' + recipeParam(recipe); }
+  function objectsUrl(recipe) { return '../_objects/' + recipeParam(recipe); }
+
+  // ── La receta que LLEGA por URL ────────────────────────────────────────────
+  // La otra mitad del mismo contrato, y vive aquí por el mismo motivo: la leen
+  // dos páginas, y dos copias de un contrato son deriva esperando turno. Admite
+  // las dos formas: el blob JSON que manda el panel y una versión legible que se
+  // puede teclear (?work=dtkrt&seed=123&fmt=horizontal). Sin nada, una tirada al
+  // azar de `dflt` para que la página abra igual y se entienda de qué va.
+  function readRecipe(dflt) {
+    const q = new URLSearchParams(location.search);
+    const raw = q.get('r');
+    if (raw) {
+      try {
+        const r = JSON.parse(raw);
+        if (r && r.work) return normalizeRecipe(r);
+      } catch (e) { console.warn('[hoks] receta ilegible en ?r=', e); }
+    }
+    return normalizeRecipe({
+      work:   q.get('work') || dflt || 'dtkrt',
+      seed:   q.get('seed'),
+      format: q.get('fmt') || q.get('format'),
+      palSel: q.get('pal'),
+    });
+  }
+  function normalizeRecipe(r) {
+    const seed = parseInt(r.seed, 10);
+    const fmt = global.HOKS.ALL_FORMATS.indexOf(r.format) >= 0 || r.format === 'vertical'
+      ? r.format : 'square';
+    const palSel = (r.palSel == null || r.palSel === 'auto' || r.palSel === '')
+      ? 'auto' : parseInt(r.palSel, 10);
+    return {
+      work:   String(r.work || 'dtkrt').toLowerCase(),
+      seed:   Number.isFinite(seed) ? (seed >>> 0) : ((Math.random() * 0xFFFFFFFF) >>> 0),
+      format: fmt,
+      params: (r.params && typeof r.params === 'object') ? r.params : {},
+      palSel: Number.isFinite(palSel) ? palSel : 'auto',
+    };
   }
 
-  // Trae su propio CSS, como _batch.js y palette-picker.js: cinco harnesses no
-  // tienen por qué llevar cinco copias de la misma regla.
-  const WALL_CSS = `
-.wall-link { display:block; font-family:'Courier New',Courier,monospace; font-size:10px;
+  // Trae su propio CSS, como _batch.js y palette-picker.js: diez harnesses no
+  // tienen por qué llevar diez copias de la misma regla.
+  const VIEW_CSS = `
+.view-links { display:flex; flex-direction:column; gap:6px; }
+.view-link { display:block; font-family:'Courier New',Courier,monospace; font-size:10px;
   font-weight:700; letter-spacing:0.1em; text-transform:uppercase; text-align:center;
   color:#8a8983; text-decoration:none; border:1px dashed #e7e5df; border-radius:6px;
   padding:8px; cursor:pointer; transition:color .15s, border-color .15s; }
-.wall-link:hover, .wall-link:focus-visible { color:#0a0a0a; border-color:#d8d5cc; }
+.view-link:hover, .view-link:focus-visible { color:#0a0a0a; border-color:#d8d5cc; }
 `;
-  let wallCssDone = false;
-  function injectWallCss() {
-    if (wallCssDone || typeof document === 'undefined') return;
-    wallCssDone = true;
-    const s = document.createElement('style'); s.textContent = WALL_CSS;
+  let viewCssDone = false;
+  function injectViewCss() {
+    if (viewCssDone || typeof document === 'undefined') return;
+    viewCssDone = true;
+    const s = document.createElement('style'); s.textContent = VIEW_CSS;
     document.head.appendChild(s);
   }
 
   // El href se recalcula al posarse encima o al enfocar, no en cada refresh:
   // así sigue siendo un enlace de verdad (botón central, abrir en pestaña) sin
   // que arrastrar un slider tenga que reconstruir la URL en cada píxel.
-  function mountWallLink(host, getRecipe) {
-    injectWallCss();
-    const a = document.createElement('a');
-    a.className = 'wall-link';
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.textContent = '▤ Ver en el muro ↗';
-    a.title = 'Abre la pieza a escala sobre una pared, en otra pestaña';
-    host.appendChild(a);
+  function mountViewLinks(host, getRecipe) {
+    injectViewCss();
+    const box = document.createElement('div');
+    box.className = 'view-links';
+    host.appendChild(box);
 
-    function sync() {
-      try { a.href = wallUrl(getRecipe()); }
-      catch (e) { a.removeAttribute('href'); }
-    }
-    a.addEventListener('pointerenter', sync);
-    a.addEventListener('focus', sync);
-    sync();
-    return { sync };
+    const syncs = [
+      ['▤ Ver en el muro ↗',  'La pieza a escala sobre una pared: pliego, figura y regla', wallUrl],
+      ['◉ Ver en fotos ↗',    'La pieza fotografiada sobre la cosa —pared, camiseta, vinilo, reloj— para publicar', objectsUrl],
+    ].map(([text, title, url]) => {
+      const a = document.createElement('a');
+      a.className = 'view-link';
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = text;
+      a.title = title + ', en otra pestaña';
+      box.appendChild(a);
+      const sync = () => {
+        try { a.href = url(getRecipe()); }
+        catch (e) { a.removeAttribute('href'); }
+      };
+      a.addEventListener('pointerenter', sync);
+      a.addEventListener('focus', sync);
+      sync();
+      return sync;
+    });
+
+    return { sync: () => syncs.forEach(f => f()) };
   }
 
   // Seed inicial: ?seed= si viene del selector de obra, si no una al azar.
@@ -374,5 +425,6 @@
   }
 
   global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, mountFormatSelect, loadWorks,
-                     initialSeed, loadAlgos, wallUrl, mountWallLink, formatControls, launch, injectBack, injectCopy };
+                     initialSeed, loadAlgos, wallUrl, objectsUrl, readRecipe, mountViewLinks,
+                     formatControls, launch, injectBack, injectCopy };
 })(typeof window !== 'undefined' ? window : globalThis);

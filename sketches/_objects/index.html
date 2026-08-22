@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- El taller no se indexa. robots.txt ya declara `Disallow: /sketches/`, pero en
+     un project page ese archivo es inerte (solo se lee en la raíz del origen), y
+     lo único que viaja de verdad en el documento es esto. -->
+<meta name="robots" content="noindex, nofollow">
+<title>fotos · lab — hoks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --ink:#0a0a0a; --ink3:#8a8983; --border:#e7e5df; --surface:#f3f1ec; --paper:#fbfbfa;
+          --blue:#000ef7; --acid:#dcff32; --f:'Courier New',Courier,monospace;
+          --geo:"League Spartan","Century Gothic",Futura,system-ui,sans-serif; }
+  body { font-family: var(--f); background: var(--paper); color: var(--ink);
+         display: grid; grid-template-columns: 268px 1fr; height: 100vh; }
+  .panel { border-right: 1px solid var(--border); padding: 1.2rem; overflow-y: auto;
+           display: flex; flex-direction: column; gap: 1.1rem; }
+  .lab-title { font-family: var(--geo); font-size: 13px; font-weight: 700; letter-spacing: 0.1em; }
+  .lab-title small { display:block; font-family:var(--f); font-size:9px; font-weight:400;
+                     color:var(--ink3); letter-spacing:0.1em; margin-top:3px; }
+  .group { display: flex; flex-direction: column; gap: 6px; }
+  .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); }
+  .hintline { font-size: 9px; color: var(--ink3); letter-spacing: 0.04em; line-height: 1.7; }
+  button { font-family: var(--f); font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+           text-transform: uppercase; border: 1px solid var(--ink); background: var(--ink);
+           color: #fff; border-radius: 2px; padding: 8px; cursor: pointer; width: 100%; }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
+  button:hover { opacity: 0.78; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .seg { display: flex; gap: 4px; flex-wrap: wrap; }
+  .seg button { flex: 1 1 auto; width: auto; font-size: 9px; background: transparent;
+                color: var(--ink3); border-color: var(--border); padding: 7px 6px; }
+  .seg button.on { border-color: var(--ink); color: var(--ink); }
+  .seg button:hover { opacity: 1; border-color: #d0d0d0; }
+  .seg.col { flex-direction: column; }
+  .seg.col button { text-align: left; padding: 7px 9px; display: flex; justify-content: space-between; gap: 8px; }
+  .seg.col button i { font-style: normal; font-weight: 400; letter-spacing: 0.04em;
+                      opacity: 0.75; text-transform: none; }
+  .facts { font-size: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .facts .t { display: flex; justify-content: space-between; gap: 8px; }
+  .facts .k { color: var(--ink3); text-transform: uppercase; font-size: 9px; letter-spacing: 0.06em; }
+  .facts .v { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; word-break: break-word; }
+  .dots { display: inline-flex; gap: 2px; vertical-align: middle; margin-right: 4px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; border: 0.5px solid rgba(0,0,0,0.1); }
+  a.back { font-size: 10px; color: var(--ink); letter-spacing: 0.06em; text-decoration: none;
+           border-bottom: 1px solid var(--border); padding-bottom: 3px; }
+  a.back:hover { border-color: var(--ink); }
+  .stage { display: flex; flex-direction: column; align-items: safe center;
+           justify-content: center; justify-content: safe center;
+           gap: 12px; padding: 1.5rem; background: var(--surface); overflow: auto; }
+  /* La foto se enseña como se publica: entera y sin recortar. El lienzo lleva su
+     proporción de salida y el CSS solo lo reduce para que quepa. */
+  .shot { position: relative; line-height: 0; }
+  #single { max-width: min(100%, calc((100vh - 130px) * var(--ar, 0.8)));
+            max-height: calc(100vh - 130px); display: block;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.10), 0 18px 40px rgba(0,0,0,0.10); }
+  /* Las esquinas van en DOM y no pintadas en el lienzo, por dos razones: se
+     arrastran sin escribir hit-testing, y el PNG exportado no las lleva —lo que
+     se guarda es el lienzo, y ellas nunca han estado ahí—. */
+  #pins { position: absolute; inset: 0; pointer-events: none; }
+  #pins.on { pointer-events: auto; }
+  #pins i { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px;
+            border: 1.5px solid #fff; border-radius: 50%; cursor: grab;
+            background: rgba(0,14,247,0.55); box-shadow: 0 0 0 1.5px rgba(0,0,0,0.45);
+            touch-action: none; transition: transform .1s; }
+  #pins i:hover { transform: scale(1.16); }
+  #pins i:active { cursor: grabbing; }
+  #pins b { position: absolute; inset: 0; border: 0; pointer-events: none; }
+  #pins svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .drop { position: fixed; inset: 0; z-index: 40; display: none; place-items: center;
+          background: rgba(0,14,247,0.86); color: #dcff32; font-size: 13px;
+          letter-spacing: 0.14em; text-transform: uppercase; }
+  .drop.on { display: grid; }
+  input[type=range] { width: 100%; accent-color: var(--ink); cursor: pointer; }
+  .row { display: flex; justify-content: space-between; font-size: 9px; color: var(--ink3);
+         letter-spacing: 0.06em; text-transform: uppercase; }
+  .filebtn { position: relative; overflow: hidden; }
+  .filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase;
+          font-variant-numeric: tabular-nums; text-align: center; line-height: 1.8; }
+</style>
+</head>
+<body>
+  <aside class="panel">
+    <div class="lab-title">hoks · fotos<small>aquí no se genera: aquí se fotografía</small></div>
+
+    <div class="group">
+      <span class="lbl">Piece</span>
+      <div class="facts" id="facts"></div>
+      <a class="back" id="back" href="#">← Abrir en el lab</a>
+      <a class="back" id="toWall" href="#">▤ Ver en el muro (mide)</a>
+    </div>
+
+    <div class="group">
+      <span class="lbl">Soporte</span>
+      <div class="seg col" id="support"></div>
+    </div>
+
+    <div class="group" id="photoGroup">
+      <span class="lbl">Foto</span>
+      <button class="ghost filebtn" id="pick">⇪ Soltar o elegir foto
+        <input type="file" id="file" accept="image/*"></button>
+      <span class="hintline" id="photoNote">arrastra una foto a la ventana. No se
+        sube ni se guarda en el repo: se queda en tu navegador</span>
+      <div id="photoCtl" style="display:none;flex-direction:column;gap:8px">
+        <div class="row"><span>Luz de la foto</span><span id="vLight">—</span></div>
+        <input type="range" id="light" min="0" max="150" step="5" value="85">
+        <div class="row"><span>Pliegue</span><span id="vFold">—</span></div>
+        <input type="range" id="fold" min="0" max="100" step="5" value="35">
+        <div class="row"><span>Textura</span><span id="vTex">—</span></div>
+        <input type="range" id="tex" min="0" max="100" step="5" value="45">
+        <div class="row"><span>Opacidad</span><span id="vOp">—</span></div>
+        <input type="range" id="op" min="40" max="100" step="1" value="97">
+        <div class="row"><span>Grano</span><span id="vNoise">—</span></div>
+        <input type="range" id="noise" min="0" max="100" step="5" value="40">
+        <div class="seg" id="blend"></div>
+        <button class="ghost" id="reset">⊹ Recolocar esquinas</button>
+        <span class="hintline">arrastra las cuatro esquinas hasta el plano —la
+          pared, el pecho, la funda—. La obra coge de ahí la luz y los pliegues</span>
+      </div>
+    </div>
+
+    <div class="group" id="matGroup">
+      <span class="lbl">Prenda</span>
+      <div class="seg" id="mat"></div>
+    </div>
+
+    <div class="group">
+      <span class="lbl">Encuadre</span>
+      <div class="seg" id="frame"></div>
+      <span class="hintline" id="frameNote">—</span>
+    </div>
+
+    <div class="group">
+      <span class="lbl">Toma</span>
+      <button class="ghost" id="shot">↻ Otra toma (espacio)</button>
+      <span class="hintline">la foto tiene su propio azar —pliegues, hojas,
+        grano— y es aparte del de la obra: la obra no cambia</span>
+    </div>
+
+    <div class="group">
+      <button id="save">↓ Guardar PNG (s)</button>
+    </div>
+  </aside>
+
+  <main class="stage" id="stage">
+    <div class="shot"><canvas id="single"></canvas><div id="pins"></div></div>
+    <span class="hint" id="status">—</span>
+  </main>
+  <div class="drop" id="drop">suelta la foto</div>
+
+<script src="../_engine.js?v=6"></script>
+<script src="../_lab.js?v=6"></script>
+<script src="../_mockup.js?v=1"></script>
+<script src="./escenas.js?v=1"></script>
+<script>
+/* hoks · fotos — la obra sobre la cosa, para publicar.
+ *
+ * Página aparte, como el muro, y por la misma razón: el laboratorio decide QUÉ
+ * se genera y aquí no se genera nada. Todo lo que mueve la obra (seed, formato,
+ * paleta, params) llega por URL y es de solo lectura; lo único que se elige aquí
+ * es la foto — soporte, prenda, encuadre y toma.
+ *
+ * Y no es el muro otra vez. El muro es un ALZADO: mide, con figura, regla y
+ * cotas, para decidir el pliego. Esto es una FOTO: luz, sombra, tela y cristal,
+ * para publicar. Son dos oficios distintos y por eso son dos páginas.
+ *
+ *   ../_objects/?r=<receta JSON urlencoded>            ← lo que pone el panel
+ *   ../_objects/?work=dtkrt&seed=123&fmt=horizontal    ← forma legible, a mano
+ *
+ * Salida a 1080 px de lado corto, que es lo que pide Instagram, y el encuadre
+ * por defecto es 4:5 porque el grid recorta un cuadrado (BRAND.md § 8).
+ */
+'use strict';
+
+const $ = id => document.getElementById(id);
+const num = (n, d) => n.toFixed(d == null ? 2 : d).replace('.', ',');
+
+// El encuadre es de la RED, no del pliego: aquí no se imprime nada.
+const FRAMES = [
+  { id: 'post',   label: '4:5',  w: 1080, h: 1350, note: 'post · 1080 × 1350 · llena el tile del grid' },
+  { id: 'square', label: '1:1',  w: 1080, h: 1080, note: 'cuadrado · 1080 × 1080 · el grid lo respeta' },
+  { id: 'story',  label: '9:16', w: 1080, h: 1920, note: 'story / reel · 1080 × 1920' },
+  // El encuadre de la propia foto: recortar la foto de alguien a 4:5 sin avisar
+  // es decidir por él dónde está el encuadre.
+  { id: 'photo',  label: 'Foto', w: 1080, h: 1080, note: 'la proporción de tu foto, sin recortar', fromPhoto: true },
+];
+// La vista previa es más pequeña que el archivo: las escenas se miden contra
+// W/H, así que la composición es la misma y solo cambia el detalle. Se exporta
+// volviendo a renderizar, como el PNG de impresión del motor.
+const PREVIEW_SHORT = 640;
+
+const recipe = HOKSLAB.readRecipe('dtkrt');
+const view = { scene: 'pared', material: 'crudo', frame: 'post',
+               shot: (Math.random() * 0xFFFFFFFF) >>> 0,
+               // El quad va NORMALIZADO al encuadre: así la vista previa y el
+               // archivo a 1080 marcan el mismo sitio, que es lo único que
+               // permite ajustar en pequeño y guardar en grande.
+               quad: [0.30, 0.30, 0.70, 0.30, 0.70, 0.70, 0.30, 0.70],
+               light: 0.85, fold: 0.35, texture: 0.45, opacity: 0.97, noise: 0.40,
+               blend: 'normal' };
+let photo = null, photoKey = '';
+
+let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
+let art = null, artKey = '', resolvedPal = null;
+
+function frameOf() {
+  const f = FRAMES.find(x => x.id === view.frame) || FRAMES[0];
+  if (!f.fromPhoto) return f;
+  if (!photo) return FRAMES[0];
+  // Lado corto a 1080, como todo lo demás: es lo que pide la red.
+  const a = photo.width / photo.height;
+  return a >= 1 ? { ...f, w: Math.round(1080 * a), h: 1080 }
+                : { ...f, w: 1080, h: Math.round(1080 / a) };
+}
+const sceneOf = () => HOKSESC.list.find(s => s.id === view.scene) || HOKSESC.list[0];
+
+// ── La obra ─────────────────────────────────────────────────────────────────
+// El palSel de la receta es un índice sobre la lista COMPLETA de paletas, que es
+// la que usa el laboratorio (loadAllPalettes). Si aquí cargáramos solo las
+// activas, el índice apuntaría a otra paleta y la pieza no sería la misma.
+function renderArt() {
+  const W = HOKS[recipe.work.toUpperCase()];
+  if (!W) { $('status').textContent = `⚠ obra desconocida: ${recipe.work}`; return null; }
+  // La obra se renderiza generosa (1100 px de lado corto): va a entrar en un
+  // pliego a media pantalla, pero también en una esfera de 38 mm reescalada, y
+  // ahí lo que se ve es el remuestreo.
+  const d = HOKS.fmtDims(recipe.format, 1100);
+  const c = document.createElement('canvas');
+  c.width = d.W; c.height = d.H;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  const palOpts = recipe.palSel === 'auto'
+    ? { palettes: PALETTES } : { palettes: PALETTES, locked: true, lockedIdx: recipe.palSel };
+  try {
+    const res = W.render(ctx, d.W, d.H, recipe.seed >>> 0, { ...palOpts, params: recipe.params });
+    resolvedPal = res && res.pal;
+  } catch (e) {
+    $('status').textContent = '⚠ ' + e.message;
+    console.error(e); return null;
+  }
+  return c;
+}
+
+// ── La foto ─────────────────────────────────────────────────────────────────
+function shoot(canvas, W, H) {
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  HOKSESC.render(ctx, W, H, art, {
+    scene: view.scene, material: view.material, seed: view.shot,
+    photo, quad: view.quad, light: view.light, fold: view.fold,
+    texture: view.texture, opacity: view.opacity, noise: view.noise, blend: view.blend,
+  });
+}
+
+function paint() {
+  if (!art) return;
+  const f = frameOf();
+  const k = PREVIEW_SHORT / Math.min(f.w, f.h);
+  const c = $('single');
+  c.style.setProperty('--ar', String(f.w / f.h));
+  const t0 = performance.now();
+  shoot(c, Math.round(f.w * k), Math.round(f.h * k));
+  const ms = Math.round(performance.now() - t0);
+
+  const s = sceneOf();
+  $('facts').innerHTML = [
+    ['Work', recipe.work.toUpperCase()],
+    ['Seed', '#' + recipe.seed],
+    ['Format', recipe.format],
+    resolvedPal ? ['Palette', `<span class="dots">${(resolvedPal.colors || []).slice(0, 6)
+      .map(c => `<span class="dot" style="background:${c}"></span>`).join('')}</span>${resolvedPal.name}`] : null,
+    ['Toma', '#' + view.shot],
+  ].filter(Boolean).map(([kk, v]) =>
+    `<div class="t"><span class="k">${kk}</span><span class="v">${v}</span></div>`).join('');
+  $('back').href = `../${recipe.work}/?seed=${recipe.seed}`;
+  $('toWall').href = HOKSLAB.wallUrl(recipe);
+  $('frameNote').textContent = f.note;
+  $('matGroup').style.display = view.scene === 'camiseta' ? '' : 'none';
+  $('photoGroup').style.display = view.scene === 'foto' ? '' : 'none';
+  $('photoCtl').style.display = (view.scene === 'foto' && photo) ? 'flex' : 'none';
+  syncPins();
+  $('status').textContent =
+    `${recipe.work.toUpperCase()} · #${recipe.seed} · ${s.label.toLowerCase()} · ` +
+    `${f.w} × ${f.h} px · vista previa a ${Math.round(k * 100)} % · ${ms} ms`;
+}
+
+// Guardar vuelve a renderizar a tamaño de publicación: lo que se ve es lo que se
+// guarda, solo que con más píxeles. Misma toma, misma foto.
+function save() {
+  const f = frameOf();
+  const out = document.createElement('canvas');
+  $('status').textContent = 'Revelando a ' + f.w + ' × ' + f.h + '…';
+  setTimeout(() => {
+    shoot(out, f.w, f.h);
+    const a = document.createElement('a');
+    a.download = `hoks_${recipe.work}_${recipe.seed}_${view.scene}_${f.id}_${view.shot}.png`;
+    a.href = out.toDataURL('image/png');
+    a.click();
+    $('status').textContent = `✓ ${a.download}`;
+  }, 20);
+}
+
+// ── Las cuatro esquinas ─────────────────────────────────────────────────────
+// El quad se guarda normalizado y las chinchetas viven en DOM sobre el lienzo:
+// se arrastran sin escribir hit-testing y, sobre todo, no salen en el PNG —lo
+// que se exporta es el lienzo, y ellas nunca han estado dentro.
+const PIN_NAMES = ['sup. izq.', 'sup. der.', 'inf. der.', 'inf. izq.'];
+let pinsBuilt = false;
+
+function syncPins() {
+  const host = $('pins');
+  const on = view.scene === 'foto' && !!photo;
+  host.classList.toggle('on', on);
+  if (!on) { host.innerHTML = ''; pinsBuilt = false; return; }
+  if (!pinsBuilt) {
+    host.innerHTML = '<svg id="pinLine" preserveAspectRatio="none"></svg>' +
+      PIN_NAMES.map((n, i) => `<i data-i="${i}" title="esquina ${n}"></i>`).join('');
+    pinsBuilt = true;
+    host.querySelectorAll('i').forEach(el => el.addEventListener('pointerdown', startDrag));
+  }
+  host.querySelectorAll('i').forEach(el => {
+    const i = +el.dataset.i;
+    el.style.left = (view.quad[i * 2] * 100) + '%';
+    el.style.top = (view.quad[i * 2 + 1] * 100) + '%';
+  });
+  const pts = [0, 1, 2, 3].map(i => `${view.quad[i * 2] * 100},${view.quad[i * 2 + 1] * 100}`).join(' ');
+  $('pinLine').setAttribute('viewBox', '0 0 100 100');
+  $('pinLine').innerHTML = `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.85)" ` +
+    `stroke-width="0.35" vector-effect="non-scaling-stroke" stroke-dasharray="2 1.4"/>`;
+}
+
+function startDrag(e) {
+  // `currentTarget` solo vale mientras se despacha ESTE evento: dentro de los
+  // handlers de después ya es null. Se guarda el elemento en una variable, que
+  // es la parte que siempre se olvida.
+  const el = e.currentTarget;
+  const i = +el.dataset.i;
+  const box = $('single').getBoundingClientRect();
+  el.setPointerCapture(e.pointerId);
+  const move = ev => {
+    // Sin pinzar a 0..1: una esquina puede caer fuera del encuadre, y de hecho
+    // tiene que poder —un plano que se sale del cuadro es lo normal en una foto.
+    view.quad[i * 2]     = (ev.clientX - box.left) / box.width;
+    view.quad[i * 2 + 1] = (ev.clientY - box.top) / box.height;
+    syncPins();
+    schedule();
+  };
+  const up = () => {
+    el.removeEventListener('pointermove', move);
+    el.removeEventListener('pointerup', up);
+    dragging = false;
+    rememberQuad();
+    paint();
+  };
+  el.addEventListener('pointermove', move);
+  el.addEventListener('pointerup', up);
+}
+
+// Arrastrar repinta MUCHO, y un montaje cuesta más que una escena sintética
+// (lee el cuadro, desplaza píxel a píxel). Se repinta a ritmo de cuadro y con la
+// obra a media resolución mientras se arrastra: al soltar se hace la buena.
+let raf = 0, dragging = false;
+function schedule() {
+  dragging = true;
+  if (raf) return;
+  raf = requestAnimationFrame(() => { raf = 0; paint(); });
+}
+
+// Las esquinas de una foto se marcan una vez. Si vuelve la misma foto, vuelven
+// donde estaban: es la diferencia entre una herramienta y un juguete.
+const quadKey = () => 'hoks-quad:' + photoKey;
+function rememberQuad() {
+  try { localStorage.setItem(quadKey(), JSON.stringify(view.quad)); } catch (e) {}
+}
+function recallQuad() {
+  try {
+    const v = JSON.parse(localStorage.getItem(quadKey()) || 'null');
+    if (Array.isArray(v) && v.length === 8 && v.every(Number.isFinite)) view.quad = v;
+  } catch (e) {}
+}
+
+// ── Soltar la foto ──────────────────────────────────────────────────────────
+// Nunca sale del navegador: ni se sube, ni se commitea, ni se guarda más que las
+// cuatro esquinas. El repo es público.
+function loadPhoto(file) {
+  if (!file || !/^image\//.test(file.type)) { $('status').textContent = '⚠ eso no es una imagen'; return; }
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    photo = img;
+    photoKey = `${file.name}:${img.width}x${img.height}`;
+    view.quad = [0.30, 0.30, 0.70, 0.30, 0.70, 0.70, 0.30, 0.70];
+    recallQuad();
+    view.scene = 'foto'; view.frame = 'photo';
+    $('support').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === 'foto'));
+    $('frame').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === 'photo'));
+    $('photoNote').textContent = `${file.name} · ${img.width} × ${img.height}`;
+    paint();
+    URL.revokeObjectURL(url);
+  };
+  img.onerror = () => { $('status').textContent = '⚠ no se pudo leer la imagen'; URL.revokeObjectURL(url); };
+  img.src = url;
+}
+
+$('file').onchange = e => loadPhoto(e.target.files && e.target.files[0]);
+let dragDepth = 0;
+window.addEventListener('dragenter', e => { e.preventDefault(); if (++dragDepth) $('drop').classList.add('on'); });
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('dragleave', e => { e.preventDefault(); if (--dragDepth <= 0) { dragDepth = 0; $('drop').classList.remove('on'); } });
+window.addEventListener('drop', e => {
+  e.preventDefault(); dragDepth = 0; $('drop').classList.remove('on');
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  loadPhoto(f);
+});
+// Pegar también: media foto llega por el portapapeles.
+window.addEventListener('paste', e => {
+  const it = [...(e.clipboardData ? e.clipboardData.items : [])].find(i => i.type.startsWith('image/'));
+  if (it) loadPhoto(it.getAsFile());
+});
+
+$('reset').onclick = () => {
+  view.quad = [0.30, 0.30, 0.70, 0.30, 0.70, 0.70, 0.30, 0.70];
+  rememberQuad(); paint();
+};
+[['light', 'vLight', 100, v => view.light = v / 100],
+ ['fold', 'vFold', 100, v => view.fold = v / 100],
+ ['tex', 'vTex', 100, v => view.texture = v / 100],
+ ['op', 'vOp', 100, v => view.opacity = v / 100],
+ ['noise', 'vNoise', 100, v => view.noise = v / 100]].forEach(([id, out, d, set]) => {
+  const el = $(id);
+  const sync = () => { set(+el.value); $(out).textContent = el.value + ' %'; };
+  el.addEventListener('input', () => { sync(); schedule(); });
+  el.addEventListener('change', () => { sync(); paint(); });
+  sync();
+});
+
+// ── Panel ───────────────────────────────────────────────────────────────────
+function seg(host, items, get, set) {
+  host.innerHTML = items.map(i =>
+    `<button data-v="${i.id}"${i.id === get() ? ' class="on"' : ''}>${i.label}` +
+    (i.sub ? `<i>${i.sub}</i>` : '') + `</button>`).join('');
+  host.onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    set(b.dataset.v);
+    host.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === get()));
+    paint();
+  };
+}
+seg($('support'), HOKSESC.list, () => view.scene, v => { view.scene = v; });
+seg($('frame'), FRAMES, () => view.frame, v => { view.frame = v; });
+seg($('mat'), [{ id: 'crudo', label: 'Crudo' }, { id: 'tinta', label: 'Tinta' }],
+    () => view.material, v => { view.material = v; });
+seg($('blend'), [{ id: 'normal', label: 'Normal' }, { id: 'multiply', label: 'Multiplicar' }],
+    () => view.blend, v => { view.blend = v; });
+
+$('shot').onclick = () => { view.shot = (Math.random() * 0xFFFFFFFF) >>> 0; paint(); };
+$('save').onclick = save;
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === ' ') { e.preventDefault(); $('shot').click(); }
+  else if (e.key === 's' || e.key === 'S') save();
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const i = HOKSESC.list.findIndex(s => s.id === view.scene);
+    const n = (i + (e.key === 'ArrowRight' ? 1 : HOKSESC.list.length - 1)) % HOKSESC.list.length;
+    view.scene = HOKSESC.list[n].id;
+    $('support').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === view.scene));
+    paint();
+  }
+});
+
+function rebuild() {
+  const key = `${recipe.work}|${recipe.format}|${recipe.seed}`;
+  if (key !== artKey) {
+    const c = renderArt();
+    if (!c) return;
+    art = c; artKey = key;
+  }
+  paint();
+}
+
+document.title = `${recipe.work} #${recipe.seed} · fotos — hoks`;
+HOKSLAB.loadAlgos(() => {
+  rebuild();
+  HOKSLAB.injectCopy();
+  HOKS.loadAllPalettes()
+    .then(p => { if (p && p.length) { PALETTES = p; artKey = ''; rebuild(); } })
+    .catch(() => {});
+});
+</script>
+</body>
+</html>
