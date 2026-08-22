@@ -59,6 +59,7 @@
       <button data-f="KRRTK">KRRTK</button>
     </div>
     <button class="btn" id="regen">↻ Regenerar</button>
+    <button class="btn" id="dlGrid" title="Mosaico de 12 piezas de la familia (4:5), estilo colección — enseña el sistema, no una pieza">▦ Rejilla</button>
     <span class="hint" id="count"></span>
   </div>
 
@@ -82,8 +83,8 @@
         <button class="btn solid" id="share" title="Compartir al móvil (Instagram, etc.) — solo aparece donde el navegador lo permite">⇪ Compartir</button>
         <button class="btn" id="dlDet" title="Detalle 4:5 de la pieza">Detalle 4:5</button>
         <button class="btn" id="dl2048" title="Pieza cuadrada a 2048, para archivo/impresión">2048 · pieza</button>
-        <button class="btn" id="vidItr" title="El sistema escupe seeds">Vídeo ⟳</button>
-        <button class="btn" id="vidAsm" title="La pieza se pinta sola (making-of), 4:5">Vídeo ✎</button>
+        <button class="btn" id="vidItr" title="El sistema escupe seeds: una tras otra, la familia entera">↻ Vídeo iteraciones</button>
+        <button class="btn" id="vidAsm" title="La pieza se pinta sola (making-of), 4:5">✎ Vídeo montaje</button>
         <span class="flash" id="flash">✓ copiado</span>
       </div>
       <div>
@@ -1510,6 +1511,39 @@
       build(); });
   });
   document.getElementById('regen').addEventListener('click', build);
+
+  // ── REJILLA DE FAMILIA ────────────────────────────────────────────────────
+  // Mosaico 3×4 (12 piezas) de la familia sobre papel, estilo colección: enseña
+  // el SISTEMA (la variación dentro de la regla), no una pieza suelta. Respeta la
+  // paleta fijada, así una rejilla puede ser toda Hoks o toda Science. Cada clic
+  // tira 12 seeds nuevos. En móvil se comparte; en escritorio se descarga.
+  function gridBlob(cb){
+    var cols=3, rows=4, W=1080, HH=1350, m=48, g=18, footer=52;
+    var cell=Math.min(Math.floor((W-2*m-(cols-1)*g)/cols),
+                      Math.floor((HH-m-footer-(rows-1)*g)/rows));
+    var gw=cols*cell+(cols-1)*g, gh=rows*cell+(rows-1)*g;
+    var x0=Math.round((W-gw)/2), y0=m+Math.max(0, Math.round(((HH-m-footer)-m-gh)/2));
+    var cv=document.createElement('canvas'); cv.width=W; cv.height=HH; var x=cv.getContext('2d');
+    x.fillStyle='#fbfbfa'; x.fillRect(0,0,W,HH);
+    var tile=document.createElement('canvas');
+    for(var r=0;r<rows;r++){ for(var c=0;c<cols;c++){
+      var f=(fam==='ALL')?pickFam():fam; render(f,tile,cell,seed());
+      x.drawImage(tile, x0+c*(cell+g), y0+r*(cell+g));
+    }}
+    x.fillStyle='#8a8983'; x.font='400 20px ui-monospace,"SF Mono",Menlo,Consolas,monospace';
+    x.textBaseline='alphabetic'; x.textAlign='left';
+    x.fillText('hoks · '+(fam==='ALL'?'todas las familias':fam)+(chosenPal?(' · '+chosenPal.name):''), x0, HH-26);
+    x.textAlign='right'; x.fillText('hoks.design', W-m, HH-26); x.textAlign='left';
+    cv.toBlob(function(b){ cb(b); },'image/png');
+  }
+  document.getElementById('dlGrid').addEventListener('click', function(){
+    gridBlob(function(blob){ if(!blob)return;
+      var name='hoks-'+(fam==='ALL'?'mix':fam.toLowerCase())+'-rejilla-'+Date.now()+'.png';
+      var file=new File([blob],name,{type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){ navigator.share({files:[file]}).then(flash).catch(function(){}); }
+      else { saveBlob(blob,name); flash(); }
+    });
+  });
   document.getElementById('dl45').addEventListener('click', function(){ download45((sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-1080x1350.png'); });
   // Compartir (Web Share con archivos). En móvil abre la hoja nativa —Instagram
   // incluido—, así se publica sin pasar el archivo al teléfono. Comparte la
