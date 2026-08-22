@@ -79,6 +79,7 @@
       <div class="row">
         <button class="btn solid" id="copy">Copiar pie</button>
         <button class="btn acid" id="dl45" title="Pieza 4:5 (1080×1350), sin recorte en el grid">Descargar 4:5 (IG)</button>
+        <button class="btn solid" id="share" title="Compartir al móvil (Instagram, etc.) — solo aparece donde el navegador lo permite">⇪ Compartir</button>
         <button class="btn" id="dlDet" title="Detalle 4:5 de la pieza">Detalle 4:5</button>
         <button class="btn" id="dl2048" title="Pieza cuadrada a 2048, para archivo/impresión">2048 · pieza</button>
         <button class="btn" id="vidItr" title="El sistema escupe seeds">Vídeo ⟳</button>
@@ -1510,6 +1511,20 @@
   });
   document.getElementById('regen').addEventListener('click', build);
   document.getElementById('dl45').addEventListener('click', function(){ download45((sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-1080x1350.png'); });
+  // Compartir (Web Share con archivos). En móvil abre la hoja nativa —Instagram
+  // incluido—, así se publica sin pasar el archivo al teléfono. Comparte la
+  // pieza 4:5 + el pie. Donde no hay soporte (escritorio), el botón se oculta.
+  function shareCurrent(){ if(!sel)return;
+    var c=document.createElement('canvas'); render45(sel.fam,c,1080,sel.seed);
+    c.toBlob(function(blob){ if(!blob)return;
+      var file=new File([blob], sel.fam.toLowerCase()+'-'+sel.seed+'-1080x1350.png', {type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file], text:cap.value}).then(flash).catch(function(){});
+      } else { download45(sel.fam.toLowerCase()+'-'+sel.seed+'-1080x1350.png'); }
+    },'image/png'); }
+  (function(){ var sb=document.getElementById('share'); if(!sb)return; var ok=false;
+    try{ ok=!!(navigator.canShare && navigator.canShare({files:[new File([new Uint8Array([0])],'x.png',{type:'image/png'})]})); }catch(e){}
+    if(!ok){ sb.style.display='none'; } else { sb.addEventListener('click', shareCurrent); } })();
   document.getElementById('dlDet').addEventListener('click', function(){ downloadDetail((sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-detalle-1080x1350.png'); });
   document.getElementById('dl2048').addEventListener('click', function(){ download(2048, (sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-2048.png'); });
   document.getElementById('copyTags').addEventListener('click', function(){ var t=TAGS;

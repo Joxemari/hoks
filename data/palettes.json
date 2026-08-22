@@ -650,5 +650,20 @@
     ],
     "notes": "Tangerine Tango · Charcoal · Platinum · Powder Blue",
     "created": 1787100000000
+  },
+  {
+    "id": 101,
+    "name": "Hoks",
+    "active": true,
+    "colors": [
+      "#dcff32",
+      "#000ef7"
+    ],
+    "tags": [
+      "hoks",
+      "brand"
+    ],
+    "notes": "acid + logo blue — la paleta insignia de la casa",
+    "created": 1787100000001
   }
 ]
