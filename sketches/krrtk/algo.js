@@ -5,7 +5,10 @@
  * Si arreglas algo aquí, se arregla en todas partes.
  *
  * Porte FIEL del motor que vivía inline en krrtk.html — mismo orden de
- * consumo del RNG, mismos números → mismo seed produce la misma imagen.
+ * consumo del RNG, mismos números. Con una corrección posterior: sobre suelo
+ * plano la tinta ya no puede salir del color del suelo (E.pickInk). Misma cuenta
+ * de tiradas, pero una seed en la que algún cuadrado caía en el suelo da ahora
+ * otra imagen — y esa era la mayoría.
  * Nota: la subdivisión descarta el 4º hijo de cada división (el splice del
  * original). No es un bug a arreglar: es la firma visual de la serie.
  *
@@ -73,17 +76,19 @@
     // Fondo: mesh gradient (lo propio de la obra) o plano si el laboratorio pide
     // 'solid'. Se sortea en su propio stream, así la composición no se entera.
     const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
+    let ground = null;                               // el suelo, cuando es un color y no un degradado
     if (E.pickBg(seed, params, BG_GRADIENT) === 'solid') {
-      ctx.fillStyle = colors[rngBg.int(0, colors.length - 1)];
+      ground = colors[rngBg.int(0, colors.length - 1)];
+      ctx.fillStyle = ground;
       ctx.fillRect(0, 0, W, H);
     } else {
-      E.drawMeshGradient(ctx, W, H, colors, rngBg);
+      ground = E.meshGround(E.drawMeshGradient(ctx, W, H, colors, rngBg));
     }
 
     // 2. Construir cuadrados (algoritmo KRRTK fiel, splice incluido). Cada campo
     //    de la rejilla se subdivide por su cuenta: el sistema no sabe que hay
     //    otros, y por eso ninguno repite al de al lado.
-    const squares = [], toDraw = [];
+    const squares = [], toDraw = [], roll = [];
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
   // ⟨esaldia:eu⟩ Karratu bat, behin eta berriz, zatitu ala ez erabakitzen.
@@ -91,7 +96,11 @@
   // ⟨esaldia:en⟩ A square deciding, again and again, whether to divide.
   // ⟨esaldia:en⟩ It splits in four and always discards the fourth: that missing quarter is what the series says.
         // ⟨gramatika⟩
-        const anyColour = () => colors[rng.int(0, colors.length - 1)];
+        // Tinta que se vea: sobre suelo plano, un cuadrado del color del suelo no
+        // es un cuadrado — y con pocos cuadrados dibujados se llevaba la obra
+        // entera (1,5% de piezas invisibles en cuadrado). Consume la misma
+        // tirada, así que la subdivisión no se entera.
+        const anyColour = () => E.pickInk(rng, colors, ground);
         const field = [{ x: col * side, y: row * side, size: side, color: anyColour() }];
         let pending = 0;
         while (pending < field.length) {
@@ -111,8 +120,16 @@
         }
         // ⟨/gramatika⟩
         for (const sq of field) squares.push(sq);
-        for (let i = 0; i < field.length; i++) toDraw.push(rng.next() > threshold);
+        for (let i = 0; i < field.length; i++) { const v = rng.next(); roll.push(v); toDraw.push(v > threshold); }
       }
+    }
+    // La obra siempre deja una marca. Que ningún cuadrado pase el umbral es raro
+    // —una de cada tres mil— pero no imposible, y entonces no hay subdivisión que
+    // leer: hay papel. Pasa el que más cerca estuvo.
+    if (!toDraw.some(Boolean) && roll.length) {
+      let m = 0;
+      for (let i = 1; i < roll.length; i++) if (roll[i] > roll[m]) m = i;
+      toDraw[m] = true;
     }
     const drawCount = toDraw.filter(Boolean).length;
     const a0 = side;   // lado del campo: la profundidad se mide contra él

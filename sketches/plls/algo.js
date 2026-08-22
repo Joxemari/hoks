@@ -49,6 +49,7 @@
     return pickWeighted(rng, keys, keys.map(k => (probs && probs[k] != null) ? probs[k] : FINISH_PROBS[k]));
   }
   function pickBlendOp(colors) { return colors.reduce((s, c) => s + E.luma(c), 0) / colors.length < 0.45 ? 'screen' : 'multiply'; }
+
   function pillsOverlap(ax, ay, aL, at, bx, by, bL, bt, tol) {
     return Math.max(0, (at + bt) / 2 + Math.min(aL, bL) * 0.5 - Math.hypot(ax - bx, ay - by)) / ((at / 2 + bt / 2)) > tol;
   }
@@ -140,7 +141,16 @@
     ctx.restore();
   }
 
-  // Fondo: plano o degradado (devuelve los 2 colores usados).
+  // Fondo: plano o degradado. Devuelve DOS cosas distintas que antes eran una:
+  //   · pair   — los dos colores sorteados. Es lo que mira la preferencia de tono
+  //              de las cápsulas, y se deja intacto: cambiarlo recolorea PLLS
+  //              entera para arreglar el medio por ciento que salía en blanco.
+  //   · suelos — los que de verdad están en pantalla: los dos si es degradado, y
+  //              UNO si es plano, que además puede ser el PAPEL —el off-white de
+  //              la casa— y no un color de la paleta. Ahí estaba el cabo suelto:
+  //              se devolvía el par, así que la cápsula se guardaba de un suelo
+  //              que no estaba y no del que sí, y salía casi blanca sobre papel
+  //              casi blanco.
   // forceMode (opcional): 'solid' | 'diagonal' para fijarlo desde el lab.
   // pGrad: % de fondo con degradado cuando va en 'auto'. El resto es plano, así
   // que los dos suman 100 sin poder no hacerlo.
@@ -151,17 +161,21 @@
     const c1 = rng.pickFrom(colors), rest = colors.filter(x => x !== c1), c2 = rng.pickFrom(rest.length ? rest : colors);
     const [r1, g1, b1] = E.hexToRgb(c1), [r2, g2, b2] = E.hexToRgb(c2);
     ctx.save(); ctx.globalCompositeOperation = 'source-over';
+    let suelos;
     if (mode === 'diagonal') {
       const flip = rng.bool(0.5), gr = ctx.createLinearGradient(flip ? W : 0, 0, flip ? 0 : W, H);
       gr.addColorStop(0, `rgb(${r1},${g1},${b1})`);
       gr.addColorStop(0.5, `rgb(${Math.round((r1 + r2) / 2)},${Math.round((g1 + g2) / 2)},${Math.round((b1 + b2) / 2)})`);
       gr.addColorStop(1, `rgb(${r2},${g2},${b2})`);
       ctx.fillStyle = gr;
+      suelos = [c1, c2];
     } else {
-      ctx.fillStyle = rng.bool(0.286) ? OFF_WHITE : c1;
+      const flat = rng.bool(0.286) ? OFF_WHITE : c1;
+      ctx.fillStyle = flat;
+      suelos = [flat];
     }
     ctx.fillRect(0, 0, W, H); ctx.restore();
-    return [c1, c2];
+    return { pair: [c1, c2], suelos };
   }
 
   // ── Entrada principal ───────────────────────────────────────────────────────
@@ -205,7 +219,7 @@
       : bgT === 'gradient' ? 'diagonal'
       : params.bgMode;
     const pGrad = (params.bgProbs && params.bgProbs.gradient != null) ? params.bgProbs.gradient : BG_GRADIENT;
-    const bgColors = drawBg(ctx, W, H, colors, rng, bgForce, pGrad);
+    const { pair: bgColors, suelos } = drawBg(ctx, W, H, colors, rng, bgForce, pGrad);
 
     // Margen = extensión máxima de la cápsula desde su centro (hl + radio del cap).
     // Así todas caben sin recortes → todas conservan la MISMA proporción.
@@ -232,11 +246,17 @@
       // que dejar de hablar.
       if (!roomFound) { angle = rng.range(0, Math.PI * 2); cx = rng.range(mx, FW - mx); cy = rng.range(my, FH - my); }
       placed.push({ cx, cy, hl: halfLength, t: thick });
-      // Evitar pills del mismo tono que el fondo.
+      // Evitar pills del mismo tono que el fondo. La preferencia se queda EXACTA
+      // —mide luminancia contra el par sorteado— porque tocarla recolorea la obra
+      // entera. Lo que deja de ser es la última palabra: cuando la paleta tiene
+      // dos colores descarta los dos y se rinde a `colors`, que incluye el suelo,
+      // y la cápsula salía justo del color de debajo. E.pickInk hace de guarda
+      // contra el suelo DE VERDAD: la tirada es la misma y solo salta si cae en un
+      // color que ahí no se vería.
       const bgL = bgColors.map(c => E.luma(c)), cOk = c => bgL.every(bl => Math.abs(E.luma(c) - bl) > 0.12);
       const pc = colors.filter(cOk).length ? colors.filter(cOk)
         : (colors.filter(c => !bgColors.includes(c)).length ? colors.filter(c => !bgColors.includes(c)) : colors);
-      pills.push({ cx, cy, hl: halfLength, angle, col: rng.pickFrom(pc), style: pickFinish(rng, params.finishProbs), thick });
+      pills.push({ cx, cy, hl: halfLength, angle, col: E.pickInk(rng, pc, suelos), style: pickFinish(rng, params.finishProbs), thick });
     }
     // ⟨/gramatika⟩
 
@@ -246,7 +266,19 @@
     for (const p of pills) {
       styleCount[p.style] = (styleCount[p.style] || 0) + 1;
       const dx = Math.cos(p.angle) * p.hl, dy = Math.sin(p.angle) * p.hl;
-      drawPill(ctx, p.cx - dx, p.cy - dy, p.cx + dx, p.cy + dy, p.thick, p.col, p.style, rng, colors, blndOp, u);
+      // El fundido también tiene que dejar marca, y esa regla está en el motor
+      // (E.blendFor) porque ECLPS funde igual y con el mismo desajuste: el
+      // operador salía de la MEDIA de luma de la paleta, así que Her (rojo + casi
+      // blanco) daba multiply con tinta blanca — que es no pintar. 'blnd' es un
+      // tercio de los acabados de PLLS, no era un caso de esquina.
+      //
+      // Contra el suelo solo se mide si el suelo es UNO: en un degradado no hay un
+      // color contra el que medir y forzar el operador movería piezas que se ven
+      // perfectamente. Lo que sí se mira siempre es el NEUTRO —multiply con tinta
+      // blanca no pinta, haya lo que haya debajo—, y eso lo comprueba E.blendFor
+      // aunque no se le dé suelo.
+      drawPill(ctx, p.cx - dx, p.cy - dy, p.cx + dx, p.cy + dy, p.thick, p.col, p.style, rng, colors,
+               E.blendFor(blndOp, p.col, suelos.length === 1 ? suelos : []), u);
     }
     ctx.restore();
     E.grain(ctx, W, H, colors, grainScale, u);

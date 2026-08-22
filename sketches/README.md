@@ -411,6 +411,13 @@ Los sliders son de exploración: producción usa siempre los defaults.
    `FORMAT` de partida de la obra.
 3. Verificar: `node --check`, y si reemplaza un motor existente, prueba de
    equivalencia (log de operaciones de canvas idéntico para N seeds).
+   Y **contar las que salen sin nada**: renderizar unos cientos de seeds sin
+   grano y mirar si alguna se queda sin un solo borde. Sale a cero o no está
+   graduada. El color de la marca no se tira con `colors[rng.int(…)]` —el suelo
+   sale de esa misma lista y la tirada puede caer justo en él— sino con
+   `E.pickInk(rng, colors, suelo)`; si la obra funde en vez de superponer, el
+   operador pasa por `E.blendFor`. Con eso salen a cero las seis familias; sin
+   eso salían DTK 5,0%, ECLPS 14,0%, KRRTK 1,5% y PLLS 0,5%.
 4. Añadir el slug a `GRADUATED` — en `_lab.js` **y** en `admin.html`, que es un
    panel autónomo y lleva su propia copia. Con eso ya se abre en el laboratorio
    y aparece en su selector de obra, esté publicada o no.

@@ -37,10 +37,13 @@
   // Se pinta por bandas: a resolución de impresión (decenas de Mpx) una sola
   // ImageData de todo el lienzo son cientos de MB. La imagen es idéntica.
   const STRIP_PX = 2e6;   // ~2 Mpx por banda ≈ 8 MB de ImageData
+  // Devuelve las cuatro esquinas — ver meshGround: a veces no hay degradado.
   function drawMeshGradient(ctx, W, H, colors, rng) {
     const n = colors.length;
-    const c00 = hexToRgb(colors[rng.int(0, n - 1)]), c10 = hexToRgb(colors[rng.int(0, n - 1)]);
-    const c01 = hexToRgb(colors[rng.int(0, n - 1)]), c11 = hexToRgb(colors[rng.int(0, n - 1)]);
+    const k00 = colors[rng.int(0, n - 1)], k10 = colors[rng.int(0, n - 1)];
+    const k01 = colors[rng.int(0, n - 1)], k11 = colors[rng.int(0, n - 1)];
+    const c00 = hexToRgb(k00), c10 = hexToRgb(k10);
+    const c01 = hexToRgb(k01), c11 = hexToRgb(k11);
     const strip = Math.max(1, Math.min(H, Math.floor(STRIP_PX / W)));
     for (let y0 = 0; y0 < H; y0 += strip) {
       const h = Math.min(strip, H - y0);
@@ -57,6 +60,7 @@
       }
       ctx.putImageData(img, 0, y0);
     }
+    return [k00, k10, k01, k11];
   }
 
   // ── Grano de film (soft-light, teñido hacia la media de la paleta) ──────────
@@ -221,6 +225,108 @@
       if (otras.length === 3) break;
     }
     return { suelo, tinta, otra, otras, inv, papel };
+  }
+
+  // ── La tinta tiene que verse sobre el suelo ─────────────────────────────────
+  // Una marca del color del suelo no es una marca: se dibuja, cuenta en el
+  // recuento y se cuela en los traits —«Coverage · 100%»— y en el papel no hay
+  // nada. No es una tirada desafortunada, es un fallo de lectura: las paletas de
+  // hoks son listas planas, el suelo sale de esa misma lista y nadie estaba
+  // comprobando que la tinta no fuera justo el color que ya está debajo.
+  //
+  // Medido sobre el píxel, salía en TODAS las familias que tiran el color con
+  // `colors[rng.int(...)]`: DTK 5,0% de piezas invisibles en cuadrado, ECLPS
+  // 14,0%, KRRTK 1,5%, PLLS 0,5%. Las que ya pasaban por `inkRoles` —DTKRT,
+  // TRZS— salían a cero, que es la prueba de que esto es exactamente el mismo
+  // problema y va exactamente en el mismo sitio: aquí, una vez.
+  //
+  // La distancia es de COLOR y no de luminancia, por lo mismo que en inkRoles:
+  // las Itten son contrastes de tono y con luma darían rojo sobre rojo.
+  //
+  // El umbral es del SISTEMA, como el margen. 0,08 deja fuera los pares más
+  // cercanos de las propias paletas —dos tonos del mismo color, #c0392b sobre
+  // #a93226— y nada más: por encima de ahí ya hay borde y hay obra.
+  const INK_MIN = 0.08;
+  // `ground` es un color o una lista de colores (un mesh no siempre tiene uno).
+  function inkOn(colors, ground, min) {
+    const G = (Array.isArray(ground) ? ground : [ground]).filter(Boolean);
+    if (!G.length) return colors;                  // sin suelo plano no hay contra qué medir
+    const m = min == null ? INK_MIN : min;
+    const ok = colors.filter(c => G.every(g => dcolor(c, g) > m));
+    if (ok.length) return ok;
+    // Ninguna paleta activa llega aquí con un suelo. Si alguna llegara, manda el
+    // color más lejano: el sistema cede antes que dejar de hablar.
+    const d = c => Math.min(...G.map(g => dcolor(c, g)));
+    return [colors.reduce((b, c) => (d(c) > d(b) ? c : b), colors[0])];
+  }
+  // Un mesh cuyas cuatro esquinas caen a menos de un borde unas de otras no es un
+  // degradado: es un suelo, y hay que tratarlo como tal o la regla de arriba no
+  // se aplica justo donde más falta hace. Las esquinas se sortean por separado y
+  // con repetición, así que pasa a menudo —con tres colores, las cuatro salen
+  // iguales una de cada nueve veces— y basta con que la paleta traiga un par de
+  // sombra (#e07b39 y #c96a28) para que un mesh «de dos colores» sea liso.
+  // Devuelve la lista de suelos, porque la tinta debe separarse de todos.
+  function meshGround(corners) {
+    if (!corners || !corners.length) return null;
+    const uniq = corners.filter((c, i) => corners.indexOf(c) === i);
+    for (const a of uniq) for (const b of uniq) if (dcolor(a, b) > INK_MIN) return null;
+    return uniq;
+  }
+
+  // Y lo mismo cuando la tinta no se pone encima sino que se FUNDE. 'multiply'
+  // oscurece: sobre un suelo casi negro no queda nada que oscurecer, y una tinta
+  // casi blanca no oscurece nada. 'screen' es su espejo exacto. Las dos familias
+  // que funden elegían el operador por la MEDIA de luma de la PALETA —ni el
+  // suelo ni la tinta—, así que Her (rojo + casi blanco) daba multiply con tinta
+  // blanca: la forma se colocaba, se dibujaba, contaba en los traits, y en el
+  // papel no había nada.
+  //
+  // Se mide el fundido de verdad contra el suelo de verdad. Si el operador de la
+  // paleta no mueve el color se prueba el otro, y si tampoco, se pinta plano: el
+  // sistema cede antes que dejar de hablar.
+  function blendMark(op, ink, ground) {
+    const f = op === 'multiply' ? (a, b) => a * b / 255 : (a, b) => 255 - (255 - a) * (255 - b) / 255;
+    const [ir, ig, ib] = hexToRgb(ink), [gr, gg, gb] = hexToRgb(ground);
+    return (Math.abs(f(ir, gr) - gr) + Math.abs(f(ig, gg) - gg) + Math.abs(f(ib, gb) - gb)) / 765;
+  }
+  // Cada operador tiene un NEUTRO: multiply con tinta blanca, o screen con tinta
+  // negra, no es un fundido flojo — es no pintar, y da igual lo que haya debajo.
+  // Por eso se comprueba también sin suelo: sobre un mesh gradient de verdad no
+  // hay un color contra el que medir, y ahí es donde quedaba el último resto.
+  const BLEND_NEUTRO = { multiply: '#ffffff', screen: '#000000' };
+  // El operador vale si TODA la tinta que se va a poner mueve el suelo.
+  function blendFor(op, inks, grounds) {
+    if (op !== 'multiply' && op !== 'screen') return op;
+    const I = (Array.isArray(inks) ? inks : [inks]).filter(Boolean);
+    const G = (Array.isArray(grounds) ? grounds : [grounds]).filter(Boolean);
+    if (!I.length) return op;
+    const marca = o => I.every(k => dcolor(k, BLEND_NEUTRO[o]) > INK_MIN
+                                 && G.every(g => blendMark(o, k, g) > INK_MIN));
+    if (marca(op)) return op;
+    const otro = op === 'multiply' ? 'screen' : 'multiply';
+    return marca(otro) ? otro : 'source-over';
+  }
+
+  // Tinta a suertes. La tirada es LA MISMA de siempre —`colors[rng.int(...)]`, un
+  // número y un índice sobre la lista entera—; lo único que cambia es que, si cae
+  // justo en el color del suelo, se avanza al siguiente que se vea, como quien
+  // salta una carta en blanco.
+  //
+  // Tirar directamente sobre la lista ya filtrada habría sido más corto y no es lo
+  // mismo: con la lista más corta el índice cae en otro sitio, así que con suelo
+  // plano —que es el color del suelo dentro de la paleta— se recolorearía CADA
+  // pieza, también aquella en la que ninguna tirada había caído en el suelo. Con
+  // el salto, esa pieza sale idéntica al píxel.
+  function pickInk(rng, colors, ground, min) {
+    const i = rng.int(0, colors.length - 1);
+    const G = (Array.isArray(ground) ? ground : [ground]).filter(Boolean);
+    if (!G.length) return colors[i];
+    const m = min == null ? INK_MIN : min;
+    for (let k = 0; k < colors.length; k++) {
+      const c = colors[(i + k) % colors.length];
+      if (G.every(g => dcolor(c, g) > m)) return c;
+    }
+    return inkOn(colors, G, m)[0];                 // no queda ninguno: el más lejano
   }
 
   // ── Paletas: probabilidad ponderada por edad (lo reciente pesa más) ─────────
@@ -542,8 +648,8 @@
 
   global.HOKS = {
     Rng, hexToRgb, luma, lerpColor, softLight,
-    drawMeshGradient, bakeGrain, applyGrain, grain, bgMode, pickBg, hash01, fieldMode, fieldGrid, FIELD_MARGIN,
-    dcolor, inkDice, inkRoles,
+    drawMeshGradient, meshGround, bakeGrain, applyGrain, grain, bgMode, pickBg, hash01, fieldMode, fieldGrid, FIELD_MARGIN,
+    dcolor, inkDice, inkRoles, inkOn, pickInk, blendMark, blendFor, INK_MIN,
     ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
     FORMATS, ALL_FORMATS, formatsFor, SHEETS, SHEET_IDS, sheetIdsFor, WALL_SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,
     fmtDims, previewDims, printDims, nominalAspect, unit, mountFormat, exportPrint,

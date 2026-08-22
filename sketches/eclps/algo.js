@@ -116,10 +116,12 @@
     //    nació con mesh, pero el plano también es suyo.
     const bg = E.pickBg(seed, params, BG_GRADIENT);
     const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
+    let ground = null;                    // el suelo, cuando es un color y no un degradado
     if (bg === 'gradient') {
-      E.drawMeshGradient(ctx, W, H, colors, rngBg);
+      ground = E.meshGround(E.drawMeshGradient(ctx, W, H, colors, rngBg));
     } else {
-      ctx.fillStyle = colors[rngBg.int(0, colors.length - 1)];
+      ground = colors[rngBg.int(0, colors.length - 1)];
+      ctx.fillStyle = ground;
       ctx.fillRect(0, 0, W, H);
     }
 
@@ -180,7 +182,7 @@
     const alpha = (!params.alpha && mode === 'Ring') ? Math.max(alphaRaw, RING_ALPHA_MIN) : alphaRaw;
     const blendRaw = params.blend ? params.blend : (mulRnd ? 'multiply' : 'source-over');
     const muddy = blendRaw === 'multiply' && colors.some(c => E.luma(c) < MUD_LUMA);
-    const blend = (!params.blend && muddy) ? 'source-over' : blendRaw;
+    const blendPal = (!params.blend && muddy) ? 'source-over' : blendRaw;
 
     const solo  = n < 2 || span <= 0;             // un único círculo: al centro
     const pitch = solo ? 0 : span / (n - 1);      // distancia entre centros — constante
@@ -190,8 +192,13 @@
     const cx = i => ox + (solo ? AW / 2 : margin + r + i * pitch);
 
     // 5. Color por slot (se tira siempre, exista o no el círculo).
+    //    Y tinta que se vea: sobre suelo plano, un disco del color del suelo no
+    //    es un disco. Con dos o tres slots era la obra entera —el 14,0% de las
+    //    piezas salía sin nada, la peor de la casa—, y es el mismo desajuste que
+    //    ya corregían Ring y multiply un poco más arriba: el color se estaba
+    //    eligiendo por la paleta, no por la obra. Consume la misma tirada.
     const cols = [];
-    for (let i = 0; i < n; i++) cols.push(colors[rng.int(0, colors.length - 1)]);
+    for (let i = 0; i < n; i++) cols.push(E.pickInk(rng, colors, ground));
 
     // 6. Ausencias. Cadence consume un número variable de tiradas; por eso va
     //    la última, para no arrastrar al resto de la pieza.
@@ -203,9 +210,24 @@
       present = cadence(rng, n, runMax);
     }
 
+    // La partitura siempre suena. Si NINGÚN slot queda presente no hay obra, hay
+    // papel — y con dos o tres slots el silencio total no es un ritmo raro, es
+    // una tirada corta que sale demasiado. Suena entonces el del medio.
+    if (!present.some(Boolean)) present[(n - 1) >> 1] = true;
+
     // 7. Dibujo.
     let drawn = 0;
     for (let i = 0; i < n; i++) if (present[i]) drawn++;
+
+    // Tercer acoplamiento, el mismo de PLLS y por eso vive en el motor: multiply
+    // con una tinta casi blanca no oscurece nada. Es lo que quedaba después de
+    // arreglar el color —un disco #fafafa fundido sobre #cd1440— y solo corrige
+    // la tirada automática: si el laboratorio fuerza el fundido, pasa tal cual.
+    //
+    // `tinta` es la que se va a poner de verdad: Xor pinta el trazado entero con
+    // cols[0]; Ring y Stack, la de cada slot presente.
+    const tinta = mode === 'Xor' ? [cols[0]] : cols.filter((c, i) => present[i]);
+    const blend = params.blend ? blendPal : E.blendFor(blendPal, tinta, [ground]);
 
     ctx.save();
     ctx.globalAlpha = alpha;
