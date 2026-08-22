@@ -384,12 +384,47 @@
     });
     document.body.appendChild(a);
   }
+  // ── Botón "copiar imagen" ───────────────────────────────────────────────
+  // Junto a Save PNG, uno más ligero (ghost): copia la vista actual al
+  // portapapeles como PNG —sin archivo, sin re-render a tamaño de impresión—
+  // para pegar rápido en un chat, un doc o una story. Se inyecta en el panel
+  // de cualquier harness (los que tienen #save y #single); el muro no los
+  // tiene, así que ahí no aparece. Sin tocar el HTML de cada harness.
+  function injectCopy() {
+    if (typeof document === 'undefined' || document.getElementById('copyImg')) return;
+    const save = document.getElementById('save');
+    const canvas = document.getElementById('single');
+    if (!save || !canvas || !save.parentNode) return;
+    const b = document.createElement('button');
+    b.id = 'copyImg';
+    b.type = 'button';
+    b.className = 'ghost';
+    b.textContent = '⎘ Copiar imagen';
+    b.title = 'Copia la vista actual al portapapeles (PNG). Más ligero que descargar.';
+    const status = document.getElementById('status');
+    const flash = (m) => {
+      if (status) { status.textContent = m; return; }
+      const t = b.textContent; b.textContent = m; setTimeout(() => { b.textContent = t; }, 1400);
+    };
+    b.addEventListener('click', () => {
+      if (!(navigator.clipboard && window.ClipboardItem && canvas.toBlob)) { flash('⚠ portapapeles no disponible'); return; }
+      canvas.toBlob((blob) => {
+        if (!blob) { flash('⚠ no se pudo generar la imagen'); return; }
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+          .then(() => flash('✓ imagen copiada'))
+          .catch(() => flash('⚠ no se pudo copiar (¿permiso del portapapeles?)'));
+      }, 'image/png');
+    });
+    save.parentNode.insertBefore(b, save.nextSibling);
+  }
+
   if (typeof document !== 'undefined') {
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectBack);
-    else injectBack();
+    const run = () => { injectBack(); injectCopy(); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+    else run();
   }
 
   global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, mountFormatSelect, loadWorks,
                      initialSeed, loadAlgos, wallUrl, objectsUrl, readRecipe, mountViewLinks,
-                     formatControls, launch, injectBack };
+                     formatControls, launch, injectBack, injectCopy };
 })(typeof window !== 'undefined' ? window : globalThis);
