@@ -22,7 +22,7 @@
     '@type': 'Person',
     name: 'Joxemari Gallastegi',
     alternateName: 'hoks',
-    jobTitle: 'Generative artist',
+    jobTitle: 'Computational artist',
     url: BASE + 'about.html',
   };
 
