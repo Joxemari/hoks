@@ -142,8 +142,26 @@ que mueve la imagen llega por URL y es de solo lectura: si hay que cambiar la
 obra, se vuelve al lab. Lo que viaja es la **receta**, la
 misma de los harnesses y `_batch.js`, serializada entera, así que un parámetro
 nuevo llega al muro sin tocar nada. El enlace lo pone
-`HOKSLAB.mountWallLink()`, una línea por harness. No metas mandos de mirar en
-el panel de generar: esa separación es el motivo de que exista la página.
+`HOKSLAB.mountViewLinks()`, una línea por harness (que monta los dos: muro y
+objetos). No metas mandos de mirar en el panel de generar: esa separación es el
+motivo de que existan estas páginas.
+
+**`_objects/` — los objetos.** La otra mitad de la pregunta. El muro dice cuánto
+**mide** la obra; los objetos dicen cuánto **queda** de ella cuando el soporte se
+la lleva, que casi nunca es todo: un soporte no es un marco, es un recorte y una
+escala. Seis, en orden de más obra a menos —interior (el pliego colgado, con
+sofá), pañuelo 900 mm, vinilo 315, camiseta ≤300, tote ≤280, reloj 38—, y el
+porcentaje visible **se calcula**: `cover` pierde lo que sobresale, `contain`
+entra entero y le sobra soporte, y una máscara circular se queda además con π/4.
+De ahí salen los dos datos que no se ven en ningún otro sitio: el pañuelo es el
+único soporte que **agranda** la obra (más lado que un A1) y la camiseta es donde
+el sistema **pierde el suelo** —en tela no hay sangre, así que la obra estrena un
+borde que no ha elegido—. Segunda vista: la **hoja de soportes**, los seis a la
+misma escala, que es la imagen que se manda a una colaboración. Todo en **alzado**
+—SVG con el `viewBox` en milímetros, línea de un píxel, cotas— y no en maqueta
+fotográfica: una foto vendería el objeto, un alzado dice la medida, que es lo
+único que aquí se decide. No exporta imagen todavía: la captura de pantalla es el
+método, y conviene decirlo.
 
 El circuito completo: **lab → lote → publicar → galería**. Se mira la hoja de
 contactos, se aparta con `+` o `a`, y el lote —una lista de *recetas*, no de

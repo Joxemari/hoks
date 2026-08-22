@@ -166,9 +166,10 @@
       <button class="ghost" id="cartela">↓ Cartela A5 (c)</button>
       <button class="ghost" id="sheet">▦ Grid de obras (g)</button>
       <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
-      <!-- El muro es una VISTA, no un parámetro: se va a su página y no engorda
-           el panel con mandos que no cambian la obra, solo cómo se mira. -->
-      <div id="wallLink"></div>
+      <!-- Mirar es una VISTA, no un parámetro: el muro (cuánto MIDE) y los
+           objetos (cuánto QUEDA de la obra sobre la cosa) van a su página y no
+           engordan el panel con mandos que no cambian la obra. -->
+      <div id="viewLinks"></div>
     </div>
     <div class="group"><span class="lbl">Traits</span><div class="traits" id="traits"></div></div>
   </aside>
@@ -393,9 +394,9 @@ const fmtSel = HOKSLAB.mountFormatSelect($('fmt'), SLUG, {
 });
 FORMAT = $('fmt').value;
 $('fmt').onchange = () => { FORMAT = $('fmt').value; applyFormat(); refresh(); };
-// El muro recibe la receta por URL. Se pasa sin resolver el nombre de la paleta
-// (que exige un render de 8px): al muro le basta con volver a pintarla.
-HOKSLAB.mountWallLink($('wallLink'), () => ({
+// Las dos páginas de mirar reciben la receta por URL. Se pasa sin resolver el
+// nombre de la paleta (que exige un render de 8 px): les basta con repintarla.
+HOKSLAB.mountViewLinks($('viewLinks'), () => ({
   work: SLUG, seed: seed >>> 0, format: FORMAT, params: params(),
   palSel: palPicker ? palPicker.selection : 'auto',
 }));

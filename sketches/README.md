@@ -49,6 +49,10 @@ sketches/
   _wall/            ← el MURO: la pieza a escala sobre una pared. Página aparte,
                       se abre desde el enlace del panel y recibe la receta por
                       URL. Solo tiene mandos que NO cambian la obra.
+  _objects/         ← los OBJETOS: la obra sobre la cosa —interior, pañuelo,
+                      vinilo, camiseta, tote, reloj— en alzado y a escala. El muro
+                      dice cuánto MIDE; esto dice cuánto QUEDA. Misma receta por
+                      URL, mismas reglas: aquí no se genera.
   _template/        ← esqueleto para graduar una obra nueva
   plls/            ← graduada (algo.js + harness)
   krrtk/           ← graduada (porte fiel, verificado op-a-op)
@@ -353,14 +357,82 @@ parámetros de generar en un cajón con parámetros de mirar.
 
 Lo que viaja es la **receta**, la misma que ya usan los cinco harnesses y
 `_batch.js`, serializada entera: un parámetro nuevo en una obra llega al muro sin
-tocar nada. El enlace lo pone `HOKSLAB.mountWallLink()` — una línea por harness —
-y recalcula el `href` al posarse encima, no en cada refresh, para seguir siendo
-un enlace de verdad.
+tocar nada. Los enlaces los pone `HOKSLAB.mountViewLinks()` —una línea por
+harness, los dos destinos— y recalculan el `href` al posarse encima, no en cada
+refresh, para seguir siendo enlaces de verdad.
 
 ```
 ../_wall/?r=<receta JSON urlencoded>            ← lo que pone el enlace del panel
 ../_wall/?work=dtkrt&seed=123&fmt=horizontal    ← forma legible, a mano
 ```
+
+## Los objetos (`_objects/`)
+
+El muro contesta cuánto **mide** la obra. Esta página contesta la otra mitad:
+cuánto **queda** de ella cuando el soporte se la lleva. Y casi nunca es todo —un
+soporte no es un marco, es un recorte y una escala—, así que es justo lo que hay
+que poder mirar antes de decir sí a una colaboración: no si queda bien, sino qué
+parte del sistema sigue ahí.
+
+Seis soportes, y el orden **no es decorativo**: va de más obra a menos. Recorrerlo
+con `←` / `→` es el argumento de la página.
+
+| soporte    | área de obra      | cómo entra          | qué se ve                          |
+|------------|-------------------|---------------------|------------------------------------|
+| `interior` | el pliego, A3–A0  | a sangre            | todo, colgado a 1,45 m sobre un sofá |
+| `panuelo`  | 900 × 900 mm      | a sangre            | 100 % en cuadrado · 71 % en horizontal |
+| `vinilo`   | 315 × 315 mm      | a sangre            | lo mismo que el pañuelo, a un tercio |
+| `camiseta` | ≤ 300 × 360 mm    | con borde de tela   | 100 %, pero el fondo ya no es la obra |
+| `tote`     | ≤ 280 × 300 mm    | con borde de lona   | 100 %, curvo y a trozos            |
+| `reloj`    | disco de 38 mm    | a sangre, en disco  | 79 % en cuadrado · 56 % en horizontal |
+
+Ese porcentaje **se calcula, no se estima**: con `cover` se llena el área y lo que
+sobresale se pierde (la fracción es el cociente de proporciones); con `contain`
+entra toda y sobra soporte; una máscara circular se queda además con π/4 del
+cuadrado que ya había cubierto. El panel lo dice junto a los milímetros de la obra
+sobre ese soporte y su escala respecto a un A3. Un dato que se manda por correo no
+puede salir de mirar la pantalla con los ojos entornados.
+
+Dos datos que solo se ven aquí: el **pañuelo es el único soporte que agranda la
+obra** —900 mm de lado, más que el lado largo de un A1— y la **camiseta es donde
+el sistema pierde el suelo**: en tela no hay sangre, así que la obra estrena un
+borde que no ha elegido y el fondo pasa a ser algodón.
+
+**Dibujo de alzado, no maqueta fotográfica.** Línea de un píxel
+(`vector-effect="non-scaling-stroke"`), relleno plano y cotas en milímetros. Una
+foto de estudio vendería el objeto; un alzado dice la medida, que es lo único que
+aquí se decide. Todo el dibujo es SVG con el `viewBox` **en milímetros**: la escala
+sale exacta sin medir un píxel en JS, y `width`/`height` se normalizan a un marco
+nominal para que un reloj de 50 mm y un pañuelo de 900 ocupen los dos lo que caben.
+
+La segunda vista (`g`) es **la hoja de soportes**: los seis a la misma escala,
+apoyados en una línea, con el pliego de primero como vara de medir. Es la imagen
+que se manda a una colaboración —dice de una vez que el pañuelo es más grande que
+cualquier pliego que exportamos y que el reloj es una uña—. Las columnas se
+ensanchan hasta que caben los rótulos, pero **el dibujo no se reescala nunca**: si
+no, la hoja dejaría de decir lo único que dice.
+
+Mandos, y ninguno toca la obra: soporte, pliego (**solo donde el pliego existe**,
+o sea el interior y la hoja), material de la prenda (crudo / tinta), cotas y las
+referencias que cada soporte honre —la figura en el interior, las agujas en el
+reloj—. Lo que un soporte no honra no se queda ahí sin efecto: se esconde, igual
+que `HOKSLAB.formatControls` con el giro y el campo.
+
+```
+../_objects/?r=<receta JSON urlencoded>            ← lo que pone el enlace del panel
+../_objects/?work=dtkrt&seed=123&fmt=horizontal    ← forma legible, a mano
+```
+
+| tecla     | acción                                   |
+|-----------|------------------------------------------|
+| `g`       | hoja de soportes ↔ un soporte            |
+| `←` / `→` | soporte anterior / siguiente             |
+| `c`       | cotas                                    |
+
+**Lo que falta:** no exporta imagen. La página se compone en DOM/SVG con la obra
+como `dataURL` dentro, así que hoy la imagen para el correo sale de una captura de
+pantalla. Rasterizar el SVG entero es hacible y no está hecho — y hasta que lo
+esté, conviene decirlo en vez de dar por supuesto que hay un botón.
 
 ## Usar el harness (paso 3)
 

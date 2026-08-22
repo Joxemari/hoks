@@ -101,6 +101,10 @@
       <span class="lbl">Piece</span>
       <div class="facts" id="facts"></div>
       <a class="back" id="back" href="#">← Abrir en el lab</a>
+      <!-- Las dos páginas de mirar se enlazan entre sí: son la misma pregunta
+           partida en dos —cuánto MIDE la obra, cuánto QUEDA de ella— y volver al
+           lab para pasar de una a la otra era el camino largo. -->
+      <a class="back" id="toObjects" href="#">◑ Ver en objetos (recorta)</a>
       <span class="hintline">abre el lab en esta seed. Los ajustes del panel
         (grid, fondo, grano…) no viajan de vuelta</span>
     </div>
@@ -182,46 +186,14 @@ const FIG_PATH =
   'L446 876L452 848L458 704L440 404C424 356 384 330 334 308C306 294 288 280 286 242Z';
 
 // ── Estado: lo que llega (fijo) y lo que se mira (mutable) ──────────────────
-const recipe = readRecipe();
+// La receta la lee _lab.js: es el contrato que comparten las dos páginas de
+// mirar (muro y objetos), y tenerlo dos veces era tenerlo mal una de las dos.
+const recipe = HOKSLAB.readRecipe('dtkrt');
 const view = { sheet: 'A3', mode: 'single',
                refs: { fig: true, eye: true, rule: true } };
 
 let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
 let piece = null, pieceUrl = '', pieceKey = '', resolvedPal = null;
-
-// La receta admite las dos formas: el blob JSON que manda el lab y una versión
-// legible que se puede teclear. Si no viene nada, una tirada de DTKRT para que
-// la página abra igual y se entienda de qué va.
-function readRecipe() {
-  const q = new URLSearchParams(location.search);
-  const raw = q.get('r');
-  if (raw) {
-    try {
-      const r = JSON.parse(raw);
-      if (r && r.work) return normalize(r);
-    } catch (e) { console.warn('[hoks] receta ilegible en ?r=', e); }
-  }
-  return normalize({
-    work:   q.get('work') || 'dtkrt',
-    seed:   q.get('seed'),
-    format: q.get('fmt') || q.get('format'),
-    palSel: q.get('pal'),
-  });
-}
-function normalize(r) {
-  const seed = parseInt(r.seed, 10);
-  const fmt = r.format === 'horizontal' || r.format === 'vertical' || r.format === 'square'
-    ? r.format : 'square';
-  const palSel = (r.palSel == null || r.palSel === 'auto' || r.palSel === '')
-    ? 'auto' : parseInt(r.palSel, 10);
-  return {
-    work:   String(r.work || 'dtkrt').toLowerCase(),
-    seed:   Number.isFinite(seed) ? (seed >>> 0) : ((Math.random() * 0xFFFFFFFF) >>> 0),
-    format: fmt,
-    params: (r.params && typeof r.params === 'object') ? r.params : {},
-    palSel: Number.isFinite(palSel) ? palSel : 'auto',
-  };
-}
 
 // ── Referencias del muro ────────────────────────────────────────────────────
 function figureSvg(wmm, hmm) {
@@ -335,6 +307,7 @@ function drawFacts() {
   const m2 = (p.mm[0] * p.mm[1] / 1e6).toFixed(2).replace('.', ',');
   $('sheetNote').textContent = `${p.mm[0]} × ${p.mm[1]} mm · ${m2} m²`;
   $('back').href = `../${recipe.work}/?seed=${recipe.seed}`;
+  $('toObjects').href = HOKSLAB.objectsUrl(recipe);
 }
 
 function paint() {
