@@ -3,6 +3,50 @@
 Identidad para web y redes. Complementa `CLAUDE.md` (§ Sistema de diseño 2026).
 Se escribe una vez para **no repetir** las decisiones. Si cambia algo, cambia aquí.
 
+## 0 · Arquitectura narrativa
+
+- **Nombre del artista:** `hoks`.
+- **Definición:** `code blacksmith` — lo que hace y cómo trabaja; no sustituye el
+  nombre del artista.
+- **Descriptor principal:** `forging algorithms into matter`.
+- **Tesis:** `code proposes. geometry translates. matter negotiates.`
+- **Secuencia:** `code → geometry → matter`.
+- **Metáfora productiva:** `production lines that repeat a process, not a result`.
+- **Conflicto:** artefacto, sistema y el tránsito entre ambos.
+- **Pregunta:** `where does the work reside — in the artifact, in the system, or
+  in the passage between them?`
+
+`code blacksmith` describe el proceso, no impone una estética literal. No usar yunques,
+martillos, fuego, Matrix, cyberpunk, steampunk ni futurismo tecnológico genérico.
+La voz debe sentirse material, silenciosa, precisa y museística.
+
+### Arquitectura anterior → actual
+
+| capa | anterior | actual |
+|---|---|---|
+| nombre | `hoks` | `hoks` |
+| definición | `hand coded goods` | `code blacksmith` |
+| secuencia | `code · manufacturing · art` | `code → geometry → matter` |
+| producción | líneas que fabrican originales | líneas que repiten un proceso, no un resultado |
+| conflicto | imagen / sistema | artefacto / sistema / tránsito |
+| pregunta | qué hace la obra | dónde reside la obra |
+
+Se conservan el sistema como núcleo, el azar controlado, la selección, el descarte
+y `the visible is only a shadow: the residue of a system thinking`. La nueva
+arquitectura amplía la anterior hacia la traducción y la materia; no borra su base.
+
+## 0.1 · Método
+
+1. define a system
+2. generate possibilities
+3. select an iteration
+4. translate into fabrication
+5. allow matter to intervene
+
+Las tensiones recurrentes son `digital / physical`, `precision / imperfection`,
+`algorithm / intuition`, `infinite computation / finite matter` y
+`machine / craftsman`. La fórmula breve es: `perfect systems / imperfect matter`.
+
 ## 1 · Tipografía — dos voces
 
 - **Display → `--geo`**: League Spartan. Stack:
@@ -46,18 +90,18 @@ Banco (rota, no repitas siempre `//`):
 ## 4 · Caja y ortografía
 
 - **Minúscula SIEMPRE** en texto corrido y código. (El código es minúscula; es la
-  voz sobria, sistémica; el wordmark `hoks` y `hand coded goods` ya son minúscula.)
+  voz sobria, sistémica; el wordmark `hoks` y `code blacksmith` son minúscula.)
 - **MAYÚSCULA solo** para nombres de familia usados como etiqueta: `PLLS`,
   `KRRTK`, `DTKRT`.
 - `randomSeed` respeta su **camelCase** real (es la función de p5); lo demás, minúscula.
 
 ## 5 · Cuentas y assets
 
-- Instagram **@hoks.art** · X **@hoksart**. Strapline: **hand coded goods**.
+- Instagram **@hoks.art** · X **@hoksart**. Definición: **code blacksmith**.
 - Avatar: monograma acid sobre azul (`avatar-monogram.png`). Cabecera X:
   `x-header.png`. Tarjeta de compartir / OG: `preview.jpg`.
-- Bio (EN): `hand coded goods / generative systems · code as grammar, chance as
-  form / Donostia ↔ San Francisco`.
+- Bio (EN): `code blacksmith · forging algorithms into matter / code → geometry
+  → matter / donostia ↔ san francisco`.
 - **El link vive SOLO en la bio.** Nunca en el pie (IG no lo hace clicable).
   Dominio: **`hoks.design`** (comprado en Namecheap; apunta a GitHub Pages).
 
@@ -73,7 +117,7 @@ Banco (rota, no repitas siempre `//`):
 
 - **Masthead (fila de apertura, 3 posts FIJADOS)** en orden de pineo
   `draw → hoks → loop`:
-  `function draw(){ hand coded goods }` · logo hoks · `<p> loop() … ¿pregunta? </p>`.
+  `function draw(){ code blacksmith }` · logo hoks · `<p> loop() … ¿pregunta? </p>`.
   Pinear los tres clava la cabecera; la obra fluye por debajo sin romperla.
 - **Filas de obra:** 1 familia = 1 fila. col1 pieza acabada · col2 GIF *assembling*
   · col3 detalle.
@@ -94,28 +138,30 @@ Una imagen cuadrada se **recorta** a 4:5 en la miniatura.
 ## Apéndice · manifiesto canónico (post de lanzamiento, trilingüe)
 
 ```
-// hoks — hand coded goods
+// hoks — code blacksmith
 
 // EN
-// i build production lines that make only originals.
-// what you see is a shadow — the residue of a system thinking.
-// the essence is in what isn't shown: the discard, the void.
-// a single question underneath:
-// what makes the work — the image, or the system behind it?
+// forging algorithms into matter.
+// i build production lines that repeat a process, not a result.
+// the visible is only a shadow: the residue of a system thinking.
+// code proposes. geometry translates. matter negotiates.
+// where does the work reside — in the artifact, in the system,
+// or in the passage between them?
 
 // ES
-// construyo líneas de producción que solo fabrican originales.
-// lo visible es una sombra: el residuo de un sistema que piensa.
-// la esencia está en lo que no se ve — en el descarte, en el vacío.
-// y debajo, una pregunta:
-// ¿qué hace la obra — lo visible o el sistema que hay detrás?
+// forjando algoritmos en materia.
+// construyo líneas de producción que repiten un proceso, no un resultado.
+// lo visible es solo una sombra: el residuo de un sistema que piensa.
+// el código propone. la geometría traduce. la materia negocia.
+// ¿dónde reside la obra — en el artefacto, en el sistema
+// o en el tránsito entre ambos?
 
 // EUS
-// pieza bakarrak soilik ekoizten dituen produkzio-lerroak eraikitzen ditut.
-// ikusgai dagoena itzal bat besterik ez da: sistema baten hondarra.
-// mamia itzalean dago — baztertutakoan, hutsean.
-// eta azpian, galdera bat:
-// zerk egiten du obra — aurrean ikusgai dugunak ala atzean dagoen sistemak?
+// algoritmoak materian forjatuz.
+// emaitza bat ez, prozesu bat errepikatzen duten produkzio-lerroak eraikitzen ditut.
+// ikusgai dena itzal bat besterik ez da: pentsatzen ari den sistema baten hondarra.
+// kodeak proposatzen du. geometriak itzultzen du. materiak negoziatzen du.
+// non bizi da obra — artefaktuan, sisteman, ala bien arteko igarobidean?
 
 function draw() {
   randomSeed(seed)   // same seed → same world · no two are kept
