@@ -27,10 +27,15 @@
 
   const MM = 25.4;
   const A5 = [148, 210];            // mm, de pie
-  const MARGIN = 16;                // mm — la cartela es sobre todo aire
-  const THUMB_MM = 42;              // ancho de la miniatura
-  const GUTTER_MM = 7;              // aire entre el texto y la miniatura
-  const MONO = `'Courier New', Courier, monospace`;
+  const MARGIN = 15;                // mm — la cartela es sobre todo aire
+  const THUMB_MM = 54;              // ancho de la miniatura (la pieza pesa arriba)
+  const GUTTER_MM = 8;              // aire entre el texto y la miniatura
+  // Voz mono del sistema 2026 (no Courier New, que era la voz vieja). En la
+  // máquina del lab resuelve a SF Mono/Menlo; en print mantiene el aire mono.
+  const MONO = `ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace`;
+  // Tokens de marca (los mismos de nav.js): la cartela habla el idioma de la casa.
+  const INK = '#0a0a0a', PAPER = '#fbfbfa', BLUE = '#000ef7', ACID = '#dcff32',
+        MUT = '#8a8983', LINE = '#e2e0da', CODE = '#6b6b66';
 
   const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
 
@@ -94,101 +99,106 @@
     const k = W / A5[0];                        // px por mm
     const pt = p => p * (W / (A5[0] / MM * 72)); // puntos tipográficos → px
     const x = MARGIN * k;
+    const right = W - MARGIN * k;
+    const colW = right - x;                     // ancho útil
     let y = MARGIN * k;
 
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H);
     ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
 
+    // Un renglón desde x, con letterspacing a mano (canvas no lo trae).
     const line = (txt, size, color, spacing, weight) => {
       ctx.font = `${weight || 400} ${pt(size)}px ${MONO}`;
       ctx.fillStyle = color;
       if (!spacing) { ctx.fillText(txt, x, y); return; }
-      let cx = x;                                // letterspacing a mano: canvas no lo trae
+      let cx = x;
       for (const ch of txt) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + spacing; }
     };
-    const rule = (w) => { ctx.fillStyle = '#e0e0e0'; ctx.fillRect(x, y, (w || (W - x * 2)), Math.max(1, k * 0.12)); };
+    // Filete: fino gris (divisoria) o grueso acid (tick de marca).
+    const hair = (yy, color, x1, hpt) => { ctx.fillStyle = color; ctx.fillRect(x, yy, (x1 || right) - x, Math.max(1, pt(hpt || 0.5))); };
 
-    // La miniatura va ARRIBA A LA DERECHA, en la banda que la cabecera deja
-    // vacía: así identifica la hoja sin costarle a la hoja un solo milímetro de
-    // alto. El código, que es lo que puede no caber, se queda con la columna
-    // entera de abajo.
+    // La miniatura va ARRIBA A LA DERECHA: la pieza pesa arriba y la columna de
+    // texto queda a su izquierda. El código, que es lo que puede no caber, se
+    // queda con el ancho entero abajo.
     const thumb = info.thumb || null;
     const TW = thumb ? THUMB_MM * k : 0;
     const TH = thumb ? TW * (thumb.height / thumb.width) : 0;
-    let textW = (W - x * 2) - (thumb ? TW + GUTTER_MM * k : 0);
+    const colTextW = colW - (thumb ? TW + GUTTER_MM * k : 0);
     if (thumb) {
-      const tx = W - x - TW;
+      const tx = right - TW;
       ctx.drawImage(thumb, tx, y, TW, TH);
-      ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = Math.max(1, k * 0.12);
+      ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, pt(0.5));
       ctx.strokeRect(tx + 0.5, y + 0.5, TW - 1, TH - 1);
     }
 
-    // Cabecera
-    line('hoks', 7, '#bbb', pt(3));
-    y += pt(26);
-    line(String(info.work || '').toUpperCase(), 17, '#111', pt(6), 700);
-    y += pt(15);
-    line(String(info.year || new Date().getFullYear()), 9, '#888');
-    y += pt(12);
-    rule(textW); y += pt(16);
+    // Cabecera. El nombre de familia es el héroe: se encoge para no chocar con
+    // la miniatura (DTKRT es más ancho que PLLS).
+    line('hoks', 7.5, MUT, pt(3.2));
+    y += pt(30);
+    const fam = String(info.work || '').toUpperCase(), famSp = pt(7);
+    let fs = 20; ctx.font = `700 ${pt(fs)}px ${MONO}`;
+    const famW = () => { let w = 0; for (const ch of fam) w += ctx.measureText(ch).width + famSp; return w - famSp; };
+    while (fs > 12 && famW() > colTextW) { fs -= 0.5; ctx.font = `700 ${pt(fs)}px ${MONO}`; }
+    line(fam, fs, INK, famSp, 700);
+    y += pt(14);
+    line(String(info.year || new Date().getFullYear()), 9, MUT);
+    y += pt(9);
+    hair(y, ACID, x + colTextW, 1.2); y += pt(18);   // tick acid bajo el título
 
-    // Identidad: la seed es lo que nombra a la pieza, así que va grande.
-    line('#' + info.seed, 13, '#111', 0, 700);
-    y += pt(16);
+    // La seed nombra la pieza: es el sello, y va en azul (la voz de la notación).
+    line('randomSeed(' + info.seed + ')', 11.5, BLUE, 0, 700);
+    y += pt(17);
 
-    // Formato y campo son dos decisiones distintas — el pliego da la proporción
-    // del papel, el campo dice si la obra lo llena o se compone cuadrada dentro.
-    // En dos renglones se leen como lo que son, y además caben junto a la
-    // miniatura sin que haya que cortarlos.
+    // Formato y campo son dos decisiones — el pliego da la proporción, el campo
+    // dice si la obra lo llena o se compone cuadrada dentro.
     const rows = [
-      ['Formato', info.format === 'square' ? 'Cuadrado' : 'Horizontal'],
-      ['Campo', info.field === 'square' ? 'Cuadrado' : 'Llena el pliego'],
-      ['Pliego', (info.sheet || 'A3') + ' · 300 dpi'],
-      ['Paleta', info.palette || '—'],
+      ['formato', info.format === 'square' ? 'cuadrado' : 'horizontal'],
+      ['campo', info.field === 'square' ? 'cuadrado' : 'llena el pliego'],
+      ['pliego', (info.sheet || 'A3') + ' · 300 dpi'],
+      ['paleta', info.palette || '—'],
     ].concat(info.extra || []);
+    const valX = x + pt(56);
     for (const [kk, vv] of rows) {
-      ctx.font = `400 ${pt(8)}px ${MONO}`; ctx.fillStyle = '#999'; ctx.fillText(kk, x, y);
-      ctx.fillStyle = '#111'; ctx.fillText(clip(ctx, String(vv), textW - pt(60)), x + pt(60), y);
+      ctx.font = `400 ${pt(8)}px ${MONO}`; ctx.fillStyle = MUT; ctx.fillText(kk, x, y);
+      ctx.fillStyle = INK; ctx.fillText(clip(ctx, String(vv), colTextW - pt(56)), valX, y);
       y += pt(13);
     }
 
-    // La paleta, dicha en color. El nombre no dice nada — elegir paleta es
-    // elegir color, y así lo dice el selector de toda la casa: la paleta entera
-    // en una franja. Aquí igual, en el ancho de la columna de texto.
+    // La paleta, dicha en color: elegir paleta es elegir color. Con bordes, para
+    // que un color papel (casi blanco) también se vea sobre el fondo papel.
     const pc = info.palColors || [];
     if (pc.length) {
-      y += pt(2);
-      const bw = textW / pc.length, bh = pt(7);
-      for (let i = 0; i < pc.length; i++) {
-        ctx.fillStyle = pc[i];
-        ctx.fillRect(x + i * bw, y, Math.ceil(bw) + 1, bh);
-      }
-      y += bh + pt(9);
+      y += pt(3);
+      const barW = colTextW, bh = pt(8), bw = barW / pc.length;
+      for (let i = 0; i < pc.length; i++) { ctx.fillStyle = pc[i]; ctx.fillRect(x + i * bw, y, Math.ceil(bw) + 1, bh); }
+      ctx.strokeStyle = LINE; ctx.lineWidth = 1;
+      for (let i = 1; i < pc.length; i++) { const sx = Math.round(x + i * bw) + 0.5; ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx, y + bh); ctx.stroke(); }
+      ctx.strokeRect(x + 0.5, y + 0.5, barW - 1, bh - 1);
+      y += bh + pt(10);
     } else y += pt(8);
 
-    // La hoja no sigue hasta que la miniatura ha terminado: el texto de abajo
-    // usa el ancho entero y no puede meterse debajo de ella.
+    // No se sigue hasta que la miniatura ha terminado: el texto de abajo usa el
+    // ancho entero y no puede meterse debajo de ella.
     y = Math.max(y, MARGIN * k + TH + pt(16));
-    rule(); y += pt(16);
 
-    // La regla, dicha
+    // El colofón se ancla ABAJO y llena el pie con sentido (no con blanco): un
+    // filete acid, la línea de edición y el dominio. El código corre hasta él.
+    const footBase = H - MARGIN * k;
+    const selloTop = footBase - pt(16);
+
+    // Divisoria fina, luego la regla dicha.
+    hair(y, LINE, right, 0.5); y += pt(18);
     const said = info.said || [];
-    ctx.font = `400 ${pt(9.5)}px ${MONO}`; ctx.fillStyle = '#111';
-    for (const s of said) for (const l of wrap(ctx, s, W - x * 2)) { ctx.fillText(l, x, y); y += pt(14); }
-    if (said.length) y += pt(10);
+    ctx.font = `400 ${pt(10)}px ${MONO}`; ctx.fillStyle = INK;
+    for (const s of said) for (const l of wrap(ctx, s, colW)) { ctx.fillText(l, x, y); y += pt(15); }
+    if (said.length) y += pt(12);
 
-    // El código: el resto de la hoja, en voz baja. El cuerpo no es fijo — se
-    // encoge hasta caber en la columna, porque en papel un renglón que se sale
-    // del margen no es un detalle: es un error de imprenta.
-    //
-    // Pero NO se mide contra la línea más larga: en PLLS hay dos renglones
-    // sueltos que doblan a los demás, y servirles a ellos dejaba el bloque
-    // entero ilegible y media hoja en blanco. Se mide contra el percentil 90 —
-    // el ancho en que ya cabe casi todo — y los dos que sobran se cortan. Es
-    // mejor negocio: dos renglones truncados y treinta legibles.
+    // El código, en voz baja. Se encoge hasta caber en la columna (mide contra
+    // el percentil 90, no contra la línea más larga: dos renglones sueltos no
+    // deben empequeñecer el bloque entero). Corre hasta el colofón.
     const code = info.code || [];
-    const colW = W - x * 2;
-    let size = 6.6;
+    let size = 6.8;
     if (code.length) {
       ctx.font = `400 ${pt(size)}px ${MONO}`;
       const ws = code.map(l => ctx.measureText(l).width).sort((a, b) => a - b);
@@ -196,17 +206,22 @@
       if (p90 > colW) size = Math.max(4.4, size * (colW / p90));
     }
     ctx.font = `400 ${pt(size)}px ${MONO}`;
-    const lh = pt(size * 1.42), bottom = H - MARGIN * k - pt(16);
+    const lh = pt(size * 1.5), bottom = selloTop - pt(14);
     let cut = false;
     for (const l of code) {
       if (y > bottom) { cut = true; break; }
-      ctx.fillStyle = '#666'; ctx.fillText(clip(ctx, l, colW), x, y); y += lh;
+      ctx.fillStyle = CODE; ctx.fillText(clip(ctx, l, colW), x, y); y += lh;
     }
-    if (cut) { ctx.fillStyle = '#bbb'; ctx.fillText('…', x, y); }
+    if (cut) { ctx.fillStyle = MUT; ctx.fillText('…', x, y); }
 
-    // Pie
-    ctx.font = `400 ${pt(6.6)}px ${MONO}`; ctx.fillStyle = '#bbb';
-    ctx.fillText('hoks.design', x, H - MARGIN * k);
+    // Colofón anclado
+    hair(selloTop, ACID, right, 1.2);
+    const selloY = selloTop + pt(12);
+    ctx.font = `400 ${pt(7.5)}px ${MONO}`;
+    ctx.fillStyle = INK; ctx.textAlign = 'left';
+    ctx.fillText(fam + ' · ' + (info.sheet || 'A3') + ' · 1/1', x, selloY);
+    ctx.textAlign = 'right'; ctx.fillStyle = MUT; ctx.fillText('hoks.design', right, selloY);
+    ctx.textAlign = 'left';
     return ctx;
   }
 
