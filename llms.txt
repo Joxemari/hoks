@@ -1,7 +1,8 @@
 # hoks
 
 > Generative art by Joxemari Gallastegi (Donostia / San Francisco), published as
-> hoks — "hand coded goods". Each family is a rule, not a picture: an algorithm
+> hoks — code blacksmith, forging algorithms into matter.
+> Each family is a rule, not a picture: an algorithm
 > plus a seed, a deterministic RNG, and a weighted palette. What you see is the
 > residue of a system at work. No framework, no build step: the repository is
 > the website.

@@ -28,10 +28,10 @@
   "mainEntity": {
     "@type": "Person",
     "name": "Joxemari Gallastegi",
-    "alternateName": "hoks",
-    "jobTitle": "Generative artist",
+    "alternateName": ["hoks", "code blacksmith"],
+    "jobTitle": "Computational artist",
     "url": "https://hoks.design/about.html",
-    "description": "Generative artist based between Donostia and San Francisco. Builds production lines that make only single pieces.",
+    "description": "Computational artist forging algorithms into physical matter between Donostia and San Francisco.",
     "alumniOf": {
       "@type": "CollegeOrUniversity",
       "name": "Stanford University"
@@ -79,12 +79,13 @@ body { background: var(--paper); color: var(--ink); font-family: var(--geo); }
     <div class="about-eye">hoks - algorithmic art</div>
     <p id="about-text"></p>
     <pre class="about-code"><span class="kw">const</span> school  <span class="pu">=</span> <span class="str">"Stanford University"</span><span class="pu">;</span>
-<span class="kw">let</span>   balance <span class="pu">=</span> <span class="pu">[</span>code<span class="pu">,</span> manufacturing<span class="pu">,</span> art<span class="pu">];</span>   <span class="cm">// the tightrope</span>
+<span class="kw">const</span> practice <span class="pu">=</span> <span class="pu">[</span>software<span class="pu">,</span> engineering<span class="pu">,</span> manufacturing<span class="pu">,</span> design<span class="pu">];</span>
+<span class="kw">const</span> language <span class="pu">=</span> <span class="pu">[</span>code<span class="pu">,</span> geometry<span class="pu">,</span> matter<span class="pu">];</span>
 <span class="kw">let</span>   home    <span class="pu">=</span> <span class="str">"Donostia | San Francisco"</span><span class="pu">;</span>
-<span class="kw">function</span> <span class="fn">line</span><span class="pu">(</span>seed<span class="pu">)</span> <span class="pu">{</span>                 <span class="cm">// a production line that makes originals</span>
-  <span class="kw">const</span> piece <span class="pu">=</span> <span class="fn">system</span><span class="pu">(</span>seed<span class="pu">);</span>         <span class="cm">// same seed → same piece</span>
-  <span class="fn">keep</span><span class="pu">(</span>one<span class="pu">);</span> <span class="fn">discard</span><span class="pu">(</span>rest<span class="pu">);</span>           <span class="cm">// the essence is in the discard</span>
-  <span class="kw">return</span> <span class="fn">shadow</span><span class="pu">(</span>piece<span class="pu">);</span>               <span class="cm">// what's visible is only the residue</span>
+<span class="kw">function</span> <span class="fn">forge</span><span class="pu">(</span>seed<span class="pu">)</span> <span class="pu">{</span>
+  <span class="kw">const</span> proposal <span class="pu">=</span> <span class="fn">system</span><span class="pu">(</span>seed<span class="pu">);</span>      <span class="cm">// the algorithm proposes</span>
+  <span class="kw">const</span> artifact <span class="pu">=</span> <span class="fn">matter</span><span class="pu">.</span><span class="fn">negotiate</span><span class="pu">(</span>proposal<span class="pu">);</span>
+  <span class="kw">return</span> artifact<span class="pu">;</span>                        <span class="cm">// computation made physical</span>
 <span class="pu">}</span></pre>
     <div class="about-coda">
       <img class="mark" src="portrait.png" alt="hoks — halftone self-portrait">

@@ -74,7 +74,7 @@ const DICT = {
     'palettes.loadError': 'Could not load palettes', 'palettes.chance': 'chance',
     'sort.name': 'Name', 'palettes.count': '%1 palettes · %2 active',
     'palettes.copied': 'Copied: ', 'palettes.copyAll': 'Copy all',
-    'about.fallback': 'hoks is the work of Joxemari Gallastegi, a generative artist based in Donostia. He studied at Stanford University, where he presented his first solo exhibition.\n\nThe work begins where a rule is written. Each series is a small system — a grammar of modules, geometry and controlled chance — and every piece is one sentence that grammar can utter: a seed, a deterministic sequence, an image. Same seed, same image. Nothing is retouched.\n\nThere is a virtue in modularity: a module explains nothing on its own. It asks for repetition, for contact, for a shared edge. The unit is kept deliberately poor so that the field can be rich — meaning does not live in the pieces but between them.\n\nWhat reaches the screen is not the subject of the work but its residue: the visible trace of a system thinking. The series matter more than the pieces; the rules matter more than the series.',
+    'about.fallback': 'i work as a code blacksmith, forging algorithms into matter.\n\nmy practice begins not with a fixed image, but with a system: rules, constraints, probabilities and geometries capable of producing many possible forms.\n\ni build production lines that repeat a process, not a result. each execution produces a possibility. selection determines which possibility is carried forward and translated into matter. what becomes visible is only a shadow: the residue of a system thinking.\n\nas computation becomes physical, precision encounters scale, texture, fabrication and time. these are not limitations to overcome, but forces that participate in the work.\n\ncode proposes. geometry translates. matter negotiates.\n\nwhere does the work reside — in the artifact, in the system, or in the passage between them?',
   },
   es: {
     'nav.work': 'Obra', 'nav.about': 'Autor', 'nav.palettes': 'Paletas',
@@ -133,7 +133,7 @@ const DICT = {
     'palettes.loadError': 'No se pudieron cargar las paletas', 'palettes.chance': 'prob.',
     'sort.name': 'Nombre', 'palettes.count': '%1 paletas · %2 activas',
     'palettes.copied': 'Copiado: ', 'palettes.copyAll': 'Copiar todo',
-    'about.fallback': 'hoks es el trabajo de Joxemari Gallastegi, artista generativo afincado en Donostia. Estudió en la Universidad de Stanford, donde presentó su primera exposición individual.\n\nLa obra empieza donde se escribe una regla. Cada serie es un pequeño sistema —una gramática de módulos, geometría y azar controlado— y cada pieza es una frase que esa gramática puede pronunciar: una semilla, una secuencia determinista, una imagen. Misma semilla, misma imagen. Nada se retoca.\n\nHay una virtud en lo modular: un módulo no explica nada por sí solo. Pide repetición, contacto, un borde compartido. La unidad se mantiene deliberadamente pobre para que el campo pueda ser rico: el sentido no habita en las piezas, sino entre ellas.\n\nLo que llega a la pantalla no es el asunto de la obra sino su residuo: el rastro visible de un sistema pensando. Importan más las series que las piezas; importan más las reglas que las series.',
+    'about.fallback': 'trabajo como code blacksmith, forjando algoritmos en materia.\n\nmi práctica no comienza con una imagen fija, sino con un sistema: reglas, restricciones, probabilidades y geometrías capaces de producir muchas formas posibles.\n\nconstruyo líneas de producción que repiten un proceso, no un resultado. cada ejecución produce una posibilidad. la selección determina cuál sigue adelante y se traduce en materia. lo que se hace visible es solo una sombra: el residuo de un sistema que piensa.\n\ncuando la computación se vuelve física, la precisión se encuentra con la escala, la textura, la fabricación y el tiempo. no son limitaciones que deban superarse, sino fuerzas que participan en la obra.\n\nel código propone. la geometría traduce. la materia negocia.\n\n¿dónde reside la obra — en el artefacto, en el sistema o en el tránsito entre ambos?',
   },
   eu: {
     'nav.work': 'Lana', 'nav.about': 'Egilea', 'nav.palettes': 'Paletak',
@@ -192,7 +192,7 @@ const DICT = {
     'palettes.loadError': 'Ezin izan dira paletak kargatu', 'palettes.chance': 'aukera',
     'sort.name': 'Izena', 'palettes.count': '%1 paleta · %2 aktibo',
     'palettes.copied': 'Kopiatuta: ', 'palettes.copyAll': 'Kopiatu dena',
-    'about.fallback': 'hoks Joxemari Gallastegiren lana da, Donostian bizi den artista sortzailea. Stanfordeko Unibertsitatean ikasi zuen, eta han aurkeztu zuen bere lehen bakarkako erakusketa.\n\nLana araua idazten den lekuan hasten da. Serie bakoitza sistema txiki bat da —moduluen gramatika bat, geometria eta zori kontrolatua— eta pieza bakoitza gramatika horrek esan dezakeen esaldi bat da: hazi bat, sekuentzia deterministiko bat, irudi bat. Hazi bera, irudi bera. Ez da ezer ukitzen.\n\nBertute bat dago modulartasunean: modulu batek ez du ezer azaltzen bakarrik. Errepikapena eskatzen du, kontaktua, ertz partekatu bat. Unitatea nahita mantentzen da pobre, eremua aberatsa izan dadin: esanahia ez da piezetan bizi, haien artean baizik.\n\nPantailara iristen dena ez da lanaren gaia, haren hondarra baizik: sistema bat pentsatzen ari denaren aztarna ikusgaia. Serieek piezek baino gehiago axola dute; arauek serieek baino gehiago.',
+    'about.fallback': 'code blacksmith gisa lan egiten dut, algoritmoak materian forjatuz.\n\nnire praktika ez da irudi finko batekin hasten, sistema batekin baizik: forma posible asko sortzeko gai diren arau, muga, probabilitate eta geometriekin.\n\nemaitza bat ez, prozesu bat errepikatzen duten produkzio-lerroak eraikitzen ditut. exekuzio bakoitzak aukera bat sortzen du. hautaketak erabakitzen du zein aukerak egiten duen aurrera eta materian itzultzen den. ikusgai bihurtzen dena itzal bat besterik ez da: pentsatzen ari den sistema baten hondarra.\n\nkonputazioa fisiko bihurtzen denean, zehaztasunak eskala, testura, fabrikazioa eta denbora topatzen ditu. ez dira gainditu beharreko mugak, lanean parte hartzen duten indarrak baizik.\n\nkodeak proposatzen du. geometriak itzultzen du. materiak negoziatzen du.\n\nnon bizi da obra — artefaktuan, sisteman, ala bien arteko igarobidean?',
   },
 };
 
@@ -515,7 +515,7 @@ document.querySelectorAll('main, #main-content, .about-wrap, .work-section, .wk,
 const footer = document.createElement('footer');
 footer.className = 'site-footer';
 footer.innerHTML = `
-  <span class="footer-copy">© 2026 hoks · hand coded goods</span>
+  <span class="footer-copy">© 2026 hoks · code blacksmith</span>
   <div class="footer-links" id="footer-links">
     <a href="mailto:joxemgallastegi@gmail.com" data-i18n="footer.contact">Contact</a>
   </div>`;

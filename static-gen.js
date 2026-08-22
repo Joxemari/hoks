@@ -162,7 +162,7 @@
     L.push('<!-- Generado desde data/works.json por static-gen.js. NO editar a mano.');
     L.push('     Lo que se lee sin JavaScript. work-page.js lo retira al arrancar. -->');
     L.push('<div id="hoks-static">');
-    L.push('  <div class="s-eye">hoks — hand coded goods</div>');
+    L.push('  <div class="s-eye">hoks — code blacksmith</div>');
     L.push('  <h1>' + esc(nm) + '</h1>');
 
     const meta = [];
