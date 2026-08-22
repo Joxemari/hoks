@@ -62,6 +62,11 @@
     <span class="hint" id="count"></span>
   </div>
 
+  <div class="controls">
+    <span class="hint" style="align-self:center">paleta</span>
+    <div id="palPick" style="position:relative; min-width:220px; max-width:360px; flex:1"></div>
+  </div>
+
   <div class="grid" id="grid"></div>
 
   <div id="panel">
@@ -74,6 +79,7 @@
       <div class="row">
         <button class="btn solid" id="copy">Copiar pie</button>
         <button class="btn acid" id="dl45" title="Pieza 4:5 (1080×1350), sin recorte en el grid">Descargar 4:5 (IG)</button>
+        <button class="btn solid" id="share" title="Compartir al móvil (Instagram, etc.) — solo aparece donde el navegador lo permite">⇪ Compartir</button>
         <button class="btn" id="dlDet" title="Detalle 4:5 de la pieza">Detalle 4:5</button>
         <button class="btn" id="dl2048" title="Pieza cuadrada a 2048, para archivo/impresión">2048 · pieza</button>
         <button class="btn" id="vidItr" title="El sistema escupe seeds">Vídeo ⟳</button>
@@ -1362,12 +1368,19 @@
   (global.HOKS = global.HOKS || {}).KRRTK = { render, traits, THRESHOLD, RECT_ALPHA, BG_GRADIENT };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
+<script src="palette-picker.js?v=6"></script>
 <script>
 (function(){
   var H=window.HOKS, ACTIVE=['PLLS','DTKRT','KRRTK'], fam='ALL', N=9, sel=null;
+  // Paleta elegida en el selector. null = 'auto' (por peso, cada candidato la
+  // suya, como antes). Al fijar una, TODO —candidatos, pieza grande, PNG,
+  // detalle y vídeos— usa esa paleta bloqueada, así el color es determinista y
+  // reproducible (seed + paleta), que es justo lo que faltaba.
+  var chosenPal=null;
+  function palOpts(o){ o=o||{}; if(chosenPal){ o.palettes=[chosenPal]; o.locked=true; o.lockedIdx=0; } return o; }
   function seed(){return (Math.random()*1e9)>>>0;}
   function pickFam(){return fam==='ALL'?ACTIVE[(Math.random()*ACTIVE.length)|0]:fam;}
-  function render(f,cv,px,s){cv.width=px;cv.height=px;var ctx=cv.getContext('2d');var o={params:{field:'square',grainScale:1}};
+  function render(f,cv,px,s){cv.width=px;cv.height=px;var ctx=cv.getContext('2d');var o=palOpts({params:{field:'square',grainScale:1}});
     try{H[f].render(ctx,px,px,s,o);}catch(e){try{H.PLLS.render(ctx,px,px,s,o);}catch(_){ctx.fillStyle='#efeee9';ctx.fillRect(0,0,px,px);}}}
 
   // 4:5 para IG (1080×1350): la pieza cuadrada matada sobre su propio fondo
@@ -1412,7 +1425,7 @@
     render(f,big,900,s);
     cap.value=caption(f,s);
     var tg=document.getElementById('tags'); if(tg) tg.textContent=TAGS;
-    prov.textContent='randomSeed('+s+') · '+f+' · 1/1';
+    prov.textContent='randomSeed('+s+') · '+f+' · 1/1'+(chosenPal?(' · '+chosenPal.name):'');
     panel.classList.add('on');
     panel.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
@@ -1452,7 +1465,7 @@
   function _record(f,px,s){ var fc=document.createElement('canvas'); fc.width=px; fc.height=px; var rc=fc.getContext('2d'); var ops=[];
     var proxy=new Proxy(rc,{get:function(t,k){var v=t[k]; if(typeof v==='function'){return function(){var a=[].slice.call(arguments);var r=v.apply(t,a);ops.push({m:k,a:a});return r;};} return v;},
       set:function(t,k,val){if(_S.indexOf(k)>=0)ops.push({p:k,v:val}); try{t[k]=val;}catch(e){} return true;}});
-    try{H[f].render(proxy,px,px,s,{params:{field:'square',grainScale:1}});}catch(e){} return {rc:rc,ops:ops}; }
+    try{H[f].render(proxy,px,px,s,palOpts({params:{field:'square',grainScale:1}}));}catch(e){} return {rc:rc,ops:ops}; }
   function _objStart(ops,px){ for(var i=0;i<ops.length;i++){var o=ops[i];if(!o.m)continue;if(_P[o.m])return i;if((o.m==='fillRect'||o.m==='rect')&&o.a&&o.a.length>=4){var x=o.a[0],y=o.a[1],w=o.a[2],h=o.a[3];if(!(Math.abs(x)<2&&Math.abs(y)<2&&w>=px*0.98&&h>=px*0.98))return i;}} return ops.length; }
   function _ex(rc,o){ if(o.p!==undefined){try{rc[o.p]=o.v;}catch(e){}} else {try{rc[o.m].apply(rc,o.a);}catch(e){}} }
   function recordVideo(mode){
@@ -1498,6 +1511,20 @@
   });
   document.getElementById('regen').addEventListener('click', build);
   document.getElementById('dl45').addEventListener('click', function(){ download45((sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-1080x1350.png'); });
+  // Compartir (Web Share con archivos). En móvil abre la hoja nativa —Instagram
+  // incluido—, así se publica sin pasar el archivo al teléfono. Comparte la
+  // pieza 4:5 + el pie. Donde no hay soporte (escritorio), el botón se oculta.
+  function shareCurrent(){ if(!sel)return;
+    var c=document.createElement('canvas'); render45(sel.fam,c,1080,sel.seed);
+    c.toBlob(function(blob){ if(!blob)return;
+      var file=new File([blob], sel.fam.toLowerCase()+'-'+sel.seed+'-1080x1350.png', {type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file], text:cap.value}).then(flash).catch(function(){});
+      } else { download45(sel.fam.toLowerCase()+'-'+sel.seed+'-1080x1350.png'); }
+    },'image/png'); }
+  (function(){ var sb=document.getElementById('share'); if(!sb)return; var ok=false;
+    try{ ok=!!(navigator.canShare && navigator.canShare({files:[new File([new Uint8Array([0])],'x.png',{type:'image/png'})]})); }catch(e){}
+    if(!ok){ sb.style.display='none'; } else { sb.addEventListener('click', shareCurrent); } })();
   document.getElementById('dlDet').addEventListener('click', function(){ downloadDetail((sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-detalle-1080x1350.png'); });
   document.getElementById('dl2048').addEventListener('click', function(){ download(2048, (sel?sel.fam.toLowerCase()+'-'+sel.seed:'hoks')+'-2048.png'); });
   document.getElementById('copyTags').addEventListener('click', function(){ var t=TAGS;
@@ -1509,6 +1536,20 @@
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(flash, function(){cap.select();flash();}); }
     else { cap.select(); try{document.execCommand('copy');}catch(e){} flash(); }
   });
+
+  // Selector de paleta (componente único HOKSPAL). La primera opción es 'auto'
+  // —por peso, como siempre—; elegir una la BLOQUEA en todo lo que se genera y
+  // exporta. Se cargan todas (activas + inactivas), como en el laboratorio.
+  (function mountPal(){
+    if(!window.HOKSPAL || !H.loadAllPalettes){ return; }
+    var host=document.getElementById('palPick'); if(!host) return;
+    H.loadAllPalettes().then(function(pals){
+      var list=[{name:'auto · por peso', auto:true, colors:[]}].concat(pals||[]);
+      HOKSPAL.mount(host,{ palettes:list, index:0, label:'Paleta',
+        onChange:function(i,p){ chosenPal=(p && !p.auto && p.colors && p.colors.length)?p:null; build(); } });
+    }).catch(function(){});
+  })();
+
   build();
 })();
 </script>
