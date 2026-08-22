@@ -83,8 +83,10 @@ body { background: var(--paper); color: var(--ink); font-family: var(--geo); }
 <span class="kw">const</span> language <span class="pu">=</span> <span class="pu">[</span>code<span class="pu">,</span> geometry<span class="pu">,</span> matter<span class="pu">];</span>
 <span class="kw">let</span>   home    <span class="pu">=</span> <span class="str">"Donostia | San Francisco"</span><span class="pu">;</span>
 <span class="kw">function</span> <span class="fn">forge</span><span class="pu">(</span>seed<span class="pu">)</span> <span class="pu">{</span>
-  <span class="kw">const</span> proposal <span class="pu">=</span> <span class="fn">system</span><span class="pu">(</span>seed<span class="pu">);</span>      <span class="cm">// the algorithm proposes</span>
-  <span class="kw">const</span> artifact <span class="pu">=</span> <span class="fn">matter</span><span class="pu">.</span><span class="fn">negotiate</span><span class="pu">(</span>proposal<span class="pu">);</span>
+  <span class="kw">const</span> possibilities <span class="pu">=</span> <span class="fn">system</span><span class="pu">(</span>seed<span class="pu">);</span> <span class="cm">// the algorithm proposes</span>
+  <span class="kw">const</span> selected <span class="pu">=</span> <span class="fn">keep</span><span class="pu">(</span><span class="fn">one</span><span class="pu">(</span>possibilities<span class="pu">));</span>
+  <span class="fn">discard</span><span class="pu">(</span><span class="fn">rest</span><span class="pu">(</span>possibilities<span class="pu">));</span>       <span class="cm">// the essence is in the discard</span>
+  <span class="kw">const</span> artifact <span class="pu">=</span> <span class="fn">matter</span><span class="pu">.</span><span class="fn">negotiate</span><span class="pu">(</span>selected<span class="pu">);</span>
   <span class="kw">return</span> artifact<span class="pu">;</span>                        <span class="cm">// computation made physical</span>
 <span class="pu">}</span></pre>
     <div class="about-coda">

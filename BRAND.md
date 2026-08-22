@@ -89,11 +89,16 @@ Banco (rota, no repitas siempre `//`):
 
 ## 4 · Caja y ortografía
 
-- **Minúscula SIEMPRE** en texto corrido y código. (El código es minúscula; es la
-  voz sobria, sistémica; el wordmark `hoks` y `code blacksmith` son minúscula.)
+- **Minúscula SIEMPRE** en el texto visible y el código. (El código es minúscula;
+  es la voz sobria, sistémica; el wordmark `hoks` y `code blacksmith` son
+  minúscula.)
 - **MAYÚSCULA solo** para nombres de familia usados como etiqueta: `PLLS`,
   `KRRTK`, `DTKRT`.
 - `randomSeed` respeta su **camelCase** real (es la función de p5); lo demás, minúscula.
+- Los metadatos invisibles y legibles por máquinas (`JSON-LD`, Schema.org) siguen
+  la ortografía convencional y pueden usar términos taxonómicos como
+  `Computational artist`. No constituyen voz de marca: la definición pública y
+  visible continúa siendo `code blacksmith`.
 
 ## 5 · Cuentas y assets
 
