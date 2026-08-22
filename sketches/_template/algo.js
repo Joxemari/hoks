@@ -39,11 +39,15 @@
     // Fíjate en S = min(W,H): los radios se miden contra el lado corto, así el
     // dibujo no se deforma al cambiar de formato.
     const S = Math.min(W, H);
-    ctx.fillStyle = rng.pickFrom(colors);
+    // El suelo se guarda: la tinta sale de la MISMA lista, así que sin decir cuál
+    // es el suelo la tirada puede caer justo en él y la marca no existe. E.pickInk
+    // tira igual —un índice sobre la lista entera— y solo salta si cae ahí.
+    const ground = rng.pickFrom(colors);
+    ctx.fillStyle = ground;
     ctx.fillRect(0, 0, W, H);
     const n = params.count || rng.int(8, 40);
     for (let i = 0; i < n; i++) {
-      ctx.fillStyle = rng.pickFrom(colors);
+      ctx.fillStyle = E.pickInk(rng, colors, ground);
       ctx.beginPath();
       ctx.arc(rng.range(0, W), rng.range(0, H), rng.range(S * 0.02, S * 0.12), 0, Math.PI * 2);
       ctx.fill();

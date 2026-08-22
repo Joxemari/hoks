@@ -5,7 +5,11 @@
  * Si arreglas algo aquí, se arregla en todas partes.
  *
  * Porte FIEL del motor que vivía inline en dtk.html — mismo orden de consumo
- * del RNG, mismos números → mismo seed produce la misma imagen.
+ * del RNG, mismos números. Con dos correcciones posteriores, y las dos se ven en
+ * el papel: la tinta ya no puede salir del color del suelo (E.pickInk) y la
+ * rejilla siempre deja una marca. El stream no se mueve —misma cuenta de
+ * tiradas—, pero una seed de antes de esto puede dar otra imagen: justo las que
+ * salían en blanco, que eran el 5,0% en cuadrado.
  *
  * Canvas 2D puro. Depende de window.HOKS (_engine.js).
  *
@@ -39,11 +43,13 @@
     // Fondo: mesh gradient (lo propio de la obra) o plano si el laboratorio pide
     // 'solid'. Se sortea en su propio stream, así la composición no se entera.
     const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
+    let ground = null;                               // el suelo, cuando es un color y no un degradado
     if (E.pickBg(seed, params, BG_GRADIENT) === 'solid') {
-      ctx.fillStyle = colors[rngBg.int(0, colors.length - 1)];
+      ground = colors[rngBg.int(0, colors.length - 1)];
+      ctx.fillStyle = ground;
       ctx.fillRect(0, 0, W, H);
     } else {
-      E.drawMeshGradient(ctx, W, H, colors, rngBg);
+      ground = E.meshGround(E.drawMeshGradient(ctx, W, H, colors, rngBg));
     }
 
     // 2. Rejilla — n de 1 a 7, celda cuadrada, con el aire del sistema alrededor.
@@ -67,16 +73,28 @@
     }
     // ⟨/gramatika⟩
 
+    // La rejilla siempre dice algo. Si NINGUNA celda pasa el umbral no hay
+    // lectura, hay una hoja en blanco — y con n=1 en cuadrado eso es una sola
+    // moneda al aire: salía el 2,9% de las veces, no una vez entre mil. Pasa
+    // entonces la celda que más cerca estuvo. El sistema cede antes que dejar de
+    // hablar, igual que PLLS cede al colocar.
+    let mi = 0, mj = 0, mv = Infinity, said = false;
+    for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
+      if (chance[i][j] <= threshold) said = true;
+      if (chance[i][j] < mv) { mv = chance[i][j]; mi = i; mj = j; }
+    }
+
     // 3. Círculos.
     ctx.save();
     ctx.translate(offsetX, offsetY);
     let drawn = 0;
     for (let i = 0; i < cols; i++) {
       for (let j = 0; j < rows; j++) {
-        if (chance[i][j] <= threshold) {
+        if (chance[i][j] <= threshold || (!said && i === mi && j === mj)) {
           const x = (i + 0.5) * pitch;
           const y = (j + 0.5) * pitch;
-          ctx.fillStyle = colors[rng.int(0, colors.length - 1)];
+          // Tinta que se vea: un círculo del color del suelo no es un círculo.
+          ctx.fillStyle = E.pickInk(rng, colors, ground);
           ctx.beginPath();
           ctx.arc(x, y, size / 2, 0, Math.PI * 2);
           ctx.fill();
@@ -98,8 +116,11 @@
     const cols = res.cols || res.n, rows = res.rows || res.n;
     const total = cols * rows;
     const coveragePct = Math.round((res.drawn / total) * 100);
-    const coverageLabel = coveragePct > 70 ? 'Full' : coveragePct > 40 ? 'Scattered' : coveragePct > 0 ? 'Sparse' : 'Empty';
-    const coverageR = coveragePct === 0 ? 'legendary' : coveragePct > 70 ? 'uncommon' : 'common';
+    // Ya no hay 'Empty': la rejilla siempre deja una marca, así que la cobertura
+    // cero no existe. Declararla legendaria mientras salía el 2,9% de las veces
+    // era, además, describir como improbable lo que pasaba cada treinta piezas.
+    const coverageLabel = coveragePct > 70 ? 'Full' : coveragePct > 40 ? 'Scattered' : 'Sparse';
+    const coverageR = coveragePct > 70 ? 'uncommon' : 'common';
     const gridLabel = res.n === 1 ? 'Solo' : res.n <= 3 ? 'Small' : res.n <= 5 ? 'Medium' : 'Large';
     const gridR = res.n === 1 ? 'rare' : res.n === 7 ? 'uncommon' : 'common';
     const prob = res.pal.prob != null ? res.pal.prob : 0.05;

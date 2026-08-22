@@ -254,6 +254,18 @@ redeploy de Pages.
   fondo **plano** (figura/fondo necesita un plano estable), margen para que el
   suelo se vea, y tres roles de color fijos por luma (suelo/bloque/punto) en vez
   de un color por forma. Conserva el grano. Es la dirección actual del trabajo.
+- **La tinta tiene que verse sobre el suelo** (`E.pickInk`, `E.inkOn`,
+  `E.blendFor`): las paletas son listas planas y el suelo sale de la misma lista,
+  así que la tirada del color podía caer justo en el color de debajo — la marca se
+  dibujaba, contaba en los traits y en el papel no había nada. Medido sobre el
+  píxel: DTK 5,0% de piezas invisibles en cuadrado, ECLPS 14,0%, KRRTK 1,5%,
+  PLLS 0,5%. La distancia es de **color**, no de luminancia (las Itten son
+  contrastes de tono). `pickInk` consume la misma tirada de siempre y solo salta
+  si cae en el suelo; `blendFor` es lo mismo para lo que se funde en vez de
+  superponerse — multiply con tinta blanca no es un fundido flojo, es no pintar.
+  Y la obra **siempre deja una marca**: si ninguna celda de DTK pasa el umbral
+  pasa la que más cerca estuvo, y si ninguna nota de ECLPS suena, suena la del
+  medio. Una hoja en blanco no es una tirada rara: es la obra que no está.
 - **Traits/rareza**: cada draw calcula traits (paleta, arquetipo, cobertura…) y
   una rareza global (`common`→`legendary`) por probabilidad combinada.
 - **Familias, sin variantes "G"**: la familia es la **matriz** (PLLS, KRRTK, DTK,
