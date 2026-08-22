@@ -160,11 +160,11 @@
   }
 
   // ── Enlaces a las páginas de MIRAR ─────────────────────────────────────────
-  // El muro y los objetos son VISTAS, no parámetros: ninguna cambia un píxel de
-  // la obra. El muro dice de qué TAMAÑO es el objeto que sale; los objetos dicen
-  // CUÁNTO de la obra sobrevive al soporte. Por eso viven en sus propias páginas
-  // y el panel solo pone enlaces — meter aquí pliego, soporte y referencias
-  // sería engordar los mandos de generar con mandos de mirar.
+  // El muro y las fotos son VISTAS, no parámetros: ninguna cambia un píxel de la
+  // obra. El muro es el ALZADO —cuánto mide, para decidir el pliego—; las fotos
+  // son la FOTO —la obra sobre la cosa, para publicar—. Por eso viven en sus
+  // propias páginas y el panel solo pone enlaces: meter aquí pliego, soporte y
+  // encuadre sería engordar los mandos de generar con mandos de mirar.
   //
   // Lo que viaja es la RECETA, que ya es el contrato común de los harnesses y de
   // _batch.js. Se serializa entera en vez de campo a campo: así un parámetro
@@ -248,7 +248,7 @@
 
     const syncs = [
       ['▤ Ver en el muro ↗',  'La pieza a escala sobre una pared: pliego, figura y regla', wallUrl],
-      ['◑ Ver en objetos ↗',  'La pieza sobre el soporte: interior, pañuelo, vinilo, camiseta, tote, reloj', objectsUrl],
+      ['◉ Ver en fotos ↗',    'La pieza fotografiada sobre la cosa —pared, camiseta, vinilo, reloj— para publicar', objectsUrl],
     ].map(([text, title, url]) => {
       const a = document.createElement('a');
       a.className = 'view-link';

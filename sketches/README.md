@@ -49,10 +49,13 @@ sketches/
   _wall/            ← el MURO: la pieza a escala sobre una pared. Página aparte,
                       se abre desde el enlace del panel y recibe la receta por
                       URL. Solo tiene mandos que NO cambian la obra.
-  _objects/         ← los OBJETOS: la obra sobre la cosa —interior, pañuelo,
-                      vinilo, camiseta, tote, reloj— en alzado y a escala. El muro
-                      dice cuánto MIDE; esto dice cuánto QUEDA. Misma receta por
-                      URL, mismas reglas: aquí no se genera.
+  _mockup.js        ← el taller de fotografía: campos de pliegues, perspectiva
+                      proyectiva, desplazamiento, sombras y grado. Lo que hace que
+                      una maqueta parezca una foto es la LUZ, y está aquí.
+  _objects/         ← las FOTOS: la obra sobre la cosa —pared, camiseta, vinilo,
+                      reloj— para publicar. Salida a 1080 px, 4:5 por defecto.
+                      Misma receta por URL, mismas reglas: aquí no se genera.
+                      Las escenas, en su escenas.js.
   _template/        ← esqueleto para graduar una obra nueva
   plls/            ← graduada (algo.js + harness)
   krrtk/           ← graduada (porte fiel, verificado op-a-op)
@@ -358,81 +361,84 @@ parámetros de generar en un cajón con parámetros de mirar.
 Lo que viaja es la **receta**, la misma que ya usan los cinco harnesses y
 `_batch.js`, serializada entera: un parámetro nuevo en una obra llega al muro sin
 tocar nada. Los enlaces los pone `HOKSLAB.mountViewLinks()` —una línea por
-harness, los dos destinos— y recalculan el `href` al posarse encima, no en cada
-refresh, para seguir siendo enlaces de verdad.
+harness, los dos destinos: el muro y las fotos— y recalculan el `href` al posarse
+encima, no en cada refresh, para seguir siendo enlaces de verdad.
 
 ```
 ../_wall/?r=<receta JSON urlencoded>            ← lo que pone el enlace del panel
 ../_wall/?work=dtkrt&seed=123&fmt=horizontal    ← forma legible, a mano
 ```
 
-## Los objetos (`_objects/`)
+## Las fotos (`_objects/`)
 
-El muro contesta cuánto **mide** la obra. Esta página contesta la otra mitad:
-cuánto **queda** de ella cuando el soporte se la lleva. Y casi nunca es todo —un
-soporte no es un marco, es un recorte y una escala—, así que es justo lo que hay
-que poder mirar antes de decir sí a una colaboración: no si queda bien, sino qué
-parte del sistema sigue ahí.
+El muro es un **alzado**: mide, con figura, regla y cotas, para decidir el
+pliego. Esto es una **foto**: luz, sombra, tela y cristal, para **publicar**. Son
+dos oficios distintos y por eso son dos páginas — la primera versión de esta
+intentó ser las dos cosas, y un alzado con cotas no se puede poner en Instagram.
 
-Seis soportes, y el orden **no es decorativo**: va de más obra a menos. Recorrerlo
-con `←` / `→` es el argumento de la página.
+Cuatro soportes, y todos salen del mismo sitio:
 
-| soporte    | área de obra      | cómo entra          | qué se ve                          |
-|------------|-------------------|---------------------|------------------------------------|
-| `interior` | el pliego, A3–A0  | a sangre            | todo, colgado a 1,45 m sobre un sofá |
-| `panuelo`  | 900 × 900 mm      | a sangre            | 100 % en cuadrado · 71 % en horizontal |
-| `vinilo`   | 315 × 315 mm      | a sangre            | lo mismo que el pañuelo, a un tercio |
-| `camiseta` | ≤ 300 × 360 mm    | con borde de tela   | 100 %, pero el fondo ya no es la obra |
-| `tote`     | ≤ 280 × 300 mm    | con borde de lona   | 100 %, curvo y a trozos            |
-| `reloj`    | disco de 38 mm    | a sangre, en disco  | 79 % en cuadrado · 56 % en horizontal |
+| escena     | qué es                          | qué la hace creíble                       |
+|------------|---------------------------------|-------------------------------------------|
+| `pared`    | el pliego colgado, en una sala  | el paño de luz, la sombra corta y algo desenfocado delante |
+| `camiseta` | plano cenital sobre mesa        | el estampado se DESPLAZA con los pliegues |
+| `vinilo`   | funda de 315 mm, girada         | el brillo cruzado del plastificado        |
+| `reloj`    | esfera de 38 mm                 | el reflejo del cristal y el aro en cónico |
 
-Ese porcentaje **se calcula, no se estima**: con `cover` se llena el área y lo que
-sobresale se pierde (la fracción es el cociente de proporciones); con `contain`
-entra toda y sobra soporte; una máscara circular se queda además con π/4 del
-cuadrado que ya había cubierto. El panel lo dice junto a los milímetros de la obra
-sobre ese soporte y su escala respecto a un A3. Un dato que se manda por correo no
-puede salir de mirar la pantalla con los ojos entornados.
+**Encuadre y salida.** 4:5 (1080 × 1350) por defecto, porque el grid de Instagram
+recorta un cuadrado (BRAND.md § 8); también 1:1 y 9:16. Guardar **vuelve a
+renderizar** al tamaño de publicación, como el PNG de impresión del motor: lo que
+se ve es lo que se guarda, con más píxeles. Y hay botón de copiar al portapapeles.
 
-Dos datos que solo se ven aquí: el **pañuelo es el único soporte que agranda la
-obra** —900 mm de lado, más que el lado largo de un A1— y la **camiseta es donde
-el sistema pierde el suelo**: en tela no hay sangre, así que la obra estrena un
-borde que no ha elegido y el fondo pasa a ser algodón.
+**La toma es un azar aparte.** La obra tiene su seed y la foto tiene la suya —los
+pliegues, las hojas, el grano—. `Espacio` cambia de toma sin tocar la obra: la
+misma pieza fotografiada otra vez, no otra pieza.
 
-**Dibujo de alzado, no maqueta fotográfica.** Línea de un píxel
-(`vector-effect="non-scaling-stroke"`), relleno plano y cotas en milímetros. Una
-foto de estudio vendería el objeto; un alzado dice la medida, que es lo único que
-aquí se decide. Todo el dibujo es SVG con el `viewBox` **en milímetros**: la escala
-sale exacta sin medir un píxel en JS, y `width`/`height` se normalizan a un marco
-nominal para que un reloj de 50 mm y un pañuelo de 900 ocupen los dos lo que caben.
+### Por qué parece una foto (`_mockup.js`)
 
-La segunda vista (`g`) es **la hoja de soportes**: los seis a la misma escala,
-apoyados en una línea, con el pliego de primero como vara de medir. Es la imagen
-que se manda a una colaboración —dice de una vez que el pañuelo es más grande que
-cualquier pliego que exportamos y que el reloj es una uña—. Las columnas se
-ensanchan hasta que caben los rótulos, pero **el dibujo no se reescala nunca**: si
-no, la hoja dejaría de decir lo único que dice.
+Una maqueta no convence por tener el objeto bien dibujado: convence por la luz.
+Tres piezas hacen casi todo:
 
-Mandos, y ninguno toca la obra: soporte, pliego (**solo donde el pliego existe**,
-o sea el interior y la hoja), material de la prenda (crudo / tinta), cotas y las
-referencias que cada soporte honre —la figura en el interior, las agujas en el
-reloj—. Lo que un soporte no honra no se queda ahí sin efecto: se esconde, igual
-que `HOKSLAB.formatControls` con el giro y el campo.
+- **`warp`** — la obra sobre un plano girado, con perspectiva **proyectiva**. La
+  coordenada de textura se interpola en 1/z (y aquí 1/z es el alto proyectado del
+  borde); interpolada linealmente, la imagen no se comprime hacia el lado lejano
+  y el resultado se lee como un trapecio pintado. Va recortada al propio quad,
+  porque el dibujo se hace en tiras y si no el canto sale en escalera.
+- **`displace`** — la obra impresa se **dobla** con lo que hay debajo. Sin esto la
+  impresión es una pegatina, siempre, y se nota justo en los bordes rectos. Y son
+  LOS pliegues de esa prenda, no unos nuevos: un campo aparte para el estampado
+  daba una tela con dos telas dentro.
+- **`grade`** — caída de luz, temperatura y grano, al final y sobre TODO el
+  cuadro. Una cámara mete el mismo defecto en todo lo que entra por el objetivo, y
+  ese defecto compartido es lo que dice que hay una sola foto.
+
+Reglas comunes: **una sola luz** (arriba a la izquierda, en todas las escenas);
+el objeto se construye en su propio lienzo y se coloca con sombra, para que la
+sombra sea de la silueta y no de una caja; **nada axial** —dos grados de giro
+separan una foto de un diagrama—; y todo medido contra `W`, `H` o `min(W,H)`,
+como un `algo.js`, para que la vista previa y el archivo sean la misma imagen.
 
 ```
 ../_objects/?r=<receta JSON urlencoded>            ← lo que pone el enlace del panel
 ../_objects/?work=dtkrt&seed=123&fmt=horizontal    ← forma legible, a mano
 ```
 
-| tecla     | acción                                   |
-|-----------|------------------------------------------|
-| `g`       | hoja de soportes ↔ un soporte            |
-| `←` / `→` | soporte anterior / siguiente             |
-| `c`       | cotas                                    |
+| tecla     | acción                          |
+|-----------|---------------------------------|
+| `Espacio` | otra toma (misma obra)          |
+| `←` / `→` | soporte anterior / siguiente    |
+| `s`       | guardar PNG a tamaño de publicación |
 
-**Lo que falta:** no exporta imagen. La página se compone en DOM/SVG con la obra
-como `dataURL` dentro, así que hoy la imagen para el correo sale de una captura de
-pantalla. Rasterizar el SVG entero es hacible y no está hecho — y hasta que lo
-esté, conviene decirlo en vez de dar por supuesto que hay un botón.
+**Lo que falta:**
+
+1. **Tote y pañuelo.** El pañuelo pide seda cayendo, que es el caso difícil: una
+   tela colgada, no extendida.
+2. **Interior amueblado.** Hoy `pared` es una pared con una rama delante. Un salón
+   —sofá, lámpara, suelo— es otra escena, no un ajuste de esta.
+3. **Foto propia.** Todo esto es sintético: se dibuja la luz, no se fotografía.
+   Para una foto de verdad la vía es soltar una imagen en la página y marcar las
+   cuatro esquinas del plano — el `warp` ya sabe hacer el resto—. Es el camino a
+   fotorrealismo real y no está hecho.
 
 ## Usar el harness (paso 3)
 

@@ -146,22 +146,22 @@ nuevo llega al muro sin tocar nada. El enlace lo pone
 objetos). No metas mandos de mirar en el panel de generar: esa separación es el
 motivo de que existan estas páginas.
 
-**`_objects/` — los objetos.** La otra mitad de la pregunta. El muro dice cuánto
-**mide** la obra; los objetos dicen cuánto **queda** de ella cuando el soporte se
-la lleva, que casi nunca es todo: un soporte no es un marco, es un recorte y una
-escala. Seis, en orden de más obra a menos —interior (el pliego colgado, con
-sofá), pañuelo 900 mm, vinilo 315, camiseta ≤300, tote ≤280, reloj 38—, y el
-porcentaje visible **se calcula**: `cover` pierde lo que sobresale, `contain`
-entra entero y le sobra soporte, y una máscara circular se queda además con π/4.
-De ahí salen los dos datos que no se ven en ningún otro sitio: el pañuelo es el
-único soporte que **agranda** la obra (más lado que un A1) y la camiseta es donde
-el sistema **pierde el suelo** —en tela no hay sangre, así que la obra estrena un
-borde que no ha elegido—. Segunda vista: la **hoja de soportes**, los seis a la
-misma escala, que es la imagen que se manda a una colaboración. Todo en **alzado**
-—SVG con el `viewBox` en milímetros, línea de un píxel, cotas— y no en maqueta
-fotográfica: una foto vendería el objeto, un alzado dice la medida, que es lo
-único que aquí se decide. No exporta imagen todavía: la captura de pantalla es el
-método, y conviene decirlo.
+**`_objects/` + `_mockup.js` — las fotos.** El muro es un **alzado**: mide, para
+decidir el pliego. Esto es una **foto**: la obra sobre la cosa —pared, camiseta,
+vinilo, reloj—, para **publicar**. Dos oficios distintos, dos páginas: un alzado
+con cotas no se puede poner en Instagram. Sale a 1080 px con 4:5 por defecto
+(BRAND.md § 8) y guardar vuelve a renderizar a tamaño de publicación. La **toma**
+es un azar aparte del de la obra: los pliegues, las hojas y el grano cambian con
+`Espacio`; la pieza, no. Lo que hace que parezca una foto vive en `_mockup.js` y
+son tres cosas: `warp` (perspectiva **proyectiva** —interpolar la textura en 1/z—
+recortada al quad), `displace` (la impresión se **dobla** con los pliegues que le
+tocan; sin esto es una pegatina, siempre) y `grade` (luz, temperatura y grano al
+final y sobre todo el cuadro, que es el defecto compartido que dice que hay una
+sola foto). Una sola luz para todas las escenas, el objeto en su propio lienzo
+para que la sombra sea de la silueta, y nada paralelo al canto. Todo es
+**sintético**: se dibuja la luz, no se fotografía — para fotorrealismo de verdad
+falta poder soltar una foto propia y marcarle las cuatro esquinas, que el `warp`
+ya sabe hacer.
 
 El circuito completo: **lab → lote → publicar → galería**. Se mira la hoja de
 contactos, se aparta con `+` o `a`, y el lote —una lista de *recetas*, no de

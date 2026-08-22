@@ -7,7 +7,7 @@
      un project page ese archivo es inerte (solo se lee en la raíz del origen), y
      lo único que viaja de verdad en el documento es esto. -->
 <meta name="robots" content="noindex, nofollow">
-<title>objetos · lab — hoks</title>
+<title>fotos · lab — hoks</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&display=swap">
@@ -15,12 +15,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root { --ink:#0a0a0a; --ink3:#8a8983; --border:#e7e5df; --surface:#f3f1ec; --paper:#fbfbfa;
           --blue:#000ef7; --acid:#dcff32; --f:'Courier New',Courier,monospace;
-          --geo:"League Spartan","Century Gothic",Futura,system-ui,sans-serif;
-          /* Los mismos grados que el muro: la sala está medio grado por debajo
-             del papel de la página, y el objeto medio grado por debajo de la sala.
-             Esa escalera es lo que separa página, sitio y cosa. */
-          --wall:#efece7; --wall-lo:#e7e3dc; --floor:#d9d5cd;
-          --ref:rgba(17,17,17,0.34); --ref-soft:rgba(17,17,17,0.16); --figure:rgba(17,17,17,0.135); }
+          --geo:"League Spartan","Century Gothic",Futura,system-ui,sans-serif; }
   body { font-family: var(--f); background: var(--paper); color: var(--ink);
          display: grid; grid-template-columns: 268px 1fr; height: 100vh; }
   .panel { border-right: 1px solid var(--border); padding: 1.2rem; overflow-y: auto;
@@ -37,57 +32,39 @@
   button.ghost { background: transparent; color: var(--ink); border-color: var(--border); }
   button:hover { opacity: 0.78; }
   :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-
-  /* Segmentado: soporte, pliego, referencias. Mismo lenguaje que los botones de
-     formato del motor y que el muro, para que esta página no estrene UI propia. */
   .seg { display: flex; gap: 4px; flex-wrap: wrap; }
   .seg button { flex: 1 1 auto; width: auto; font-size: 9px; background: transparent;
                 color: var(--ink3); border-color: var(--border); padding: 7px 6px; }
   .seg button.on { border-color: var(--ink); color: var(--ink); }
   .seg button:hover { opacity: 1; border-color: #d0d0d0; }
-  /* Los soportes van en columna: son nombres, no siglas, y en fila se parten. */
   .seg.col { flex-direction: column; }
   .seg.col button { text-align: left; padding: 7px 9px; display: flex; justify-content: space-between; gap: 8px; }
   .seg.col button i { font-style: normal; font-weight: 400; letter-spacing: 0.04em;
-                      font-variant-numeric: tabular-nums; opacity: 0.75; text-transform: none; }
-
-  /* Ficha: lo que el objeto RECIBE (arriba, inmutable) y lo que le HACE (abajo). */
+                      opacity: 0.75; text-transform: none; }
   .facts { font-size: 10px; display: flex; flex-direction: column; gap: 4px; }
   .facts .t { display: flex; justify-content: space-between; gap: 8px; }
   .facts .k { color: var(--ink3); text-transform: uppercase; font-size: 9px; letter-spacing: 0.06em; }
   .facts .v { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; word-break: break-word; }
   .dots { display: inline-flex; gap: 2px; vertical-align: middle; margin-right: 4px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; border: 0.5px solid rgba(0,0,0,0.1); }
-  .note { font-size: 9.5px; line-height: 1.75; color: var(--ink3); letter-spacing: 0.02em;
-          border-left: 1px solid var(--border); padding-left: 9px; }
   a.back { font-size: 10px; color: var(--ink); letter-spacing: 0.06em; text-decoration: none;
            border-bottom: 1px solid var(--border); padding-bottom: 3px; }
   a.back:hover { border-color: var(--ink); }
-
-  /* ── Escenario ─────────────────────────────────────────────────────────── */
-  /* `safe center` centra solo mientras quepa; cuando no, se comporta como
-     flex-start y el desbordamiento queda al alcance del scroll en vez de
-     repartirse a los dos lados. Mismo motivo que en el muro. */
-  .stage { display: flex; flex-direction: column; align-items: center; align-items: safe center;
+  .stage { display: flex; flex-direction: column; align-items: safe center;
            justify-content: center; justify-content: safe center;
            gap: 12px; padding: 1.5rem; background: var(--surface); overflow: auto; }
-  /* El tamaño en pantalla lo fija JS (atributos width/height del svg, ya
-     normalizados a un marco nominal): así un reloj de 50 mm y un pañuelo de
-     900 mm ocupan los dos lo que caben, y no lo que miden. */
-  .scene svg { display: block; max-width: 100%; height: auto; }
-  /* Los rótulos del dibujo son de la PÁGINA, no del objeto: aquí toman la voz
-     mono y su tamaño lo pone JS (en unidades del viewBox) para que no escalen
-     con la cosa. Un atributo font-family="var(--f)" dependería de que el
-     navegador resuelva var() en un atributo de presentación; esto no. */
-  .scene text { font-family: var(--f); letter-spacing: 0.06em; }
+  /* La foto se enseña como se publica: entera y sin recortar. El lienzo lleva su
+     proporción de salida y el CSS solo lo reduce para que quepa. */
+  #single { max-width: min(100%, calc((100vh - 130px) * var(--ar, 0.8)));
+            max-height: calc(100vh - 130px); display: block;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.10), 0 18px 40px rgba(0,0,0,0.10); }
   .hint { font-size: 9px; color: var(--ink3); letter-spacing: 0.1em; text-transform: uppercase;
           font-variant-numeric: tabular-nums; text-align: center; line-height: 1.8; }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
   <aside class="panel">
-    <div class="lab-title">hoks · objetos<small>aquí no se genera: aquí se cede</small></div>
+    <div class="lab-title">hoks · fotos<small>aquí no se genera: aquí se fotografía</small></div>
 
     <div class="group">
       <span class="lbl">Piece</span>
@@ -97,675 +74,214 @@
     </div>
 
     <div class="group">
-      <span class="lbl">Support</span>
+      <span class="lbl">Soporte</span>
       <div class="seg col" id="support"></div>
     </div>
 
-    <div class="group" id="sheetGroup">
-      <span class="lbl">Sheet</span>
-      <div class="seg" id="sheet"></div>
-      <span class="hintline" id="sheetNote">—</span>
-    </div>
-
     <div class="group" id="matGroup">
-      <span class="lbl">Material</span>
+      <span class="lbl">Prenda</span>
       <div class="seg" id="mat"></div>
-      <span class="hintline">el color de la prenda es el fondo que la obra no
-        eligió: en tela no hay sangre</span>
-    </div>
-
-    <div class="group" id="refsGroup">
-      <span class="lbl">References</span>
-      <div class="seg" id="refs"></div>
-      <span class="hintline">cotas = el área impresa en mm. Nada de esto toca la
-        obra: son mandos de mirar</span>
     </div>
 
     <div class="group">
-      <span class="lbl">What it takes</span>
-      <div class="note" id="note">—</div>
+      <span class="lbl">Encuadre</span>
+      <div class="seg" id="frame"></div>
+      <span class="hintline" id="frameNote">—</span>
     </div>
 
     <div class="group">
-      <button class="ghost" id="viewBtn">▦ Todos los soportes (g)</button>
+      <span class="lbl">Toma</span>
+      <button class="ghost" id="shot">↻ Otra toma (espacio)</button>
+      <span class="hintline">la foto tiene su propio azar —pliegues, hojas,
+        grano— y es aparte del de la obra: la obra no cambia</span>
+    </div>
+
+    <div class="group">
+      <button id="save">↓ Guardar PNG (s)</button>
     </div>
   </aside>
 
   <main class="stage">
-    <div class="scene" id="scene"></div>
+    <canvas id="single"></canvas>
     <span class="hint" id="status">—</span>
   </main>
 
 <script src="../_engine.js?v=6"></script>
 <script src="../_lab.js?v=6"></script>
+<script src="../_mockup.js?v=1"></script>
+<script src="./escenas.js?v=1"></script>
 <script>
-/* hoks · objetos — la obra sobre la cosa.
+/* hoks · fotos — la obra sobre la cosa, para publicar.
  *
- * Página aparte, como el muro y por la misma razón: el laboratorio decide QUÉ se
- * genera y aquí solo hay mandos que NO cambian ni un píxel —soporte, pliego,
- * material, referencias—. Todo lo que mueve la imagen (seed, formato, paleta,
- * params) llega por URL desde el lab y aquí es de solo lectura.
+ * Página aparte, como el muro, y por la misma razón: el laboratorio decide QUÉ
+ * se genera y aquí no se genera nada. Todo lo que mueve la obra (seed, formato,
+ * paleta, params) llega por URL y es de solo lectura; lo único que se elige aquí
+ * es la foto — soporte, prenda, encuadre y toma.
  *
- * Pero no es el muro otra vez. El muro contesta CUÁNTO MIDE la obra; esta página
- * contesta CUÁNTO QUEDA de ella cuando el soporte se la lleva. Y la respuesta casi
- * nunca es "todo": un soporte no es un marco, es un recorte y una escala. En el
- * pañuelo la obra sale entera y encima crece por encima de cualquier pliego que
- * exportamos; en la camiseta pierde la sangre y estrena un borde que no ha
- * elegido; en el reloj se queda en un disco de 38 mm donde el grano ya no existe.
- * Eso es lo que hay que poder mirar ANTES de decir sí a una colaboración: no si
- * queda bien, sino qué parte del sistema sigue ahí.
+ * Y no es el muro otra vez. El muro es un ALZADO: mide, con figura, regla y
+ * cotas, para decidir el pliego. Esto es una FOTO: luz, sombra, tela y cristal,
+ * para publicar. Son dos oficios distintos y por eso son dos páginas.
  *
- * El orden de los soportes no es decorativo: va de más obra a menos.
+ *   ../_objects/?r=<receta JSON urlencoded>            ← lo que pone el panel
+ *   ../_objects/?work=dtkrt&seed=123&fmt=horizontal    ← forma legible, a mano
  *
- *   ../_objects/?r=<receta JSON urlencoded>              ← lo que pone el panel
- *   ../_objects/?work=dtkrt&seed=123&fmt=horizontal      ← forma legible, a mano
- *
- * Dibujo de ALZADO, no maqueta fotográfica: línea de un píxel, relleno plano y
- * cotas en milímetros. Una foto de estudio vendería el objeto; un alzado dice la
- * medida, que es lo único que aquí se decide.
+ * Salida a 1080 px de lado corto, que es lo que pide Instagram, y el encuadre
+ * por defecto es 4:5 porque el grid recorta un cuadrado (BRAND.md § 8).
  */
 'use strict';
 
 const $ = id => document.getElementById(id);
-const R = n => Math.round(n);
 const num = (n, d) => n.toFixed(d == null ? 2 : d).replace('.', ',');
-const NBSP = ' ';
 
-// Geometría: SIEMPRE punto decimal. `num` es para LEER (coma decimal, como el
-// resto de la web) y no puede acercarse a un atributo SVG — un viewBox con coma
-// no es un viewBox, es una página en blanco.
-const f1 = n => n.toFixed(1);
+// El encuadre es de la RED, no del pliego: aquí no se imprime nada.
+const FRAMES = [
+  { id: 'post',   label: '4:5',  w: 1080, h: 1350, note: 'post · 1080 × 1350 · llena el tile del grid' },
+  { id: 'square', label: '1:1',  w: 1080, h: 1080, note: 'cuadrado · 1080 × 1080 · el grid lo respeta' },
+  { id: 'story',  label: '9:16', w: 1080, h: 1920, note: 'story / reel · 1080 × 1920' },
+];
+// La vista previa es más pequeña que el archivo: las escenas se miden contra
+// W/H, así que la composición es la misma y solo cambia el detalle. Se exporta
+// volviendo a renderizar, como el PNG de impresión del motor.
+const PREVIEW_SHORT = 640;
 
-// Los colores del dibujo salen de los tokens :root en vez de una copia en JS:
-// una copia se queda vieja el día que se toque el grado de la sala. Se leen ya
-// resueltos para no meter var() dentro de un atributo de presentación.
-const CSSVAR = getComputedStyle(document.documentElement);
-const T0 = n => CSSVAR.getPropertyValue(n).trim();
-const PAINT = { wall: T0('--wall'), wallLo: T0('--wall-lo'), floor: T0('--floor'),
-                ref: T0('--ref'), refSoft: T0('--ref-soft'), figure: T0('--figure'),
-                ink: T0('--ink'), ink3: T0('--ink3'), surface: T0('--surface') };
-
-// Marco nominal en px: el objeto se dibuja a la mayor escala que quepa aquí, y
-// el CSS lo reduce después si la ventana es menor. Sin esto, un viewBox de 50 mm
-// (el reloj) saldría de 50 px y uno de 4200 (el interior) rompería la pantalla.
-const FRAME_W = 1180, FRAME_H = 720;
-const TEXT_PX  = 9.5;    // los rótulos NO escalan con el objeto: son de la página
-const RENDER_SHORT = 700;
-
-// ── La receta ───────────────────────────────────────────────────────────────
-// La lee _lab.js: es el contrato que comparten las dos páginas de mirar.
 const recipe = HOKSLAB.readRecipe('dtkrt');
-const view = { support: 'interior', sheet: 'A3', mode: 'single', material: 'crudo',
-               refs: { cotas: false, fig: true, agujas: true } };
+const view = { scene: 'pared', material: 'crudo', frame: 'post',
+               shot: (Math.random() * 0xFFFFFFFF) >>> 0 };
 
 let PALETTES = HOKS.normalizePalettes(HOKS.DEFAULTS);
-let pieceUrl = '', pieceKey = '', resolvedPal = null, pieceAR = 1;
+let art = null, artKey = '', resolvedPal = null;
 
-// Materiales: el soporte que los declara los honra, el resto los ignora. No es
-// un ajuste de la obra —la obra no cambia— es de qué color es lo que hay debajo.
-//
-// Dos líneas, no una, y la diferencia importa: la SILUETA se ve contra la página
-// y por eso es siempre un pelo oscuro (en tela oscura la define el propio
-// relleno); la COSTURA se ve contra el tejido y por eso cambia con él. Con una
-// sola, la prenda en tinta perdía las asas — trazo blanco sobre papel claro.
-const MATS = {
-  crudo: { label: 'Crudo', fill: '#e9e5dd', seam: 'rgba(17,17,17,0.17)' },
-  tinta: { label: 'Tinta', fill: '#17171a', seam: 'rgba(255,255,255,0.22)' },
-};
-const mat = () => MATS[view.material] || MATS.crudo;
+const frameOf = () => FRAMES.find(f => f.id === view.frame) || FRAMES[0];
+const sceneOf = () => HOKSESC.list.find(s => s.id === view.scene) || HOKSESC.list[0];
 
-// Silueta de alzado, la misma del muro: convención de dibujo de arquitectura, no
-// un monigote. Coordenadas en mm, con el suelo en y = 1700.
-const FIG_PATH =
-  'M214 242C212 280 194 294 166 308C116 330 76 356 60 404L42 704L48 848L54 876' +
-  'L112 872L118 762L128 474L104 474L118 686L96 906L88 1140L96 1420L104 1660L108 1692' +
-  'L216 1692L220 1420L232 1140L240 1010L250 940L260 1010L268 1140L280 1420L284 1692' +
-  'L392 1692L396 1660L404 1420L412 1140L404 906L382 686L396 474L372 474L382 762L388 872' +
-  'L446 876L452 848L458 704L440 404C424 356 384 330 334 308C306 294 288 280 286 242Z';
-const HANG_MM = 1450;   // eje de colgado: el mismo del muro
-
-/* ── Los soportes ───────────────────────────────────────────────────────────
- * Cada uno declara, en milímetros y en coordenadas LOCALES (0,0 en su esquina):
- *
- *   w, h     la caja del objeto dibujado
- *   print    el área donde va la obra — MÁXIMO si fit es 'contain'
- *   fit      'cover'   la obra llena el área y el área la recorta (a sangre)
- *            'contain' la obra entra entera y el soporte le pone borde
- *   mask     'rect' | 'circle'
- *   anchor   'center' | 'top'  — cómo se sienta la obra dentro del máximo
- *   under    lo que se dibuja DEBAJO de la obra (el objeto)
- *   over     lo que se dibuja ENCIMA (costuras, dobladillo, agujas)
- *   extras   referencias opcionales, por id de toggle
- *   note     qué le hace este soporte a la obra. La frase honesta, no el argumento
- *   bleed    true = el dibujo llega al canto del encuadre (el interior es una sala)
- */
-const SUPPORTS = [
-  { id: 'interior', label: 'Interior', sub: 'A3–A0 · papel', sheetful: true, bleed: true, build: interior },
-  { id: 'panuelo',  label: 'Pañuelo',  sub: '900 mm',        build: panuelo },
-  { id: 'vinilo',   label: 'Vinilo',   sub: '315 mm',        build: vinilo },
-  { id: 'camiseta', label: 'Camiseta', sub: '≤300 mm',       materials: true, build: camiseta },
-  { id: 'tote',     label: 'Tote',     sub: '≤280 mm',       materials: true, build: tote },
-  { id: 'reloj',    label: 'Reloj',    sub: '38 mm',         build: reloj },
-];
-// La hoja compara COSAS, así que el interior no entra: una sala no es un objeto.
-// El pliego sí, y de primero: es la vara con la que se leen los demás.
-const SHEET_IDS = ['pliego', 'panuelo', 'vinilo', 'camiseta', 'tote', 'reloj'];
-
-const supportOf = id => SUPPORTS.find(s => s.id === id) || SUPPORTS[0];
-
-// ── Interior ────────────────────────────────────────────────────────────────
-// El muro pelado ya existe (../_wall/) y ahí es donde se mide. Aquí la sala está
-// amueblada a propósito: el sofá no se vende, da la escala que en una pared
-// desnuda tiene que dar una regla.
-function interior() {
-  const w = 4200, h = 2800, floor = 2600;
-  const p = HOKS.printDims(recipe.format, view.sheet);
-  const cx = w * 0.55;
-  const print = { x: cx - p.mm[0] / 2, y: floor - HANG_MM - p.mm[1] / 2, w: p.mm[0], h: p.mm[1] };
-
-  const sw = 2100, sx = cx - sw / 2;
-  const L = `stroke="${PAINT.refSoft}" stroke-width="1" vector-effect="non-scaling-stroke"`;
-  const F = 'fill="#e4e0d8"';
-  const sofa =
-    `<rect x="${sx + 150}" y="${floor - 830}" width="${sw - 300}" height="460" ${F} ${L} rx="26"/>` +
-    `<rect x="${sx}" y="${floor - 580}" width="150" height="430" ${F} ${L} rx="22"/>` +
-    `<rect x="${sx + sw - 150}" y="${floor - 580}" width="150" height="430" ${F} ${L} rx="22"/>` +
-    `<rect x="${sx + 130}" y="${floor - 430}" width="${sw - 260}" height="180" fill="#dedad1" ${L} rx="14"/>` +
-    `<line x1="${sx + sw / 2}" y1="${floor - 425}" x2="${sx + sw / 2}" y2="${floor - 255}" ${L}/>` +
-    `<rect x="${sx + 150}" y="${floor - 250}" width="${sw - 300}" height="90" ${F} ${L}/>` +
-    [sx + 190, sx + sw - 230].map(x =>
-      `<rect x="${x}" y="${floor - 160}" width="40" height="160" ${F} ${L}/>`).join('');
-
-  const lx = w - 330;
-  const lamp =
-    `<line x1="${lx}" y1="${floor}" x2="${lx}" y2="${floor - 1480}" ${L}/>` +
-    `<ellipse cx="${lx}" cy="${floor - 8}" rx="140" ry="18" ${F} ${L}/>` +
-    `<path d="M${lx - 165} ${floor - 1480} L${lx + 165} ${floor - 1480} L${lx + 120} ${floor - 1760} L${lx - 120} ${floor - 1760} Z" ${F} ${L}/>`;
-
-  return {
-    w, h, print, fit: 'cover', mask: 'rect', anchor: 'center', lift: true,
-    defs:
-      `<linearGradient id="wallg" x1="0" y1="0" x2="0.05" y2="1">` +
-        `<stop offset="0" stop-color="${PAINT.wall}"/><stop offset="0.62" stop-color="${PAINT.wall}"/>` +
-        `<stop offset="1" stop-color="${PAINT.wallLo}"/></linearGradient>`,
-    under:
-      `<rect x="0" y="0" width="${w}" height="${floor}" fill="url(#wallg)"/>` +
-      `<rect x="0" y="${floor}" width="${w}" height="${h - floor}" fill="${PAINT.floor}"/>` +
-      `<line x1="0" y1="${floor}" x2="${w}" y2="${floor}" stroke="rgba(17,17,17,0.22)" stroke-width="1" vector-effect="non-scaling-stroke"/>` +
-      `<line x1="0" y1="${floor - 85}" x2="${w}" y2="${floor - 85}" ${L}/>` +
-      lamp + sofa,
-    extras: {
-      fig: `<svg viewBox="0 0 500 1700" x="700" y="${floor - 1700}" width="500" height="1700" ` +
-           `fill="${PAINT.figure}" overflow="visible"><ellipse cx="250" cy="134" rx="84" ry="114"/>` +
-           `<path d="${FIG_PATH}"/></svg>`,
-    },
-    over:
-      `<line x1="0" y1="${floor - HANG_MM}" x2="${w}" y2="${floor - HANG_MM}" ` +
-      `stroke="${PAINT.refSoft}" stroke-width="1" stroke-dasharray="9 7" vector-effect="non-scaling-stroke"/>`,
-    labels: [{ x: 60, y: floor - HANG_MM - 24, t: `eje de colgado · 1,45${NBSP}m`, anchor: 'start' }],
-    note: 'el pliego a sangre, colgado a 1,45 m. El único soporte donde la obra ' +
-          'sigue siendo la obra: papel, tinta y nada más. El sofá está para dar ' +
-          'escala, no para vender el sofá — a pared pelada y con regla, eso es el muro.',
-  };
-}
-
-// ── Pañuelo ─────────────────────────────────────────────────────────────────
-function panuelo() {
-  const s = 900, hem = 14;
-  const L = `stroke="${PAINT.refSoft}" stroke-width="1" fill="none" vector-effect="non-scaling-stroke"`;
-  return {
-    w: s, h: s, print: { x: 0, y: 0, w: s, h: s }, fit: 'cover', mask: 'rect', anchor: 'center',
-    under: `<rect x="0" y="0" width="${s}" height="${s}" fill="#e9e5dd"/>`,
-    over:
-      `<rect x="0" y="0" width="${s}" height="${s}" ${L}/>` +
-      `<rect x="${hem}" y="${hem}" width="${s - hem * 2}" height="${s - hem * 2}" ${L} stroke-dasharray="6 5"/>`,
-    labels: [{ x: hem + 8, y: hem + 26, t: 'dobladillo enrollado · 14 mm', anchor: 'start' }],
-    note: 'seda de 900 mm. El único soporte que se lleva la obra entera y encima ' +
-          'la agranda: 900 mm de lado es más que el lado largo de un A1. Luego se ' +
-          'dobla y se anuda, así que la mitad del tiempo la obra está plegada — un ' +
-          'sistema con centro fuerte aquí lo pierde.',
-  };
-}
-
-// ── Vinilo ──────────────────────────────────────────────────────────────────
-function vinilo() {
-  const s = 315, pad = 8, disc = 302;
-  const L = `stroke="${PAINT.refSoft}" stroke-width="1" fill="none" vector-effect="non-scaling-stroke"`;
-  const dcx = s - disc / 2 + 45, dcy = pad + s / 2;
-  return {
-    w: s + 45, h: s + pad * 2, print: { x: 0, y: pad, w: s, h: s }, fit: 'cover', mask: 'rect', anchor: 'center',
-    under:
-      `<circle cx="${dcx}" cy="${dcy}" r="${disc / 2}" fill="#1b1b1e" ${L}/>` +
-      `<circle cx="${dcx}" cy="${dcy}" r="48" fill="#cfcabf" ${L}/>` +
-      `<circle cx="${dcx}" cy="${dcy}" r="3.6" fill="${PAINT.surface}"/>` +
-      `<rect x="0" y="${pad}" width="${s}" height="${s}" fill="#e9e5dd"/>`,
-    over:
-      `<rect x="0" y="${pad}" width="${s}" height="${s}" ${L}/>` +
-      `<line x1="6" y1="${pad + 6}" x2="${s - 6}" y2="${pad + 6}" ${L} stroke-dasharray="5 4"/>`,
-    labels: [{ x: s - 12, y: pad + 24, t: 'abertura', anchor: 'end' }],
-    note: '315 mm a sangre, como el pliego: el soporte que menos discute. Un ' +
-          'cuadrado entra exacto; un horizontal pierde los costados, y ahí hay que ' +
-          'mirar si lo que se cae era estructura o relleno.',
-  };
-}
-
-// ── Camiseta ────────────────────────────────────────────────────────────────
-// El área de impresión es un MÁXIMO, no una caja: la obra entra a la mayor
-// medida que quepa y se cuelga del borde de arriba, que es como se coloca de
-// verdad sobre el pecho. Por eso anchor:'top'.
-function camiseta() {
-  const m = mat();
-  const L = `stroke="${PAINT.refSoft}" stroke-width="1" fill="none" vector-effect="non-scaling-stroke"`;
-  const S = `stroke="${m.seam}" stroke-width="1" fill="none" vector-effect="non-scaling-stroke" stroke-dasharray="5 4"`;
-  const SS = `stroke="${m.seam}" stroke-width="1" fill="none" vector-effect="non-scaling-stroke"`;
-  const body =
-    'M370 42 L180 55 L40 240 L132 345 L200 278 L200 745 L700 745 L700 278 ' +
-    'L768 345 L860 240 L720 55 L530 42 C500 108 400 108 370 42 Z';
-  return {
-    w: 900, h: 780, print: { x: 300, y: 200, w: 300, h: 360 },
-    fit: 'contain', mask: 'rect', anchor: 'top',
-    under: `<path d="${body}" fill="${m.fill}" ${L}/>`,
-    over:
-      `<path d="M366 60 C400 122 500 122 534 60" ${SS}/>` +
-      `<line x1="200" y1="728" x2="700" y2="728" ${S}/>` +
-      `<line x1="120" y1="330" x2="196" y2="270" ${S}/>` +
-      `<line x1="780" y1="330" x2="704" y2="270" ${S}/>`,
-    note: 'en tela el fondo es la prenda: la obra deja de ir a sangre y estrena ' +
-          'un borde que no ha elegido. Es el primer soporte donde el sistema pierde ' +
-          'el suelo — lo que en el papel era campo aquí es algodón. La trama se ' +
-          'come el grano de film antes que ninguna otra cosa.',
-  };
-}
-
-// ── Tote ────────────────────────────────────────────────────────────────────
-function tote() {
-  const m = mat();
-  const L = `stroke="${PAINT.refSoft}" stroke-width="1" fill="none" vector-effect="non-scaling-stroke"`;
-  const S = `stroke="${m.seam}" stroke-width="1" fill="none" vector-effect="non-scaling-stroke" stroke-dasharray="5 4"`;
-  return {
-    w: 400, h: 600, print: { x: 60, y: 240, w: 280, h: 300 },
-    fit: 'contain', mask: 'rect', anchor: 'center',
-    under:
-      `<path d="M105 176 C105 40 295 40 295 176 L271 176 C271 74 129 74 129 176 Z" ` +
-      `fill="${m.fill}" ${L}/>` +
-      `<rect x="10" y="176" width="380" height="414" fill="${m.fill}" ${L}/>`,
-    over:
-      `<line x1="10" y1="196" x2="390" y2="196" ${S}/>` +
-      `<line x1="10" y1="574" x2="390" y2="574" ${S}/>`,
-    note: '280 mm sobre lona. La bolsa se dobla, se llena y se arruga: la obra ' +
-          'vive curva y nunca se ve entera de una vez. Un sistema que se lee por ' +
-          'el conjunto aquí llega a trozos; uno que se lee por el detalle, aguanta.',
-  };
-}
-
-// ── Reloj ───────────────────────────────────────────────────────────────────
-// Las agujas van PERFILADAS —blanco con canto oscuro— porque tienen que leerse
-// sobre cualquier obra: negras al 50 % sobre los círculos negros de DTKRT no se
-// veían, y una referencia invisible no es una referencia. Es además cómo se
-// resuelve en un reloj de verdad, por lo mismo.
-function hands(cx, cy) {
-  const arm = (x2, y2, w) =>
-    `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="rgba(10,10,10,0.55)" ` +
-    `stroke-width="${w + 0.9}" stroke-linecap="round"/>` +
-    `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.92)" ` +
-    `stroke-width="${w}" stroke-linecap="round"/>`;
-  return arm(cx - 8.5, cy - 5, 1.5) + arm(cx + 8, cy - 11, 1.1) +
-    `<circle cx="${cx}" cy="${cy}" r="1.3" fill="rgba(10,10,10,0.6)"/>` +
-    `<circle cx="${cx}" cy="${cy}" r="0.7" fill="rgba(255,255,255,0.92)"/>`;
-}
-
-function reloj() {
-  const cx = 25, cy = 80, caseR = 20, dialR = 19;
-  const L = `stroke="${PAINT.refSoft}" stroke-width="1" fill="none" vector-effect="non-scaling-stroke"`;
-  const strap = '#d7d3ca';
-  return {
-    w: 50, h: 160, print: { x: cx - dialR, y: cy - dialR, w: dialR * 2, h: dialR * 2 },
-    fit: 'cover', mask: 'circle', anchor: 'center',
-    under:
-      `<path d="M14 62 L14 2 L36 2 L36 62 Z" fill="${strap}" ${L}/>` +
-      `<path d="M14 98 L14 158 L36 158 L36 98 Z" fill="${strap}" ${L}/>` +
-      `<rect x="${cx + caseR - 1}" y="${cy - 4}" width="4" height="8" fill="#c9c5bb" ${L}/>` +
-      `<circle cx="${cx}" cy="${cy}" r="${caseR}" fill="#cfcbc2" ${L}/>`,
-    over: `<circle cx="${cx}" cy="${cy}" r="${dialR}" ${L}/>`,
-    extras: { agujas: hands(cx, cy) },
-    note: 'un disco de 38 mm: se ve el gesto, no el sistema. A esta escala el ' +
-          'grano no existe, el mesh gradient es un color y las agujas tapan el ' +
-          'centro. El soporte se queda con la composición y devuelve un tono — que ' +
-          'puede estar bien, pero hay que decirlo así.',
-  };
-}
-
-// ── El pliego suelto: la vara de medir de la hoja ───────────────────────────
-function pliego() {
-  const p = HOKS.printDims(recipe.format, view.sheet);
-  return {
-    w: p.mm[0], h: p.mm[1], print: { x: 0, y: 0, w: p.mm[0], h: p.mm[1] },
-    fit: 'cover', mask: 'rect', anchor: 'center', lift: true,
-    label: 'Pliego', sub: view.sheet,
-    under: `<rect x="0" y="0" width="${p.mm[0]}" height="${p.mm[1]}" fill="#fff"/>`,
-    over: '', note: '',
-  };
-}
-
-// ── Qué le hace el soporte a la obra ────────────────────────────────────────
-// La obra COMPLETA en milímetros sobre este soporte, y qué fracción de ella
-// sobrevive. Con 'contain' se ve toda y sobra soporte; con 'cover' se llena el
-// área y lo que sobresale se pierde; una máscara circular se queda además con
-// π/4 del cuadrado que ya había cubierto.
-function apply(d) {
-  const b = d.print, ap = pieceAR;
-  const s = d.fit === 'cover' ? Math.max(b.w / ap, b.h) : Math.min(b.w / ap, b.h);
-  const full = { w: s * ap, h: s };
-  let vis = 1;
-  if (d.fit === 'cover') {
-    const ab = b.w / b.h;
-    vis = Math.min(ap, ab) / Math.max(ap, ab);
-  }
-  if (d.mask === 'circle') vis *= Math.PI / 4;
-  // El rectángulo DIBUJADO: con cover es el área (y la obra se recorta contra
-  // ella); con contain es la obra, colgada de arriba o centrada en el máximo.
-  const rect = d.fit === 'cover' ? { ...b }
-    : { x: b.x + (b.w - full.w) / 2, y: d.anchor === 'top' ? b.y : b.y + (b.h - full.h) / 2,
-        w: full.w, h: full.h };
-  const a3 = HOKS.printDims(recipe.format, 'A3').mm;
-  return { full, vis, rect, scale: Math.min(full.w, full.h) / Math.min(a3[0], a3[1]) };
-}
-
-// ── Dibujo ──────────────────────────────────────────────────────────────────
-function obraSvg(d, a, uid) {
-  if (!pieceUrl) return `<rect x="${a.rect.x}" y="${a.rect.y}" width="${a.rect.w}" height="${a.rect.h}" fill="#dcd8d0"/>`;
-  const alt = `${recipe.work} #${recipe.seed}`;
-  if (d.fit === 'cover') {
-    const clip = d.mask === 'circle'
-      ? `<clipPath id="c${uid}"><circle cx="${d.print.x + d.print.w / 2}" cy="${d.print.y + d.print.h / 2}" r="${d.print.w / 2}"/></clipPath>`
-      : '';
-    return (clip ? `<defs>${clip}</defs>` : '') +
-      `<image href="${pieceUrl}" x="${d.print.x}" y="${d.print.y}" width="${d.print.w}" ` +
-      `height="${d.print.h}" preserveAspectRatio="xMidYMid slice"` +
-      (clip ? ` clip-path="url(#c${uid})"` : '') + ` aria-label="${alt}"/>`;
-  }
-  return `<image href="${pieceUrl}" x="${a.rect.x}" y="${a.rect.y}" width="${a.rect.w}" ` +
-         `height="${a.rect.h}" preserveAspectRatio="xMidYMid meet" aria-label="${alt}"/>`;
-}
-
-// Cotas: el área impresa en milímetros, dibujada como se dibuja una cota — línea
-// entre remates y la cifra al lado. No es decoración: es lo que va en el correo.
-function cotasSvg(r, ts) {
-  const o = ts * 1.9, t = ts * 0.7;
-  const D = `stroke="${PAINT.ref}" stroke-width="1" vector-effect="non-scaling-stroke"`;
-  const T = `font-size="${ts}" fill="${PAINT.ink3}"`;
-  const yb = r.y + r.h + o, xl = r.x - o;
-  return `<g>` +
-    `<line x1="${r.x}" y1="${yb}" x2="${r.x + r.w}" y2="${yb}" ${D}/>` +
-    `<line x1="${r.x}" y1="${yb - t}" x2="${r.x}" y2="${yb + t}" ${D}/>` +
-    `<line x1="${r.x + r.w}" y1="${yb - t}" x2="${r.x + r.w}" y2="${yb + t}" ${D}/>` +
-    `<text x="${r.x + r.w / 2}" y="${yb + ts * 1.5}" text-anchor="middle" ${T}>${R(r.w)} mm</text>` +
-    `<line x1="${xl}" y1="${r.y}" x2="${xl}" y2="${r.y + r.h}" ${D}/>` +
-    `<line x1="${xl - t}" y1="${r.y}" x2="${xl + t}" y2="${r.y}" ${D}/>` +
-    `<line x1="${xl - t}" y1="${r.y + r.h}" x2="${xl + t}" y2="${r.y + r.h}" ${D}/>` +
-    `<text x="${xl - ts * 0.7}" y="${r.y + r.h / 2}" text-anchor="end" dominant-baseline="middle" ${T}>${R(r.h)} mm</text>` +
-    `</g>`;
-}
-
-// Un soporte entero, en coordenadas locales. La obra va entre `under` y `over`
-// porque el objeto no es un marco: el dobladillo, la costura y las agujas están
-// DELANTE de la tinta, y verlas delante es el punto de la página.
-function supportSvg(d, a, ts, uid) {
-  const T = `font-size="${ts}" fill="${PAINT.ink3}"`;
-  const extras = Object.entries(d.extras || {})
-    .filter(([k]) => view.refs[k]).map(([, v]) => v).join('');
-  const cotas = view.mode === 'single' && view.refs.cotas;
-  const labels = (d.labels || []).filter(() => cotas)
-    .map(l => `<text x="${l.x}" y="${l.y}" text-anchor="${l.anchor || 'start'}" ${T}>${l.t}</text>`).join('');
-  return (d.under || '') +
-    (d.lift ? `<g filter="url(#lift${uid})">${obraSvg(d, a, uid)}</g>` : obraSvg(d, a, uid)) +
-    (d.mask === 'circle' ? '' :
-      `<rect x="${a.rect.x}" y="${a.rect.y}" width="${a.rect.w}" height="${a.rect.h}" fill="none" ` +
-      `stroke="rgba(17,17,17,0.18)" stroke-width="1" vector-effect="non-scaling-stroke"/>`) +
-    (d.over || '') + extras +
-    (cotas ? cotasSvg(a.rect, ts) : '') + labels;
-}
-
-function liftDef(uid, sceneW) {
-  const b = sceneW * 0.0022;
-  return `<filter id="lift${uid}" x="-25%" y="-25%" width="160%" height="160%">` +
-         `<feDropShadow dx="0" dy="${b * 2.6}" stdDeviation="${b * 3.4}" flood-color="#000" flood-opacity="0.17"/></filter>`;
-}
-
-// ── Vista de un soporte ─────────────────────────────────────────────────────
-function paintSingle() {
-  const s = supportOf(view.support);
-  const d = s.build();
-  const a = apply(d);
-  const pad = s.bleed ? 0 : Math.max(d.w, d.h) * 0.13;
-  const sceneW = d.w + pad * 2, sceneH = d.h + pad * 2;
-  const k = Math.min(FRAME_W / sceneW, FRAME_H / sceneH);
-  const ts = TEXT_PX / k;
-  $('scene').innerHTML =
-    `<svg viewBox="0 0 ${f1(sceneW)} ${f1(sceneH)}" width="${R(sceneW * k)}" height="${R(sceneH * k)}" ` +
-    `role="img" aria-label="${recipe.work} #${recipe.seed} sobre ${s.label}">` +
-    `<defs>${liftDef('S', sceneW)}${d.defs || ''}</defs>` +
-    (s.bleed ? '' : `<rect x="0" y="0" width="${sceneW}" height="${sceneH}" fill="${PAINT.surface}"/>`) +
-    `<g transform="translate(${f1(pad)} ${f1(pad)})">${supportSvg(d, a, ts, 'S')}</g></svg>`;
-  return { d, a, s };
-}
-
-// ── Vista de todos: la hoja de soportes ─────────────────────────────────────
-// Todos a la MISMA escala en milímetros, apoyados en una línea. Es la imagen que
-// se manda: dice de una vez que el pañuelo es más grande que cualquier pliego
-// que exportamos y que el reloj es una uña. Las columnas se ensanchan hasta que
-// caben los rótulos —el reloj mide 50 mm y su rótulo, no—, pero el DIBUJO no se
-// reescala nunca: si no, la hoja dejaría de decir lo único que dice.
-function paintSheet() {
-  const items = SHEET_IDS.map(id => {
-    const s = id === 'pliego' ? { id, label: 'Pliego', sub: view.sheet, build: pliego } : supportOf(id);
-    const d = s.build();
-    return { s, d, a: apply(d) };
-  });
-  const objH = Math.max(...items.map(i => i.d.h));
-  const GAP = 70, SIDE = 60;
-  let k = FRAME_W / 4000, cols = null, sceneW = 0, sceneH = 0, ts = 0;
-  for (let i = 0; i < 5; i++) {
-    ts = TEXT_PX / k;
-    cols = items.map(it => Math.max(it.d.w, ts * 13));
-    sceneW = cols.reduce((a, c) => a + c, 0) + GAP * (items.length - 1) + SIDE * 2;
-    sceneH = objH + ts * 2 + ts * 5.5;
-    k = Math.min(FRAME_W / sceneW, FRAME_H / sceneH);
-  }
-  const base = ts * 2 + objH;   // línea de apoyo
-  let x = SIDE, body = '';
-  items.forEach((it, i) => {
-    const cw = cols[i];
-    const dx = x + (cw - it.d.w) / 2, dy = base - it.d.h;
-    const T = `font-size="${ts}" fill="${PAINT.ink3}"`;
-    body += `<g transform="translate(${f1(dx)} ${f1(dy)})">${supportSvg(it.d, it.a, ts, 'H' + i)}</g>` +
-      `<text x="${f1(x + cw / 2)}" y="${f1(base + ts * 2.1)}" text-anchor="middle" ${T} ` +
-      `fill="${PAINT.ink}" font-weight="700">${it.s.label.toLowerCase()}</text>` +
-      `<text x="${f1(x + cw / 2)}" y="${f1(base + ts * 3.5)}" text-anchor="middle" ${T}>` +
-      `${R(it.a.full.w)}×${R(it.a.full.h)} mm</text>` +
-      `<text x="${f1(x + cw / 2)}" y="${f1(base + ts * 4.8)}" text-anchor="middle" ${T}>` +
-      `${R(it.a.vis * 100)}${NBSP}% de la obra</text>`;
-    x += cw + GAP;
-  });
-  $('scene').innerHTML =
-    `<svg viewBox="0 0 ${f1(sceneW)} ${f1(sceneH)}" width="${R(sceneW * k)}" height="${R(sceneH * k)}" ` +
-    `role="img" aria-label="${recipe.work} #${recipe.seed} sobre todos los soportes, a la misma escala">` +
-    `<defs>${items.map((_, i) => liftDef('H' + i, sceneW)).join('')}</defs>` +
-    `<rect x="0" y="0" width="${sceneW}" height="${sceneH}" fill="${PAINT.surface}"/>` +
-    `<line x1="${SIDE - 30}" y1="${f1(base)}" x2="${f1(sceneW - SIDE + 30)}" y2="${f1(base)}" ` +
-    `stroke="${PAINT.refSoft}" stroke-width="1" vector-effect="non-scaling-stroke"/>` +
-    body + `</svg>`;
-  return items;
-}
-
-// ── Render de la obra ───────────────────────────────────────────────────────
+// ── La obra ─────────────────────────────────────────────────────────────────
 // El palSel de la receta es un índice sobre la lista COMPLETA de paletas, que es
 // la que usa el laboratorio (loadAllPalettes). Si aquí cargáramos solo las
 // activas, el índice apuntaría a otra paleta y la pieza no sería la misma.
-function renderPiece() {
+function renderArt() {
   const W = HOKS[recipe.work.toUpperCase()];
   if (!W) { $('status').textContent = `⚠ obra desconocida: ${recipe.work}`; return null; }
-  const dim = HOKS.fmtDims(recipe.format, RENDER_SHORT);
+  // La obra se renderiza generosa (1100 px de lado corto): va a entrar en un
+  // pliego a media pantalla, pero también en una esfera de 38 mm reescalada, y
+  // ahí lo que se ve es el remuestreo.
+  const d = HOKS.fmtDims(recipe.format, 1100);
   const c = document.createElement('canvas');
-  c.width = dim.W; c.height = dim.H;
+  c.width = d.W; c.height = d.H;
   const ctx = c.getContext('2d', { willReadFrequently: true });
   const palOpts = recipe.palSel === 'auto'
     ? { palettes: PALETTES } : { palettes: PALETTES, locked: true, lockedIdx: recipe.palSel };
   try {
-    const res = W.render(ctx, dim.W, dim.H, recipe.seed >>> 0, { ...palOpts, params: recipe.params });
+    const res = W.render(ctx, d.W, d.H, recipe.seed >>> 0, { ...palOpts, params: recipe.params });
     resolvedPal = res && res.pal;
   } catch (e) {
     $('status').textContent = '⚠ ' + e.message;
-    console.error(e);
-    return null;
+    console.error(e); return null;
   }
-  pieceAR = dim.W / dim.H;
   return c;
 }
 
-// ── Panel ───────────────────────────────────────────────────────────────────
-function drawFacts(d, a) {
-  const fmtLabel = { square: 'Square', horizontal: 'Horizontal', vertical: 'Vertical', double: 'Doble' }[recipe.format];
-  const rows = [
-    ['Work', recipe.work.toUpperCase()],
-    ['Seed', '#' + recipe.seed],
-    ['Format', fmtLabel || recipe.format],
-  ];
-  if (resolvedPal) {
-    const dots = (resolvedPal.colors || []).slice(0, 6)
-      .map(c => `<span class="dot" style="background:${c}"></span>`).join('');
-    rows.push(['Palette', `<span class="dots">${dots}</span>${resolvedPal.name}`]);
-  }
-  if (a) {
-    rows.push(['Obra', `${R(a.full.w)} × ${R(a.full.h)} mm`]);
-    rows.push(['Visible', `${R(a.vis * 100)} %`]);
-    rows.push(['vs A3', '×' + num(a.scale)]);
-  }
-  $('facts').innerHTML = rows.map(([k, v]) =>
-    `<div class="t"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
-  $('back').href = `../${recipe.work}/?seed=${recipe.seed}`;
-  $('toWall').href = HOKSLAB.wallUrl(recipe);
-  $('note').textContent = (d && d.note) || '';
-}
-
-// Los mandos que este soporte no honra NO se quedan ahí sin efecto: se esconden.
-// Un desplegable que se mueve y no cambia nada miente más que no estar. Misma
-// regla que HOKSLAB.formatControls con el giro y el campo.
-function syncControls() {
-  const s = supportOf(view.support);
-  const sheetful = view.mode === 'sheet' || s.sheetful;
-  $('sheetGroup').style.display = sheetful ? '' : 'none';
-  $('matGroup').style.display = (view.mode === 'sheet' || s.materials) ? '' : 'none';
-  const d = view.mode === 'single' ? s.build() : null;
-  const toggles = view.mode === 'single' ? [['cotas', 'Cotas']] : [];
-  if (view.mode === 'single' && d && d.extras) {
-    if (d.extras.fig)    toggles.push(['fig', 'Figura']);
-    if (d.extras.agujas) toggles.push(['agujas', 'Agujas']);
-  }
-  $('refs').innerHTML = toggles.map(([k, l]) =>
-    `<button data-v="${k}"${view.refs[k] ? ' class="on"' : ''}>${l}</button>`).join('');
-  // Sin mandos que honrar, el grupo entero se va: un rótulo sobre nada es peor
-  // que no estar.
-  $('refsGroup').style.display = toggles.length ? '' : 'none';
-  $('support').querySelectorAll('button').forEach(b =>
-    b.classList.toggle('on', view.mode === 'single' && b.dataset.v === view.support));
-  if (sheetful) {
-    const p = HOKS.printDims(recipe.format, view.sheet);
-    $('sheetNote').textContent = `${p.mm[0]} × ${p.mm[1]} mm · ` +
-      `${num(p.mm[0] * p.mm[1] / 1e6)} m²`;
-  }
+// ── La foto ─────────────────────────────────────────────────────────────────
+function shoot(canvas, W, H) {
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  HOKSESC.render(ctx, W, H, art, {
+    scene: view.scene, material: view.material, seed: view.shot,
+  });
 }
 
 function paint() {
-  syncControls();
-  if (view.mode === 'sheet') {
-    const items = paintSheet();
-    drawFacts(null, null);
-    $('note').textContent = 'los seis a la misma escala: la obra no cambia, cambia ' +
-      'cuánto de ella deja ver la cosa. Es la hoja que se manda a una colaboración.';
-    $('status').textContent = `${recipe.work.toUpperCase()} · #${recipe.seed} · ` +
-      items.map(i => `${i.s.label.toLowerCase()} ${R(i.a.vis * 100)}%`).join(' · ');
-    return;
-  }
-  const { d, a, s } = paintSingle();
-  drawFacts(d, a);
-  $('status').textContent = `${recipe.work.toUpperCase()} · #${recipe.seed} · ${s.label.toLowerCase()} · ` +
-    `obra ${R(a.full.w)} × ${R(a.full.h)} mm · visible ${R(a.vis * 100)} % · ` +
-    `×${num(a.scale)} respecto a A3 · ${d.fit === 'cover' ? 'a sangre' : 'con borde de soporte'}`;
+  if (!art) return;
+  const f = frameOf();
+  const k = PREVIEW_SHORT / Math.min(f.w, f.h);
+  const c = $('single');
+  c.style.setProperty('--ar', String(f.w / f.h));
+  const t0 = performance.now();
+  shoot(c, Math.round(f.w * k), Math.round(f.h * k));
+  const ms = Math.round(performance.now() - t0);
+
+  const s = sceneOf();
+  $('facts').innerHTML = [
+    ['Work', recipe.work.toUpperCase()],
+    ['Seed', '#' + recipe.seed],
+    ['Format', recipe.format],
+    resolvedPal ? ['Palette', `<span class="dots">${(resolvedPal.colors || []).slice(0, 6)
+      .map(c => `<span class="dot" style="background:${c}"></span>`).join('')}</span>${resolvedPal.name}`] : null,
+    ['Toma', '#' + view.shot],
+  ].filter(Boolean).map(([kk, v]) =>
+    `<div class="t"><span class="k">${kk}</span><span class="v">${v}</span></div>`).join('');
+  $('back').href = `../${recipe.work}/?seed=${recipe.seed}`;
+  $('toWall').href = HOKSLAB.wallUrl(recipe);
+  $('frameNote').textContent = f.note;
+  $('matGroup').style.display = view.scene === 'camiseta' ? '' : 'none';
+  $('status').textContent =
+    `${recipe.work.toUpperCase()} · #${recipe.seed} · ${s.label.toLowerCase()} · ` +
+    `${f.w} × ${f.h} px · vista previa a ${Math.round(k * 100)} % · ${ms} ms`;
 }
 
-// La obra NO se vuelve a renderizar al cambiar de soporte: la misma seed en el
-// mismo formato da el mismo archivo, y lo único que se mueve es qué se lo lleva.
-// Es la afirmación que hace esta página, y el código tiene que sostenerla.
-function rebuild() {
-  const key = `${recipe.work}|${recipe.format}|${recipe.seed}`;
-  if (key !== pieceKey) {
-    const c = renderPiece();
-    if (!c) return;
-    pieceUrl = c.toDataURL('image/png'); pieceKey = key;
-  }
-  paint();
+// Guardar vuelve a renderizar a tamaño de publicación: lo que se ve es lo que se
+// guarda, solo que con más píxeles. Misma toma, misma foto.
+function save() {
+  const f = frameOf();
+  const out = document.createElement('canvas');
+  $('status').textContent = 'Revelando a ' + f.w + ' × ' + f.h + '…';
+  setTimeout(() => {
+    shoot(out, f.w, f.h);
+    const a = document.createElement('a');
+    a.download = `hoks_${recipe.work}_${recipe.seed}_${view.scene}_${f.id}_${view.shot}.png`;
+    a.href = out.toDataURL('image/png');
+    a.click();
+    $('status').textContent = `✓ ${a.download}`;
+  }, 20);
 }
 
-function setMode(mode) {
-  view.mode = mode;
-  $('viewBtn').textContent = mode === 'sheet' ? '◑ Un soporte (g)' : '▦ Todos los soportes (g)';
-  paint();
+// ── Panel ───────────────────────────────────────────────────────────────────
+function seg(host, items, get, set) {
+  host.innerHTML = items.map(i =>
+    `<button data-v="${i.id}"${i.id === get() ? ' class="on"' : ''}>${i.label}` +
+    (i.sub ? `<i>${i.sub}</i>` : '') + `</button>`).join('');
+  host.onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    set(b.dataset.v);
+    host.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === get()));
+    paint();
+  };
 }
+seg($('support'), HOKSESC.list, () => view.scene, v => { view.scene = v; });
+seg($('frame'), FRAMES, () => view.frame, v => { view.frame = v; });
+seg($('mat'), [{ id: 'crudo', label: 'Crudo' }, { id: 'tinta', label: 'Tinta' }],
+    () => view.material, v => { view.material = v; });
 
-// ── Init ────────────────────────────────────────────────────────────────────
-$('support').innerHTML = SUPPORTS.map(s =>
-  `<button data-v="${s.id}"${s.id === view.support ? ' class="on"' : ''}>${s.label}<i>${s.sub}</i></button>`).join('');
-$('support').onclick = e => {
-  const b = e.target.closest('button'); if (!b) return;
-  view.support = b.dataset.v;
-  if (view.mode !== 'single') setMode('single'); else paint();
-};
-$('sheet').innerHTML = HOKS.WALL_SHEET_IDS
-  .map(id => `<button data-v="${id}"${id === view.sheet ? ' class="on"' : ''}>${id}</button>`).join('');
-$('sheet').onclick = e => {
-  const b = e.target.closest('button'); if (!b) return;
-  view.sheet = b.dataset.v;
-  $('sheet').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === view.sheet));
-  paint();
-};
-$('mat').innerHTML = Object.entries(MATS)
-  .map(([k, m]) => `<button data-v="${k}"${k === view.material ? ' class="on"' : ''}>${m.label}</button>`).join('');
-$('mat').onclick = e => {
-  const b = e.target.closest('button'); if (!b) return;
-  view.material = b.dataset.v;
-  $('mat').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === view.material));
-  paint();
-};
-$('refs').onclick = e => {
-  const b = e.target.closest('button'); if (!b) return;
-  view.refs[b.dataset.v] = !view.refs[b.dataset.v];
-  paint();
-};
-$('viewBtn').onclick = () => setMode(view.mode === 'sheet' ? 'single' : 'sheet');
+$('shot').onclick = () => { view.shot = (Math.random() * 0xFFFFFFFF) >>> 0; paint(); };
+$('save').onclick = save;
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-  if (e.key === 'g' || e.key === 'G') { setMode(view.mode === 'sheet' ? 'single' : 'sheet'); return; }
-  if ((e.key === 'c' || e.key === 'C') && view.mode === 'single') {
-    view.refs.cotas = !view.refs.cotas; paint(); return;
-  }
-  // ← / → recorren los soportes en su orden, que es el del recorte: de la obra
-  // entera al fragmento. Recorrerlo con una tecla ES el argumento de la página.
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-    const i = SUPPORTS.findIndex(s => s.id === view.support);
-    const n = (i + (e.key === 'ArrowRight' ? 1 : SUPPORTS.length - 1)) % SUPPORTS.length;
-    view.support = SUPPORTS[n].id;
-    if (view.mode !== 'single') setMode('single'); else paint();
+  if (e.key === ' ') { e.preventDefault(); $('shot').click(); }
+  else if (e.key === 's' || e.key === 'S') save();
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const i = HOKSESC.list.findIndex(s => s.id === view.scene);
+    const n = (i + (e.key === 'ArrowRight' ? 1 : HOKSESC.list.length - 1)) % HOKSESC.list.length;
+    view.scene = HOKSESC.list[n].id;
+    $('support').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === view.scene));
+    paint();
   }
 });
 
-// Pinta YA con el fallback embebido y luego trae TODAS las paletas — el índice
-// de palSel es sobre esa lista, así que al llegar hay que rehacer la pieza.
-document.title = `${recipe.work} #${recipe.seed} · objetos — hoks`;
+function rebuild() {
+  const key = `${recipe.work}|${recipe.format}|${recipe.seed}`;
+  if (key !== artKey) {
+    const c = renderArt();
+    if (!c) return;
+    art = c; artKey = key;
+  }
+  paint();
+}
+
+document.title = `${recipe.work} #${recipe.seed} · fotos — hoks`;
 HOKSLAB.loadAlgos(() => {
   rebuild();
+  HOKSLAB.injectCopy();
   HOKS.loadAllPalettes()
-    .then(p => { if (p && p.length) { PALETTES = p; pieceKey = ''; rebuild(); } })
+    .then(p => { if (p && p.length) { PALETTES = p; artKey = ''; rebuild(); } })
     .catch(() => {});
 });
 </script>
