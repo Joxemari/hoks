@@ -130,15 +130,20 @@ Banco (rota, no repitas siempre `//`):
 - IG pone lo último arriba-izquierda → **sube de derecha a izquierda** para
   componer cada fila.
 
-## 8 · Formato de imagen (IG 4:5)
+## 8 · Formato de imagen (IG 3:4)
 
-Instagram muestra el grid y el feed en **4:5 vertical** (desde 2024, universal).
-Una imagen cuadrada se **recorta** a 4:5 en la miniatura.
+El perfil móvil actual muestra el grid en **3:4 vertical**. Un archivo 4:5 se
+recorta lateralmente en la miniatura y rompe las uniones de un tríptico.
 
-- **Todas las tarjetas y posts de obra → 1080×1350 (4:5).** Llenan el tile sin recorte.
+- **Filas de obra y trípticos → 1080×1440 (3:4).** Es el máster de composición
+  para el grid; cada panel se comprueba unido a los otros dos antes de publicar.
+- **Feed 4:5 → 1080×1350** solo cuando la pieza no depende de una unión entre
+  tiles. No reutilizar un 4:5 para una fila compuesta.
 - **La obra va matada sobre fondo** (papel o azul) con margen, para que el grid
   **nunca** corte lo que importa. Una pieza cuadrada a pelo pierde arriba y abajo.
 - Stories / Reels verticales → 1080×1920 (9:16).
+- Instagram pone lo último arriba-izquierda: una fila se publica
+  **derecha → centro → izquierda** y se verifica en el perfil móvil.
 
 ## Apéndice · manifiesto canónico (post de lanzamiento, trilingüe)
 
