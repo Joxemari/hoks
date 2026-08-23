@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "id": 1787497953000,
+    "name": "social · DTKRT · 2026-W35–W36",
+    "status": "open",
+    "created": 1787497953000,
+    "items": [],
+    "editorial": {
+      "family": "dtkrt",
+      "period": "2026-W35–W36",
+      "cadencePerWeek": 2,
+      "channels": [
+        "instagram",
+        "x"
+      ],
+      "targetItems": 6,
+      "plannedReleases": 4,
+      "approvalRequired": true,
+      "publisher": "codex"
+    }
+  }
+]
