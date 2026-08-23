@@ -512,7 +512,7 @@ HOKSLAB.loadAlgos(() => batch.refresh());
 applyFormat();
 renderSingle();
 HOKS.loadAllPalettes().then(p => {
-  if (p && p.length) { PALETTES = p; populatePalList();  refresh(); }
+  if (p && p.length) { PALETTES = p; populatePalList(); batch.refresh(); refresh(); }
 }).catch(() => {});
 </script>
 </body>
