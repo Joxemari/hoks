@@ -363,7 +363,7 @@ batch = HOKSBATCH.mount($('batchPanel'), {
 HOKSLAB.loadAlgos(() => batch.refresh());
 applyFormat();
 renderSingle();
-HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});
+HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); batch.refresh(); refresh(); } }).catch(() => {});
 </script>
 </body>
 </html>
