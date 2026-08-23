@@ -119,6 +119,12 @@ rama o *worktree*, abre una PR y deja la decisión final al propietario.
 La arquitectura operativa completa está en
 [`docs/OPERATING_MODEL.md`](docs/OPERATING_MODEL.md).
 
+Para trabajos de comunicación, redes, making ofs o narrativa, lee además
+[`docs/EDITORIAL_SYSTEM.md`](docs/EDITORIAL_SYSTEM.md). Ahí están el registro de
+Notion vigente, la arquitectura anterior y actual, los estados editoriales y el
+límite entre automatización y decisión humana. No reconstruyas ese contexto desde
+una conversación ni abras un segundo registro paralelo.
+
 ## Commits
 
 Commits pequeños y descriptivos, en castellano, en minúscula, con el área delante:

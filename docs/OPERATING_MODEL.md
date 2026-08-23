@@ -103,6 +103,12 @@ Campos mínimos del registro de Notion:
 No se implementa sincronización bidireccional ciega. Primero se automatiza la
 **detección de deriva**; solo el contenido `approved` puede avanzar hacia GitHub.
 
+La implementación vigente del ciclo editorial —workspace correcto, páginas de
+Notion, esquema del registro, estados, vistas y frontera de automatización— está
+documentada en [`EDITORIAL_SYSTEM.md`](EDITORIAL_SYSTEM.md). Esa nota es el punto
+de entrada para cualquier agente que trabaje en comunicación; el registro único
+continúa en Notion y el copy publicado continúa en GitHub.
+
 ## 6. Memoria y skills portables
 
 La idea útil de *Own Your Intelligence* no es acumular todos los chats: es poseer
