@@ -61,6 +61,25 @@
         "palSel": "auto",
         "palName": "North",
         "addedAt": 1787502293214
+      },
+      {
+        "work": "dtkrt",
+        "seed": 1919632515,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Wheel",
+        "addedAt": 1787502301464
       }
     ],
     "editorial": {
