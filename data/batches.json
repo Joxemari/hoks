@@ -23,25 +23,6 @@
         "palSel": "auto",
         "palName": "Hoks",
         "addedAt": 1787499274179
-      },
-      {
-        "work": "dtkrt",
-        "seed": 274128135,
-        "format": "square",
-        "base": 600,
-        "params": {
-          "field": "sheet",
-          "bg": "auto",
-          "bgProbs": {
-            "gradient": 30
-          },
-          "grainScale": 1,
-          "grid": 0,
-          "threshold": 0.8
-        },
-        "palSel": "auto",
-        "palName": "Sheets",
-        "addedAt": 1787500826048
       }
     ],
     "editorial": {
