@@ -130,6 +130,33 @@ recetas DTKRT.
 Al cerrar las dos semanas se revisan calidad, carga de aprobación y respuesta de
 cada formato antes de mantener o cambiar la cadencia.
 
+## Después del piloto · reserva curatorial
+
+El lote quincenal es una excepción de arranque, no el modelo permanente. Después
+del piloto, el artista trabaja contra uno o varios **pools persistentes**: reservas
+curatoriales abiertas donde guarda una obra porque merece permanecer disponible,
+sin asignarle todavía fecha, canal ni obligación de publicarse.
+
+Arquitectura anterior → nueva:
+
+| Capa | Piloto | Modelo permanente |
+| --- | --- | --- |
+| Motivo de entrada | llenar una ventana editorial | interés artístico |
+| Horizonte | dos semanas | indefinido |
+| Selección | cuatro titulares y reservas | Codex propone entre inéditas |
+| Salida | calendario del piloto | unidad editorial aprobada |
+| Lotes adicionales | por periodo | por exposición, proyecto o criterio curatorial |
+
+El pool no es la cola de publicación. Estar dentro significa **digna de
+consideración**, no `approved`. Codex cruza sus recetas con el registro editorial,
+descarta las ya publicadas, propone la pieza y su tratamiento, y solo publica tras
+aprobación explícita.
+
+Convención prevista para el primer pool: `candidates · DTKRT`. Puede permanecer
+abierto indefinidamente. Otros pools pueden convivir cuando expresen una selección
+real —por ejemplo una exposición—, pero no se abre uno nuevo por cada semana ni
+por cada post.
+
 ## Validación antes de publicar
 
 - El activo corresponde a la seed y familia registradas.
@@ -155,6 +182,9 @@ cada formato antes de mantener o cambiar la cadencia.
   iniciales.
 - Se abrió el primer lote editorial compartido para DTKRT y se delegó en Codex
   la ejecución de publicaciones aprobadas.
+- Se acordó que, tras el piloto, los lotes periódicos dejan paso a pools
+  curatoriales persistentes; guardar una obra expresa interés, no intención
+  inmediata de publicarla.
 
 Para cualquier cambio futuro: actualiza primero la fuente que corresponda,
 registra la transición anterior → nueva y deja Notion y GitHub enlazados mediante
