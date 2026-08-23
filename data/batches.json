@@ -4,7 +4,27 @@
     "name": "social · DTKRT · 2026-W35–W36",
     "status": "open",
     "created": 1787497953000,
-    "items": [],
+    "items": [
+      {
+        "work": "dtkrt",
+        "seed": 274128135,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Sheets",
+        "addedAt": 1787500799564
+      }
+    ],
     "editorial": {
       "family": "dtkrt",
       "period": "2026-W35–W36",
