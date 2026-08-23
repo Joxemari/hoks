@@ -80,6 +80,25 @@
         "palSel": "auto",
         "palName": "Wheel",
         "addedAt": 1787502301464
+      },
+      {
+        "work": "dtkrt",
+        "seed": 390811867,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Light",
+        "addedAt": 1787502308481
       }
     ],
     "editorial": {
