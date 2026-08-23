@@ -1,7 +1,9 @@
 TITLE: One lattice, read twice
-LEAD: Illustrated essay over an open, commented algorithm; the contact sheet reads the series as one system. Every figure is rendered from the real algo.js.
+LEAD: DTKRT begins with one lattice and asks it to carry two kinds of information: presence and belonging. Every figure below is rendered from the working algorithm; together they expose how a system becomes an image without pretending the image is the whole work.
 
-DTKRT is one lattice read twice. The same n×n grid answers two questions — *is there a circle here?* and *is this cell part of a region?* — and the second answer changes the ground under the first. The circle never changes; what changes is what it sits on. *(It is also where the practice began — the first hoks system, 2023.)*
+DTKRT is one lattice read twice. The same grid answers two questions — *is there a circle here?* and *is this cell part of a region?* — and the second answer changes the ground under the first. The circle never changes; what changes is what it sits on. The work returns to DTK, the first hoks system from 2023, and subjects its original circle grid to a second reading.
+
+That distinction is the work's central operation. DTKRT does not transform the circle; it transforms the conditions under which the circle is read. Geometry acts less as a drawing language than as an agreement shared by figure and ground. Context becomes executable.
 
 > The same circle means one thing on the field and another inside the region.
 
@@ -11,7 +13,7 @@ A single grid carries two layers. **Presence** decides which cells hold a circle
 ![presence (dots) + belonging (block), one lattice](sketches/dtkrt/makingof/anatomy.png)
 
 ## Presence — the circles
-Every cell draws a number; a circle appears if it clears the threshold (0.8 by default). The circle keeps one constant colour throughout — it must not compete with the region. Presence is a mask, and absence is the same mask read backwards.
+Every cell draws a number; a circle appears if that number falls within the threshold (0.8 by default). The circle keeps one constant colour throughout — it must not compete with the region. Presence is a mask, and absence is the same mask read backwards.
 
 ![coverage — the mask lets more or fewer circles through](sketches/dtkrt/makingof/coverage.png)
 
@@ -23,7 +25,7 @@ The region is a polyomino grown by orthogonal spread: pick a seed cell, reach to
 ![region shapes — bar, ell, field, cluster — grown, not drawn](sketches/dtkrt/makingof/regions.png)
 
 ## Three roles of colour
-The palette is sorted by luma and split into three fixed roles: **ground**, **block**, **dot**. The block is a real pigment from the palette — an intermediate tone with enough air from the other two — never a mix, because a mix reads as a dirty glaze. One in four inverts the pair: a light ground, a dark dot. If each circle took its own colour, the region layer would not read; the discipline of three roles is what lets the second reading exist.
+The palette is sorted by luma and split into three fixed roles: **ground**, **block**, **dot**. The system first looks for a real pigment with enough distance from the other two. If the palette cannot provide one — especially when it contains only two colours — it derives an intermediate tone. This exception matters: fidelity to the palette yields to the legibility of the relation. One in four compositions inverts the pair, producing a light ground and a dark dot. If every circle took its own colour, the region would cease to operate; the discipline of three roles is what allows the second reading to exist.
 
 ![three roles — dark ground vs. light ground (inverted)](sketches/dtkrt/makingof/roles.png)
 
@@ -38,12 +40,14 @@ The same seed on the three sheets is the same thought re-latticed, not one image
 ![same seed — square / vertical / horizontal](sketches/dtkrt/makingof/format.png)
 
 ## Ground and grain
-The ground is flat by design: figure and ground need a stable plane, so DTKRT drops the mesh gradient its ancestor DTK used. Film grain is baked over the whole image at the end. A gradient ground stays available as a lab option, but the default is a plane.
+The ground is flat in 70% of outputs, giving figure and ground a stable plane. In the remaining 30%, a mesh gradient introduces atmosphere. It runs from an independent random stream, so changing the ground cannot move a circle or regrow a region. Film grain is baked over the whole image at the end.
+
+This separation is conceptual as much as technical: atmosphere can alter the conditions of viewing without rewriting the geometry. The weather changes; the proposition does not.
 
 ![flat ground · film grain · gradient (lab option)](sketches/dtkrt/makingof/ground_grain.png)
 
 ## What the rule refuses
-- The block is a real pigment, not a mix — the region must read as a plane, not a glaze.
+- The block prefers a real pigment; only insufficient contrast permits a derived tone.
 - The dot never changes colour — one shape, read against two grounds.
 - No catalogue of shapes — the region is grown, never chosen from a list.
 - Figure and ground share one lattice — the block reframes, it does not decorate.
@@ -52,18 +56,20 @@ The ground is flat by design: figure and ground need a stable plane, so DTKRT dr
 Each output reports its palette, its grid, its region (shape, twin, cells), its coverage, its ground (dark or light) and its contrast. A combined score maps to a rarity from **common to legendary**. A twin region and a lone Solo region are the rare shapes; an inverted, light ground is uncommon.
 
 ## Scarcity
-Like Cherniak's *Ringers*, the odds are published, not hidden:
+The odds are published, not hidden. They describe the shape of the possibility space before selection begins:
 
 - Presence threshold — 0.8 (a circle appears in ~80% of cells).
 - Grid — n from 3 to 7.
 - Twin region — 18% · loose accent — 40%.
 - Inverted (light) ground — 25%.
 
-A twin region on an inverted ground and a rare palette is the DTKRT *Goose*: the outlier the rule can make and almost never does. How many will exist, and how they are released, is the edition decision.
+A twin region on an inverted ground and a rare palette is an outlier the rule can make and almost never does. But probability is not yet an edition. The system determines what can occur; selection determines what is carried forward.
 
-## The series
-Seen together, the seeds are the work; a single one is only where the system happened to land.
+## The passage
+Seen together, the seeds reveal the system; a single one is only where it happened to land. I generate possibilities, compare them and keep one. The rest are discarded. That decision converts abundance into commitment.
+
+The chosen lattice then moves into matter. Geometry preserves the relation between circle, cell and region; fabrication introduces scale, surface and time. The physical piece is neither a screenshot nor a neutral copy. It is the place where an exact system meets conditions it cannot fully command.
 
 ![contact sheet — fifteen seeds](sketches/dtkrt/makingof/contact.png)
 
-> The rule is the work.
+> code proposes. geometry translates. matter negotiates.
