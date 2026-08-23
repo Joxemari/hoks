@@ -100,11 +100,35 @@ Queda reservado al artista:
 
 - elegir qué output merece existir y qué se descarta;
 - ordenar los capítulos;
-- aprobar el texto;
-- publicar y realizar interacciones públicas.
+- aprobar el texto y los activos;
+- realizar interacciones públicas.
 
-**Regla:** automatizar la mecánica, no la mirada. Ningún agente publica ni habla
-en nombre de hoks sin aprobación explícita en la tarea correspondiente.
+Codex puede ejecutar la publicación en las cuentas conectadas una vez que el
+artista haya aprobado explícitamente esa unidad editorial. La aprobación debe
+identificar la pieza y el copy; el silencio nunca equivale a aprobación. Tras
+publicar, Codex registra la URL y la fecha. **Regla:** automatizar la mecánica,
+no la mirada. Ningún agente publica ni habla en nombre de hoks sin aprobación
+explícita en la tarea correspondiente.
+
+## Piloto DTKRT · semanas 35–36 de 2026
+
+El lote canónico es `social · DTKRT · 2026-W35–W36`, abierto en
+`data/batches.json`. Es el único origen de selección del piloto y contiene solo
+recetas DTKRT.
+
+- Cadencia: **2 salidas editoriales por semana**, martes y viernes.
+- Selección: **6 piezas en el lote**; 4 titulares y 2 reservas se deciden en la
+  conversación de estrategia.
+- Una salida es una unidad narrativa. Un tríptico cuenta como una salida aunque
+  genere tres posts consecutivos en el perfil.
+- Instagram recibe el activo principal. X puede recibir una derivación de la
+  misma salida, adaptada al canal; no cuenta como una tercera decisión.
+- Codex prepara activo, caption, primer comentario y orden de publicación; el
+  artista aprueba; Codex publica y registra el resultado.
+- No se publican dos trípticos en una misma semana durante el piloto.
+
+Al cerrar las dos semanas se revisan calidad, carga de aprobación y respuesta de
+cada formato antes de mantener o cambiar la cadencia.
 
 ## Validación antes de publicar
 
@@ -129,6 +153,8 @@ en nombre de hoks sin aprobación explícita en la tarea correspondiente.
 - La página madre enlaza ahora al canon y al sistema editorial vigentes.
 - Se creó el sistema editorial, el registro, sus vistas y seis registros
   iniciales.
+- Se abrió el primer lote editorial compartido para DTKRT y se delegó en Codex
+  la ejecución de publicaciones aprobadas.
 
 Para cualquier cambio futuro: actualiza primero la fuente que corresponda,
 registra la transición anterior → nueva y deja Notion y GitHub enlazados mediante
