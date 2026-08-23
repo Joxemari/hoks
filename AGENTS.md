@@ -101,15 +101,33 @@ El token de GitHub del panel vive en `localStorage` del navegador del admin.
 **Nunca escribas un token, PAT o credencial en un archivo del repo** — es un sitio
 público servido desde `main`.
 
+## Flujo de agentes, ramas y PR
+
+`main` es producción. Un agente —Claude, Codex o cualquier otro— **no trabaja
+directamente sobre `main` y no hace merge**. Cada unidad de trabajo usa su propia
+rama o *worktree*, abre una PR y deja la decisión final al propietario.
+
+- Una tarea = una rama = una PR. No reutilices la rama de otro agente.
+- Actualiza la rama desde `origin/main` antes de empezar y antes de entregar si
+  `main` cambió durante el trabajo.
+- La PR debe explicar qué cambia, qué queda atrás, cómo se verificó y si afecta a
+  web, Notion, redes o documentación derivada.
+- Si el cambio altera narrativa o contenido publicado, actualiza su fuente en el
+  repo y deja Notion alineado; nunca mantengas dos versiones canónicas.
+- No hagas push a la rama de otra tarea ni edites el *worktree* de otro agente.
+
+La arquitectura operativa completa está en
+[`docs/OPERATING_MODEL.md`](docs/OPERATING_MODEL.md).
+
 ## Commits
 
 Commits pequeños y descriptivos, en castellano, en minúscula, con el área delante:
 `lab: …`, `static: …`, `about: …`, `fix: …`. El historial es parte de la
 documentación: di *qué* cambia y, si hace falta, por qué.
 
-El flujo humano de este repo es push directo a `main`; un agente en la nube trabaja
-por rama y PR, y eso está bien. Lo que no está bien es dejar el HTML derivado
-desincronizado o abrir un PR con archivos generados a mano.
+El propietario puede conservar su flujo humano, pero cualquier agente entrega por
+rama y PR. Lo que no está bien es dejar el HTML derivado desincronizado o abrir
+una PR con archivos generados a mano.
 
 ## Tono, si escribes texto
 

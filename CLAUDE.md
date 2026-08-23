@@ -401,9 +401,14 @@ cabecera no puede ser por familia sin paso de build.
 
 ## Workflow
 
-Trabajar **directamente sobre `main`** y hacer **push directo**. Sin ramas de
-feature, sin PRs. El objetivo es iterar rápido y ver el cambio publicado al
-instante en la web. Commits pequeños y descriptivos.
+`main` es producción. Claude, Codex y cualquier otro agente trabajan siempre en
+una rama o *worktree* propios, abren una PR y **no hacen merge**. Una tarea no
+comparte rama con otra: GitHub es el punto de coordinación y el propietario
+decide qué llega a producción. Commits pequeños y descriptivos.
+
+La relación entre GitHub, Notion y los distintos agentes está documentada en
+[`docs/OPERATING_MODEL.md`](docs/OPERATING_MODEL.md). La memoria personal del
+propietario no vive en este repo público.
 
 ## Estética y tono
 
