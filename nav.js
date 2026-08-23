@@ -437,6 +437,7 @@ drawer.innerHTML = `
   <a href="palettes.html"${isPalettes?' class="active"':''} data-i18n="nav.palettes">Palettes</a>
   ${SHOW_LANG_SWITCHER ? `<div class="d-lang" id="nav-lang">
     <button type="button" data-lang="eu">EU</button>
+    <button type="button" data-lang="es">ES</button>
     <button type="button" data-lang="en">EN</button>
   </div>` : ''}`;
 document.body.appendChild(scrim);
