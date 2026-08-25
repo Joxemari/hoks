@@ -99,7 +99,7 @@ jobs:
               repo,
               issue_number,
               body: [
-                `✅ orden registrada: \`${command}\``,
+                `@${owner} ✅ orden registrada: \`${command}\``,
                 '',
                 `Estado de cola: \`${labels.ready.name}\` + \`${stage}\`.`,
                 next,

@@ -25,8 +25,9 @@ uno de estos:
 - `aprobar publicación`
 
 La Action crea las etiquetas necesarias, mueve la issue a la etapa solicitada,
-añade `agent:ready` y responde en la propia conversación. Ese comentario genera
-la notificación de GitHub sin llamar a ningún modelo.
+añade `agent:ready` y responde en la propia conversación mencionando directamente
+al propietario. La mención permite la notificación push de GitHub Mobile sin
+llamar a ningún modelo.
 
 `aprobar dirección` autoriza producir activo y copy en una rama/PR. No autoriza
 publicar. `aprobar publicación` registra una solicitud final, pero no sustituye
@@ -52,10 +53,11 @@ nuevas nazcan con pieza, pilar, formato, dirección y contrato de autorización.
 
 ## Notificaciones
 
-GitHub notifica a participantes, personas asignadas y suscriptores según sus
-preferencias. Para recibir el aviso en el móvil, la app de GitHub debe tener
-activadas las notificaciones de issues. La Action confirma cada orden con un
-comentario, por lo que el expediente y la notificación son independientes de la
+GitHub mantiene el inbox de participantes, personas asignadas y suscriptores,
+pero GitHub Mobile limita los eventos push. La Action incluye una mención directa
+al propietario porque ese evento sí admite push. En la app móvil debe estar
+activado **Direct mentions** y el sistema operativo debe permitir notificaciones
+de GitHub. El expediente y la notificación siguen siendo independientes de la
 herramienta que después ejecute el trabajo.
 
 ## Qué no hace
