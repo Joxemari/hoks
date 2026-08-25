@@ -17,8 +17,9 @@ canon publicado. Una conversación no es fuente de verdad.
 ## Órdenes del propietario
 
 `.github/workflows/editorial-queue.yml` escucha comentarios nuevos en issues. Se
-ejecuta solo si el autor es el propietario del repositorio y el comentario es
-exactamente uno de estos:
+solo procesa órdenes cuyo autor es el propietario del repositorio. Ignora
+mayúsculas, espacios exteriores y tildes, pero el contenido normalizado debe ser
+uno de estos:
 
 - `aprobar dirección`
 - `aprobar publicación`
