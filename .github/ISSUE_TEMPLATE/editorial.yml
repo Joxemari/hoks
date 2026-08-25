@@ -1,0 +1,65 @@
+name: Propuesta editorial
+description: Revisar una pieza, producir sus activos y decidir su publicación
+title: "editorial: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Esta issue es el expediente operativo compartido por Codex y Claude.
+        Crear la issue no autoriza ninguna publicación.
+  - type: input
+    id: work
+    attributes:
+      label: Pieza
+      description: Familia, seed y paleta.
+      placeholder: DTKRT · seed 390811867 · Light
+    validations:
+      required: true
+  - type: input
+    id: notion
+    attributes:
+      label: Registro de Notion
+      description: URL de la ficha editorial que conserva proceso y estado.
+      placeholder: https://notion.so/...
+  - type: dropdown
+    id: pillar
+    attributes:
+      label: Pilar
+      options:
+        - sistema
+        - materia
+        - proceso
+        - obra
+    validations:
+      required: true
+  - type: dropdown
+    id: format
+    attributes:
+      label: Formato previsto
+      options:
+        - single 4:5
+        - tríptico
+        - iterations
+        - making of
+        - por decidir
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Dirección editorial
+      description: Por qué esta pieza, qué cambia y qué deja atrás.
+    validations:
+      required: true
+  - type: textarea
+    id: copy
+    attributes:
+      label: Copy de trabajo
+      description: Borrador; no se considera aprobado al crear la issue.
+  - type: checkboxes
+    id: guardrail
+    attributes:
+      label: Contrato
+      options:
+        - label: Entiendo que solo `aprobar publicación` autoriza la fase final y que debe existir un activo verificado.
+          required: true

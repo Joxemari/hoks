@@ -158,7 +158,7 @@ ningún agente debe volcarla completa dentro de `hoks`.
 - Export/backup periódico de Notion a formatos abiertos.
 - Check de PR que detecte contenido aprobado pero desalineado.
 - Evals para skills importantes y registro de fallos corregidos.
-- Trigger editorial restringido desde GitHub Issues; contrato y activación en
+- Cola editorial gratuita y agnóstica desde GitHub Issues; contrato en
   [`EDITORIAL_AUTOMATION.md`](EDITORIAL_AUTOMATION.md).
 
 ### Fase 4 — ingestión selectiva
