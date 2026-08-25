@@ -1,0 +1,97 @@
+name: editorial queue
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: editorial-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  queue:
+    if: >-
+      github.event.issue.pull_request == null &&
+      github.event.comment.user.login == github.repository_owner &&
+      (github.event.comment.body == 'aprobar dirección' ||
+       github.event.comment.body == 'aprobar publicación')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Registrar orden en la cola
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.issue.number;
+            const command = context.payload.comment.body;
+
+            const labels = {
+              ready: {
+                name: 'agent:ready',
+                color: '000ef7',
+                description: 'Lista para que la recoja Codex, Claude u otro agente'
+              },
+              production: {
+                name: 'editorial:producción',
+                color: 'dcff32',
+                description: 'Dirección aprobada; producir activo y copy final'
+              },
+              publish: {
+                name: 'editorial:publicación-solicitada',
+                color: 'c0392b',
+                description: 'Solicitada; pendiente de verificación y agente conectado'
+              }
+            };
+
+            for (const label of Object.values(labels)) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: label.name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({ owner, repo, ...label });
+              }
+            }
+
+            const issue = await github.rest.issues.get({ owner, repo, issue_number });
+            const current = issue.data.labels.map(label =>
+              typeof label === 'string' ? label : label.name
+            );
+            const stages = [labels.production.name, labels.publish.name];
+
+            for (const name of stages) {
+              if (current.includes(name)) {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
+              }
+            }
+
+            const stage = command === 'aprobar dirección'
+              ? labels.production.name
+              : labels.publish.name;
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number,
+              labels: [labels.ready.name, stage]
+            });
+            const next = command === 'aprobar dirección'
+              ? 'El siguiente agente prepara activo y copy final en una rama/PR. No publica.'
+              : 'El siguiente agente verifica activo, copy y formato. Solo un agente conectado puede publicar y registrar las URLs.';
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: [
+                `✅ orden registrada: \`${command}\``,
+                '',
+                `Estado de cola: \`${labels.ready.name}\` + \`${stage}\`.`,
+                next,
+                '',
+                'Codex y Claude pueden recoger esta misma issue; GitHub conserva el expediente.'
+              ].join('\n')
+            });
