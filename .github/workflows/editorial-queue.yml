@@ -12,9 +12,7 @@ jobs:
   queue:
     if: >-
       github.event.issue.pull_request == null &&
-      github.event.comment.user.login == github.repository_owner &&
-      (github.event.comment.body == 'aprobar dirección' ||
-       github.event.comment.body == 'aprobar publicación')
+      github.event.comment.user.login == github.repository_owner
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -27,7 +25,21 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const issue_number = context.issue.number;
-            const command = context.payload.comment.body;
+            const normalized = context.payload.comment.body
+              .trim()
+              .toLocaleLowerCase('es-ES')
+              .normalize('NFD')
+              .replace(/\p{Diacritic}/gu, '');
+            const commands = {
+              'aprobar direccion': 'aprobar dirección',
+              'aprobar publicacion': 'aprobar publicación'
+            };
+            const command = commands[normalized];
+
+            if (!command) {
+              core.info('Comentario del propietario sin una orden editorial reconocida.');
+              return;
+            }
 
             const labels = {
               ready: {
