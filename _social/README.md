@@ -39,6 +39,23 @@ commitean** (pesan y se regeneran); son entregables para colgar, no código.
 expone `full / setup / step / resize / layout`); `make-videos.mjs` lo conduce
 con Playwright, captura los fotogramas y los codifica.
 
+## Publicar: `zernio.mjs`
+
+Sube los activos del kit a [Zernio](https://zernio.com) y deja el post de
+Instagram como **borrador** (o programado con `--at`) para aprobarlo allí.
+Nunca publica directo. El pie va sin hashtags; los hashtags de la casa van solos
+al primer comentario.
+
+```
+node _social/zernio.mjs accounts
+node _social/zernio.mjs post pieza.png --caption pie.txt
+node _social/zernio.mjs post pieza.png montaje.mp4 detalle.png --caption pie.txt --at 2026-11-10T19:00
+```
+
+Por API, Instagram acepta feed entre 4:5 y 1,91:1, así que para Zernio se
+exporta en **`feed` 4:5**, no en `row` 3:4. El margen del 11 % absorbe el recorte
+del perfil a 3:4 (unos 34 px por lado, todo papel).
+
 ## Estética
 
 Sin texto, o el mínimo: que hablen el color y la obra (registro Judd / Oteiza).

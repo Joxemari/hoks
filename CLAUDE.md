@@ -368,8 +368,9 @@ lo edita a mano.
   mirar un `<canvas>`: agente o lector de pantalla. Las de PLLS y KRRTK son la
   pieza publicada tal cual (no se re-renderiza el seed: `data/*.json` no guarda
   la paleta y la elección por peso dependía de qué paletas estaban activas ese
-  día, así que manda el píxel publicado). Las tres sin lote son un render con
-  seed fijo, **provisionales**: en cuanto haya lote se cambian por obra
+  día, así que manda el píxel publicado). DTKRT y TRZS llevan desde noviembre
+  de 2026 la primera pieza de su lote publicado. La de ECLPS sigue siendo un
+  render con seed fijo, **provisional**: en cuanto haya lote se cambia por obra
   publicada. El campo `ogImage` de `works.json` dice quién tiene la suya; sin él
   se cae a `preview.png`, que es mejor que un 404.
 - **`assets/static.css`** — el estilo de ese bloque, en archivo y no repetido en
@@ -415,9 +416,9 @@ cabecera no puede ser por familia sin paso de build.
    cabecera y su texto no pueden ser por pieza sin build. Los ensayos están en el
    sitemap y se indexarán por lo que renderice el buscador, no por lo que diga el
    documento.
-3. **Obra publicada por familia.** Cuando DTKRT, ECLPS y TRZS tengan lote, sus
-   tarjetas `og` dejan de ser un render provisional. Y una imagen por *pieza*
-   —no por familia— sigue sin existir.
+3. **Obra publicada por familia.** DTKRT y TRZS ya tienen lote (noviembre de
+   2026) y su tarjeta `og` es obra publicada; falta ECLPS. Y una imagen por
+   *pieza* —no por familia— sigue sin existir.
 
 ## Workflow
 

@@ -114,5 +114,376 @@
       "approvalRequired": true,
       "publisher": "codex"
     }
+  },
+  {
+    "id": 1793638185684,
+    "name": "lote · DTKRT · 2026-11",
+    "status": "open",
+    "created": 1793638185684,
+    "items": [
+      {
+        "work": "dtkrt",
+        "seed": 2172093574,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Escape",
+        "addedAt": 1793638158731,
+        "published": true
+      },
+      {
+        "work": "dtkrt",
+        "seed": 4003279795,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Mondrian",
+        "addedAt": 1793638158836,
+        "published": true
+      },
+      {
+        "work": "dtkrt",
+        "seed": 826826201,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Poet",
+        "addedAt": 1793638158920,
+        "published": true
+      },
+      {
+        "work": "dtkrt",
+        "seed": 512870602,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Commit",
+        "addedAt": 1793638159030,
+        "published": true
+      },
+      {
+        "work": "dtkrt",
+        "seed": 3272973475,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Mondrian",
+        "addedAt": 1793638159122,
+        "published": true
+      },
+      {
+        "work": "dtkrt",
+        "seed": 683346908,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Hoks",
+        "addedAt": 1793638159213,
+        "published": true
+      },
+      {
+        "work": "dtkrt",
+        "seed": 1249096303,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Edit",
+        "addedAt": 1793638159369,
+        "published": true
+      },
+      {
+        "work": "dtkrt",
+        "seed": 4094180414,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Podcast",
+        "addedAt": 1793638159506,
+        "published": true
+      },
+      {
+        "work": "dtkrt",
+        "seed": 364947145,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Play",
+        "addedAt": 1793638159567,
+        "published": true
+      }
+    ]
+  },
+  {
+    "id": 1793638185685,
+    "name": "lote · TRZS · 2026-11",
+    "status": "open",
+    "created": 1793638185685,
+    "items": [
+      {
+        "work": "trzs",
+        "seed": 1740577527,
+        "format": "horizontal",
+        "base": 900,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 20
+          },
+          "grainScale": 1,
+          "tipo": "auto",
+          "corner": "auto",
+          "ends": "auto",
+          "dial": "auto",
+          "fantasma": "auto",
+          "temblor": "auto",
+          "dots": "auto"
+        },
+        "palSel": "auto",
+        "palName": "Her",
+        "addedAt": 1793638162145,
+        "published": true
+      },
+      {
+        "work": "trzs",
+        "seed": 4003279795,
+        "format": "horizontal",
+        "base": 900,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 20
+          },
+          "grainScale": 1,
+          "tipo": "auto",
+          "corner": "auto",
+          "ends": "auto",
+          "dial": "auto",
+          "fantasma": "auto",
+          "temblor": "auto",
+          "dots": "auto"
+        },
+        "palSel": "auto",
+        "palName": "Mondrian",
+        "addedAt": 1793638162532,
+        "published": true
+      },
+      {
+        "work": "trzs",
+        "seed": 2859082781,
+        "format": "horizontal",
+        "base": 900,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 20
+          },
+          "grainScale": 1,
+          "tipo": "auto",
+          "corner": "auto",
+          "ends": "auto",
+          "dial": "auto",
+          "fantasma": "auto",
+          "temblor": "auto",
+          "dots": "auto"
+        },
+        "palSel": "auto",
+        "palName": "Slussen",
+        "addedAt": 1793638162676,
+        "published": true
+      },
+      {
+        "work": "trzs",
+        "seed": 683346908,
+        "format": "horizontal",
+        "base": 900,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 20
+          },
+          "grainScale": 1,
+          "tipo": "auto",
+          "corner": "auto",
+          "ends": "auto",
+          "dial": "auto",
+          "fantasma": "auto",
+          "temblor": "auto",
+          "dots": "auto"
+        },
+        "palSel": "auto",
+        "palName": "Hoks",
+        "addedAt": 1793638163773,
+        "published": true
+      },
+      {
+        "work": "trzs",
+        "seed": 4094180414,
+        "format": "horizontal",
+        "base": 900,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 20
+          },
+          "grainScale": 1,
+          "tipo": "auto",
+          "corner": "auto",
+          "ends": "auto",
+          "dial": "auto",
+          "fantasma": "auto",
+          "temblor": "auto",
+          "dots": "auto"
+        },
+        "palSel": "auto",
+        "palName": "Podcast",
+        "addedAt": 1793638164143,
+        "published": true
+      },
+      {
+        "work": "trzs",
+        "seed": 2009336932,
+        "format": "horizontal",
+        "base": 900,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 20
+          },
+          "grainScale": 1,
+          "tipo": "auto",
+          "corner": "auto",
+          "ends": "auto",
+          "dial": "auto",
+          "fantasma": "auto",
+          "temblor": "auto",
+          "dots": "auto"
+        },
+        "palSel": "auto",
+        "palName": "Ten",
+        "addedAt": 1793638164788,
+        "published": true
+      },
+      {
+        "work": "trzs",
+        "seed": 2684855195,
+        "format": "horizontal",
+        "base": 900,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 20
+          },
+          "grainScale": 1,
+          "tipo": "auto",
+          "corner": "auto",
+          "ends": "auto",
+          "dial": "auto",
+          "fantasma": "auto",
+          "temblor": "auto",
+          "dots": "auto"
+        },
+        "palSel": "auto",
+        "palName": "Play",
+        "addedAt": 1793638165133,
+        "published": true
+      }
+    ]
   }
 ]
