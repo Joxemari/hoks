@@ -101,10 +101,6 @@
       <span class="lbl">Piece</span>
       <div class="facts" id="facts"></div>
       <a class="back" id="back" href="#">← Abrir en el lab</a>
-      <!-- Las dos páginas de mirar se enlazan entre sí: el alzado y la foto son
-           el mismo objeto contado de dos maneras, y volver al lab para pasar de
-           una a la otra era el camino largo. -->
-      <a class="back" id="toObjects" href="#">◉ Ver en fotos (publicar)</a>
       <span class="hintline">abre el lab en esta seed. Los ajustes del panel
         (grid, fondo, grano…) no viajan de vuelta</span>
     </div>
@@ -186,8 +182,8 @@ const FIG_PATH =
   'L446 876L452 848L458 704L440 404C424 356 384 330 334 308C306 294 288 280 286 242Z';
 
 // ── Estado: lo que llega (fijo) y lo que se mira (mutable) ──────────────────
-// La receta la lee _lab.js: es el contrato que comparten las dos páginas de
-// mirar (muro y objetos), y tenerlo dos veces era tenerlo mal una de las dos.
+// La receta la lee _lab.js: es el mismo contrato que usan los harnesses y el
+// lote, y tenerlo dos veces sería tenerlo mal una de las dos.
 const recipe = HOKSLAB.readRecipe('dtkrt');
 const view = { sheet: 'A3', mode: 'single',
                refs: { fig: true, eye: true, rule: true } };
@@ -307,7 +303,6 @@ function drawFacts() {
   const m2 = (p.mm[0] * p.mm[1] / 1e6).toFixed(2).replace('.', ',');
   $('sheetNote').textContent = `${p.mm[0]} × ${p.mm[1]} mm · ${m2} m²`;
   $('back').href = `../${recipe.work}/?seed=${recipe.seed}`;
-  $('toObjects').href = HOKSLAB.objectsUrl(recipe);
 }
 
 function paint() {

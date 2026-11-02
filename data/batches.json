@@ -498,7 +498,7 @@
         "format": "square",
         "base": 600,
         "params": {},
-        "palSel": 0,
+        "palSel": 27,
         "palName": "Poet",
         "addedAt": 1793647542805,
         "published": true
@@ -509,7 +509,7 @@
         "format": "horizontal",
         "base": 600,
         "params": {},
-        "palSel": 0,
+        "palSel": 27,
         "palName": "Poet",
         "addedAt": 1793647545007,
         "published": true
@@ -520,7 +520,7 @@
         "format": "horizontal",
         "base": 600,
         "params": {},
-        "palSel": 0,
+        "palSel": 27,
         "palName": "Poet",
         "addedAt": 1793647545807,
         "published": true
@@ -531,7 +531,7 @@
         "format": "square",
         "base": 600,
         "params": {},
-        "palSel": 0,
+        "palSel": 27,
         "palName": "Poet",
         "addedAt": 1793647546402,
         "published": true

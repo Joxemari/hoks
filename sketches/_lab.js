@@ -180,7 +180,6 @@
     return '?r=' + encodeURIComponent(JSON.stringify(r));
   }
   function wallUrl(recipe)    { return '../_wall/' + recipeParam(recipe); }
-  function objectsUrl(recipe) { return '../_objects/' + recipeParam(recipe); }
 
   // ── La receta que LLEGA por URL ────────────────────────────────────────────
   // La otra mitad del mismo contrato, y vive aquí por el mismo motivo: la leen
@@ -248,7 +247,6 @@
 
     const syncs = [
       ['▤ Ver en el muro ↗',  'La pieza a escala sobre una pared: pliego, figura y regla', wallUrl],
-      ['◉ Ver en fotos ↗',    'La pieza fotografiada sobre la cosa —pared, camiseta, vinilo, reloj— para publicar', objectsUrl],
     ].map(([text, title, url]) => {
       const a = document.createElement('a');
       a.className = 'view-link';
@@ -425,6 +423,6 @@
   }
 
   global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, mountFormatSelect, loadWorks,
-                     initialSeed, loadAlgos, wallUrl, objectsUrl, readRecipe, mountViewLinks,
+                     initialSeed, loadAlgos, wallUrl, readRecipe, mountViewLinks,
                      formatControls, launch, injectBack, injectCopy };
 })(typeof window !== 'undefined' ? window : globalThis);

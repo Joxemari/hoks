@@ -62,6 +62,14 @@
     }
     return [k00, k10, k01, k11];
   }
+  // El color del mesh en un punto (tx, ty ∈ [0,1]): la misma interpolación de
+  // arriba, para saber qué suelo tiene debajo una forma cuando el suelo no es
+  // un color sino un degradado. Sin esto, `pickInk` no tiene contra qué medir.
+  function meshAt(corners, tx, ty) {
+    const [a, b, c, d] = corners.map(hexToRgb);
+    const ch = k => Math.round((1 - tx) * (1 - ty) * a[k] + tx * (1 - ty) * b[k] + (1 - tx) * ty * c[k] + tx * ty * d[k]);
+    return '#' + [0, 1, 2].map(k => ch(k).toString(16).padStart(2, '0')).join('');
+  }
 
   // ── Grano de film (soft-light, teñido hacia la media de la paleta) ──────────
   const GRAIN_SAMPLES = 3, GRAIN_MAG = 1.0, GRAIN_AMIN = 0.4, GRAIN_AMAX = 0.8;
@@ -376,6 +384,13 @@
     x = Math.imul(x ^ (x >>> 13), 0xC2B2AE35) >>> 0;
     return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
   }
+  // La seed, revuelta. El LCG de Rng tiene un defecto de arranque: para seeds
+  // SEGUIDAS la primera tirada casi no cambia (1000…1009 dan 0,6236…0,6271), y la
+  // segunda avanza a pasos regulares. Una familia cuya primera decisión sea un
+  // bool sale igual en todas las vecinas — en PTZD, el papel. Pasar la seed por
+  // aquí antes de `new Rng` lo arregla sin tocar el motor de las demás, cuyas
+  // obras publicadas dependen del stream tal como está.
+  function seedMix(x) { return Math.floor(hash01(x >>> 0) * 4294967296) >>> 0; }
   function pickBg(seed, params, dfltGradientPct) {
     const v = params && params.bg;
     if (v === 'solid' || v === 'gradient') return v;
@@ -660,7 +675,7 @@
 
   global.HOKS = {
     Rng, hexToRgb, luma, lerpColor, softLight,
-    drawMeshGradient, meshGround, bakeGrain, applyGrain, grain, bgMode, pickBg, hash01, fieldMode, fieldGrid, FIELD_MARGIN,
+    drawMeshGradient, meshAt, meshGround, seedMix, bakeGrain, applyGrain, grain, bgMode, pickBg, hash01, fieldMode, fieldGrid, FIELD_MARGIN,
     dcolor, inkDice, inkRoles, inkOn, pickInk, blendMark, blendFor, INK_MIN,
     ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
     FORMATS, ALL_FORMATS, formatsFor, SHEETS, SHEET_IDS, sheetIdsFor, WALL_SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,

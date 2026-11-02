@@ -149,36 +149,14 @@ que mueve la imagen llega por URL y es de solo lectura: si hay que cambiar la
 obra, se vuelve al lab. Lo que viaja es la **receta**, la
 misma de los harnesses y `_batch.js`, serializada entera, así que un parámetro
 nuevo llega al muro sin tocar nada. El enlace lo pone
-`HOKSLAB.mountViewLinks()`, una línea por harness (que monta los dos: muro y
-objetos). No metas mandos de mirar en el panel de generar: esa separación es el
+`HOKSLAB.mountViewLinks()`, una línea por harness. No metas mandos de mirar en el panel de generar: esa separación es el
 motivo de que existan estas páginas.
 
-**`_objects/` + `_mockup.js` — las fotos.** El muro es un **alzado**: mide, para
-decidir el pliego. Esto es una **foto**: la obra sobre la cosa —pared, camiseta,
-vinilo, reloj—, para **publicar**. Dos oficios distintos, dos páginas: un alzado
-con cotas no se puede poner en Instagram. Sale a 1080 px con 4:5 por defecto
-(BRAND.md § 8) y guardar vuelve a renderizar a tamaño de publicación. La **toma**
-es un azar aparte del de la obra: los pliegues, las hojas y el grano cambian con
-`Espacio`; la pieza, no. Lo que hace que parezca una foto vive en `_mockup.js` y
-son tres cosas: `warp` (perspectiva **proyectiva** —interpolar la textura en 1/z—
-recortada al quad), `displace` (la impresión se **dobla** con los pliegues que le
-tocan; sin esto es una pegatina, siempre) y `grade` (luz, temperatura y grano al
-final y sobre todo el cuadro, que es el defecto compartido que dice que hay una
-sola foto). Una sola luz para todas las escenas, el objeto en su propio lienzo
-para que la sombra sea de la silueta, y nada paralelo al canto.
-
-Pero esas cuatro son **renders**, y se nota. Lo que da fotorrealismo es la escena
-**`foto`**, que es la que se usa para publicar: sueltas una imagen (móvil,
-plantilla comprada), arrastras las **cuatro esquinas** hasta el plano —pared,
-pecho, funda— y la obra se proyecta ahí por **homografía** tomando prestada la
-luz de la propia fotografía: su sombra multiplica y su brillo va en screen (con
-la referencia medida **dentro del plano**, no en el cuadro entero), el gradiente
-de luminancia la **dobla**, la foto en gris y en overlay le mete la trama a
-resolución completa, y un grano igualado tapa la diferencia entre una obra
-perfectamente limpia y una foto que no lo es. **La foto no sale del navegador**:
-no se sube ni se commitea —el repo es público—, solo se recuerdan las cuatro
-esquinas por archivo. Lo que no llega: un plano curvo (una taza es un cilindro,
-no un quad) y la máscara para lo que pase por delante.
+**Las fotos de la obra son fotos de verdad.** Hubo una página de maquetas
+(`_objects/` + `_mockup.js`: la obra proyectada sobre paredes, camisetas o una foto
+propia) y se retiró en noviembre de 2026: por buena que fuera la técnica, una
+maqueta se lee como maqueta. La obra *in situ* sale de fotografiar la impresión
+colgada.
 
 El circuito completo: **lab → lote → publicar → galería**. Se mira la hoja de
 contactos, se aparta con `+` o `a`, y el lote —una lista de *recetas*, no de
@@ -205,7 +183,7 @@ redeploy de Pages.
   la mesa de trabajo, y esconder lo inactivo escondía justo el trabajo en curso.
   Activar una familia es, por tanto, un clic en el panel y nada más: ni tocar
   `nav.js`, ni la landing, ni escribir un `<slug>.html`. Hoy activas: **plls,
-  krrtk, dtkrt, eclps y trzs**. Lo que sí hace falta antes es que la obra esté en
+  krrtk, dtkrt y trzs** (ECLPS está graduada pero apagada, sin lote). Lo que sí hace falta antes es que la obra esté en
   el registro (**+ Add Family**) y graduada, o saldrá sin celdas demo.
 - **`palettes.json`** — Paletas con `colors`, `active`, `tags`, `notes`. Mezcla
   sets de Roni Kaufman (color_pals) y series Itten (contraste complementario).
@@ -221,13 +199,17 @@ redeploy de Pages.
   fijada (`'locked'`, ninguna)— y el hash git del `algo.js` y del `_engine.js`
   que la pintaron. Con eso, **`node tools/rerender.mjs <obra> <seed> [A2]`** saca
   de git el código exacto y reimprime la pieza aunque el algoritmo haya cambiado;
-  `--check` comprueba que la composición coincide con lo publicado. El modo de
+  `--check` comprueba que la composición coincide con lo publicado. **Desde
+  noviembre de 2026 PLLS y KRRTK solo guardan obra con receta**: las anteriores
+  existían como PNG de 760 px y no se podían imprimir, así que se retiraron (siguen
+  en el historial de git). El modo de
   la paleta no es un detalle: con la misma paleta y la misma seed, `auto` y
   `locked` dan obras distintas, porque una tirada de menos corre todo el azar.
 - **`palette-usage.json`** — Índice de uso: una fila por obra guardada con
   `{family, seed, savedAt, paletteId, paletteName, source}`. Lo escribe la página
-  de obra al Guardar (`source:"save"`). Las filas `source:"backfill"` son las 26
-  obras que ya existían: se reconstruyeron re-renderizando cada seed con el
+  de obra al Guardar (`source:"save"`). Las filas `source:"backfill"` son las
+  obras que ya existían (eran 26; quedan 10, de DTK, PILLS y BZRS, tras retirar las
+  de PLLS y KRRTK sin receta): se reconstruyeron re-renderizando cada seed con el
   algoritmo de su época (rescatado de git) y comparando píxel a píxel contra el
   PNG guardado — no por parecido de color, que en las familias con grano y mesh
   gradient se equivoca. Es un índice **derivado**: si se borran obras de una
@@ -365,11 +347,9 @@ lo edita a mano.
   nadie lo ve dos veces.
 - **`assets/og/<slug>.jpg`** — una tarjeta 1200×630 por familia activa, la obra
   centrada sobre papel. Es lo que hace que la obra **exista** para quien no puede
-  mirar un `<canvas>`: agente o lector de pantalla. Las de PLLS y KRRTK son la
-  pieza publicada tal cual (no se re-renderiza el seed: `data/*.json` no guarda
-  la paleta y la elección por peso dependía de qué paletas estaban activas ese
-  día, así que manda el píxel publicado). DTKRT y TRZS llevan desde noviembre
-  de 2026 la primera pieza de su lote publicado. La de ECLPS sigue siendo un
+  mirar un `<canvas>`: agente o lector de pantalla. Todas las
+  de las familias activas son la primera pieza publicada, tal cual: DTKRT y TRZS
+  la de su lote de noviembre de 2026, PLLS y KRRTK la del capítulo 01 (Poet). La de ECLPS sigue siendo un
   render con seed fijo, **provisional**: en cuanto haya lote se cambia por obra
   publicada. El campo `ogImage` de `works.json` dice quién tiene la suya; sin él
   se cae a `preview.png`, que es mejor que un 404.
