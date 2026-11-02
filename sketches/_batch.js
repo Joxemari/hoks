@@ -126,6 +126,29 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
   // marca la deriva en vez de fingir que la receta sigue valiendo.
   // La proporción es parte de la receta: la misma seed en vertical no es un
   // recorte de la cuadrada, es otra composición. Todo render parte de aquí.
+  // Un lote puede mezclar familias —un capítulo de Instagram es eso: una pieza de
+  // cada una— y cada laboratorio carga SOLO su algo.js. Sin esto, las piezas de
+  // las otras familias salían en blanco en la tira y, peor, en blanco al pliego.
+  // El algoritmo que falte se pide a su carpeta, una vez, como hace la landing.
+  const algoLoads = {};   // work → Promise<bool>
+  const hasAlgo = w => !!(global.HOKS && global.HOKS[String(w || '').toUpperCase()]);
+  function ensureWork(work) {
+    if (hasAlgo(work)) return Promise.resolve(true);
+    if (!algoLoads[work]) algoLoads[work] = new Promise(res => {
+      const s = document.createElement('script');
+      s.src = '../' + work + '/algo.js';
+      s.onload = () => res(hasAlgo(work)); s.onerror = () => res(false);
+      document.head.appendChild(s);
+    });
+    return algoLoads[work];
+  }
+  function ensureWorks(items) {
+    return Promise.all([...new Set(items.map(it => it.work))].map(ensureWork)).then(() => items.filter(it => !hasAlgo(it.work)));
+  }
+  // ¿Hay piezas cuyo algoritmo aún no se ha pedido? (Las que ya fallaron no
+  // cuentan: si no, la tira se repintaría sin fin esperando lo que no llega.)
+  const pendingAlgo = items => items.some(it => !hasAlgo(it.work) && !algoLoads[it.work]);
+
   function dimsFor(r, shortSide) {
     return global.HOKS.fmtDims(r.format || 'square', shortSide);
   }
@@ -242,6 +265,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       $('hb-dl').disabled = $('hb-cart').disabled = $('hb-pub').disabled = !b.items.length;
       if (!b.items.length) { strip.innerHTML = '<span class="hb-empty">vacío · pulsa <b>a</b> o el + de la hoja de contactos</span>'; return; }
       strip.innerHTML = '';
+      if (pendingAlgo(b.items)) ensureWorks(b.items).then(() => renderStrip());
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
       b.items.forEach((it, i) => {
         const wrap = document.createElement('div'); wrap.className = 'hb-item';
@@ -347,10 +371,13 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     }
     // Exportar: se regenera desde la receta, así que la resolución la eliges ahora
     // y no cuando guardaste. Es la ventaja de haber guardado reglas y no píxeles.
-    function download() {
+    async function download() {
       const b = openBatch(); if (!b || !b.items.length) return;
       const sheet = $('hb-res').value;
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
+      // Nunca un pliego en blanco: si el algoritmo de una pieza no carga, se dice.
+      const sin = await ensureWorks(b.items);
+      if (sin.length) { note('⚠ no carga el algoritmo de ' + [...new Set(sin.map(it => it.work))].join(', ') + ': no se exporta nada'); return; }
       note(`generando ${b.items.length} PNG a ${sheet} · 300 dpi…`);
       // exportPrint re-renderiza a tamaño de papel (no reescala) y avisa si el
       // navegador no puede con ese lienzo.
@@ -375,6 +402,8 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       const b = openBatch(); if (!b || !b.items.length) return;
       const sheet = $('hb-res').value;
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
+      const sin = await ensureWorks(b.items);
+      if (sin.length) { note('⚠ no carga el algoritmo de ' + [...new Set(sin.map(it => it.work))].join(', ')); return; }
       note(`generando ${b.items.length} cartela(s) A5…`);
       for (let i = 0; i < b.items.length; i++) {
         const it = b.items[i];
@@ -405,6 +434,8 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       if (!pending.length) { toast('Todo el lote ya está publicado'); return; }
       if (!confirm(`¿Publicar ${pending.length} pieza(s) a la galería?`)) return;
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
+      const sin = await ensureWorks(pending);
+      if (sin.length) { note('⚠ no carga el algoritmo de ' + [...new Set(sin.map(it => it.work))].join(', ') + ': no se publica nada'); return; }
       const byWork = {};
       pending.forEach(it => { (byWork[it.work] = byWork[it.work] || []).push(it); });
       for (const work of Object.keys(byWork)) {
@@ -445,6 +476,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       host.innerHTML = '';
       if (!b) { host.innerHTML = '<span class="hb-empty">sin lote abierto</span>'; return 'sin lote'; }
       if (!b.items.length) { host.innerHTML = '<span class="hb-empty">lote vacío</span>'; return b.name + ' · vacío'; }
+      if (pendingAlgo(b.items)) ensureWorks(b.items).then(() => { if (host.isConnected) renderFull(host); });
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
       b.items.forEach((it, i) => {
         const fig = document.createElement('figure');
