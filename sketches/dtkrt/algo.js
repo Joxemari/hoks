@@ -97,14 +97,28 @@
   }
   // ⟨/gramatika⟩
 
-  // Celdas pintadas con bordes redondeados al mismo entero: las contiguas
-  // comparten arista exacta y la región se lee como una sola masa, sin costuras.
-  function paintCells(ctx, cells, pitch) {
+  // El bloque ocupa lo mismo que ocuparía su círculo: la celda menos el aire del
+  // GUTTER. Entre dos celdas de la región ese aire se rellena —puente—, así que
+  // la masa sigue siendo una, pero su contorno cae siempre a `air` de la arista
+  // de la celda, igual que el del punto. Si el bloque llenara la celda entera, su
+  // filo interior quedaría pegado a la retícula y el exterior recortado: el
+  // bloque saldría partido de forma distinta por cada lado.
+  // Cada rectángulo redondea sus dos aristas al entero, y las contiguas
+  // comparten arista exacta: sin costuras.
+  function paintCells(ctx, cells, pitch, air) {
+    const has = (i, j) => cells.has(i + ',' + j);
+    const R = (x0, y0, x1, y1) => {
+      const a = Math.round(x0), b = Math.round(y0);
+      ctx.fillRect(a, b, Math.round(x1) - a, Math.round(y1) - b);
+    };
     for (const key of cells) {
       const [i, j] = key.split(',').map(Number);
-      const x0 = Math.round(i * pitch), x1 = Math.round((i + 1) * pitch);
-      const y0 = Math.round(j * pitch), y1 = Math.round((j + 1) * pitch);
-      ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      const x0 = i * pitch, y0 = j * pitch, x1 = x0 + pitch, y1 = y0 + pitch;
+      R(x0 + air, y0 + air, x1 - air, y1 - air);                              // la celda
+      if (has(i + 1, j)) R(x1 - air, y0 + air, x1 + air, y1 - air);           // puente →
+      if (has(i, j + 1)) R(x0 + air, y1 - air, x1 - air, y1 + air);           // puente ↓
+      if (has(i + 1, j) && has(i, j + 1) && has(i + 1, j + 1))
+        R(x1 - air, y1 - air, x1 + air, y1 + air);                            // cruce
     }
   }
 
@@ -168,21 +182,13 @@
     ctx.save();
     ctx.translate(offX, offY);
     ctx.fillStyle = R.block;
-    // El bloque llena su celda —así dos contiguas comparten arista y la región
-    // se lee como una masa— pero el círculo deja dentro de la suya el aire del
-    // GUTTER. Sin más, una región que toca el borde encoge el margen aparente
-    // justo ese aire, y el margen deja de leerse igual en los cuatro lados. Se
-    // recorta SOLO el contorno exterior del campo: dentro nada cambia, y la
-    // tinta —bloque o punto— arranca a la misma distancia del papel.
+    // El bloque se retira de la arista de la celda el mismo aire que el
+    // círculo (paintCells): la tinta —bloque o punto— arranca a la misma
+    // distancia del papel y de la retícula por los cuatro lados.
     const air = (pitch - size) / 2;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(air, air, cols * pitch - air * 2, rows * pitch - air * 2);
-    ctx.clip();
-    paintCells(ctx, region, pitch);
-    paintCells(ctx, twin, pitch);
-    paintCells(ctx, accent, pitch);
-    ctx.restore();
+    paintCells(ctx, region, pitch, air);
+    paintCells(ctx, twin, pitch, air);
+    paintCells(ctx, accent, pitch, air);
 
     // 5. Círculos — color constante: el punto no compite con la región.
     ctx.fillStyle = R.dot;
