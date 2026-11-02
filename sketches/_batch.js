@@ -138,6 +138,50 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     catch (e) { return null; }
   }
 
+  // ── Lo que se publica tiene que poder reimprimirse ─────────────────────────
+  // Una pieza publicada guarda su receta COMPLETA y con qué código se pintó.
+  // Antes solo quedaban seed y PNG: la paleta 'auto' depende de qué paletas
+  // había ese día y el algo.js cambia, así que una pieza vieja ya no salía igual
+  // y no se podía llevar a A2. Ahora:
+  //   recipe — formato, params, la paleta con sus colores y si salió sola
+  //            ('auto': consumió una tirada) o fijada ('locked': ninguna).
+  //   code   — el hash git (blob SHA-1) del algo.js y del _engine.js que
+  //            corrían: `git cat-file -p <hash>` devuelve el archivo exacto
+  //            aunque después cambie. tools/rerender.mjs lo usa para reimprimir.
+  function recipeOf(it, pal) {
+    return {
+      work: it.work, seed: it.seed >>> 0, format: it.format || 'square', base: it.base,
+      params: it.params || {},
+      pal: (it.palSel === 'auto' || it.palSel == null) ? 'auto' : 'locked',
+      palette: pal ? { id: pal.id, name: pal.name, colors: pal.colors } : null,
+    };
+  }
+  async function gitBlob(url) {
+    // force-cache: el archivo que ya cargó la página, no uno desplegado después.
+    const bytes = new Uint8Array(await (await fetch(url, { cache: 'force-cache' })).arrayBuffer());
+    const head = new TextEncoder().encode('blob ' + bytes.length + '\0');
+    const all = new Uint8Array(head.length + bytes.length); all.set(head); all.set(bytes, head.length);
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-1', all));
+    return Array.from(h, b => b.toString(16).padStart(2, '0')).join('');
+  }
+  async function codeOf(work) {
+    const code = {};
+    const find = re => { const s = [...document.scripts].find(s => re.test(s.src.split('?')[0])); return s && s.src; };
+    const src = { algo: find(new RegExp('/' + work + '/algo\\.js$')), engine: find(/\/_engine\.js$/) };
+    for (const k in src) if (src[k]) { try { code[k] = await gitBlob(src[k]); } catch (e) {} }
+    return code;
+  }
+  // La entrada de galería de una receta: el PNG a la resolución del sitio, su
+  // receta y su código. Es lo que hace publicar, pieza a pieza.
+  function entryFor(it, palettes, code) {
+    const c = document.createElement('canvas');
+    const d = dimsFor(it, global.HOKS.PREVIEW_SHORT); c.width = d.W; c.height = d.H;
+    const res = renderRecipe(c.getContext('2d'), d.W, d.H, it, palettes);
+    if (!res) return null;
+    return { res, entry: { seed: it.seed, dataUrl: c.toDataURL('image/png'), savedAt: Date.now(),
+                           recipe: recipeOf(it, res.pal), code: code || {} } };
+  }
+
   function mount(host, opts) {
     injectCss();
     const toast = opts.toast || (m => console.log(m));
@@ -367,13 +411,12 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
         note('publicando ' + work.toUpperCase() + '…');
         const gallery = await pullJson(work + '.json');
         const usage = [];
+        const code = await codeOf(work);
         for (const it of byWork[work]) {
-          const c = document.createElement('canvas');
-          const d = dimsFor(it, global.HOKS.PREVIEW_SHORT); c.width = d.W; c.height = d.H;
-          const res = renderRecipe(c.getContext('2d'), d.W, d.H, it, palettes);
-          if (!res) continue;
-          const savedAt = Date.now();
-          gallery.unshift({ seed: it.seed, dataUrl: c.toDataURL('image/png'), savedAt });
+          const made = entryFor(it, palettes, code);
+          if (!made) continue;
+          const { res, entry } = made, savedAt = entry.savedAt;
+          gallery.unshift(entry);
           // La paleta que va al índice es la que ha salido en ESTE render, no la
           // que tuviera la receta: si hubo deriva, manda el píxel publicado.
           if (res.pal) usage.push({ family: work, seed: it.seed >>> 0, savedAt,
@@ -462,5 +505,5 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
              get open() { return openBatch(); } };
   }
 
-  global.HOKSBATCH = { mount, renderRecipe };
+  global.HOKSBATCH = { mount, renderRecipe, entryFor, codeOf };
 })(typeof window !== 'undefined' ? window : globalThis);

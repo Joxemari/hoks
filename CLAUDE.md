@@ -213,9 +213,17 @@ redeploy de Pages.
 - **`plls.json`, `krrtk.json`, `dtk.json`, `plls.json`, `dtkrt.json`,
   `gallery*.json`** —
   Obras guardadas como `{seed, dataUrl(base64), savedAt}`. Pueden pesar MB.
-  Ojo: **no guardan la paleta**, y no se puede re-derivar del seed (la elección
-  por peso depende de qué paletas estaban activas ese día). De ahí el índice
-  aparte.
+  Ojo: las anteriores a noviembre de 2026 **no guardan la paleta**, y no se puede
+  re-derivar del seed (la elección por peso depende de qué paletas estaban
+  activas ese día). De ahí el índice aparte. **Desde entonces, publicar un lote
+  guarda además `recipe` y `code`**: la receta completa —formato, params, la
+  paleta con sus colores y si salió sola (`pal:'auto'`, consumió una tirada) o
+  fijada (`'locked'`, ninguna)— y el hash git del `algo.js` y del `_engine.js`
+  que la pintaron. Con eso, **`node tools/rerender.mjs <obra> <seed> [A2]`** saca
+  de git el código exacto y reimprime la pieza aunque el algoritmo haya cambiado;
+  `--check` comprueba que la composición coincide con lo publicado. El modo de
+  la paleta no es un detalle: con la misma paleta y la misma seed, `auto` y
+  `locked` dan obras distintas, porque una tirada de menos corre todo el azar.
 - **`palette-usage.json`** — Índice de uso: una fila por obra guardada con
   `{family, seed, savedAt, paletteId, paletteName, source}`. Lo escribe la página
   de obra al Guardar (`source:"save"`). Las filas `source:"backfill"` son las 26
@@ -293,7 +301,10 @@ redeploy de Pages.
 - **Impresión**: "Download PNG" **vuelve a renderizar** fuera de pantalla al
   tamaño del pliego (A4 / **A3** / A2 / A1, 300 dpi); el lienzo de la página es
   solo vista previa (lado corto 760 px). Mismo seed + mismo formato = la misma
-  imagen a cualquier tamaño, así que lo que se ve es lo que se imprime.
+  **composición** a cualquier tamaño, así que lo que se ve es lo que se imprime.
+  El **grano no**: `_engine.js` lo saca de `Math.random()`, así que cambia en cada
+  render, también en el laboratorio — estadísticamente igual, nunca idéntico al
+  píxel. Si algún día tiene que serlo, el grano necesita su propio `Rng` sembrado.
   **A0 está en `SHEETS` pero no en `SHEET_IDS`**: solo lo enseña el muro
   (`WALL_SHEET_IDS`), porque a 300 dpi son 139,5 Mpx y 532 MB de lienzo —
   exportarlo pide antes decidir su dpi (a 150 son 34,9 Mpx y a ese tamaño no se
