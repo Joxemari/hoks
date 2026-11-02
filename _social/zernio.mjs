@@ -16,6 +16,12 @@
  * la portada del Reel; sin ella, el primer fotograma. --story lo manda a
  * Stories, que no llevan pie ni primer comentario.
  *
+ *   ZERNIO_TT_USERNAME=… node _social/zernio.mjs post reel.mp4 --to tiktok --caption pie.txt --cover p.jpg --at …
+ *
+ * A TikTok solo van vídeos, y como BORRADOR a la bandeja de la app: TikTok pide
+ * que quien publica vea la pieza y dé su consentimiento, así que el último paso
+ * es siempre del autor. Sin primer comentario: los hashtags van en el pie.
+ *
  * --caption acepta un archivo o el texto mismo. --comment es el primer
  * comentario; si no se da, van los hashtags de la casa (HOKSPOST.TAGS).
  *
@@ -52,14 +58,18 @@ async function api(method, p, body, extra) {
 // La cuenta se elige por NOMBRE, nunca por ser "la que hay": la primera vez se
 // conectó por error la personal del autor, y con "la única conectada" los
 // borradores habrían ido allí.
-const HANDLE = (process.env.ZERNIO_IG_USERNAME || 'hoks.art').replace(/^@/, '');
-async function instagram() {
+const HANDLES = {
+  instagram: (process.env.ZERNIO_IG_USERNAME || 'hoks.art').replace(/^@/, ''),
+  tiktok:    (process.env.ZERNIO_TT_USERNAME || 'hoks.art').replace(/^@/, ''),
+};
+async function account(platform) {
+  const HANDLE = HANDLES[platform];
   const { accounts = [] } = await api('GET', '/accounts');
-  const ig = accounts.filter(a => a.platform === 'instagram');
+  const ig = accounts.filter(a => a.platform === platform);
   const it = ig.find(a => a.username === HANDLE);
-  if (!it) throw new Error(`@${HANDLE} no está conectada en Zernio` +
+  if (!it) throw new Error(`@${HANDLE} no está conectada en Zernio (${platform})` +
     (ig.length ? ` (hay: ${ig.map(a => '@' + a.username).join(', ')}).` : '.') +
-    '\nConéctala (Business o Creator) y vuelve a probar.');
+    '\nConéctala y vuelve a probar.');
   return it;
 }
 
@@ -85,6 +95,7 @@ function args(argv) {
     else if (a === '--tz') o.tz = argv[++i];
     else if (a === '--cover') o.cover = argv[++i];
     else if (a === '--story') o.story = true;
+    else if (a === '--to') o.to = argv[++i];
     else if (a.startsWith('--')) throw new Error('opción desconocida: ' + a);
     else o.files.push(a);
   }
@@ -106,28 +117,44 @@ try {
     if (!o.caption && !o.story) throw new Error('falta --caption (archivo o texto)');
     const content = !o.caption ? '' : fs.existsSync(o.caption) ? fs.readFileSync(o.caption, 'utf8').trim() : o.caption;
     if (/#\w/.test(content)) console.warn('⚠ el pie lleva hashtags: en la casa van en el primer comentario (BRAND.md §6).');
-    const ig = await instagram();
+    const to = o.to || 'instagram';
+    if (!HANDLES[to]) throw new Error('--to admite instagram o tiktok');
+    if (to === 'tiktok' && (o.story || o.files.length !== 1 || !/\.(mp4|mov)$/i.test(o.files[0])))
+      throw new Error('a TikTok solo va un vídeo suelto');
+    const ig = await account(to);
     const mediaItems = [];
     for (const f of o.files) { mediaItems.push(await upload(f)); console.log('subido', f); }
-    const psd = o.story ? { contentType: 'story' } : { firstComment: o.comment || TAGS };
-    if (o.cover) { psd.instagramThumbnail = (await upload(o.cover)).url; console.log('portada', o.cover); }
+    let psd, text = content;
+    if (to === 'tiktok') {
+      // TikTok no tiene primer comentario: los hashtags van al final del pie.
+      // Y no se publica directo: va a la bandeja de TikTok como BORRADOR
+      // (draft:true → Creator Inbox) y el autor lo termina desde la app. Esa
+      // es su revisión y su consentimiento, que es lo que TikTok exige.
+      text = content + '\n\n' + (o.comment || TAGS);
+      psd = { draft: true, allowComment: true, allowDuet: false, allowStitch: false,
+              contentPreviewConfirmed: true, expressConsentGiven: true };
+      if (o.cover) { psd.videoCoverImageUrl = (await upload(o.cover)).url; console.log('portada', o.cover); }
+    } else {
+      psd = o.story ? { contentType: 'story' } : { firstComment: o.comment || TAGS };
+      if (o.cover) { psd.instagramThumbnail = (await upload(o.cover)).url; console.log('portada', o.cover); }
+    }
     const body = {
-      content, mediaItems,
-      platforms: [{ platform: 'instagram', accountId: ig._id, platformSpecificData: psd }],
+      content: text, mediaItems,
+      platforms: [{ platform: to, accountId: ig._id, platformSpecificData: psd }],
     };
     // Sin --at es un borrador. Con --at se programa; nunca publishNow.
     if (o.at) { body.scheduledFor = o.at; body.timezone = o.tz || 'Europe/Madrid'; }
     else body.isDraft = true;
     // Mismos archivos + mismo pie = misma clave: un reintento no duplica el post.
-    const h = crypto.createHash('sha256').update(content + o.files.map(f => fs.readFileSync(f).length + f).join('|') + (o.at || '') + (o.story ? 'story' : '') + (o.cover || '')).digest('hex');
+    const h = crypto.createHash('sha256').update(to + text + o.files.map(f => fs.readFileSync(f).length + f).join('|') + (o.at || '') + (o.story ? 'story' : '') + (o.cover || '')).digest('hex');
     const key = [h.slice(0, 8), h.slice(8, 12), h.slice(12, 16), h.slice(16, 20), h.slice(20, 32)].join('-');
     const res = await api('POST', '/posts', body, { 'Idempotency-Key': key });
     const post = res.post || res;
-    const kind = o.story ? 'story' : o.files.length > 1 ? `carrusel de ${o.files.length}` : mediaItems[0].type === 'video' ? 'reel' : 'post';
+    const kind = to === 'tiktok' ? 'tiktok (a la bandeja)' : o.story ? 'story' : o.files.length > 1 ? `carrusel de ${o.files.length}` : mediaItems[0].type === 'video' ? 'reel' : 'post';
     console.log(`${kind} · ${o.at ? 'programado para ' + o.at + ' (' + body.timezone + ')' : 'borrador'} en @${ig.username} · ${post._id || ''}`);
     console.log('Revísalo y apruébalo en zernio.com.');
   } else {
-    console.log('uso: node _social/zernio.mjs accounts | post <archivos…> --caption <archivo|texto> [--comment …] [--cover img] [--story] [--at ISO] [--tz IANA]');
+    console.log('uso: node _social/zernio.mjs accounts | post <archivos…> --caption <archivo|texto> [--comment …] [--cover img] [--story] [--to instagram|tiktok] [--at ISO] [--tz IANA]');
     process.exit(cmd ? 2 : 0);
   }
 } catch (e) { console.error(e.message); process.exit(1); }

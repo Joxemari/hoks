@@ -54,6 +54,11 @@ node _social/zernio.mjs post montaje-9x16.mp4 --caption pie.txt --cover portada.
 node _social/zernio.mjs post pieza-9x16.png --story                                     # Story
 ```
 
+A **TikTok** van los mismos Reels con `--to tiktok` (y `ZERNIO_TT_USERNAME` si la
+cuenta aún no se llama hoks.art). Llegan como **borrador a la bandeja de la app**:
+TikTok exige que quien publica vea la pieza y dé su consentimiento, así que el
+último paso es tuyo. Sin primer comentario: los hashtags van al final del pie.
+
 Qué sale lo decide el material, como en Instagram: una imagen es un post,
 varias un carrusel, un vídeo solo un Reel (`--cover`, la portada). Las Stories
 van sin pie ni primer comentario.
