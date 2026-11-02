@@ -302,9 +302,11 @@ redeploy de Pages.
   tamaño del pliego (A4 / **A3** / A2 / A1, 300 dpi); el lienzo de la página es
   solo vista previa (lado corto 760 px). Mismo seed + mismo formato = la misma
   **composición** a cualquier tamaño, así que lo que se ve es lo que se imprime.
-  El **grano no**: `_engine.js` lo saca de `Math.random()`, así que cambia en cada
-  render, también en el laboratorio — estadísticamente igual, nunca idéntico al
-  píxel. Si algún día tiene que serlo, el grano necesita su propio `Rng` sembrado.
+  **El grano es parte de la obra** (desde noviembre de 2026): `E.grain(…, seed)`
+  lo saca de su propio `Rng` sembrado con la seed, aparte del azar de la
+  composición, así que misma seed + mismo tamaño = mismo píxel, grano incluido.
+  Antes salía de `Math.random()` y cambiaba en cada render; sin seed lo sigue
+  haciendo, por eso toda llamada a `E.grain` en un `algo.js` pasa la suya.
   **A0 está en `SHEETS` pero no en `SHEET_IDS`**: solo lo enseña el muro
   (`WALL_SHEET_IDS`), porque a 300 dpi son 139,5 Mpx y 532 MB de lienzo —
   exportarlo pide antes decidir su dpi (a 150 son 34,9 Mpx y a ese tamaño no se

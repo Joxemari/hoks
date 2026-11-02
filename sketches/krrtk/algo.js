@@ -144,7 +144,7 @@
 
     // 4. Grano (los defaults del engine a escala 1 son los números del original).
     //    unit mantiene el tamaño del grano al subir a resolución de impresión.
-    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
+    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF), seed);
 
     // Datos para traits.
     const minSize = squares.reduce((m, sq) => Math.min(m, sq.size), a0);

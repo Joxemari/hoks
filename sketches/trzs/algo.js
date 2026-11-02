@@ -3070,7 +3070,7 @@
       renderComposition(ctx, 0, 0, W, comp, H, false, false);
     }
 
-    E.grain(ctx, W, H, comp.pal.colors, grainScale, u);
+    E.grain(ctx, W, H, comp.pal.colors, grainScale, u, seed);
 
     return {
       pal: comp.pal, tipo: comp.tipo, familia: comp.family, familia2: comp.family2,

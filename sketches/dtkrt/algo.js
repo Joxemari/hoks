@@ -200,7 +200,7 @@
     ctx.restore();
 
     // 6. Grano — unit mantiene su tamaño al subir a resolución de impresión.
-    E.grain(ctx, W, H, pal.colors, grainScale, E.unit(W, H, REF));
+    E.grain(ctx, W, H, pal.colors, grainScale, E.unit(W, H, REF), seed);
 
     return { pal, n, cols, rows, drawn, region, twin, accent, roles: R };
   }
