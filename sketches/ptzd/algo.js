@@ -840,7 +840,7 @@
     const palettes = opts.palettes || E.normalizePalettes(E.DEFAULTS);
     const grainScale = params.grainScale == null ? 1 : params.grainScale;
     const u = E.unit(W, H, REF);
-    const rng = new E.Rng(seed);
+    const rng = new E.Rng(E.seedMix(seed));   // ver E.seedMix: sin esto, seeds vecinas compartían papel
 
     const pal = (opts.locked && palettes[opts.lockedIdx]) ? palettes[opts.lockedIdx] : rng.weighted(palettes);
     const col = pareja(rng, pal.colors);
@@ -1042,7 +1042,7 @@
       const cand = piezas
         .map((p, i) => ({ i, o: orilla(p.poly, p.kind), a: Math.abs(area(p.poly)), e: aEsquina(p.poly), p }))
         .filter(c => !c.p.reserva && c.o > 0.28 && c.a < areaBloque * 0.34);
-      // Y no se pierde media obra: por encima de un tercio de las placas, lo que
+      // Y no se pierde media obra: por encima de la mitad de las placas, lo que
       // queda deja de leerse como un bloque roto y pasa a ser dos objetos sueltos.
       if (!cand.length || piezas.length <= 2 || faltan >= Math.floor(piezas.length / 2)) break;
       // Pesa por estar fuera, por ser pequeña —la grande de en medio no se cae

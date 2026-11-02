@@ -117,8 +117,10 @@
     const bg = E.pickBg(seed, params, BG_GRADIENT);
     const rngBg = new E.Rng(seed ^ 0xDEADBEEF);
     let ground = null;                    // el suelo, cuando es un color y no un degradado
+    let corners = null;                   // y cuando es degradado, sus cuatro esquinas
     if (bg === 'gradient') {
-      ground = E.meshGround(E.drawMeshGradient(ctx, W, H, colors, rngBg));
+      corners = E.drawMeshGradient(ctx, W, H, colors, rngBg);
+      ground = E.meshGround(corners);
     } else {
       ground = colors[rngBg.int(0, colors.length - 1)];
       ctx.fillStyle = ground;
@@ -197,8 +199,12 @@
     //    piezas salía sin nada, la peor de la casa—, y es el mismo desajuste que
     //    ya corregían Ring y multiply un poco más arriba: el color se estaba
     //    eligiendo por la paleta, no por la obra. Consume la misma tirada.
+    //    Sobre degradado no hay UN suelo, pero cada disco sí tiene uno debajo: el
+    //    color del mesh en su centro. Antes el degradado iba sin suelo y la tinta
+    //    no se medía contra nada; ahí estaba casi todo el 14% de marcas débiles.
+    const under = i => ground || (corners ? E.meshAt(corners, cx(i) / Math.max(1, W - 1), cy / Math.max(1, H - 1)) : null);
     const cols = [];
-    for (let i = 0; i < n; i++) cols.push(E.pickInk(rng, colors, ground));
+    for (let i = 0; i < n; i++) cols.push(E.pickInk(rng, colors, under(i)));
 
     // 6. Ausencias. Cadence consume un número variable de tiradas; por eso va
     //    la última, para no arrastrar al resto de la pieza.
@@ -227,7 +233,11 @@
     // `tinta` es la que se va a poner de verdad: Xor pinta el trazado entero con
     // cols[0]; Ring y Stack, la de cada slot presente.
     const tinta = mode === 'Xor' ? [cols[0]] : cols.filter((c, i) => present[i]);
-    const blend = params.blend ? blendPal : E.blendFor(blendPal, tinta, [ground]);
+    // El suelo contra el que se mide el fundido: el liso, o lo que hay debajo de
+    // cada disco que suena. (Antes iba `[ground]`, y como meshGround ya devuelve
+    // una lista, quedaba una lista dentro de otra: el fundido nunca se medía.)
+    const debajo = ground || (corners ? present.map((p, i) => (p || mode === 'Xor') ? under(i) : null).filter(Boolean) : null);
+    const blend = params.blend ? blendPal : E.blendFor(blendPal, tinta, debajo);
 
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -273,6 +283,13 @@
              alpha, blend, bg, field: square ? 'square' : 'sheet', present };
   }
 
+  // Cortes de la rareza global. NO salen de la intuición: se midió la
+  // distribución de `s` sobre 6.000 seeds dispersas con las paletas activas y se
+  // buscaron por fuerza bruta los cortes más cercanos al reparto de la casa
+  // (≈40/35/15/7/3). `s` es un producto de factores discretos, así que la escala
+  // tiene escalones y el reparto no cae exacto: sale 45/34/15/4/1,5.
+  const RAR_CUT = s => s > 0.1785 ? 'common' : s > 0.0875 ? 'uncommon' : s > 0.0375 ? 'rare' : s > 0.0262 ? 'superrare' : 'legendary';
+
   // Traits + rareza global a partir de un resultado de render().
   function traits(res) {
     const prob = res.pal.prob != null ? res.pal.prob : 0.05;
@@ -292,8 +309,8 @@
     // La partitura, tal cual: ■ suena, · calla.
     const score = res.present.map(p => (p ? '■' : '·')).join('');
     const pct = Math.round((res.drawn / Math.max(1, res.n)) * 100);
-    const rhythmR = res.drawn === 0 ? 'legendary'
-      : res.drawn === res.n ? (res.n <= 4 ? 'uncommon' : 'rare')
+    // (El silencio total ya no puede salir: la partitura siempre suena.)
+    const rhythmR = res.drawn === res.n ? (res.n <= 4 ? 'uncommon' : 'rare')
       : res.rhythm === 'Cadence' ? 'common' : 'uncommon';
 
     const inkLabel = res.alpha === 1 ? 'Opaque' : res.alpha >= 0.65 ? 'Veiled' : 'Glass';
@@ -304,8 +321,12 @@
     const modeR = res.mode === 'Xor' ? 'rare' : res.mode === 'Ring' ? 'uncommon' : 'common';
 
     const f = r => (r === 'rare' ? 0.3 : r === 'uncommon' ? 0.7 : 1);
-    const s = prob * f(slotsR) * f(overlapR) * f(rhythmR === 'legendary' ? 'common' : rhythmR) * f(inkR) * f(modeR);
-    const overall = s > 0.06 ? 'common' : s > 0.025 ? 'uncommon' : s > 0.008 ? 'rare' : s > 0.002 ? 'superrare' : 'legendary';
+    // La paleta entra por su RAREZA, no por su probabilidad cruda: el producto con
+    // `prob` dependía de cuántas paletas había activas (con una fijada, prob = 1 y
+    // todo salía common; con todas, casi nada lo era).
+    const fp = r => ({ common: 1, uncommon: 0.7, rare: 0.3, superrare: 0.15, legendary: 0.07 })[r] || 1;
+    const s = fp(palR) * f(slotsR) * f(overlapR) * f(rhythmR) * f(inkR) * f(modeR);
+    const overall = RAR_CUT(s);
 
     return {
       list: [
@@ -316,7 +337,7 @@
         { key: 'Mode',    val: res.mode, rarity: modeR },
         { key: 'Ink',     val: inkLabel + (res.alpha === 1 ? '' : ' ×' + res.alpha.toFixed(2)) + (res.blend === 'multiply' ? ' · multiply' : ''), rarity: inkR },
       ],
-      overall,
+      overall, score: s,
     };
   }
 

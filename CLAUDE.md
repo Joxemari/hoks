@@ -205,7 +205,7 @@ redeploy de Pages.
   la mesa de trabajo, y esconder lo inactivo escondía justo el trabajo en curso.
   Activar una familia es, por tanto, un clic en el panel y nada más: ni tocar
   `nav.js`, ni la landing, ni escribir un `<slug>.html`. Hoy activas: **plls,
-  krrtk, dtkrt, eclps y trzs**. Lo que sí hace falta antes es que la obra esté en
+  krrtk, dtkrt y trzs** (ECLPS está graduada pero apagada, sin lote). Lo que sí hace falta antes es que la obra esté en
   el registro (**+ Add Family**) y graduada, o saldrá sin celdas demo.
 - **`palettes.json`** — Paletas con `colors`, `active`, `tags`, `notes`. Mezcla
   sets de Roni Kaufman (color_pals) y series Itten (contraste complementario).

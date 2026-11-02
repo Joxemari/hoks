@@ -61,7 +61,7 @@ sketches/
   krrtk/           ← graduada (porte fiel, verificado op-a-op)
   dtk/             ← graduada (porte fiel, verificado op-a-op)
   dtkrt/            ← publicada: la primera familia que nació aquí
-  eclps/             ← publicada: la fila, con su pliego doble
+  eclps/             ← graduada, apagada: la fila, con su pliego doble
   evol/             ← EN PRUEBAS: la ley del encuentro invertida. Ver su README
   hrrs/             ← EN PRUEBAS: la ley del encuentro esquivada — la cinta no se
                       cruza, se pone al lado. Con algo.js, harness y batería
@@ -86,8 +86,9 @@ merece página. No está en `data/works.json` ni publicada.
 
 `eclps/` es el segundo, y llega igual: nace aquí. Una fila de círculos con paso
 constante donde las ausencias hacen el ritmo — un eclipse es exactamente eso, un
-disco que tapa a otro. Usa el harness compartido, está en `GRADUATED` y ya tiene
-página (`eclps.html`) y entrada activa en `works.json`.
+disco que tapa a otro. Usa el harness compartido, está en `GRADUATED` y tiene
+página (`eclps.html`), pero en `works.json` va con `active:false`: no tiene lote publicado y su gramática
+(degradado, vidrio, solape) aún no está a la altura de DTKRT y TRZS.
 
 `evol/` es el tercero, y el primero que nace **de otra familia de aquí** en vez de
 una idea suelta: es TRZS con la ley del encuentro invertida. Donde TRZS cruza —una

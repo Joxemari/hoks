@@ -61,14 +61,6 @@
         se genera en horizontal y el giro es de la vista, no del archivo</span>
     </div>
     <div class="group">
-      <span class="lbl">Field</span>
-      <select id="field">
-        <option value="sheet">▣ Llena el pliego</option>
-        <option value="square">□ Campo cuadrado</option>
-      </select>
-      <span class="hintline">el pliego y el campo son dos decisiones: un cuadrado puede ir sobre un DIN</span>
-    </div>
-    <div class="group">
       <span class="lbl">Seed</span>
       <input type="text" id="seed" value="0" inputmode="numeric" spellcheck="false">
       <button id="rnd">↻ Nueva seed (espacio)</button>
@@ -78,21 +70,6 @@
       <span class="lbl">Palette · <span id="palCount">…</span></span>
       <div id="palPicker"></div>
       <span class="hintline">incluye activas e inactivas</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Background</span>
-      <select id="bg">
-        <option value="auto">Auto (lo propio de la obra)</option>
-        <option value="solid">Solid</option>
-        <option value="gradient">Gradient</option>
-      </select>
-      <span class="hintline">transversal: es lo que separaba a KRT de KRTG</span>
-      <div id="bgAuto">
-        <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
-          · plano <span id="bgPS">—</span></span>
-        <input type="range" id="bgP" min="0" max="100" step="5" value="30">
-        <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre</span>
-      </div>
     </div>
     <div class="group">
       <span class="lbl">Grain</span>
@@ -215,7 +192,9 @@ let sheetMode = false;
 const $ = id => document.getElementById(id);
 
 function params() {
-  const p = { field: $('field').value, bg: $('bg').value, grainScale: parseFloat($('grain').value) };
+  // PTZD no tiene campo ni fondo que decidir: es papel y tinta. Los mandos de
+  // Field y Background venían de la plantilla y no movían nada; se quitaron.
+  const p = { grainScale: parseFloat($('grain').value) };
   if ($('tipo').value)  p.tipo  = $('tipo').value;
   if ($('gubia').value) p.gubia = $('gubia').value;
   const c = parseInt($('cortes').value, 10); if (c > 0) p.cortes = c;
@@ -337,18 +316,6 @@ $('tintas').onchange = refresh;
 $('veta').oninput   = () => { $('vetaV').textContent   = $('veta').value === '-5'  ? 'auto' : ($('veta').value / 100).toFixed(2); refresh(); };
 $('faltan').oninput = () => { $('faltanV').textContent = $('faltan').value === '-1' ? 'auto' : $('faltan').value; refresh(); };
 $('rot').onclick = () => { ROT = !ROT; applyFormat(); refresh(); };   // la etiqueta la pone formatControls
-$('field').onchange = refresh;
-$('bg').onchange = () => { syncBgAuto(); refresh(); };
-// El % de degradado solo manda cuando el fondo va en 'auto': si lo fuerzas a
-// plano o a degradado, el peso sobra y se esconde en vez de mentir.
-function syncBgAuto() {
-  const auto = $('bg').value === 'auto', p = parseInt($('bgP').value, 10);
-  $('bgAuto').style.display = auto ? '' : 'none';
-  $('bgPV').textContent = p + '%'; $('bgPS').textContent = (100 - p) + '%';
-}
-$('bgP').value = (WORK.BG_GRADIENT != null ? WORK.BG_GRADIENT : 50);
-$('bgP').oninput = () => { syncBgAuto(); refresh(); };
-syncBgAuto();
 
 $('grain').onchange = refresh;
 $('cartela').onclick = () => {
@@ -358,7 +325,7 @@ $('cartela').onclick = () => {
   // del lote, que es donde se elige el papel.
   $('status').textContent = 'cartela A5…';
   HOKSCARTELA.download({
-    work: SLUG, seed: seed >>> 0, format: FORMAT, field: $('field').value,
+    work: SLUG, seed: seed >>> 0, format: FORMAT, field: 'sheet',
     sheet: (batch && batch.sheet) ? batch.sheet() : HOKS.DEFAULT_SHEET,
     palette: lastPalName || '—', palColors: lastPalColors, thumb: single,
     year: new Date().getFullYear(),
@@ -368,7 +335,7 @@ $('cartela').onclick = () => {
 $('sheet').onclick = () => setView(VIEW === 'sheet' ? 'single' : 'sheet');
 $('volver').onclick = () => { if (gridSeed !== null) seed = gridSeed; gridSeed = null; setView('sheet'); };
 $('batchView').onclick = () => setView(VIEW === 'batch' ? 'single' : 'batch');
-$('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `template_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
+$('save').onclick = () => { if (sheetMode) setSheet(false); const a = document.createElement('a'); a.download = `ptzd_${seed}.png`; a.href = single.toDataURL('image/png'); a.click(); };
 
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;

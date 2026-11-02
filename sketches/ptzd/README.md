@@ -802,7 +802,12 @@ seguidas usaba tres paletas de quince — y el reparto de tintas salía 82/16/2 
 bloque y 100/0/0 en otro sin que cambiara una línea de código. La geometría no
 estaba tocada (se sortea del tercero en adelante), pero el color sí, y con él la
 rareza. No se toca el `Rng`: cambiarlo cambiaría todas las obras guardadas de seis
-familias. Se mezcla la seed en los instrumentos, que es donde estaba el fallo.
+familias. Al principio se mezclaba la seed solo en los instrumentos; desde noviembre
+de 2026 la mezcla la hace **la propia obra** (`new E.Rng(E.seedMix(seed))`, en el
+motor): el harness recorre vecinas con ← →, y con la paleta fijada el primer sorteo
+es el del papel, así que doscientas seeds seguidas salían todas en crudo. Ahora salen
+un 33%, como las dispersas. Las cifras de arriba no cambian —ya estaban medidas con
+seeds mezcladas—; lo que cambia es qué obra corresponde a cada número.
 
 El coste por pieza subió de ~18 a ~30 ms: el grosor compara el contorno consigo
 mismo por cada candidato, y hay siete candidatos por corte. Es geometría, así que
