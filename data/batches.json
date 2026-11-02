@@ -485,5 +485,57 @@
         "published": true
       }
     ]
+  },
+  {
+    "id": 1793647553983,
+    "name": "capítulo 01 · Poet · 2026-11",
+    "status": "open",
+    "created": 1793647553983,
+    "items": [
+      {
+        "work": "dtkrt",
+        "seed": 2950288811,
+        "format": "square",
+        "base": 600,
+        "params": {},
+        "palSel": 0,
+        "palName": "Poet",
+        "addedAt": 1793647542805,
+        "published": true
+      },
+      {
+        "work": "trzs",
+        "seed": 683129967,
+        "format": "horizontal",
+        "base": 600,
+        "params": {},
+        "palSel": 0,
+        "palName": "Poet",
+        "addedAt": 1793647545007,
+        "published": true
+      },
+      {
+        "work": "plls",
+        "seed": 2084311110,
+        "format": "horizontal",
+        "base": 600,
+        "params": {},
+        "palSel": 0,
+        "palName": "Poet",
+        "addedAt": 1793647545807,
+        "published": true
+      },
+      {
+        "work": "krrtk",
+        "seed": 4112119562,
+        "format": "square",
+        "base": 600,
+        "params": {},
+        "palSel": 0,
+        "palName": "Poet",
+        "addedAt": 1793647546402,
+        "published": true
+      }
+    ]
   }
 ]
