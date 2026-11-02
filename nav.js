@@ -518,7 +518,7 @@ footer.className = 'site-footer';
 footer.innerHTML = `
   <span class="footer-copy">© 2026 hoks · code blacksmith</span>
   <div class="footer-links" id="footer-links">
-    <a href="mailto:joxemgallastegi@gmail.com" data-i18n="footer.contact">Contact</a>
+    <a href="mailto:hola@hoks.design" data-i18n="footer.contact">Contact</a>
   </div>`;
 document.body.appendChild(footer);
 
