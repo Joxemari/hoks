@@ -281,7 +281,7 @@
                E.blendFor(blndOp, p.col, suelos.length === 1 ? suelos : []), u);
     }
     ctx.restore();
-    E.grain(ctx, W, H, colors, grainScale, u);
+    E.grain(ctx, W, H, colors, grainScale, u, seed);
 
     return { pal, arch, num, styleCount, bgColors };
   }

@@ -3002,7 +3002,13 @@
 
     const campo = E.fieldMode(params, 'sheet');
     const cfg = {
-      aspecto: campo === 'square' ? 1 : W / H,
+      // La proporción NOMINAL, no la de los píxeles: el recorrido toma decisiones
+      // enteras con ella, y 424×300 (hoja de contactos), 1075×760 (lo publicado)
+      // y 4961×3508 (A3) dan 1,4133 / 1,4145 / 1,4142 — bastaba para que la misma
+      // seed fuese otra obra según el tamaño (3 de 7 en el lote de noviembre de
+      // 2026). Ver E.nominalAspect.
+      aspecto: campo === 'square' ? 1
+             : W >= H ? E.nominalAspect(W, H) : 1 / E.nominalAspect(H, W),
       paletas: palettes, locked: !!opts.locked, lockedIdx: opts.lockedIdx,
       unidad: u,
     };
@@ -3070,7 +3076,7 @@
       renderComposition(ctx, 0, 0, W, comp, H, false, false);
     }
 
-    E.grain(ctx, W, H, comp.pal.colors, grainScale, u);
+    E.grain(ctx, W, H, comp.pal.colors, grainScale, u, seed);
 
     return {
       pal: comp.pal, tipo: comp.tipo, familia: comp.family, familia2: comp.family2,

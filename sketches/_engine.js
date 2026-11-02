@@ -71,8 +71,19 @@
   // subir de resolución (a 300 dpi un grano de 1 px sería invisible). En
   // pantalla unit≈1 → cell=1 → exactamente el grano de siempre.
   //   unit = ladoCorto / ladoCortoDeReferencia de la obra.
-  function grain(ctx, W, H, colors, scale, unit) {
+  //   seed = la de la obra. El grano es parte de la pieza, no del papel: con
+  //          seed sale de su propio Rng y se repite al píxel (misma seed, mismo
+  //          tamaño, mismo grano), sin tocar el azar de la composición. Sin seed
+  //          vuelve a Math.random, como antes de noviembre de 2026.
+  const GRAIN_SALT = 0x67A1D5E3;
+  function grainRandom(seed) {
+    if (seed == null) return Math.random;
+    const r = new Rng((seed ^ GRAIN_SALT) >>> 0);
+    return () => r.next();
+  }
+  function grain(ctx, W, H, colors, scale, unit, seed) {
     scale = scale == null ? 1 : scale;
+    const rand = grainRandom(seed);
     const cell = Math.max(1, Math.round(unit || 1));
     let aR = 0, aG = 0, aB = 0;
     for (const h of colors) { const [r, g, b] = hexToRgb(h); aR += r; aG += g; aB += b; }
@@ -89,10 +100,10 @@
       const id = ctx.getImageData(0, y0, W, bh), px = id.data;
       for (let cy = 0; cy < bh; cy += cell) {
         for (let ci = 0; ci < cols; ci++) {
-          let v = 0; for (let k = 0; k < GRAIN_SAMPLES; k++) v += Math.random();
+          let v = 0; for (let k = 0; k < GRAIN_SAMPLES; k++) v += rand();
           const m = (v / GRAIN_SAMPLES - 0.5) * mag;
           nR[ci] = 0.5 + m * kR; nG[ci] = 0.5 + m * kG; nB[ci] = 0.5 + m * kB;
-          nA[ci] = mn + Math.random() * (mx - mn);
+          nA[ci] = mn + rand() * (mx - mn);
         }
         const yEnd = Math.min(cy + cell, bh);
         for (let y = cy; y < yEnd; y++) {
@@ -109,8 +120,9 @@
     }
   }
 
-  function bakeGrain(W, H, colors, scale) {
+  function bakeGrain(W, H, colors, scale, seed) {
     scale = scale == null ? 1 : scale;
+    const rand = grainRandom(seed);
     let aR = 0, aG = 0, aB = 0;
     for (const h of colors) { const [r, g, b] = hexToRgb(h); aR += r; aG += g; aB += b; }
     aR /= colors.length; aG /= colors.length; aB /= colors.length;
@@ -118,10 +130,10 @@
     const mag = GRAIN_MAG * scale, mn = GRAIN_AMIN * scale, mx = GRAIN_AMAX * scale, n = W * H;
     const R = new Float32Array(n), G = new Float32Array(n), B = new Float32Array(n), A = new Float32Array(n);
     for (let i = 0; i < n; i++) {
-      let v = 0; for (let k = 0; k < GRAIN_SAMPLES; k++) v += Math.random();
+      let v = 0; for (let k = 0; k < GRAIN_SAMPLES; k++) v += rand();
       const m = (v / GRAIN_SAMPLES - 0.5) * mag;
       R[i] = 0.5 + m * (0.6 + tR * 0.4); G[i] = 0.5 + m * (0.6 + tG * 0.4); B[i] = 0.5 + m * (0.6 + tB * 0.4);
-      A[i] = mn + Math.random() * (mx - mn);
+      A[i] = mn + rand() * (mx - mn);
     }
     return { R, G, B, A };
   }

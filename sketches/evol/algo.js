@@ -1407,7 +1407,7 @@
     }
 
     // El grano, sobre el PAPEL y antes de imprimir.
-    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
+    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF), seed);
 
     // 4. El cuerpo. UNA sola llamada a fill(): la soldadura no se dibuja, es la
     //    consecuencia de que todo esté en el mismo trazado. Ahí es donde esta

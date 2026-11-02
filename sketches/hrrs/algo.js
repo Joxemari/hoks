@@ -2102,7 +2102,7 @@
     }
     ctx.restore();
 
-    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF));
+    E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF), seed);
 
     return { pal, rol, tipo, bg, falta: bestF,
              field: cuad ? 'square' : 'sheet',
@@ -2289,7 +2289,7 @@
       ctx.fillStyle = rol.suelo; ctx.fill();
     }
     ctx.restore();
-    if (receta.grano !== 0) E.grain(ctx, W, H, colors, receta.grano == null ? 1 : receta.grano, E.unit(W, H, REF));
+    if (receta.grano !== 0) E.grain(ctx, W, H, colors, receta.grano == null ? 1 : receta.grano, E.unit(W, H, REF), seed);
 
     const med = medir(cx2.trazos, Wb, fw, fh);
     return { pal, rol, cintas: cx2.trazos.length, ojos: med.ojos, ocupacion: med.ocupacion,

@@ -9,8 +9,9 @@
  *   node tools/rerender.mjs <obra> <seed> --check         → ¿sale igual que lo publicado?
  *
  * --check pinta a la resolución del sitio y compara con el PNG de
- * data/<obra>.json. Es la prueba de que la receta basta. Compara composición,
- * no grano: el grano del motor sale de Math.random y no se repite nunca.
+ * data/<obra>.json. Es la prueba de que la receta basta. Con el grano sembrado
+ * (noviembre de 2026) tiene que salir idéntica al píxel; una pieza pintada con
+ * el grano aleatorio de antes solo puede coincidir en composición.
  *
  * Requiere (solo en desarrollo): Playwright (Chromium) y el historial de git
  * que contenga esos archivos. En un clon superficial: git fetch --unshallow.
@@ -75,6 +76,7 @@ const out = await page.evaluate(async ({ recipe, sheet, check, ref, BLOCK_TOL })
     // en el laboratorio. Lo que tiene que coincidir es la composición, así que se
     // compara por bloques de 16 px, donde el grano se promedia. Un bloque con la
     // forma o el color equivocados se va a decenas de niveles.
+    let px = 0; for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) px++;
     const B = 16, bx = Math.floor(d.W / B), by = Math.floor(d.H / B);
     let worst = 0, off = 0;
     for (let j = 0; j < by; j++) for (let i = 0; i < bx; i++) {
@@ -85,7 +87,7 @@ const out = await page.evaluate(async ({ recipe, sheet, check, ref, BLOCK_TOL })
       const m = Math.max(...[0, 1, 2].map(c => Math.abs(s[c] - s[c + 3]) / (B * B)));
       if (m > worst) worst = m; if (m > BLOCK_TOL) off++;
     }
-    return { ...info, sameSize: img.naturalWidth === d.W && img.naturalHeight === d.H, worst: +worst.toFixed(1), off, blocks: bx * by };
+    return { ...info, sameSize: img.naturalWidth === d.W && img.naturalHeight === d.H, worst: +worst.toFixed(1), off, blocks: bx * by, px };
   }
   const blob = await new Promise(r => c.toBlob(r, 'image/png'));
   const buf = new Uint8Array(await blob.arrayBuffer());
@@ -97,9 +99,10 @@ await browser.close();
 const tag = `${work} #${seed} · ${recipe.format} · ${out.palette}`;
 if (check) {
   const ok = out.sameSize && out.off === 0;
-  console.log(`${tag} · ${out.W}×${out.H} · ` + (ok
-    ? `misma composición que lo publicado (peor bloque: ${out.worst}; el grano es aleatorio)`
-    : `NO coincide: ${out.off} de ${out.blocks} bloques distintos (peor: ${out.worst})`));
+  console.log(`${tag} · ${out.W}×${out.H} · ` + (!ok
+    ? `NO coincide: ${out.off} de ${out.blocks} bloques distintos (peor: ${out.worst})`
+    : out.px === 0 ? 'idéntica al píxel a lo publicado'
+    : `misma composición, grano distinto (${out.px} px): se pintó con el grano aleatorio de antes`));
   process.exit(ok ? 0 : 1);
 }
 const file = pos[1] || `${work}-${seed}-${sheet}-${recipe.format}.png`;

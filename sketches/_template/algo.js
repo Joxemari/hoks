@@ -52,7 +52,7 @@
       ctx.arc(rng.range(0, W), rng.range(0, H), rng.range(S * 0.02, S * 0.12), 0, Math.PI * 2);
       ctx.fill();
     }
-    E.grain(ctx, W, H, colors, grainScale, u);
+    E.grain(ctx, W, H, colors, grainScale, u, seed);
     // ————————————————————————————————————————————————————————————————————————
 
     return { pal, count: n };

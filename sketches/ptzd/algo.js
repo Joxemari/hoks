@@ -1198,7 +1198,7 @@
       ctx.fill();
     }
 
-    E.grain(ctx, W, H, tintas.concat([col.ground]), grainScale, u);
+    E.grain(ctx, W, H, tintas.concat([col.ground]), grainScale, u, seed);
 
     // Lo medido, que es lo que manda sobre lo declarado.
     const mancha = piezas.reduce((s, p) => s + Math.abs(area(p.poly)), 0) / (FW * FH);
