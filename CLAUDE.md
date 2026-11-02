@@ -221,13 +221,17 @@ redeploy de Pages.
   fijada (`'locked'`, ninguna)— y el hash git del `algo.js` y del `_engine.js`
   que la pintaron. Con eso, **`node tools/rerender.mjs <obra> <seed> [A2]`** saca
   de git el código exacto y reimprime la pieza aunque el algoritmo haya cambiado;
-  `--check` comprueba que la composición coincide con lo publicado. El modo de
+  `--check` comprueba que la composición coincide con lo publicado. **Desde
+  noviembre de 2026 PLLS y KRRTK solo guardan obra con receta**: las anteriores
+  existían como PNG de 760 px y no se podían imprimir, así que se retiraron (siguen
+  en el historial de git). El modo de
   la paleta no es un detalle: con la misma paleta y la misma seed, `auto` y
   `locked` dan obras distintas, porque una tirada de menos corre todo el azar.
 - **`palette-usage.json`** — Índice de uso: una fila por obra guardada con
   `{family, seed, savedAt, paletteId, paletteName, source}`. Lo escribe la página
-  de obra al Guardar (`source:"save"`). Las filas `source:"backfill"` son las 26
-  obras que ya existían: se reconstruyeron re-renderizando cada seed con el
+  de obra al Guardar (`source:"save"`). Las filas `source:"backfill"` son las
+  obras que ya existían (eran 26; quedan 10, de DTK, PILLS y BZRS, tras retirar las
+  de PLLS y KRRTK sin receta): se reconstruyeron re-renderizando cada seed con el
   algoritmo de su época (rescatado de git) y comparando píxel a píxel contra el
   PNG guardado — no por parecido de color, que en las familias con grano y mesh
   gradient se equivoca. Es un índice **derivado**: si se borran obras de una
@@ -365,11 +369,9 @@ lo edita a mano.
   nadie lo ve dos veces.
 - **`assets/og/<slug>.jpg`** — una tarjeta 1200×630 por familia activa, la obra
   centrada sobre papel. Es lo que hace que la obra **exista** para quien no puede
-  mirar un `<canvas>`: agente o lector de pantalla. Las de PLLS y KRRTK son la
-  pieza publicada tal cual (no se re-renderiza el seed: `data/*.json` no guarda
-  la paleta y la elección por peso dependía de qué paletas estaban activas ese
-  día, así que manda el píxel publicado). DTKRT y TRZS llevan desde noviembre
-  de 2026 la primera pieza de su lote publicado. La de ECLPS sigue siendo un
+  mirar un `<canvas>`: agente o lector de pantalla. Todas las
+  de las familias activas son la primera pieza publicada, tal cual: DTKRT y TRZS
+  la de su lote de noviembre de 2026, PLLS y KRRTK la del capítulo 01 (Poet). La de ECLPS sigue siendo un
   render con seed fijo, **provisional**: en cuanto haya lote se cambia por obra
   publicada. El campo `ogImage` de `works.json` dice quién tiene la suya; sin él
   se cae a `preview.png`, que es mejor que un 404.
