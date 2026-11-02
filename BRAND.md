@@ -144,6 +144,69 @@ recorta lateralmente en la miniatura y rompe las uniones de un tríptico.
 - Stories / Reels verticales → 1080×1920 (9:16).
 - Instagram pone lo último arriba-izquierda: una fila se publica
   **derecha → centro → izquierda** y se verifica en el perfil móvil.
+- Todo esto lo ejecuta **`_social/kit.js`** (§9). Si una salida no pasa por ahí,
+  no cumple esta sección.
+
+## 9 · Sistema de publicaciones
+
+Una regla, todas las salidas. La maqueta vive en **`_social/kit.js`**
+(`HOKSPOST`), componente único como `palette-picker.js`: lo usan `post.html`
+(la herramienta del día), `_social/harness.html` + `make-videos.mjs` (los
+vídeos de estudio) y cualquier agente que prepare un post. La hoja de
+especímenes es **`_social/kit.html`**: abre, elige familia y seed, y enseña
+cada plantilla con una obra real. Antes había cuatro formatos para la misma
+fila (3:4 aquí, 4:5 en `post.html`, 1:1/9:16 en `_social`, y las rutinas
+estirando el borde de la obra); eso es lo que esta sección cierra.
+
+**Tokens** — los de §1–2: papel `#fbfbfa`, tinta `#0a0a0a`, azul `#000ef7`,
+acid `#dcff32`, gris `#8a8983`. Mono para todo lo que se escribe en la imagen.
+Ninguna plantilla usa display: en redes la tipografía grande es la obra.
+
+**Formatos**
+
+| clave | medida | para qué |
+|---|---|---|
+| `row` | 1080×1440 · 3:4 | **máster**: las tres casillas de una fila |
+| `feed` | 1080×1350 · 4:5 | post suelto que no forma fila |
+| `story` | 1080×1920 · 9:16 | stories / reels |
+| `x` | 1600×900 · 16:9 | tarjeta de X |
+
+**Plantillas**
+
+- **pieza** — la obra matada sobre papel (o azul) con un margen del **11 % del
+  lado corto**: el mismo aire que las familias dejan dentro de su campo
+  (`E.FIELD_MARGIN`), así la obra se retira de la página lo mismo que de su
+  papel. Cualquier proporción cabe; un PLLS horizontal sigue horizontal.
+  Debajo, la **cartela**: el sello (§7) en mono, pegado a la obra y alineado a su
+  canto izquierdo, como una etiqueta de sala. `randomSeed` y la seed en tinta (o
+  acid sobre azul), el resto en gris (o blanco).
+- **montaje** — el vídeo *assembling* en la misma maqueta que la pieza, **sin
+  cartela**. Su portada es un fotograma **a medio montar**: si fuera el último,
+  la fila tendría dos casillas gemelas.
+- **detalle** — a sangre, sin margen ni cartela: enseña la materia (grano,
+  canto, cruce), no la composición. Recorte del 56 % del lado de la obra.
+- **notación** — tarjeta azul, palabras en acid, sintaxis en blanco, comentario
+  `//` en blanco atenuado. Masthead y posts de pensamiento (§3, §7).
+- **comprobación de fila** — las tres casillas como las enseña el perfil. No se
+  publica: se mira antes de subir.
+
+**La obra no se amplía.** El algoritmo se renderiza al tamaño exacto que pide
+la maqueta (`HOKSPOST.srcSize`): la pieza a su caja, el detalle lo bastante
+grande para que el recorte salga a 1:1. Un PNG guardado de 600 px solo vale
+para archivo; para publicar se vuelve a pintar desde su receta.
+
+**Pie y primer comentario** — una línea de la casa (`HOKSPOST.LINES`, elegida
+por la seed, así el mismo post da siempre el mismo pie) + salto + sello. Los
+hashtags, **un solo juego** (`HOKSPOST.TAGS`), van en el primer comentario:
+`#generativeart #creativecoding #genart #handcodedgoods`.
+
+**Antes de publicar una fila**
+
+1. Las tres casillas salen del kit en `row` y con el mismo fondo.
+2. La pieza viene de su receta (seed + paleta + algoritmo), no de un PNG ampliado.
+3. La comprobación de fila se ve como una sola cosa.
+4. Pie con sello; hashtags aparte.
+5. Se sube detalle → montaje → pieza y se mira en el perfil móvil.
 
 ## Apéndice · manifiesto canónico (post de lanzamiento, trilingüe)
 

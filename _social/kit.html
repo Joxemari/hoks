@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Kit de publicación</title>
+<!-- Hoja de especímenes del sistema de publicaciones (_social/kit.js). Taller,
+     no sitio: enseña cada plantilla con una obra real, renderizada por su
+     algo.js a la resolución que pide la maqueta. Especificación: BRAND.md §8–9. -->
+<style>
+  :root{ --paper:#fbfbfa; --ink:#0a0a0a; --blue:#000ef7; --acid:#dcff32; --line:#e7e5df; --mut:#8a8983;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --geo:"League Spartan","Century Gothic",Futura,"Trebuchet MS",system-ui,sans-serif; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:13px}
+  header{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:baseline;padding:20px 16px;border-bottom:1px solid var(--line)}
+  h1{font-family:var(--geo);font-weight:700;font-size:22px;letter-spacing:.02em;text-transform:uppercase;margin:0}
+  header p{margin:0;color:var(--mut)}
+  .ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .ctl label{display:flex;gap:6px;align-items:center;color:var(--mut)}
+  select,input,button{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:3px;padding:6px 8px}
+  input{width:130px}
+  button{cursor:pointer} button.go{background:var(--blue);color:var(--acid);border-color:var(--blue)}
+  button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+  main{padding:16px;display:grid;gap:28px}
+  section h2{font-family:var(--geo);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}
+  section .why{color:var(--mut);margin:0 0 12px;max-width:68ch;line-height:1.5}
+  .specs{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
+  figure{margin:0;display:grid;gap:6px}
+  figure canvas{display:block;max-width:100%;height:auto;border:1px solid var(--line);background:#fff}
+  figcaption{display:flex;justify-content:space-between;gap:10px;color:var(--mut)}
+  figcaption button{padding:2px 8px;font-size:12px}
+  .w-row{width:300px} .w-story{width:220px} .w-x{width:420px} .w-check{width:min(700px,100%)}
+  figure canvas{width:100%}
+  figcaption span{min-width:0;overflow-wrap:anywhere}
+  pre{margin:0;padding:12px;background:#fff;border:1px solid var(--line);white-space:pre-wrap;max-width:68ch;line-height:1.5}
+  .copy{display:grid;gap:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>kit de publicación</h1>
+  <p>una regla, todas las salidas · <code>_social/kit.js</code> · BRAND.md §8–9</p>
+</header>
+<div class="ctl">
+  <label>familia <select id="fam"></select></label>
+  <label>seed <input id="seed" inputmode="numeric"></label>
+  <label>fondo <select id="mat"><option value="paper">papel</option><option value="blue">azul</option></select></label>
+  <label>pliego <select id="sheet"><option value="">—</option><option>A4</option><option selected>A3</option><option>A2</option><option>A1</option></select></label>
+  <button id="rnd">otra seed</button>
+  <button class="go" id="go">pintar</button>
+</div>
+<main>
+  <section>
+    <h2>fila · 3:4 · 1080×1440</h2>
+    <p class="why">El máster del grid. Una familia = una fila: pieza, assembling, detalle. La obra se retira del papel el mismo 11&nbsp;% que dentro de su propio campo; la cartela cuelga de su canto izquierdo.</p>
+    <div class="specs" id="rowSpecs"></div>
+  </section>
+  <section>
+    <h2>comprobación de fila</h2>
+    <p class="why">Las tres casillas como las enseña el perfil. No se publica: se mira antes de subir, de derecha a izquierda.</p>
+    <div class="specs" id="checkSpecs"></div>
+  </section>
+  <section>
+    <h2>otros formatos</h2>
+    <p class="why">La misma maqueta en feed 4:5 (solo si la pieza no forma fila), story 9:16 y tarjeta de X 16:9.</p>
+    <div class="specs" id="otherSpecs"></div>
+  </section>
+  <section>
+    <h2>tarjeta de notación</h2>
+    <p class="why">Azul, palabras en acid, sintaxis en blanco. Masthead y posts de pensamiento.</p>
+    <div class="specs" id="codeSpecs"></div>
+  </section>
+  <section>
+    <h2>pie y primer comentario</h2>
+    <div class="copy"><pre id="cap"></pre><pre id="tags"></pre></div>
+  </section>
+</main>
+
+<script src="../sketches/_engine.js"></script>
+<script src="../sketches/plls/algo.js"></script>
+<script src="../sketches/krrtk/algo.js"></script>
+<script src="../sketches/dtk/algo.js"></script>
+<script src="../sketches/dtkrt/algo.js"></script>
+<script src="../sketches/trzs/algo.js"></script>
+<script src="../sketches/eclps/algo.js"></script>
+<script src="kit.js"></script>
+<script>
+(function(){
+  var E = window.HOKS, P = window.HOKSPOST;
+  var FAMS = ['DTKRT','TRZS','PLLS','KRRTK','DTK','ECLPS'].filter(function(f){ return E[f] && E[f].render; });
+  var famSel = document.getElementById('fam'), seedIn = document.getElementById('seed');
+  FAMS.forEach(function(f){ var o=document.createElement('option'); o.textContent=f; famSel.appendChild(o); });
+  var PALS = E.normalizePalettes(E.DEFAULTS);
+  E.loadPalettes().then(function(p){ if(p && p.length) PALS = p; paint(); });
+
+  function rnd(){ return (Math.random()*4294967296)>>>0; }
+  seedIn.value = rnd();
+
+  // La obra la pinta su algo.js al tamaño exacto que pide la maqueta: nada se amplía.
+  function work(fam, seed, px){
+    var c = document.createElement('canvas'); c.width = px; c.height = px;
+    E[fam].render(c.getContext('2d'), px, px, seed, { palettes: PALS, params: { field: 'square' } });
+    return c;
+  }
+  function fig(host, cls, c, name){
+    var f = document.createElement('figure'); f.className = cls;
+    var cap = document.createElement('figcaption');
+    var t = document.createElement('span'); t.textContent = name + ' · ' + c.width + '×' + c.height;
+    var b = document.createElement('button'); b.textContent = 'png';
+    var file = famSel.value.toLowerCase() + '-' + (parseInt(seedIn.value,10)>>>0) + '-' + name.replace(/\W+/g,'-') + '-' + c.width + 'x' + c.height + '.png';
+    b.addEventListener('click', function(){ c.toBlob(function(blob){ var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=file; a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);},1500); }); });
+    cap.appendChild(t); cap.appendChild(b); f.appendChild(c); f.appendChild(cap); host.appendChild(f);
+  }
+  function clear(id){ var h=document.getElementById(id); h.innerHTML=''; return h; }
+
+  function paint(){
+    var fam = famSel.value, seed = (parseInt(seedIn.value,10)>>>0);
+    var mat = document.getElementById('mat').value, sheet = document.getElementById('sheet').value;
+    var meta = { seed: seed, family: fam, sheet: sheet || null };
+
+    var px = P.srcSize('row', 'piece');
+    var src = work(fam, seed, px);
+    var big = work(fam, seed, P.srcSize('row', 'detail'));
+    var pieza = P.piece(src, 'row', meta, { mat: mat });
+    // La portada del vídeo es un fotograma a medio montar: si fuera el último,
+    // la fila tendría dos casillas gemelas.
+    var asm = P.assembly(function(ctx, w, hh){ E[fam].render(ctx, w, hh, seed, { palettes: PALS, params: { field: 'square' } }); }, px, px);
+    var frame = P.piece(asm.at(0.55), 'row', meta, { mat: mat, stamp: false });
+    var det = P.detail(big, 'row');
+
+    var h = clear('rowSpecs');
+    fig(h, 'w-row', pieza, 'pieza');
+    fig(h, 'w-row', frame, 'assembling · portada');
+    fig(h, 'w-row', det, 'detalle');
+
+    // El perfil pone lo último arriba a la izquierda: se sube detalle → assembling → pieza.
+    fig(clear('checkSpecs'), 'w-check', P.row([pieza, frame, det]), 'fila');
+
+    var o = clear('otherSpecs');
+    fig(o, 'w-row', P.piece(work(fam, seed, P.srcSize('feed','piece')), 'feed', meta, { mat: mat }), 'feed');
+    fig(o, 'w-story', P.piece(work(fam, seed, P.srcSize('story','piece')), 'story', meta, { mat: mat }), 'story');
+    fig(o, 'w-x', P.piece(work(fam, seed, P.srcSize('x','piece')), 'x', meta, { mat: mat }), 'x');
+
+    var c = clear('codeSpecs');
+    fig(c, 'w-row', P.code(['function draw() {', '  code blacksmith', '}'], 'row'), 'masthead draw');
+    fig(c, 'w-row', P.code(['noLoop();', '// no se guardan dos'], 'row'), 'nota noloop');
+    fig(c, 'w-row', P.code(['randomSeed(' + seed + ');', fam.toLowerCase() + '.draw();', '// ' + P.LINES[seed % P.LINES.length]], 'row'), 'sello');
+
+    document.getElementById('cap').textContent = P.caption(meta);
+    document.getElementById('tags').textContent = P.TAGS;
+  }
+
+  document.getElementById('go').addEventListener('click', paint);
+  document.getElementById('rnd').addEventListener('click', function(){ seedIn.value = rnd(); paint(); });
+  famSel.addEventListener('change', paint);
+  paint();
+})();
+</script>
+</body>
+</html>

@@ -112,6 +112,13 @@ solo el de PLLS está portado al sistema nuevo, el resto sigue en el look viejo.
   laboratorio (un commit por publicación, no uno por pieza) y `.record()` añade
   una al Guardar en las páginas heredadas. Sin token de admin no escribe.
 
+- **`_social/kit.js`** — `HOKSPOST`, el sistema de diseño de las publicaciones
+  (formatos, márgenes, cartela, pie, hashtags y el *assembling*). Componente
+  único: lo usan `post.html` y el banco de vídeo de `_social/`. Hoja de
+  especímenes en `_social/kit.html`; especificación en `BRAND.md` §9. Si algo va
+  a redes, sale de aquí. `post.html` carga los `algo.js` reales: antes llevaba
+  copias pegadas que se quedaron atrás y pintaban otra obra para la misma seed.
+
 No hay otro CSS/JS global: cada página trae su propio `<style>`.
 
 ### Laboratorio (`sketches/`)
