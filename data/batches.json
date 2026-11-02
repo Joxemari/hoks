@@ -1,1 +1,118 @@
-[]
+[
+  {
+    "id": 1787497953000,
+    "name": "social · DTKRT · 2026-W35–W36",
+    "status": "open",
+    "created": 1787497953000,
+    "items": [
+      {
+        "work": "dtkrt",
+        "seed": 3156573569,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Hoks",
+        "addedAt": 1787499274179
+      },
+      {
+        "work": "dtkrt",
+        "seed": 274128135,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": 3,
+        "palName": "Morning",
+        "addedAt": 1787501010400
+      },
+      {
+        "work": "dtkrt",
+        "seed": 3360454248,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "North",
+        "addedAt": 1787502293214
+      },
+      {
+        "work": "dtkrt",
+        "seed": 1919632515,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Wheel",
+        "addedAt": 1787502301464
+      },
+      {
+        "work": "dtkrt",
+        "seed": 390811867,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "grid": 0,
+          "threshold": 0.8
+        },
+        "palSel": "auto",
+        "palName": "Light",
+        "addedAt": 1787502308481
+      }
+    ],
+    "editorial": {
+      "family": "dtkrt",
+      "period": "2026-W35–W36",
+      "cadencePerWeek": 2,
+      "channels": [
+        "instagram",
+        "x"
+      ],
+      "targetItems": 6,
+      "plannedReleases": 4,
+      "approvalRequired": true,
+      "publisher": "codex"
+    }
+  }
+]

@@ -187,7 +187,7 @@
 <script src="../../palette-picker.js?v=6"></script>
 <script src="../../usage.js?v=6"></script>
 <script src="../_lab.js?v=7"></script>
-<script src="../_batch.js?v=6"></script>
+<script src="../_batch.js?v=7"></script>
 <script src="../_cartela.js?v=7"></script>
 <script src="../_engine.js?v=6"></script>
 <script src="./algo.js?v=6"></script>
@@ -409,7 +409,7 @@ batch = HOKSBATCH.mount($('batchPanel'), {
 HOKSLAB.loadAlgos(() => batch.refresh());
 applyFormat();
 renderSingle();
-HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); refresh(); } }).catch(() => {});
+HOKS.loadAllPalettes().then(p => { if (p && p.length) { PALETTES = p; populateSelect(); batch.refresh(); refresh(); } }).catch(() => {});
 </script>
 </body>
 </html>

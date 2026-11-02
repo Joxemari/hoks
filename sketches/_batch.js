@@ -22,6 +22,7 @@
   const REPO = 'Joxemari/hoks';
   const TOKEN_KEY = 'hoks-gh-token';
   const OPEN_KEY = 'hoks-batch-open';     // qué lote recibe, compartido entre labs
+  const OUTBOX_KEY = 'hoks-batches-outbox'; // copia recuperable hasta que GitHub confirma
   const PUSH_DELAY = 1500;                // agrupa varios clics en un commit
 
   const CSS = `
@@ -75,6 +76,19 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
 
   // ── Persistencia ───────────────────────────────────────────────────────────
   function token() { return localStorage.getItem(TOKEN_KEY); }
+
+  function readOutbox() {
+    try {
+      const d = JSON.parse(localStorage.getItem(OUTBOX_KEY) || 'null');
+      return Array.isArray(d) ? d : null;
+    } catch (e) { return null; }
+  }
+
+  function writeOutbox(batches) {
+    localStorage.setItem(OUTBOX_KEY, JSON.stringify(batches));
+  }
+
+  function clearOutbox() { localStorage.removeItem(OUTBOX_KEY); }
 
   async function pull() {
     try {
@@ -154,12 +168,20 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
 
     function schedulePush() {
       dirty = true;
+      // La selección se escribe primero en una cola recuperable. Si el token
+      // falla o se cierra la pestaña durante el debounce, el siguiente arranque
+      // retoma exactamente estas recetas en vez de fingir que se guardaron.
+      writeOutbox(batches);
       clearTimeout(pushTimer);
       pushTimer = setTimeout(async () => {
-        try { await push(batches); dirty = false; note(''); }
-        catch (e) { note('⚠ sin guardar: ' + e.message); }
+        try {
+          await push(batches);
+          clearOutbox(); dirty = false; note('✓ guardado en GitHub');
+          setTimeout(() => { if (!dirty) note(''); }, 1800);
+        }
+        catch (e) { note('⚠ pendiente de GitHub: ' + e.message); }
       }, PUSH_DELAY);
-      note('guardando…');
+      note('guardado local · sincronizando con GitHub…');
     }
     function note(m) { $('hb-note').textContent = m; }
 
@@ -210,7 +232,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       if (b.items.some(it => it.work === r.work && it.seed === r.seed)) { toast('Ya estaba en ' + b.name); return false; }
       b.items.push({ ...r, addedAt: Date.now() });
       schedulePush(); render();
-      toast(`→ ${b.name} (${b.items.length})`);
+      toast(`→ ${b.name} (${b.items.length}) · sincronizando`);
       return true;
     }
     function add(seed) {
@@ -424,7 +446,15 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
     render();
-    pull().then(d => { batches = d; render(); });
+    pull().then(d => {
+      const pending = readOutbox();
+      batches = pending || d;
+      render();
+      if (pending) {
+        note('recuperado · sincronizando con GitHub…');
+        schedulePush();
+      }
+    });
 
     // El pliego se elige una sola vez y aquí: la descarga de la obra y la de su
     // cartela tienen que hablar del mismo papel.

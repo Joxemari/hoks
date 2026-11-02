@@ -1,5 +1,5 @@
 TITLE: A square that keeps asking
-LEAD: Every image here was rendered from the KRRTK algorithm itself — the same code that runs in the studio, not mockups. Where two panels sit side by side they share a seed; only the one thing under discussion changes.
+LEAD: KRRTK reduces a production line to one shape and one recurring decision: divide or stop. Every image here comes from the working system. When two panels share a seed, only the variable under discussion has changed.
 
 I wanted one shape and one question, repeated until the repetition became the subject. The shape is a square. The question is whether it should divide. KRRTK — *karratuak*, squares in Basque — is that question asked out loud, again and again, on a single sheet.
 
@@ -7,12 +7,14 @@ I wanted one shape and one question, repeated until the repetition became the su
 
 I didn't want ornament. I wanted the structure to be the only ornament, so I gave the square nothing to decorate itself with: no outline, no line weight, no gesture. It can split, or it can stay whole. Everything you see is the record of those two moves and nothing else.
 
-## The grammar
+## The grammar of refusal
 A field begins as one square. If it is bigger than a quarter of the field, it splits into four and I throw the fourth quarter away — the bottom-right corner, gone, every time. The three survivors each face the same test, split again, and lose their own fourth corner. Then the pieces are too small to divide and the recursion stops. Two levels deep, always. Thirteen squares to a field — one whole, three halves, nine quarters — stacked on top of each other with the parents still showing through.
 
 ![Left: the full lattice with every square inked. Right: the threshold keeps only some.](sketches/krrtk/makingof/grammar.png)
 
 That discarded quarter is not a bug I never got around to fixing. It's the sentence the series says. A clean quadtree tiles the plane and leaves nothing to notice — you read the grid and move on. Throw one corner away at every level and the square stops being a container and becomes a decision that went a particular way. The missing corner is where the eye catches.
+
+KRRTK contains three different refusals. The recursion discards one child structurally. The threshold discards squares probabilistically. Selection later discards complete outputs editorially. They are not the same gesture: one defines the grammar, one creates variation, and one turns variation into a body of work. The image is the residue left where those three filters overlap.
 
 > The rule is deliberately shallow: two levels, never three. I gave up depth on purpose. A square that could divide forever would be about its own cleverness, and I wanted it to be about the choice.
 
@@ -50,23 +52,17 @@ The margin isn't mine to set — it belongs to the system: one number, shared wi
 - **No neighbour awareness.** Each field subdivides blind. Fields never coordinate, which is why no two ever rhyme.
 
 ## Scarcity
-I learned this from Dmitri Cherniak's *Ringers* — publish the odds. A series should be able to tell you what's rare in it without a marketplace doing the telling. KRRTK's value doesn't come from quantity. What varies — and therefore what's scarce — is **coverage**: how the coin fell across the field. Measured over 20,000 seeds, one square field, default threshold:
+The probabilities are part of the work and should remain visible. In KRRTK, what varies — and therefore what becomes scarce within the system — is **coverage**: how the threshold falls across the field. Dense fields above 65% and sparse fields below 20% sit at the edges of the distribution; the large majority remains between them.
 
-| Coverage | Reading | How often |
-| over 65% of squares inked | uncommon | ~1 in 30 |
-| between 20% and 65% | common | the large majority |
-| under 20% inked | rare | ~1 in 17 |
-| under 12% inked | rarer | ~1 in 84 |
-| a single surviving square | the Goose | ~1 in 93 |
-| the empty field | the Goose, emptied | ~1 in 950 |
+![A common field beside a near-empty field: one square left standing in the ground.](sketches/krrtk/makingof/scarcity.png)
 
-![A common field beside the Goose: one square left standing in the ground.](sketches/krrtk/makingof/scarcity.png)
+Mathematically, all thirteen squares can fail the threshold. The current system refuses that outcome. If every answer is *no*, it restores the square whose random value came closest to surviving. KRRTK is therefore not neutral chance: it permits extreme absence but refuses silence. The rule edits probability at the boundary where the work would otherwise disappear.
 
-The Goose — the one output that makes you stop — is the near-empty field: a single square that survived every chance to disappear, about one in ninety. Rarer still, roughly once in nine hundred and fifty, the coin clears the field completely — no squares at all, just ground and grain, the question asked thirteen times and answered *no* every time.
+## The passage
+The algorithm can ask its question without end. The practice cannot keep every answer. I generate fields, compare them, select one and discard the rest. The missing fourth quarter is therefore echoed at another scale: refusal exists inside the rule and again in the act of choosing.
 
-## Close
-I don't publish the source. You've seen how it thinks, which is the part worth explaining; the rest it keeps.
+Once selected, the field leaves pure computation. Paper, scale, ink and surface turn exact coordinates into a physical encounter. What becomes visible is not the whole system, but the residue of one decision carried through it.
 
 ![Fifteen seeds.](sketches/krrtk/makingof/contact.png)
 
-> The rule is the work.
+> where does the work reside — in the artifact, in the system, or in the passage between them?

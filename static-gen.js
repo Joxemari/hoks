@@ -22,7 +22,7 @@
     '@type': 'Person',
     name: 'Joxemari Gallastegi',
     alternateName: 'hoks',
-    jobTitle: 'Computational artist',
+    jobTitle: 'Generative artist',
     url: BASE + 'about.html',
   };
 
@@ -145,7 +145,7 @@
   }
   function imageAlt(w) {
     const nm = name(w);
-    if (!w.ogImage) return 'hoks — generative art by Joxemari Gallastegi.';
+    if (!w.ogImage) return 'hoks — code blacksmith, forging algorithms into matter.';
     const s = firstSentence(pick(w.description, 'en'));
     return 'A piece from the ' + nm + ' family' + (s ? ': ' + s + '.' : '.');
   }

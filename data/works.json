@@ -8,7 +8,7 @@
     "description": {
       "en": "The capsules of PLLS given weather: mesh-gradient ground, film-grain skin. A capsule is not a shape — it is a distance between two points, given a thickness. The current direction of the work.",
       "es": "Las cápsulas de PLLS dotadas de atmósfera: fondo de degradado en malla, piel de grano de película. Una cápsula no es una forma — es una distancia entre dos puntos, con un grosor. La dirección actual del trabajo.",
-      "eu": "PLLSen kapsulak atmosfera emanda: sare-degradatuzko hondoa, film-pikorrezko azala. Kapsula bat ez da forma bat — bi punturen arteko distantzia bat da, lodiera batekin. Lanaren egungo norabidea."
+      "eu": "PLLSeko kapsulei atmosfera emanda: sare-gradientezko hondoa, film-pikorrezko azala. Kapsula bat ez da forma bat — bi punturen arteko distantzia bat da, lodiera batekin. Lanaren egungo norabidea."
     },
     "page": "plls.html",
     "makingof": "making.html?w=plls",
@@ -20,7 +20,8 @@
     "created": 1745000000000,
     "drawCode": "if (!palettes.length || _generating) return;\n  _generating = true;\n\n  const canvas = document.getElementById('c');\n  const ctx = canvas.getContext('2d');\n  const W = canvas.width, H = canvas.height;\n  const rng = new Rng(s);\n\n  const arch = rng.weighted(ARCHETYPES);\n  const pal  = getActivePalette(rng);\n  const colors = pal.colors;\n  const sizePct = rng.range(arch.sizeMin, arch.sizeMax);\n  const maxSize = Math.min(W,H) * sizePct;\n  const thickness = maxSize * 0.7;\n  const numShapes = rng.int(arch.pillMin, arch.pillMax);\n  const tol = OVERLAP_TOL[arch.name];\n\n  // Compute all pill positions first\n  const pills = [];\n  const placed = [];\n  for (let i = 0; i < numShapes; i++) {\n    const hl = maxSize/4, margin = thickness/2;\n    let cx, cy, angle, ok = false;\n    for (let att = 0; att < PLACEMENT_ATT; att++) {\n      angle = rng.range(0, Math.PI*2);\n      const dx = Math.cos(angle)*hl, dy = Math.sin(angle)*hl;\n      cx = rng.range(margin+Math.abs(dx), W-margin-Math.abs(dx));\n      cy = rng.range(margin+Math.abs(dy), H-margin-Math.abs(dy));\n      let bad = false;\n      for (const p of placed) if (pillsOverlapTooMuch(cx,cy,hl,thickness,p.cx,p.cy,p.hl,p.t,tol)){bad=true;break;}\n      if (!bad){ok=true;break;}\n    }\n    if (!ok){\n      angle = rng.range(0, Math.PI*2);\n      const dx = Math.cos(angle)*hl, dy = Math.sin(angle)*hl;\n      cx = rng.range(margin+Math.abs(dx), W-margin-Math.abs(dx));\n      cy = rng.range(margin+Math.abs(dy), H-margin-Math.abs(dy));\n    }\n    placed.push({cx,cy,hl,t:thickness});\n    const color = rng.pickFrom(colors);\n    const style = pickFinish(rng, arch.name);\n    pills.push({cx,cy,hl,angle,color,style,thickness});\n  }\n\n  // Clear and draw background immediately\n  ctx.globalCompositeOperation = 'source-over';\n  ctx.fillStyle = OFF_WHITE; ctx.fillRect(0,0,W,H);\n  let bgTrait = 'Off-white';\n  if (rng.bool(0.6)) { ctx.fillStyle = rng.pickFrom(colors); ctx.fillRect(0,0,W,H); bgTrait = 'Colored'; }\n\n  // Draw all pills instantly\n  const styleCount = {};\n  ctx.globalCompositeOperation = 'source-over';\n  for (const pill of pills) {\n    styleCount[pill.style] = (styleCount[pill.style]||0) + 1;\n    const x1 = pill.cx - Math.cos(pill.angle)*pill.hl;\n    const y1 = pill.cy - Math.sin(pill.angle)*pill.hl;\n    const x2 = pill.cx + Math.cos(pill.angle)*pill.hl;\n    const y2 = pill.cy + Math.sin(pill.angle)*pill.hl;\n    drawPill(ctx, x1, y1, x2, y2, pill.thickness, pill.color, pill.style, rng, colors);\n  }\n  _generating = false;\n  updateTraits(arch, pal, styleCount, bgTrait, numShapes, s);",
     "cartela": {
-      "eu": "Kapsula bat ez da forma: bi punturen arteko distantzia bat da, lodiera batekin.\nKolokatzea ez da apaingarria: elkarren gainean zenbat egon daitezkeen erabakitzen du arauak.",
+      "eu": "Kapsula bat ez da forma: bi punturen arteko distantzia bat da, lodiera batekin.\nKokapena ez da konposizioa: arauak erabakitzen du zenbateraino gainjar daitezkeen.",
+      "es": "Una cápsula no es una forma: es una distancia entre dos puntos, con un grosor.\nLa colocación no es composición: la regla decide cuánto pueden solaparse.",
       "en": "A capsule is not a shape: it is a distance between two points, given a thickness.\nPlacement is not arrangement: the rule decides how much they may overlap."
     },
     "ogImage": true
@@ -34,7 +35,7 @@
     "description": {
       "en": "Karratuak. A square deciding, again and again, whether to divide. Recursive subdivision against a threshold — structure as the only ornament. Atmosphere is a setting, not another work: the gradient beneath and the grain above can be lowered to nothing, and the rule is unchanged.",
       "es": "Karratuak. Un cuadrado decidiendo, una y otra vez, si dividirse. Subdivisión recursiva contra un umbral — la estructura como único ornamento. La atmósfera es un ajuste, no otra obra: el degradado debajo y el grano encima pueden bajarse a nada, y la regla no cambia.",
-      "eu": "Karratuak. Karratu bat, behin eta berriz, zatitu ala ez erabakitzen. Azpibanaketa errekurtsiboa atalase baten aurka — egitura apaingarri bakar gisa. Atmosfera ezarpen bat da, ez beste obra bat: azpiko degradatua eta gaineko pikorra ezerezera jaits daitezke, eta araua ez da aldatzen."
+      "eu": "Karratuak. Karratu bat, behin eta berriz, zatitu ala ez erabakitzen. Azpibanaketa errekurtsiboa atalase baten arabera — egitura apaingarri bakar gisa. Atmosfera ezarpen bat da, ez beste obra bat: azpiko gradientea eta gaineko pikorra desagertu arte jaits daitezke, eta araua ez da aldatzen."
     },
     "page": "krrtk.html",
     "makingof": "making.html?w=krrtk",
@@ -46,7 +47,8 @@
     "created": 1745100000000,
     "drawCode": "if (!palettes.length || _generating) return;\n  _generating = true;\n  const canvas = document.getElementById('c');\n  const ctx = canvas.getContext('2d');\n  const W = canvas.width, H = canvas.height;\n  const rng = new Rng(seed);\n  const pal = getActivePalette(rng);\n  const colors = pal.colors;\n  const threshold = 0.6;\n  const margin = Math.round(W * 0.1667);\n  const a = W - margin * 2;\n\n  // Background\n  ctx.fillStyle = colors[rng.int(0, colors.length-1)];\n  ctx.fillRect(0, 0, W, H);\n\n  // Build all squares â index-based loop so pushed squares get iterated (faithful to p5 behavior)\n  let squares = [{ x:margin, y:margin, size:a, color:colors[rng.int(0,colors.length-1)] }];\n  let si = 0;\n  while (si < squares.length) {\n    const sq = squares[si];\n    if (sq.size > a/4) {\n      const ns = sq.size/2;\n      squares.push(\n        {x:sq.x,      y:sq.y,      size:ns, color:colors[rng.int(0,colors.length-1)]},\n        {x:sq.x+ns,   y:sq.y,      size:ns, color:colors[rng.int(0,colors.length-1)]},\n        {x:sq.x,      y:sq.y+ns,   size:ns, color:colors[rng.int(0,colors.length-1)]},\n        {x:sq.x+ns,   y:sq.y+ns,   size:ns, color:colors[rng.int(0,colors.length-1)]}\n      );\n      squares.splice(squares.length-1, 1);\n    }\n    si++;\n  }\n\n  // Assign draw/skip probabilities\n  const toDraw = squares.map(() => rng.next() > threshold);\n  const drawCount = toDraw.filter(Boolean).length;\n  const minSize = squares.reduce((m,sq) => Math.min(m,sq.size), a);\n  const depthLevel = Math.max(1, Math.round(Math.log2(a / Math.max(minSize, 1))));\n  const density = drawCount > squares.length*0.5 ? 'Dense' : drawCount > squares.length*0.25 ? 'Scattered' : 'Open';\n\n  // Draw all squares instantly\n  for (let j = 0; j < squares.length; j++) {\n    if (toDraw[j]) {\n      ctx.fillStyle = squares[j].color;\n      ctx.fillRect(squares[j].x, squares[j].y, squares[j].size, squares[j].size);\n    }\n  }\n  _generating = false;\n  updateTraits(pal, drawCount, squares.length, depthLevel, seed);",
     "cartela": {
-      "eu": "Karratu bat, behin eta berriz, zatitu ala ez erabakitzen.\nLauetan zatitzen da, eta laugarrena beti botatzen: hutsune hori da serieak esaten duena.",
+      "eu": "Karratu bat, behin eta berriz, zatitu ala ez erabakitzen.\nLau zatitan banatzen da, eta laugarrena beti baztertzen du: hutsune hori da serieak esaten duena.",
+      "es": "Un cuadrado decidiendo, una y otra vez, si dividirse.\nSe divide en cuatro y siempre descarta el cuarto: ese cuadrante ausente es lo que dice la serie.",
       "en": "A square deciding, again and again, whether to divide.\nIt splits in four and always discards the fourth: that missing quarter is what the series says."
     },
     "ogImage": true
@@ -94,7 +96,7 @@
     "description": {
       "en": "One lattice read twice. A boolean mask decides which cells hold a circle; a region grown cell by cell decides which of them share a ground. The block does not decorate — it reframes: the same circle means one thing on the field and another inside the region.",
       "es": "Una malla leída dos veces. Una máscara booleana decide qué celdas tienen círculo; una región crecida celda a celda decide cuáles comparten un suelo. El bloque no decora — reencuadra: el mismo círculo significa una cosa en el campo y otra dentro de la región.",
-      "eu": "Sare bat, bitan irakurria. Maskara boolear batek erabakitzen du zein gelaxkak duten zirkulua; gelaxkaz gelaxka hazitako eskualde batek erabakitzen du horietako zeinek partekatzen duten lurra. Blokeak ez du apaintzen — birmarkatu egiten du: zirkulu berak gauza bat esan nahi du eremuan eta beste bat eskualdearen barruan."
+      "eu": "Sare bat, bitan irakurria. Maskara boolear batek erabakitzen du zein gelaxkak duten zirkulu bat; gelaxkaz gelaxka hazitako eskualde batek erabakitzen du horietako zeinek partekatzen duten lurra. Blokeak ez du apaintzen — berriz markoztatzen du: zirkulu berak gauza bat esan nahi du eremuan eta beste bat eskualdearen barruan."
     },
     "page": "dtkrt.html",
     "makingof": "making.html?w=dtkrt",
@@ -105,7 +107,8 @@
     ],
     "created": 1786060800000,
     "cartela": {
-      "eu": "Hazi bat, eta ondokoetara hedatzea. Ez dago forma-katalogorik.\nBarrak, eleak eta eskailerak arauaren ondorio dira, ez marrazki bat.",
+      "eu": "Hazi-gelaxka bat, gero ondokoetara hedatzea. Ez dago forma-katalogorik.\nBarrak, eleak eta eskailerak arauaren ondorio dira, ez marrazki bat.",
+      "es": "Una celda semilla, después la expansión a sus vecinas. No existe un catálogo de formas.\nLas barras, las eles y las escaleras son consecuencias de la regla, no un dibujo.",
       "en": "A seed cell, then spread to its neighbours. There is no catalogue of shapes.\nBars, ells and staircases are consequences of the rule, not a drawing."
     },
     "ogImage": true
@@ -150,7 +153,8 @@
     ],
     "created": 1786579200000,
     "cartela": {
-      "eu": "Gainetik eta azpitik ez dira bi geruza: ibilbideari jarraituz txandakatzen dira.\nGurutzagune bakoitzetik bi aldiz igarotzen da, eta bigarrenak lehenaren kontrakoa dio.",
+      "eu": "Gainetik eta azpitik ez dira bi geruza: ibilbideari jarraituz txandakatzen dira.\nGurutzagune bakoitzetik bi aldiz igarotzen da, eta bigarrenak lehenengoaren kontrakoa dio.",
+      "es": "Encima y debajo no son dos capas: se alternan a medida que se recorre la línea.\nCada cruce se atraviesa dos veces, y la segunda pasada dice lo contrario de la primera.",
       "en": "Over and under are not two layers: they alternate as the line is walked.\nEvery crossing is passed twice, and the second pass says the opposite of the first."
     },
     "ogImage": true

@@ -192,7 +192,7 @@ const DICT = {
     'palettes.loadError': 'Ezin izan dira paletak kargatu', 'palettes.chance': 'aukera',
     'sort.name': 'Izena', 'palettes.count': '%1 paleta · %2 aktibo',
     'palettes.copied': 'Kopiatuta: ', 'palettes.copyAll': 'Kopiatu dena',
-    'about.fallback': 'code blacksmith gisa lan egiten dut, algoritmoak materian forjatuz.\n\nnire praktika ez da irudi finko batekin hasten, sistema batekin baizik: forma posible asko sortzeko gai diren arau, muga, probabilitate eta geometriekin.\n\nemaitza bat ez, prozesu bat errepikatzen duten produkzio-lerroak eraikitzen ditut. exekuzio bakoitzak aukera bat sortzen du. hautaketak erabakitzen du zein aukerak egiten duen aurrera eta materian itzultzen den. ikusgai bihurtzen dena itzal bat besterik ez da: pentsatzen ari den sistema baten hondarra.\n\nkonputazioa fisiko bihurtzen denean, zehaztasunak eskala, testura, fabrikazioa eta denbora topatzen ditu. ez dira gainditu beharreko mugak, lanean parte hartzen duten indarrak baizik.\n\nkodeak proposatzen du. geometriak itzultzen du. materiak negoziatzen du.\n\nnon bizi da obra — artefaktuan, sisteman, ala bien arteko igarobidean?',
+    'about.fallback': 'code blacksmith gisa lan egiten dut, algoritmoak materian forjatuz.\n\nnire praktika ez da irudi finko batekin hasten, sistema batekin baizik: forma posible asko sortzeko gai diren arau, muga, probabilitate eta geometriekin.\n\nemaitza bat ez, prozesu bat errepikatzen duten produkzio-lerroak eraikitzen ditut. exekuzio bakoitzak aukera bat sortzen du. hautaketak erabakitzen du zein aukera eramango den aurrera eta materia bihurtuko den. ikusgai bihurtzen dena itzal bat besterik ez da: sistema baten pentsamenduak utzitako hondarra.\n\nkonputazioa fisiko bihurtzen denean, zehaztasunak eskalarekin, testurarekin, fabrikazioarekin eta denborarekin egiten du topo. ez dira gainditu beharreko mugak, obran parte hartzen duten indarrak baizik.\n\nkodeak proposatzen du. geometriak itzultzen du. materiak negoziatzen du.\n\nnon bizi da obra — artefaktuan, sisteman, ala bien arteko igarobidean?',
   },
 };
 
@@ -437,6 +437,7 @@ drawer.innerHTML = `
   <a href="palettes.html"${isPalettes?' class="active"':''} data-i18n="nav.palettes">Palettes</a>
   ${SHOW_LANG_SWITCHER ? `<div class="d-lang" id="nav-lang">
     <button type="button" data-lang="eu">EU</button>
+    <button type="button" data-lang="es">ES</button>
     <button type="button" data-lang="en">EN</button>
   </div>` : ''}`;
 document.body.appendChild(scrim);
