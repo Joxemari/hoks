@@ -8,6 +8,13 @@
  *   node _social/zernio.mjs post pieza.png --caption pie.txt [--comment "…"]
  *   node _social/zernio.mjs post a.png b.mp4 c.png --caption pie.txt      (carrusel)
  *   node _social/zernio.mjs post pieza.png --caption pie.txt --at 2026-11-10T19:00 [--tz Europe/Madrid]
+ *   node _social/zernio.mjs post montaje.mp4 --caption pie.txt --cover portada.jpg   (Reel)
+ *   node _social/zernio.mjs post pieza-9x16.png --story                               (Story)
+ *
+ * Qué sale lo decide el material, como en Instagram: una imagen es un post,
+ * varias son un carrusel (hasta 10) y un vídeo solo es un Reel. --cover pone
+ * la portada del Reel; sin ella, el primer fotograma. --story lo manda a
+ * Stories, que no llevan pie ni primer comentario.
  *
  * --caption acepta un archivo o el texto mismo. --comment es el primer
  * comentario; si no se da, van los hashtags de la casa (HOKSPOST.TAGS).
@@ -76,6 +83,8 @@ function args(argv) {
     else if (a === '--comment') o.comment = argv[++i];
     else if (a === '--at') o.at = argv[++i];
     else if (a === '--tz') o.tz = argv[++i];
+    else if (a === '--cover') o.cover = argv[++i];
+    else if (a === '--story') o.story = true;
     else if (a.startsWith('--')) throw new Error('opción desconocida: ' + a);
     else o.files.push(a);
   }
@@ -92,29 +101,33 @@ try {
     const o = args(rest);
     if (!o.files.length) throw new Error('falta al menos un archivo');
     if (o.files.length > 10) throw new Error('un carrusel admite como mucho 10 piezas');
-    if (!o.caption) throw new Error('falta --caption (archivo o texto)');
-    const content = fs.existsSync(o.caption) ? fs.readFileSync(o.caption, 'utf8').trim() : o.caption;
+    if (o.story && o.files.length > 1) throw new Error('una Story es una sola pieza');
+    if (o.cover && !(o.files.length === 1 && /\.(mp4|mov)$/i.test(o.files[0]))) throw new Error('--cover es solo para un Reel (un vídeo solo)');
+    if (!o.caption && !o.story) throw new Error('falta --caption (archivo o texto)');
+    const content = !o.caption ? '' : fs.existsSync(o.caption) ? fs.readFileSync(o.caption, 'utf8').trim() : o.caption;
     if (/#\w/.test(content)) console.warn('⚠ el pie lleva hashtags: en la casa van en el primer comentario (BRAND.md §6).');
     const ig = await instagram();
     const mediaItems = [];
     for (const f of o.files) { mediaItems.push(await upload(f)); console.log('subido', f); }
+    const psd = o.story ? { contentType: 'story' } : { firstComment: o.comment || TAGS };
+    if (o.cover) { psd.instagramThumbnail = (await upload(o.cover)).url; console.log('portada', o.cover); }
     const body = {
       content, mediaItems,
-      platforms: [{ platform: 'instagram', accountId: ig._id,
-                    platformSpecificData: { firstComment: o.comment || TAGS } }],
+      platforms: [{ platform: 'instagram', accountId: ig._id, platformSpecificData: psd }],
     };
     // Sin --at es un borrador. Con --at se programa; nunca publishNow.
     if (o.at) { body.scheduledFor = o.at; body.timezone = o.tz || 'Europe/Madrid'; }
     else body.isDraft = true;
     // Mismos archivos + mismo pie = misma clave: un reintento no duplica el post.
-    const h = crypto.createHash('sha256').update(content + o.files.map(f => fs.readFileSync(f).length + f).join('|') + (o.at || '')).digest('hex');
+    const h = crypto.createHash('sha256').update(content + o.files.map(f => fs.readFileSync(f).length + f).join('|') + (o.at || '') + (o.story ? 'story' : '') + (o.cover || '')).digest('hex');
     const key = [h.slice(0, 8), h.slice(8, 12), h.slice(12, 16), h.slice(16, 20), h.slice(20, 32)].join('-');
     const res = await api('POST', '/posts', body, { 'Idempotency-Key': key });
     const post = res.post || res;
-    console.log(`${o.at ? 'programado para ' + o.at + ' (' + body.timezone + ')' : 'borrador'} en @${ig.username} · ${post._id || ''}`);
+    const kind = o.story ? 'story' : o.files.length > 1 ? `carrusel de ${o.files.length}` : mediaItems[0].type === 'video' ? 'reel' : 'post';
+    console.log(`${kind} · ${o.at ? 'programado para ' + o.at + ' (' + body.timezone + ')' : 'borrador'} en @${ig.username} · ${post._id || ''}`);
     console.log('Revísalo y apruébalo en zernio.com.');
   } else {
-    console.log('uso: node _social/zernio.mjs accounts | post <archivos…> --caption <archivo|texto> [--comment …] [--at ISO] [--tz IANA]');
+    console.log('uso: node _social/zernio.mjs accounts | post <archivos…> --caption <archivo|texto> [--comment …] [--cover img] [--story] [--at ISO] [--tz IANA]');
     process.exit(cmd ? 2 : 0);
   }
 } catch (e) { console.error(e.message); process.exit(1); }

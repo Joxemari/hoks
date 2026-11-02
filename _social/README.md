@@ -50,7 +50,13 @@ al primer comentario.
 node _social/zernio.mjs accounts
 node _social/zernio.mjs post pieza.png --caption pie.txt
 node _social/zernio.mjs post pieza.png montaje.mp4 detalle.png --caption pie.txt --at 2026-11-10T19:00
+node _social/zernio.mjs post montaje-9x16.mp4 --caption pie.txt --cover portada.jpg     # Reel
+node _social/zernio.mjs post pieza-9x16.png --story                                     # Story
 ```
+
+Qué sale lo decide el material, como en Instagram: una imagen es un post,
+varias un carrusel, un vídeo solo un Reel (`--cover`, la portada). Las Stories
+van sin pie ni primer comentario.
 
 Por API, Instagram acepta feed entre 4:5 y 1,91:1, así que para Zernio se
 exporta en **`feed` 4:5**, no en `row` 3:4. El margen del 11 % absorbe el recorte
