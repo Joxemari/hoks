@@ -42,14 +42,18 @@ async function api(method, p, body, extra) {
   return data;
 }
 
+// La cuenta se elige por NOMBRE, nunca por ser "la que hay": la primera vez se
+// conectó por error la personal del autor, y con "la única conectada" los
+// borradores habrían ido allí.
+const HANDLE = (process.env.ZERNIO_IG_USERNAME || 'hoks.art').replace(/^@/, '');
 async function instagram() {
   const { accounts = [] } = await api('GET', '/accounts');
   const ig = accounts.filter(a => a.platform === 'instagram');
-  if (!ig.length) throw new Error('No hay ninguna cuenta de Instagram conectada en Zernio.\n' +
-    'Conéctala en zernio.com (tiene que ser Business o Creator) y vuelve a probar.');
-  if (ig.length > 1) throw new Error('Hay varias cuentas de Instagram: ' + ig.map(a => '@' + a.username).join(', ') +
-    '. Este script asume una sola (@hoks.art).');
-  return ig[0];
+  const it = ig.find(a => a.username === HANDLE);
+  if (!it) throw new Error(`@${HANDLE} no está conectada en Zernio` +
+    (ig.length ? ` (hay: ${ig.map(a => '@' + a.username).join(', ')}).` : '.') +
+    '\nConéctala (Business o Creator) y vuelve a probar.');
+  return it;
 }
 
 async function upload(file) {
