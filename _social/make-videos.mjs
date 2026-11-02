@@ -3,14 +3,17 @@
  * Dos formatos, los acordados:
  *   · assembling — una pieza se pinta sola (fondo → objetos), como el splash.
  *   · iterations — el sistema escupe seeds, cortes secos.
- * Cada familia en 1:1 (feed / X) y 9:16 (Reels / Stories / TikTok).
+ * Cada familia en 3:4 maquetado (la casilla de la fila del grid, con la misma
+ * maqueta que la pieza: _social/kit.js, BRAND.md §8–9), y a pantalla completa
+ * en 1:1 (X) y 9:16 (Reels / Stories / TikTok), donde la obra ES el fotograma.
  *
  * Requiere (solo en desarrollo, no en la web): Playwright (Chromium) y un
  * ffmpeg con libx264 — p.ej. `pip install imageio-ffmpeg`. No hay build del
  * sitio: esto es utillería de estudio, como sketches/ o _preview/.
  *
- *   node _social/make-videos.mjs [OUT_DIR] [FAM,FAM,...]
- *   node _social/make-videos.mjs ./out PLLS,KRRTK,DTKRT
+ *   node _social/make-videos.mjs [OUT_DIR] [FAM,FAM,...] [SEED]
+ *   node _social/make-videos.mjs ./out PLLS,KRRTK,DTKRT 782297919
+ *   MAT=blue node _social/make-videos.mjs ./out TRZS   (fondo de la fila)
  *
  * Los .mp4 NO se commitean (pesan y se regeneran): son entregables para colgar.
  */
@@ -22,7 +25,10 @@ import { fileURLToPath } from 'url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.resolve(process.argv[2] || './social-out');
 const FAMILIES = (process.argv[3] || 'PLLS,KRRTK,DTKRT').split(',');
-const ASPECTS = [['1x1', 1080, 1080], ['9x16', 1080, 1920]];
+const SEED = Number(process.argv[4] || 782297919) >>> 0;
+const MAT = process.env.MAT === 'blue' ? 'blue' : 'paper';
+// [etiqueta, ancho, alto, formato del kit si va maquetado]
+const ASPECTS = [['3x4', 1080, 1440, 'row'], ['1x1', 1080, 1080], ['9x16', 1080, 1920]];
 
 // ffmpeg con libx264: imageio-ffmpeg si está, si no el del PATH.
 function ffmpegExe() {
@@ -52,12 +58,13 @@ const ease = t => 1 - Math.pow(1 - t, 3);
 const ASM = path.join(OUT, '_asm'), ITR = path.join(OUT, '_itr');
 
 for (const fam of FAMILIES) {
-  for (const [lab, W, Hh] of ASPECTS) {
+  for (const [lab, W, Hh, kit] of ASPECTS) {
     await pg.setViewportSize({ width: W, height: Hh });
-    await pg.evaluate(([w, h]) => window.resize(w, h), [W, Hh]);
+    if (kit) await pg.evaluate(([k, m]) => window.layout(k, m), [kit, MAT]);
+    else await pg.evaluate(([w, h]) => window.resize(w, h), [W, Hh]);
     // assembling — la pieza se pinta sola
     { clean(ASM); const REVEAL = 120, HOLD = 36; let n = 0;
-      await pg.evaluate(([f, s]) => window.setup(f, s), [fam, 782297919]);
+      await pg.evaluate(([f, s]) => window.setup(f, s), [fam, SEED]);
       for (let f = 0; f < REVEAL; f++) { await pg.evaluate(x => window.step(x), ease(f / (REVEAL - 1))); await C.screenshot({ path: path.join(ASM, 'f' + pad(n++) + '.png') }); }
       const last = path.join(ASM, 'f' + pad(n - 1) + '.png'); for (let h = 0; h < HOLD; h++) fs.copyFileSync(last, path.join(ASM, 'f' + pad(n++) + '.png'));
       enc(ASM, path.join(OUT, fam.toLowerCase() + '-assembling-' + lab + '.mp4'), 30, 18); }
