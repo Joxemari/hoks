@@ -64,7 +64,7 @@ varias un carrusel, un vídeo solo un Reel (`--cover`, la portada). Las Stories
 van sin pie ni primer comentario.
 
 Por API, Instagram acepta feed entre 4:5 y 1,91:1, así que para Zernio se
-exporta en **`feed` 4:5**, no en `row` 3:4. El margen del 6 % absorbe el recorte
+exporta en **`feed` 4:5**, no en `row` 3:4. El margen del 11 % absorbe el recorte
 del perfil a 3:4 (unos 34 px por lado, todo papel).
 
 ## Estética
