@@ -146,7 +146,10 @@ try {
     if (o.at) { body.scheduledFor = o.at; body.timezone = o.tz || 'Europe/Madrid'; }
     else body.isDraft = true;
     // Mismos archivos + mismo pie = misma clave: un reintento no duplica el post.
-    const h = crypto.createHash('sha256').update(to + text + o.files.map(f => fs.readFileSync(f).length + f).join('|') + (o.at || '') + (o.story ? 'story' : '') + (o.cover || '')).digest('hex');
+    // La clave va por CONTENIDO, no por nombre: con la ruta, rehacer una
+    // portada con el mismo nombre devolvía el post viejo (incluso uno borrado).
+    const sum = f => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
+    const h = crypto.createHash('sha256').update(to + text + o.files.map(sum).join('|') + (o.at || '') + (o.story ? 'story' : '') + (o.cover ? sum(o.cover) : '')).digest('hex');
     const key = [h.slice(0, 8), h.slice(8, 12), h.slice(12, 16), h.slice(16, 20), h.slice(20, 32)].join('-');
     const res = await api('POST', '/posts', body, { 'Idempotency-Key': key });
     const post = res.post || res;
