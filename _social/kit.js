@@ -43,9 +43,13 @@
   };
   function fmtOf(f) { return typeof f === 'string' ? (FORMATS[f] || FORMATS.row) : (f || FORMATS.row); }
 
-  // El margen es el de la obra: las familias se retiran del papel un 11 %
-  // (E.FIELD_MARGIN), y la página se retira lo mismo. Mismo aire dentro y fuera.
-  const MARGIN = 0.11;
+  // El margen. Nació igual al de la obra (las familias se retiran del papel un
+  // 11 %, E.FIELD_MARGIN), pero en el grid del perfil la pieza se quedaba
+  // pequeña: la casilla ya es pequeña y el 11 % más el aire propio de la obra
+  // eran demasiado papel. Un 6 % basta para lo único que el margen tiene que
+  // hacer aquí: que el recorte del perfil (4:5 → 3:4, ~34 px por lado en 1080)
+  // caiga siempre en papel y nunca en la obra.
+  const MARGIN = 0.06;
   // La cartela va pegada a la obra, no al borde: es una etiqueta de sala.
   const STAMP_GAP = 0.45;   // × margen, entre la obra y la línea del sello
   const STAMP_SIZE = 0.022; // × lado corto

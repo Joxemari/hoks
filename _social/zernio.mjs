@@ -33,7 +33,7 @@
  *
  * Ojo con el formato: por API, Instagram acepta feed entre 4:5 y 1,91:1, así
  * que la fila 3:4 (1080×1440) no pasa. Para Zernio se exporta en `feed` 4:5:
- * su margen del 11 % absorbe el recorte del perfil a 3:4 (≈34 px por lado,
+ * su margen del 6 % absorbe el recorte del perfil a 3:4 (≈34 px por lado,
  * todo papel), así que la fila se sigue leyendo entera.
  */
 import fs from 'fs'; import path from 'path'; import crypto from 'crypto';
