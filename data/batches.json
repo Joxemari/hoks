@@ -537,5 +537,57 @@
         "published": true
       }
     ]
+  },
+  {
+    "id": 1793722381514,
+    "name": "capítulo 02 · Mondrian · 2026-11",
+    "status": "open",
+    "created": 1793722381514,
+    "items": [
+      {
+        "work": "dtkrt",
+        "seed": 3722888192,
+        "format": "square",
+        "base": 600,
+        "params": {},
+        "palSel": 1,
+        "palName": "Mondrian",
+        "addedAt": 1793722367079,
+        "published": true
+      },
+      {
+        "work": "trzs",
+        "seed": 2856910491,
+        "format": "horizontal",
+        "base": 600,
+        "params": {},
+        "palSel": 1,
+        "palName": "Mondrian",
+        "addedAt": 1793722369363,
+        "published": true
+      },
+      {
+        "work": "plls",
+        "seed": 3244187408,
+        "format": "horizontal",
+        "base": 600,
+        "params": {},
+        "palSel": 1,
+        "palName": "Mondrian",
+        "addedAt": 1793722370088,
+        "published": true
+      },
+      {
+        "work": "krrtk",
+        "seed": 1364305481,
+        "format": "square",
+        "base": 600,
+        "params": {},
+        "palSel": 1,
+        "palName": "Mondrian",
+        "addedAt": 1793722370574,
+        "published": true
+      }
+    ]
   }
 ]
