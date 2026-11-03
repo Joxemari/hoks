@@ -173,10 +173,11 @@ Ninguna plantilla usa display: en redes la tipografía grande es la obra.
 
 **Plantillas**
 
-- **pieza** — la obra matada sobre papel (o azul) con un margen del **11 % del
-  lado corto**: el mismo aire que las familias dejan dentro de su campo
-  (`E.FIELD_MARGIN`), así la obra se retira de la página lo mismo que de su
-  papel. Cualquier proporción cabe; un PLLS horizontal sigue horizontal.
+- **pieza** — la obra matada sobre papel (o azul) con un margen del **6 % del
+  lado corto**. Fue del 11 % —el mismo aire que las familias dejan dentro de su
+  campo— y en el grid del perfil la pieza se quedaba pequeña; el 6 % sigue
+  cubriendo el recorte de 4:5 a 3:4 con papel. Cualquier proporción cabe; un
+  PLLS horizontal sigue horizontal.
   Debajo, la **cartela**: el sello (§7) en mono, pegado a la obra y alineado a su
   canto izquierdo, como una etiqueta de sala. `randomSeed` y la seed en tinta (o
   acid sobre azul), el resto en gris (o blanco).
