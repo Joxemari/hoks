@@ -18,6 +18,17 @@
  *
  *   ZERNIO_TT_USERNAME=… node _social/zernio.mjs post reel.mp4 --to tiktok --caption pie.txt --cover p.jpg --at …
  *
+ * Alcance (solo Instagram; BRAND/Notion «Alcance»):
+ *   --trial [manual|auto]  Trial Reel: se enseña PRIMERO a quien no te sigue y no sale
+ *                          en el perfil, así que no toca el grid. manual (por defecto):
+ *                          se gradúa a mano desde la app; auto: Instagram lo gradúa si
+ *                          funciona con no seguidores (y entonces SÍ llega al perfil).
+ *   --reels-only           el Reel va solo a la pestaña Reels, no al grid.
+ *   --collab a,b,c         hasta 3 colaboradores: el post sale también en su perfil
+ *                          cuando aceptan la invitación (no en Stories).
+ *   --location ID          ubicación: el número de instagram.com/explore/locations/ID/
+ *                          (no en Stories). Siempre un lugar real donde se hace la obra.
+ *
  * A TikTok solo van vídeos, y como BORRADOR a la bandeja de la app: TikTok pide
  * que quien publica vea la pieza y dé su consentimiento, así que el último paso
  * es siempre del autor. Sin primer comentario: los hashtags van en el pie.
@@ -96,6 +107,10 @@ function args(argv) {
     else if (a === '--cover') o.cover = argv[++i];
     else if (a === '--story') o.story = true;
     else if (a === '--to') o.to = argv[++i];
+    else if (a === '--trial') o.trial = /^(manual|auto)$/.test(argv[i + 1] || '') ? argv[++i] : 'manual';
+    else if (a === '--reels-only') o.reelsOnly = true;
+    else if (a === '--collab') o.collab = argv[++i].split(',').map(u => u.trim().replace(/^@/, '')).filter(Boolean);
+    else if (a === '--location') o.location = argv[++i];
     else if (a.startsWith('--')) throw new Error('opción desconocida: ' + a);
     else o.files.push(a);
   }
@@ -115,10 +130,16 @@ try {
     if (o.story && o.files.length > 1) throw new Error('una Story es una sola pieza');
     if (o.cover && !(o.files.length === 1 && /\.(mp4|mov)$/i.test(o.files[0]))) throw new Error('--cover es solo para un Reel (un vídeo solo)');
     if (!o.caption && !o.story) throw new Error('falta --caption (archivo o texto)');
+    const isReel = o.files.length === 1 && /\.(mp4|mov)$/i.test(o.files[0]) && !o.story;
+    if ((o.trial || o.reelsOnly) && !isReel) throw new Error('--trial y --reels-only son solo para un Reel (un vídeo suelto, sin --story)');
+    if (o.story && (o.collab || o.location)) throw new Error('las Stories no admiten --collab ni --location');
+    if (o.collab && o.collab.length > 3) throw new Error('--collab admite como mucho 3 cuentas');
+    if (o.location && !/^\d+$/.test(o.location)) throw new Error('--location es el número del lugar (instagram.com/explore/locations/<número>/)');
     const content = !o.caption ? '' : fs.existsSync(o.caption) ? fs.readFileSync(o.caption, 'utf8').trim() : o.caption;
     if (/#\w/.test(content)) console.warn('⚠ el pie lleva hashtags: en la casa van en el primer comentario (BRAND.md §6).');
     const to = o.to || 'instagram';
     if (!HANDLES[to]) throw new Error('--to admite instagram o tiktok');
+    if (to === 'tiktok' && (o.trial || o.reelsOnly || o.collab || o.location)) throw new Error('--trial, --reels-only, --collab y --location son de Instagram');
     if (to === 'tiktok' && (o.story || o.files.length !== 1 || !/\.(mp4|mov)$/i.test(o.files[0])))
       throw new Error('a TikTok solo va un vídeo suelto');
     const ig = await account(to);
@@ -136,6 +157,10 @@ try {
       if (o.cover) { psd.videoCoverImageUrl = (await upload(o.cover)).url; console.log('portada', o.cover); }
     } else {
       psd = o.story ? { contentType: 'story' } : { firstComment: o.comment || TAGS };
+      if (o.trial) psd.trialParams = { graduationStrategy: o.trial === 'auto' ? 'SS_PERFORMANCE' : 'MANUAL' };
+      if (o.reelsOnly) psd.shareToFeed = false;
+      if (o.collab) psd.collaborators = o.collab;
+      if (o.location) psd.locationId = o.location;
       if (o.cover) { psd.instagramThumbnail = (await upload(o.cover)).url; console.log('portada', o.cover); }
     }
     const body = {
@@ -149,15 +174,15 @@ try {
     // La clave va por CONTENIDO, no por nombre: con la ruta, rehacer una
     // portada con el mismo nombre devolvía el post viejo (incluso uno borrado).
     const sum = f => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
-    const h = crypto.createHash('sha256').update(to + text + o.files.map(sum).join('|') + (o.at || '') + (o.story ? 'story' : '') + (o.cover ? sum(o.cover) : '')).digest('hex');
+    const h = crypto.createHash('sha256').update(to + text + o.files.map(sum).join('|') + (o.at || '') + (o.story ? 'story' : '') + (o.cover ? sum(o.cover) : '') + JSON.stringify([o.trial, o.reelsOnly, o.collab, o.location])).digest('hex');
     const key = [h.slice(0, 8), h.slice(8, 12), h.slice(12, 16), h.slice(16, 20), h.slice(20, 32)].join('-');
     const res = await api('POST', '/posts', body, { 'Idempotency-Key': key });
     const post = res.post || res;
-    const kind = to === 'tiktok' ? 'tiktok (a la bandeja)' : o.story ? 'story' : o.files.length > 1 ? `carrusel de ${o.files.length}` : mediaItems[0].type === 'video' ? 'reel' : 'post';
+    const kind = to === 'tiktok' ? 'tiktok (a la bandeja)' : o.story ? 'story' : o.trial ? `trial reel (${o.trial})` : o.files.length > 1 ? `carrusel de ${o.files.length}` : mediaItems[0].type === 'video' ? 'reel' : 'post';
     console.log(`${kind} · ${o.at ? 'programado para ' + o.at + ' (' + body.timezone + ')' : 'borrador'} en @${ig.username} · ${post._id || ''}`);
     console.log('Revísalo y apruébalo en zernio.com.');
   } else {
-    console.log('uso: node _social/zernio.mjs accounts | post <archivos…> --caption <archivo|texto> [--comment …] [--cover img] [--story] [--to instagram|tiktok] [--at ISO] [--tz IANA]');
+    console.log('uso: node _social/zernio.mjs accounts | post <archivos…> --caption <archivo|texto> [--comment …] [--cover img] [--story] [--trial [manual|auto]] [--reels-only] [--collab a,b] [--location ID] [--to instagram|tiktok] [--at ISO] [--tz IANA]');
     process.exit(cmd ? 2 : 0);
   }
 } catch (e) { console.error(e.message); process.exit(1); }
