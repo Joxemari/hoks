@@ -87,8 +87,20 @@
   .th-code{font-family:var(--mono); font-size:clamp(13px,1.25vw,17px); line-height:2; color:var(--acid); white-space:pre; justify-self:start}
   .th-code i{font-style:normal; color:rgba(255,255,255,.55)}
   .th-vis .cap{position:absolute; left:0; bottom:-28px; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:rgba(255,255,255,.6)}
-  .reveal{opacity:0; transform:translateY(26px); transition:opacity .9s ease, transform .9s ease}
-  .reveal.in{opacity:1; transform:none}
+  /* ── La página se ejecuta: el texto se escribe con el scroll, las cajas se trazan
+     desde una esquina y unos cursores hacen el trabajo. Código propio (la idea es
+     la de Swarm, de Joel Califa: aquí sin su código ni su coreografía). ── */
+  .ch-h{visibility:hidden}
+  .caret{display:inline-block; width:.07em; min-width:2px; height:.95em; margin-right:-.07em; vertical-align:-.1em; background:currentColor; animation:blink 1s steps(1) infinite}
+  [data-build="box"],[data-build="piece"]{position:relative}
+  .bframe{position:absolute; left:0; top:0; border:1.5px solid var(--blue); pointer-events:none; z-index:3}
+  .thesis .bframe{border-color:var(--acid)}
+  .bbadge{position:absolute; right:-1px; bottom:-22px; font-family:var(--mono); font-size:10px; letter-spacing:.04em; padding:2px 6px; background:var(--blue); color:var(--acid); white-space:nowrap}
+  .thesis .bbadge{background:var(--acid); color:var(--blue)}
+  .agent{position:fixed; left:0; top:0; z-index:30; pointer-events:none; opacity:0; transition:opacity .4s; will-change:transform}
+  .agent svg{display:block; width:18px; height:22px; filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
+  .agent .tag{position:absolute; left:14px; top:18px; font-family:var(--mono); font-size:10.5px; padding:2px 7px; border-radius:2px; white-space:nowrap; background:var(--blue); color:var(--acid)}
+  .agent.on-blue path{fill:var(--acid)} .agent.on-blue .tag{background:var(--acid); color:var(--blue)}
 
   /* ── 3 · la sala (el muro con pulso) o el índice ── */
   #hall{position:relative; height:100vh; border-top:1px solid var(--line)}
@@ -153,7 +165,7 @@
   }
   @media (prefers-reduced-motion:reduce){
     html{scroll-behavior:auto}
-    .reveal{opacity:1; transform:none; transition:none}
+    .agent{display:none} .caret{display:none}
     .kin span{transition:none}
   }
 </style>
@@ -191,19 +203,19 @@
 <!-- 2 · la tesis: una idea por pantalla, en el campo azul de la casa -->
 <section class="thesis" aria-label="Thesis">
   <div class="th">
-    <div class="reveal"><div class="lbl">[01] — code</div><h2>code proposes.</h2>
-      <p>every piece begins as a rule written in code. the rule does not draw a picture: it describes how one could be drawn.</p></div>
-    <div class="th-code reveal" id="thCode"></div>
+    <div><div class="lbl" data-build="type">[01] — code</div><h2 data-build="type">code proposes.</h2>
+      <p data-build="type">every piece begins as a rule written in code. the rule does not draw a picture: it describes how one could be drawn.</p></div>
+    <div class="th-code" id="thCode"></div>
   </div>
   <div class="th">
-    <div class="reveal"><div class="lbl">[02] — geometry</div><h2>geometry translates.</h2>
-      <p>a seed decides. the same rule, executed once, takes a form — and it would take that same form a thousand times.</p></div>
-    <div class="th-vis reveal"><canvas id="thGeo" width="1040" height="1040"></canvas><div class="cap">the block, before the dots</div></div>
+    <div><div class="lbl" data-build="type">[02] — geometry</div><h2 data-build="type">geometry translates.</h2>
+      <p data-build="type">a seed decides. the same rule, executed once, takes a form — and it would take that same form a thousand times.</p></div>
+    <div class="th-vis" data-build="piece"><canvas id="thGeo" width="1040" height="1040"></canvas><div class="cap">the block, before the dots</div></div>
   </div>
   <div class="th" id="thMatter">
-    <div class="reveal"><div class="lbl">[03] — matter</div><h2>matter negotiates.</h2>
-      <p>printed at 300 dpi, the work meets paper, pigment and grain. the grain belongs to the seed too.</p></div>
-    <div class="th-vis reveal"><canvas id="thMat" width="1040" height="1040"></canvas><div class="cap" id="matCap">1:1 at print size — the grain</div></div>
+    <div><div class="lbl" data-build="type">[03] — matter</div><h2 data-build="type">matter negotiates.</h2>
+      <p data-build="type">printed at 300 dpi, the work meets paper, pigment and grain. the grain belongs to the seed too.</p></div>
+    <div class="th-vis" data-build="box"><canvas id="thMat" width="1040" height="1040"></canvas><div class="cap" id="matCap">1:1 at print size — the grain</div></div>
   </div>
 </section>
 
@@ -222,7 +234,7 @@
 
 <!-- 4 · capítulos: una paleta, cuatro sistemas -->
 <section class="sec" aria-label="Chapters">
-  <div class="sec-head"><h2>chapters</h2><span class="lbl" style="color:var(--mut)">one palette · four systems</span></div>
+  <div class="sec-head"><h2 data-build="type">chapters</h2><span class="lbl" style="color:var(--mut)">one palette · four systems</span></div>
   <div id="chaps"></div>
 </section>
 
@@ -336,7 +348,7 @@
 
   // ── 2 · tesis ─────────────────────────────────────────────────────────
   function thesis(PAL){
-    document.getElementById('thCode').innerHTML='randomSeed('+HERO.seed+');\npalette(\''+HERO.pal+'\');\n\n'+RULE;
+    var code=document.getElementById('thCode'); code.innerHTML='randomSeed('+HERO.seed+');\npalette(\''+HERO.pal+'\');\n\n'+RULE; code.setAttribute('data-build','type');
     // geometría: el bloque entero y ningún círculo (como la portada del Reel)
     var g=document.getElementById('thGeo'), n=g.width, rects=0, arc=false, probe=document.createElement('canvas'); probe.width=probe.height=n;
     var px=new Proxy(probe.getContext('2d'), { get:function(o,k){ var v=o[k]; if(typeof v!=='function') return v;
@@ -345,6 +357,8 @@
     H[HERO.fam].render(px, n, n, HERO.seed, opts(PAL));
     var asm=HOKSPOST.assembly(function(c){ H[HERO.fam].render(c, n, n, HERO.seed, opts(PAL)); }, n, n);
     g.getContext('2d').drawImage(asm.at(rects/asm.steps),0,0);
+    // el constructor la monta con el scroll: del suelo al bloque entero, paso a paso
+    GEO={ ctx:g.getContext('2d'), asm:asm, target:rects/asm.steps, n:n, last:-1 };
     // materia: la pieza al tamaño de impresión y un recorte 1:1. Es el render más
     // caro de la página, así que espera a que la sección se acerque, y en una
     // pantalla pequeña se hace a A4 (2480 px) y no a A3 (3508 px).
@@ -359,8 +373,7 @@
         var mx=m.getContext('2d'); mx.imageSmoothingEnabled=true; mx.imageSmoothingQuality='high';
         mx.drawImage(big, Math.round(big.width*.40), Math.round(big.height*.49), px*2, px*2, 0, 0, px, px); big.width=big.height=0; }, 30); }); },
       {rootMargin:'60% 0px'}).observe(document.getElementById('thMatter'));
-    var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting) e.target.classList.add('in'); }); }, {threshold:.25});
-    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
   }
 
   // ── 3 · la sala (de la landing actual) y el índice ───────────────────
@@ -434,7 +447,7 @@
   // ── 4 · capítulos ─────────────────────────────────────────────────────
   function chapters(byName){ var host=document.getElementById('chaps');
     CHAPTERS.forEach(function(c,i){ var p=byName(c[0]); if(!p) return; var row=document.createElement('div'); row.className='chap'+(i===0?' now':i>1?' later':'');
-      row.innerHTML='<span class="n">['+String(i+1).padStart(2,'0')+']</span><span class="pn">'+c[0]+'</span><span class="sw">'+p.colors.map(function(x){ return '<span style="background:'+x+'"></span>'; }).join('')+'</span><span class="st">'+c[1]+'</span>';
+      row.innerHTML='<span class="n">['+String(i+1).padStart(2,'0')+']</span><span class="pn" data-build="type">'+c[0]+'</span><span class="sw" data-build="box">'+p.colors.map(function(x){ return '<span style="background:'+x+'"></span>'; }).join('')+'</span><span class="st">'+c[1]+'</span>';
       host.appendChild(row); }); }
 
   // ── 5 · la gramática, compuesta por una seed ─────────────────────────
@@ -459,6 +472,60 @@
     addEventListener('resize', compose);
   }
 
+  // ── La página se ejecuta ──────────────────────────────────────────────
+  // Cada elemento marcado se construye según cuánto ha entrado en pantalla, y se
+  // deshace si se vuelve a subir: el scroll es el tiempo de la ejecución.
+  //   type  → se escribe letra a letra con su caret
+  //   box   → se traza desde la esquina con su W × H; al cerrarse, aparece el contenido
+  //   piece → se traza la caja y la pieza se monta paso a paso (assembly)
+  var GEO=null;
+  function build(){
+    var els=[].slice.call(document.querySelectorAll('[data-build]'));
+    var items=els.map(function(el){ var kind=el.getAttribute('data-build'), it={el:el, kind:kind, p:-1, blue:!!el.closest('.thesis')};
+      if(kind==='type'){ it.chars=[]; var walk=document.createTreeWalker(el, NodeFilter.SHOW_TEXT), nodes=[], nd; while((nd=walk.nextNode())) nodes.push(nd);
+        nodes.forEach(function(t){ var frag=document.createDocumentFragment(); Array.from(t.nodeValue).forEach(function(ch){ var sp=document.createElement('span'); sp.textContent=ch; sp.className='ch-h'; frag.appendChild(sp); it.chars.push(sp); }); t.parentNode.replaceChild(frag,t); });
+        it.shown=0; it.caret=document.createElement('span'); it.caret.className='caret'; it.caret.setAttribute('aria-hidden','true'); }
+      else { it.frame=document.createElement('div'); it.frame.className='bframe'; it.badge=document.createElement('span'); it.badge.className='bbadge'; it.frame.appendChild(it.badge); el.appendChild(it.frame);
+        it.content=[].slice.call(el.children).filter(function(c){ return c!==it.frame && !c.classList.contains('cap'); }); }
+      return it; });
+    if(REDUCED){ items.forEach(function(it){ apply(it,1); }); return; }
+    // los cursores: cuatro, con lo que ejecutan
+    var AG=[0,1,2,3].map(function(){ var a=document.createElement('div'); a.className='agent';
+      a.innerHTML='<svg viewBox="0 0 18 22"><path d="M1 1 L1 17 L5.5 13 L8.5 20.5 L11.5 19.2 L8.6 12 L14.5 12 Z" fill="#000ef7" stroke="#fff" stroke-width="1.2"/></svg><span class="tag"></span>';
+      document.body.appendChild(a); return {el:a, tag:a.querySelector('.tag'), x:innerWidth*Math.random(), y:innerHeight*.5, tx:0, ty:0, idle:0}; });
+    function apply(it,p){
+      if(it.kind==='type'){ var n=Math.round(p*it.chars.length);
+        if(n!==it.shown){ var a=Math.min(n,it.shown), b=Math.max(n,it.shown); for(var i=a;i<b;i++) it.chars[i].classList.toggle('ch-h', i>=n); it.shown=n; }
+        if(p>0 && p<1){ var at=it.chars[Math.max(0,n-1)]; if(at && at.nextSibling!==it.caret) at.parentNode.insertBefore(it.caret, at.nextSibling); }
+        else if(it.caret.parentNode) it.caret.parentNode.removeChild(it.caret);
+        return; }
+      var w=it.el.clientWidth, h=it.el.clientHeight, f=it.kind==='piece' ? clamp(p/.3,0,1) : clamp(p/.85,0,1), fe=1-Math.pow(1-f,2);
+      it.frame.style.width=(w*fe)+'px'; it.frame.style.height=(h*fe)+'px'; it.frame.style.opacity=(p>=1?0:1);
+      it.badge.textContent=Math.round(w*fe)+' × '+Math.round(h*fe);
+      var show=it.kind==='piece' ? (p>.3?1:0) : clamp((p-.85)/.15,0,1);
+      it.content.forEach(function(c){ c.style.opacity=show; });
+      if(it.kind==='piece' && GEO){ var k=Math.round(clamp((p-.3)/.7,0,1)*GEO.target*GEO.asm.steps);
+        if(k!==GEO.last){ GEO.last=k; GEO.ctx.clearRect(0,0,GEO.n,GEO.n); GEO.ctx.drawImage(GEO.asm.at(k/GEO.asm.steps),0,0); } } }
+    function point(it){ // dónde trabaja ahora, en coordenadas de pantalla
+      if(it.kind==='type'){ var r=it.caret.getBoundingClientRect(); return {x:r.right+2, y:r.top+r.height*.6, tag:'type()'}; }
+      var rr=it.frame.getBoundingClientRect();
+      if(it.kind==='piece' && it.p>.3){ var t=performance.now()/700; return {x:rr.left+rr.width*(.5+.3*Math.sin(t)), y:rr.top+rr.height*(.5+.3*Math.cos(t*1.3)), tag:'assemble()'}; }
+      return {x:rr.right, y:rr.bottom, tag:'rect()'}; }
+    function tick(){
+      var vh=innerHeight, active=[];
+      items.forEach(function(it){ var r=it.el.getBoundingClientRect();
+        var p=(r.bottom<-vh || r.top>vh*2) ? it.p : clamp((vh*.9-r.top)/(vh*.42),0,1);
+        if(p!==it.p){ it.p=p; apply(it,p); }
+        if(p>0 && p<1) active.push(it); });
+      AG.forEach(function(a,i){
+        if(i<active.length){ var it=active[i], pt=point(it); a.tx=pt.x; a.ty=pt.y;   // un cursor por tarea en curso, nunca dos en la misma
+          a.tag.textContent=pt.tag; a.el.classList.toggle('on-blue', it.blue); a.el.style.opacity=1; a.idle=0; }
+        else { a.idle++; if(a.idle>40) a.el.style.opacity=0; }
+        a.x+= (a.tx-a.x)*.2; a.y+=(a.ty-a.y)*.2; a.el.style.transform='translate('+a.x+'px,'+a.y+'px)'; });
+      requestAnimationFrame(tick); }
+    requestAnimationFrame(tick);
+  }
+
   // ── BOOT ──────────────────────────────────────────────────────────────
   (async function boot(){
     var cat=FALLBACK, works=await fetchJSON(RAW+'works.json?t='+Date.now(), 6000);
@@ -481,7 +548,7 @@
     var norm=function(n){ var p=byName(n); return p ? Object.assign({}, p, {prob:1}) : null; };
     HALLPAL={ chapter:norm(HERO.pal), brand:norm('Hoks'), next:norm('Mondrian') };
     if(H[HERO.fam] && PAL){ hero(PAL); thesis(PAL); }
-    index(cat, PAL); chapters(byName); kinetic();
+    index(cat, PAL); chapters(byName); kinetic(); build();
     if(hallVisible) contact();
   })();
 })();
