@@ -71,9 +71,9 @@
   @keyframes logoIn{from{opacity:0} to{opacity:1}}
   .enter{font-family:var(--geo); font-size:12px; letter-spacing:.42em; text-transform:uppercase; color:#fff; padding-left:.42em; text-shadow:0 1px 14px rgba(0,0,0,.45)}
   @keyframes blink{50%{opacity:.25}} .enter b{animation:blink 2.4s ease-in-out infinite; font-weight:400}
-  .hero-seal{position:absolute; left:50%; transform:translateX(-50%); opacity:0; font-family:var(--mono); font-size:12px; letter-spacing:.06em; max-width:92vw; text-align:center; line-height:1.6}
+  .hero-seal{position:absolute; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:12px; letter-spacing:.06em; max-width:92vw; text-align:center; line-height:1.6}
   .hero-seal b{font-weight:400; color:var(--mut)}
-  .hero-q{position:absolute; left:50%; bottom:11vh; transform:translateX(-50%); width:min(92vw,860px); text-align:center; opacity:0; font-family:var(--geo); font-weight:700; text-transform:uppercase; font-size:clamp(18px,2.4vw,30px); line-height:1.1; text-wrap:balance}
+  .hero-q{position:absolute; left:50%; bottom:11vh; transform:translateX(-50%); width:min(92vw,860px); text-align:center; font-family:var(--geo); font-weight:700; text-transform:uppercase; font-size:clamp(18px,2.4vw,30px); line-height:1.1; text-wrap:balance}
 
   /* ── 2 · la tesis, una pantalla por idea ── */
   .thesis{background:var(--blue); color:#fff}
@@ -91,6 +91,10 @@
      desde una esquina y unos cursores hacen el trabajo. Código propio (la idea es
      la de Swarm, de Joel Califa: aquí sin su código ni su coreografía). ── */
   .ch-h{visibility:hidden}
+  .ch-g{color:var(--mut)} .thesis .ch-g{color:rgba(255,255,255,.55)}   /* el carácter aún se está decidiendo */
+  .ruled{position:relative; border-bottom-color:transparent !important}
+  .rline{position:absolute; left:0; bottom:-1px; height:1px; width:0}
+  #heroFrame{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); border:1.5px solid var(--blue); pointer-events:none; opacity:0}
   .caret{display:inline-block; width:.07em; min-width:2px; height:.95em; margin-right:-.07em; vertical-align:-.1em; background:currentColor; animation:blink 1s steps(1) infinite}
   [data-build="box"],[data-build="piece"]{position:relative}
   .bframe{position:absolute; left:0; top:0; border:1.5px solid var(--blue); pointer-events:none; z-index:3}
@@ -195,8 +199,9 @@
   <div class="hero-stage">
     <canvas id="heroCv" role="img" aria-label="DTKRT, seed 2950288811, palette Poet"></canvas>
     <div class="lockup" id="lockup"><div class="logo-mark" role="img" aria-label="hoks"></div><div class="enter">scroll <b>&#9662;</b></div></div>
-    <div class="hero-seal" id="heroSeal">randomSeed(2950288811) · DTKRT · 1/1 <b>· Poet · chapter 01</b></div>
-    <div class="hero-q" id="heroQ">where does the work reside — in the artifact, in the system, or in the passage between them?</div>
+    <div id="heroFrame"></div>
+    <div class="hero-seal" id="heroSeal" data-build="type" data-prog="seal">randomSeed(2950288811) · DTKRT · 1/1 <b>· Poet · chapter 01</b></div>
+    <div class="hero-q" id="heroQ" data-build="type" data-prog="q">where does the work reside — in the artifact, in the system, or in the passage between them?</div>
   </div>
 </section>
 
@@ -234,7 +239,7 @@
 
 <!-- 4 · capítulos: una paleta, cuatro sistemas -->
 <section class="sec" aria-label="Chapters">
-  <div class="sec-head"><h2 data-build="type">chapters</h2><span class="lbl" style="color:var(--mut)">one palette · four systems</span></div>
+  <div class="sec-head" data-build="rule"><h2 data-build="type">chapters</h2><span class="lbl" style="color:var(--mut)">one palette · four systems</span></div>
   <div id="chaps"></div>
 </section>
 
@@ -329,7 +334,7 @@
     var grained=false;
     function grainIt(){ if(grained) return; grained=true; try{ H.grain(x, N, N, PAL.colors, 1, 1, HERO.seed); }catch(e){} }
     var seal=document.getElementById('heroSeal'), q=document.getElementById('heroQ'), lock=document.getElementById('lockup'), sec=document.getElementById('hero');
-    var t0=null, built=REDUCED ? 1 : 0, last=-1;
+    var t0=null, built=REDUCED ? 1 : 0, last=-1, fr=document.getElementById('heroFrame'), ag=REDUCED ? null : makeAgent();
     if(REDUCED){ x.drawImage(asm.final, 0, 0); grainIt(); }
     function frame(ts){
       if(built<1){ if(t0===null) t0=ts; built=clamp((ts-t0)/2900,0,1); var k=Math.round((1-Math.pow(1-built,3))*asm.steps);
@@ -337,8 +342,14 @@
       var vw=innerWidth, vh=innerHeight, span=sec.offsetHeight-vh, p=clamp(-sec.getBoundingClientRect().top/span,0,1), e=ease(clamp((p-.08)/.7,0,1));
       var side=lerp(Math.max(vw,vh), Math.min(vw*.78, vh*.58), e), cy=lerp(vh/2, vh*.44, e);
       cv.style.width=cv.style.height=side+'px'; cv.style.top=cy+'px';
-      seal.style.top=(cy+side/2+18)+'px'; seal.style.opacity=clamp((p-.72)/.12,0,1);
-      q.style.opacity=clamp((p-.8)/.12,0,1);
+      seal.style.top=(cy+side/2+18)+'px'; HP=p;
+      // el marco: mientras la pieza se recoge, una caja se cierra sobre ella con su medida
+      var closing=e>.03 && e<.995; fr.style.width=fr.style.height=side+'px'; fr.style.top=cy+'px'; fr.style.opacity=closing?1:0;
+      if(ag){ var r=cv.getBoundingClientRect();
+        if(built<1){ var tt=ts/650; ag.tx=clamp(r.left+r.width*(.5+.28*Math.sin(tt)),24,vw-90); ag.ty=clamp(r.top+r.height*(.5+.28*Math.cos(tt*1.4)),80,vh-40); ag.tag.textContent='assemble()'; ag.el.style.opacity=1; }
+        else if(closing){ ag.tx=clamp(r.right,24,vw-150); ag.ty=clamp(r.bottom,80,vh-40); ag.tag.textContent='rect() '+Math.round(side)+' × '+Math.round(side); ag.el.style.opacity=1; }
+        else ag.el.style.opacity=0;
+        ag.x+=(ag.tx-ag.x)*.2; ag.y+=(ag.ty-ag.y)*.2; ag.el.style.transform='translate('+ag.x+'px,'+ag.y+'px)'; }
       lock.style.opacity=1-clamp(p/.12,0,1); lock.style.transform='translate(-50%,calc(-50% - '+(p*30)+'vh))';
       if(!REDUCED || built<1) requestAnimationFrame(frame);
     }
@@ -446,7 +457,7 @@
 
   // ── 4 · capítulos ─────────────────────────────────────────────────────
   function chapters(byName){ var host=document.getElementById('chaps');
-    CHAPTERS.forEach(function(c,i){ var p=byName(c[0]); if(!p) return; var row=document.createElement('div'); row.className='chap'+(i===0?' now':i>1?' later':'');
+    CHAPTERS.forEach(function(c,i){ var p=byName(c[0]); if(!p) return; var row=document.createElement('div'); row.className='chap'+(i===0?' now':i>1?' later':''); row.setAttribute('data-build','rule');
       row.innerHTML='<span class="n">['+String(i+1).padStart(2,'0')+']</span><span class="pn" data-build="type">'+c[0]+'</span><span class="sw" data-build="box">'+p.colors.map(function(x){ return '<span style="background:'+x+'"></span>'; }).join('')+'</span><span class="st">'+c[1]+'</span>';
       host.appendChild(row); }); }
 
@@ -478,25 +489,47 @@
   //   type  → se escribe letra a letra con su caret
   //   box   → se traza desde la esquina con su W × H; al cerrarse, aparece el contenido
   //   piece → se traza la caja y la pieza se monta paso a paso (assembly)
-  var GEO=null;
+  var GEO=null, HP=0;   // HP: el avance del hero (0 → 1), lo pone hero()
+  var PROG={ seal:function(){ return clamp((HP-.7)/.12,0,1); }, q:function(){ return clamp((HP-.8)/.14,0,1); } };
+  function makeAgent(){ var a=document.createElement('div'); a.className='agent';
+    a.innerHTML='<svg viewBox="0 0 18 22"><path d="M1 1 L1 17 L5.5 13 L8.5 20.5 L11.5 19.2 L8.6 12 L14.5 12 Z" fill="#000ef7" stroke="#fff" stroke-width="1.2"/></svg><span class="tag"></span>';
+    document.body.appendChild(a); return {el:a, tag:a.querySelector('.tag'), x:innerWidth*Math.random(), y:innerHeight*.5, tx:0, ty:0, idle:0}; }
+  // el decodificado: antes de fijarse, cada letra pasa por el alfabeto del código.
+  // Determinista: misma posición y mismo avance, mismo carácter (subir y bajar da lo mismo).
+  var ALPH='{}[]()<>;=+*/_#0123456789abcdef';
+  function glyph(i,n,salt){ var x=(i*7919+n*104729+salt)>>>0; x=Math.imul(x^(x>>>15),2654435761)>>>0; return ALPH[(x^(x>>>13))%ALPH.length]; }
+  // el clic de teclado: sintetizado, sin archivos; solo con el sonido encendido y escribiendo hacia delante
+  var lastClick=0;
+  function keyClick(space){ if(!actx||!sndOn||!unlocked) return; var t=actx.currentTime; if(t-lastClick<.035) return; lastClick=t;
+    var n=Math.floor(actx.sampleRate*.012), b=actx.createBuffer(1,n,actx.sampleRate), d=b.getChannelData(0);
+    for(var i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);
+    var src=actx.createBufferSource(); src.buffer=b; var f=actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=space?1400:3200+Math.random()*900; f.Q.value=1.2;
+    var g=actx.createGain(); g.gain.value=space?.10:.07; src.connect(f); f.connect(g); g.connect(actx.destination); src.start(t); }
   function build(){
     var els=[].slice.call(document.querySelectorAll('[data-build]'));
-    var items=els.map(function(el){ var kind=el.getAttribute('data-build'), it={el:el, kind:kind, p:-1, blue:!!el.closest('.thesis')};
+    var items=els.map(function(el,ix){ var kind=el.getAttribute('data-build'), it={el:el, kind:kind, p:-1, blue:!!el.closest('.thesis'), prog:PROG[el.getAttribute('data-prog')], salt:ix*977};
+      if(kind==='rule'){ var bc=getComputedStyle(el).borderBottomColor; el.classList.add('ruled'); it.line=document.createElement('div'); it.line.className='rline'; it.line.style.background=bc; el.appendChild(it.line); return it; }
       if(kind==='type'){ it.chars=[]; var walk=document.createTreeWalker(el, NodeFilter.SHOW_TEXT), nodes=[], nd; while((nd=walk.nextNode())) nodes.push(nd);
-        nodes.forEach(function(t){ var frag=document.createDocumentFragment(); Array.from(t.nodeValue).forEach(function(ch){ var sp=document.createElement('span'); sp.textContent=ch; sp.className='ch-h'; frag.appendChild(sp); it.chars.push(sp); }); t.parentNode.replaceChild(frag,t); });
+        nodes.forEach(function(t){ var frag=document.createDocumentFragment(); Array.from(t.nodeValue).forEach(function(ch){ var sp=document.createElement('span'); sp.textContent=ch; sp._c=ch; sp.className='ch-h'; frag.appendChild(sp); it.chars.push(sp); }); t.parentNode.replaceChild(frag,t); });
         it.shown=0; it.caret=document.createElement('span'); it.caret.className='caret'; it.caret.setAttribute('aria-hidden','true'); }
       else { it.frame=document.createElement('div'); it.frame.className='bframe'; it.badge=document.createElement('span'); it.badge.className='bbadge'; it.frame.appendChild(it.badge); el.appendChild(it.frame);
         it.content=[].slice.call(el.children).filter(function(c){ return c!==it.frame && !c.classList.contains('cap'); }); }
       return it; });
     if(REDUCED){ items.forEach(function(it){ apply(it,1); }); return; }
     // los cursores: cuatro, con lo que ejecutan
-    var AG=[0,1,2,3].map(function(){ var a=document.createElement('div'); a.className='agent';
-      a.innerHTML='<svg viewBox="0 0 18 22"><path d="M1 1 L1 17 L5.5 13 L8.5 20.5 L11.5 19.2 L8.6 12 L14.5 12 Z" fill="#000ef7" stroke="#fff" stroke-width="1.2"/></svg><span class="tag"></span>';
-      document.body.appendChild(a); return {el:a, tag:a.querySelector('.tag'), x:innerWidth*Math.random(), y:innerHeight*.5, tx:0, ty:0, idle:0}; });
+    var AG=[0,1,2,3].map(makeAgent);
     function apply(it,p){
-      if(it.kind==='type'){ var n=Math.round(p*it.chars.length);
-        if(n!==it.shown){ var a=Math.min(n,it.shown), b=Math.max(n,it.shown); for(var i=a;i<b;i++) it.chars[i].classList.toggle('ch-h', i>=n); it.shown=n; }
-        if(p>0 && p<1){ var at=it.chars[Math.max(0,n-1)]; if(at && at.nextSibling!==it.caret) at.parentNode.insertBefore(it.caret, at.nextSibling); }
+      if(it.kind==='rule'){ it.line.style.width=(p*100)+'%'; return; }
+      if(it.kind==='type'){ var L=it.chars.length, n=Math.round(p*L), W=p<1?3:0;
+        // fijadas hasta n; las W siguientes, decodificándose; el resto, por escribir
+        if(n!==it.shown){ var lo=Math.min(n,it.shown), hi=Math.min(L, Math.max(n,it.shown)+3);
+          for(var i=lo;i<hi;i++){ var sp=it.chars[i];
+            if(i<n){ sp.textContent=sp._c; sp.className=''; }
+            else if(i<n+W && /\S/.test(sp._c)){ sp.textContent=glyph(i,n,it.salt); sp.className='ch-g'; }
+            else { sp.textContent=sp._c; sp.className='ch-h'; } }
+          if(n>it.shown) keyClick(it.chars[n-1] && it.chars[n-1]._c===' ');
+          it.shown=n; }
+        if(p>0 && p<1){ var at=it.chars[Math.min(L,n+W)-1]; if(at && at.nextSibling!==it.caret) at.parentNode.insertBefore(it.caret, at.nextSibling); }
         else if(it.caret.parentNode) it.caret.parentNode.removeChild(it.caret);
         return; }
       var w=it.el.clientWidth, h=it.el.clientHeight, f=it.kind==='piece' ? clamp(p/.3,0,1) : clamp(p/.85,0,1), fe=1-Math.pow(1-f,2);
@@ -514,9 +547,9 @@
     function tick(){
       var vh=innerHeight, active=[];
       items.forEach(function(it){ var r=it.el.getBoundingClientRect();
-        var p=(r.bottom<-vh || r.top>vh*2) ? it.p : clamp((vh*.9-r.top)/(vh*.42),0,1);
+        var p=it.prog ? it.prog() : (r.bottom<-vh || r.top>vh*2) ? it.p : clamp((vh*.9-r.top)/(vh*.42),0,1);
         if(p!==it.p){ it.p=p; apply(it,p); }
-        if(p>0 && p<1) active.push(it); });
+        if(p>0 && p<1 && it.kind!=='rule') active.push(it); });
       AG.forEach(function(a,i){
         if(i<active.length){ var it=active[i], pt=point(it); a.tx=pt.x; a.ty=pt.y;   // un cursor por tarea en curso, nunca dos en la misma
           a.tag.textContent=pt.tag; a.el.classList.toggle('on-blue', it.blue); a.el.style.opacity=1; a.idle=0; }
