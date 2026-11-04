@@ -306,14 +306,22 @@
 
   // ── 1 · hero ──────────────────────────────────────────────────────────
   function hero(PAL){
-    var cv=document.getElementById('heroCv'), x=cv.getContext('2d'), N=1600; cv.width=cv.height=N;
-    var asm=HOKSPOST.assembly(function(c){ H[HERO.fam].render(c, N, N, HERO.seed, opts(PAL)); }, N, N);
+    var DPR=Math.min(window.devicePixelRatio||1, 2), N=Math.round(clamp(Math.max(innerWidth,innerHeight)*DPR, 1200, 2880));
+    var cv=document.getElementById('heroCv'), x=cv.getContext('2d'); cv.width=cv.height=N;   // un píxel del lienzo por píxel de pantalla
+    // El grano del motor está hecho para papel: su celda crece con el lienzo (a
+    // 2880 px son bloques de 4 px, que en pantalla se leen como pixelado). La
+    // pieza se pinta limpia y, al terminar, recibe el grano de SU seed con
+    // celdas de un píxel de pantalla: el mismo grano determinista, a la escala del medio.
+    var clean={ palettes:[Object.assign({}, PAL, {prob:1})], locked:true, lockedIdx:0, params:{grainScale:0} };
+    var asm=HOKSPOST.assembly(function(c){ H[HERO.fam].render(c, N, N, HERO.seed, clean); }, N, N);
+    var grained=false;
+    function grainIt(){ if(grained) return; grained=true; try{ H.grain(x, N, N, PAL.colors, 1, 1, HERO.seed); }catch(e){} }
     var seal=document.getElementById('heroSeal'), q=document.getElementById('heroQ'), lock=document.getElementById('lockup'), sec=document.getElementById('hero');
     var t0=null, built=REDUCED ? 1 : 0, last=-1;
-    if(REDUCED) x.drawImage(asm.final, 0, 0);
+    if(REDUCED){ x.drawImage(asm.final, 0, 0); grainIt(); }
     function frame(ts){
       if(built<1){ if(t0===null) t0=ts; built=clamp((ts-t0)/2900,0,1); var k=Math.round((1-Math.pow(1-built,3))*asm.steps);
-        if(k!==last){ last=k; x.clearRect(0,0,N,N); x.drawImage(asm.at(k/asm.steps),0,0); } }
+        if(k!==last){ last=k; x.clearRect(0,0,N,N); x.drawImage(asm.at(k/asm.steps),0,0); } if(built>=1) grainIt(); }
       var vw=innerWidth, vh=innerHeight, span=sec.offsetHeight-vh, p=clamp(-sec.getBoundingClientRect().top/span,0,1), e=ease(clamp((p-.08)/.7,0,1));
       var side=lerp(Math.max(vw,vh), Math.min(vw*.78, vh*.58), e), cy=lerp(vh/2, vh*.44, e);
       cv.style.width=cv.style.height=side+'px'; cv.style.top=cy+'px';
@@ -342,17 +350,21 @@
     // pantalla pequeña se hace a A4 (2480 px) y no a A3 (3508 px).
     var small = innerWidth<820 || (navigator.deviceMemory && navigator.deviceMemory<=4);
     var SIDE = small ? 2480 : 3508, done=false;
-    document.getElementById('matCap').textContent = '1:1 at ' + (small ? 'A4' : 'A3') + ', 300 dpi — the grain';
+    document.getElementById('matCap').textContent = 'a detail at ' + (small ? 'A4' : 'A3') + ', 300 dpi — the grain';
     new IntersectionObserver(function(es,o){ es.forEach(function(e){ if(!e.isIntersecting||done) return; done=true; o.disconnect();
       setTimeout(function(){ var big=render(HERO.fam, HERO.fmt, HERO.seed, SIDE, PAL), m=document.getElementById('thMat');
-        m.getContext('2d').drawImage(big, big.width*.43, big.height*.52, m.width, m.height, 0, 0, m.width, m.height); big.width=big.height=0; }, 30); }); },
+        // dos píxeles de impresión por píxel de pantalla, con suavizado: las celdas
+        // del grano se funden en textura, como en el papel, en vez de verse como bloques
+        var px=Math.round(m.getBoundingClientRect().width*(window.devicePixelRatio||1)); m.width=m.height=px;
+        var mx=m.getContext('2d'); mx.imageSmoothingEnabled=true; mx.imageSmoothingQuality='high';
+        mx.drawImage(big, Math.round(big.width*.40), Math.round(big.height*.49), px*2, px*2, 0, 0, px, px); big.width=big.height=0; }, 30); }); },
       {rootMargin:'60% 0px'}).observe(document.getElementById('thMatter'));
     var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting) e.target.classList.add('in'); }); }, {threshold:.25});
     document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
   }
 
   // ── 3 · la sala (de la landing actual) y el índice ───────────────────
-  var FAM={}, ACTIVE=[], HALL_FAM=[], PALS=[], COLORS=[];
+  var FAM={}, ACTIVE=[], HALL_FAM=[], BRAND_FAM=[], PALS=[], COLORS=[], HALLPAL={};
   function seed(){ return (Math.random()*1e9)>>>0; }
   function randHallFam(){ var a=HALL_FAM.length?HALL_FAM:ACTIVE; return a[(Math.random()*a.length)|0]; }
   function palColor(){ return COLORS.length ? COLORS[(Math.random()*COLORS.length)|0] : '#dcff32'; }
@@ -369,28 +381,35 @@
     w.style.gridTemplateColumns='repeat('+cols+',1fr)';
     var ts=[]; for(var i=0;i<count;i++){ var f=document.createElement('figure'); f.className='tile'; var c=document.createElement('canvas'); c.width=c.height=150; f.appendChild(c); f._c=c;
       (function(t){ t.addEventListener('click', function(){ if(t._w) location.href=workHref(t._w); }); })(f); w.appendChild(f); ts.push(f); }
-    frame.appendChild(w); hlbl.textContent='a pulse sweeps from a zone, then rests';
+    frame.appendChild(w); hlbl.textContent='chapter 01 · '+(HALLPAL.chapter?HALLPAL.chapter.name:'');
     requestAnimationFrame(function(){
       var fr=frame.getBoundingClientRect();
       ts.forEach(function(t){ var r=t.getBoundingClientRect(); t._x=r.left-fr.left+r.width/2; t._y=r.top-fr.top+r.height/2; t._c0=-1e9; t._c1=-1e9; });
       var W=fr.width, Hh=fr.height, maxR=Math.sqrt(W*W+Hh*Hh), SWEEP=2500, GAP=300, BAND=54, REST=1500, speed=(maxR+BAND)/SWEEP;
-      var pulse=null, restUntil=0, pcount=0, SEQ=['family','palette'], resolveQ=[];
-      ts.forEach(function(t){ resolveQ.push({t:t, mode:'family', fam:randHallFam(), palIdx:0}); });
-      function palPick(mode,palIdx){ var pal=(mode==='palette'&&PALS.length)?PALS[palIdx]:null; return (pal&&pal.colors&&pal.colors.length)?pal.colors[(Math.random()*pal.colors.length)|0]:palColor(); }
-      function flap(t,mode,palIdx){ var c=t._c, g=c.getContext('2d'); c.width=c.width; g.fillStyle=palPick(mode,palIdx); g.fillRect(0,0,c.width,c.height); }
-      function resolve(t,mode,fam,palIdx){ var pal=(mode==='palette'&&PALS.length)?PALS[palIdx]:null, fm=(mode==='family')?fam:randHallFam(); draw(t._c,150,150,fm,seed(),pal); t._w=FAM[fm]&&FAM[fm].w; }
+      var pulse=null, restUntil=0, pcount=0, resolveQ=[];
+      // El muro abre entero en la paleta del capítulo; cada pulso barre con una
+      // intención: una familia en el capítulo, la marca (acid + azul) o el
+      // capítulo que viene. El color del destello sale de la paleta del pulso.
+      var SEQ=['family','brand','family','next'];
+      ts.forEach(function(t){ resolveQ.push({t:t, mode:'chapter'}); });
+      function pulsePal(it){ return it.mode==='brand' ? HALLPAL.brand : it.mode==='next' ? HALLPAL.next : HALLPAL.chapter; }
+      function pulseFam(it){ if(it.mode==='family') return it.fam; var pool=it.mode==='brand' ? BRAND_FAM : HALL_FAM; return pool[(Math.random()*pool.length)|0]; }
+      function flap(t,it){ var c=t._c, g=c.getContext('2d'), p=pulsePal(it); c.width=c.width; g.fillStyle=p ? p.colors[(Math.random()*p.colors.length)|0] : palColor(); g.fillRect(0,0,c.width,c.height); }
+      function resolve(t,it){ var fm=pulseFam(it); draw(t._c,150,150,fm,seed(),pulsePal(it)); t._w=FAM[fm]&&FAM[fm].w; }
       loopFn=function loop(now){ if(!running) return;
-        if(!REDUCED && !pulse && now>=restUntil){ var mode=SEQ[pcount%SEQ.length]; pcount++; if(mode==='palette'&&!PALS.length) mode='family';
-          pulse={ox:Math.random()*W, oy:Math.random()*Hh, b:[now,now+GAP], mode:mode, fam:randHallFam(), palIdx:(Math.random()*Math.max(1,PALS.length))|0};
-          var pn=(pulse.mode==='palette'&&PALS[pulse.palIdx])?PALS[pulse.palIdx].name:'';
-          hlbl.textContent=(mode==='palette'?('palette'+(pn?' '+pn:'')):('family '+pulse.fam)); pulseAccent(); setTimeout(pulseAccent, GAP); }
+        if(!REDUCED && !pulse && now>=restUntil){ var mode=SEQ[pcount%SEQ.length]; pcount++;
+          if((mode==='brand'&&(!HALLPAL.brand||!BRAND_FAM.length))||(mode==='next'&&!HALLPAL.next)) mode='family';
+          pulse={ox:Math.random()*W, oy:Math.random()*Hh, b:[now,now+GAP], mode:mode, fam:randHallFam()};
+          hlbl.textContent = mode==='brand' ? 'hoks · acid on blue' : mode==='next' ? 'chapter 02 · '+HALLPAL.next.name
+            : 'chapter 01 · '+(HALLPAL.chapter?HALLPAL.chapter.name:'')+' · '+pulse.fam;
+          pulseAccent(); setTimeout(pulseAccent, GAP); }
         if(pulse){ var done=true;
           for(var bi=0;bi<pulse.b.length;bi++){ var rad=(now-pulse.b[bi])*speed; if(rad<0){done=false;continue;} if(rad<=maxR+BAND) done=false;
             for(var i2=0;i2<ts.length;i2++){ var t=ts[i2], dx=t._x-pulse.ox, dy=t._y-pulse.oy, d=Math.sqrt(dx*dx+dy*dy);
-              if(Math.abs(d-rad)<BAND){ if(bi===0){ if(now-t._c0>250){ t._c0=now; flap(t,pulse.mode,pulse.palIdx); } }
-                else if(now-t._c1>250 && !t._q){ t._c1=now; t._q=true; resolveQ.push({t:t,mode:pulse.mode,fam:pulse.fam,palIdx:pulse.palIdx}); } } } }
+              if(Math.abs(d-rad)<BAND){ if(bi===0){ if(now-t._c0>250){ t._c0=now; flap(t,pulse); } }
+                else if(now-t._c1>250 && !t._q){ t._c1=now; t._q=true; resolveQ.push({t:t,mode:pulse.mode,fam:pulse.fam}); } } } }
           if(done){ pulse=null; restUntil=now+REST; } }
-        var budget=6; while(resolveQ.length && budget-->0){ var it=resolveQ.shift(); it.t._q=false; resolve(it.t,it.mode,it.fam,it.palIdx); }
+        var budget=6; while(resolveQ.length && budget-->0){ var it=resolveQ.shift(); it.t._q=false; resolve(it.t,it); }
         if(REDUCED && !resolveQ.length){ running=false; return; }
         rafId=requestAnimationFrame(loop); };
       if(hallVisible) startHall();
@@ -457,6 +476,10 @@
       return loadScript('sketches/'+w.slug+'/algo.js?v=1').then(function(){ H=window.HOKS||H; if(H[up]) FAM[up]={w:w}; }); }));
     ACTIVE=Object.keys(FAM);
     HALL_FAM=ACTIVE.filter(function(f){ return f!=='TRZS'; });   // TRZS tarda ~600 ms por render: congelaría el muro
+    // La marca solo con las familias que la aguantan: en KRRTK el acid sobre azul se agrisa al fundirse.
+    BRAND_FAM=HALL_FAM.filter(function(f){ return f==='DTKRT' || f==='PLLS'; });
+    var norm=function(n){ var p=byName(n); return p ? Object.assign({}, p, {prob:1}) : null; };
+    HALLPAL={ chapter:norm(HERO.pal), brand:norm('Hoks'), next:norm('Mondrian') };
     if(H[HERO.fam] && PAL){ hero(PAL); thesis(PAL); }
     index(cat, PAL); chapters(byName); kinetic();
     if(hallVisible) contact();
