@@ -75,7 +75,7 @@ sketches/
 
 `dtkrt/` fue el primer caso de obra que **nace aquí** en vez de portarse
 desde p5: propuesta de sistema para mirar en el grid de obras antes de decidir si
-merece página. No está en `data/works.json` ni publicada.
+merece página. Hoy está en `data/works.json`, activa y con lote publicado.
 
 `eclps/` es el segundo, y llega igual: nace aquí. Una fila de círculos con paso
 constante donde las ausencias hacen el ritmo — un eclipse es exactamente eso, un

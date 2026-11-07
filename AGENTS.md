@@ -36,8 +36,13 @@ Los JSON se leen **siempre** desde
 por ruta relativa: así un cambio de datos aparece sin esperar el redeploy de Pages.
 Si escribes un `fetch` nuevo, sigue ese patrón.
 
-> Los `*.json` de la **raíz** (`bzrs.json`, `dtk.json`, `krrtk.json`…) están vacíos
-> (`[]`) y son restos heredados. No los uses ni los confundas con los de `data/`.
+> Los `*.json` de la **raíz** (`bzrs.json`, `dtk.json`, `krrtk.json`…) son restos
+> heredados. No los uses ni los confundas con los de `data/`.
+
+**Para escribir en el repo desde el navegador, usa `gh-store.js` (`HOKSGH`).**
+No escribas un `PUT` a la Contents API a mano: sin el `sha` de lo que se leyó,
+el último en escribir borra lo que hizo el otro, y por encima de 1 MB la API
+devuelve el contenido vacío.
 
 `data/works.json` es el registro de familias y su campo **`active` es el único
 interruptor de la web**: decide qué sale en la landing, en el dropdown *Work* y con

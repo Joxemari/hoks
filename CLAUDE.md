@@ -10,7 +10,7 @@ controlado: cada pieza nace de una *seed* y un RNG determinista.
 
 **HTML/JS vanilla. Sin framework, sin bundler, sin paso de build.** Lo que se
 commitea es exactamente lo que se publica. Las obras **graduadas** (plls,
-krrtk, dtk, dtkrt) tienen su algoritmo en `sketches/<obra>/algo.js` (fuente única,
+krrtk, dtk, dtkrt, eclps, trzs, evol, ptzd, hrrs) tienen su algoritmo en `sketches/<obra>/algo.js` (fuente única,
 compartida entre laboratorio y producción); las páginas de las demás series aún
 llevan su JS *inline*. No hay módulos ni dependencias instaladas salvo una
 webfont: **League Spartan** (Google Fonts), cargada desde `nav.js`.
@@ -26,21 +26,21 @@ derecha (el burger lo abre); la marca es la "o" cruzada pintada a mano
 cross-origin la bloquean algunos navegadores; `logo_tall.png` es la versión alta
 para landing/About). El canvas de diseño de todas las pantallas vive en
 `_preview/design/` (artboards `*.dc.html`). Ojo: **el laboratorio (`sketches/`)
-no carga `nav.js`**, así que cada harness define sus propios tokens `:root`; hoy
-solo el de PLLS está portado al sistema nuevo, el resto sigue en el look viejo.
+no carga `nav.js`**, así que cada harness define sus propios tokens `:root`
+(todos llevan ya `--paper`, `--blue` y `--acid` del sistema nuevo).
 
 ## Estructura
 
 ### Páginas
 
-- **`index.html`** — Landing. Rejilla 9×10 arrastrable (drag/pan, perspectiva 3D
-  al hover). Carga obras guardadas reales desde `data/*.json` y rellena los
-  huecos con *demos* dibujadas en vivo. **El catálogo lo pone `works.json`**: una
-  familia `active` sale aquí sin tocar código —la landing le pide su
-  `sketches/<slug>/algo.js` cuando hace falta, y saca nombre, destino y
-  proporción de celda de su ficha—. Solo las familias anteriores al algo.js
-  compartido (PLLS, KRRTK, DTK, BZRS) conservan aquí una reimplementación
-  reducida para su demo; esa tabla está para vaciarse, no para crecer.
+- **`index.html`** — Landing, página autónoma (no carga `nav.js`: trae su
+  propio cajón, sin selector de idioma). Un *splash* donde una obra se pinta
+  sola, y al entrar la **sala**: una hoja de contactos que llena la pantalla con
+  obras dibujadas en vivo, con el sonido de `hall-loop.wav`. No carga obra
+  guardada: todo sale de los `sketches/<slug>/algo.js`. **El catálogo lo pone
+  `works.json`**: una familia `active` sale aquí sin tocar código. TRZS se queda
+  fuera del muro (tarda ~600 ms por render) y TRZS y ECLPS fuera del splash.
+  Su `workHref` repite la regla de `HOKSNAV.workHref` porque no carga `nav.js`.
 - **Páginas de obra** — **archivo, no herramienta**. Las graduadas
   (`plls.html`, `krrtk.html`, `dtk.html`, `dtkrt.html`) son cascarones de 20
   líneas que cargan `work-page.js`: nombre, narrativa (`description` de
@@ -70,9 +70,15 @@ solo el de PLLS está portado al sistema nuevo, el resto sigue en el look viejo.
   pedir `palette-usage.json`: el uso es dato interno, y por eso ese bloque va en
   inglés y fuera de i18n, como el resto de la operativa. Enlace desde el panel:
   pestaña *Palettes* → **Usage grid**.
-- **`admin.html`** — Panel protegido por contraseña. Gestiona paletas, familias
-  (`works.json`), contenido (`site.json`) y el token de GitHub. Escribe
-  commiteando directamente a `main` por la Contents API. En cada familia
+- **`admin.html`** — Panel. **Se entra con el token de GitHub**, que se
+  comprueba contra GitHub (permiso de escritura en este repo); no hay
+  contraseña: la que hubo estaba escrita en este archivo público y se
+  comprobaba en el navegador, así que no protegía nada. Cerrar sesión borra el
+  token del navegador. Gestiona paletas, familias (`works.json`), contenido
+  (`site.json`), lotes y galerías. Escribe commiteando directamente a `main`
+  por la Contents API, siempre a través de `gh-store.js`. La galería sale del
+  registro de familias y se carga al abrir su pestaña (pesa decenas de MB);
+  borrar una pieza quita también su fila de `palette-usage.json`. En cada familia
   graduada muestra un enlace **Lab** (`sketches/<slug>/`), solo visible desde el
   panel y presente también en las apagadas —el lab las abre igual—. El check
   *Active* de cada familia es el interruptor de la web entera: al marcarlo, la
@@ -106,6 +112,17 @@ solo el de PLLS está portado al sistema nuevo, el resto sigue en el look viejo.
   `admin.html` al guardar (y `tools/static.mjs` desde node). Ver § Buscadores y
   agentes: las páginas de familia son artefacto derivado de `works.json`, no se
   editan a mano.
+- **`gh-store.js`** — **El único sitio que escribe en el repo** (panel, lab,
+  índice de uso). Escribe con el `sha` de lo que leyó, así que si el archivo
+  cambió entretanto GitHub da conflicto en vez de ganar el último. Dos formas:
+  `HOKSGH.update(path, fn, msg)` para operaciones (añadir piezas, borrar una,
+  renombrar un lote: se reaplican sobre lo nuevo si hubo conflicto) y
+  `HOKSGH.put(path, data, msg, sha)` para formularios ("este es el archivo";
+  si cambió, el panel pide recargar). Lee con el tipo *raw* de la API, que
+  sirve hasta 100 MB: el JSON normal deja el contenido vacío por encima de
+  1 MB. Un archivo que existe y no es JSON válido **no** se sobrescribe.
+  Si añades un `fetch(... PUT)` a la Contents API en otro sitio, estás
+  reintroduciendo el bug que esto arregla.
 - **`usage.js`** — Registro de uso de paletas (`data/palette-usage.json`).
   `HOKSUSAGE.load()` / `.counts()` los lee (palettes.html, solo con sesión
   admin); `.recordMany()` añade filas al **publicar un lote** desde el
@@ -188,8 +205,8 @@ redeploy de Pages.
 - **`palettes.json`** — Paletas con `colors`, `active`, `tags`, `notes`. Mezcla
   sets de Roni Kaufman (color_pals) y series Itten (contraste complementario).
 - **`site.json`** — `aboutText`, `footerEmail`, `footerInstagram`.
-- **`plls.json`, `krrtk.json`, `dtk.json`, `plls.json`, `dtkrt.json`,
-  `gallery*.json`** —
+- **`plls.json`, `krrtk.json`, `dtk.json`, `bzrs.json`, `dtkrt.json`,
+  `trzs.json`, `eclps.json`, `evol.json`, `gallery.json`** —
   Obras guardadas como `{seed, dataUrl(base64), savedAt}`. Pueden pesar MB.
   Ojo: las anteriores a noviembre de 2026 **no guardan la paleta**, y no se puede
   re-derivar del seed (la elección por peso depende de qué paletas estaban
@@ -208,16 +225,16 @@ redeploy de Pages.
 - **`palette-usage.json`** — Índice de uso: una fila por obra guardada con
   `{family, seed, savedAt, paletteId, paletteName, source}`. Lo escribe la página
   de obra al Guardar (`source:"save"`). Las filas `source:"backfill"` son las
-  obras que ya existían (eran 26; quedan 10, de DTK, PILLS y BZRS, tras retirar las
+  obras que ya existían (eran 26; quedan 6, de DTK y BZRS, tras retirar las
   de PLLS y KRRTK sin receta): se reconstruyeron re-renderizando cada seed con el
   algoritmo de su época (rescatado de git) y comparando píxel a píxel contra el
   PNG guardado — no por parecido de color, que en las familias con grano y mesh
   gradient se equivoca. Es un índice **derivado**: si se borran obras de una
   galería, sus filas quedan huérfanas y hay que quitarlas a mano.
 
-> ⚠️ Los `*.json` en la **raíz** (`bzrs.json`, `dtk.json`, `krrtk.json`, etc.)
-> están vacíos (`[]`) y son restos heredados. La fuente real es `data/`. No los
-> uses ni los confundas con los de `data/`.
+> ⚠️ Los `*.json` que quedan en la **raíz** (`bzrs.json`, `dtk.json`, `krrtk.json`,
+> `dtkg.json`, `krrtkg.json`, `gallery_krrtk.json`, `plls.json`) son restos
+> heredados (`[]` o casi). La fuente real es `data/`. No los uses.
 
 ## Motor común (cómo funcionan las obras)
 
@@ -243,9 +260,10 @@ redeploy de Pages.
   análisis dice. Graduada desde p5 (`sketches/iterations2/`), con el porte
   verificado idéntico al píxel y una batería propia en `sketches/trzs/verificacion/`
   (`mil.sh`: mil obras por bloque, cada bloque con su control roto a propósito).
-- **Variantes "G"** (KRRTK/DTK/PLLS): añaden **mesh gradient** de fondo
-  (interpolación bilineal de 4 esquinas, `drawMeshGradient`) y **grano de film**
-  por soft-light (`bakeGrain`/`applyGrain`).
+- **Mesh gradient y grano** (lo que fueron las variantes "G", hoy ajustes del
+  laboratorio, ver más abajo): **mesh gradient** de fondo (interpolación
+  bilineal de 4 esquinas, `drawMeshGradient`) y **grano de film** por
+  soft-light (`bakeGrain`/`applyGrain`).
 - **DTKRT**: la misma malla de DTK leída dos veces — *presencia* (¿hay círculo?) y
   *pertenencia* (región crecida celda a celda). Rompe con las "G" a propósito:
   fondo **plano** (figura/fondo necesita un plano estable), margen para que el
@@ -356,12 +374,12 @@ lo edita a mano.
 - **`assets/static.css`** — el estilo de ese bloque, en archivo y no repetido en
   cada cascarón: el CSS sí lo pide un navegador con el JS apagado, y a un agente
   le da igual.
-- **`robots.txt`** — declara la frontera taller/obra y apunta al sitemap. Ojo:
-  en un *project page* (`hoks.design/`) **es inerte**, porque
-  `robots.txt` solo se lee en la raíz del origen, que es otro repo. Lo que de
-  verdad mantiene el taller fuera del índice es el `noindex` de esas páginas,
-  que sí viaja en el documento. El archivo pasa a valer el día que haya dominio
-  propio.
+- **`robots.txt`** — **se lee**: con `CNAME` (hoks.design) esta es la raíz
+  del origen. Cierra solo `sketches/` y `_preview/`, que no llevan `noindex`
+  página a página. Las páginas sueltas del taller (admin, impresion, post,
+  wall-studies) llevan `noindex` y **no** se bloquean aquí: un rastreador
+  bloqueado no lee el `noindex`. `work.html?w=` añade `noindex` cuando la
+  familia está apagada y dice "no work" si el slug no es familia.
 - **`sitemap.xml`** — generado, **sin `lastmod` a propósito**: la única fecha que
   el panel conoce es "hoy", y ponerla en cada URL cada vez que se guarda es
   justo el `lastmod` que los buscadores aprenden a ignorar. Hace falta porque
