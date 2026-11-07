@@ -429,7 +429,6 @@ drawer.innerHTML = `
     <a href="plls.html"${path==='plls.html'?' class="active"':''}><span class="d-em">💊</span>PLLS</a>
     <a href="krrtk.html"${path==='krrtk.html'?' class="active"':''}><span class="d-em">🟥</span>KRRTK</a>
     <a href="dtkrt.html"${path==='dtkrt.html'?' class="active"':''}><span class="d-em">🔵</span>DTKRT</a>
-    <a class="soon${path==='eclps.html'?' active':''}" href="eclps.html"><span class="d-em">🌑</span>ECLPS <small>soon</small></a>
     <a class="soon${path==='trzs.html'?' active':''}" href="trzs.html"><span class="d-em">🪢</span>TRZS <small>soon</small></a>
   </div>
   <div class="d-sep"></div>
@@ -528,6 +527,8 @@ fetch('https://raw.githubusercontent.com/Joxemari/hoks/main/data/site.json?t=' +
     const fl = document.getElementById('footer-links');
     if (!fl) return;
     const social = (url, label) => {
+      // Solo enlaces web: un javascript: en site.json se ejecutaría al clic.
+      if (!/^https:\/\//i.test(String(url))) return;
       const a = document.createElement('a');
       a.href = url;
       a.target = '_blank';

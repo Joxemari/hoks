@@ -203,10 +203,11 @@
     {slug:'plls', name:'PLLS', page:'plls.html',  year:2024},
     {slug:'krrtk',name:'KRRTK',page:'krrtk.html', year:2023},
     {slug:'dtkrt',name:'DTKRT',page:'dtkrt.html', year:2025},
-    {slug:'eclps',name:'ECLPS',page:'eclps.html'},
     {slug:'trzs', name:'TRZS', page:'trzs.html'}
   ];
-  function workHref(w){ return w.page ? w.page : ('work.html?w=' + w.slug); }
+  // La misma regla que HOKSNAV.workHref (nav.js), que esta página no carga.
+  function workHref(w){ return w.page ? w.page : ('work.html?w=' + encodeURIComponent(w.slug)); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 
   function fetchJSON(url, ms){
     return new Promise(function(res){
@@ -358,7 +359,7 @@
   function buildNav(cat){
     var ul=document.getElementById('navlist'); var html='';
     html+='<li><a id="nav-all"><span class="em">&#9638;</span>All</a></li>';
-    cat.forEach(function(w){ var soon=!w.year; html+='<li><a href="'+workHref(w)+'" class="'+(soon?'soon':'')+'"><span class="em">'+(EM[w.slug]||'')+'</span>'+(w.name||w.slug.toUpperCase())+(soon?' <span class="tag">soon</span>':'')+'</a></li>'; });
+    cat.forEach(function(w){ var soon=!w.year; html+='<li><a href="'+esc(workHref(w))+'" class="'+(soon?'soon':'')+'"><span class="em">'+(EM[w.slug]||'')+'</span>'+esc(w.name||w.slug.toUpperCase())+(soon?' <span class="tag">soon</span>':'')+'</a></li>'; });
     html+='<li class="sep"></li>';
     html+='<li><a href="palettes.html">Palettes</a></li>';
     html+='<li><a href="about.html">About</a></li>';
