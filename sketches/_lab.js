@@ -125,16 +125,65 @@
       palettes: [AUTO].concat(palettes),
       index: 0,
       label: 'Palette',
-      onChange: i => { sel = i === 0 ? 'auto' : i - 1; if (opts.onChange) opts.onChange(); },
+      onChange: i => { sel = i === 0 ? 'auto' : i - 1; if (sel !== 'auto') { marcadas.clear(); pintaLista(); } if (opts.onChange) opts.onChange(); },
     });
 
+    // VARIAS: además de «aleatoria entre todas» o «esta», se puede marcar un
+    // subconjunto y que el RNG elija solo entre esas. Lo pidió el autor para
+    // trabajar una serie de DTKRT con dos o tres paletas. Para el algoritmo es
+    // `auto` con una lista más corta —consume la misma tirada—, así que la receta
+    // guarda `pal:'auto'` y la paleta que salió, y se reproduce igual.
+    const marcadas = new Set();   // nombres, para sobrevivir a setPalettes
+    const multi = document.createElement('div');
+    multi.style.cssText = 'margin-top:4px;font-size:9px;letter-spacing:0.04em;color:var(--ink3,#888)';
+    const tog = document.createElement('a');
+    tog.href = '#'; tog.style.cssText = 'color:inherit;text-decoration:underline dotted;cursor:pointer';
+    const lista = document.createElement('div');
+    lista.style.cssText = 'display:none;max-height:150px;overflow:auto;margin-top:3px;border:1px solid var(--border,#e8e8e8);border-radius:2px;padding:3px 4px';
+    tog.onclick = e => { e.preventDefault(); lista.style.display = lista.style.display === 'none' ? '' : 'none'; };
+    multi.appendChild(tog); multi.appendChild(lista); host.appendChild(multi);
+    function subset() { return palettes.filter(p => marcadas.has(p.name)); }
+    function pintaLista() {
+      lista.innerHTML = '';
+      palettes.forEach(p => {
+        const row = document.createElement('label');
+        row.style.cssText = 'display:flex;align-items:center;gap:5px;padding:1px 0;cursor:pointer;text-transform:none';
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = marcadas.has(p.name);
+        cb.onchange = () => {
+          if (cb.checked) marcadas.add(p.name); else marcadas.delete(p.name);
+          if (marcadas.size) { sel = 'auto'; picker.setIndex(0); }
+          pintaTog(); if (opts.onChange) opts.onChange();
+        };
+        const strip = document.createElement('span');
+        strip.style.cssText = 'display:inline-flex;width:44px;height:9px;flex:0 0 auto';
+        (p.colors || []).forEach(c => { const sw = document.createElement('i'); sw.style.cssText = 'flex:1;background:' + c; strip.appendChild(sw); });
+        const nm = document.createElement('span'); nm.textContent = p.name;
+        row.appendChild(cb); row.appendChild(strip); row.appendChild(nm); lista.appendChild(row);
+      });
+      pintaTog();
+    }
+    function pintaTog() {
+      const n = subset().length;
+      tog.textContent = n ? 'varias: ' + n + ' marcadas (el azar elige entre ellas) · cambiar' : 'varias… (marcar un subconjunto)';
+    }
+    pintaLista();
+
     return {
-      // Lo que espera render(): paleta fijada, o todas y que el RNG elija.
-      opts() { return sel === 'auto' ? { palettes } : { palettes, locked: true, lockedIdx: sel }; },
+      // Lo que espera render(): paleta fijada, o todas y que el RNG elija —o solo
+      // entre las marcadas, que para el algoritmo es lo mismo con una lista corta.
+      opts() {
+        if (sel !== 'auto') return { palettes, locked: true, lockedIdx: sel };
+        const sub = subset();
+        // entre las marcadas, a partes iguales: el peso por antigüedad es para
+        // la tirada entre todas, no para una selección hecha a mano
+        return { palettes: sub.length ? sub.map(p => Object.assign({}, p, { prob: 1 / sub.length })) : palettes };
+      },
       get selection() { return sel; },
+      get marcadas() { return subset().map(p => p.name); },
       setPalettes(list) {
         palettes = list || [];
         picker.setPalettes([AUTO].concat(palettes), sel === 'auto' ? 0 : sel + 1);
+        pintaLista();
       },
       select(v) {
         sel = (v === 'auto' || v == null) ? 'auto' : parseInt(v, 10);
