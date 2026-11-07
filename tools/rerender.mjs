@@ -16,9 +16,22 @@
  * Requiere (solo en desarrollo): Playwright (Chromium) y el historial de git
  * que contenga esos archivos. En un clon superficial: git fetch --unshallow.
  */
-import { chromium } from 'playwright';
+import { createRequire } from 'module';
 import { execFileSync } from 'child_process';
 import fs from 'fs'; import path from 'path'; import { fileURLToPath } from 'url';
+
+// Playwright no es dependencia del repo (no hay package.json, a propósito).
+// Un import ESM a secas solo mira node_modules junto al script; require sí
+// respeta NODE_PATH y las instalaciones globales, que es donde suele estar.
+let chromium;
+try { ({ chromium } = await import('playwright')); }
+catch (e) {
+  try { ({ chromium } = createRequire(import.meta.url)('playwright')); }
+  catch (e2) {
+    console.error('Falta Playwright. Instálalo global (npm i -g playwright) y exporta NODE_PATH=$(npm root -g).');
+    process.exit(2);
+  }
+}
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const [work, seedArg, ...rest] = process.argv.slice(2);
