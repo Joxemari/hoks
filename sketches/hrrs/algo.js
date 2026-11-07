@@ -429,19 +429,37 @@
   //           entre techo, patas y muñones. La obra no es un montón de rayas.
   //   cerco — cuántos de esos n se colocan rodeando un blanco sin cerrarlo. Es el
   //           «recinto» de las referencias 1 y 6, y es vecindad, no figura.
+  // LOS TIPOS SON LAS LECTURAS DEL AUTOR SOBRE LOS GRABADOS (noviembre de 2026),
+  // y cada uno fija sus EJES —no solo el reparto de relaciones—, porque en cada
+  // grabado todas las decisiones van juntas:
+  //   bloque    (ref. 2) «no hay cruces ni solapes»: una masa, retícula, banda
+  //             gorda, sin salirse del papel, muchos paralelos, cabos al contorno.
+  //   travesia  (ref. 3) «mucha paralelización, algunos cruces y terminaciones en
+  //             perpendicular»: pocos trazos largos que atraviesan el pliego, a
+  //             escuadra, un cruce claro, cabos que mueren contra un cuerpo.
+  //   recinto   (ref. 1) «mucha concentración en un lado, amplitud en otro, trazo
+  //             fino y muchísima paralelización»: banda fina, cerco arriba y las
+  //             hebras colgando, apiñado en una parte del papel.
+  //   haz       (ref. 6) los paralelos cortos engranados, dos peines.
+  // `ejes` manda sobre los rangos globales de auto; un mando del laboratorio manda
+  // sobre los dos.
   const TIPOS = {
-    // Refs 3 y 4: pocos trazos largos, tendidos, mucho paralelo y mucho aire.
-    tendido: { prob: 0.20, n: [3, 5], cerco: [0, 0],
-               w: { paralelo: 0.42, abanico: 0.20, tangencia: 0.06, continua: 0.20, caboCabo: 0.07, caboCuerpo: 0.05 } },
-    // Refs 1 y 2: un cerco y trazos que lo acompañan.
-    recinto: { prob: 0.30, n: [5, 8], cerco: [3, 4],
-               w: { paralelo: 0.36, abanico: 0.11, tangencia: 0.06, continua: 0.17, caboCabo: 0.15, caboCuerpo: 0.15 } },
-    // Ref 6: denso, muchos paralelos cortos engranados.
-    haz:     { prob: 0.40, n: [5, 8], cerco: [0, 3],
-               w: { paralelo: 0.50, abanico: 0.18, tangencia: 0.05, continua: 0.14, caboCabo: 0.06, caboCuerpo: 0.07 } },
-    // El examen duro: pocos trazos y mucha separación. Sin relación no hay obra.
-    disperso:{ prob: 0.10, n: [3, 5], cerco: [0, 0],
-               w: { paralelo: 0.30, abanico: 0.14, tangencia: 0.16, continua: 0.16, caboCabo: 0.15, caboCuerpo: 0.09 } },
+    bloque:  { prob: 0.32, n: [6, 9], cerco: [0, 2],
+               w: { paralelo: 0.46, abanico: 0.06, tangencia: 0.04, continua: 0.18, caboCabo: 0.10, caboCuerpo: 0.16 },
+               ejes: { ancho: [0.70, 1.00], cruza: 0, orto: 0.9, conc: [0.70, 0.95], seca: 0.9, sangra: [0.1, 0.25],
+                       relleno: [2.0, 2.6], pega: [0.8, 1.0], recto: [0.7, 0.95], travesia: 0, patas: 0.2 } },
+    travesia:{ prob: 0.24, n: [4, 6], cerco: [0, 0],
+               w: { paralelo: 0.50, abanico: 0.08, tangencia: 0.04, continua: 0.10, caboCabo: 0.04, caboCuerpo: 0.24 },
+               ejes: { ancho: [0.80, 1.00], cruza: 0.45, orto: 0.85, conc: [0.30, 0.60], seca: 0.05, sangra: [0.5, 0.9],
+                       relleno: [1.6, 2.2], pega: [0.8, 1.0], recto: [0.8, 1.0], travesia: 1, patas: 0.1 } },
+    recinto: { prob: 0.28, n: [7, 10], cerco: [3, 4],
+               w: { paralelo: 0.52, abanico: 0.08, tangencia: 0.04, continua: 0.14, caboCabo: 0.08, caboCuerpo: 0.14 },
+               ejes: { ancho: [0.35, 0.55], cruza: 0, orto: 0.7, conc: [0.80, 0.95], seca: 0.8, sangra: [0.1, 0.3],
+                       relleno: [1.6, 2.2], pega: [0.9, 1.0], recto: [0.5, 0.8], travesia: 0, patas: 0.9 } },
+    haz:     { prob: 0.16, n: [5, 8], cerco: [0, 3],
+               w: { paralelo: 0.50, abanico: 0.18, tangencia: 0.05, continua: 0.14, caboCabo: 0.06, caboCuerpo: 0.07 },
+               ejes: { ancho: [0.6, 1.0], cruza: 0.05, orto: 0.6, conc: [0.6, 0.9], seca: 0.6, sangra: [0.1, 0.4],
+                       relleno: [1.8, 2.6], pega: [0.7, 1.0], recto: [0.55, 0.9], travesia: 0.1, patas: 0.4 } },
   };
   const TIPO_NAMES = Object.keys(TIPOS);
 
@@ -2126,22 +2144,23 @@
 
   // ── Un candidato ────────────────────────────────────────────────────────────
   function tramar(rng, fw, fh, tipo, params) {
-    const t = TIPOS[tipo];
+    const t = TIPOS[tipo], ej = t.ejes || {};
     const S = min(fw, fh);
-    const W = params.ancho ? S * W_MAX * params.ancho : S * rng.range(W_MIN, W_MAX);
+    const rr = (v, def) => rng.range((v || def)[0], (v || def)[1]);
+    const W = params.ancho ? S * W_MAX * params.ancho : (ej.ancho ? S * W_MAX * rr(ej.ancho) : S * rng.range(W_MIN, W_MAX));
     const gam = params.canal ? params.canal : rng.range(GAMMA[0], GAMMA[1]);
     const g = W * gam, D = W + g;
     const vibra = params.vibra != null ? !!params.vibra : rng.bool(P_VIBRA);
-    const pega  = params.pega  != null ? params.pega  : rng.range(PEGA[0], PEGA[1]);
-    const recto = params.recto != null ? params.recto : rng.range(RECTO[0], RECTO[1]);
+    const pega  = params.pega  != null ? params.pega  : rr(ej.pega, PEGA);
+    const recto = params.recto != null ? params.recto : rr(ej.recto, RECTO);
     const vibF  = params.vibAmp != null ? params.vibAmp : rng.range(VIBF[0], VIBF[1]);
-    const conc  = params.concentra != null ? params.concentra : rng.range(CONC[0], CONC[1]);
-    const relleno = params.relleno != null ? params.relleno : rng.range(RELLENO[0], RELLENO[1]);
+    const conc  = params.concentra != null ? params.concentra : rr(ej.conc, CONC);
+    const relleno = params.relleno != null ? params.relleno : rr(ej.relleno, RELLENO);
     // Cuánto sangra ESTA obra: o nada, o entre poco y mucho. Es constante dentro
     // de la hoja, como la vibración — que unas se salgan y otras no es del cuadro,
     // no del trazo.
     const pSangra = params.sangra != null ? params.sangra
-                  : (rng.bool(P_SECA) ? 0 : rng.range(P_SANGRA_OBRA[0], P_SANGRA_OBRA[1]));
+                  : (rng.bool(ej.seca != null ? ej.seca : P_SECA) ? 0 : rr(ej.sangra, P_SANGRA_OBRA));
     // LA ZONA: el dibujo no ocupa la hoja, ocupa una parte de la hoja. Es lo último
     // que separaba esto de las referencias, y se ve de un vistazo en las seis — el
     // grabado del recinto vive en un tercio del papel y el resto está vacío; en las
@@ -2167,7 +2186,8 @@
       sep: D * rng.range(SEP_OBRA[0], SEP_OBRA[1]),
       // la retícula, si la hay: es de la obra, y con su propio giro para que no
       // salgan todas alineadas con el pliego
-      orto: params.orto != null ? !!params.orto : rng.bool(P_ORTO),
+      orto: params.orto != null ? !!params.orto : rng.bool(ej.orto != null ? ej.orto : P_ORTO),
+      pCruza: ej.cruza != null ? ej.cruza : P_CRUZA,
       ejeBase: rng.range(0, 90),
       // el alfabeto de direcciones de ESTA obra
       rumbos: (() => {
@@ -2227,7 +2247,7 @@
       // caben mejor —tienen menos restricción— y como se elige el más largo, ganaban
       // casi siempre: salían obras con cruces por todas partes. En la referencia un
       // cruce es un suceso, no la norma.
-      const sangra = forzarSangre || rng.bool(ctx.pSangra), cruza = rng.bool(P_CRUZA);
+      const sangra = forzarSangre || rng.bool(ctx.pSangra), cruza = rng.bool(ctx.pCruza);
       // LA GRAVEDAD, y los que se le escapan. Lo dijo el autor: «hay un primer trazo
       // que marca algo, y en torno a eso se generan los demás; a veces tienden a
       // alejarse, pero hay como una fuerza gravitacional que los lleva al centro. Y
@@ -2292,7 +2312,7 @@
     // contra el trazo largo, que es lo que hace en las referencias.
     // Si la obra es de TRAVESÍA, al protagonista se le pide más que la diagonal y se
     // le deja sangrar por los dos cabos: entra por un borde y sale por otro.
-    ctx.travesia = params.travesia != null ? !!params.travesia : rng.bool(P_TRAVESIA);
+    ctx.travesia = params.travesia != null ? !!params.travesia : rng.bool(ej.travesia != null ? ej.travesia : P_TRAVESIA);
     const real = poner(ctx.travesia ? hypot(fw, fh) / S * rng.range(1.15, 1.5)
                                     : rng.range(PROTA[0], PROTA[1]), ctx.travesia);
     // El cerco SALE DE N, no se suma a N: son trazos de la obra, no un extra.
@@ -2309,7 +2329,7 @@
     // mantiene; con el plan declarado de antemano, salían todos pegados a él.
     const c0 = rng.range(CAIDA[0], CAIDA[1]);
     let L = (real || PROTA[0]) * c0;
-    const hayPatas = rng.bool(P_PATAS);
+    const hayPatas = rng.bool(ej.patas != null ? ej.patas : P_PATAS);
     const tope = hayPatas ? max(2 + cerco, N - rng.int(PATAS[0], PATAS[1])) : N;
     for (let idx = 1 + cerco; idx < tope; idx++) {
       poner(max(L, LARGO_MIN * 1.2));
@@ -2719,7 +2739,7 @@
     const ocR = o < 0.05 ? 'uncommon' : o >= 0.24 ? 'rare' : 'common';
     const qm = res.cintas ? res.quiebros / res.cintas : 0;
     const trazoLbl = qm < 1.6 ? 'Recto' : qm < 3.2 ? 'Quebrado' : 'Roto';
-    const tipoR = res.tipo === 'disperso' ? 'uncommon' : 'common';
+    const tipoR = res.tipo === 'haz' ? 'uncommon' : 'common';
     const vibR = res.vibra ? 'uncommon' : 'common';
     const f = r => r === 'superrare' ? 0.18 : r === 'rare' ? 0.3 : r === 'uncommon' ? 0.7 : 1;
     const s = prob * f(ojosR) * f(ocR) * f(tipoR) * f(vibR);
