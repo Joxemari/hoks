@@ -121,9 +121,12 @@ function renderAbout() {
     t.style.visibility = 'visible';
   }
   if (c) {
-    const email = (siteData && siteData.footerEmail) || 'hola@hoks.design';
+    // Se monta con nodos, no con innerHTML: el correo viene de site.json.
+    const email = String((siteData && siteData.footerEmail) || 'hola@hoks.design');
     const label = window.HOKSI18N ? HOKSI18N.t('footer.contact') : 'Contact';
-    c.innerHTML = label + ': <a href="mailto:' + email + '">' + email + '</a>';
+    const a = document.createElement('a');
+    a.href = 'mailto:' + email; a.textContent = email;
+    c.textContent = label + ': '; c.appendChild(a);
   }
 }
 
