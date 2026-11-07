@@ -665,7 +665,9 @@
         "seed": 2950288811,
         "format": "square",
         "base": 600,
-        "params": {},
+        "params": {
+          "grainScale": 1
+        },
         "palSel": 27,
         "palName": "Poet",
         "addedAt": 1793647542805,
@@ -676,7 +678,9 @@
         "seed": 683129967,
         "format": "horizontal",
         "base": 600,
-        "params": {},
+        "params": {
+          "grainScale": 1
+        },
         "palSel": 27,
         "palName": "Poet",
         "addedAt": 1793647545007,
@@ -687,7 +691,9 @@
         "seed": 2084311110,
         "format": "horizontal",
         "base": 600,
-        "params": {},
+        "params": {
+          "grainScale": 1
+        },
         "palSel": 27,
         "palName": "Poet",
         "addedAt": 1793647545807,
@@ -698,7 +704,9 @@
         "seed": 4112119562,
         "format": "square",
         "base": 600,
-        "params": {},
+        "params": {
+          "grainScale": 1
+        },
         "palSel": 27,
         "palName": "Poet",
         "addedAt": 1793647546402,
@@ -717,7 +725,9 @@
         "seed": 3722888192,
         "format": "square",
         "base": 600,
-        "params": {},
+        "params": {
+          "grainScale": 1
+        },
         "palSel": 1,
         "palName": "Mondrian",
         "addedAt": 1793722367079,
@@ -728,7 +738,9 @@
         "seed": 2856910491,
         "format": "horizontal",
         "base": 600,
-        "params": {},
+        "params": {
+          "grainScale": 1
+        },
         "palSel": 1,
         "palName": "Mondrian",
         "addedAt": 1793722369363,
@@ -739,7 +751,9 @@
         "seed": 3244187408,
         "format": "horizontal",
         "base": 600,
-        "params": {},
+        "params": {
+          "grainScale": 1
+        },
         "palSel": 1,
         "palName": "Mondrian",
         "addedAt": 1793722370088,
@@ -750,7 +764,9 @@
         "seed": 1364305481,
         "format": "square",
         "base": 600,
-        "params": {},
+        "params": {
+          "grainScale": 1
+        },
         "palSel": 1,
         "palName": "Mondrian",
         "addedAt": 1793722370574,

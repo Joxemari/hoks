@@ -8,7 +8,9 @@
       "seed": 3722888192,
       "format": "square",
       "base": 600,
-      "params": {},
+      "params": {
+        "grainScale": 1
+      },
       "pal": "locked",
       "palette": {
         "id": 2,
@@ -36,7 +38,9 @@
       "seed": 2950288811,
       "format": "square",
       "base": 600,
-      "params": {},
+      "params": {
+        "grainScale": 1
+      },
       "pal": "locked",
       "palette": {
         "id": 28,

@@ -216,7 +216,12 @@ redeploy de Pages.
   fijada (`'locked'`, ninguna)— y el hash git del `algo.js` y del `_engine.js`
   que la pintaron. Con eso, **`node tools/rerender.mjs <obra> <seed> [A2]`** saca
   de git el código exacto y reimprime la pieza aunque el algoritmo haya cambiado;
-  `--check` comprueba que la composición coincide con lo publicado. **Desde
+  `--check` comprueba que la composición coincide con lo publicado. **El grano
+  va siempre escrito en `params.grainScale`** (`recipeOf` lo rellena con
+  `E.GRAIN_DEFAULT` si el harness no lo manda): una receta no puede apoyarse en
+  el defecto del código, porque el defecto cambia y la pieza publicada no. Las 8
+  piezas de los capítulos de Instagram, publicadas a mano con `params: {}`, se
+  rellenaron a `1` y pasan `--check` idénticas. **Desde
   noviembre de 2026 PLLS y KRRTK solo guardan obra con receta**: las anteriores
   existían como PNG de 760 px y no se podían imprimir, así que se retiraron (siguen
   en el historial de git). El modo de
