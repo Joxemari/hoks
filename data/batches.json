@@ -144,6 +144,26 @@
         "palSel": "auto",
         "palName": "Escape",
         "addedAt": 1794087318426
+      },
+      {
+        "work": "krrtk",
+        "seed": 1356856277,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Troll",
+        "addedAt": 1794087325851
       }
     ]
   },
