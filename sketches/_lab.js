@@ -37,7 +37,7 @@
   // algo.js (FORMATS) y el panel lo puede cambiar por works.json sin tocar
   // código. Sin red manda lo del algo.js, que es lo que viaja con la obra.
   const FMT_LABEL = {
-    square:     '\u25A1 Square (1:1)',
+    square:     '\u25A1 Cuadrado (1:1)',
     vertical:   '\u25AF Vertical (1:\u221A2)',
     horizontal: '\u25AD Horizontal (\u221A2:1)',
     double:     '\u25AD\u25AD Doble \u00B7 dos pliegos (2\u221A2:1)',
@@ -117,7 +117,7 @@
   // es el comportamiento de producción y por tanto el que debe venir por defecto.
   function mountPalettePicker(host, opts) {
     opts = opts || {};
-    const AUTO = { name: opts.autoLabel || 'Random (weighted)', auto: true, colors: [] };
+    const AUTO = { name: opts.autoLabel || 'Al azar entre todas (por peso)', auto: true, colors: [] };
     let palettes = opts.palettes || [];
     let sel = 'auto';   // 'auto' | índice dentro de palettes
 
@@ -125,20 +125,97 @@
       palettes: [AUTO].concat(palettes),
       index: 0,
       label: 'Palette',
-      onChange: i => { sel = i === 0 ? 'auto' : i - 1; if (opts.onChange) opts.onChange(); },
+      onChange: i => { sel = i === 0 ? 'auto' : i - 1; if (sel === 'auto' && modo === 'una') setModo('todas'); if (opts.onChange) opts.onChange(); },
     });
 
+    // TRES MANERAS DE ELEGIR, a la vista y con nombre: TODAS (el azar por peso,
+    // que es producción), UNA (fijada) y VARIAS (el azar solo entre las marcadas,
+    // a partes iguales). Lo pidió el autor para trabajar una serie de DTKRT con
+    // dos o tres paletas; la primera versión era un enlace discreto y no lo
+    // encontró. Para el algoritmo «varias» es `auto` con una lista corta —consume
+    // la misma tirada—, así que la receta guarda `pal:'auto'` y la paleta que
+    // salió, y se reproduce igual.
+    const marcadas = new Set();   // nombres, para sobrevivir a setPalettes
+    let modo = 'todas';           // 'todas' | 'una' | 'varias'
+    const seg = document.createElement('div');
+    seg.style.cssText = 'display:flex;gap:3px;margin-top:5px';
+    const btn = {};
+    [['todas', 'Todas'], ['una', 'Una'], ['varias', 'Varias']].forEach(([k, txt]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = txt;
+      b.style.cssText = 'flex:1;padding:5px 4px;font-size:9px;letter-spacing:0.08em;border:1px solid var(--border,#e8e8e8);background:transparent;color:var(--ink,#111);width:auto';
+      b.onclick = () => { setModo(k); if (opts.onChange) opts.onChange(); };
+      btn[k] = b; seg.appendChild(b);
+    });
+    const lista = document.createElement('div');
+    lista.style.cssText = 'display:none;max-height:170px;overflow:auto;margin-top:4px;border:1px solid var(--border,#e8e8e8);border-radius:2px;padding:4px 5px;font-size:10px;letter-spacing:0.02em';
+    const barra = document.createElement('div');
+    barra.style.cssText = 'display:none;justify-content:space-between;margin-top:3px;font-size:9px;color:var(--ink3,#888);letter-spacing:0.04em';
+    host.appendChild(seg); host.appendChild(barra); host.appendChild(lista);
+    function subset() { return palettes.filter(p => marcadas.has(p.name)); }
+    function setModo(k) {
+      modo = k;
+      if (k !== 'una') { sel = 'auto'; picker.setIndex(0); }
+      if (k === 'una' && sel === 'auto') { sel = 0; picker.setIndex(1); }
+      Object.keys(btn).forEach(x => { btn[x].style.background = x === modo ? 'var(--ink,#111)' : 'transparent'; btn[x].style.color = x === modo ? '#fff' : 'var(--ink,#111)'; });
+      lista.style.display = modo === 'varias' ? '' : 'none';
+      barra.style.display = modo === 'varias' ? 'flex' : 'none';
+      // el desplegable es el mando de UNA: en los otros dos modos sobra
+      const trig = host.querySelector('.hokspal-trigger');
+      if (trig) trig.style.display = modo === 'una' ? '' : 'none';
+      pintaBarra();
+    }
+    function pintaLista() {
+      lista.innerHTML = '';
+      // activas primero; las retiradas al final y dichas
+      const orden = palettes.map((p, i) => ({ p, i })).sort((a, b) => ((b.p.active !== false) - (a.p.active !== false)) || (a.i - b.i));
+      orden.forEach(({ p }) => {
+        const row = document.createElement('label');
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;text-transform:none;font-weight:400';
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = marcadas.has(p.name);
+        cb.onchange = () => { if (cb.checked) marcadas.add(p.name); else marcadas.delete(p.name); pintaBarra(); if (opts.onChange) opts.onChange(); };
+        const strip = document.createElement('span');
+        strip.style.cssText = 'display:inline-flex;width:48px;height:10px;flex:0 0 auto;border:1px solid rgba(0,0,0,0.08)';
+        (p.colors || []).forEach(c => { const sw = document.createElement('i'); sw.style.cssText = 'flex:1;background:' + c; strip.appendChild(sw); });
+        const nm = document.createElement('span'); nm.textContent = p.name + (p.active === false ? ' · retirada' : '');
+        if (p.active === false) nm.style.color = 'var(--ink3,#888)';
+        row.appendChild(cb); row.appendChild(strip); row.appendChild(nm); lista.appendChild(row);
+      });
+      pintaBarra();
+    }
+    function pintaBarra() {
+      const n = subset().length;
+      barra.innerHTML = '';
+      const t = document.createElement('span'); t.textContent = n ? n + ' marcadas · el azar elige entre ellas' : 'marca dos o más';
+      const acc = document.createElement('span');
+      const mk = (txt, fn) => { const a = document.createElement('a'); a.href = '#'; a.textContent = txt; a.style.cssText = 'color:inherit;margin-left:8px'; a.onclick = e => { e.preventDefault(); fn(); pintaLista(); if (opts.onChange) opts.onChange(); }; acc.appendChild(a); };
+      mk('activas', () => { marcadas.clear(); palettes.filter(p => p.active !== false).forEach(p => marcadas.add(p.name)); });
+      mk('ninguna', () => marcadas.clear());
+      barra.appendChild(t); barra.appendChild(acc);
+    }
+    pintaLista();
+    setModo('todas');
+
     return {
-      // Lo que espera render(): paleta fijada, o todas y que el RNG elija.
-      opts() { return sel === 'auto' ? { palettes } : { palettes, locked: true, lockedIdx: sel }; },
-      get selection() { return sel; },
+      // Lo que espera render(): paleta fijada, o todas y que el RNG elija —o solo
+      // entre las marcadas, que para el algoritmo es lo mismo con una lista corta.
+      opts() {
+        if (modo === 'una' && sel !== 'auto') return { palettes, locked: true, lockedIdx: sel };
+        const sub = modo === 'varias' ? subset() : [];
+        // entre las marcadas, a partes iguales: el peso por antigüedad es para
+        // la tirada entre todas, no para una selección hecha a mano
+        return { palettes: sub.length ? sub.map(p => Object.assign({}, p, { prob: 1 / sub.length })) : palettes };
+      },
+      get selection() { return modo === 'una' ? sel : 'auto'; },
+      get marcadas() { return modo === 'varias' ? subset().map(p => p.name) : []; },
       setPalettes(list) {
         palettes = list || [];
         picker.setPalettes([AUTO].concat(palettes), sel === 'auto' ? 0 : sel + 1);
+        pintaLista();
       },
       select(v) {
         sel = (v === 'auto' || v == null) ? 'auto' : parseInt(v, 10);
         picker.setIndex(sel === 'auto' ? 0 : sel + 1);
+        setModo(sel === 'auto' ? 'todas' : 'una');
       },
     };
   }
@@ -369,7 +446,9 @@
     a.type = 'button';
     a.textContent = '← atrás';
     a.title = 'Volver (al panel si vienes de él)';
-    a.style.cssText = 'position:fixed;bottom:12px;right:14px;z-index:300;' +
+    // width:auto a propósito: los harnesses ponen `button { width:100% }` y el
+    // chip salía como una barra de lado a lado del escenario
+    a.style.cssText = 'position:fixed;bottom:12px;right:14px;z-index:300;width:auto;' +
       "font-family:'Courier New',Courier,monospace;font-size:10px;letter-spacing:0.1em;" +
       'text-transform:uppercase;color:#0a0a0a;background:rgba(251,251,250,0.92);' +
       'border:1px solid #d8d5cc;border-radius:8px;padding:6px 11px;cursor:pointer;' +

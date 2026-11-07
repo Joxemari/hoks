@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>dtkrt · lab — hoks</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,94 +45,118 @@
   .swatches { display:flex; gap:4px; }
   .sw { flex:1; height:16px; border-radius:2px; border:1px solid rgba(0,0,0,0.08); }
   .lab-title { font-family: var(--geo); font-size: 13px; letter-spacing: 0.1em; text-transform: none; }
+  /* El panel va en el orden del trabajo: obra → tirada → mirar y elegir → sacar.
+     Lo que no se toca a diario (afinado) va plegado. */
+  .sec { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .sec h2 { font-family: var(--geo); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); }
+  details.afinado summary { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); cursor: pointer; list-style: none; }
+  details.afinado summary::before { content: '▸ '; } details.afinado[open] summary::before { content: '▾ '; }
+  details.afinado > .group { margin-top: 8px; }
 </style>
 </head>
 <body>
   <aside class="panel">
     <div class="lab-title">hoks · lab<small>aquí se genera y aquí se elige</small></div>
-    <div class="group">
-      <span class="lbl">Work</span>
-      <div id="workPicker"></div>
-    </div>
-    <div class="group">
-      <span class="lbl">Format</span>
-      <select id="fmt"></select>
-      <button class="ghost" id="rot">⟲ Ver de pie (r)</button>
-      <span class="hintline">vertical y horizontal son la misma obra girada:
-        se genera en horizontal y el giro es de la vista, no del archivo</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Field</span>
-      <select id="field">
-        <option value="sheet">▣ Llena el pliego</option>
-        <option value="square">□ Campo cuadrado</option>
-      </select>
-      <span class="hintline">el pliego y el campo son dos decisiones: un cuadrado puede ir sobre un DIN</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Seed</span>
-      <input type="text" id="seed" value="0" inputmode="numeric" spellcheck="false">
-      <button id="rnd">↻ Nueva seed (espacio)</button>
-      <span class="hintline">se puede teclear una seed para volver a ella · ← → recorren vecinas</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Palette · <span id="palCount">…</span></span>
-      <div id="palPicker"></div>
-      <span class="hintline">incluye activas e inactivas</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Background</span>
-      <select id="bg">
-        <option value="auto">Auto (lo propio de la obra)</option>
-        <option value="solid">Solid</option>
-        <option value="gradient">Gradient</option>
-      </select>
-      <span class="hintline">transversal: es lo que separaba a KRT de KRTG</span>
-      <div id="bgAuto">
-        <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
-          · plano <span id="bgPS">—</span></span>
-        <input type="range" id="bgP" min="0" max="100" step="5" value="50">
-        <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre</span>
+
+    <section class="sec">
+      <h2>1 · Obra</h2>
+      <div class="group">
+        <span class="lbl">Familia</span>
+        <div id="workPicker"></div>
       </div>
-    </div>
-    <div class="group">
-      <span class="lbl">Grain</span>
-      <select id="grain">
-        <option value="1">Con grano</option>
-        <option value="0">Sin grano</option>
-      </select>
-      <span class="hintline">o lo hay o no lo hay: media dosis de grano no es una decisión</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Roles · suelo / bloque / punto</span>
-      <div class="swatches"><div class="sw" id="swG"></div><div class="sw" id="swB"></div><div class="sw" id="swD"></div></div>
-      <span class="hintline" id="rolesNote">—</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Grid · <span id="gridV">auto</span></span>
-      <input type="range" id="grid" min="0" max="7" step="1" value="0">
-      <span class="hintline">0 = aleatorio 3–7 (como producción)</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Threshold · <span id="thV">0.80</span></span>
-      <input type="range" id="th" min="0.1" max="1" step="0.05" value="0.8">
-      <span class="hintline">más alto = más círculos (producción: 0.80)</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Batch</span>
-      <div id="batchPanel"></div>
-    </div>
-    <div class="group">
-      <button id="save">↓ Save PNG (s)</button>
-      <button class="ghost" id="cartela">↓ Cartela A5 (c)</button>
-      <button class="ghost" id="sheet">▦ Grid de obras (g)</button>
-      <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
-      <!-- Mirar es una VISTA, no un parámetro: el muro (el alzado, para decidir
-           el pliego) y las fotos (la obra sobre la cosa, para publicar) van a su
-           página y no engordan el panel con mandos que no cambian la obra. -->
-      <div id="viewLinks"></div>
-    </div>
-    <div class="group"><span class="lbl">Traits</span><div class="traits" id="traits"></div></div>
+      <div class="group">
+        <span class="lbl">Formato</span>
+        <select id="fmt"></select>
+        <button class="ghost" id="rot">⟲ Ver de pie (r)</button>
+        <span class="hintline">vertical y horizontal son la misma obra girada: se genera en horizontal y el giro es de la vista</span>
+      </div>
+      <div class="group">
+        <span class="lbl">Campo</span>
+        <select id="field">
+          <option value="sheet">▣ Llena el pliego</option>
+          <option value="square">□ Cuadrado centrado en el pliego</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="sec">
+      <h2>2 · Tirada</h2>
+      <div class="group">
+        <span class="lbl">Paleta · <span id="palCount">…</span></span>
+        <div id="palPicker"></div>
+        <span class="hintline">todas = producción (al azar por peso) · una = fijada · varias = el azar solo entre las marcadas</span>
+      </div>
+      <div class="group">
+        <span class="lbl">Fondo</span>
+        <select id="bg">
+          <option value="auto">Auto (lo propio de la obra)</option>
+          <option value="solid">Plano</option>
+          <option value="gradient">Degradado</option>
+        </select>
+        <div id="bgAuto">
+          <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
+            · plano <span id="bgPS">—</span></span>
+          <input type="range" id="bgP" min="0" max="100" step="5" value="50">
+        </div>
+        <span class="hintline">DTKRT pide suelo plano: el degradado es para mirar, no para publicar</span>
+      </div>
+      <div class="group">
+        <span class="lbl">Grano</span>
+        <select id="grain">
+          <option value="1">Con grano</option>
+          <option value="0">Sin grano</option>
+        </select>
+      </div>
+      <details class="afinado">
+        <summary>Afinado</summary>
+        <div class="group">
+          <span class="lbl">Rejilla · <span id="gridV">auto</span></span>
+          <input type="range" id="grid" min="0" max="7" step="1" value="0">
+          <span class="hintline">0 = al azar entre 3 y 7, como producción</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Umbral · <span id="thV">0.80</span></span>
+          <input type="range" id="th" min="0.1" max="1" step="0.05" value="0.8">
+          <span class="hintline">más alto, más círculos · producción 0,80</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Roles · suelo / bloque / punto</span>
+          <div class="swatches"><div class="sw" id="swG"></div><div class="sw" id="swB"></div><div class="sw" id="swD"></div></div>
+          <span class="hintline" id="rolesNote">—</span>
+        </div>
+      </details>
+    </section>
+
+    <section class="sec">
+      <h2>3 · Mirar y elegir</h2>
+      <div class="group">
+        <span class="lbl">Seed</span>
+        <input type="text" id="seed" value="0" inputmode="numeric" spellcheck="false">
+        <button id="rnd">↻ Nueva seed (espacio)</button>
+        <span class="hintline">← → recorren las vecinas · teclea una seed para volver a ella</span>
+      </div>
+      <div class="group">
+        <button class="ghost" id="sheet">▦ Grid de obras (g)</button>
+        <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
+        <span class="hintline">en el grid: + sobre una pieza la aparta al lote · botón derecho elige a cuál</span>
+      </div>
+      <div class="group">
+        <span class="lbl">Lote</span>
+        <div id="batchPanel"></div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <h2>4 · Sacar</h2>
+      <div class="group">
+        <button id="save">↓ Guardar PNG (s)</button>
+        <button class="ghost" id="cartela">↓ Cartela A5 (c)</button>
+        <!-- Mirar es una VISTA, no un parámetro: el muro va a su página. -->
+        <div id="viewLinks"></div>
+      </div>
+    </section>
+
+    <div class="group"><span class="lbl">Rasgos</span><div class="traits" id="traits"></div></div>
   </aside>
 
   <main class="stage">
@@ -280,7 +305,7 @@ function setView(v) {
   $('volver').style.display = (v === 'single' && gridSeed !== null) ? 'block' : 'none';
   $('sheet').textContent = v === 'sheet' ? '▦ Vista única (g)' : '▦ Grid de obras (g)';
   $('batchView').textContent = v === 'batch' ? '▦ Vista única (b)' : '▦ Ver el lote (b)';
-  if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; }
+  if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variaciones desde #${seed}`; }
   else if (v === 'batch') { $('sheetGrid').innerHTML = ''; $('status').textContent = batch.renderFull($('sheetGrid')); }
   else renderSingle();
 }

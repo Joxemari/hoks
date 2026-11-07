@@ -63,7 +63,7 @@ elif roto == 'cuna':
     # -que era su otro control- ya no dispara ahi, y un cero sin control no significa
     # nada.
     a = """    ctx.beginPath();
-    banda(ctx, pts, W, gub, relleno, anchos);
+    banda(ctx, pts, W, gub, relleno, anchos, 0, lados);
     ctx.fill();
     if (mas > 0) {
       ctx.save();
@@ -74,8 +74,17 @@ elif roto == 'cuna':
     assert a in src, 'no encuentro el corte por offset'
     src = src.replace(a, """    // ROTO A PROPOSITO: el corte vuelve a ser «la misma banda mas gorda»
     ctx.beginPath();
-    banda(ctx, pts, W, gub, relleno, anchos, mas);
+    banda(ctx, pts, W, gub, relleno, anchos, mas, lados);
     ctx.fill();""")
+
+elif roto == 'pelo0':
+    # EL PELO DEL CAMPO, ROTO: el canal visible se fabrica en `pintarCampo` como la
+    # franja donde d2 - d1 < g. Si se pinta con 0,4 g, el detector `pelo` tiene que
+    # cantar pares por debajo de g. Es el control del pintado por campo; los de la
+    # banda poligonal (`duro`, `cuna`) ya no tocan lo que se publica.
+    a = "    const gpx = gf * S, reach = MITER * Rmax + gpx + 2;"
+    assert a in src, 'no encuentro el pelo del campo'
+    src = src.replace(a, "    const gpx = gf * S * 0.4, reach = MITER * Rmax + gpx + 2;   // ROTO A PROPOSITO")
 
 elif roto == 'holgura':
     # LA CUENTA DE LA HOLGURA, ROTA. Es el control de la otra mitad: que lo que el

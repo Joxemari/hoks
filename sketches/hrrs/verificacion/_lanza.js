@@ -17,10 +17,10 @@ const REPO = path.join(__dirname, '..', '..', '..');
 // extremos de la gubia y del canal.
 const CONFIGS = [
   { n: 'defecto',    fmt: 'square',     p: {} },
-  { n: 'tendido',    fmt: 'square',     p: { tipo: 'tendido' } },
+  { n: 'bloque',     fmt: 'square',     p: { tipo: 'bloque' } },
   { n: 'recinto',    fmt: 'square',     p: { tipo: 'recinto' } },
   { n: 'haz',        fmt: 'square',     p: { tipo: 'haz' } },
-  { n: 'disperso',   fmt: 'square',     p: { tipo: 'disperso' } },
+  { n: 'travesia',   fmt: 'square',     p: { tipo: 'travesia' } },
   { n: 'apaisado',   fmt: 'horizontal', p: {} },
   { n: 'apais-haz',  fmt: 'horizontal', p: { tipo: 'haz' } },
   { n: 'cuadro',     fmt: 'horizontal', p: { field: 'square' } },

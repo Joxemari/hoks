@@ -113,51 +113,13 @@ function medir({ seed, fmt, params, base }) {
   const conHalo = geo.halo > 0;
   if (n < 2) return { seed, pelo: null, gpx: g, n, conHalo };
 
-  // La obra otra vez, pero con CADA TRAZO DE SU COLOR y con los mismos cortes. Se
-  // usa la `banda()` publicada: un detector que reimplementa el dibujo mide su copia.
-  const lb = document.createElement('canvas');
-  lb.width = d.W; lb.height = d.H;
-  const lx = lb.getContext('2d');
-  lx.translate(geo.ox, 0); lx.scale(S, S);
-  // EL HALO PUBLICADO, no reconstruido de los params: `geo.halo` lo dice el propio
-  // algoritmo, y un detector que recalcula lo que el artefacto ya declara mide su copia.
-  const halo = geo.halo;
-  // LAS ETIQUETAS, BIEN SEPARADAS. Con la etiqueta en 1,2,3… el antialias entre dos
-  // tintas da valores intermedios —el filo de la 3 sobre la 5 pinta un 4— y esos
-  // cuentan como una etiqueta nueva pegada a las dos. Medido: daba 0,125 g de minimo,
-  // que es un pixel, o sea el filo. Separadas y con tolerancia, el filo se descarta
-  // en vez de inventarse un trazo.
-  const paso1 = Math.max(2, Math.floor(250 / Math.max(1, n)));
-  for (let k = 0; k < n; k++) {
-    const pts = geo.cintas[k], rel = geo.relleno[k];
-    const deb = geo.debajo ? geo.debajo[k] : null;
-    if (halo > 0 && deb && deb.length) {
-      // el mismo recorte que el dibujo: la banda del de abajo, no un disco
-      lx.save();
-      lx.beginPath();
-      for (const j of deb) {
-        HOKS.HRRS.banda(lx, geo.cintas[j], Wt, geo.gubia[j], geo.relleno[j], null, halo);
-      }
-      lx.clip();
-      lx.globalCompositeOperation = 'destination-out';
-      // `corte()` PUBLICADO, no una copia: el corte ya no es «la banda mas gorda» sino
-      // el offset de la tinta -relleno mas trazo de 2·halo con union redonda-, y un
-      // detector que reimplementa el dibujo mide su copia, no el dibujo.
-      HOKS.HRRS.corte(lx, pts, Wt, geo.gubia[k], rel, null, halo);
-      lx.restore();
-    }
-    lx.globalCompositeOperation = 'source-over';
-    lx.fillStyle = 'rgb(' + paso1 * (k + 1) + ',0,0)';
-    lx.beginPath(); HOKS.HRRS.banda(lx, pts, Wt, geo.gubia[k], rel);
-    lx.fill();
-  }
-  const px = lx.getImageData(0, 0, d.W, d.H).data;
+  // LAS ETIQUETAS SALEN DEL CAMPO PUBLICADO. Desde que HRRS se pinta por campo de
+  // distancia (`pintarCampo`), la tinta no es un poligono: `etiquetas()` recorre el
+  // mismo campo con la misma geometria y dice, pixel a pixel, de que trazo es cada
+  // punto de tinta llena. Un detector que pintara bandas con `banda()` mediria el
+  // dibujo viejo, no el publicado.
   const W = d.W, H = d.H;
-  const et = new Int32Array(W * H);
-  for (let i = 0, k = 0; i < px.length; i += 4, k++) {
-    const v = px[i], q = Math.round(v / paso1);
-    et[k] = (px[i + 3] > 250 && q >= 1 && q <= n && Math.abs(v - q * paso1) <= 1) ? q : 0;
-  }
+  const et = HOKS.HRRS.etiquetas(geo, W, H);
 
   // Transformada de distancia CON ETIQUETA (chamfer 3-4, dos pasadas): de cada
   // pixel, a que distancia esta el trazo mas cercano y cual es.

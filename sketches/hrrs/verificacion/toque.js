@@ -175,6 +175,21 @@ function medir({ seed, fmt, params, base, extra }) {
         if (dv <= lim + TOL) { explicado = true; break; }
       }
     }
+    // ¿o lo explica el RELLENO HASTA EL MARGEN? Desde que la banda crece hacia el
+    // vecino por cada lado hasta dejar el pelo, la tinta se pasa de W/2 a lo largo
+    // del tramo, no solo en el vertice — y lo declara `geo.lados`, por vertice y
+    // por lado. Se acepta hasta el mayor de los dos extremos del tramo (sin mirar
+    // de que lado cae el pixel: es una cota, y lo que vigila es el exceso gordo).
+    for (let c = 0; c < g.cintas.length && !explicado; c++) {
+      const pts = g.cintas[c], la = (g.lados || [])[c];
+      if (!la) continue;
+      for (let k = 0; k < pts.length - 1; k++) {
+        const lim = Math.max(la.izq[k], la.izq[k + 1], la.der[k], la.der[k + 1]) * S;
+        if (lim <= h + TOL) continue;
+        const dd2 = pSeg(px, py, pts[k].x * S + ox, pts[k].y * S, pts[k + 1].x * S + ox, pts[k + 1].y * S);
+        if (dd2 <= lim + TOL) { explicado = true; break; }
+      }
+    }
     if (explicado) { fuera--; continue; }
     if (dmin - h > peorFuera) { peorFuera = dmin - h; fx = gx; fy = gy; }
   }
