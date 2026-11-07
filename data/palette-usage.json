@@ -195,14 +195,6 @@
       "source": "save"
     },
     {
-      "family": "pills",
-      "seed": 1240966757,
-      "savedAt": 1782333279289,
-      "paletteId": 28,
-      "paletteName": "Poet",
-      "source": "backfill"
-    },
-    {
       "family": "dtk",
       "seed": 945289627,
       "savedAt": 1777445303119,
@@ -220,14 +212,6 @@
       "source": "backfill"
     },
     {
-      "family": "pills",
-      "seed": 3532653870,
-      "savedAt": 1777445224167,
-      "paletteId": 8,
-      "paletteName": "Meta",
-      "source": "backfill"
-    },
-    {
       "family": "dtk",
       "seed": 3154946851,
       "savedAt": 1777386648510,
@@ -235,16 +219,6 @@
       "paletteName": "Daily",
       "source": "backfill",
       "renderedBy": "dtkg"
-    },
-    {
-      "family": "pills",
-      "seed": 3748818332,
-      "savedAt": 1777386244918,
-      "paletteId": 33,
-      "paletteName": "Itten III — Red & Teal",
-      "source": "backfill",
-      "altPaletteId": 34,
-      "altPaletteName": "Itten IV — Red & Cyan"
     },
     {
       "family": "dtk",
@@ -270,14 +244,6 @@
       "paletteName": "Itten V — Purple & Yellow-Green",
       "source": "backfill",
       "renderedBy": "dtkg"
-    },
-    {
-      "family": "pills",
-      "seed": 558364210,
-      "savedAt": 1777237845128,
-      "paletteId": 14,
-      "paletteName": "Escape",
-      "source": "backfill"
     }
   ]
 }

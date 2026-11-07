@@ -196,9 +196,10 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
 <div id="login-screen">
   <h1>hoks · admin</h1>
   <div class="login-form">
-    <input type="password" id="pwd-input" placeholder="password" autocomplete="current-password">
+    <input type="password" id="pwd-input" placeholder="GitHub token" autocomplete="off" onkeydown="if(event.key==='Enter')tryLogin()">
     <button onclick="tryLogin()">Enter</button>
-    <span class="login-error" id="login-error">incorrect password</span>
+    <span class="login-error" id="login-error">token not valid for Joxemari/hoks</span>
+    <span style="font-size:9px;color:var(--ink3);letter-spacing:0.04em;line-height:1.6;text-align:center">Fine-grained token, solo este repo, permiso <i>Contents: read and write</i>. Se queda en este navegador hasta que cierres sesión.</span>
   </div>
 </div>
 
@@ -259,53 +260,7 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
         <br><b>En una línea:</b> <b>Batches</b> = tu selección de recetas (aún no en la web); <b>Gallery</b> = lo
         publicado que el sitio enseña. Enviar obra a la web = publicar un lote, no subir nada aquí.
       </div>
-      <div class="section-header">
-        <span class="section-title">PLLS Gallery (<span id="gal-count">0</span>)</span>
-        <button class="btn btn-danger" onclick="clearAllGallery()">Clear All</button>
-      </div>
-      <div class="gallery-grid" id="gallery-grid"></div>
-      <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
-        <div class="section-header">
-          <span class="section-title">KRRTK Gallery (<span id="gal-krrtk-count">0</span>)</span>
-          <button class="btn btn-danger" onclick="clearKrrtkGallery()">Clear All</button>
-        </div>
-        <div class="gallery-grid" id="gallery-krrtk-grid"></div>
-      </div>
-      <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
-        <div class="section-header">
-          <span class="section-title">DTK Gallery (<span id="gal-dtk-count">0</span>)</span>
-          <button class="btn btn-danger" onclick="clearDtkGallery()">Clear All</button>
-        </div>
-        <div class="gallery-grid" id="gallery-dtk-grid"></div>
-      </div>
-      <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
-        <div class="section-header">
-          <span class="section-title">BZRS Gallery (<span id="gal-bzrs-count">0</span>)</span>
-          <button class="btn btn-danger" onclick="clearBzrsGallery()">Clear All</button>
-        </div>
-        <div class="gallery-grid" id="gallery-bzrs-grid"></div>
-      </div>
-      <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
-        <div class="section-header">
-          <span class="section-title">KRRTK Gallery (<span id="gal-krrtk-count">0</span>)</span>
-          <button class="btn btn-danger" onclick="clearKrrtkgGallery()">Clear All</button>
-        </div>
-        <div class="gallery-grid" id="gallery-krrtk-grid"></div>
-      </div>
-      <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
-        <div class="section-header">
-          <span class="section-title">DTK Gallery (<span id="gal-dtk-count">0</span>)</span>
-          <button class="btn btn-danger" onclick="clearDtkgGallery()">Clear All</button>
-        </div>
-        <div class="gallery-grid" id="gallery-dtk-grid"></div>
-      </div>
-      <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
-        <div class="section-header">
-          <span class="section-title">DTKRT Gallery (<span id="gal-dtkrt-count">0</span>)</span>
-          <button class="btn btn-danger" onclick="clearDtkrtGallery()">Clear All</button>
-        </div>
-        <div class="gallery-grid" id="gallery-dtkrt-grid"></div>
-      </div>
+      <div id="gallery-sections"><div class="empty-state">Abre esta pestaña para cargar las galerías.</div></div>
     </div>
 
     <!-- BATCHES -->
@@ -382,13 +337,6 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
 
     <!-- SECURITY -->
     <div class="tab-panel" id="tab-security">
-      <div class="section-title" style="margin-bottom:1.5rem">Change Password</div>
-      <div class="pwd-form">
-        <div class="field"><label>Current Password</label><input type="password" id="pwd-current"></div>
-        <div class="field"><label>New Password</label><input type="password" id="pwd-new"></div>
-        <div class="field"><label>Confirm</label><input type="password" id="pwd-confirm"></div>
-        <button class="btn" onclick="changePassword()" style="width:fit-content">Update Password</button>
-      </div>
       <div style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)">
         <div class="section-title" style="margin-bottom:1rem">GitHub Token</div>
         <div class="pwd-form">
@@ -434,28 +382,42 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
      dos implementaciones y la deriva no se vería hasta leer el archivo
      publicado. Ver CLAUDE.md § Buscadores y agentes. -->
 <script src="static-gen.js"></script>
+<script src="gh-store.js"></script>
 <script>
-const PWD_KEY='hoks-admin-pwd', SESSION_KEY='hoks-admin-session', TOKEN_KEY='hoks-gh-token';
+const SESSION_KEY='hoks-admin-session', TOKEN_KEY='hoks-gh-token';
 const BATCH_KEY='hoks-batches';   // solo lectura: lotes del sistema anterior
-const DEFAULT_PWD='hoks2026';
 const REPO='Joxemari/hoks';
 const RAW_BASE=`https://raw.githubusercontent.com/${REPO}/main/data/`;
 const $=id=>document.getElementById(id);
 
 // ── GITHUB ────────────────────────────────────────────
 function getToken(){return localStorage.getItem(TOKEN_KEY)||'';}
+// Toda escritura pasa por gh-store.js (HOKSGH), con el sha de lo que se leyó:
+// si el archivo ha cambiado desde que el panel lo cargó (el laboratorio
+// publicó, otra pestaña guardó), GitHub responde conflicto y no se pisa nada.
+// Antes se pedía el sha justo antes de escribir y ganaba siempre el último.
+const SHAS={};
+function needToken(){toast('Add your GitHub token first — Security tab');try{switchTab('security');const el=$('gh-token-input');if(el){el.scrollIntoView({block:'center'});el.focus();}}catch(e){}}
+function ghError(e){
+  if(e&&e.code==='conflict')toast('Este archivo ha cambiado desde que abriste el panel. Recarga la página y vuelve a hacer el cambio.');
+  else toast('GitHub error: '+(e&&e.message||e));
+}
+// Formularios (familias, paletas, contenido): "este es el archivo entero".
 async function ghFetch(path,content,msg){
-  const token=getToken();
-  if(!token){ toast('Add your GitHub token first — Security tab'); try{ switchTab('security'); const el=$('gh-token-input'); if(el){ el.scrollIntoView({block:'center'}); el.focus(); } }catch(e){} return false; }
+  if(!getToken()){needToken();return false;}
   showSaving(true);
-  let sha;
-  try{const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{headers:{'Authorization':'Bearer '+token}});if(r.ok)sha=(await r.json()).sha;}catch(e){}
-  const body={message:msg,content:btoa(unescape(encodeURIComponent(JSON.stringify(content,null,2))))};
-  if(sha)body.sha=sha;
-  const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,{method:'PUT',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body)});
-  showSaving(false);
-  if(!r.ok){const d=await r.json();toast('GitHub error: '+(d.message||r.status));return false;}
-  return true;
+  try{const sha=await HOKSGH.put(path,content,msg,SHAS[path]);if(sha)SHAS[path]=sha;return true;}
+  catch(e){ghError(e);return false;}
+  finally{showSaving(false);}
+}
+// Operaciones (borrar una pieza, renombrar un lote): se aplican sobre lo que
+// haya en main ahora mismo. → el contenido nuevo, o null si falló.
+async function ghUpdate(path,fn,msg){
+  if(!getToken()){needToken();return null;}
+  showSaving(true);
+  try{const r=await HOKSGH.update(path,fn,msg);if(r.sha)SHAS[path]=r.sha;return r;}
+  catch(e){ghError(e);return null;}
+  finally{showSaving(false);}
 }
 // UTF-8 ↔ base64: la Contents API habla base64 y btoa/atob solo latin1.
 function b64enc(text){return btoa(unescape(encodeURIComponent(text)));}
@@ -483,7 +445,14 @@ async function ghPutText(path,text,msg,sha){
   return true;
 }
 
-async function ghRead(path){const r=await fetch(RAW_BASE+path+'?t='+Date.now());if(!r.ok)return null;return r.json();}
+// Lee de raw y apunta el sha de esos mismos bytes: es la versión contra la
+// que se escribirá después.
+async function ghRead(path){
+  const r=await fetch(RAW_BASE+path+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)return null;
+  const buf=await r.arrayBuffer();
+  try{SHAS['data/'+path]=await HOKSGH.blobSha(buf);}catch(e){}
+  return JSON.parse(new TextDecoder().decode(buf));
+}
 function showSaving(v){$('saving').classList.toggle('show',v);}
 
 
@@ -565,7 +534,7 @@ function renderWorks() {
           <div style="font-size:9px;color:var(--ink3);margin-top:2px;">${esc(w.canvas||'')} &middot; ${esc(workHref(w))}</div>
         </div>
         <label style="display:flex;align-items:center;gap:6px;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;">
-          Year <input type="number" id="year-${i}" value="${w.year||''}" placeholder="—" min="2000" max="2099" onchange="saveWorkYear(${i})" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:5px 7px;font-family:var(--f);font-size:10px;color:var(--ink);outline:none;">
+          Year <input type="number" id="year-${i}" value="${esc(w.year||'')}" placeholder="—" min="2000" max="2099" onchange="saveWorkYear(${i})" style="width:62px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:5px 7px;font-family:var(--f);font-size:10px;color:var(--ink);outline:none;">
         </label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;">
           <input type="checkbox" ${w.active?'checked':''} onchange="toggleWork(${i},this.checked)"> Active
@@ -676,9 +645,30 @@ function openAddWorkModal() {
 }
 
 // ── AUTH ──────────────────────────────────────────────
-function getStoredPwd(){return localStorage.getItem(PWD_KEY)||DEFAULT_PWD;}
-function tryLogin(){if($('pwd-input').value===getStoredPwd()){sessionStorage.setItem(SESSION_KEY,'1');localStorage.setItem(SESSION_KEY,'1');showAdmin();}else{$('login-error').style.display='block';$('pwd-input').value='';$('pwd-input').focus();}}
-function logout(){sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);location.reload();}
+// La llave es el token de GitHub. Antes había una contraseña, pero estaba en
+// este mismo archivo público y se comprobaba en el navegador: no protegía
+// nada, y daba la impresión de que sí. Lo que de verdad impide escribir en el
+// repo es no tener un token con permiso, así que es eso lo que se pide y se
+// comprueba contra GitHub. El indicador de sesión (badge ADMIN, rejilla de uso
+// de paletas) solo se enciende con un token válido.
+async function tokenCanWrite(t){
+  try{
+    const r=await fetch('https://api.github.com/repos/'+REPO,{headers:{Authorization:'Bearer '+t},cache:'no-store'});
+    if(!r.ok)return false;
+    const d=await r.json();return !!(d.permissions&&d.permissions.push);
+  }catch(e){return false;}
+}
+async function tryLogin(){
+  const t=$('pwd-input').value.trim()||getToken();
+  if(t&&await tokenCanWrite(t)){
+    localStorage.setItem(TOKEN_KEY,t);sessionStorage.setItem(SESSION_KEY,'1');localStorage.setItem(SESSION_KEY,'1');
+    $('pwd-input').value='';showAdmin();
+  }else{
+    $('login-error').style.display='block';$('pwd-input').value='';$('pwd-input').focus();
+  }
+}
+// Cerrar sesión borra el token de este navegador.
+function logout(){sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);localStorage.removeItem(TOKEN_KEY);location.reload();}
 function showAdmin(){$('login-screen').style.display='none';$('admin-screen').style.display='block';loadAll();switchTab('works');}
 $('pwd-input').addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
 
@@ -688,23 +678,18 @@ function switchTab(name){
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',TAB_NAMES[i]===name));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   $('tab-'+name).classList.add('active');
+  if(name==='gallery'&&!galleriesLoaded)loadGalleries();
 }
 
 // ── LOAD ──────────────────────────────────────────────
-let pals=[],gallery=[],galleryKrrtk=[],galleryDtk=[],galleryBzrs=[],galleryKrrtkg=[],galleryDtkg=[],galleryDtkrt=[],site={};
+let pals=[],site={};
+var works=[];
 async function loadAll(){
-  [pals,gallery,galleryKrrtk,galleryDtk,galleryBzrs,galleryKrrtkg,galleryDtkg,galleryDtkrt,site]=await Promise.all([
+  [pals,site]=await Promise.all([
     ghRead('palettes.json').then(d=>d||[]),
-    ghRead('plls.json').then(d=>d||[]),
-    ghRead('krrtk.json').then(d=>d||[]),
-    ghRead('dtk.json').then(d=>d||[]),
-    ghRead('bzrs.json').then(d=>d||[]),
-    ghRead('krrtk.json').then(d=>d||[]),
-    ghRead('dtk.json').then(d=>d||[]),
-    ghRead('dtkrt.json').then(d=>d||[]),
     ghRead('site.json').then(d=>d||{}),
   ]);
-  loadWorks();renderPalettes();renderGallery();loadBatches();renderLegacyBatches();loadSiteForm();
+  loadWorks();renderPalettes();loadBatches();renderLegacyBatches();loadSiteForm();
 }
 
 // ── PALETTE PROB ──────────────────────────────────────
@@ -775,77 +760,56 @@ async function savePalette(){
 }
 
 // ── GALLERY ───────────────────────────────────────────
-function renderGallery(){
-  // PLLS
-  $('gal-count').textContent=gallery.length;
-  const grid=$('gallery-grid');
-  if(!grid)return;
-  if(!gallery.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-  else grid.innerHTML=gallery.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteGalleryItem(${i})">✕</button></div></div></div>`).join('');
-
-  // KRRTK
-  $('gal-krrtk-count').textContent=galleryKrrtk.length;
-  const kgrid=$('gallery-krrtk-grid');
-  if(kgrid){
-    if(!galleryKrrtk.length){kgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else kgrid.innerHTML=galleryKrrtk.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteKrrtkItem(${i})">✕</button></div></div></div>`).join('');
-  }
-
-  // DTK
-  const dgrid=$('gallery-dtk-grid');
-  if(dgrid){
-    $('gal-dtk-count').textContent=galleryDtk.length;
-    if(!galleryDtk.length){dgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else dgrid.innerHTML=galleryDtk.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteDtkItem(${i})">✕</button></div></div></div>`).join('');
-  }
-
-  // BZRS
-  const bgrid=$('gallery-bzrs-grid');
-  if(bgrid){
-    $('gal-bzrs-count').textContent=galleryBzrs.length;
-    if(!galleryBzrs.length){bgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else bgrid.innerHTML=galleryBzrs.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteBzrsItem(${i})">✕</button></div></div></div>`).join('');
-  }
-
-  // KRRTK
-  const kggrid=$('gallery-krrtk-grid');
-  if(kggrid){
-    $('gal-krrtk-count').textContent=galleryKrrtkg.length;
-    if(!galleryKrrtkg.length){kggrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else kggrid.innerHTML=galleryKrrtkg.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteKrrtkgItem(${i})">✕</button></div></div></div>`).join('');
-  }
-
-  // DTK
-  const dtgrid=$('gallery-dtk-grid');
-  if(dtgrid){
-    $('gal-dtk-count').textContent=galleryDtkg.length;
-    if(!galleryDtkg.length){dtgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else dtgrid.innerHTML=galleryDtkg.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteDtkgItem(${i})">✕</button></div></div></div>`).join('');
-  }
-
-  // DTKRT
-  const dkgrid=$('gallery-dtkrt-grid');
-  if(dkgrid){
-    $('gal-dtkrt-count').textContent=galleryDtkrt.length;
-    if(!galleryDtkrt.length){dkgrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';}
-    else dkgrid.innerHTML=galleryDtkrt.map((item,i)=>`<div class="gallery-item"><img src="${item.dataUrl}" loading="lazy"><div class="gallery-item-footer"><span>#${item.seed}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteDtkrtItem(${i})">✕</button></div></div></div>`).join('');
-  }
+// Una sección por familia del registro, no una lista escrita a mano (le
+// faltaba TRZS y cargaba KRRTK y DTK dos veces, así que un borrado deshacía
+// el otro). Las galerías pesan decenas de MB: se cargan al abrir la pestaña.
+const GAL={};let galleriesLoaded=false;
+async function loadGalleries(){
+  const el=$('gallery-sections');
+  if(!works||!works.length){el.innerHTML='<div class="empty-state">Aún no ha cargado el registro de familias. Vuelve a abrir la pestaña.</div>';return;}
+  galleriesLoaded=true;
+  el.innerHTML='<div class="empty-state">Cargando galerías…</div>';
+  const fams=(works||[]).map(w=>w.slug).filter(s=>/^[a-z0-9-]{1,24}$/.test(s||''));
+  await Promise.all(fams.map(async s=>{try{GAL[s]=await ghRead(s+'.json');}catch(e){GAL[s]=null;}}));
+  renderGallery();
 }
-
-async function deleteGalleryItem(i){if(!confirm('Delete?'))return;gallery.splice(i,1);await ghFetch('data/plls.json',gallery,'delete gallery item');renderGallery();toast('Deleted');}
-async function deleteKrrtkItem(i){if(!confirm('Delete?'))return;galleryKrrtk.splice(i,1);await ghFetch('data/krrtk.json',galleryKrrtk,'delete krrtk item');renderGallery();toast('Deleted');}
-async function deleteDtkItem(i){if(!confirm('Delete?'))return;galleryDtk.splice(i,1);await ghFetch('data/dtk.json',galleryDtk,'delete dtk item');renderGallery();toast('Deleted');}
-async function deleteBzrsItem(i){if(!confirm('Delete?'))return;galleryBzrs.splice(i,1);await ghFetch('data/bzrs.json',galleryBzrs,'delete bzrs item');renderGallery();toast('Deleted');}
-async function deleteKrrtkgItem(i){if(!confirm('Delete?'))return;galleryKrrtkg.splice(i,1);await ghFetch('data/krrtk.json',galleryKrrtkg,'delete krrtk item');renderGallery();toast('Deleted');}
-async function deleteDtkgItem(i){if(!confirm('Delete?'))return;galleryDtkg.splice(i,1);await ghFetch('data/dtk.json',galleryDtkg,'delete dtk item');renderGallery();toast('Deleted');}
-async function deleteDtkrtItem(i){if(!confirm('Delete?'))return;galleryDtkrt.splice(i,1);await ghFetch('data/dtkrt.json',galleryDtkrt,'delete dtkrt item');renderGallery();toast('Deleted');}
-async function clearAllGallery(){if(!confirm('Clear all PLLS gallery?'))return;gallery=[];await ghFetch('data/plls.json',[],'clear plls gallery');renderGallery();toast('Cleared');}
-async function clearKrrtkGallery(){if(!confirm('Clear all KRRTK gallery?'))return;galleryKrrtk=[];await ghFetch('data/krrtk.json',[],'clear krrtk gallery');renderGallery();toast('Cleared');}
-async function clearDtkGallery(){if(!confirm('Clear all DTK gallery?'))return;galleryDtk=[];await ghFetch('data/dtk.json',[],'clear dtk gallery');renderGallery();toast('Cleared');}
-async function clearBzrsGallery(){if(!confirm('Clear all BZRS gallery?'))return;galleryBzrs=[];await ghFetch('data/bzrs.json',[],'clear bzrs gallery');renderGallery();toast('Cleared');}
-async function clearKrrtkgGallery(){if(!confirm('Clear all KRRTK gallery?'))return;galleryKrrtkg=[];await ghFetch('data/krrtk.json',[],'clear krrtk gallery');renderGallery();toast('Cleared');}
-async function clearDtkgGallery(){if(!confirm('Clear all DTK gallery?'))return;galleryDtkg=[];await ghFetch('data/dtk.json',[],'clear dtk gallery');renderGallery();toast('Cleared');}
-async function clearDtkrtGallery(){if(!confirm('Clear all DTKRT gallery?'))return;galleryDtkrt=[];await ghFetch('data/dtkrt.json',[],'clear dtkrt gallery');renderGallery();toast('Cleared');}
+function renderGallery(){
+  const el=$('gallery-sections');if(!el)return;
+  const fams=Object.keys(GAL).filter(s=>Array.isArray(GAL[s]));
+  if(!fams.length){el.innerHTML='<div class="empty-state">No hay galerías publicadas</div>';return;}
+  el.innerHTML=fams.map((s,k)=>{
+    const g=GAL[s];
+    const items=g.length?g.map((item,i)=>`<div class="gallery-item"><img src="${esc(item.dataUrl)}" loading="lazy"><div class="gallery-item-footer"><span>#${esc(item.seed)}</span><div style="display:flex;gap:4px;"><button class="gallery-del" onclick="deleteGalleryItem('${s}',${i})">✕</button></div></div></div>`).join(''):'<div class="empty-state" style="grid-column:1/-1">No saved iterations</div>';
+    return `<div${k?' style="margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border)"':''}>
+      <div class="section-header"><span class="section-title">${esc(s.toUpperCase())} Gallery (${g.length})</span>
+      <button class="btn btn-danger" onclick="clearGallery('${s}')">Clear All</button></div>
+      <div class="gallery-grid">${items}</div></div>`;
+  }).join('');
+}
+// Borrar quita la pieza de la galería y su fila del índice de uso de paletas,
+// que antes quedaba huérfana y había que quitar a mano. Se identifica por
+// seed + savedAt, no por posición: la lista de main puede haber cambiado.
+async function deleteGalleryItem(slug,i){
+  const it=(GAL[slug]||[])[i];if(!it||!confirm('Delete '+slug.toUpperCase()+' #'+it.seed+'?'))return;
+  const same=x=>x&&x.seed===it.seed&&x.savedAt===it.savedAt;
+  const r=await ghUpdate('data/'+slug+'.json',cur=>{
+    if(!Array.isArray(cur))throw new Error(slug+'.json no es una lista');
+    const n=cur.filter(x=>!same(x));return n.length===cur.length?undefined:n;
+  },'delete '+slug+' #'+it.seed);
+  if(!r)return;
+  GAL[slug]=r.data;renderGallery();
+  const u=await ghUpdate('data/palette-usage.json',cur=>{
+    if(!cur||!Array.isArray(cur.works))return undefined;
+    const n=cur.works.filter(w=>!(w.family===slug&&w.seed===it.seed&&w.savedAt===it.savedAt));
+    return n.length===cur.works.length?undefined:Object.assign({},cur,{works:n});
+  },'palette usage: − '+slug+' #'+it.seed);
+  toast(u?'Deleted':'Deleted — pero revisa palette-usage.json');
+}
+async function clearGallery(slug){
+  if(!confirm('Clear all '+slug.toUpperCase()+' gallery?'))return;
+  const r=await ghUpdate('data/'+slug+'.json',()=>[],'clear '+slug+' gallery');
+  if(!r)return;GAL[slug]=[];renderGallery();toast('Cleared — las filas de palette-usage.json de '+slug.toUpperCase()+' quedan: quítalas si ya no aplican');
+}
 
 
 
@@ -856,42 +820,52 @@ function getBatches(){try{return JSON.parse(localStorage.getItem(BATCH_KEY)||'[]
 // Viven en data/batches.json y se llenan desde el laboratorio. Aquí se revisan.
 let batches = [];
 function loadBatches(){ ghRead('batches.json').then(d => { batches = Array.isArray(d) ? d : []; renderBatches(); }); }
-async function saveBatchesRemote(msg){ await ghFetch('data/batches.json', batches, msg); renderBatches(); }
+// Cada acción del panel es una operación sobre lo que hay en main, no una
+// copia entera: el laboratorio escribe en el mismo archivo (piezas apartadas,
+// publicadas) y no se puede pisar.
+async function batchOp(fn, msg){
+  const r = await ghUpdate('data/batches.json', cur => {
+    if (cur !== undefined && !Array.isArray(cur)) throw new Error('batches.json no es una lista');
+    const list = cur || []; return fn(list) === false ? undefined : list;
+  }, msg);
+  if (r && Array.isArray(r.data)) batches = r.data;
+  renderBatches();
+  return !!r;
+}
 // Un lote se abre normalmente aquí: es una decisión de tirada, no de sesión de
 // laboratorio. El lab lo puede crear también, en caliente, cuando aparece algo
 // que no cabe en ninguno de los abiertos.
 async function createBatch(){
   const name = prompt('Nombre del lote:'); if (!name || !name.trim()) return;
-  batches.unshift({ id: Date.now(), name: name.trim(), status: 'open', created: Date.now(), items: [] });
-  await saveBatchesRemote('open batch ' + name.trim());
-  toast('Lote abierto — llénalo desde el laboratorio');
+  const nb = { id: Date.now(), name: name.trim(), status: 'open', created: Date.now(), items: [] };
+  if (await batchOp(list => { list.unshift(nb); }, 'open batch ' + nb.name))
+    toast('Lote abierto — llénalo desde el laboratorio');
 }
 async function renameBatch(id){
   const b = batches.find(x => x.id === id); if (!b) return;
   const name = prompt('Nombre del lote:', b.name); if (!name || !name.trim() || name.trim() === b.name) return;
-  b.name = name.trim();
-  await saveBatchesRemote('rename batch ' + b.name);
-  toast('Renombrado');
+  const nn = name.trim();
+  if (await batchOp(list => { const x = list.find(v => v.id === id); if (!x) return false; x.name = nn; }, 'rename batch ' + nn))
+    toast('Renombrado');
 }
 async function toggleBatch(id){
   const b = batches.find(x => x.id === id); if (!b) return;
-  b.status = b.status === 'closed' ? 'open' : 'closed';
-  await saveBatchesRemote((b.status === 'closed' ? 'close' : 'reopen') + ' batch ' + b.name);
-  toast(b.status === 'closed' ? 'Lote cerrado' : 'Lote reabierto');
+  const to = b.status === 'closed' ? 'open' : 'closed';
+  if (await batchOp(list => { const x = list.find(v => v.id === id); if (!x) return false; x.status = to; }, (to === 'closed' ? 'close' : 'reopen') + ' batch ' + b.name))
+    toast(to === 'closed' ? 'Lote cerrado' : 'Lote reabierto');
 }
 async function deleteBatch(id){
   const b = batches.find(x => x.id === id); if (!b) return;
   if(!confirm('¿Borrar el lote "' + b.name + '" (' + b.items.length + ' piezas)?')) return;
-  batches = batches.filter(x => x.id !== id);
-  await saveBatchesRemote('delete batch ' + b.name);
-  toast('Lote borrado');
+  if (await batchOp(list => { const k = list.findIndex(v => v.id === id); if (k < 0) return false; list.splice(k, 1); }, 'delete batch ' + b.name))
+    toast('Lote borrado');
 }
 function renderBatches(){
   const el = $('batch-list'); if(!el) return;
   $('batch-count').textContent = batches.length;
   el.innerHTML = batches.length ? batches.map(b => {
-    const works = [...new Set((b.items||[]).map(i => i.work))];
-    const lab = 'sketches/' + (works[0] || 'dtkrt') + '/';
+    const works = [...new Set((b.items||[]).map(i => i.work))].filter(w => /^[a-z0-9-]{1,24}$/.test(w||''));
+    const lab = 'sketches/' + encodeURIComponent(works[0] || 'dtkrt') + '/';
     return `<div class="batch-card">
       <div class="batch-header">
         <div>
@@ -905,7 +879,7 @@ function renderBatches(){
           <button class="btn btn-danger" onclick="deleteBatch(${b.id})">Borrar</button>
         </div>
       </div>
-      <div class="batch-meta" style="padding:8px 14px;display:flex;flex-wrap:wrap;gap:8px;">${(b.items||[]).map(i=>`<span>${i.work}#${i.seed}</span>`).join('') || 'vacío'}</div>
+      <div class="batch-meta" style="padding:8px 14px;display:flex;flex-wrap:wrap;gap:8px;">${(b.items||[]).map(i=>`<span>${esc(i.work)}#${esc(i.seed)}</span>`).join('') || 'vacío'}</div>
     </div>`;
   }).join('') : '<div class="empty-state">Sin lotes — abre uno con + Nuevo lote</div>';
 }
@@ -964,18 +938,23 @@ async function saveSiteContent(){
 }
 
 // ── SECURITY ──────────────────────────────────────────
-function changePassword(){const c=$('pwd-current').value,n=$('pwd-new').value,cf=$('pwd-confirm').value;if(c!==getStoredPwd()){toast('Incorrect current password');return;}if(!n){toast('New password empty');return;}if(n!==cf){toast('Passwords do not match');return;}localStorage.setItem(PWD_KEY,n);$('pwd-current').value='';$('pwd-new').value='';$('pwd-confirm').value='';toast('Password updated');}
-function saveToken(){const t=$('gh-token-input').value.trim();if(!t){toast('Token cannot be empty');return;}localStorage.setItem(TOKEN_KEY,t);$('gh-token-input').value='';toast('Token saved');}
+async function saveToken(){const t=$('gh-token-input').value.trim();if(!t){toast('Token cannot be empty');return;}if(!await tokenCanWrite(t)){toast('Ese token no puede escribir en '+REPO);return;}localStorage.setItem(TOKEN_KEY,t);$('gh-token-input').value='';toast('Token saved');}
 
 // ── UTILS ─────────────────────────────────────────────
-const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// Escapa también comillas: se usa dentro de atributos (href, style, value).
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 
 // ── AUTO-LOGIN (al final: TAB_NAMES y el resto del estado ya están inicializados) ──
-if(sessionStorage.getItem(SESSION_KEY)==='1' || localStorage.getItem(SESSION_KEY)==='1') {
-  sessionStorage.setItem(SESSION_KEY,'1'); // sync a sesión para checks posteriores
-  showAdmin();
-}
+// La contraseña vieja se borra de los navegadores donde quedó guardada.
+try{localStorage.removeItem('hoks-admin-pwd');}catch(e){}
+// Con token guardado se entra directo, pero solo si GitHub lo sigue aceptando.
+if(getToken()){
+  tokenCanWrite(getToken()).then(ok=>{
+    if(ok){sessionStorage.setItem(SESSION_KEY,'1');localStorage.setItem(SESSION_KEY,'1');showAdmin();}
+    else{sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);}
+  });
+}else{sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);}
 </script>
 </body>
 </html>

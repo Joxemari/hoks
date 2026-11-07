@@ -12,15 +12,20 @@
  *     .add(seed)        → mete esa seed del harness actual en el lote abierto
  *     .renderFull(host) → pinta el lote entero (la vista de decidir)
  *
- * Depende de _lab.js (para cargar los algos de todas las obras graduadas) y de
- * los algoritmos ya cargados en window.HOKS.
+ * Depende de _lab.js (para cargar los algos de todas las obras graduadas), de
+ * los algoritmos ya cargados en window.HOKS y de gh-store.js para escribir.
+ *
+ * Quién manda en cada campo de un lote: el laboratorio manda en sus piezas
+ * (`items`, y si están publicadas); el panel manda en el nombre y el estado
+ * (abierto/cerrado). Por eso el lab no sube su copia entera: sube solo los
+ * lotes que ha tocado, sobre lo que haya en main en ese momento, conservando
+ * el nombre y el estado de allí. Antes subía el array entero y deshacía lo que
+ * se hubiera renombrado o cerrado en el panel mientras tanto.
  */
 (function (global) {
   'use strict';
 
   const RAW = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/';
-  const REPO = 'Joxemari/hoks';
-  const TOKEN_KEY = 'hoks-gh-token';
   const OPEN_KEY = 'hoks-batch-open';     // qué lote recibe, compartido entre labs
   const OUTBOX_KEY = 'hoks-batches-outbox'; // copia recuperable hasta que GitHub confirma
   const PUSH_DELAY = 1500;                // agrupa varios clics en un commit
@@ -74,18 +79,28 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s);
   }
 
-  // ── Persistencia ───────────────────────────────────────────────────────────
-  function token() { return localStorage.getItem(TOKEN_KEY); }
+  const escHtml = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+  // ── Persistencia ───────────────────────────────────────────────────────────
+  const GH = () => {
+    if (!global.HOKSGH) throw new Error('falta gh-store.js en esta página');
+    if (!global.HOKSGH.token()) throw new Error('sin token de GitHub — guárdalo en admin');
+    return global.HOKSGH;
+  };
+
+  // La cola guarda los lotes tocados y cuáles son. Formato viejo (array a
+  // secas): se da por tocado todo, que es lo que hacía antes.
   function readOutbox() {
     try {
       const d = JSON.parse(localStorage.getItem(OUTBOX_KEY) || 'null');
-      return Array.isArray(d) ? d : null;
+      if (Array.isArray(d)) return { batches: d, touched: d.map(b => b.id) };
+      if (d && Array.isArray(d.batches) && Array.isArray(d.touched)) return d;
+      return null;
     } catch (e) { return null; }
   }
 
-  function writeOutbox(batches) {
-    localStorage.setItem(OUTBOX_KEY, JSON.stringify(batches));
+  function writeOutbox(batches, touched) {
+    localStorage.setItem(OUTBOX_KEY, JSON.stringify({ batches, touched: [...touched] }));
   }
 
   function clearOutbox() { localStorage.removeItem(OUTBOX_KEY); }
@@ -98,26 +113,22 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     } catch (e) { return []; }
   }
 
-  async function pushJson(path, payload) {
-    const t = token();
-    if (!t) throw new Error('sin token de GitHub — guárdalo en admin');
-    let sha;
-    try {
-      const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, { headers: { Authorization: 'Bearer ' + t } });
-      if (r.ok) sha = (await r.json()).sha;
-    } catch (e) {}
-    const body = { message: 'update ' + path, content: btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2)))) };
-    if (sha) body.sha = sha;
-    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
-      method: 'PUT', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error('GitHub ' + r.status);
-  }
-  const push = batches => pushJson('data/batches.json', batches);
-
-  async function pullJson(name) {
-    try { const r = await fetch(RAW + name + '?t=' + Date.now()); const d = r.ok ? await r.json() : []; return Array.isArray(d) ? d : []; }
-    catch (e) { return []; }
+  // Sube los lotes `local` sobre lo que haya en main. Un lote que el panel
+  // borró mientras el lab lo tocaba vuelve a aparecer: se prefiere recuperar
+  // piezas apartadas a perderlas en silencio.
+  async function pushBatches(local, msg) {
+    const res = await GH().update('data/batches.json', cur => {
+      if (cur !== undefined && !Array.isArray(cur)) throw new Error('batches.json no es una lista: no se escribe encima');
+      const remote = cur || [];
+      const byId = new Map(local.map(b => [b.id, b]));
+      const out = remote.map(rb => {
+        const lb = byId.get(rb.id);
+        return lb ? { ...lb, name: rb.name, status: rb.status } : rb;
+      });
+      const fresh = local.filter(lb => !remote.some(rb => rb.id === lb.id));
+      return fresh.concat(out);
+    }, msg || 'update data/batches.json');
+    return res.data;
   }
 
   // ── Receta → imagen ────────────────────────────────────────────────────────
@@ -211,6 +222,10 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     let batches = [];
     let openId = (() => { const v = localStorage.getItem(OPEN_KEY); return v ? parseInt(v, 10) : null; })();
     let pushTimer = null, dirty = false;
+    // Lotes tocados aquí y aún no confirmados por GitHub, con un contador para
+    // no dar por subido un lote que se volvió a tocar mientras se subía.
+    const touched = new Map();
+    const touch = id => touched.set(id, (touched.get(id) || 0) + 1);
 
     host.innerHTML =
       `<div class="hb-row"><select id="hb-sel"></select>` +
@@ -233,17 +248,33 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     const $ = id => host.querySelector('#' + id);
     const openBatch = () => batches.find(b => b.id === openId && b.status !== 'closed') || null;
 
-    function schedulePush() {
+    async function syncNow(msg) {
+      clearTimeout(pushTimer);
+      if (!touched.size) return;
+      const sent = new Map(touched);
+      const merged = await pushBatches(batches.filter(b => sent.has(b.id)), msg);
+      sent.forEach((v, id) => { if (touched.get(id) === v) touched.delete(id); });
+      // Se adopta lo de main (trae lo que haya cambiado el panel), salvo los
+      // lotes que se han vuelto a tocar mientras tanto.
+      const keep = new Map(batches.filter(b => touched.has(b.id)).map(b => [b.id, b]));
+      batches = merged.map(b => keep.get(b.id) || b)
+        .concat([...keep.values()].filter(b => !merged.some(m => m.id === b.id)));
+      if (touched.size) writeOutbox(batches, touched.keys()); else { clearOutbox(); dirty = false; }
+    }
+
+    function schedulePush(id) {
+      if (id != null) touch(id);
       dirty = true;
       // La selección se escribe primero en una cola recuperable. Si el token
       // falla o se cierra la pestaña durante el debounce, el siguiente arranque
       // retoma exactamente estas recetas en vez de fingir que se guardaron.
-      writeOutbox(batches);
+      writeOutbox(batches, touched.keys());
       clearTimeout(pushTimer);
       pushTimer = setTimeout(async () => {
         try {
-          await push(batches);
-          clearOutbox(); dirty = false; note('✓ guardado en GitHub');
+          await syncNow();
+          render();
+          note('✓ guardado en GitHub');
           setTimeout(() => { if (!dirty) note(''); }, 1800);
         }
         catch (e) { note('⚠ pendiente de GitHub: ' + e.message); }
@@ -255,7 +286,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     function renderSelect() {
       const open = batches.filter(b => b.status !== 'closed');
       $('hb-sel').innerHTML = '<option value="">— sin lote —</option>' +
-        open.map(b => `<option value="${b.id}"${b.id === openId ? ' selected' : ''}>${b.name} (${b.items.length})</option>`).join('');
+        open.map(b => `<option value="${Number(b.id)}"${b.id === openId ? ' selected' : ''}>${escHtml(b.name)} (${b.items.length})</option>`).join('');
     }
     function renderStrip() {
       const b = openBatch(), strip = $('hb-strip');
@@ -281,7 +312,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
         if (it.published) wrap.classList.add('pub');
         c.onclick = () => { location.href = '../' + it.work + '/?seed=' + (it.seed >>> 0); };
         const x = document.createElement('span'); x.className = 'hb-x'; x.textContent = '×';
-        x.onclick = e => { e.stopPropagation(); b.items.splice(i, 1); schedulePush(); render(); };
+        x.onclick = e => { e.stopPropagation(); b.items.splice(i, 1); schedulePush(b.id); render(); };
         wrap.appendChild(c); wrap.appendChild(x); strip.appendChild(wrap);
       });
     }
@@ -299,7 +330,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       if (!r) return false;
       if (b.items.some(it => it.work === r.work && it.seed === r.seed)) { toast('Ya estaba en ' + b.name); return false; }
       b.items.push({ ...r, addedAt: Date.now() });
-      schedulePush(); render();
+      schedulePush(b.id); render();
       toast(`→ ${b.name} (${b.items.length}) · sincronizando`);
       return true;
     }
@@ -315,7 +346,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       if (!name) return null;
       const b = { id: Date.now(), name: name.trim(), status: 'open', created: Date.now(), items: [] };
       batches.unshift(b); openId = b.id; localStorage.setItem(OPEN_KEY, String(openId));
-      schedulePush(); render();
+      schedulePush(b.id); render();
       if (seed != null) addTo(b.id, seed);
       return b;
     }
@@ -438,32 +469,50 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       if (sin.length) { note('⚠ no carga el algoritmo de ' + [...new Set(sin.map(it => it.work))].join(', ') + ': no se publica nada'); return; }
       const byWork = {};
       pending.forEach(it => { (byWork[it.work] = byWork[it.work] || []).push(it); });
+      note('');
+      let done = 0, warned = false;
       for (const work of Object.keys(byWork)) {
         note('publicando ' + work.toUpperCase() + '…');
-        const gallery = await pullJson(work + '.json');
-        const usage = [];
         const code = await codeOf(work);
+        const made = [], usage = [];
         for (const it of byWork[work]) {
-          const made = entryFor(it, palettes, code);
-          if (!made) continue;
-          const { res, entry } = made, savedAt = entry.savedAt;
-          gallery.unshift(entry);
+          const m = entryFor(it, palettes, code);
+          if (!m) continue;
+          made.push({ it, m });
           // La paleta que va al índice es la que ha salido en ESTE render, no la
           // que tuviera la receta: si hubo deriva, manda el píxel publicado.
-          if (res.pal) usage.push({ family: work, seed: it.seed >>> 0, savedAt,
-                                    paletteId: res.pal.id, paletteName: res.pal.name });
-          it.published = true;
+          if (m.res.pal) usage.push({ family: work, seed: it.seed >>> 0, savedAt: m.entry.savedAt,
+                                      paletteId: m.res.pal.id, paletteName: m.res.pal.name });
         }
-        try { await pushJson('data/' + work + '.json', gallery); }
-        catch (e) { note('⚠ ' + work + ': ' + e.message); return; }
+        if (!made.length) continue;
+        // La galería se lee y se escribe en la misma operación: si otra
+        // publicación entra a la vez, se repite sobre lo nuevo en vez de pisarla.
+        try {
+          await GH().update('data/' + work + '.json', cur => {
+            if (cur !== undefined && !Array.isArray(cur)) throw new Error(work + '.json no es una lista: no se escribe encima');
+            return made.map(x => x.m.entry).concat(cur || []);
+          }, 'publish ' + made.length + ' ' + work + ' from batch ' + b.name);
+        } catch (e) { warned = true; note('⚠ ' + work + ': ' + e.message + ' · no se ha publicado nada de ' + work.toUpperCase()); break; }
+        // Solo ahora está publicada: antes se marcaba antes de subir, y un
+        // fallo dejaba piezas "publicadas" que nunca llegaron a la galería.
+        // Se marca sobre el lote vigente (la sincronización puede haberlo
+        // sustituido por la copia de main), pieza a pieza por obra y seed.
+        const cur = batches.find(x => x.id === b.id) || b;
+        cur.items.forEach(it => { if (made.some(x => x.it.work === it.work && x.it.seed === it.seed)) it.published = true; });
+        done += made.length;
+        touch(b.id);
+        try { await syncNow('mark published ' + work + ' in ' + b.name); }
+        catch (e) { warned = true; note('⚠ publicado, pero el lote no se pudo marcar: ' + e.message); }
         // El índice de uso (data/palette-usage.json) solo tiene sentido si se
         // alimenta aquí: publicar es lo único que crea obra guardada.
-        if (global.HOKSUSAGE) await global.HOKSUSAGE.recordMany(usage);
+        if (global.HOKSUSAGE) {
+          try { await global.HOKSUSAGE.recordMany(usage); }
+          catch (e) { warned = true; note('⚠ publicado, pero el índice de paletas no se actualizó: ' + e.message); }
+        }
       }
-      note('');
-      try { await push(batches); } catch (e) {}
+      if (!warned) note('');
       render();
-      toast('Publicado');
+      if (done) toast('Publicado · ' + done + ' pieza(s)');
     }
 
 
@@ -494,7 +543,7 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
         const x = document.createElement('button');
         x.className = 'hb-btn'; x.textContent = '× quitar';
         x.style.cssText = 'margin-top:4px;padding:3px 6px;font-size:9px';
-        x.onclick = () => { b.items.splice(i, 1); schedulePush(); render(); renderFull(host); };
+        x.onclick = () => { b.items.splice(i, 1); schedulePush(b.id); render(); renderFull(host); };
         fig.appendChild(c); fig.appendChild(cap); fig.appendChild(x);
         host.appendChild(fig);
       });
@@ -523,9 +572,16 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     render();
     pull().then(d => {
       const pending = readOutbox();
-      batches = pending || d;
-      render();
+      batches = d;
       if (pending) {
+        // Lo pendiente se pone encima de lo de main, lote a lote.
+        const mine = new Map(pending.batches.filter(b => pending.touched.includes(b.id)).map(b => [b.id, b]));
+        batches = d.map(b => mine.get(b.id) || b)
+          .concat([...mine.values()].filter(b => !d.some(x => x.id === b.id)));
+        mine.forEach((b, id) => touch(id));
+      }
+      render();
+      if (pending && touched.size) {
         note('recuperado · sincronizando con GitHub…');
         schedulePush();
       }

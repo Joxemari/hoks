@@ -32,15 +32,36 @@ body { font-family: var(--geo); background: var(--paper); color: var(--ink);
 const _q = new URLSearchParams(location.search).get('w') || '';
 const SLUG = /^[a-z0-9-]{1,24}$/.test(_q) ? _q : '';
 
-if (!SLUG) {
-  HOKSWORK.missing();
-} else {
+function start() {
   // El algo.js solo existe si la obra está graduada. Si no está, la página
   // sigue en pie —texto y piezas guardadas— y se queda sin lienzo vivo.
   const s = document.createElement('script');
   s.src = 'sketches/' + SLUG + '/algo.js?v=1';
   s.onload = s.onerror = () => HOKSWORK.init(SLUG);
   document.head.appendChild(s);
+}
+
+if (!SLUG) {
+  HOKSWORK.missing();
+} else {
+  // Antes de pintar se mira el registro. Un slug que no es familia no tiene
+  // página (antes salía un "NONEXISTENT" con su making of). Una familia apagada
+  // se puede ver por enlace, pero no se indexa: es la misma regla que pone el
+  // generador estático en sus cascarones. Sin red, se pinta igual.
+  fetch('https://raw.githubusercontent.com/Joxemari/hoks/main/data/works.json?t=' + Date.now())
+    .then(r => r.ok ? r.json() : null)
+    .then(list => {
+      if (!Array.isArray(list)) return start();
+      const w = list.find(x => x.slug === SLUG);
+      if (!w) return HOKSWORK.missing();
+      if (!w.active) {
+        const m = document.createElement('meta');
+        m.name = 'robots'; m.content = 'noindex';
+        document.head.appendChild(m);
+      }
+      start();
+    })
+    .catch(start);
 }
 </script>
 </body>

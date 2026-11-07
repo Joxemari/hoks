@@ -1,18 +1,17 @@
 # hoks — robots.txt
 #
-# OJO: en un project page de GitHub Pages (hoks.design/) este archivo
-# es INERTE. robots.txt solo se lee en la raíz del origen —
-# joxemari.github.io/robots.txt — que pertenece a otro repo. Queda aquí porque
-# es correcto el día que haya dominio propio (CNAME), y porque declara la
-# frontera: qué es obra publicada y qué es taller. Lo que de verdad mantiene el
-# taller fuera del índice hoy es el <meta name="robots" content="noindex"> de
-# esas páginas, que sí viaja en el documento.
+# Este archivo SÍ se lee: el sitio sirve desde dominio propio (CNAME
+# hoks.design), así que esta es la raíz del origen.
+#
+# Dos formas de dejar algo fuera del índice, y no se mezclan:
+# - Las páginas sueltas del taller (admin, impresion, post, wall-studies)
+#   llevan <meta name="robots" content="noindex">. No se bloquean aquí a
+#   propósito: un rastreador bloqueado no llega a leer ese noindex, y si
+#   alguien las enlaza pueden salir en resultados como URL sin descripción.
+# - Las carpetas del laboratorio y las maquetas (sketches/, _preview/) no
+#   llevan noindex página a página, así que se cierran aquí.
 
 User-agent: *
-Disallow: /admin.html
-Disallow: /impresion.html
-Disallow: /post.html
-Disallow: /wall-studies.html
 Disallow: /sketches/
 Disallow: /_preview/
 Allow: /

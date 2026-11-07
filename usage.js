@@ -8,6 +8,7 @@
  * Lo lee palettes.html (rejilla de uso) y lo escriben las páginas de obra al
  * pulsar Guardar, commiteando a main como el resto de los datos.
  *
+ *   <script src="gh-store.js"></script>   (solo para escribir)
  *   <script src="usage.js"></script>
  *     HOKSUSAGE.load()                       → { works: [...] }
  *     HOKSUSAGE.counts(data)                 → { <paletteId>: nObras }
@@ -18,8 +19,6 @@
 
 const RAW  = 'https://raw.githubusercontent.com/Joxemari/hoks/main/data/palette-usage.json';
 const PATH = 'data/palette-usage.json';
-const REPO = 'Joxemari/hoks';
-const GH_TOKEN_KEY = 'hoks-gh-token';
 
 const empty = () => ({ works: [] });
 
@@ -41,47 +40,41 @@ function counts(data) {
   return m;
 }
 
-const b64enc = s => btoa(unescape(encodeURIComponent(s)));
-const b64dec = s => decodeURIComponent(escape(atob(String(s).replace(/\s/g, ''))));
-
 // Añade varias obras al índice de una vez: un solo commit por publicación de
 // lote, no uno por pieza. Sin token de admin no hace nada.
 // rows: [{ family, seed, savedAt, paletteId, paletteName }]
+//
+// Pasa por HOKSGH.update (gh-store.js): lee el índice tal como está en main,
+// le añade las filas y, si alguien escribió entre medias, repite sobre lo
+// nuevo. Si el índice existe pero no se puede leer, NO se escribe: antes un
+// índice ilegible (o de más de 1 MB, que la API devolvía vacío) se reescribía
+// con solo las filas nuevas.
+// → true si quedó escrito, false si no había nada que hacer o no hay token.
 async function recordMany(rows) {
-  const token = localStorage.getItem(GH_TOKEN_KEY);
   rows = (rows || []).filter(r => r && r.paletteId != null);
-  if (!token || !rows.length) return;
-  const url = 'https://api.github.com/repos/' + REPO + '/contents/' + PATH;
-  const auth = { 'Authorization': 'Bearer ' + token };
-  let sha, data = empty();
-  try {
-    const r = await fetch(url + '?t=' + Date.now(), { headers: auth });
-    if (r.ok) {
-      const j = await r.json();
-      sha = j.sha;
-      try { const p = JSON.parse(b64dec(j.content)); if (p && Array.isArray(p.works)) data = p; } catch (e) {}
-    }
-  } catch (e) { return; }   // sin poder leer el índice, no lo sobrescribimos
-  data.works.unshift(...rows.map(r => ({
-    family: r.family, seed: Number(r.seed), savedAt: r.savedAt || Date.now(),
-    paletteId: r.paletteId, paletteName: r.paletteName, source: 'save',
-  })));
-  data.generated = Date.now();
+  if (!rows.length || !global.HOKSGH || !global.HOKSGH.token()) return false;
   const msg = rows.length === 1
     ? 'palette usage: ' + rows[0].family + ' #' + rows[0].seed + ' → ' + rows[0].paletteName
     : 'palette usage: +' + rows.length + ' obras';
-  const body = { message: msg, content: b64enc(JSON.stringify(data, null, 2)) };
-  if (sha) body.sha = sha;
-  try {
-    await fetch(url, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, auth),
-                       body: JSON.stringify(body) });
-  } catch (e) {}
+  await global.HOKSGH.update(PATH, cur => {
+    if (cur !== undefined && !(cur && Array.isArray(cur.works)))
+      throw new Error('palette-usage.json no tiene la forma esperada: no se escribe encima');
+    const data = cur || empty();
+    data.works.unshift(...rows.map(r => ({
+      family: r.family, seed: Number(r.seed), savedAt: r.savedAt || Date.now(),
+      paletteId: r.paletteId, paletteName: r.paletteName, source: 'save',
+    })));
+    data.generated = Date.now();
+    return data;
+  }, msg);
+  return true;
 }
 
 // Una sola obra (páginas de obra heredadas, que aún guardan de una en una).
 function record(family, seed, savedAt, pal) {
-  if (!pal) return Promise.resolve();
-  return recordMany([{ family, seed, savedAt, paletteId: pal.id, paletteName: pal.name }]);
+  if (!pal) return Promise.resolve(false);
+  return recordMany([{ family, seed, savedAt, paletteId: pal.id, paletteName: pal.name }])
+    .catch(e => { console.warn('[usage]', e.message); return false; });
 }
 
 global.HOKSUSAGE = { load, counts, record, recordMany };

@@ -157,7 +157,8 @@
       "es": "Encima y debajo no son dos capas: se alternan a medida que se recorre la línea.\nCada cruce se atraviesa dos veces, y la segunda pasada dice lo contrario de la primera.",
       "en": "Over and under are not two layers: they alternate as the line is walked.\nEvery crossing is passed twice, and the second pass says the opposite of the first."
     },
-    "ogImage": true
+    "ogImage": true,
+    "year": 2026
   },
   {
     "id": "evol",

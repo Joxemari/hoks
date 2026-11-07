@@ -58,7 +58,8 @@
 }`;
 
   function css() { const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); }
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+  // Escapa también comillas: esc() se usa dentro de atributos (href, src, alt).
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   // Inline: negrita, cursiva, código. Se escapa primero; los marcadores sobreviven.
   function inline(s) {
     return esc(s)

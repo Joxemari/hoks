@@ -24,13 +24,13 @@ body { font-family: var(--geo); background: var(--paper); color: var(--ink); min
 .page-head h1 { font-family: var(--geo); font-weight: 700; font-size: 48px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--ink); margin: 0 0 4px; }
 .page-head .sub { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--blue); }
 .controls {
-  max-width: 1180px; margin: 26px auto 0;
+  width: 100%; max-width: 1180px; margin: 26px auto 0; flex-wrap: wrap;
   padding: 1.2rem 2rem;
   display: flex; gap: 14px; align-items: center;
   border-bottom: 1px solid var(--line);
   justify-content: space-between;
 }
-.controls-left { display: flex; gap: 14px; align-items: center; flex: 1; }
+.controls-left { display: flex; gap: 14px; align-items: center; flex: 1; flex-wrap: wrap; min-width: 0; }
 .controls-right { flex-shrink: 0; }
 .search-wrap { flex: 1; min-width: 160px; max-width: 320px; }
 .search-wrap input {
@@ -66,7 +66,9 @@ body { font-family: var(--geo); background: var(--paper); color: var(--ink); min
 .usage-copy { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mut); background: none; border: 1px solid var(--line); border-radius: 2px; padding: 3px 8px; cursor: pointer; margin-left: auto; transition: color 0.12s, border-color 0.12s; }
 .usage-copy:hover { color: var(--ink); border-color: var(--blue); }
 .usage-chip { font-family: var(--mono); font-size: 8px; font-weight: 700; letter-spacing: 0.08em; color: var(--body); border: 1px solid var(--mut); border-radius: 20px; padding: 1px 6px; flex-shrink: 0; }
-.grid { max-width: 1180px; margin: 24px auto 0; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+/* width:100% por lo mismo que .usage: sin él la rejilla mide su contenido y en
+   móvil se salía por la derecha. min() deja la columna caber en 390 px. */
+.grid { width: 100%; max-width: 1180px; margin: 24px auto 0; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 18px; }
 .palette-card { background: #fff; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.15s; }
 .palette-card:hover { border-color: var(--blue); }
 .palette-card.inactive { filter: grayscale(1); opacity: 0.45; }
