@@ -112,6 +112,13 @@
         <summary>Afinado · los ejes de la obra</summary>
         <span class="hintline" style="display:block;margin-top:6px">−1 = lo que sortee el tipo. Mover un mando lo fija para todas las seeds.</span>
         <div class="group">
+          <span class="lbl">Modelo</span>
+          <select id="modelo">
+            <option value="reja">Retícula · bandas a un pelo, giros a escuadra (producción)</option>
+            <option value="trazos">Trazos sueltos · el modelo anterior, para comparar</option>
+          </select>
+        </div>
+        <div class="group">
           <span class="lbl">Gubia (anchura) · <span id="anV">auto</span></span>
           <input type="range" id="an" min="0" max="1" step="0.02" value="0">
           <span class="hintline">0 = la del tipo · determinante: un tipo con otra anchura es otra obra</span>
@@ -135,6 +142,21 @@
           <span class="lbl">Concentración · <span id="coV">auto</span></span>
           <input type="range" id="co" min="-1" max="100" step="1" value="-1">
           <span class="hintline">100 = la obra apiñada en poco papel</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Cruces · <span id="crV">auto</span></span>
+          <input type="range" id="cr" min="-1" max="100" step="5" value="-1">
+          <span class="hintline">probabilidad de que un trazo cruce a otro, siempre a escuadra · 0 = nunca</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Giros máx. · <span id="giV">auto</span></span>
+          <input type="range" id="gi" min="-1" max="6" step="1" value="-1">
+          <span class="hintline">cuántas veces puede girar un trazo · 0 = rectos</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Inclinación · <span id="inV">auto</span></span>
+          <input type="range" id="in" min="-1" max="15" step="1" value="-1">
+          <span class="hintline">grados de giro de la retícula entera · 0 = a plomo</span>
         </div>
         <div class="group">
           <span class="lbl">Trazos · <span id="ciV">auto</span></span>
@@ -271,6 +293,10 @@ function params() {
     masa:       autoF($('ma').value, 100),
     vibAmp:     autoF($('va').value, 100),
     relleno:    autoF($('rl').value, 100),
+    modelo:     $('modelo').value,
+    cruza:      autoF($('cr').value, 100),
+    giros:      auto($('gi').value),
+    inclina:    auto($('in').value),
   };
 }
 function auto(v) { const n = parseInt(v, 10); return n < 0 ? null : n; }
@@ -354,15 +380,16 @@ $('rnd').onclick = () => { seed = (Math.random() * 0xFFFFFFFF) >>> 0; refresh();
 $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; refresh(); };
 $('field').onchange = refresh;
 $('tipo').onchange = refresh;
+$('modelo').onchange = refresh;
 $('vibra').onchange = refresh;
 $('sa').oninput = () => { const v = parseInt($('sa').value, 10);
   $('saV').textContent = v < 0 ? 'auto' : v + '%'; refresh(); };
 $('ci').oninput = () => { $('ciV').textContent = $('ci').value === '0' ? 'auto' : $('ci').value; refresh(); };
 $('pl').oninput = () => { $('plV').textContent = $('pl').value === '-1' ? 'auto' : $('pl').value; refresh(); };
 $('an').oninput = () => { $('anV').textContent = parseFloat($('an').value) === 0 ? 'auto' : '×' + parseFloat($('an').value).toFixed(2); refresh(); };
-['pe', 're', 'co', 'ma', 'va', 'rl'].forEach(id => {
+['pe', 're', 'co', 'ma', 'va', 'rl', 'cr', 'gi', 'in'].forEach(id => {
   $(id).oninput = () => { const v = parseInt($(id).value, 10);
-    $(id + 'V').textContent = v < 0 ? 'auto' : (id === 'va' || id === 'rl' ? '×' + (v / 100).toFixed(2) : v + '%'); refresh(); };
+    $(id + 'V').textContent = v < 0 ? 'auto' : (id === 'va' || id === 'rl' ? '×' + (v / 100).toFixed(2) : id === 'gi' ? String(v) : id === 'in' ? v + '°' : v + '%'); refresh(); };
 });
 $('ca').oninput = () => { $('caV').textContent = parseFloat($('ca').value) === 0 ? 'auto' : '1/' + Math.round(1 / parseFloat($('ca').value)); refresh(); };
 $('bg').onchange = () => { syncBgAuto(); refresh(); };

@@ -77,6 +77,14 @@ elif roto == 'cuna':
     banda(ctx, pts, W, gub, relleno, anchos, mas, lados);
     ctx.fill();""")
 
+elif roto == 'reja':
+    # LA RETÍCULA, ROTA: el paso de celda es W + g por construcción, y eso es lo que
+    # garantiza el canal. Con el paso en W + 0,4 g, dos bandas vecinas quedan a menos
+    # de un pelo, y `canal.js` (geometría) y `pelo.js` (píxel) tienen que cantar.
+    a = "    const g = W * gam, D = W + g, P = D;"
+    assert a in src, 'no encuentro el paso de la retícula'
+    src = src.replace(a, "    const g = W * gam, D = W + g, P = W + 0.4 * g;   // ROTO A PROPOSITO")
+
 elif roto == 'pelo0':
     # EL PELO DEL CAMPO, ROTO: el canal visible se fabrica en `pintarCampo` como la
     # franja donde d2 - d1 < g. Si se pinta con 0,4 g, el detector `pelo` tiene que
