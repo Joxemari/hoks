@@ -2735,6 +2735,67 @@ esto es lo contrario —**convergen** hacia uno— y no tengo el movimiento inve
    sitio correcto, sólo que se suma otro detrás. Se vio mirando, no midiendo — el
    autor contó las líneas de sus referencias y no salían.
 
+## Décima vuelta: calcar los originales y sacar de ahí la lógica
+
+El autor, viendo el modelo atascado, propuso otra cosa: *dibujar el trazo donde lo
+sitúan los tres originales, ver si con eso la técnica llega a una exactitud alta, y
+que las iteraciones salgan de la lógica de esos mismos cuadros*. Hecho, y en ese
+orden.
+
+1. **Calco automático.** Un trazador (`trace.py`, fuera del repo porque las
+   referencias no se commitean) saca de cada original sus componentes, el esqueleto
+   y los ejes simplificados. Pintados con el mismo campo de distancia que usa la
+   obra, el solape con el original es del **88 %** en las referencias 1 y 3 y del
+   70 % en la 2 (el grano de la xilografía ensucia el calco, no la técnica). La
+   retícula ortogonal que había (`modelo: 'reja'`), encajada sobre los mismos ejes,
+   cae al 61–67 %: la referencia no está en una reja, y la reja era el error.
+2. **Lo que dicen los calcos**, medido sobre los tres (`stats.py`): quiebros por
+   trazo 4 (2–6), ángulos de quiebro 27–55° con mediana en 40 y solo un 7 % a 80° o
+   más, tramos de 0,8–2 anchuras, trazos de 5–12 anchuras de largo, el 89 % de los
+   cabos **contra un cuerpo**, y la sección acompañada de un trazo entre 0,45 y 1,0
+   de su largo.
+3. **El modelo «libre»** (`tramarLibre`, el de producción desde esta vuelta) está
+   escrito con esas distribuciones y nada más: el trazo es un paseo de tramos con
+   quiebros que alternan de lado, el acompañante es el **desplazado exacto** de una
+   sección del vecino, y el cabo cae donde ya no cabe.
+
+Y las trampas que costó que midiera lo que dice:
+
+- **El paseo moría en el primer sitio donde no cabía.** Un zigzag de 40° que
+  alterna se choca consigo mismo a dos tramos, así que los trazos salían de 3
+  anchuras. Ahora la mano prueba el giro que tocaba, y si no cabe sigue recta, o
+  gira al otro lado, o gira menos; solo cuando ninguna de las cuatro cabe muere
+  contra el cuerpo. La mediana pasó de 3 a 7 anchuras sin tocar un parámetro.
+- **El acompañante se encogía en cascada**: cada uno era una fracción del anterior
+  y el cuarto ya era un tocón. Ahora acompaña el 70–100 % del vecino y sobresale por
+  los cabos, que es lo que hacen los de las referencias.
+- **El pelo lo corta el halo, no la geometría.** El acompañante va a `W + g −
+  0,12·W` de eje a eje, **solapado**, y el halo del de encima deja exactamente `g`:
+  así el blanco mide lo mismo aunque la gubia adelgace el trazo. Sin halo no hay
+  quien corte, y entonces va a `D` como todos — la batería `sin-halo` lo cantó a
+  la primera, que es para lo que está.
+- **Apretar.** Lo que hace compacta a la referencia 2 no es que los trazos se
+  acompañen: es que entre dos que no se acompañan tampoco hay más blanco que un
+  pelo. Al final, cada trazo se traslada —sin girar— hacia su vecino más cercano
+  hasta quedar a `D`, y solo lo que cabe. No se aplica a la travesía, que es del
+  papel entero.
+- **Coherencia sin reja.** El trazo que no acompaña arranca paralelo o
+  perpendicular al vecino junto al que nace (±10°). Es lo que hace que la
+  referencia 2 parezca una reja sin serlo.
+- **Cada tipo tiene su gramática en anchuras**, y es determinante (el autor lo dijo
+  antes de que se midiera): el `recinto` (referencia 1, trazo fino) arranca con un
+  **marco en U** de tres lados y los meandros cuelgan de la pared de enfrente hacia
+  el lado abierto, con trazos de 15–40 anchuras; la `travesia` (referencia 3) entra
+  por un borde y sale por el de enfrente, con cruces a 65° o más; el `bloque`
+  (referencia 2) quiebra a 40–90°.
+
+**Dónde está hoy, mirado en hoja:** `travesia` y `haz` leen como la referencia;
+`bloque` tiene el canto, el pelo y los quiebros a escuadra pero sigue más suelto
+que la 2 —quedan ríos de blanco entre grupos—; `recinto` tiene el marco y la
+escala pero el interior sale a palos sueltos y no a meandros que corren juntos.
+Lo de arriba es lo que falta, no un detalle: está escrito aquí para que la hoja
+no se lea como acabada.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
