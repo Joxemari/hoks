@@ -1,5 +1,73 @@
 [
   {
+    "id": 1793657944984,
+    "name": "JOX",
+    "status": "open",
+    "created": 1793657944984,
+    "items": [
+      {
+        "work": "krrtk",
+        "seed": 0,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Splash",
+        "addedAt": 1793657944989
+      },
+      {
+        "work": "krrtk",
+        "seed": 2777456269,
+        "format": "square",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Marble",
+        "addedAt": 1793657947027
+      },
+      {
+        "work": "krrtk",
+        "seed": 2953302001,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Base",
+        "addedAt": 1793657997989
+      }
+    ]
+  },
+  {
     "id": 1787497953000,
     "name": "social · DTKRT · 2026-W35–W36",
     "status": "open",
