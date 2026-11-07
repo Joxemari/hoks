@@ -142,6 +142,11 @@
       <span class="hintline">100 = la obra apiñada en poco papel · 0 = repartida · −1 = auto</span>
     </div>
     <div class="group">
+      <span class="lbl">Relleno · <span id="rlV">auto</span></span>
+      <input type="range" id="rl" min="-1" max="300" step="5" value="-1">
+      <span class="hintline">la tinta crece hacia el vecino hasta dejar el pelo · ×1,00 = banda base · −1 = auto (hoy, base: pendiente de decidir)</span>
+    </div>
+    <div class="group">
       <span class="lbl">Masa · <span id="maV">auto</span></span>
       <input type="range" id="ma" min="-1" max="60" step="1" value="-1">
       <span class="hintline">tinta dentro de la caja de la figura, pegando trazos a un pelo · −1 y 0 = apagada (sale a dientes; ver algo.js)</span>
@@ -241,6 +246,7 @@ function params() {
     concentra:  autoF($('co').value, 100),
     masa:       autoF($('ma').value, 100),
     vibAmp:     autoF($('va').value, 100),
+    relleno:    autoF($('rl').value, 100),
   };
 }
 function auto(v) { const n = parseInt(v, 10); return n < 0 ? null : n; }
@@ -330,9 +336,9 @@ $('sa').oninput = () => { const v = parseInt($('sa').value, 10);
 $('ci').oninput = () => { $('ciV').textContent = $('ci').value === '0' ? 'auto' : $('ci').value; refresh(); };
 $('pl').oninput = () => { $('plV').textContent = $('pl').value === '-1' ? 'auto' : $('pl').value; refresh(); };
 $('an').oninput = () => { $('anV').textContent = parseFloat($('an').value) === 0 ? 'auto' : '×' + parseFloat($('an').value).toFixed(2); refresh(); };
-['pe', 're', 'co', 'ma', 'va'].forEach(id => {
+['pe', 're', 'co', 'ma', 'va', 'rl'].forEach(id => {
   $(id).oninput = () => { const v = parseInt($(id).value, 10);
-    $(id + 'V').textContent = v < 0 ? 'auto' : (id === 'va' ? '×' + (v / 100).toFixed(2) : v + '%'); refresh(); };
+    $(id + 'V').textContent = v < 0 ? 'auto' : (id === 'va' || id === 'rl' ? '×' + (v / 100).toFixed(2) : v + '%'); refresh(); };
 });
 $('ca').oninput = () => { $('caV').textContent = parseFloat($('ca').value) === 0 ? 'auto' : '1/' + Math.round(1 / parseFloat($('ca').value)); refresh(); };
 $('bg').onchange = () => { syncBgAuto(); refresh(); };

@@ -615,6 +615,18 @@
   // y está a medio medir sobre los ejes que el autor marcó a mano. Queda el mecanismo
   // puesto y a 1,0 hasta que la medida diga con qué crece.
   const RELLENO_W = 1.0;
+  // EL RELLENO HASTA EL MARGEN, por lados. Del autor: «el margen entre trazos
+  // debería tender a ser homogéneo, para lo que hay que completar los espacios
+  // entre los trazos, que realmente son líneas que luego se rellenan». O sea: la
+  // composición son ejes; la tinta crece desde cada eje hacia el vecino hasta
+  // dejar entre los dos EXACTAMENTE el pelo. Crece por cada lado lo que ese lado
+  // tiene de sitio —(d − g)/2, la mitad del hueco menos el canal, así las dos
+  // bandas se encuentran en el medio— y nunca más de `relleno` medias anchuras.
+  // Donde no hay vecino al alcance la banda se queda en su anchura base: el
+  // intento de engordar UNIFORME (1,6×) ya se midió y se tiró — engordaba justo
+  // donde no había nada que rellenar. Es un eje de obra, con mando en el lab:
+  // a 1,0 es la banda de siempre; a 2,4 la masa de la referencia 6.
+  const RELLENO = [1.6, 2.6];
   const TIRON = 20;                        // grados por subdivisión
   const TIRON_R = 3.0;                     // radio de influencia, en canales D
   // EL SEQUITO: el acompanamiento como ESTADO, no como empujon. Capturado un vecino
@@ -794,11 +806,16 @@
   // afloja: se aplica donde de verdad está, que es entre TINTAS y no entre ejes.
   function holguras(ctx) {
     const h0 = ctx.W / 2, techo = ctx.W * RELLENO_MAX;
+    const techoLado = h0 * (ctx.relleno || 1);
     for (let k = 0; k < ctx.trazos.length; k++) {
-      const tr = ctx.trazos[k], out = [];
+      const tr = ctx.trazos[k], out = [], izq = [], der = [];
       for (let i = 0; i < tr.pts.length; i++) {
         const p = tr.pts[i];
-        let d = Infinity;
+        // la normal "izquierda" del vértice, la misma que usa `banda`
+        const a = tr.pts[max(0, i - 1)], b = tr.pts[min(tr.pts.length - 1, i + 1)];
+        const tx = b.x - a.x, ty = b.y - a.y, tm = hypot(tx, ty) || 1e-9;
+        const nx = -ty / tm, ny = tx / tm;
+        let d = Infinity, dI = Infinity, dD = Infinity;
         for (let j = 0; j < ctx.trazos.length; j++) {
           const o = ctx.trazos[j];
           for (let m = 0; m < o.segs.length; m++) {
@@ -807,18 +824,43 @@
             const q = o.segs[m];
             const t2 = pointSegDist(p.x, p.y, q[0], q[1], q[2], q[3]);
             if (t2 < d) d = t2;
+            // de qué lado cae ese tramo: por su punto medio
+            const lado = ((q[0] + q[2]) / 2 - p.x) * nx + ((q[1] + q[3]) / 2 - p.y) * ny;
+            if (lado >= 0) { if (t2 < dI) dI = t2; } else { if (t2 < dD) dD = t2; }
           }
         }
         out.push(clamp(d - h0 - ctx.g, h0, techo));
+        // el relleno de cada lado: hasta el medio del hueco menos el pelo, y
+        // nunca por debajo de la banda base ni por encima del techo de la obra
+        izq.push(clamp((dI - ctx.g) / 2, h0, techoLado));
+        der.push(clamp((dD - ctx.g) / 2, h0, techoLado));
       }
       tr.relleno = out;
+      // EN CUÑA, no a escalones. El sitio de cada vértice sale de un vecino distinto
+      // y la anchura saltaba de golpe donde cambia el vecino: dientes de sierra en el
+      // costado. La tinta no puede ensancharse más deprisa de lo que avanza —una
+      // pendiente de 1 : 1,15—, en los dos sentidos, así el relleno nace y muere en
+      // punta, que es como muere el canal en la referencia (regla 8 del análisis).
+      const PEND = 1 / 1.15;
+      const cuna = v => {
+        for (let i = 1; i < v.length; i++) {
+          const L = hypot(tr.pts[i].x - tr.pts[i - 1].x, tr.pts[i].y - tr.pts[i - 1].y);
+          if (v[i] > v[i - 1] + L * PEND) v[i] = v[i - 1] + L * PEND;
+        }
+        for (let i = v.length - 2; i >= 0; i--) {
+          const L = hypot(tr.pts[i + 1].x - tr.pts[i].x, tr.pts[i + 1].y - tr.pts[i].y);
+          if (v[i] > v[i + 1] + L * PEND) v[i] = v[i + 1] + L * PEND;
+        }
+        return v;
+      };
+      tr.lados = techoLado > h0 * 1.001 ? { izq: cuna(izq), der: cuna(der) } : null;
     }
   }
 
   // `anchos` (opcional) son las SEMIANCHURAS por vértice, en unidades de campo.
   // Sólo las usa la réplica: el original no tiene una anchura sola, y reconstruirlo
   // con la modal suelda las bandas que van a un pelo.
-  function banda(ctx, pts, W, gub, relleno, anchos, mas) {
+  function banda(ctx, pts, W, gub, relleno, anchos, mas, lados) {
     // `mas` ensancha la banda: es el CORTE del halo, la misma banda un canal mas
     // gorda y un canal mas larga. Va por los dos sitios porque el cabo también es
     // un filo — si sólo se ensancharan los costados, el remate se soldaría a lo que
@@ -862,12 +904,19 @@
     else if (hBase) { for (const a2 of hBase) h.push(a2 + mas); }
     else { let acc = 0;
       for (let i = 0; i < n; i++) { h.push(anchoEn(tot > 0 ? acc / tot : 0, W, gub) / 2 + mas); if (i < n - 1) acc += L[i]; } }
+    // el relleno hasta el margen va por LADOS: cada costado crece lo que su lado
+    // tiene de sitio. Con `mas` (el corte) crece lo mismo que la tinta: el corte es
+    // el offset de la tinta ya rellena, no de la base.
+    const hI = h.slice(), hD = h.slice();
+    if (lados && lados.izq.length === n) {
+      for (let i = 0; i < n; i++) { hI[i] = max(h[i], lados.izq[i] + mas); hD[i] = max(h[i], lados.der[i] + mas); }
+    }
     const izq = [], der = [];
     for (let i = 0; i < n - 1; i++) {
-      izq.push({ x: pts[i].x + nx[i] * h[i],         y: pts[i].y + ny[i] * h[i] });
-      izq.push({ x: pts[i + 1].x + nx[i] * h[i + 1], y: pts[i + 1].y + ny[i] * h[i + 1] });
-      der.push({ x: pts[i].x - nx[i] * h[i],         y: pts[i].y - ny[i] * h[i] });
-      der.push({ x: pts[i + 1].x - nx[i] * h[i + 1], y: pts[i + 1].y - ny[i] * h[i + 1] });
+      izq.push({ x: pts[i].x + nx[i] * hI[i],         y: pts[i].y + ny[i] * hI[i] });
+      izq.push({ x: pts[i + 1].x + nx[i] * hI[i + 1], y: pts[i + 1].y + ny[i] * hI[i + 1] });
+      der.push({ x: pts[i].x - nx[i] * hD[i],         y: pts[i].y - ny[i] * hD[i] });
+      der.push({ x: pts[i + 1].x - nx[i] * hD[i + 1], y: pts[i + 1].y - ny[i] * hD[i + 1] });
       // EL RELLENO DE LA ESQUINA, en el vértice i+1 y sólo por FUERA del giro: se
       // mete el punto del inglete si cabe en la holgura que se calculó. Si no cabe,
       // no se mete y queda el bisel — que es el caso de siempre, junto al canal.
@@ -911,9 +960,9 @@
   // menos de g. Es la cuarta puerta por la que entra el inglete en esta casa, y con esta
   // construcción se cierra sin un solo umbral: la punta del inglete ya no es un punto
   // que haya que desplazar a mano, es parte del contorno que se traza.
-  function corte(ctx, pts, W, gub, relleno, anchos, mas) {
+  function corte(ctx, pts, W, gub, relleno, anchos, mas, lados) {
     ctx.beginPath();
-    banda(ctx, pts, W, gub, relleno, anchos);
+    banda(ctx, pts, W, gub, relleno, anchos, 0, lados);
     ctx.fill();
     if (mas > 0) {
       ctx.save();
@@ -1897,6 +1946,9 @@
     const recto = params.recto != null ? params.recto : rng.range(RECTO[0], RECTO[1]);
     const vibF  = params.vibAmp != null ? params.vibAmp : rng.range(VIBF[0], VIBF[1]);
     const conc  = params.concentra != null ? params.concentra : rng.range(CONC[0], CONC[1]);
+    // SIN SORTEAR HASTA QUE EL AUTOR DECIDA cómo se pinta el relleno (ver README):
+    // el mando del laboratorio lo enciende; `auto` deja la banda base.
+    const relleno = params.relleno != null ? params.relleno : 1;
     // Cuánto sangra ESTA obra: o nada, o entre poco y mucho. Es constante dentro
     // de la hoja, como la vibración — que unas se salgan y otras no es del cuadro,
     // no del trazo.
@@ -1947,7 +1999,7 @@
       // sigue a nadie cuando recorre el trazo paso a paso, que es lo que hace vibrado.
       vib: vibra ? { amp: rng.range(VIB_AMP[0], VIB_AMP[1]) * vibF, onda: W * rng.range(VIB_ONDA[0], VIB_ONDA[1]),
                      capta: 0.15 + 0.75 * pega, suelta: 0.02 + 0.30 * (1 - pega), radio: 1.5 + 3.0 * pega } : null,
-      recto, pega, conc,
+      recto, pega, conc, relleno,
     };
 
     // LA ANCHURA MANDA SOBRE LO DEMÁS, y esto faltaba. Al subir la banda al doble, la
@@ -2108,7 +2160,7 @@
     const Ls = ctx.trazos.map(tr => largoDe(tr.pts) / S).sort((a, b) => a - b);
     const lMed = Ls.length ? Ls[Ls.length >> 1] : 0;
     const reparto = lMed > 0 ? Ls[Ls.length - 1] / lMed : 0;
-    return { trazos: ctx.trazos, W, g, D, cerco, patas, masaN, masa, objMasa, pega, recto, vibF, conc, relCount, vibra, orto: ctx.orto, travesia: ctx.travesia,
+    return { trazos: ctx.trazos, W, g, D, cerco, patas, masaN, masa, objMasa, pega, recto, vibF, conc, relleno, relCount, vibra, orto: ctx.orto, travesia: ctx.travesia,
              // los dos de OBRA que los detectores necesitan y `ctx` no cruza sola:
              // el halo -para saber que regla toca- y el cierre -el carácter-
              halo: ctx.halo, cierre: ctx.cierre,
@@ -2249,7 +2301,7 @@
         // asi que no estaban en esta lista- acabarian fundiendo sus tintas. El corte
         // tiene que llegar a todo lo que el relleno pueda alcanzar.
         let toca = false;
-        const alcance = best.W * RELLENO_W + best.g;
+        const alcance = best.W * max(RELLENO_W, best.relleno || 1) + best.g;
         for (const a of best.trazos[k].segs) {
           for (const b of best.trazos[j].segs) {
             if (corteDe(a, b) || segSegDist(a, b) < alcance) { toca = true; break; }
@@ -2274,15 +2326,15 @@
           cx.beginPath();
           for (const j of debajo[k]) {
             const t2 = best.trazos[j];
-            banda(cx, t2.pts, best.W * RELLENO_W, t2.gubia, t2.relleno, null, halo);
+            banda(cx, t2.pts, best.W * RELLENO_W, t2.gubia, t2.relleno, null, halo, t2.lados);
           }
           cx.clip();
           cx.globalCompositeOperation = 'destination-out';
-          corte(cx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno, null, halo);
+          corte(cx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno, null, halo, tr.lados);
           cx.restore();
         }
         cx.globalCompositeOperation = 'source-over';
-        cx.beginPath(); banda(cx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno);
+        cx.beginPath(); banda(cx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno, null, 0, tr.lados);
         cx.fill();
       }
       ctx.restore();
@@ -2290,7 +2342,7 @@
       ctx.save();
     } else {
       ctx.beginPath();
-      for (const tr of best.trazos) banda(ctx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno);
+      for (const tr of best.trazos) banda(ctx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno, null, 0, tr.lados);
       ctx.fillStyle = rol.tinta;
       ctx.fill();
     }
@@ -2302,7 +2354,7 @@
              field: cuad ? 'square' : 'sheet',
              cintas: best.trazos.length, pliegues: best.cerco,
              masa: best.masa, masaN: best.masaN, objMasa: best.objMasa,
-             pega: best.pega, recto: best.recto, vibF: best.vibF, conc: best.conc,
+             pega: best.pega, recto: best.recto, vibF: best.vibF, conc: best.conc, relleno: best.relleno,
              pasillos: best.pasillos, largoPas: best.largoPas,
              cabos: best.trazos.length * 2, vert: best.vert,
              quiebros: best.quiebros, vibra: best.vibra, sangrados: best.sangrados,
@@ -2312,6 +2364,9 @@
              cierre: best.cierre,
              geo: { cintas: best.trazos.map(x => x.pts), sangra: best.trazos.map(x => !!x.sangra),
                     relleno: best.trazos.map(x => x.relleno || null),
+                    // el relleno hasta el margen, por lados: la banda PINTADA es esta,
+                    // y un detector que pinte la base mide otra obra
+                    lados: best.trazos.map(x => x.lados || null),
                     cruza: best.trazos.map(x => !!x.cruza), CRUCE_MIN,
                     gubia: best.trazos.map(x => x.gubia || 0), debajo,
                     cierre: best.cierre, rumbos: best.rumbos,
@@ -2491,6 +2546,7 @@
     return { pal, rol, cintas: cx2.trazos.length, ojos: med.ojos, ocupacion: med.ocupacion,
              geo: { cintas: cx2.trazos.map(x => x.pts), sangra: cx2.trazos.map(() => true),
                     relleno: cx2.trazos.map(x => x.relleno || null),
+                    lados: cx2.trazos.map(x => x.lados || null),
                     cruza: cx2.trazos.map(() => true), CRUCE_MIN,
                     // igual que en `render`: el halo se publica para que un detector
                     // sepa cual de las dos reglas le toca en vez de suponerla
