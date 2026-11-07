@@ -73,6 +73,11 @@
 
   // ── Grano de film (soft-light, teñido hacia la media de la paleta) ──────────
   const GRAIN_SAMPLES = 3, GRAIN_MAG = 1.0, GRAIN_AMIN = 0.4, GRAIN_AMAX = 0.8;
+  // El grano que lleva una obra cuando la receta no dice otra cosa. Cada algo.js
+  // lo aplica (`params.grainScale == null ? 1`); está aquí con nombre para que
+  // _batch.js lo ESCRIBA en la receta al publicar: una pieza publicada no puede
+  // depender de un defecto del código, porque el defecto cambia y ella no.
+  const GRAIN_DEFAULT = 1;
 
   // Grano en una pasada, por bandas y con "celda": el ruido se sortea una vez
   // por bloque de cell×cell píxeles, así el grano conserva su tamaño FÍSICO al
@@ -675,7 +680,7 @@
 
   global.HOKS = {
     Rng, hexToRgb, luma, lerpColor, softLight,
-    drawMeshGradient, meshAt, meshGround, seedMix, bakeGrain, applyGrain, grain, bgMode, pickBg, hash01, fieldMode, fieldGrid, FIELD_MARGIN,
+    drawMeshGradient, meshAt, meshGround, seedMix, bakeGrain, applyGrain, grain, GRAIN_DEFAULT, bgMode, pickBg, hash01, fieldMode, fieldGrid, FIELD_MARGIN,
     dcolor, inkDice, inkRoles, inkOn, pickInk, blendMark, blendFor, INK_MIN,
     ageWeight, normalizePalettes, palRarity, loadPalettes, loadAllPalettes, DEFAULTS,
     FORMATS, ALL_FORMATS, formatsFor, SHEETS, SHEET_IDS, sheetIdsFor, WALL_SHEET_IDS, DEFAULT_SHEET, DPI, PREVIEW_SHORT,

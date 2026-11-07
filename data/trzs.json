@@ -8,7 +8,9 @@
       "seed": 2856910491,
       "format": "horizontal",
       "base": 600,
-      "params": {},
+      "params": {
+        "grainScale": 1
+      },
       "pal": "locked",
       "palette": {
         "id": 2,
@@ -36,7 +38,9 @@
       "seed": 683129967,
       "format": "horizontal",
       "base": 600,
-      "params": {},
+      "params": {
+        "grainScale": 1
+      },
       "pal": "locked",
       "palette": {
         "id": 28,

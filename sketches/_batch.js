@@ -182,10 +182,17 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
   //   code   — el hash git (blob SHA-1) del algo.js y del _engine.js que
   //            corrían: `git cat-file -p <hash>` devuelve el archivo exacto
   //            aunque después cambie. tools/rerender.mjs lo usa para reimprimir.
+  //   El grano va SIEMPRE escrito en params: los harnesses lo mandan, pero una
+  //   pieza publicada por otro camino (los capítulos de Instagram lo fueron)
+  //   llegaba con params vacíos y heredaba el defecto del código. Si ese defecto
+  //   cambia, la pieza cambia con él y `rerender --check` deja de pasar. La
+  //   receta tiene que bastar sola.
   function recipeOf(it, pal) {
+    const params = { ...(it.params || {}) };
+    if (params.grainScale == null) params.grainScale = global.HOKS.GRAIN_DEFAULT;
     return {
       work: it.work, seed: it.seed >>> 0, format: it.format || 'square', base: it.base,
-      params: it.params || {},
+      params,
       pal: (it.palSel === 'auto' || it.palSel == null) ? 'auto' : 'locked',
       palette: pal ? { id: pal.id, name: pal.name, colors: pal.colors } : null,
     };
