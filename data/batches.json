@@ -124,6 +124,26 @@
         "palSel": "auto",
         "palName": "Escape",
         "addedAt": 1794087314800
+      },
+      {
+        "work": "krrtk",
+        "seed": 1128278676,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Escape",
+        "addedAt": 1794087318426
       }
     ]
   },
