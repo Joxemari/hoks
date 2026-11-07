@@ -37,152 +37,175 @@
   .dots { display:inline-flex; gap:2px; vertical-align:middle; margin-right:5px; }
   .dot { width:8px; height:8px; border-radius:50%; display:inline-block; border:0.5px solid rgba(0,0,0,0.1); }
   .lab-title { font-family: var(--geo); font-size: 13px; letter-spacing: 0.1em; text-transform: none; }
+  /* El panel va en el orden del trabajo: obra → tirada → mirar y elegir → sacar.
+     Lo que no se toca a diario (afinado) va plegado. */
+  .sec { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .sec h2 { font-family: var(--geo); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); }
+  details.afinado summary { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); cursor: pointer; list-style: none; }
+  details.afinado summary::before { content: '▸ '; } details.afinado[open] summary::before { content: '▾ '; }
+  details.afinado > .group { margin-top: 8px; }
 </style>
 </head>
 <body>
   <aside class="panel">
-    <div class="lab-title">hoks · lab<small>hrrs · el acompañamiento · itzulera</small></div>
-    <div class="group">
-      <span class="lbl">Work</span>
-      <div id="workPicker"></div>
-    </div>
-    <div class="group">
-      <span class="lbl">Format</span>
-      <select id="fmt"></select>
-      <span class="hintline">en cuadrado el recorrido se pliega sobre sí mismo y en
-        apaisado viaja: cada proporción es otra obra, no la misma girada</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Field</span>
-      <select id="field">
-        <option value="sheet">▣ Llena el pliego</option>
-        <option value="square">□ Campo cuadrado</option>
-      </select>
-      <span class="hintline">el pliego y el campo son dos decisiones: un cuadrado puede ir sobre un DIN</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Seed</span>
-      <input type="text" id="seed" value="0" inputmode="numeric" spellcheck="false">
-      <button id="rnd">↻ Nueva seed (espacio)</button>
-      <span class="hintline">se puede teclear una seed para volver a ella · ← → recorren vecinas</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Palette · <span id="palCount">…</span></span>
-      <div id="palPicker"></div>
-      <span class="hintline">incluye activas e inactivas</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Background</span>
-      <select id="bg">
-        <option value="auto">Auto (lo propio de la obra)</option>
-        <option value="solid">Solid</option>
-        <option value="gradient">Gradient</option>
-      </select>
-      <span class="hintline">el suelo es PLANO: la mitad de la obra es vacío y el
-        vacío tiene que ser papel. El degradado está para mirarlo, no para publicarlo</span>
-      <div id="bgAuto">
-        <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
-          · plano <span id="bgPS">—</span></span>
-        <input type="range" id="bgP" min="0" max="100" step="5" value="0">
-        <span class="hintline">un solo mando: el otro es 100 menos este, así que suman 100 siempre</span>
+    <div class="lab-title">hoks · lab<small>aquí se genera y aquí se elige</small></div>
+
+    <section class="sec">
+      <h2>1 · Obra</h2>
+      <div class="group">
+        <span class="lbl">Familia</span>
+        <div id="workPicker"></div>
       </div>
-    </div>
-    <div class="group">
-      <span class="lbl">Grain</span>
-      <select id="grain">
-        <option value="1">Con grano</option>
-        <option value="0">Sin grano</option>
-      </select>
-      <span class="hintline">o lo hay o no lo hay: media dosis de grano no es una decisión</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Type</span>
-      <select id="tipo">
+      <div class="group">
+        <span class="lbl">Formato</span>
+        <select id="fmt"></select>
+      </div>
+      <div class="group">
+        <span class="lbl">Campo</span>
+        <select id="field">
+          <option value="sheet">▣ Llena el pliego</option>
+          <option value="square">□ Cuadrado centrado en el pliego</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="sec">
+      <h2>2 · Tirada</h2>
+      <div class="group">
+        <span class="lbl">Tipo</span>
+        <select id="tipo">
         <option value="">Aleatorio (por peso)</option>
         <option value="bloque">bloque · una masa en retícula, sin cruces, banda gorda (ref. 2)</option>
         <option value="travesia">travesía · pocos trazos que cruzan el pliego, un cruce a escuadra (ref. 3)</option>
         <option value="recinto">recinto · banda fina, cerco y hebras colgando, apiñado a un lado (ref. 1)</option>
         <option value="haz">haz · paralelos cortos engranados, dos peines (ref. 6)</option>
       </select>
-      <span class="hintline">el tipo DECLARA ojos, dispersión y ocupación; luego se
-        comprueba sobre el dibujo y se queda el candidato que menos se sale</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Trazos · <span id="ciV">auto</span></span>
-      <input type="range" id="ci" min="0" max="20" step="1" value="0">
-      <span class="hintline">el TOTAL, cerco incluido · 0 = lo que pida el tipo · nunca se tocan</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Cerco · <span id="plV">auto</span></span>
-      <input type="range" id="pl" min="-1" max="9" step="1" value="-1">
-      <span class="hintline">cuántos de esos rodean el blanco · −1 = auto · menos de 3 no cerca nada</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Gubia (anchura) · <span id="anV">auto</span></span>
-      <input type="range" id="an" min="0" max="1" step="0.02" value="0">
-      <span class="hintline">0 = auto · escala el techo del trazo (0,058 del lado corto)</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Canal · <span id="caV">auto</span></span>
-      <input type="range" id="ca" min="0" max="0.4" step="0.01" value="0">
-      <span class="hintline">0 = auto · el suelo entre dos trazos, en fracción de la anchura (~1/5)</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Pega · <span id="peV">auto</span></span>
-      <input type="range" id="pe" min="-1" max="100" step="1" value="-1">
-      <span class="hintline">cuánto se deja llevar un trazo por el que pasa cerca · −1 = auto</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Recto · <span id="reV">auto</span></span>
-      <input type="range" id="re" min="-1" max="100" step="1" value="-1">
-      <span class="hintline">100 = pocos quiebros y largos · 0 = muchos · −1 = auto</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Concentración · <span id="coV">auto</span></span>
-      <input type="range" id="co" min="-1" max="100" step="1" value="-1">
-      <span class="hintline">100 = la obra apiñada en poco papel · 0 = repartida · −1 = auto</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Relleno · <span id="rlV">auto</span></span>
-      <input type="range" id="rl" min="-1" max="300" step="5" value="-1">
-      <span class="hintline">radio de la tinta alrededor del eje, × media anchura · el pelo entre vecinos es siempre g · −1 = auto (1,4–2,2)</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Masa · <span id="maV">auto</span></span>
-      <input type="range" id="ma" min="-1" max="60" step="1" value="-1">
-      <span class="hintline">tinta dentro de la caja de la figura, pegando trazos a un pelo · −1 y 0 = apagada (sale a dientes; ver algo.js)</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Temblor · <span id="vaV">auto</span></span>
-      <input type="range" id="va" min="-1" max="130" step="1" value="-1">
-      <span class="hintline">amplitud del filo, × la de siempre · −1 = auto · con «Lisa» no hay</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Vibración</span>
-      <select id="vibra">
+        <span class="hintline">cada tipo trae su anchura, su retícula, sus cruces y su concentración: son las lecturas de los grabados</span>
+      </div>
+      <div class="group">
+        <span class="lbl">Paleta · <span id="palCount">…</span></span>
+        <div id="palPicker"></div>
+        <span class="hintline">todas = producción (al azar por peso) · una = fijada · varias = el azar solo entre las marcadas</span>
+      </div>
+      <div class="group">
+        <span class="lbl">Fondo</span>
+        <select id="bg">
+          <option value="auto">Auto (lo propio de la obra)</option>
+          <option value="solid">Plano</option>
+          <option value="gradient">Degradado</option>
+        </select>
+        <div id="bgAuto">
+          <span class="lbl" style="display:block;margin-top:6px">En auto · degradado <span id="bgPV">—</span>
+            · plano <span id="bgPS">—</span></span>
+          <input type="range" id="bgP" min="0" max="100" step="5" value="0">
+        </div>
+        <span class="hintline">el suelo de HRRS es plano: el vacío tiene que ser papel</span>
+      </div>
+      <div class="group">
+        <span class="lbl">Grano</span>
+        <select id="grain">
+          <option value="1">Con grano</option>
+          <option value="0">Sin grano</option>
+        </select>
+      </div>
+      <details class="afinado">
+        <summary>Afinado · los ejes de la obra</summary>
+        <span class="hintline" style="display:block;margin-top:6px">−1 = lo que sortee el tipo. Mover un mando lo fija para todas las seeds.</span>
+        <div class="group">
+          <span class="lbl">Gubia (anchura) · <span id="anV">auto</span></span>
+          <input type="range" id="an" min="0" max="1" step="0.02" value="0">
+          <span class="hintline">0 = la del tipo · determinante: un tipo con otra anchura es otra obra</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Relleno · <span id="rlV">auto</span></span>
+          <input type="range" id="rl" min="-1" max="300" step="5" value="-1">
+          <span class="hintline">cuánto crece la tinta desde el eje hacia el vecino; el pelo siempre mide g</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Pega · <span id="peV">auto</span></span>
+          <input type="range" id="pe" min="-1" max="100" step="1" value="-1">
+          <span class="hintline">cuánto se deja llevar un trazo por el que pasa cerca</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Recto · <span id="reV">auto</span></span>
+          <input type="range" id="re" min="-1" max="100" step="1" value="-1">
+          <span class="hintline">100 = pocos quiebros y largos</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Concentración · <span id="coV">auto</span></span>
+          <input type="range" id="co" min="-1" max="100" step="1" value="-1">
+          <span class="hintline">100 = la obra apiñada en poco papel</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Trazos · <span id="ciV">auto</span></span>
+          <input type="range" id="ci" min="0" max="20" step="1" value="0">
+          <span class="hintline">el total, cerco incluido · 0 = los del tipo</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Cerco · <span id="plV">auto</span></span>
+          <input type="range" id="pl" min="-1" max="9" step="1" value="-1">
+          <span class="hintline">cuántos rodean el blanco · menos de 3 no cerca nada</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Canal · <span id="caV">auto</span></span>
+          <input type="range" id="ca" min="0" max="0.4" step="0.01" value="0">
+          <span class="hintline">el pelo entre dos trazos, en fracción de la anchura</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Sangrado · <span id="saV">auto</span></span>
+          <input type="range" id="sa" min="-1" max="100" step="5" value="-1">
+          <span class="hintline">% de trazos que se salen del cuadro · 0 = ninguno</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Vibración</span>
+          <select id="vibra">
         <option value="-1">Auto</option>
         <option value="1">Vibrada</option>
         <option value="0">Lisa</option>
       </select>
-      <span class="hintline">el temblor del filo · es del material, así que es constante dentro de la obra</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Sangrado · <span id="saV">auto</span></span>
-      <input type="range" id="sa" min="-1" max="100" step="5" value="-1">
-      <span class="hintline">% de trazos que se salen del cuadro · −1 = auto · 0 = ninguno toca el borde</span>
-    </div>
-    <div class="group">
-      <span class="lbl">Batch</span>
-      <div id="batchPanel"></div>
-    </div>
-    <div class="group">
-      <button id="save">↓ Save PNG (s)</button>
-      <button class="ghost" id="cartela">↓ Cartela A5 (c)</button>
-      <button class="ghost" id="sheet">▦ Grid de obras (g)</button>
-      <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
-      <div id="viewLinks"></div>
-    </div>
-    <div class="group"><span class="lbl">Traits</span><div class="traits" id="traits"></div></div>
+        </div>
+        <div class="group">
+          <span class="lbl">Temblor · <span id="vaV">auto</span></span>
+          <input type="range" id="va" min="-1" max="130" step="1" value="-1">
+          <span class="hintline">amplitud del filo · con «Lisa» no hay</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Masa · <span id="maV">auto</span></span>
+          <input type="range" id="ma" min="-1" max="60" step="1" value="-1">
+          <span class="hintline">experimento: trazos pegados a un pelo hasta una densidad · 0 = apagada</span>
+        </div>
+      </details>
+    </section>
+
+    <section class="sec">
+      <h2>3 · Mirar y elegir</h2>
+      <div class="group">
+        <span class="lbl">Seed</span>
+        <input type="text" id="seed" value="0" inputmode="numeric" spellcheck="false">
+        <button id="rnd">↻ Nueva seed (espacio)</button>
+        <span class="hintline">← → recorren las vecinas · teclea una seed para volver a ella</span>
+      </div>
+      <div class="group">
+        <button class="ghost" id="sheet">▦ Grid de obras (g)</button>
+        <button class="ghost" id="batchView">▦ Ver el lote (b)</button>
+        <span class="hintline">en el grid: + sobre una pieza la aparta al lote · botón derecho elige a cuál</span>
+      </div>
+      <div class="group">
+        <span class="lbl">Lote</span>
+        <div id="batchPanel"></div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <h2>4 · Sacar</h2>
+      <div class="group">
+        <button id="save">↓ Guardar PNG (s)</button>
+        <button class="ghost" id="cartela">↓ Cartela A5 (c)</button>
+        <div id="viewLinks"></div>
+      </div>
+    </section>
+
+    <div class="group"><span class="lbl">Rasgos</span><div class="traits" id="traits"></div></div>
   </aside>
 
   <main class="stage">
@@ -315,7 +338,7 @@ function setView(v) {
   $('sheetGrid').style.display = v === 'single' ? 'none' : 'grid';
   $('sheet').textContent = v === 'sheet' ? '▦ Vista única (g)' : '▦ Grid de obras (g)';
   $('batchView').textContent = v === 'batch' ? '▦ Vista única (b)' : '▦ Ver el lote (b)';
-  if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variations from #${seed}`; }
+  if (v === 'sheet') { renderSheet(); $('status').textContent = `${SHEET_N} variaciones desde #${seed}`; }
   else if (v === 'batch') { $('sheetGrid').innerHTML = ''; $('status').textContent = batch.renderFull($('sheetGrid')); }
   else renderSingle();
 }
