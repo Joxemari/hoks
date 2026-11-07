@@ -196,10 +196,10 @@ header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-item
 <div id="login-screen">
   <h1>hoks · admin</h1>
   <div class="login-form">
-    <input type="password" id="pwd-input" placeholder="GitHub token" autocomplete="off" onkeydown="if(event.key==='Enter')tryLogin()">
+    <input type="password" id="pwd-input" placeholder="GitHub token" autocomplete="off">
     <button onclick="tryLogin()">Enter</button>
     <span class="login-error" id="login-error">token not valid for Joxemari/hoks</span>
-    <span style="font-size:9px;color:var(--ink3);letter-spacing:0.04em;line-height:1.6;text-align:center">Fine-grained token, solo este repo, permiso <i>Contents: read and write</i>. Se queda en este navegador hasta que cierres sesión.</span>
+    <span style="font-size:9px;color:var(--ink3);letter-spacing:0.04em;line-height:1.6;text-align:center">Ya no hay contraseña: se entra con la llave de GitHub. Si este navegador ya la tiene guardada, deja la casilla vacía y pulsa Enter.<br>Para crear una: GitHub → Settings → Developer settings → <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener" style="color:var(--ink)">Fine-grained tokens</a>, solo este repo, permiso <i>Contents: Read and write</i>.</span>
   </div>
 </div>
 
@@ -651,19 +651,30 @@ function openAddWorkModal() {
 // repo es no tener un token con permiso, así que es eso lo que se pide y se
 // comprueba contra GitHub. El indicador de sesión (badge ADMIN, rejilla de uso
 // de paletas) solo se enciende con un token válido.
+// → { ok, why }. La comprobación es de cordura, no de permisos finos: lo que
+// decide de verdad es la escritura, que ya avisa con el mensaje de GitHub.
+// Solo se rechaza lo que GitHub rechaza (401/403/404) o lo que diga sin
+// permiso de escritura; si la respuesta no trae permisos, se deja pasar.
 async function tokenCanWrite(t){
+  if(!/^(ghp_|github_pat_|gho_|ghu_)?[A-Za-z0-9_]{20,}$/.test(t))return{ok:false,why:'Eso no es una llave de GitHub (empieza por ghp_ o github_pat_). La contraseña ya no existe.'};
   try{
     const r=await fetch('https://api.github.com/repos/'+REPO,{headers:{Authorization:'Bearer '+t},cache:'no-store'});
-    if(!r.ok)return false;
-    const d=await r.json();return !!(d.permissions&&d.permissions.push);
-  }catch(e){return false;}
+    if(r.status===401)return{ok:false,why:'GitHub no reconoce esa llave (401): caducada o mal copiada.'};
+    if(!r.ok)return{ok:false,why:'GitHub responde '+r.status+': la llave no llega a '+REPO+'.'};
+    const d=await r.json();
+    if(d.permissions&&d.permissions.push===false)return{ok:false,why:'La llave entra pero no puede escribir en '+REPO+'.'};
+    return{ok:true};
+  }catch(e){return{ok:false,why:'No se ha podido hablar con GitHub: '+e.message};}
 }
 async function tryLogin(){
-  const t=$('pwd-input').value.trim()||getToken();
-  if(t&&await tokenCanWrite(t)){
+  const typed=$('pwd-input').value.trim(), t=typed||getToken();
+  if(!t){$('login-error').textContent='Pega aquí tu llave de GitHub (personal access token).';$('login-error').style.display='block';return;}
+  const v=await tokenCanWrite(t);
+  if(v.ok){
     localStorage.setItem(TOKEN_KEY,t);sessionStorage.setItem(SESSION_KEY,'1');localStorage.setItem(SESSION_KEY,'1');
     $('pwd-input').value='';showAdmin();
   }else{
+    $('login-error').textContent=v.why+(!typed?' (era la guardada en este navegador)':'');
     $('login-error').style.display='block';$('pwd-input').value='';$('pwd-input').focus();
   }
 }
@@ -938,7 +949,7 @@ async function saveSiteContent(){
 }
 
 // ── SECURITY ──────────────────────────────────────────
-async function saveToken(){const t=$('gh-token-input').value.trim();if(!t){toast('Token cannot be empty');return;}if(!await tokenCanWrite(t)){toast('Ese token no puede escribir en '+REPO);return;}localStorage.setItem(TOKEN_KEY,t);$('gh-token-input').value='';toast('Token saved');}
+async function saveToken(){const t=$('gh-token-input').value.trim();if(!t){toast('Token cannot be empty');return;}const v=await tokenCanWrite(t);if(!v.ok){toast(v.why);return;}localStorage.setItem(TOKEN_KEY,t);$('gh-token-input').value='';toast('Token saved');}
 
 // ── UTILS ─────────────────────────────────────────────
 // Escapa también comillas: se usa dentro de atributos (href, style, value).
@@ -950,8 +961,8 @@ function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show')
 try{localStorage.removeItem('hoks-admin-pwd');}catch(e){}
 // Con token guardado se entra directo, pero solo si GitHub lo sigue aceptando.
 if(getToken()){
-  tokenCanWrite(getToken()).then(ok=>{
-    if(ok){sessionStorage.setItem(SESSION_KEY,'1');localStorage.setItem(SESSION_KEY,'1');showAdmin();}
+  tokenCanWrite(getToken()).then(v=>{
+    if(v.ok){sessionStorage.setItem(SESSION_KEY,'1');localStorage.setItem(SESSION_KEY,'1');showAdmin();}
     else{sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);}
   });
 }else{sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);}
