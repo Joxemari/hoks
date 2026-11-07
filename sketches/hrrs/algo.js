@@ -376,6 +376,42 @@
   const CRUCE_GIRO = 40;                   // el quiebro que justifica el cruce
   const CRUCE_CERCA = 3.0;                 // cómo de cerca del quiebro, × W
 
+  // ── La masa ─────────────────────────────────────────────────────────────────
+  // MEDIDO SOBRE LAS REFERENCIAS con una sola regla (umbral de tinta, caja de la
+  // figura, longitudes de las rachas): dentro de la caja de la figura hay un 23–56 %
+  // de tinta, y del blanco que queda entre trazos, un 46–68 % son pelos (más
+  // estrechos que media anchura). Lo nuestro, sobre 24 obras por configuración:
+  // 21–30 % de tinta y 13–44 % de pelos — y NINGÚN MANDO LO MOVÍA: con 14 trazos
+  // pedidos la tinta se quedaba en el 27 %. Más trazos no daban más masa porque
+  // cada trazo nuevo se coloca buscando sitio, y el sitio que queda está siempre
+  // lejos: la adyacencia era un premio del sorteo, no una pieza de la obra.
+  //
+  // Así que la densidad se DECLARA por obra, como la anchura o el pelo, y se
+  // cumple pegando: un trazo de masa es un trozo de otro desplazado exactamente
+  // un canal, que es la única manera de que el pelo salga constante. Es la regla 6
+  // del análisis, literal: «toda masa ancha es N cintas adyacentes de la misma
+  // anchura». La masa se mide sobre la geometría (tinta ≈ largo × anchura, caja =
+  // la de los ejes más media anchura), sin pintar: es la misma cuenta que la regla
+  // de arriba, a falta del bisel.
+  const MASA = [0.25, 0.42];               // el rango que pide la referencia (hoy no se sortea)
+  const MASA_MAX = 11;                     // techo de trazos, masa incluida
+  const MASA_LARGO = 0.55;                 // un trazo de masa que no acompaña al menos esto, sobra
+
+  // ── Los ejes de la obra ─────────────────────────────────────────────────────
+  // Del autor, mirando las referencias: «debería haber una especie de variables
+  // que determinen cómo van a ser: si son más rectos o menos rectos, si tienen
+  // más vibración o menos, si están más concentrados o más separados. Y muy
+  // importante: la paralelización cuando dos trazos pasan cerca». Cuatro ejes,
+  // de OBRA (se sortean una vez por hoja, como la anchura), y cada uno con su
+  // mando en el laboratorio para poder mirarlos de uno en uno.
+  const PEGA  = [0.30, 0.95];              // cuánto se deja llevar un trazo por el que pasa cerca
+  const RECTO = [0.20, 0.80];              // 1 = pocos quiebros y largos; 0 = muchos
+  const VIBF  = [0.40, 1.30];              // factor sobre la amplitud del temblor
+  const CONC  = [0.30, 0.90];              // 1 = la obra apiñada en poco papel; 0 = repartida
+  const MASA_FALLOS = 10;                  // intentos seguidos sin colocar: se para
+  const MASA_FR = [0.35, 0.95];            // qué parte del otro se acompaña
+  const P_MASA_COLA = 0.35;                // y a veces sigue por su cuenta un poco
+
   // ── Los tipos ───────────────────────────────────────────────────────────────
   // Un tipo es un REPARTO DE RELACIONES y un número de trazos. Nada más: no hay
   // topología que declarar porque no hay topología.
@@ -636,9 +672,9 @@
           // la primera bisagra porque el giro del guion dispara ignorando si el punto
           // va acompanado. El estado arregla las tres cosas a la vez.
           if (vecinos && vecinos.length) {
-            const v = vecinoEn(cx, cy, vecinos, D * TIRON_R);
-            if (seq && (!v || rng.bool(P_SUELTA))) seq = false;   // se suelta
-            if (!seq && v && rng.bool(P_CAPTA)) {
+            const v = vecinoEn(cx, cy, vecinos, D * (vib.radio || TIRON_R));
+            if (seq && (!v || rng.bool(vib.suelta != null ? vib.suelta : P_SUELTA))) seq = false;   // se suelta
+            if (!seq && v && rng.bool(vib.capta != null ? vib.capta : P_CAPTA)) {
               let dif = ((v.dir - cd) % 180 + 180) % 180;
               if (dif > 90) dif = 180 - dif;
               if (dif < SEQ_ANG) seq = true;                      // se deja llevar
@@ -973,8 +1009,9 @@
   }
 
   // Cuántas vueltas da un corte de este largo. El ritmo es del material.
-  function quiebrosPara(rng, largo, W) {
-    const paso = W * rng.range(PASO[0], PASO[1]);
+  function quiebrosPara(rng, largo, W, recto) {
+    // cuanto más recto, más larga la vuelta: es el eje `recto` de la obra
+    const paso = W * rng.range(PASO[0], PASO[1]) * (recto == null ? 1 : 0.55 + 1.6 * recto);
     return clamp(Math.round(largo / paso), QUIEBROS[0], QUIEBROS[1]);
   }
 
@@ -985,7 +1022,7 @@
     const { D, W } = ctx;
     const S = min(ctx.fw, ctx.fh);
     const largo = S * largoRel;
-    const nq = quiebrosPara(rng, largo, ctx.W);
+    const nq = quiebrosPara(rng, largo, ctx.W, ctx.recto);
 
     if (rel === 'paralelo' && obj) {
       // EL ACOMPAÑAMIENTO ES DE UNA SECCIÓN, NO DEL TRAZO. Es lo que el autor vio
@@ -1066,7 +1103,7 @@
       if (Lpost > ctx.S * 0.03) {
         const p = pts[pts.length - 1];
         const post = trazar(rng, p.x, p.y, (dOut2 != null ? dOut2 : dOut) + rng.range(-14, 14), Lpost,
-                            quiebrosPara(rng, Lpost, ctx.W), ctx.vib, D, ctx.orto, null, null, ctx.cierre, ctx.trazos, ctx.sep);
+                            quiebrosPara(rng, Lpost, ctx.W, ctx.recto), ctx.vib, D, ctx.orto, null, null, ctx.cierre, ctx.trazos, ctx.sep);
         pts = pts.concat(post.slice(1));
       }
       const Lpre = pts2 ? largo * rng.range(0.10, 0.30) : sobra * fPre;
@@ -1074,7 +1111,7 @@
         // se traza hacia atrás desde el arranque y se le da la vuelta
         const p = medio[0];
         const pre = trazar(rng, p.x, p.y, dIn + 180 + rng.range(-14, 14), Lpre,
-                           quiebrosPara(rng, Lpre, ctx.W), ctx.vib, D, ctx.orto, null, null, ctx.cierre, ctx.trazos, ctx.sep);
+                           quiebrosPara(rng, Lpre, ctx.W, ctx.recto), ctx.vib, D, ctx.orto, null, null, ctx.cierre, ctx.trazos, ctx.sep);
         pre.reverse();
         pts = pre.slice(0, -1).concat(pts);
       }
@@ -1444,7 +1481,7 @@
       for (const lado of [1, -1]) for (const salto of [1, 2])
         cand.push(alRumbo(rng, cd + lado * salto * RUMBO_PASO[0], ctx.rumbos));
       for (const nd of cand) {
-        const cola = trazar(rng, p.x, p.y, nd, falta, quiebrosPara(rng, falta, ctx.W),
+        const cola = trazar(rng, p.x, p.y, nd, falta, quiebrosPara(rng, falta, ctx.W, ctx.recto),
                             ctx.vib, ctx.D, ctx.orto, null, ctx.rumbos, ctx.cierre, ctx.trazos, ctx.sep);
         if (!cola || cola.length < 2) continue;
         const junto = cur.concat(cola.slice(1));
@@ -1548,7 +1585,7 @@
         // ESCALONADAS: cada pata mide distinto, y bastante
         const L = largoRef * rng.range(PATA_LARGO[0], PATA_LARGO[1]);
         let pts = trazar(rng, x0, y0, caida + rng.range(-14, 14), ctx.S * L,
-                         quiebrosPara(rng, ctx.S * L, ctx.W), ctx.vib, ctx.D, ctx.orto,
+                         quiebrosPara(rng, ctx.S * L, ctx.W, ctx.recto), ctx.vib, ctx.D, ctx.orto,
                          null, ctx.rumbos, ctx.cierre, ctx.trazos, ctx.sep);
         pts = cortarAlVolver(pts, ctx);
         pts = recortar(pts, ctx, false, false);
@@ -1579,7 +1616,7 @@
       const dir = a + 90 + rng.range(-24, 24);
       const largo = R * rng.range(1.15, 2.1);
       for (let t = 0; t < COLOCA; t++) {
-        const nq = quiebrosPara(rng, largo, ctx.W);
+        const nq = quiebrosPara(rng, largo, ctx.W, ctx.recto);
         let pts = trazar(rng, px - Math.cos(dir * RAD) * largo * 0.5,
                          py - Math.sin(dir * RAD) * largo * 0.5, dir, largo, nq, ctx.vib,
                          ctx.D, ctx.orto, null, ctx.rumbos, ctx.cierre, ctx.trazos, ctx.sep);
@@ -1593,6 +1630,141 @@
           puestos++; break;
         }
       }
+    }
+    return puestos;
+  }
+
+  // ── La masa ─────────────────────────────────────────────────────────────────
+  // Cuánta tinta hay dentro de la caja de la figura, por la geometría.
+  function masaDe(ctx) {
+    if (!ctx.trazos.length) return 0;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, L = 0;
+    const m = ctx.mg + ctx.W / 2;
+    const dentro = (x, y) => x > m && x < ctx.fw - m && y > m && y < ctx.fh - m;
+    for (const t of ctx.trazos) {
+      const p = t.pts;
+      for (let i = 0; i < p.length - 1; i++) {
+        // sólo cuenta lo que está en la hoja: lo que sangra no es tinta de la caja
+        const dx = p[i + 1].x - p[i].x, dy = p[i + 1].y - p[i].y, seg = hypot(dx, dy);
+        const ns = max(1, Math.ceil(seg / (ctx.W * 0.5)));
+        for (let k = 0; k < ns; k++) {
+          const u = (k + 0.5) / ns, x = p[i].x + dx * u, y = p[i].y + dy * u;
+          if (!dentro(x, y)) continue;
+          L += seg / ns;
+          if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        }
+      }
+    }
+    if (!(x1 >= x0)) return 0;
+    const area = (x1 - x0 + ctx.W) * (y1 - y0 + ctx.W);
+    return area > 0 ? min(1, L * ctx.W / area) : 0;
+  }
+
+  // La PARALELA de un trazo: su desplazado a `sep`, con las esquinas interiores
+  // quitadas. `desplazar` mueve los vértices y en un codo cerrado el desplazado por
+  // dentro se cruza consigo mismo y queda a menos de D del original — y `cabeDuro`
+  // lo tiraba entero. Aquí se muestrea el trazo fino, se desplaza cada muestra por
+  // su normal, se descartan las que caen a menos de `sep` del original (las del
+  // codo interior) y se devuelve la racha más larga que queda.
+  // `minimo` es lo que `cabeDuro` exige entre ejes (D): se filtra contra ESO y no
+  // contra `sep`, porque entre dos muestras la cuerda cae un pelo por dentro en
+  // los codos y a 0,985·D la regla tiraba la paralela entera.
+  function paralela(pts, sep, lado, paso, minimo) {
+    const segs = segsDe(pts);
+    const out = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const dx = pts[i + 1].x - pts[i].x, dy = pts[i + 1].y - pts[i].y, L = hypot(dx, dy);
+      if (L < 1e-9) continue;
+      const nx = -dy / L * lado, ny = dx / L * lado;
+      const ns = max(1, Math.ceil(L / paso));
+      for (let k = (i === 0 ? 0 : 1); k <= ns; k++) {
+        const u = k / ns;
+        out.push({ x: pts[i].x + dx * u + nx * sep, y: pts[i].y + dy * u + ny * sep });
+      }
+    }
+    // fuera las muestras del codo interior; la racha más larga es la paralela
+    let mejor = [], cur = [];
+    for (const q of out) {
+      let d = Infinity;
+      for (const sg of segs) { const t = pointSegDist(q.x, q.y, sg[0], sg[1], sg[2], sg[3]); if (t < d) d = t; }
+      if (d >= minimo) cur.push(q);
+      else { if (largoDe(cur) > largoDe(mejor)) mejor = cur; cur = []; }
+    }
+    if (largoDe(cur) > largoDe(mejor)) mejor = cur;
+    // y se SIMPLIFICA: `seCorta` mide tramos no adyacentes del mismo trazo, así
+    // que un trazo muestreado más fino que D se "corta" consigo mismo a cada paso.
+    // Con los vértices sobrantes fuera, los tramos vuelven a ser largos, como en
+    // el trazo del que sale.
+    return simplificar(mejor, paso * 0.18);
+  }
+  // Douglas–Peucker: quita los vértices que no apartan el trazo más de `tol`.
+  function simplificar(pts, tol) {
+    if (pts.length < 3) return pts;
+    const keep = new Uint8Array(pts.length); keep[0] = keep[pts.length - 1] = 1;
+    const pila = [[0, pts.length - 1]];
+    while (pila.length) {
+      const [a, b] = pila.pop();
+      let dm = -1, im = -1;
+      for (let i = a + 1; i < b; i++) {
+        const d = pointSegDist(pts[i].x, pts[i].y, pts[a].x, pts[a].y, pts[b].x, pts[b].y);
+        if (d > dm) { dm = d; im = i; }
+      }
+      if (dm > tol) { keep[im] = 1; pila.push([a, im], [im, b]); }
+    }
+    const out = [];
+    for (let i = 0; i < pts.length; i++) if (keep[i]) out.push(pts[i]);
+    return out;
+  }
+
+  // Trazos de masa hasta llegar al objetivo: cada uno, un trozo de otro desplazado
+  // un pelo. Se escoge a quién acompañar cerca del núcleo —como `paralelo`— para
+  // que la masa crezca donde ya hay cuerpo y no se reparta. Devuelve cuántos puso.
+  function engrosar(rng, ctx, objetivo) {
+    let puestos = 0, fallos = 0;
+    while (ctx.trazos.length < MASA_MAX && fallos < MASA_FALLOS && masaDe(ctx) < objetivo) {
+      // a quién: el último dos de cada tres veces (así sale el haz), si no uno
+      // cualquiera; y de él, el trozo que cae más cerca del núcleo
+      const o = rng.bool(0.66) ? ctx.trazos[ctx.trazos.length - 1]
+                               : ctx.trazos[rng.int(0, ctx.trazos.length - 1)];
+      const fr = rng.range(MASA_FR[0], MASA_FR[1]);
+      const aMax = max(0, 1 - fr);
+      let a = rng.range(0, aMax);
+      if (ctx.nucleo && aMax > 0) {
+        let mejor = a, dMin = Infinity;
+        for (let k = 0; k <= 6; k++) {
+          const t = aMax * k / 6, p = puntoEn(o.pts, t + fr / 2);
+          const d = hypot(p.x - ctx.nucleo.x, p.y - ctx.nucleo.y);
+          if (d < dMin) { dMin = d; mejor = t; }
+        }
+        a = clamp(mejor + rng.range(-0.1, 0.1), 0, aMax);
+      }
+      const sub = trozo(o.pts, a, min(a + fr, 1));
+      if (sub.length < 2) { fallos++; continue; }
+      const sangra = !!o.sangra && rng.bool(0.7);
+      const cola = rng.bool(P_MASA_COLA), Lc = ctx.S * rng.range(0.08, 0.22), giro = rng.range(-30, 30);
+      // por los dos lados, y se queda el que más trazo deja
+      let pts = null;
+      for (const lado of (rng.bool(0.5) ? [1, -1] : [-1, 1])) {
+        let q = paralela(sub, max(ctx.sep, ctx.D * 1.03), lado, ctx.W * 0.35, ctx.D * 1.005);
+        if (q.length < 2) continue;
+        // y a veces, al acabar de acompañar, sigue un poco por su cuenta
+        if (cola) {
+          const p = q[q.length - 1];
+          const c = trazar(new E.Rng((rng.int(0, 1e9)) >>> 0), p.x, p.y, dirEn(q, q.length - 2) + giro, Lc,
+                           quiebrosPara(rng, Lc, ctx.W, ctx.recto), ctx.vib, ctx.D, ctx.orto,
+                           null, ctx.rumbos, ctx.cierre, ctx.trazos, ctx.sep);
+          q = q.concat(c.slice(1));
+        }
+        q = cortarAlVolver(q, ctx);
+        q = recortar(q, ctx, sangra, false, ctx.S * LARGO_MIN * 0.6);
+        if (!q || (sangra && !bastaVisto(q, ctx, sangra))) continue;
+        // un acompañamiento corto no es masa, es un diente: se tira
+        if (largoDe(q) < largoDe(sub) * MASA_LARGO) continue;
+        if (!pts || largoDe(q) > largoDe(pts)) pts = q;
+      }
+      if (!pts) { fallos++; continue; }
+      ctx.trazos.push({ pts, segs: segsDe(pts), rel: 'masa', sangra, gubia: gubiaDe(rng, ctx) });
+      recentrar(ctx); puestos++; fallos = 0;
     }
     return puestos;
   }
@@ -1721,6 +1893,10 @@
     const gam = params.canal ? params.canal : rng.range(GAMMA[0], GAMMA[1]);
     const g = W * gam, D = W + g;
     const vibra = params.vibra != null ? !!params.vibra : rng.bool(P_VIBRA);
+    const pega  = params.pega  != null ? params.pega  : rng.range(PEGA[0], PEGA[1]);
+    const recto = params.recto != null ? params.recto : rng.range(RECTO[0], RECTO[1]);
+    const vibF  = params.vibAmp != null ? params.vibAmp : rng.range(VIBF[0], VIBF[1]);
+    const conc  = params.concentra != null ? params.concentra : rng.range(CONC[0], CONC[1]);
     // Cuánto sangra ESTA obra: o nada, o entre poco y mucho. Es constante dentro
     // de la hoja, como la vibración — que unas se salgan y otras no es del cuadro,
     // no del trazo.
@@ -1737,8 +1913,10 @@
     // no es simétrico. El blanco que sobra es material, igual que el canal.
     // la zona también: banda gorda pide más papel para el mismo dibujo
     const zEsc = clamp(0.86 + 0.30 * ((W / S) / 0.065 - 1), 0.8, 1.25);
-    const zw = clamp(rng.range(ZONA[0], ZONA[1]) * zEsc, 0.4, 1),
-          zh = clamp(rng.range(ZONA[0], ZONA[1]) * zEsc, 0.4, 1);
+    // la concentración manda sobre la zona: apiñada, los trazos se encuentran
+    const zCon = 1.35 - 0.8 * conc;
+    const zw = clamp(rng.range(ZONA[0], ZONA[1]) * zEsc * zCon, 0.3, 1),
+          zh = clamp(rng.range(ZONA[0], ZONA[1]) * zEsc * zCon, 0.3, 1);
     const zx = rng.range(0, 1 - zw), zy = rng.range(0, 1 - zh);
     const gubAmp = params.gubia != null ? params.gubia
                  : (rng.bool(P_GUBIA) ? rng.range(GUB_AMP[0], GUB_AMP[1]) : 0);
@@ -1764,7 +1942,12 @@
       // cuánto cierra el circuito ESTA obra. Del autor, y de obra: marca el carácter.
       cierre: params.cierre != null ? params.cierre : rng.range(CIERRE[0], CIERRE[1]),
       zona: { x0: zx * fw, y0: zy * fh, x1: (zx + zw) * fw, y1: (zy + zh) * fh },
-      vib: vibra ? { amp: rng.range(VIB_AMP[0], VIB_AMP[1]), onda: W * rng.range(VIB_ONDA[0], VIB_ONDA[1]) } : null,
+      // el temblor lleva dentro la PEGA: cuánto se captura, cuánto dura el carril
+      // y desde qué distancia se nota el vecino. Van juntos porque `trazar` sólo
+      // sigue a nadie cuando recorre el trazo paso a paso, que es lo que hace vibrado.
+      vib: vibra ? { amp: rng.range(VIB_AMP[0], VIB_AMP[1]) * vibF, onda: W * rng.range(VIB_ONDA[0], VIB_ONDA[1]),
+                     capta: 0.15 + 0.75 * pega, suelta: 0.02 + 0.30 * (1 - pega), radio: 1.5 + 3.0 * pega } : null,
+      recto, pega, conc,
     };
 
     // LA ANCHURA MANDA SOBRE LO DEMÁS, y esto faltaba. Al subir la banda al doble, la
@@ -1904,6 +2087,17 @@
       if (nP > 0) patas = colgar(rng, ctx, nP, real || 0.7);
     }
 
+    // LA MASA, la última: sobre la obra ya compuesta, se pega trazo a trazo hasta la
+    // densidad declarada. Va después de las patas porque acompaña a lo que haya.
+    // APAGADA POR DEFECTO, y con su motivo, medido: con la masa puesta la tinta en
+    // la caja sube del 24 al 30 % y los pelos del 22 al 35 % —hacia las referencias,
+    // 23–56 y 46–68— pero LA IMAGEN es peor: los trazos de masa salen cortos
+    // (`recortar` los come contra el tercero) y se leen como dientes de peine, no
+    // como cuerpo. Queda como mando del laboratorio para mirarla; `auto` no la sortea.
+    const objMasa = params.masa != null ? params.masa : 0;
+    const masaN = objMasa > 0 ? engrosar(rng, ctx, objMasa) : 0;
+    const masa = masaDe(ctx);
+
     holguras(ctx);
     const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };
     const pas = pasillos(ctx.trazos, W, D);
@@ -1914,7 +2108,7 @@
     const Ls = ctx.trazos.map(tr => largoDe(tr.pts) / S).sort((a, b) => a - b);
     const lMed = Ls.length ? Ls[Ls.length >> 1] : 0;
     const reparto = lMed > 0 ? Ls[Ls.length - 1] / lMed : 0;
-    return { trazos: ctx.trazos, W, g, D, cerco, patas, relCount, vibra, orto: ctx.orto, travesia: ctx.travesia,
+    return { trazos: ctx.trazos, W, g, D, cerco, patas, masaN, masa, objMasa, pega, recto, vibF, conc, relCount, vibra, orto: ctx.orto, travesia: ctx.travesia,
              // los dos de OBRA que los detectores necesitan y `ctx` no cruza sola:
              // el halo -para saber que regla toca- y el cierre -el carácter-
              halo: ctx.halo, cierre: ctx.cierre,
@@ -2107,6 +2301,8 @@
     return { pal, rol, tipo, bg, falta: bestF,
              field: cuad ? 'square' : 'sheet',
              cintas: best.trazos.length, pliegues: best.cerco,
+             masa: best.masa, masaN: best.masaN, objMasa: best.objMasa,
+             pega: best.pega, recto: best.recto, vibF: best.vibF, conc: best.conc,
              pasillos: best.pasillos, largoPas: best.largoPas,
              cabos: best.trazos.length * 2, vert: best.vert,
              quiebros: best.quiebros, vibra: best.vibra, sangrados: best.sangrados,

@@ -127,6 +127,31 @@
       <span class="hintline">0 = auto · el suelo entre dos trazos, en fracción de la anchura (~1/5)</span>
     </div>
     <div class="group">
+      <span class="lbl">Pega · <span id="peV">auto</span></span>
+      <input type="range" id="pe" min="-1" max="100" step="1" value="-1">
+      <span class="hintline">cuánto se deja llevar un trazo por el que pasa cerca · −1 = auto</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Recto · <span id="reV">auto</span></span>
+      <input type="range" id="re" min="-1" max="100" step="1" value="-1">
+      <span class="hintline">100 = pocos quiebros y largos · 0 = muchos · −1 = auto</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Concentración · <span id="coV">auto</span></span>
+      <input type="range" id="co" min="-1" max="100" step="1" value="-1">
+      <span class="hintline">100 = la obra apiñada en poco papel · 0 = repartida · −1 = auto</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Masa · <span id="maV">auto</span></span>
+      <input type="range" id="ma" min="-1" max="60" step="1" value="-1">
+      <span class="hintline">tinta dentro de la caja de la figura, pegando trazos a un pelo · −1 y 0 = apagada (sale a dientes; ver algo.js)</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Temblor · <span id="vaV">auto</span></span>
+      <input type="range" id="va" min="-1" max="130" step="1" value="-1">
+      <span class="hintline">amplitud del filo, × la de siempre · −1 = auto · con «Lisa» no hay</span>
+    </div>
+    <div class="group">
       <span class="lbl">Vibración</span>
       <select id="vibra">
         <option value="-1">Auto</option>
@@ -211,6 +236,11 @@ function params() {
     canal:      parseFloat($('ca').value) || 0,
     vibra:      auto($('vibra').value),
     sangra:     autoF($('sa').value, 100),
+    pega:       autoF($('pe').value, 100),
+    recto:      autoF($('re').value, 100),
+    concentra:  autoF($('co').value, 100),
+    masa:       autoF($('ma').value, 100),
+    vibAmp:     autoF($('va').value, 100),
   };
 }
 function auto(v) { const n = parseInt(v, 10); return n < 0 ? null : n; }
@@ -300,6 +330,10 @@ $('sa').oninput = () => { const v = parseInt($('sa').value, 10);
 $('ci').oninput = () => { $('ciV').textContent = $('ci').value === '0' ? 'auto' : $('ci').value; refresh(); };
 $('pl').oninput = () => { $('plV').textContent = $('pl').value === '-1' ? 'auto' : $('pl').value; refresh(); };
 $('an').oninput = () => { $('anV').textContent = parseFloat($('an').value) === 0 ? 'auto' : '×' + parseFloat($('an').value).toFixed(2); refresh(); };
+['pe', 're', 'co', 'ma', 'va'].forEach(id => {
+  $(id).oninput = () => { const v = parseInt($(id).value, 10);
+    $(id + 'V').textContent = v < 0 ? 'auto' : (id === 'va' ? '×' + (v / 100).toFixed(2) : v + '%'); refresh(); };
+});
 $('ca').oninput = () => { $('caV').textContent = parseFloat($('ca').value) === 0 ? 'auto' : '1/' + Math.round(1 / parseFloat($('ca').value)); refresh(); };
 $('bg').onchange = () => { syncBgAuto(); refresh(); };
 function syncBgAuto() {
