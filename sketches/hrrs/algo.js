@@ -366,7 +366,10 @@
   // de verdad ya no lo es: sólo hay que pedirla.
   const P_TRAVESIA = 0.28;
   const P_OUTLIER = 0.20;                  // los que se le escapan
-  const CRUCE_MIN = 38;                    // grados: por debajo, la cuña se afila
+  // DEL AUTOR, mirando los grabados: «no hay solapes si no son cruces claros;
+  // si dos trazos se acercan de manera no perpendicular (o casi), lo que hacen es
+  // paralelizarse». Un cruce es un suceso a escuadra; todo lo demás es carril.
+  const CRUCE_MIN = 65;                    // grados: por debajo no hay cruce, hay acompañamiento
   // Y NO EN CUALQUIER SITIO. Lo dijo el autor: «el cruce tiene que ser muy, muy raro,
   // y normalmente debería darse sólo cuando hay un cambio de dirección en un trazo —
   // que parta en ángulo y cubra al trazo que tiene paralelo». O sea: no es que dos
@@ -637,7 +640,7 @@
   // sigue el rumbo local del vecino con CONSIGNA DE DISTANCIA (el canal del grupo) y en
   // cada paso sortea seguir o soltarse. Es el punto 5 del encargo leido entero: la
   // tendencia tiene memoria.
-  const SEQ_ANG = 38;      // capturable solo si el rumbo ya se parece
+  const SEQ_ANG = 65;      // capturable si no viene a escuadra: lo que no cruza, acompaña
   const P_CAPTA = 0.45;    // por subdivision: cuanto tarda en dejarse llevar
   const P_SUELTA = 0.12;   // por subdivision: cuanto dura el carril
   const SEQ_KP = 30;     // grados de correccion por canal de error de distancia
@@ -834,6 +837,8 @@
   // el pelo visible se mide sobre ESTE campo, que es lo publicado.
   function pintarCampo(ctx, trazos, Wf, gf, relleno, S, ox, tinta, Wpx, Hpx, cruza, etiquetas) {
     const n = trazos.length; if (!n) return;
+    // sonda de depuración: global.__CAMPO_DBG = { pts: [[x, y], …], out: [] }
+    const DBG = (global.__CAMPO_DBG && global.__CAMPO_DBG.pts) ? global.__CAMPO_DBG : null;
     const segs = [];
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, Rmax = 0;
     trazos.forEach((tr, k) => {
@@ -909,7 +914,9 @@
           // a rectas y a planos), que es lo que el reparto del pelo necesita.
           const R = sg.R0 + (sg.R1 - sg.R0) * uc;
           const dxOut = u < 0 ? -u * sg.len : u > 1 ? (u - 1) * sg.len : 0;
-          let d = max(perp, R + dxOut), sd = Infinity;
+          // dentro del tramo es la perpendicular a secas: max(perp, R + 0) daba R
+          // en toda la franja —tinta a medias, un gris— en vez de la distancia.
+          let d = dxOut > 0 ? max(perp, R + dxOut) : perp, sd = Infinity;
           // sd: la distancia de verdad al rectángulo del CABO, para que el vecino
           // que pase por delante se quede a g de ese borde y no del eje
           if (dxOut > 0 && ((u < 0 && sg.end0) || (u > 1 && sg.end1))) sd = hypot(max(0, perp - R), dxOut);
@@ -937,6 +944,8 @@
           else if (sc > e1.sc) { e1.i = sg.i; e1.d = d; e1.R = R; e1.sd = sd; e1.sc = sc; }
         }
         if (!ents.length) continue;
+        if (DBG && DBG.pts.some(q => q[0] === Math.floor(px) && q[1] === Math.floor(py)))
+          DBG.out.push({ x: Math.floor(px), y: Math.floor(py), e: ents.map(e => e.k + ':' + e.i + (e.far ? 'f' : '') + ' d' + e.d.toFixed(1) + ' R' + e.R.toFixed(1) + (e.sd < Infinity ? ' sd' + e.sd.toFixed(1) : '')) });
         // cada candidato, contra todos los demás
         let a = -Infinity, de = -1;
         for (let t = 0; t < ents.length; t++) {
@@ -946,17 +955,23 @@
           for (let r = 0; r < ents.length && ae + 0.5 > 0; r++) {
             if (r === t) continue;
             const f = ents[r];
+            // EL PELO SE REPARTE POR PROFUNDIDAD (R − d), no por distancia al eje:
+            // la gubia hace que R cambie a lo largo del trazo, y comparando ejes el
+            // representante de un trazo saltaba de un tramo a otro entre dos píxeles
+            // vecinos (misma profundidad, distinta d) y el pelo se cerraba en el
+            // salto. La profundidad es continua por construcción (es un máximo).
             if (f.k !== e.k && cruza.has(e.k < f.k ? e.k * 4096 + f.k : f.k * 4096 + e.k)) {
               // se cruzan: el de arriba (puesto después) va entero; al de abajo lo
               // corta el halo del de arriba
-              if (f.k > e.k) ae = min(ae, f.d - f.R - gpx);
+              if (f.k > e.k) ae = min(ae, -f.sc - gpx);
             } else {
-              ae = min(ae, (f.d - e.d - gpx) / 2);   // el pelo, repartido a medias
+              ae = min(ae, (e.sc - f.sc - gpx) / 2);   // el pelo, repartido a medias
               if (f.sd < Infinity) ae = min(ae, f.sd - gpx);   // y a g de su cabo
             }
           }
           if (ae > a) { a = ae; de = e.k; }
         }
+        if (DBG && DBG.out.length && DBG.out[DBG.out.length - 1].x === Math.floor(px) && DBG.out[DBG.out.length - 1].y === Math.floor(py)) Object.assign(DBG.out[DBG.out.length - 1], { a: +a.toFixed(2), de });
         a = a + 0.5; if (a <= 0) continue; if (a > 1) a = 1;
         if (etiquetas && a >= 0.98) etiquetas[(py0 + gy) * Wpx + px0 + gx] = de + 1;
         if (!ctx) continue;
