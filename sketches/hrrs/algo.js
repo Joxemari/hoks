@@ -222,7 +222,7 @@
   // su carácter. Estaba en mi propia tabla de ejes («trazo: quebrado · ORTOGONAL ·
   // liso») y no la había implementado. Es de la OBRA, no del trazo: una hoja es
   // ortogonal entera o no lo es.
-  const P_ORTO = 0.30;
+  const P_ORTO = 0.50;                     // la retícula del cartel y del grabado del haz: la mitad
   const ORTO_ERR = 7;                      // cuánto se permite desviarse del eje
   const P_VOLTEA = 0.52;
   const VOLTEA_PHI = [52, 90];
@@ -286,8 +286,8 @@
   // Y era, además, lo que estaba limitando la longitud: con 0,09 el sangrado era
   // un roce del borde, así que el trazo largo seguía teniendo que caber. Ahora se
   // va de verdad, y el trazo puede ser más largo que la hoja.
-  const P_SANGRA_OBRA = [0.15, 0.62];      // cuántos se salen, por obra
-  const P_SECA = 0.30;                     // obras que no tocan el borde
+  const P_SANGRA_OBRA = [0.10, 0.40];      // cuántos se salen, por obra
+  const P_SECA = 0.55;                     // obras que no tocan el borde: en los grabados, la mayoría
   const SANGRE = 0.22;                     // cuánto se pasa, × lado corto
 
   // ── Las relaciones ──────────────────────────────────────────────────────────
@@ -404,10 +404,13 @@
   // importante: la paralelización cuando dos trazos pasan cerca». Cuatro ejes,
   // de OBRA (se sortean una vez por hoja, como la anchura), y cada uno con su
   // mando en el laboratorio para poder mirarlos de uno en uno.
-  const PEGA  = [0.30, 0.95];              // cuánto se deja llevar un trazo por el que pasa cerca
-  const RECTO = [0.20, 0.80];              // 1 = pocos quiebros y largos; 0 = muchos
-  const VIBF  = [0.40, 1.30];              // factor sobre la amplitud del temblor
-  const CONC  = [0.30, 0.90];              // 1 = la obra apiñada en poco papel; 0 = repartida
+  // Los rangos de `auto` miran a los grabados, no al centro del mando: trazos
+  // largos y firmes, pegados cuando pasan cerca, apiñados en una parte del papel,
+  // con poco temblor. Lo demás sigue ahí para el laboratorio.
+  const PEGA  = [0.60, 1.00];              // cuánto se deja llevar un trazo por el que pasa cerca
+  const RECTO = [0.55, 0.95];              // 1 = pocos quiebros y largos; 0 = muchos
+  const VIBF  = [0.20, 0.60];              // factor sobre la amplitud del temblor
+  const CONC  = [0.60, 0.95];              // 1 = la obra apiñada en poco papel; 0 = repartida
   const MASA_FALLOS = 10;                  // intentos seguidos sin colocar: se para
   const MASA_FR = [0.35, 0.95];            // qué parte del otro se acompaña
   const P_MASA_COLA = 0.35;                // y a veces sigue por su cuenta un poco
@@ -425,16 +428,16 @@
   //           «recinto» de las referencias 1 y 6, y es vecindad, no figura.
   const TIPOS = {
     // Refs 3 y 4: pocos trazos largos, tendidos, mucho paralelo y mucho aire.
-    tendido: { prob: 0.26, n: [3, 5], cerco: [0, 0],
+    tendido: { prob: 0.20, n: [3, 5], cerco: [0, 0],
                w: { paralelo: 0.42, abanico: 0.20, tangencia: 0.06, continua: 0.20, caboCabo: 0.07, caboCuerpo: 0.05 } },
     // Refs 1 y 2: un cerco y trazos que lo acompañan.
     recinto: { prob: 0.30, n: [5, 8], cerco: [3, 4],
                w: { paralelo: 0.36, abanico: 0.11, tangencia: 0.06, continua: 0.17, caboCabo: 0.15, caboCuerpo: 0.15 } },
     // Ref 6: denso, muchos paralelos cortos engranados.
-    haz:     { prob: 0.28, n: [5, 8], cerco: [0, 3],
+    haz:     { prob: 0.40, n: [5, 8], cerco: [0, 3],
                w: { paralelo: 0.50, abanico: 0.18, tangencia: 0.05, continua: 0.14, caboCabo: 0.06, caboCuerpo: 0.07 } },
     // El examen duro: pocos trazos y mucha separación. Sin relación no hay obra.
-    disperso:{ prob: 0.16, n: [3, 5], cerco: [0, 0],
+    disperso:{ prob: 0.10, n: [3, 5], cerco: [0, 0],
                w: { paralelo: 0.30, abanico: 0.14, tangencia: 0.16, continua: 0.16, caboCabo: 0.15, caboCuerpo: 0.09 } },
   };
   const TIPO_NAMES = Object.keys(TIPOS);
@@ -626,7 +629,7 @@
   // intento de engordar UNIFORME (1,6×) ya se midió y se tiró — engordaba justo
   // donde no había nada que rellenar. Es un eje de obra, con mando en el lab:
   // a 1,0 es la banda de siempre; a 2,4 la masa de la referencia 6.
-  const RELLENO = [1.6, 2.6];
+  const RELLENO = [1.8, 2.6];
   const TIRON = 20;                        // grados por subdivisión
   const TIRON_R = 3.0;                     // radio de influencia, en canales D
   // EL SEQUITO: el acompanamiento como ESTADO, no como empujon. Capturado un vecino
@@ -804,6 +807,178 @@
   // `d = D = W+g` sale exactamente W/2, que es el bisel de siempre; con la hoja
   // vacía alrededor, sale el inglete entero y la esquina se rellena. La regla no se
   // afloja: se aplica donde de verdad está, que es entre TINTAS y no entre ejes.
+  // ── EL CAMPO: la tinta se calcula, no se dibuja ──────────────────────────────
+  // Decisión del autor (noviembre de 2026), y es de arquitectura: HRRS se pinta
+  // por CAMPO DE DISTANCIA, píxel a píxel, y no como polígonos. Es la lectura
+  // literal de lo que dijo mirando los grabados: «el margen entre trazos debería
+  // tender a ser homogéneo: los trazos son líneas que luego se rellenan».
+  //
+  // Para cada píxel: d1 = distancia al eje más cercano, d2 = al segundo (otro
+  // trazo, o un tramo lejano del mismo: el pliegue). Hay tinta si d1 ≤ R —el radio
+  // de relleno de ese trazo en ese punto— y d2 − d1 ≥ g: el pelo es la franja donde
+  // los dos ejes están casi a la misma distancia, y mide g de verdad, en todas
+  // partes, sin un solo escalón. Donde los ejes se separan, el pelo muere en punta
+  // solo. Donde se CRUZAN (dos ejes que se cortan), manda el orden: el de arriba
+  // va entero y al de abajo lo corta el halo del de arriba, que es lo que se ve en
+  // el cartel de Múnich.
+  //
+  // Lo que cuesta: es píxel. Una A1 a 300 dpi son 70 Mpx; con la rejilla de
+  // candidatos salen ~12 tramos por píxel y unos segundos de exportación. Y lo que
+  // da: bordes lisos, el pelo exacto, y los cabos a escuadra —más allá del cabo la
+  // distancia salta por encima de R, así que la banda acaba donde acaba el eje—.
+  // Los codos salen redondos por fuera (es la distancia a una poligonal) y vivos
+  // por dentro.
+  const MITER = 2.0;                       // tope del pico del inglete, en radios
+  // `etiquetas` (opcional): un Int32Array de Wpx×Hpx donde se apunta, para cada
+  // píxel de tinta llena, el trazo (k+1) al que pertenece. Es para los detectores:
+  // el pelo visible se mide sobre ESTE campo, que es lo publicado.
+  function pintarCampo(ctx, trazos, Wf, gf, relleno, S, ox, tinta, Wpx, Hpx, cruza, etiquetas) {
+    const n = trazos.length; if (!n) return;
+    const segs = [];
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, Rmax = 0;
+    trazos.forEach((tr, k) => {
+      const p = tr.pts, Ls = []; let tot = 0;
+      for (let i = 0; i < p.length - 1; i++) { const L = hypot(p[i + 1].x - p[i].x, p[i + 1].y - p[i].y); Ls.push(L); tot += L; }
+      let acc = 0;
+      for (let i = 0; i < p.length - 1; i++) {
+        const L = Ls[i]; if (L < 1e-9) { continue; }
+        const ax = ox + p[i].x * S, ay = p[i].y * S, bx = ox + p[i + 1].x * S, by = p[i + 1].y * S;
+        const f0 = tot > 0 ? acc / tot : 0, f1 = tot > 0 ? (acc + L) / tot : 0;
+        const R0 = anchoEn(f0, Wf, tr.gubia) * relleno / 2 * S, R1 = anchoEn(f1, Wf, tr.gubia) * relleno / 2 * S;
+        Rmax = max(Rmax, R0, R1);
+        segs.push({ k, i, ax, ay, bx, by, ux: (bx - ax) / (L * S), uy: (by - ay) / (L * S), len: L * S,
+                    R0, R1, end0: i === 0, end1: i === p.length - 2, prev: null, next: null });
+        x0 = min(x0, ax, bx); x1 = max(x1, ax, bx); y0 = min(y0, ay, by); y1 = max(y1, ay, by);
+        acc += L;
+      }
+    });
+    if (!segs.length) return;
+    // cada tramo conoce a sus vecinos del mismo trazo: el inglete los necesita
+    for (let q = 1; q < segs.length; q++)
+      if (segs[q].k === segs[q - 1].k && segs[q].i === segs[q - 1].i + 1) { segs[q].prev = segs[q - 1]; segs[q - 1].next = segs[q]; }
+    // el alcance de un tramo: su radio, el pico del inglete y el pelo. Con solo
+    // R + g, la punta del codo (que llega a MITER·R del vértice) se quedaba fuera
+    // de la lista de candidatos de su celda y el pelo se cerraba justo ahí.
+    const gpx = gf * S, reach = MITER * Rmax + gpx + 2;
+    const px0 = max(0, Math.floor(x0 - reach)), py0 = max(0, Math.floor(y0 - reach));
+    const px1 = min(Wpx, Math.ceil(x1 + reach)), py1 = min(Hpx, Math.ceil(y1 + reach));
+    const RW = px1 - px0, RH = py1 - py0; if (RW <= 0 || RH <= 0) return;
+    // la rejilla de candidatos: cada tramo apuntado en las celdas que alcanza
+    const CELL = 48, cols = Math.ceil(RW / CELL), rows = Math.ceil(RH / CELL);
+    const cells = new Array(cols * rows); for (let c = 0; c < cells.length; c++) cells[c] = [];
+    segs.forEach((sg, idx) => {
+      const bx = sg.ax + sg.ux * sg.len, by = sg.ay + sg.uy * sg.len;
+      const c0 = max(0, Math.floor((min(sg.ax, bx) - reach - px0) / CELL)), c1 = min(cols - 1, Math.floor((max(sg.ax, bx) + reach - px0) / CELL));
+      const r0 = max(0, Math.floor((min(sg.ay, by) - reach - py0) / CELL)), r1 = min(rows - 1, Math.floor((max(sg.ay, by) + reach - py0) / CELL));
+      for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) cells[r * cols + c].push(idx);
+    });
+    const col = E.hexToRgb ? E.hexToRgb(tinta) : [0, 0, 0];
+    let cx2 = null, img = null, data = null, capa = null;
+    if (ctx) {
+      const doc = ctx.canvas.ownerDocument || document;
+      capa = doc.createElement('canvas'); capa.width = RW; capa.height = RH;
+      cx2 = capa.getContext('2d');
+      img = cx2.createImageData(RW, RH); data = img.data;
+    }
+    const cerca = (a, b) => a.k === b.k && abs(a.i - b.i) <= 2;   // el mismo trazo, tramos contiguos: el codo
+    for (let gy = 0; gy < RH; gy++) {
+      const py = py0 + gy + 0.5, row = Math.floor(gy / CELL) * cols;
+      for (let gx = 0; gx < RW; gx++) {
+        const px = px0 + gx + 0.5;
+        const lista = cells[row + Math.floor(gx / CELL)];
+        // Un candidato por trazo —su tramo más cercano— y, si el mismo trazo pasa
+        // otra vez por aquí lejos de ese tramo (el pliegue), un segundo. Luego cada
+        // candidato se juzga contra TODOS los demás, no solo contra el segundo más
+        // cercano: con dos, un tramo lejano del propio trazo tapaba al que cruza y
+        // el cruce se pintaba de una manera en un píxel y de otra en el de al lado.
+        const ents = [];
+        for (let q = 0; q < lista.length; q++) {
+          const sg = segs[lista[q]];
+          const vx = px - sg.ax, vy = py - sg.ay;
+          const u = (vx * sg.ux + vy * sg.uy) / sg.len;
+          const perp = abs(vx * sg.uy - vy * sg.ux);
+          const uc = u < 0 ? 0 : u > 1 ? 1 : u;
+          // LA BANDA SON PIEZAS, y la distancia es la mínima a cualquiera de ellas:
+          //   · la FRANJA de cada tramo: el rectángulo de media anchura R entre sus
+          //     dos extremos. Fuera de los extremos la distancia salta por encima de
+          //     R (R + lo que se pasa), así que la franja acaba a escuadra;
+          //   · el INGLETE de cada vértice interior: el cruce de las dos franjas
+          //     prolongadas, limado a MITER radios del vértice, y cortado por el
+          //     plano del cabo si uno de los dos tramos es el primero o el último.
+          // Cada pieza da una distancia con pendiente 1 (es un máximo de distancias
+          // a rectas y a planos), que es lo que el reparto del pelo necesita.
+          const R = sg.R0 + (sg.R1 - sg.R0) * uc;
+          const dxOut = u < 0 ? -u * sg.len : u > 1 ? (u - 1) * sg.len : 0;
+          let d = max(perp, R + dxOut), sd = Infinity;
+          // sd: la distancia de verdad al rectángulo del CABO, para que el vecino
+          // que pase por delante se quede a g de ese borde y no del eje
+          if (dxOut > 0 && ((u < 0 && sg.end0) || (u > 1 && sg.end1))) sd = hypot(max(0, perp - R), dxOut);
+          if (sg.next) {
+            const vec = sg.next, Rv = sg.R1;
+            const wx = px - vec.ax, wy = py - vec.ay;
+            const perp2 = abs(wx * vec.uy - wy * vec.ux);
+            let dj = max(perp, perp2, hypot(wx, wy) - (MITER - 1) * Rv);
+            if (sg.end0) { const u0 = (vx * sg.ux + vy * sg.uy) / sg.len; if (u0 < 0) dj = max(dj, Rv - u0 * sg.len); }
+            if (vec.end1) { const u2 = (wx * vec.ux + wy * vec.uy) / vec.len; if (u2 > 1) dj = max(dj, Rv + (u2 - 1) * vec.len); }
+            if (dj < d) d = dj;
+          }
+          if (d > reach && sd > reach) continue;
+          // El candidato de un trazo es el tramo que lo deja MÁS DENTRO (R − d), no
+          // el de eje más cercano: la gubia hace que R cambie a lo largo del trazo,
+          // y con el eje más cercano un tramo fino ganaba a uno gordo y la banda
+          // se quedaba sin tinta justo donde otro la cruzaba.
+          const sc = R - d;
+          let e0 = null, e1 = null, i0 = -1, i1 = -1;
+          for (let t = 0; t < ents.length; t++) { const e = ents[t]; if (e.k !== sg.k) continue; if (e.far) { e1 = e; i1 = t; } else { e0 = e; i0 = t; } }
+          if (!e0) ents.push({ k: sg.k, i: sg.i, d, R, sd, sc, far: false });
+          else if (abs(sg.i - e0.i) <= 2) { if (sc > e0.sc) { e0.i = sg.i; e0.d = d; e0.R = R; e0.sc = sc; } if (sd < e0.sd) e0.sd = sd; }
+          else if (sc > e0.sc) { ents[i0] = { k: sg.k, i: sg.i, d, R, sd, sc, far: false }; if (e1) { ents[i1] = e0; e0.far = true; } else { e0.far = true; ents.push(e0); } }
+          else if (!e1) ents.push({ k: sg.k, i: sg.i, d, R, sd, sc, far: true });
+          else if (sc > e1.sc) { e1.i = sg.i; e1.d = d; e1.R = R; e1.sd = sd; e1.sc = sc; }
+        }
+        if (!ents.length) continue;
+        // cada candidato, contra todos los demás
+        let a = -Infinity, de = -1;
+        for (let t = 0; t < ents.length; t++) {
+          const e = ents[t];
+          let ae = e.R - e.d;                       // su propia banda
+          if (ae + 0.5 <= 0) continue;
+          for (let r = 0; r < ents.length && ae + 0.5 > 0; r++) {
+            if (r === t) continue;
+            const f = ents[r];
+            if (f.k !== e.k && cruza.has(e.k < f.k ? e.k * 4096 + f.k : f.k * 4096 + e.k)) {
+              // se cruzan: el de arriba (puesto después) va entero; al de abajo lo
+              // corta el halo del de arriba
+              if (f.k > e.k) ae = min(ae, f.d - f.R - gpx);
+            } else {
+              ae = min(ae, (f.d - e.d - gpx) / 2);   // el pelo, repartido a medias
+              if (f.sd < Infinity) ae = min(ae, f.sd - gpx);   // y a g de su cabo
+            }
+          }
+          if (ae > a) { a = ae; de = e.k; }
+        }
+        a = a + 0.5; if (a <= 0) continue; if (a > 1) a = 1;
+        if (etiquetas && a >= 0.98) etiquetas[(py0 + gy) * Wpx + px0 + gx] = de + 1;
+        if (!ctx) continue;
+        const o = (gy * RW + gx) * 4;
+        data[o] = col[0]; data[o + 1] = col[1]; data[o + 2] = col[2]; data[o + 3] = Math.round(a * 255);
+      }
+    }
+    if (!ctx) return;
+    cx2.putImageData(img, 0, 0);
+    ctx.drawImage(capa, px0, py0);
+  }
+  // El campo de una obra ya hecha, desde su `geo` publicada: las etiquetas por
+  // píxel. Lo usa `verificacion/pelo.js`; no pinta nada.
+  function etiquetas(geo, Wpx, Hpx) {
+    const trazos = geo.cintas.map((pts, k) => ({ pts, gubia: geo.gubia ? geo.gubia[k] : null }));
+    const cruza = new Set();
+    if (geo.debajo) geo.debajo.forEach((lst, k) => lst.forEach(j => cruza.add(j * 4096 + k)));
+    const et = new Int32Array(Wpx * Hpx);
+    pintarCampo(null, trazos, geo.W, geo.g, geo.relleno || 1, geo.S, geo.ox, '#000000', Wpx, Hpx, cruza, et);
+    return et;
+  }
+
   function holguras(ctx) {
     const h0 = ctx.W / 2, techo = ctx.W * RELLENO_MAX;
     const techoLado = h0 * (ctx.relleno || 1);
@@ -1946,9 +2121,7 @@
     const recto = params.recto != null ? params.recto : rng.range(RECTO[0], RECTO[1]);
     const vibF  = params.vibAmp != null ? params.vibAmp : rng.range(VIBF[0], VIBF[1]);
     const conc  = params.concentra != null ? params.concentra : rng.range(CONC[0], CONC[1]);
-    // SIN SORTEAR HASTA QUE EL AUTOR DECIDA cómo se pinta el relleno (ver README):
-    // el mando del laboratorio lo enciende; `auto` deja la banda base.
-    const relleno = params.relleno != null ? params.relleno : 1;
+    const relleno = params.relleno != null ? params.relleno : rng.range(RELLENO[0], RELLENO[1]);
     // Cuánto sangra ESTA obra: o nada, o entre poco y mucho. Es constante dentro
     // de la hoja, como la vibración — que unas se salgan y otras no es del cuadro,
     // no del trazo.
@@ -2293,60 +2466,20 @@
     // costados de k cruzando la banda de j. Que es exactamente lo que se ve en las
     // referencias. De paso desaparece el radio del disco, que era un numero que
     // elegir.
+    // Los pares que SE CRUZAN (ejes que se cortan): ahí manda el orden de pintado,
+    // y `debajo` sigue diciendo quién está debajo de quién para los detectores.
     const debajo = best.trazos.map(() => []);
+    const cruza = new Set();
     for (let k = 0; k < best.trazos.length; k++)
       for (let j = 0; j < k; j++) {
-        // AL ALCANCE DEL RELLENO, no solo cruzados. Con la banda creciendo mas alla
-        // de su anchura base, dos trazos que corren en paralelo -y que NO se cruzan,
-        // asi que no estaban en esta lista- acabarian fundiendo sus tintas. El corte
-        // tiene que llegar a todo lo que el relleno pueda alcanzar.
         let toca = false;
-        const alcance = best.W * max(RELLENO_W, best.relleno || 1) + best.g;
         for (const a of best.trazos[k].segs) {
-          for (const b of best.trazos[j].segs) {
-            if (corteDe(a, b) || segSegDist(a, b) < alcance) { toca = true; break; }
-          }
+          for (const b of best.trazos[j].segs) { if (corteDe(a, b)) { toca = true; break; } }
           if (toca) break;
         }
-        if (toca) debajo[k].push(j);
+        if (toca) { debajo[k].push(j); cruza.add(j * 4096 + k); }
       }
-    ctx.save();
-    ctx.translate(ox, 0);
-    ctx.scale(S, S);
-    if (halo > 0) {
-      const capa = ctx.canvas.ownerDocument.createElement('canvas');
-      capa.width = W; capa.height = H;
-      const cx = capa.getContext('2d');
-      cx.translate(ox, 0); cx.scale(S, S);
-      cx.fillStyle = rol.tinta;
-      for (let k = 0; k < best.trazos.length; k++) {
-        const tr = best.trazos[k];
-        if (debajo[k].length) {
-          cx.save();
-          cx.beginPath();
-          for (const j of debajo[k]) {
-            const t2 = best.trazos[j];
-            banda(cx, t2.pts, best.W * RELLENO_W, t2.gubia, t2.relleno, null, halo, t2.lados);
-          }
-          cx.clip();
-          cx.globalCompositeOperation = 'destination-out';
-          corte(cx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno, null, halo, tr.lados);
-          cx.restore();
-        }
-        cx.globalCompositeOperation = 'source-over';
-        cx.beginPath(); banda(cx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno, null, 0, tr.lados);
-        cx.fill();
-      }
-      ctx.restore();
-      ctx.drawImage(capa, 0, 0);
-      ctx.save();
-    } else {
-      ctx.beginPath();
-      for (const tr of best.trazos) banda(ctx, tr.pts, best.W * RELLENO_W, tr.gubia, tr.relleno, null, 0, tr.lados);
-      ctx.fillStyle = rol.tinta;
-      ctx.fill();
-    }
-    ctx.restore();
+    pintarCampo(ctx, best.trazos, best.W, best.g, best.relleno || 1, S, ox, rol.tinta, W, H, cruza);
 
     E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF), seed);
 
@@ -2364,9 +2497,10 @@
              cierre: best.cierre,
              geo: { cintas: best.trazos.map(x => x.pts), sangra: best.trazos.map(x => !!x.sangra),
                     relleno: best.trazos.map(x => x.relleno || null),
-                    // el relleno hasta el margen, por lados: la banda PINTADA es esta,
-                    // y un detector que pinte la base mide otra obra
                     lados: best.trazos.map(x => x.lados || null),
+                    // el radio de relleno del campo, × media anchura: con esto y los ejes,
+                    // `etiquetas()` reconstruye exactamente lo pintado
+                    relleno: best.relleno || 1,
                     cruza: best.trazos.map(x => !!x.cruza), CRUCE_MIN,
                     gubia: best.trazos.map(x => x.gubia || 0), debajo,
                     cierre: best.cierre, rumbos: best.rumbos,
@@ -2555,7 +2689,7 @@
                     SANGRE, MARGEN, W: Wb, g, D, S, ox, fw, fh, veto: null } };
   }
 
-  const P_INV = 0.14;
+  const P_INV = 0.08;                      // tinta oscura sobre papel claro casi siempre: es grabado
 
   // ── Traits ──────────────────────────────────────────────────────────────────
   function traits(res) {
@@ -2600,5 +2734,5 @@
   // `banda` sale fuera para el DETECTOR, no para dibujar. `pelo.js` tiene que pintar
   // cada trazo con su etiqueta y con los mismos cortes que la obra publicada, y un
   // detector que reimplementa el dibujo mide su copia, no el dibujo.
-  (global.HOKS = global.HOKS || {}).HRRS = { render, componer, traits, TIPOS, RELS, BG_GRADIENT, FORMATS, banda, corte };
+  (global.HOKS = global.HOKS || {}).HRRS = { render, componer, traits, TIPOS, RELS, BG_GRADIENT, FORMATS, banda, corte, etiquetas };
 })(typeof window !== 'undefined' ? window : globalThis);

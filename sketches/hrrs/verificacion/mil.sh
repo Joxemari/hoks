@@ -81,17 +81,23 @@ if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = pelo ]; then
   # tinta ya no produce ni un par por debajo de g, o sea que no ejercita nada. En su
   # sitio va `cuna`, que es la construccion de antes -la banda mas gorda, con su bisel-
   # y que es justo lo que este detector existe para cazar.
-  for r in duro cuna; do
+  # Desde el pintado por CAMPO (noviembre de 2026) el pelo no sale de un poligono
+  # sino de d2 - d1 >= g en cada pixel; `duro` y `cuna` rompian la banda poligonal,
+  # que ya no se publica, asi que no ejercitan nada. El control es `pelo0`: el campo
+  # pintado con 0,4 g, y el detector tiene que cantar.
+  for r in pelo0; do
     build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
     node pelo.js "t_$r.js" 60 760 "" 2>/dev/null | grep -E "^  pelo|por debajo"
   done
 fi
 
-if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = toque ]; then
-  # A 900 px, que es donde el pixel tiene resolucion para decir algo. Menos obras:
-  # cada una lee un lienzo de 900x1272 y calcula distancias sobre el.
-  linea "toque · la tinta es la geometria · $((N / 4)) obras a 900 px"
+if [ "$BLOQUE" = toque ]; then
+  # RETIRADO DEL «todo» con el pintado por campo: `toque` comprobaba que la tinta no
+  # se pasara de la banda poligonal declarada, y en el campo la tinta ES la
+  # geometria por construccion (d1 <= R). Lo que queda por vigilar del pixel es el
+  # pelo, y eso lo mide `pelo`. Se puede lanzar suelto, pero mide el dibujo viejo.
+  linea "toque · la tinta es la geometria · $((N / 4)) obras a 900 px · (dibujo poligonal, no el publicado)"
   corre toque.js hrrs_test.js "$((N / 4))" 900 ""
   for r in miter cabo; do
     build "$r" "t_$r.js" || continue
