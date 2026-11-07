@@ -64,6 +64,46 @@
         "palSel": "auto",
         "palName": "Base",
         "addedAt": 1793657997989
+      },
+      {
+        "work": "krrtk",
+        "seed": 4116828272,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Science",
+        "addedAt": 1794087305696
+      },
+      {
+        "work": "krrtk",
+        "seed": 3877477880,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Meta",
+        "addedAt": 1794087307320
       }
     ]
   },
