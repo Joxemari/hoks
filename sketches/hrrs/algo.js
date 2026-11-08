@@ -1096,10 +1096,14 @@
     // costado y el tramo (en longitud de arco) donde el halo no corta
     // el halo lleva además el tope de la ondulación: el vecino ondula por su cuenta y
     // sin esto se metía en el pelo (pelo.js: 8 de 75 por debajo de g)
-    const masV = mas > 0 && mano ? mas + mano.vib * 1.5 : mas;
+    const masV = mas > 0 && mano ? mas + mano.vib * 1.5 : mas;   // (vib ya es la amplitud de ESTA pieza)
     const masEn = s => (mas > 0 && mano && mano.funde && s >= mano.funde[0] && s <= mano.funde[1]) ? 0 : masV;
-    const vibI = s => mano ? mano.vib * (Math.sin(s / mano.o1 + mano.f1) + 0.5 * Math.sin(s / mano.o2 + mano.f2)) : 0;
-    const vibD = s => mano ? mano.vib * (Math.sin(s / mano.o2 + mano.f3) + 0.5 * Math.sin(s / mano.o1 + mano.f4)) : 0;
+    // VARIABLE, no uniforme (el autor: «a veces es recta, otras veces no»): la
+    // amplitud de cada pieza sale de un cuadrado —muchas casi rectas, pocas más
+    // movidas— y a lo largo del trazo una envolvente lenta la hace ir y venir
+    const env = s => mano ? 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(s / mano.oe + mano.fe)) : 1;
+    const vibI = s => mano ? env(s) * mano.vib * (Math.sin(s / mano.o1 + mano.f1) + 0.5 * Math.sin(s / mano.o2 + mano.f2)) : 0;
+    const vibD = s => mano ? env(s) * mano.vib * (Math.sin(s / mano.o2 + mano.f3) + 0.5 * Math.sin(s / mano.o1 + mano.f4)) : 0;
     const hEn = f => (Wt + (anchoEn(f, Wt, gub) - Wt) * 0.5) / 2;
     for (let i = 0; i + 1 < n; i++) {
       const L = Ls[i]; if (L < 1e-9) continue;
@@ -1181,7 +1185,9 @@
         let mano = null;
         if (rm && amp > 0) {
           const Lt = largoDe(eje);
-          mano = { vib: amp * Wt, o1: rm.range(MANO_ONDA[0], MANO_ONDA[1]) * Wt / 6.2832, o2: rm.range(MANO_ONDA[0], MANO_ONDA[1]) * Wt / 6.2832,
+          const r = rm.range(0, 1);
+          mano = { vib: amp * Wt * (0.15 + 1.7 * r * r), o1: rm.range(MANO_ONDA[0], MANO_ONDA[1]) * Wt / 6.2832, o2: rm.range(MANO_ONDA[0], MANO_ONDA[1] * 1.8) * Wt / 6.2832,
+                   oe: rm.range(4, 9) * Wt / 6.2832, fe: rm.range(0, 6.2832),
                    f1: rm.range(0, 6.2832), f2: rm.range(0, 6.2832), f3: rm.range(0, 6.2832), f4: rm.range(0, 6.2832), funde: null };
           const fl = rm.range(FUNDE_L[0], FUNDE_L[1]) * Wt, pf = rm.bool(pFunde != null ? pFunde : P_FUNDE);
           if (ri === 0 && pf && Lt > fl + Wt) { const s0 = rm.range(Wt * 0.3, Lt - fl - Wt * 0.3); mano.funde = [s0, s0 + fl]; }
