@@ -131,10 +131,13 @@ menos. Y no se persigue con un relajador —`selfAvoid` no se porta— sino que 
 corta `g` a su alrededor, así que dos trazos pueden solaparse y el pelo entre ellos
 sigue midiendo lo mismo. El trazo no crece hacia donde no cabe, y de ahí sale
 gratis el cabo: **el trazo se acaba donde ya no cabe**, contra un cuerpo. Desde
-noviembre de 2026 la composición de producción es el modelo **libre**, escrito con
-las distribuciones medidas sobre el calco de tres originales de Chillida (quiebros,
-tramos, largos, acompañamiento); la retícula (`reja`) y los trazos sueltos quedan
-como modelos de comparación en el harness.
+noviembre de 2026 la composición de producción es el modelo **calco**: los ejes y
+anchuras de tres originales de Chillida, calcados automáticamente y embebidos en
+`algo.js`, mutados dentro de su misma lógica (simetrías, trazos que se quitan o se
+añaden como acompañantes, cabos que se alargan hasta donde cabe, codos que se
+redoblan). Son obras derivadas de piezas concretas, y está dicho así en
+`hrrs/README.md`. El modelo libre (escrito con las distribuciones medidas en esos
+calcos), la retícula y los trazos sueltos quedan como modelos de comparación.
 
 Verificada con su propia batería (`hrrs/verificacion/`): 996 obras repartidas entre
 catorce configuraciones, **cero** por debajo del canal, y cada detector con su

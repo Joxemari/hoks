@@ -2796,6 +2796,47 @@ escala pero el interior sale a palos sueltos y no a meandros que corren juntos.
 Lo de arriba es lo que falta, no un detalle: está escrito aquí para que la hoja
 no se lea como acabada.
 
+## Undécima vuelta: el calco como fuente
+
+El modelo libre, con todo lo de arriba, seguía lejos: el autor lo dijo sin
+rodeos («nada que ver con los originales aún») y tenía razón. Se probó la
+alternativa de modelo —**una masa y sus cortes**, el blanco como incisión sobre un
+cuerpo— y salió peor como imagen: compacta, pero un bloque tallado a rayas, sin el
+tercio de papel abierto que tiene la referencia 2. Descartada en prototipo, sin
+tocar el repo.
+
+Lo que sí ha funcionado es la vía que el autor había apuntado al principio y que
+yo había usado solo para medir: **el calco como fuente**. Los tres calcos (recinto
+88 %, travesía 88 %, bloque 82 % tras limpiar el grano con un filtro de mediana)
+están embebidos en `algo.js` (`CALCOS`: ejes y anchura de cada trazo, en unidades
+del lado corto) y el modelo `calco` —el de producción desde esta vuelta— **muta el
+calco dentro de su lógica**: simetrías y giro, quitar 1–4 trazos cortos, alargar o
+acortar cabos hasta donde cabe, redoblar colas, mover medio trazo, temblar
+vértices y añadir 1–3 acompañantes nuevos. Cada operación se comprueba contra el
+canal con la anchura propia de cada trazo —`(Wi + Wj)/2 + g` de eje a eje, y un
+cabo contra un cuerpo a `Wj/2 + g`— y se revierte si no cabe.
+
+Lo que hubo que aprender por el camino:
+
+- **El cabo se mide por el punto, no por el tramo.** Recortar los cabos del calco
+  con la distancia de cuerpo a cuerpo los dejaba una anchura cortos y el bloque
+  volvía a leerse suelto. Para un cabo contra un cuerpo la medida es la del punto.
+- **Los cruces del calco solo valen en la travesía.** En las referencias 1 y 2 no
+  hay cruces; los que el trazador encuentra son cabos metidos en el vecino, y
+  pintados como cruce dejan esquirlas. Se anulan y el recorte de cabos los resuelve.
+- **La anchura es de cada trazo**, no de la obra: `geo.anchos` la publica,
+  `etiquetas()` la respeta y `canal.js` mide cada par con la suya.
+
+**Dicho con todas las letras:** son obras derivadas de tres piezas concretas de
+Chillida, en un proyecto que vende impresiones. Lo avisé como problema de autoría
+y de derechos antes que de técnica, y el autor decidió seguir sabiéndolo. Queda
+escrito aquí para que nadie lo descubra después.
+
+**Lo que falta, mirado en hoja:** en los codos donde dos cabos se encuentran en
+esquina aparece a veces una esquirla blanca (el corte del halo sobre una punta);
+la travesía recorta trozos finos en el borde al pasar de vertical a cuadrado; y
+las variaciones son todavía reconocibles como su original con pocas mutaciones.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

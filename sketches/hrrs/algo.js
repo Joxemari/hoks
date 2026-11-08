@@ -1033,7 +1033,7 @@
   // El campo de una obra ya hecha, desde su `geo` publicada: las etiquetas por
   // píxel. Lo usa `verificacion/pelo.js`; no pinta nada.
   function etiquetas(geo, Wpx, Hpx) {
-    const trazos = geo.cintas.map((pts, k) => ({ pts, gubia: geo.gubia ? geo.gubia[k] : null }));
+    const trazos = geo.cintas.map((pts, k) => ({ pts, gubia: geo.gubia ? geo.gubia[k] : null, W: geo.anchos ? geo.anchos[k] || undefined : undefined }));
     const cruza = new Set();
     if (geo.debajo) geo.debajo.forEach((lst, k) => lst.forEach(j => cruza.add(j * 4096 + k)));
     const et = new Int32Array(Wpx * Hpx);
@@ -2671,6 +2671,190 @@
     }
   }
 
+  // ── El modelo CALCO: variaciones sobre los tres originales ──────────────────
+  //
+  // El autor, con el modelo libre todavía lejos de las referencias, pidió la vía
+  // directa: calcar los tres originales y que las obras salgan de mutar ese calco
+  // dentro de su misma lógica. Estos son los ejes y anchuras de cada trazo, sacados
+  // con el trazador automático (esqueleto + transformada de distancia) de las tres
+  // referencias, en unidades del lado corto. Pintados con el campo reproducen el
+  // original al 88 % (recinto, travesía) y al 82 % (bloque).
+  //
+  // Lo que se muta, y nada más: simetrías y giro de la obra entera, quitar 1–4
+  // trazos de entre los cortos, alargar o acortar cabos (hasta donde cabe), redoblar
+  // una cola alrededor de un codo, mover un trazo media anchura, temblar los
+  // vértices, y añadir 1–3 acompañantes nuevos (desplazados de una sección de un
+  // trazo, a un pelo). Cada operación se comprueba contra el canal —a (Wi+Wj)/2 + g
+  // de eje a eje, y un cabo contra un cuerpo a Wj/2 + g— y se revierte si no cabe.
+  // Los cruces del original (solo la travesía los tiene) se respetan.
+  //
+  // Dicho con todas las letras: son obras derivadas de tres piezas concretas de
+  // Chillida. El autor lo decidió sabiéndolo.
+  const CALCOS = {
+    recinto: { w: 1.000, h: 1.153, trazos: [
+      { W: 0.027, pts: [[0.445,0.59],[0.418,0.575],[0.415,0.55],[0.433,0.515],[0.44,0.48],[0.438,0.448],[0.43,0.428],[0.43,0.412],[0.44,0.383],[0.437,0.33],[0.313,0.328],[0.285,0.333],[0.283,0.488],[0.303,0.498],[0.328,0.555],[0.35,0.585],[0.37,0.585],[0.385,0.578],[0.383,0.54],[0.418,0.493]] },
+      { W: 0.027, pts: [[0.457,0.33],[0.7,0.33],[0.713,0.335],[0.713,0.433],[0.71,0.437],[0.647,0.43],[0.603,0.438],[0.593,0.445],[0.598,0.495],[0.597,0.555],[0.62,0.612]] },
+      { W: 0.023, pts: [[0.536,0.487],[0.527,0.502],[0.52,0.593],[0.543,0.628],[0.547,0.64],[0.535,0.702],[0.54,0.707],[0.585,0.717],[0.603,0.662],[0.605,0.645],[0.633,0.623],[0.645,0.618],[0.67,0.617],[0.723,0.621]] },
+      { W: 0.024, pts: [[0.474,0.625],[0.468,0.692],[0.452,0.735],[0.402,0.733],[0.37,0.742],[0.337,0.737],[0.32,0.747],[0.268,0.749]] },
+      { W: 0.027, pts: [[0.447,0.633],[0.438,0.69],[0.432,0.7],[0.375,0.71],[0.325,0.703],[0.296,0.725]] },
+      { W: 0.027, pts: [[0.629,0.447],[0.625,0.548],[0.638,0.58],[0.648,0.588],[0.723,0.59]] },
+      { W: 0.027, pts: [[0.268,0.571],[0.3,0.573],[0.313,0.585],[0.343,0.642],[0.437,0.638]] },
+      { W: 0.027, pts: [[0.277,0.732],[0.28,0.693],[0.312,0.672],[0.333,0.67],[0.375,0.677],[0.421,0.667]] },
+      { W: 0.023, pts: [[0.498,0.465],[0.498,0.53],[0.492,0.572],[0.487,0.577],[0.47,0.577],[0.444,0.605]] },
+      { W: 0.026, pts: [[0.466,0.621],[0.483,0.608],[0.493,0.61],[0.513,0.637],[0.513,0.66],[0.5,0.707]] },
+      { W: 0.027, pts: [[0.567,0.515],[0.573,0.592],[0.55,0.612]] },
+      { W: 0.024, pts: [[0.351,0.615],[0.41,0.608],[0.443,0.62],[0.465,0.613]] },
+      { W: 0.023, pts: [[0.601,0.605],[0.578,0.63],[0.575,0.657],[0.561,0.698]] },
+      { W: 0.027, pts: [[0.642,0.461],[0.723,0.468]] } ] },
+    bloque: { w: 1.000, h: 1.333, trazos: [
+      { W: 0.067, pts: [[0.656,0.849],[0.677,0.76],[0.67,0.638],[0.562,0.625],[0.375,0.653]] },
+      { W: 0.070, pts: [[0.182,0.546],[0.322,0.562],[0.323,0.722],[0.377,0.738],[0.396,0.901]] },
+      { W: 0.057, pts: [[0.5,0.334],[0.143,0.345],[0.133,0.367],[0.142,0.535],[0.133,0.543],[0.067,0.545],[0.035,0.628]] },
+      { W: 0.070, pts: [[0.759,0.73],[0.748,0.892],[0.725,0.903],[0.587,0.907],[0.493,0.893],[0.48,0.883],[0.466,0.752]] },
+      { W: 0.066, pts: [[0.724,0.69],[0.905,0.702],[0.933,0.817],[0.931,0.921]] },
+      { W: 0.053, pts: [[0.927,0.329],[0.685,0.342],[0.584,0.33]] },
+      { W: 0.050, pts: [[0.657,0.472],[0.91,0.482],[0.936,0.643]] },
+      { W: 0.060, pts: [[0.542,0.313],[0.54,0.412],[0.525,0.445],[0.428,0.457],[0.41,0.468],[0.406,0.597]] },
+      { W: 0.077, pts: [[0.191,0.71],[0.228,0.793],[0.302,0.82],[0.302,0.947]] },
+      { W: 0.063, pts: [[0.615,0.37],[0.595,0.55],[0.459,0.565]] },
+      { W: 0.053, pts: [[0.252,0.597],[0.238,0.665],[0.017,0.676]] },
+      { W: 0.073, pts: [[0.831,0.729],[0.845,0.868]] },
+      { W: 0.047, pts: [[0.205,0.605],[0.098,0.611]] },
+      { W: 0.064, pts: [[0.898,0.365],[0.915,0.443]] } ] },
+    travesia: { w: 1.000, h: 1.352, trazos: [
+      { W: 0.087, pts: [[0.451,0.225],[0.405,0.287],[0.415,0.395],[0.575,0.493],[0.585,0.793],[0.507,0.843],[0.187,0.878],[0.107,0.863],[0.041,0.896]] },
+      { W: 0.090, pts: [[0.302,0.2],[0.325,0.442],[0.343,0.467],[0.455,0.52],[0.477,0.56],[0.475,0.743],[0.18,0.785],[0.007,0.734]] },
+      { W: 0.092, pts: [[0.998,0.417],[0.91,0.485],[0.842,0.667],[0.69,0.688],[0.688,0.817],[0.63,0.905],[0.638,1.013],[0.607,1.185],[0.523,1.257]] },
+      { W: 0.088, pts: [[0.472,0.065],[0.497,0.32],[0.522,0.35],[0.657,0.417],[0.673,0.583],[0.782,0.575],[0.85,0.413],[0.987,0.357]] },
+      { W: 0.087, pts: [[0.535,0.153],[0.985,0.153]] },
+      { W: 0.087, pts: [[0.987,1.175],[0.71,1.177],[0.623,1.238]] },
+      { W: 0.087, pts: [[0.257,0.156],[0.425,0.152]] } ] }
+  };
+
+  function tramarCalco(rng, fw, fh, tipo, params) {
+    const base = CALCOS[tipo] ? tipo : 'bloque';
+    const calco = CALCOS[base];
+    const S = min(fw, fh);
+    const rr = (v) => rng.range(v[0], v[1]);
+    const gam = params.canal ? params.canal : rng.range(GAMMA[0], GAMMA[1]);
+    const conCruces = base === 'travesia';
+    const sangra = base === 'travesia';
+    // 1. los trazos del calco en unidades del calco
+    let tr = calco.trazos.map(t => ({ pts: t.pts.map(q => ({ x: q[0], y: q[1] })), W: t.W }));
+    const Ws = tr.map(t => t.W).sort((a, b) => a - b), Wmed = Ws[Ws.length >> 1], g = Wmed * gam;
+    const crucesDe = T => { const cz = new Set(); const SS = T.map(t => segsDe(t.pts));
+      for (let j = 0; j < T.length; j++) for (let k = j + 1; k < T.length; k++) if (SS[j].some(a => SS[k].some(b => !!corteDe(a, b)))) cz.add(j * 4096 + k); return cz; };
+    const cruces0 = conCruces ? crucesDe(tr) : new Set();
+    // 2. simetrías y giro de la obra entera
+    const bb = () => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const t of tr) for (const q of t.pts) { x0 = min(x0, q.x); y0 = min(y0, q.y); x1 = max(x1, q.x); y1 = max(y1, q.y); } return { x0, y0, x1, y1, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 }; };
+    const b0 = bb();
+    if (rng.bool(0.5)) for (const t of tr) for (const q of t.pts) q.x = 2 * b0.cx - q.x;
+    if (rng.bool(0.3)) for (const t of tr) for (const q of t.pts) q.y = 2 * b0.cy - q.y;
+    const pGiro = sangra ? 0 : (fw > fh * 1.1 ? 0.7 : fw * 1.1 < fh ? 0.1 : 0.3);
+    if (rng.bool(pGiro)) for (const t of tr) for (const q of t.pts) { const x = q.x - b0.cx, y = q.y - b0.cy; q.x = b0.cx - y; q.y = b0.cy + x; }
+    const th = rng.range(-5, 5) * RAD, sx = rng.range(0.92, 1.08);
+    for (const t of tr) for (const q of t.pts) { const x = (q.x - b0.cx) * sx, y = q.y - b0.cy; q.x = b0.cx + x * Math.cos(th) - y * Math.sin(th); q.y = b0.cy + x * Math.sin(th) + y * Math.cos(th); }
+    // 3. quitar trazos, entre el 70 % más corto
+    const quitados = new Set();
+    const nq = params.trazos ? max(0, tr.length - params.trazos) : rng.int(1, base === 'travesia' ? 2 : 4);
+    const porLargo = tr.map((t, i) => [largoDe(t.pts), i]).sort((a, b) => a[0] - b[0]).slice(0, max(1, Math.round(tr.length * 0.7))).map(x => x[1]);
+    for (let k = 0; k < nq && porLargo.length; k++) quitados.add(porLargo.splice(rng.int(0, porLargo.length - 1), 1)[0]);
+    const idx = tr.map((t, i) => i);
+    for (const t of tr) t.segs = segsDe(t.pts);
+    const cabe = (i, pts) => { const sg = segsDe(pts);
+      for (const j of idx) { if (j === i || quitados.has(j)) continue; const a = min(i, j), c = max(i, j); if (cruces0.has(a * 4096 + c)) continue;
+        const D = (tr[i].W + tr[j].W) / 2 + g; for (const s1 of sg) for (const s2 of tr[j].segs) if (segSegDist(s1, s2) < D * 0.97) return false; }
+      return true; };
+    const puntoCabe = (i, q) => { for (const j of idx) { if (j === i || quitados.has(j)) continue; const a = min(i, j), c = max(i, j); if (cruces0.has(a * 4096 + c)) continue;
+        const Dp = tr[j].W / 2 + g; for (const s2 of tr[j].segs) if (pointSegDist(q.x, q.y, s2[0], s2[1], s2[2], s2[3]) < Dp * 0.97) return false; } return true; };
+    // 3b. los cabos del calco, recortados al canal (el trazador alarga cada cabo media anchura)
+    for (const i of idx) { if (quitados.has(i)) continue; const t = tr[i];
+      for (const lado of [0, 1]) { const pts = lado ? t.pts : t.pts.slice().reverse(); const a = pts[pts.length - 2], e = pts[pts.length - 1];
+        if (puntoCabe(i, e)) continue;
+        let lo = 0, hi = 1; for (let k = 0; k < 10; k++) { const m = (lo + hi) / 2; const q = { x: e.x + (a.x - e.x) * m, y: e.y + (a.y - e.y) * m }; if (puntoCabe(i, q)) hi = m; else lo = m; }
+        const L = hypot(e.x - a.x, e.y - a.y); const m = min(hi, t.W / L);
+        pts[pts.length - 1] = { x: e.x + (a.x - e.x) * m, y: e.y + (a.y - e.y) * m }; t.pts = lado ? pts : pts.reverse(); t.segs = segsDe(t.pts); } }
+    // 4. cabos: alargar o acortar el último tramo; si al alargar no cabe, hasta donde cabe
+    for (const i of idx) { if (quitados.has(i)) continue; const t = tr[i];
+      for (const lado of [0, 1]) { if (!rng.bool(0.5)) continue;
+        const pts = lado ? t.pts : t.pts.slice().reverse(); const a = pts[pts.length - 2], e = pts[pts.length - 1];
+        const u = rng.range(0.6, 1.6); const e2 = { x: a.x + (e.x - a.x) * u, y: a.y + (e.y - a.y) * u };
+        const prueba = q => puntoCabe(i, q) && cabe(i, pts.slice(0, -1).concat([{ x: a.x + (q.x - a.x) * 0.8, y: a.y + (q.y - a.y) * 0.8 }]))
+                            && (sangra || (q.x > -0.02 && q.y > -0.02 && q.x < calco.w + 0.02 && q.y < calco.h + 0.02));
+        let fin = e2; if (u > 1 && !prueba(e2)) { let lo = 1, hi = u; for (let k = 0; k < 10; k++) { const m = (lo + hi) / 2; const q = { x: a.x + (e.x - a.x) * m, y: a.y + (e.y - a.y) * m }; if (prueba(q)) lo = m; else hi = m; } fin = { x: a.x + (e.x - a.x) * lo, y: a.y + (e.y - a.y) * lo }; }
+        pts[pts.length - 1] = fin; t.pts = lado ? pts : pts.reverse(); t.segs = segsDe(t.pts); } }
+    // 4b. redoblar: la cola gira alrededor de un codo (±18°) si cabe
+    for (const i of idx) { if (quitados.has(i)) continue; const t = tr[i]; if (t.pts.length < 3 || !rng.bool(0.6)) continue;
+      const k = rng.int(1, t.pts.length - 2); const ang = rng.range(-18, 18) * RAD; const piv = t.pts[k]; const cola = rng.bool(0.5);
+      const old = t.pts.map(q => ({ x: q.x, y: q.y }));
+      for (let m = 0; m < t.pts.length; m++) { if (cola ? m <= k : m >= k) continue; const q = t.pts[m]; const x = q.x - piv.x, y = q.y - piv.y; q.x = piv.x + x * Math.cos(ang) - y * Math.sin(ang); q.y = piv.y + x * Math.sin(ang) + y * Math.cos(ang); }
+      t.segs = segsDe(t.pts); if (!cabe(i, t.pts)) { t.pts = old; t.segs = segsDe(t.pts); } }
+    // 4c. mover el trazo entero hasta 0,6 W, si cabe
+    for (const i of idx) { if (quitados.has(i)) continue; const t = tr[i]; if (!rng.bool(0.5)) continue;
+      const a = rng.range(0, 360) * RAD, d = rng.range(0.2, 0.6) * t.W; const old = t.pts.map(q => ({ x: q.x, y: q.y }));
+      for (const q of t.pts) { q.x += Math.cos(a) * d; q.y += Math.sin(a) * d; } t.segs = segsDe(t.pts); if (!cabe(i, t.pts)) { t.pts = old; t.segs = segsDe(t.pts); } }
+    // 5. temblor de vértices (±0,12 W por la normal), revertido si rompe el canal
+    for (const i of idx) { if (quitados.has(i)) continue; const t = tr[i];
+      for (let k = 0; k < t.pts.length; k++) { const q = t.pts[k]; const a = t.pts[max(0, k - 1)], c = t.pts[min(t.pts.length - 1, k + 1)]; const tx = c.x - a.x, ty = c.y - a.y, tm = hypot(tx, ty) || 1e-9;
+        const d = rng.range(-0.12, 0.12) * t.W; const old = { x: q.x, y: q.y }; q.x -= ty / tm * d; q.y += tx / tm * d; t.segs = segsDe(t.pts);
+        if (!cabe(i, t.pts)) { q.x = old.x; q.y = old.y; t.segs = segsDe(t.pts); } } }
+    // 6. acompañantes nuevos (1–3): el desplazado de una sección, por el lado libre
+    const nuevos = rng.int(1, 3);
+    for (let n = 0; n < nuevos; n++) {
+      for (let t2 = 0; t2 < 20; t2++) { const i = rng.int(0, tr.length - 1); if (quitados.has(i)) continue; const t = tr[i];
+        const Wn = t.W * rng.range(0.85, 1.1); const Dn = (t.W + Wn) / 2 + g; const lado = rng.bool(0.5) ? 1 : -1;
+        const fr = rng.range(0.4, 1), a0 = rng.range(0, 1 - fr); const L = largoDe(t.pts);
+        const sub = []; let acc = 0;
+        for (let k = 0; k < t.pts.length - 1; k++) { const a = t.pts[k], c = t.pts[k + 1]; const l = hypot(c.x - a.x, c.y - a.y);
+          const s0 = max(0, (a0 * L - acc) / l), s1 = min(1, ((a0 + fr) * L - acc) / l); if (s1 > s0) { if (!sub.length) sub.push({ x: a.x + (c.x - a.x) * s0, y: a.y + (c.y - a.y) * s0 }); sub.push({ x: a.x + (c.x - a.x) * s1, y: a.y + (c.y - a.y) * s1 }); } acc += l; }
+        if (sub.length < 2) continue;
+        const q = sub.map((pt, k) => { const a = sub[max(0, k - 1)], c = sub[min(sub.length - 1, k + 1)]; const tx = c.x - a.x, ty = c.y - a.y, tm = hypot(tx, ty) || 1e-9; return { x: pt.x - ty / tm * Dn * lado, y: pt.y + tx / tm * Dn * lado }; });
+        const ni = tr.length; const cand = { pts: q, W: Wn, segs: segsDe(q) }; tr.push(cand); idx.push(ni);
+        const ok = [];
+        for (let k = 0; k < q.length - 1; k++) { const sg = [q[k].x, q[k].y, q[k + 1].x, q[k + 1].y]; let bien = true;
+          for (const j of idx) { if (j === ni || j === i || quitados.has(j)) continue; const Dj = (Wn + tr[j].W) / 2 + g; for (const s2 of tr[j].segs) if (segSegDist(sg, s2) < Dj * 0.97) { bien = false; break; } if (!bien) break; }
+          if (bien) { if (!ok.length) ok.push(q[k]); ok.push(q[k + 1]); } else if (ok.length >= 2) break; else ok.length = 0; }
+        if (ok.length >= 2 && largoDe(ok) >= Wn * 2.5) { cand.pts = ok; cand.segs = segsDe(ok); break; }
+        tr.pop(); idx.pop(); } }
+    const vivos = tr.filter((t, i) => !quitados.has(i));
+    // 7. encuadre: dentro del pliego con margen (recinto, bloque) o a sangre (travesía)
+    const m = MARGEN * S;
+    let Sc, ox, oy;
+    if (sangra) { Sc = max(fw / calco.w, fh / calco.h) * 0.94; ox = (fw - calco.w * Sc) / 2 + rng.range(-0.03, 0.03) * S; oy = (fh - calco.h * Sc) / 2 + rng.range(-0.03, 0.03) * S; }
+    else { const b = bb.call(null); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const t of vivos) for (const q of t.pts) { x0 = min(x0, q.x); y0 = min(y0, q.y); x1 = max(x1, q.x); y1 = max(y1, q.y); }
+      x0 -= Wmed / 2; y0 -= Wmed / 2; x1 += Wmed / 2; y1 += Wmed / 2;
+      const conc = params.concentra != null ? params.concentra : rng.range(0.55, 0.8);
+      const lleno = 1 - 0.2 * conc;    // 1 = toda la caja útil; con conc alta, algo menos
+      Sc = min((fw - 2 * m) / (x1 - x0), (fh - 2 * m) / (y1 - y0)) * lleno;
+      const libreX = fw - (x1 - x0) * Sc, libreY = fh - (y1 - y0) * Sc;
+      ox = (libreX / 2) + rng.range(-0.25, 0.25) * libreX - x0 * Sc; oy = (libreY / 2) + rng.range(-0.25, 0.25) * libreY - y0 * Sc; }
+    const W = Wmed * Sc, gS = g * Sc, D = W + gS;
+    // EL CALCO EXIGE HALO. El trazador deja pares de ejes a 0,8 D —no promete la
+    // regla geométrica— y el canal lo fabrica el halo al pintar; sin él las tintas
+    // se fundirían. Así que aquí el halo nunca baja de g, pida lo que pida el panel.
+    const ctx = { fw, fh, S, W, g: gS, D, mg: m, trazos: [], gubAmp: params.gubia != null ? params.gubia : (rng.bool(P_GUBIA) ? rng.range(GUB_AMP[0], GUB_AMP[1]) : 0), relleno: 1,
+                  halo: max(gS, params.halo != null ? params.halo * W : gS) };
+    for (const t of vivos) {
+      const pts = t.pts.map(q => ({ x: ox + q.x * Sc, y: oy + q.y * Sc }));
+      const fuera = pts.some(q => q.x < 0 || q.y < 0 || q.x > fw || q.y > fh);
+      ctx.trazos.push({ pts, segs: segsDe(pts), W: t.W * Sc, rel: 'calco', sangra: fuera, cruza: false, gubia: gubiaDe(rng, ctx), fin: 'calco' });
+    }
+    holguras(ctx);
+    const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };
+    const pas = pasillos(ctx.trazos, W, D);
+    let vert = 0, quiebros = 0;
+    for (const t of ctx.trazos) { vert += t.pts.length; quiebros += max(0, t.pts.length - 2); }
+    const Ls = ctx.trazos.map(t => largoDe(t.pts) / S).sort((a, b) => a - b);
+    const lMed = Ls.length ? Ls[Ls.length >> 1] : 0;
+    return { trazos: ctx.trazos, W, g: gS, D, cerco: 0, patas: 0, masaN: 0, masa: med.ocupacion, objMasa: 0, mano: 0, ventanas: 0,
+             pega: 1, recto: 0.5, vibF: 0, conc: 0, relleno: 1, relCount: { calco: ctx.trazos.length }, vibra: false,
+             orto: false, travesia: sangra, halo: ctx.halo, cierre: CIERRE_POR, rumbos: [0],
+             modelo: 'calco', calco: base, pedidos: ctx.trazos.length,
+             ojos: med.ojos, ocupacion: med.ocupacion, pasillos: pas.n, largoPas: pas.largo / W, vert, quiebros,
+             largoMax: Ls.length ? Ls[Ls.length - 1] : 0, reparto: lMed > 0 ? Ls[Ls.length - 1] / lMed : 0,
+             sangrados: ctx.trazos.filter(x => x.sangra).length };
+  }
+
   function tramarLibre(rng, fw, fh, tipo, params) {
     const t = TIPOS[tipo], lb = t.libre, ej = t.ejes || {};
     const S = min(fw, fh);
@@ -2983,9 +3167,10 @@
       const N = params.trazos ? params.trazos : r2.int(t.n[0], t.n[1]);
       // EL MODELO: la retícula es la de los grabados y la de producción; el de
       // trazos sueltos se queda en el laboratorio para comparar.
-      const modelo = params.modelo || 'libre';
+      const modelo = params.modelo || 'calco';
       const r3 = new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0);
-      const c = modelo === 'libre' ? tramarLibre(r3, fw, fh, tipo, params)
+      const c = modelo === 'calco' ? tramarCalco(r3, fw, fh, tipo, params)
+              : modelo === 'libre' ? tramarLibre(r3, fw, fh, tipo, params)
               : modelo === 'reja' ? tramarReja(r3, fw, fh, tipo, params)
               : tramar(r3, fw, fh, tipo, params);
       const f = falta(c, t, c.pedidos != null ? c.pedidos : N);
@@ -3100,6 +3285,8 @@
                     relleno: best.relleno || 1,
                     cruza: best.trazos.map(x => !!x.cruza), CRUCE_MIN,
                     gubia: best.trazos.map(x => x.gubia || 0), fin: best.trazos.map(x => x.fin || null), debajo,
+                    // la anchura propia de cada trazo (el calco las tiene distintas); null = la de la obra
+                    anchos: best.trazos.map(x => x.W || null),
                     cierre: best.cierre, rumbos: best.rumbos,
                     // el halo de ESTA obra. Lo mira `canal.js`: la regla vieja -ningun
                     // par por debajo de D- vale donde NO hay halo, y donde lo hay no,
