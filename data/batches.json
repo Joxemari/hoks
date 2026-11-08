@@ -239,6 +239,46 @@
         "palSel": "auto",
         "palName": "Play",
         "addedAt": 1794158483747
+      },
+      {
+        "work": "krrtk",
+        "seed": 1318115831,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Splash",
+        "addedAt": 1794158488215
+      },
+      {
+        "work": "krrtk",
+        "seed": 1944743140,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Marble",
+        "addedAt": 1794158489692
       }
     ]
   },
