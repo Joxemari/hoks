@@ -2837,6 +2837,182 @@ esquina aparece a veces una esquirla blanca (el corte del halo sobre una punta);
 la travesía recorta trozos finos en el borde al pasar de vertical a cuadrado; y
 las variaciones son todavía reconocibles como su original con pocas mutaciones.
 
+## Duodécima vuelta: el margen se homogeneiza
+
+El autor, sobre las hojas del calco: *«cuando trazos de Chillida se paralelizan,
+me da igual si es la 1, 2 o 3, el margen entre trazos se homogeneiza prácticamente
+en todo el cuadro. En tu caso hay distancias grandes y cortas»*. Y la regla que
+propuso: el trazo es un conjunto de puntos, muchos, y cada punto está paralelizado
+o no según la distancia a los trazos de alrededor.
+
+Es `paralelizar()`, y corre después de componer en los modelos calco y libre: cada
+trazo se muestrea a un cuarto de anchura; de cada muestra se busca el tramo de otro
+trazo que corre casi paralelo (menos de 30°) más cercano, y si está a menos de una
+anchura por encima del canal (`CAPTURA`), la muestra se lleva exactamente al canal
+—a `(Wi + Wj)/2 + g` de eje a eje—; si no, queda libre. Los cabos que se encuentran
+en ángulo no se tocan: la regla es de lo que corre junto, no de lo que se apoya.
+
+Medido sobre 24 obras por tipo, con la distancia de cada muestra a su vecino
+paralelo en unidades de su canal:
+
+| | antes (p50 / p75) | después (p50 / p75) | hueco intermedio antes → después |
+|---|---|---|---|
+| bloque | 1,19 / 1,99 | 1,03 / 1,42 | 13,3 % → 7,9 % |
+| recinto | 1,10 / 1,92 | 1,02 / 2,03 | 5,5 % → 2,7 % |
+| travesía | 1,00 / 1,10 | 1,01 / 1,09 | 3,8 % → 3,2 % |
+
+(«Hueco intermedio»: muestras a más de 1,3 canales pero a menos de un canal más
+0,8 anchuras del vecino, o sea el blanco que no es ni pelo ni aire.)
+
+Y la trampa, que costó una hoja entera: **el trazo se mueve como un cuerpo, no
+punto a punto.** La primera versión llevaba cada muestra a su vecino por su
+cuenta; dos muestras seguidas veían dos vecinos distintos, el eje salía como un
+rosario y el campo pintaba esquirlas por toda la obra. Ahora el desplazamiento se
+calcula por muestra, se descartan las rachas capturadas de menos de una anchura y
+media, se suaviza a lo largo del eje con una ventana de tres anchuras, se limita a
+0,3 anchuras por pasada y los cabos heredan el de su primer punto interior. Cuatro
+pasadas. En bloque, donde los trazos son cortos y van rodeados, el borde sale aún
+algo dentado en las zonas densas: queda.
+
+## Decimotercera vuelta: progresivo, y hasta cubrir un porcentaje
+
+El autor, sobre cómo lo haría Chillida: *«dibuja un trazo primero, y ese mismo ya
+influye al resto en proporciones, direcciones, tamaño, paralelización»*, y
+*«hacerlo progresivo: dibujar un trazo y el siguiente influenciado por el mismo, y
+con eso se va completando hasta rellenar un % variable del canvas»*.
+
+El modelo libre pasa a eso, con dos cambios y nada más:
+
+- **El trazo nuevo nace del anterior**, siete de cada diez veces (`padre()`), no
+  de uno cualquiera: lo acompaña a un canal exacto, o arranca a un pelo de él,
+  paralelo o perpendicular. El primero decide la anchura, los rumbos y la escala,
+  y la obra crece como una cadena.
+- **La obra se detiene por cobertura**, no por cuenta de trazos: cada tipo declara
+  un intervalo de tinta sobre el lienzo (`cobertura`: bloque 22–42 %, haz 15–32 %,
+  recinto 7–14 %) y se añaden trazos hasta llegar; la zona sale de ahí (la masa de
+  la familia tiene en torno a la mitad de tinta, así que su lado es la raíz del
+  doble). La travesía, que va a sangre, sigue siendo 3–5 trazos que cruzan el
+  pliego: ahí la cobertura la decide el formato.
+
+La paralelización de la vuelta anterior corre después y es la que deja el margen
+homogéneo en todo el cuadro. Mirado en hoja: bloque y haz ya se leen como de la
+familia sin calco detrás; el recinto sale pequeño y a palos rectos (los
+acompañantes del marco), y la travesía deja algún tocón. El calco sigue siendo el
+modelo de producción; el libre es el que puede crecer sin deber nada a tres obras.
+
+## Decimocuarta vuelta: el pintor de halo
+
+El autor, sobre las hojas: «mala pinta, ¿qué nos falta?». Lo primero de la lista
+era el pintor: el campo de distancia pinta el pelo exacto, pero su geometría de
+ingletes y cortes dejaba esquirlas y dientes en cada unión complicada, y llevábamos
+tres vueltas peleando con él en vez de con el dibujo.
+
+`pintarHalo` es el mismo principio del halo con el lienzo nativo: sobre una capa
+transparente, cada trazo en orden primero **borra** un halo de su anchura más dos
+pelos (`destination-out`) y luego pinta su banda. Donde pasa por encima deja el pelo
+exacto; donde dos corren a un canal el blanco mide g; donde se funden, se funden.
+`etiquetas()` lo reproduce pintando cada trazo de su color, así que `pelo.js` mide
+lo publicado. Es el pintor de producción; el campo queda en el harness para comparar.
+
+Y lo que costó que la banda saliera limpia, por orden:
+
+- **Desplazar el eje por su normal redondea toda esquina exterior con radio de
+  media anchura**, aunque el eje sea vivo: gusanos. La esquina viva la da el
+  inglete, no el eje.
+- **Un solo polígono (ida por un costado, vuelta por el otro) se cruza a sí mismo
+  en cada esquina interior** y la regla nonzero deja un triángulo vacío. Y el
+  inglete escalado se dispara en los vértices agudos.
+- Así que la banda es la construcción del campo hecha con polígonos: **un
+  polígono por tramo** (los dos costados, con la anchura de la gubia en cada
+  muestra; en un tramo recto no se cruza) y **una cuña por vértice** en el lado
+  exterior, con el inglete a tope `MITER` y bisel más allá. Todas las piezas con
+  la misma orientación, en un solo trazado.
+- Dos bordes coincidentes con antialias dejan una costura clara: cada tramo se
+  alarga 0,6 px por los cabos interiores. Pero alargar trapecios *por muestra*
+  dejaba un diente en cada junta donde cambia la pendiente de la gubia (un peine
+  por todo el costado): de ahí un polígono por tramo y no por muestra.
+
+La gubia va a la mitad de amplitud: con el campo el temblor se leía como textura;
+con el borde limpio la misma amplitud se leía como ondulación.
+
+Y lo que cazó `pelo.js`, que es para lo que está:
+
+- **Las etiquetas van en múltiplos de cuatro.** `etiquetas()` pinta cada trazo de
+  su color y lee la capa; con alfa premultiplicada el antialias desplaza el valor
+  en uno o dos y una etiqueta contigua se leía como otro trazo pegado (70 de 75).
+- **El halo se alarga en los cabos** lo mismo que a los lados: un cabo apoyado
+  contra un cuerpo lo tocaba.
+- **La horquilla.** En un vértice con giro de casi 180° la banda hace punta y el
+  halo, que solo ensancha a los lados, no la cubre por delante. Un disco de halo
+  en cada vértice *interior* lo cierra; en los cabos no, que dejaba un mordisco
+  redondo donde el original corta a escuadra.
+- Y el control: `halo0` (el pelo del pintor a 0,4 g) dispara 56 de 60; `pelo0`
+  parcheaba el campo, que ya no se publica, y se retira del bloque.
+
+## Decimoquinta vuelta: la mano en el pintor, y las reglas del autor
+
+Lo que el autor fijó mirando las hojas, y que manda sobre cualquier medida:
+
+- **El grosor es homogéneo** en toda la obra, salvo la variación mínima natural de
+  cada trazo (±4 %). Había metido piezas un tercio más gruesas: fuera.
+- **Las esquinas son vivas, nunca curvas.** Probé achatar la punta del inglete y
+  redondear el eje: fuera las dos cosas. `ESQUINA = 0`.
+- **Nunca un giro en torno a sí mismo**: el trazo no vuelve sobre su propio
+  cuerpo a un pelo. Las úes existen, pero abiertas.
+
+Y la mano, en `pintarHalo`, con su propio `Rng` sembrado aparte (`manoSeed`) para
+que la composición no cambie con ella:
+
+- cada costado de cada pieza ondula despacio y por su cuenta (dos senos, amplitud
+  `MANO_VIB` = 0,03 W, ondas de 2–4 anchuras). El halo lleva además el tope de esa
+  ondulación, porque el vecino ondula por su cuenta y sin eso se metía en el pelo
+  (`pelo.js` cantó 8 de 75).
+- el **pelo fundido** —un tramo de una anchura donde el halo no corta— está escrito
+  (`params.funde`) pero **apagado**: rompe a propósito la regla de la familia y
+  `pelo.js` lo canta, que es lo que tiene que hacer. Si se enciende, la obra no
+  promete la regla.
+- el control `halo0` se reescribió para la firma nueva del pintor.
+
+Fuera del repo sigue el prototipo del **paseo que rellena**: silueta sobre rejilla
+de paso W + g, un paseo que no se cruza y crece por los dos cabos, con espina
+(el primero, largo), úes (dos giros al mismo lado, nunca tres), una ventana grande
+antes de pasear, y la anchura derivada del número de celdas. Es la base del bloque
+que viene; lo siguiente es probar espesores y fijarlos por tipo.
+
+## Decimosexta vuelta: el paseo que rellena, en producción para el bloque y el haz
+
+Lo que el autor fue fijando sobre las hojas, y que el modelo cumple por
+construcción (están en `tramarPaseo`):
+
+- **Progresivo**: un trazo —la espina, larga— y los demás nacen alrededor y
+  crecen por los dos cabos hasta cubrir el porcentaje de lienzo que pide el tipo.
+- **El margen se homogeneiza en todo el cuadro**: es la rejilla de paso W + g.
+- **Grosor homogéneo** (±4 %), **esquinas vivas**, y **nunca un giro de 180°**: el
+  giro que repetiría el lado del anterior no existe como opción; si el otro lado
+  no cabe, el trazo acaba ahí.
+- **Ni rectas exactas ni 90° exactos**: un campo lento común curva todo a la vez
+  (así las vecinas se mueven juntas y el margen no cambia), cada pieza gira ±3° y
+  cada vértice se desvía ±0,08 W; los ángulos quedan en unos 82–98°.
+- **Ramas**: una de cada dos piezas se abre en perpendicular, de la misma tinta,
+  con una rama de 2–4 celdas. Salió del análisis de la referencia 2 (14 piezas,
+  3–4 bifurcaciones, siempre perpendiculares desde el costado de un tronco, rama
+  corta que acaba al aire). El esqueleto automático mete uniones falsas en cada
+  esquina; el recuento se hizo a ojo sobre la máscara numerada.
+- **Interés y asimetría**: un lado del cuerpo es el denso y el otro el abierto; la
+  ventana grande se abre hacia el abierto y ahí se retiran más piezas. Dosificado:
+  una primera versión tiraba la mitad de la obra. El cuerpo es uno (el grupo
+  conexo mayor), salvo que quedarse con él tire más de un tercio.
+- **Se traban**: el corte se elige para que cada pieza lleve un codo.
+
+Lo que se probó y se quitó: una **dirección dominante** (rachas largas en un eje y
+cortas en el otro) daba troncos apilados; el bloque es isótropo. Y el relleno por
+celdas **no es el modelo del recinto**: con trazo fino sale laberinto, no meandros.
+El recinto lleva marco en U y el interior en eses colgadas de la pared de enfrente,
+que es lo que viene. La travesía no es relleno y sigue con su modelo.
+
+Espesores, probados con el mismo motor: 0,10 del lado para el bloque (el que lee
+como la referencia 2), 0,065–0,085 para el haz; a 0,045 ya es laberinto.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

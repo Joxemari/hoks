@@ -112,9 +112,18 @@
         <summary>Afinado · los ejes de la obra</summary>
         <span class="hintline" style="display:block;margin-top:6px">−1 = lo que sortee el tipo. Mover un mando lo fija para todas las seeds.</span>
         <div class="group">
+          <span class="lbl">Pintor</span>
+          <select id="pintor">
+            <option value="halo">Halo · el lienzo nativo, en orden, con inglete (producción)</option>
+            <option value="campo">Campo de distancia · el pintor anterior, para comparar</option>
+          </select>
+        </div>
+        <div class="group">
           <span class="lbl">Modelo</span>
           <select id="modelo">
-            <option value="calco">Calco · variaciones sobre los tres originales (producción)</option>
+            <option value="">Auto · paseo para bloque y haz, calco para recinto y travesía (producción)</option>
+            <option value="paseo">Paseo · un camino que rellena, cortado en piezas con codo y ramas</option>
+            <option value="calco">Calco · variaciones sobre los tres originales</option>
             <option value="libre">Libre · la lógica medida en los calcos: compañías a un pelo, quiebros oblicuos</option>
             <option value="reja">Retícula · bandas a un pelo, giros a escuadra</option>
             <option value="trazos">Trazos sueltos · el primer modelo, para comparar</option>
@@ -305,7 +314,8 @@ function params() {
     masa:       autoF($('ma').value, 100),
     vibAmp:     autoF($('va').value, 100),
     relleno:    autoF($('rl').value, 100),
-    modelo:     $('modelo').value,
+    modelo:     $('modelo').value || null,
+    pintor:     $('pintor').value,
     cruza:      autoF($('cr').value, 100),
     mano:       autoF($('mn').value, 100),
     ventanas:   auto($('ve').value),
@@ -395,6 +405,7 @@ $('seed').onchange = () => { seed = (parseInt($('seed').value, 10) || 0) >>> 0; 
 $('field').onchange = refresh;
 $('tipo').onchange = refresh;
 $('modelo').onchange = refresh;
+$('pintor').onchange = refresh;
 $('vibra').onchange = refresh;
 $('sa').oninput = () => { const v = parseInt($('sa').value, 10);
   $('saV').textContent = v < 0 ? 'auto' : v + '%'; refresh(); };

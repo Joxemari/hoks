@@ -89,8 +89,9 @@ if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = pelo ]; then
   # sino de d2 - d1 >= g en cada pixel; `duro` y `cuna` rompian la banda poligonal,
   # que ya no se publica, asi que no ejercitan nada. El control es `pelo0`: el campo
   # pintado con 0,4 g, y el detector tiene que cantar.
-  # (`reja` parcheaba la reticula, que ya no se publica, y salia 0: fuera.)
-  for r in pelo0; do
+  # (`reja` parcheaba la reticula y `pelo0` el campo de distancia: ninguno se
+  # publica ya y salian 0. El control del pintor de halo es `halo0`.)
+  for r in halo0; do
     build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
     node pelo.js "t_$r.js" 60 760 "" 2>/dev/null | grep -E "^  pelo|por debajo"
