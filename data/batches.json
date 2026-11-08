@@ -164,6 +164,41 @@
         "palSel": "auto",
         "palName": "Troll",
         "addedAt": 1794087325851
+      },
+      {
+        "work": "plls",
+        "seed": 2497519760,
+        "format": "horizontal",
+        "base": 1000,
+        "params": {
+          "field": "sheet",
+          "grainScale": 0,
+          "archetype": "auto",
+          "bg": "solid",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "count": 0,
+          "thickness": 1,
+          "archProbs": {
+            "Scattered": 52,
+            "Dense": 25,
+            "Solo": 20,
+            "Monumental": 3
+          },
+          "finishProbs": {
+            "solid": 34,
+            "blnd": 34,
+            "translucent": 15,
+            "outline": 5,
+            "chess": 3,
+            "gradient": 5,
+            "ribbed": 4
+          }
+        },
+        "palSel": "auto",
+        "palName": "Paint",
+        "addedAt": 1794088701868
       }
     ]
   },

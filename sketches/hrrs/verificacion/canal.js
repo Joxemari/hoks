@@ -50,10 +50,13 @@ function medir({ seed, fmt, params, base }) {
     params: Object.assign({}, params, { grainScale: 0 }),
   });
   const g = res.geo, D = g.D;
+  // la anchura propia de cada trazo, si la obra las tiene distintas (el calco): la
+  // regla entre dos trazos es a (Wi + Wj)/2 + g, no a la mediana de la obra
+  const anchoDe = c => (g.anchos && g.anchos[c]) ? g.anchos[c] : g.W;
   const segs = [];
   g.cintas.forEach((pts, c) => {
     for (let i = 0; i < pts.length - 1; i++)
-      segs.push({ ax: pts[i].x, ay: pts[i].y, bx: pts[i + 1].x, by: pts[i + 1].y, c, i });
+      segs.push({ ax: pts[i].x, ay: pts[i].y, bx: pts[i + 1].x, by: pts[i + 1].y, c, i, W: anchoDe(c) });
   });
 
   const pSeg = (px, py, ax, ay, bx, by) => {
@@ -81,7 +84,8 @@ function medir({ seed, fmt, params, base }) {
       const A = segs[i], B = segs[j];
       if (A.c === B.c && Math.abs(A.i - B.i) <= 1) continue;   // vecinos: comparten vertice
       pares++;
-      const dd = ssd(A, B), u = dd / D;
+      const Wij = (A.W + B.W) / 2, Dij = Wij + g.g;
+      const dd = ssd(A, B), u = dd / Dij;
       // LA REGLA, EN SU FORMA NUEVA. Entre dos ejes a distancia d el blanco mide
       // d - W, asi que:
       //     d >= D    -> queda el pelo entero.          LEGAL
@@ -94,7 +98,7 @@ function medir({ seed, fmt, params, base }) {
       // exactos y un acompanamiento se pone a D exactos, asi que su par sale en
       // 0,999999999 y sin esto el detector marca como defecto justo la figura que la
       // obra existe para producir.
-      if (dd <= g.W * (1 + 1e-6)) {
+      if (dd <= Wij * (1 + 1e-6)) {
         solapes++;                                             // fundidos: legal
       } else if (u < 1 - 1e-6) {
         const a1 = Math.atan2(A.by - A.ay, A.bx - A.ax), a2 = Math.atan2(B.by - B.ay, B.bx - B.ax);
@@ -103,7 +107,7 @@ function medir({ seed, fmt, params, base }) {
         if (ang < (g.CRUCE_MIN || 38) - 1e-6) { malos++; if (!donde) donde = [A.c, A.i, B.c, B.i]; }
         else cruces++;
       }
-      if (u < peor && dd > g.W) peor = u;
+      if (u < peor && dd > Wij) peor = u;
     }
   }
   // ── LA HOLGURA DECLARADA ────────────────────────────────────────────────────

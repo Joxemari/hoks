@@ -85,6 +85,16 @@ elif roto == 'reja':
     assert a in src, 'no encuentro el paso de la retícula'
     src = src.replace(a, "    const g = W * gam, D = W + g, P = W + 0.4 * g;   // ROTO A PROPOSITO")
 
+elif roto == 'junto':
+    # EL MODELO LIBRE, ROTO: la tolerancia de «cabe» es exacta sin halo (1,0·D) y del
+    # 2 % con el. Con 0,85 los acompañantes y los cabos se meten en el canal del
+    # vecino, y `canal.js` (sin-halo, geometría) tiene que cantar. Es el control del
+    # modelo de producción desde la décima vuelta; `reja`, `duro`, `corta` y
+    # `rendija` parchean la retícula y los trazos sueltos, que ya no se publican.
+    a = "    const TOL = ctx.halo > 0 ? 0.98 : 1 - 1e-6;"
+    assert a in src, 'no encuentro la tolerancia del modelo libre'
+    src = src.replace(a, "    const TOL = 0.85;   // ROTO A PROPOSITO")
+
 elif roto == 'pelo0':
     # EL PELO DEL CAMPO, ROTO: el canal visible se fabrica en `pintarCampo` como la
     # franja donde d2 - d1 < g. Si se pinta con 0,4 g, el detector `pelo` tiene que

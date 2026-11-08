@@ -58,9 +58,11 @@ if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = canal ]; then
   # que parchea codigo muerto es la peor clase de control: sale verde y no ha mirado.
   linea "canal · la regla 3 exacta sobre la geometria · $N obras"
   corre canal.js hrrs_test.js "$N" 760 ""
-  # `duro`, `corta` y `rendija` rompen la colocación de trazos sueltos; con la
-  # retícula (producción) no ejercitan nada: su control es `reja`.
-  for r in reja duro corta rendija; do
+  # `duro`, `corta` y `rendija` rompen la colocacion de trazos sueltos y `reja` la
+  # reticula; desde la decima vuelta se publica el modelo LIBRE y esos cuatro
+  # parchean codigo que no corre: salian 0 de 120, verdes sin mirar. El control del
+  # modelo libre es `junto`: la tolerancia de «cabe» bajada a 0,85.
+  for r in junto; do
     build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar, sin-halo):\n' "$r"
     node canal.js "t_$r.js" 120 760 "sin-halo" 2>/dev/null | grep -E "RENDIJA|^  min"
@@ -87,7 +89,8 @@ if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = pelo ]; then
   # sino de d2 - d1 >= g en cada pixel; `duro` y `cuna` rompian la banda poligonal,
   # que ya no se publica, asi que no ejercitan nada. El control es `pelo0`: el campo
   # pintado con 0,4 g, y el detector tiene que cantar.
-  for r in pelo0 reja; do
+  # (`reja` parcheaba la reticula, que ya no se publica, y salia 0: fuera.)
+  for r in pelo0; do
     build "$r" "t_$r.js" || continue
     printf '\n  CONTROL %s (tiene que disparar):\n' "$r"
     node pelo.js "t_$r.js" 60 760 "" 2>/dev/null | grep -E "^  pelo|por debajo"

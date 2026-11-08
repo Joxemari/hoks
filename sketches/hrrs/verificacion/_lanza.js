@@ -39,7 +39,10 @@ const CONFIGS = [
   // CRUCE_MIN, juntoAQuiebro) NO SE EJECUTA NUNCA. O sea que media docena de reglas
   // y su control (`rendija`) llevaban tiempo sin medirse: el control parcheaba codigo
   // muerto y salia identico al sano, byte por byte, sin que nadie se enterara.
-  { n: 'sin-halo',   fmt: 'square',     p: { halo: 0 } },
+  // SIN HALO solo promete el canal el modelo LIBRE (la regla geometrica exacta sobre
+  // los ejes). El calco no la promete -el trazador deja pares a 0,8 D- y por eso
+  // exige halo; aqui se mide la regla donde existe.
+  { n: 'sin-halo',   fmt: 'square',     p: { halo: 0, modelo: 'libre' } },
 ];
 
 function configs(only) {
