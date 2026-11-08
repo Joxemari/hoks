@@ -199,6 +199,26 @@
         "palSel": "auto",
         "palName": "Paint",
         "addedAt": 1794088701868
+      },
+      {
+        "work": "krrtk",
+        "seed": 3552732618,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Play",
+        "addedAt": 1794158460573
       }
     ]
   },
