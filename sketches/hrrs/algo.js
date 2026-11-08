@@ -3051,14 +3051,50 @@
     { let A = 0; for (let i = 0; i < nR; i++) { const a = sil[i], b = sil[(i + 1) % nR]; A += a.x * b.y - b.x * a.y; } A = abs(A) / 2;
       // si en la silueta caben menos celdas de las pedidas, la anchura baja hasta que quepan
       const Pmax = Math.sqrt(A * 0.92 / nCel); if (P > Pmax) { P = Pmax; W = P / (1 + gam); g = W * gam; } }
+    // EL MARGEN DEL PLIEGO (el autor): a veces es SALIDA —el trazo sigue y el borde lo
+    // corta— y a veces BARRERA —el trazo llega hasta él y gira en línea con el canto—.
+    // No siempre, pero que exista. Sobre la rejilla: la silueta se empuja hasta
+    // pasarse de uno a tres bordes; en un borde de salida las celdas siguen un paso
+    // más allá del canto, y en uno barrera acaban en la fila a una anchura del canto,
+    // así que el paseo, sin celda delante, gira y corre por esa fila.
+    const pBorde = params.borde != null ? params.borde : (O.borde != null ? O.borde : 0.45);
+    const bordes = {};   // 'arriba' | 'abajo' | 'izq' | 'der' → 'sale' | 'barrera'
+    const mB0 = W * 1.15;
+    if (rng.bool(pBorde)) {
+      const lados = ['arriba', 'der', 'abajo', 'izq'], nB = rng.bool(0.65) ? 1 : 2;
+      for (let k = 0; k < nB; k++) { const l = lados.splice(rng.int(0, lados.length - 1), 1)[0]; bordes[l] = rng.bool(0.5) ? 'sale' : 'barrera'; }
+      // dos salidas a la vez empujan el cuerpo a una esquina: la segunda es barrera
+      const ks = Object.keys(bordes); if (ks.length === 2 && bordes[ks[0]] === 'sale' && bordes[ks[1]] === 'sale') bordes[ks[1]] = 'barrera';
+      // empujar la silueta hasta pasarse de esos bordes
+      let x0s = 1e9, y0s = 1e9, x1s = -1e9, y1s = -1e9; for (const q of sil) { x0s = min(x0s, q.x); y0s = min(y0s, q.y); x1s = max(x1s, q.x); y1s = max(y1s, q.y); }
+      // hasta dónde llega la silueta por ese borde: una SALIDA se pasa del canto (y la
+      // tinta se corta); una BARRERA llega justo a la fila barrera, no más allá, porque
+      // lo que se pasa se pierde y el cuerpo se quedaba en la mitad de celdas
+      const mas = m => m === 'sale' ? P * rng.range(0.9, 1.7) : -(mB0 - 0.4 * P);
+      let dx = 0, dy = 0;
+      if (bordes.izq) dx = -(x0s + mas(bordes.izq)); if (bordes.der) dx = fw - x1s + mas(bordes.der); if (bordes.arriba) dy = -(y0s + mas(bordes.arriba)); if (bordes.abajo) dy = fh - y1s + mas(bordes.abajo);
+      if (bordes.izq && bordes.der) { const a = -mas(bordes.izq), b = fw + mas(bordes.der), esc = (b - a) / (x1s - x0s); for (const q of sil) q.x = a + (q.x - x0s) * esc; dx = 0; }
+      if (bordes.arriba && bordes.abajo) { const a = -mas(bordes.arriba), b = fh + mas(bordes.abajo), esc = (b - a) / (y1s - y0s); for (const q of sil) q.y = a + (q.y - y0s) * esc; dy = 0; }
+      for (const q of sil) { q.x += dx; q.y += dy; }
+    }
     const inside = (x, y) => { let c = false; for (let i = 0, j = sil.length - 1; i < sil.length; j = i++) { const a = sil[i], b = sil[j]; if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) c = !c; } return c; };
-    // 2. la rejilla, girada unos grados: las celdas cuyo centro cae dentro
-    const th = rng.range(-8, 8) * RAD, ux = Math.cos(th), uy = Math.sin(th), vx = -uy, vy = ux;
+    // y lo que cada borde permite al centro de una celda
+    const mB = mB0, mM = MARGEN * S + W / 2;
+    const cabeBorde = (x, y) => {
+      const lim = (modo, dist, fueraDist) => modo === 'sale' ? fueraDist > -1.2 * P : modo === 'barrera' ? dist >= mB : dist >= mM;
+      return lim(bordes.izq, x, x) && lim(bordes.der, fw - x, fw - x) && lim(bordes.arriba, y, y) && lim(bordes.abajo, fh - y, fh - y); };
+    // 2. la rejilla, girada unos grados (menos si hay borde: la fila barrera tiene que leerse paralela al canto)
+    const th = rng.range(-1, 1) * (Object.keys(bordes).length ? 2.5 : 8) * RAD, ux = Math.cos(th), uy = Math.sin(th), vx = -uy, vy = ux;
     const ox = rng.range(0, P), oy = rng.range(0, P);
     const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
     const N = Math.ceil(max(fw, fh) * 1.5 / P), cells = new Map(), key = (i, j) => i + ',' + j;
     const centro = (i, j) => ({ x: cx + ox + ux * (i * P) + vx * (j * P), y: cy + oy + uy * (i * P) + vy * (j * P) });
-    for (let i = -N; i <= N; i++) for (let j = -N; j <= N; j++) { const c = centro(i, j); if (inside(c.x, c.y)) cells.set(key(i, j), { i, j, used: false }); }
+    let total = 0, enPliego = 0;
+    for (let i = -N; i <= N; i++) for (let j = -N; j <= N; j++) { const c = centro(i, j); if (!inside(c.x, c.y)) continue; total++; if (cabeBorde(c.x, c.y)) { cells.set(key(i, j), { i, j, used: false }); if (c.x >= 0 && c.y >= 0 && c.x <= fw && c.y <= fh) enPliego++; } }
+    if (Object.keys(bordes).length && enPliego < total * 0.7) {
+      // el borde se comía más de un tercio del cuerpo (la silueta cayó en la esquina): sin borde
+      for (const k of Object.keys(bordes)) delete bordes[k];
+      cells.clear(); for (let i = -N; i <= N; i++) for (let j = -N; j <= N; j++) { const c = centro(i, j); if (inside(c.x, c.y) && cabeBorde(c.x, c.y)) cells.set(key(i, j), { i, j, used: false }); } }
     const vacio = () => ({ trazos: [], W, g, D: P, cerco: 0, patas: 0, masaN: 0, masa: 0, objMasa: 0, mano: 0, ventanas: 0, pega: 1, recto, vibF: 0, conc: 0, relleno: 1,
       relCount: { paseo: 0 }, vibra: false, orto: true, travesia: false, halo: g, cierre: CIERRE_POR, rumbos: [0], modelo: 'paseo', pedidos: 0, ojos: [], ocupacion: 0,
       pasillos: 0, largoPas: 0, vert: 0, quiebros: 0, largoMax: 0, reparto: 0, sangrados: 0 });
@@ -3177,7 +3213,7 @@
     return { trazos: ctx.trazos, W, g, D: P, cerco: 0, patas: 0, masaN: 0, masa: med.ocupacion, objMasa: 0, mano: 1, ventanas: nV,
              pega: 1, recto, vibF: 0, conc: 0, relleno: 1, relCount: { paseo: ctx.trazos.length, ramas: ctx.trazos.filter(t => t.ramas.length).length }, vibra: false,
              orto: true, travesia: false, halo: ctx.halo, cierre: CIERRE_POR, rumbos: [th / RAD],
-             modelo: 'paseo', pedidos: ctx.trazos.length, celdas: cells.size, cobertura: cob, dbg,
+             modelo: 'paseo', pedidos: ctx.trazos.length, celdas: cells.size, cobertura: cob, dbg, bordes,
              ojos: med.ojos, ocupacion: med.ocupacion, pasillos: pas.n, largoPas: pas.largo / W, vert, quiebros,
              largoMax: Ls.length ? Ls[Ls.length - 1] : 0, reparto: lMed > 0 ? Ls[Ls.length - 1] / lMed : 0,
              sangrados: ctx.trazos.filter(x => x.sangra).length };
@@ -3780,7 +3816,7 @@
                     gubia: best.trazos.map(x => x.gubia || 0), fin: best.trazos.map(x => x.fin || null), debajo,
                     // la anchura propia de cada trazo (el calco las tiene distintas); null = la de la obra
                     anchos: best.trazos.map(x => x.W || null),
-                    pintor, esquina, manoSeed, manoAmp, funde, dbg: best.dbg || null,
+                    pintor, esquina, manoSeed, manoAmp, funde, dbg: best.dbg || null, celdas: best.celdas, bordes: best.bordes || null,
                     ramas: best.trazos.map(x => x.ramas || null),
                     cierre: best.cierre, rumbos: best.rumbos,
                     // el halo de ESTA obra. Lo mira `canal.js`: la regla vieja -ningun
