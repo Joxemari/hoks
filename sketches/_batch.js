@@ -39,6 +39,11 @@
   color:var(--ink,#111); border-radius:2px; padding:6px 8px; cursor:pointer; }
 .hb-btn:hover { background:var(--surface,#f7f7f7); }
 .hb-btn[disabled] { opacity:0.4; cursor:default; }
+.hb-exprow select { flex:0 0 58px; min-width:0; }
+.hb-exprow .hb-btn { flex:1 1 0; min-width:0; padding:6px 3px; font-size:9px; letter-spacing:0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hb-pubbtn { width:100%; padding:8px; margin-top:4px; border-color:var(--ink,#111); }
+.hb-pubbtn:not([disabled]):hover { background:var(--ink,#111); color:#fff; }
+.hb-export { display:flex; flex-direction:column; gap:6px; }
 .hb-take { width:100%; padding:8px; background:var(--ink,#111); color:#fff; border-color:var(--ink,#111); }
 .hb-take:hover { background:var(--ink,#111); opacity:0.78; }
 .hb-take[disabled] { background:transparent; color:var(--ink3,#bbb); border-color:var(--border,#e8e8e8); opacity:1; }
@@ -53,12 +58,16 @@
 .hb-item.pub canvas { outline:2px solid var(--ink,#111); }
 .hb-empty { font-size:9px; color:var(--ink3,#bbb); letter-spacing:0.06em; padding:14px 0; }
 .hb-note { font-size:9px; color:var(--ink3,#bbb); letter-spacing:0.04em; }
-/* el "+" que aparece sobre cada miniatura de la hoja de contactos */
-.hb-add { position:absolute; top:5px; right:5px; width:22px; height:22px; border-radius:2px;
-  border:none; background:rgba(255,255,255,0.9); color:var(--ink,#111); font-size:14px; line-height:22px;
-  text-align:center; cursor:pointer; opacity:0; transition:opacity 0.12s; font-family:inherit; }
-figure:hover .hb-add, .hb-add:focus { opacity:1; }
-.hb-add.done { background:var(--ink,#111); color:#fff; opacity:1; }
+/* apartar desde el grid: un botón con texto en el pie de cada pieza, junto a
+   su seed. Antes era un "+" blanco de 22 px que solo salía al pasar el ratón,
+   pegado a la esquina de la obra: no se veía ni se entendía. */
+.hb-cap { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.hb-add { flex:0 0 auto; width:auto; font-family:inherit; font-size:9px; font-weight:700;
+  letter-spacing:0.1em; text-transform:uppercase; padding:3px 8px; border-radius:2px; cursor:pointer;
+  border:1px solid var(--border,#e7e5df); background:transparent; color:var(--ink3,#8a8983); }
+figure:hover .hb-add, .hb-add:focus-visible { border-color:var(--ink,#111); color:var(--ink,#111); }
+.hb-add:hover { opacity:1; background:var(--paper,#fff); }
+.hb-add.done, .hb-add.done:hover { background:var(--ink,#111); border-color:var(--ink,#111); color:#fff; }
 /* el menú del botón derecho sobre una miniatura */
 .hb-menu { position:fixed; z-index:400; background:var(--paper,#fff); border:1px solid var(--border-dark,#d0d0d0);
   border-radius:2px; box-shadow:0 3px 14px rgba(0,0,0,0.13); padding:3px; min-width:150px; }
@@ -241,18 +250,23 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       // tecla `a`: el + solo existía sobre las miniaturas de la hoja de
       // contactos, y encima al pasar el ratón. El botón es la acción principal
       // del panel, así que va en el panel.
-      `<button class="hb-btn hb-take" id="hb-add">+ Añadir esta pieza <span style="opacity:.5">(a)</span></button>` +
+      `<button class="hb-btn hb-take" id="hb-add">+ Al lote<kbd>a</kbd></button>` +
       `<div class="hb-strip" id="hb-strip"></div>` +
-      `<div class="hb-row"><select id="hb-res">` +
-      global.HOKS.SHEET_IDS.map(id => `<option value="${id}"${id === global.HOKS.DEFAULT_SHEET ? ' selected' : ''}>${id} · 300 dpi</option>`).join('') +
-      `</select><button class="hb-btn" id="hb-dl">↓ PNG</button>` +
+      `<div class="hb-row hb-exprow"><select id="hb-res">` +
+      global.HOKS.SHEET_IDS.map(id => `<option value="${id}"${id === global.HOKS.DEFAULT_SHEET ? ' selected' : ''} title="${id} a 300 dpi">${id}</option>`).join('') +
+      `</select><button class="hb-btn" id="hb-dl" title="El archivo de impresión: cada pieza re-renderizada al pliego elegido, a 300 dpi">↓ Impresión</button>` +
       // La obra y su cartela se imprimen juntas, así que se descargan juntas y
       // al mismo pliego: el selector de arriba manda sobre las dos.
-      `<button class="hb-btn" id="hb-cart" title="Una cartela A5 por pieza">↓ A5</button>` +
-      `<button class="hb-btn" id="hb-pub" title="Publicar a la galería">▲</button></div>` +
+      `<button class="hb-btn" id="hb-cart" title="Una cartela A5 por pieza">↓ Cartelas</button></div>` +
+      // Publicar escribe en main, que es la web: es la acción más seria del
+      // laboratorio y era un triángulo sin texto. Va sola y dice lo que hace.
+      `<button class="hb-btn hb-pubbtn" id="hb-pub">▲ Publicar en la web</button>` +
       `<span class="hb-note" id="hb-note"></span>`;
 
     const $ = id => host.querySelector('#' + id);
+    // El botón de añadir se guarda por referencia: el laboratorio lo saca del
+    // panel y lo pone en la barra de encima de la obra, donde se mira.
+    const addBtn = $('hb-add');
     const openBatch = () => batches.find(b => b.id === openId && b.status !== 'closed') || null;
 
     async function syncNow(msg) {
@@ -297,11 +311,21 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     }
     function renderStrip() {
       const b = openBatch(), strip = $('hb-strip');
-      $('hb-add').disabled = !b;
-      $('hb-add').title = b ? 'Añade la pieza en pantalla al lote «' + b.name + '»' : 'Elige o crea un lote primero';
-      if (!b) { strip.innerHTML = '<span class="hb-empty">sin lote abierto</span>'; $('hb-dl').disabled = $('hb-cart').disabled = $('hb-pub').disabled = true; return; }
-      $('hb-dl').disabled = $('hb-cart').disabled = $('hb-pub').disabled = !b.items.length;
-      if (!b.items.length) { strip.innerHTML = '<span class="hb-empty">vacío · pulsa <b>a</b> o el + de la hoja de contactos</span>'; return; }
+      // Sin lote no se deshabilita: añadir sin lote abre uno (pide nombre) con
+      // la pieza ya dentro, que es lo que hace también la tecla a.
+      addBtn.title = b ? 'Añade la pieza en pantalla al lote «' + b.name + '» (a)' : 'Crea un lote con esta pieza (a)';
+      // Sin piezas no hay nada que sacar ni publicar: se esconde, en vez de
+      // enseñar cuatro botones apagados.
+      const exportRow = $('hb-res').parentNode, pub = $('hb-pub');
+      const showExport = on => { exportRow.style.display = on ? '' : 'none'; pub.style.display = on ? '' : 'none'; };
+      if (!b) { strip.innerHTML = '<span class="hb-empty">sin lote abierto · «+ al lote» crea uno con la pieza dentro</span>'; showExport(false); return; }
+      if (!b.items.length) { strip.innerHTML = '<span class="hb-empty">vacío · «+ al lote» sobre la obra, o la tecla <b>a</b></span>'; showExport(false); return; }
+      showExport(true);
+      $('hb-dl').disabled = $('hb-cart').disabled = false;
+      const faltan = b.items.filter(it => !it.published).length;
+      pub.disabled = !faltan;
+      pub.textContent = faltan ? `▲ Publicar en la web · ${faltan}` : '✓ Todo publicado';
+      pub.title = faltan ? `Escribe ${faltan} pieza${faltan > 1 ? 's' : ''} en main: salen en hoks.design` : 'Todas las piezas de este lote ya están en la web';
       strip.innerHTML = '';
       if (pendingAlgo(b.items)) ensureWorks(b.items).then(() => renderStrip());
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
@@ -398,13 +422,24 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
     // el gesto es el mismo en todos, así que el código también.
     function attach(fig, seed) {
       const plus = document.createElement('button');
-      plus.className = 'hb-add'; plus.textContent = '+';
+      plus.type = 'button';
+      plus.className = 'hb-add'; plus.textContent = '+ lote';
       plus.title = 'Añadir al lote — botón derecho para elegir a cuál';
-      const done = () => { plus.classList.add('done'); plus.textContent = '✓'; };
-      plus.onclick = ev => { ev.stopPropagation(); if (add(seed)) done(); };
+      plus.addEventListener('mousedown', e => e.preventDefault());
+      const done = () => { const b = openBatch(); plus.classList.add('done'); plus.textContent = '✓ ' + (b ? b.name : 'en lote'); };
+      // La pieza ya apartada se ve apartada: volver al grid no la "olvida".
+      const b0 = openBatch();
+      if (b0 && b0.items.some(it => it.work === opts.work && (it.seed >>> 0) === (seed >>> 0))) done();
+      plus.onclick = ev => { ev.stopPropagation(); if (plus.classList.contains('done')) return; if (add(seed)) done(); };
       plus.oncontextmenu = ev => { ev.preventDefault(); ev.stopPropagation(); openMenu(ev, seed, done); };
       fig.oncontextmenu = ev => { ev.preventDefault(); openMenu(ev, seed, done); };
-      fig.appendChild(plus);
+      // Va en el pie, junto a la seed; si la miniatura no tiene pie, se le pone.
+      let cap = fig.querySelector('figcaption');
+      if (!cap) { cap = document.createElement('figcaption'); fig.appendChild(cap); }
+      const wrap = document.createElement('div'); wrap.className = 'hb-cap';
+      const label = document.createElement('span');
+      while (cap.firstChild) label.appendChild(cap.firstChild);
+      wrap.appendChild(label); wrap.appendChild(plus); cap.appendChild(wrap);
       return plus;
     }
     // Exportar: se regenera desde la receta, así que la resolución la eliges ahora
@@ -470,7 +505,11 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       const b = openBatch(); if (!b || !b.items.length) return;
       const pending = b.items.filter(it => !it.published);
       if (!pending.length) { toast('Todo el lote ya está publicado'); return; }
-      if (!confirm(`¿Publicar ${pending.length} pieza(s) a la galería?`)) return;
+      const fams = [...new Set(pending.map(it => it.work.toUpperCase()))].join(', ');
+      const ya = b.items.length - pending.length;
+      if (!confirm(`¿Publicar en la web ${pending.length} pieza${pending.length > 1 ? 's' : ''} de «${b.name}» (${fams})?\n\n` +
+        `Se escribe directamente en main: salen en hoks.design en cuanto GitHub lo sirva, y quedan en la galería de su familia.` +
+        (ya ? `\n${ya} ya estaba${ya > 1 ? 'n' : ''} publicada${ya > 1 ? 's' : ''} y no se repite${ya > 1 ? 'n' : ''}.` : ''))) return;
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
       const sin = await ensureWorks(pending);
       if (sin.length) { note('⚠ no carga el algoritmo de ' + [...new Set(sin.map(it => it.work))].join(', ') + ': no se publica nada'); return; }
@@ -564,13 +603,15 @@ figure:hover .hb-add, .hb-add:focus { opacity:1; }
       if (openId) localStorage.setItem(OPEN_KEY, String(openId)); else localStorage.removeItem(OPEN_KEY);
       render();
     };
-    $('hb-new').onclick = create;
+    // Sin flecha, onclick le pasaba el evento como seed: cada lote nuevo nacía
+    // con una pieza de seed 0 dentro (el evento >>> 0 es 0).
+    $('hb-new').onclick = () => create();
     $('hb-dl').onclick = download;
     $('hb-cart').onclick = downloadCartelas;
-    $('hb-add').onclick = () => {
+    addBtn.onclick = () => {
       if (!opts.getSeed) { toast('El harness no expone la seed actual'); return; }
-      if (add(opts.getSeed())) { $('hb-add').textContent = '✓ En el lote';
-        setTimeout(() => { $('hb-add').innerHTML = '+ Añadir esta pieza <span style="opacity:.5">(a)</span>'; }, 1100); }
+      if (add(opts.getSeed())) { addBtn.textContent = '✓ En el lote';
+        setTimeout(() => { addBtn.innerHTML = '+ Al lote<kbd>a</kbd>'; }, 1100); }
     };
 
     // Avisa si te vas con cambios sin commitear.
