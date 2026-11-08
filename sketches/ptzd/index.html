@@ -121,7 +121,7 @@
     </div>
 <div class="group">
       <span class="lbl">Deriva · <span id="derivaV">auto</span></span>
-      <input type="range" id="deriva" min="0" max="120" step="5" value="-1">
+      <input type="range" id="deriva" min="-5" max="120" step="5" value="-5">
       <span class="hintline">cuánto se aparta cada pieza, en centésimas de gubia</span>
     </div>
 <div class="group">
@@ -195,8 +195,8 @@
 <script src="../../palette-picker.js?v=6"></script>
 <script src="../../gh-store.js"></script>
 <script src="../../usage.js?v=7"></script>
-<script src="../_lab.js?v=8"></script>
-<script src="../_batch.js?v=9"></script>
+<script src="../_lab.js?v=9"></script>
+<script src="../_batch.js?v=10"></script>
 <script src="../_cartela.js?v=7"></script>
 <script src="../_engine.js?v=7"></script>
 <script src="./algo.js?v=6"></script>
@@ -343,7 +343,7 @@ $('tipo').onchange  = refresh;
 $('gubia').onchange = refresh;
 $('cortes').oninput = () => { $('cortesV').textContent = $('cortes').value === '0' ? 'auto' : $('cortes').value; refresh(); };
 $('saj').oninput    = () => { $('sajV').textContent    = $('saj').value === '-1'   ? 'auto' : $('saj').value;    refresh(); };
-$('deriva').oninput = () => { $('derivaV').textContent = $('deriva').value === '-1' ? 'auto' : ($('deriva').value / 100).toFixed(2); refresh(); };
+$('deriva').oninput = () => { $('derivaV').textContent = parseInt($('deriva').value, 10) < 0 ? 'auto' : ($('deriva').value / 100).toFixed(2); refresh(); };
 $('tintas').onchange = refresh;
 $('veta').oninput   = () => { $('vetaV').textContent   = $('veta').value === '-5'  ? 'auto' : ($('veta').value / 100).toFixed(2); refresh(); };
 $('faltan').oninput = () => { $('faltanV').textContent = $('faltan').value === '-1' ? 'auto' : $('faltan').value; refresh(); };

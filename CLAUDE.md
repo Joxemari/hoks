@@ -146,6 +146,18 @@ gradient, grano, paletas) + `_lab.js` (selector de obra y de paleta) +
 una carpeta por obra graduada con `algo.js` (el algoritmo, fuente única) y un
 harness (scrub de seeds, hoja de contactos).
 
+**El panel y el escenario.** La columna es para decidir *qué* se genera (obra,
+tirada, afinado), el lote y sacar. Lo que se hace con los ojos en la obra
+—pieza / grid / lote, la seed con ‹ › y nueva, y **+ Al lote**— va en una barra
+fija encima de ella, y los rasgos debajo de la pieza. Lo monta
+`HOKSLAB.mountStage()` al cargar, sobre los ids que comparten los diez
+harnesses, sin tocar su HTML: si añades un harness, con esos ids basta. Cada
+mando del afinado lleva un chip **auto**: *auto* es lo que hace la obra si
+nadie la toca, sea un sorteo por seed o la constante de producción (el umbral
+de KRRTK); el valor inicial del mando en el HTML **es** su auto, así que un
+mando nuevo tiene que arrancar ahí. Plegado, el título del afinado dice
+cuántos hay fijados. En el grid se aparta desde el pie de cada pieza.
+
 **`_firma.js` — dónde firma la mano.** La firma **no está en el archivo**: va a
 mano sobre la tinta, porque el fondo va a sangre y no hay margen blanco donde
 firmar (`impresion.html` §03). Una firma que sale del código no acredita nada

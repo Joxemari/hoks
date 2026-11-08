@@ -495,13 +495,213 @@
     save.parentNode.insertBefore(b, save.nextSibling);
   }
 
+  // ── El escenario: mirar va junto a la obra, ajustar va en la columna ───────
+  // La columna mezclaba dos trabajos: decidir QUÉ se genera (obra, tirada,
+  // afinado) y MIRAR lo generado (seed, pieza / grid / lote, apartar). Lo
+  // segundo se hace con los ojos en la obra, así que va encima de ella, en una
+  // barra fija. La columna se queda con lo que cambia la imagen y con sacar.
+  // Se monta sobre los ids que comparten los diez harnesses —no reescribe su
+  // HTML ni su lógica—: mueve los elementos con sus manejadores puestos.
+  const STAGE_CSS = `
+.lab-bar { position:sticky; top:-1.5rem; z-index:20; align-self:stretch; display:flex; flex-wrap:wrap;
+  align-items:center; gap:8px 14px; margin:-1.5rem -1.5rem 0; padding:10px 1.5rem;
+  background:var(--surface,#f3f1ec); border-bottom:1px solid var(--border,#e7e5df); }
+.lab-bar button { width:auto; }
+.lab-seg { display:inline-flex; border:1px solid var(--ink,#0a0a0a); border-radius:2px; overflow:hidden; }
+.lab-seg button { border:0; border-radius:0; background:transparent; color:var(--ink,#0a0a0a);
+  padding:7px 12px; font-size:10px; letter-spacing:0.1em; }
+.lab-seg button + button { border-left:1px solid var(--ink,#0a0a0a); }
+.lab-seg button.on { background:var(--ink,#0a0a0a); color:#fff; }
+.lab-seg button:hover { opacity:1; background:var(--paper,#fbfbfa); }
+.lab-seg button.on:hover { background:var(--ink,#0a0a0a); }
+.lab-seg kbd, .lab-bar kbd { font-family:inherit; font-weight:400; opacity:0.5; margin-left:4px; }
+.lab-seed { display:inline-flex; align-items:center; gap:4px; }
+.lab-seed button { background:transparent; color:var(--ink,#0a0a0a); border:1px solid var(--border,#e7e5df);
+  padding:6px 9px; }
+.lab-seed button:hover { border-color:var(--ink,#0a0a0a); opacity:1; }
+.lab-seed input#seed { width:15ch; padding:6px 7px; font-size:12px; border:1px solid var(--border,#e7e5df);
+  background:var(--paper,#fbfbfa); border-radius:2px; }
+.lab-bar .lab-push { margin-left:auto; }
+.lab-bar #hb-add { width:auto; padding:7px 14px; }
+.lab-bar #volver { padding:6px 10px; }
+/* La barra arriba del todo y la obra centrada en lo que queda: el escenario
+   centraba el bloque entero y la barra flotaba a media altura. */
+.stage { justify-content:flex-start !important; }
+.stage > #single { margin-top:auto; max-height:calc(100vh - 190px); max-width:min(100%, calc(100vh - 190px)); }
+.stage > #status { margin-bottom:auto; }
+.lab-rasgos { align-self:stretch; max-width:980px; margin:0 auto; width:100%; }
+.lab-rasgos .traits { flex-direction:row; flex-wrap:wrap; justify-content:center; gap:4px 16px; }
+.lab-rasgos .traits .t { gap:6px; justify-content:flex-start; }
+.lab-rasgos .traits .t[style] { margin-top:0 !important; border-top:0 !important; padding-top:0 !important; }
+.lab-auto { width:auto; margin-left:auto; flex:0 0 auto; font-size:8px; letter-spacing:0.12em; padding:2px 6px;
+  border:1px solid var(--border,#e7e5df); background:transparent; color:var(--ink3,#8a8983); border-radius:2px; }
+.lab-auto.on { background:var(--ink,#0a0a0a); border-color:var(--ink,#0a0a0a); color:#fff; cursor:default; }
+.lab-auto:not(.on):hover { border-color:var(--ink,#0a0a0a); color:var(--ink,#0a0a0a); opacity:1; }
+.lab-lbl-row { display:flex; align-items:center; gap:6px; }
+.lab-reset { margin-top:8px; }
+details.afinado summary .lab-fixed { color:var(--ink,#0a0a0a); }
+`;
+
+  function stageButton(html, title) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.innerHTML = html; if (title) b.title = title;
+    // Sin foco: el espacio y las flechas son del laboratorio. Un botón enfocado
+    // se "pulsaría" otra vez con el espacio que pide una seed nueva.
+    b.addEventListener('mousedown', e => e.preventDefault());
+    return b;
+  }
+  // Las flechas y el espacio ya los atiende cada harness en su keydown: los
+  // botones de la barra le dicen lo mismo que el teclado, sin otra copia de la
+  // lógica de seeds en cada laboratorio.
+  const key = (k, code) => document.dispatchEvent(new KeyboardEvent('keydown', { key: k, code: code || k, bubbles: true }));
+  function hideIfEmpty(el) {
+    if (el && !el.querySelector('input, select, button, a, canvas, #batchPanel')) el.style.display = 'none';
+  }
+
+  function mountStage() {
+    const stage = document.querySelector('.stage'), panel = document.querySelector('.panel');
+    const $ = id => document.getElementById(id);
+    if (!stage || !panel || !$('single') || !$('sheetGrid') || $('labBar')) return;
+    const css = document.createElement('style'); css.textContent = STAGE_CSS; document.head.appendChild(css);
+
+    const bar = document.createElement('div'); bar.id = 'labBar'; bar.className = 'lab-bar';
+    stage.insertBefore(bar, stage.firstChild);
+
+    // 1. Qué se mira: la pieza, doce variaciones de su seed, o el lote.
+    const seg = document.createElement('div'); seg.className = 'lab-seg';
+    const views = [['single', 'Pieza', ''], ['sheet', 'Grid', 'g'], ['batch', 'Lote', 'b']];
+    const segBtn = {};
+    views.forEach(([v, label, k]) => {
+      const b = stageButton(label + (k ? `<kbd>${k}</kbd>` : ''), label === 'Pieza' ? 'Vista de la pieza' : label === 'Grid' ? 'Doce variaciones desde esta seed (g)' : 'El lote abierto entero (b)');
+      b.onclick = () => { if (typeof global.setView === 'function') global.setView(v); };
+      segBtn[v] = b; seg.appendChild(b);
+    });
+    bar.appendChild(seg);
+    let current = 'single';
+    const mark = v => { current = v; Object.keys(segBtn).forEach(k => segBtn[k].classList.toggle('on', k === v)); syncRasgos(); };
+    if (typeof global.setView === 'function') {
+      const orig = global.setView;
+      global.setView = function (v) {
+        orig.apply(this, arguments);
+        // setView se niega a cambiar (lote sin abrir): manda lo que se ve.
+        const single = $('single').style.display !== 'none';
+        mark(single ? 'single' : (v === 'single' ? current : v));
+      };
+    }
+    // Los botones viejos de la columna siguen existiendo (el harness les cambia
+    // el texto); solo dejan de verse.
+    ['sheet', 'batchView'].forEach(id => { const b = $(id); if (b) b.style.display = 'none'; });
+    if ($('volver')) bar.appendChild($('volver'));
+
+    // 2. Qué seed: la de antes, esta, la de después, una nueva.
+    const sd = document.createElement('div'); sd.className = 'lab-seed';
+    const prev = stageButton('‹', 'Seed anterior (←)'); prev.onclick = () => key('ArrowLeft');
+    const next = stageButton('›', 'Seed siguiente (→)'); next.onclick = () => key('ArrowRight');
+    sd.appendChild(prev);
+    const seedIn = $('seed'); const seedGroup = seedIn && seedIn.closest('.group');
+    if (seedIn) { seedIn.title = 'Teclea una seed para volver a ella'; sd.appendChild(seedIn); }
+    sd.appendChild(next);
+    const rnd = $('rnd');
+    if (rnd) { rnd.innerHTML = '↻ Nueva<kbd>espacio</kbd>'; rnd.title = 'Una seed al azar (espacio)';
+      rnd.addEventListener('mousedown', e => e.preventDefault()); sd.appendChild(rnd); }
+    bar.appendChild(sd);
+    hideIfEmpty(seedGroup);
+
+    // 3. Apartar: la acción principal de mirar, a la derecha de la barra.
+    const add = $('hb-add');
+    if (add) { add.classList.add('lab-push'); add.innerHTML = '+ Al lote<kbd>a</kbd>';
+      add.addEventListener('mousedown', e => e.preventDefault()); bar.appendChild(add); }
+
+    // La sección de la columna que era "mirar y elegir" se queda en el lote.
+    const bp = $('batchPanel'), sec = bp && bp.closest('.sec');
+    if (sec) {
+      const h = sec.querySelector('h2'); if (h) h.textContent = h.textContent.replace(/Mirar y elegir/i, 'Lote');
+      sec.querySelectorAll('.group').forEach(g => {
+        if (g.contains(bp)) { const l = g.querySelector('.lbl'); if (l && /^lote$/i.test(l.textContent.trim())) l.style.display = 'none'; return; }
+        if (!g.querySelector('input, select, a, canvas') && ![...g.querySelectorAll('button')].some(b => b.style.display !== 'none')) g.style.display = 'none';
+      });
+    }
+
+    // Los rasgos describen la pieza que se mira: van debajo de ella.
+    const tr = $('traits'), trGroup = tr && tr.closest('.group');
+    let rasgos = null;
+    if (tr) {
+      rasgos = document.createElement('div'); rasgos.className = 'lab-rasgos';
+      rasgos.appendChild(tr);
+      const st = $('status'); stage.insertBefore(rasgos, st && st.parentNode === stage ? st : null);
+      if (trGroup) trGroup.style.display = 'none';
+    }
+    // En el grid se aparta pieza a pieza desde su pie; en el lote no hay nada
+    // que apartar. El botón de la barra añadiría una seed que no se ve.
+    function syncRasgos() {
+      if (rasgos) rasgos.style.display = current === 'single' ? '' : 'none';
+      if (add) add.style.visibility = current === 'single' ? '' : 'hidden';
+    }
+
+    mark($('sheetGrid').style.display === 'none' || !$('sheetGrid').style.display ? 'single' : 'sheet');
+    mountAutoChips(panel);
+  }
+
+  // ── "Auto" en cada mando del afinado ──────────────────────────────────────
+  // Cada mando arranca en lo que hace la obra sola: en unos eso es un sorteo
+  // por seed (0 o −1 = que decida la tirada), en otros es la constante de
+  // producción (el umbral 0,60 de KRRTK). Las dos cosas son "auto": lo que hace
+  // la obra si nadie la toca. El chip dice si el mando está ahí y lo devuelve.
+  // Para la receta no cambia nada: el harness sigue mandando el valor, así que
+  // una constante de producción va escrita, no heredada del código.
+  // Plegado, el afinado escondía si había algo fijado; ahora lo dice el título.
+  function mountAutoChips(panel) {
+    const det = panel.querySelector('details.afinado'); if (!det) return;
+    // Un select sin ninguna opción marcada `selected` arranca en la primera.
+    const defIdx = c => Math.max(0, [...c.options].findIndex(o => o.defaultSelected));
+    const isDefault = c => c.tagName === 'SELECT'
+      ? c.selectedIndex === defIdx(c)
+      : String(c.value) === String(c.defaultValue) || (parseFloat(c.value) === Math.min(Math.max(parseFloat(c.defaultValue), parseFloat(c.min)), parseFloat(c.max)));
+    const reset = c => {
+      if (c.tagName === 'SELECT') c.selectedIndex = defIdx(c);
+      else c.value = c.defaultValue;
+      c.dispatchEvent(new Event('input', { bubbles: true }));
+      c.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const chips = [];
+    det.querySelectorAll('.group').forEach(g => {
+      const ctl = g.querySelectorAll('input[type=range], select');
+      const lbl = g.querySelector(':scope > .lbl');
+      if (ctl.length !== 1 || !lbl) return;   // los pesos de PLLS son varios mandos: se quedan como están
+      const c = ctl[0];
+      const row = document.createElement('div'); row.className = 'lab-lbl-row';
+      lbl.parentNode.insertBefore(row, lbl); row.appendChild(lbl);
+      const chip = stageButton('auto', 'Devolver a lo que hace la obra sola');
+      chip.className = 'lab-auto';
+      chip.onclick = () => { if (!isDefault(c)) reset(c); };
+      row.appendChild(chip);
+      const sync = () => { chip.classList.toggle('on', isDefault(c)); chip.title = isDefault(c) ? 'En auto: lo que hace la obra sola' : 'Fijado · pulsa para volver a auto'; syncSummary(); };
+      c.addEventListener('input', sync); c.addEventListener('change', sync);
+      chips.push({ c, sync });
+    });
+    if (!chips.length) return;
+    const summary = det.querySelector('summary');
+    const base = summary ? summary.textContent.trim() : 'Afinado';
+    const all = stageButton('Todo a auto', 'Devuelve todos los mandos del afinado a lo que hace la obra sola');
+    all.className = 'ghost lab-reset';
+    all.onclick = () => chips.forEach(({ c }) => { if (!isDefault(c)) reset(c); });
+    det.appendChild(all);
+    function syncSummary() {
+      if (!summary) return;
+      const n = chips.filter(({ c }) => !isDefault(c)).length;
+      summary.innerHTML = base + (n ? ` · <span class="lab-fixed">${n} fijado${n > 1 ? 's' : ''}</span>` : ' · todo auto');
+      all.disabled = !n;
+    }
+    chips.forEach(({ sync }) => sync());
+  }
+
   if (typeof document !== 'undefined') {
-    const run = () => { injectBack(); injectCopy(); };
+    const run = () => { injectBack(); injectCopy(); mountStage(); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
     else run();
   }
 
   global.HOKSLAB = { GRADUATED, mountWorkPicker, mountPalettePicker, mountFormatSelect, loadWorks,
                      initialSeed, loadAlgos, wallUrl, readRecipe, mountViewLinks,
-                     formatControls, launch, injectBack, injectCopy };
+                     formatControls, launch, injectBack, injectCopy, mountStage };
 })(typeof window !== 'undefined' ? window : globalThis);
