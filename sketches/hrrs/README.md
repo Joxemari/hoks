@@ -3046,6 +3046,44 @@ Y lo que no entra: los prototipos de travesía y recinto de las dos vueltas
 anteriores, que se construían a mano fuera de la rejilla y volvían a montar trazos.
 Lo que venga sale del paseo, que es lo que cumple la regla por construcción.
 
+## Decimoctava vuelta: núcleo, margen del pliego y el margen compartido
+
+Tres reglas más del autor, mirando las hojas del paseo:
+
+- **El margen del pliego**: a veces es salida (el trazo sigue y el borde lo corta) y
+  a veces barrera (llega hasta él y gira en línea con el canto). Sobre la rejilla:
+  en la mitad de las obras la silueta se empuja hasta uno o dos bordes; en una
+  salida las celdas siguen un paso más allá del canto; en una barrera acaban en la
+  fila a una anchura del canto, y el paseo, sin celda delante, gira y corre por esa
+  fila. Si el borde se comiera más de un tercio del cuerpo, se cae. Una primera
+  versión empujaba de más y dejaba obras de un trazo en una esquina.
+- **Hay un centro.** «Hay como un núcleo muy marcado, y a partir de ahí empieza
+  todo.» Una celda interior del lado denso; la espina pasa por ella, las tres
+  piezas siguientes —el nudo— nacen pegadas con rachas cortas, y lo demás crece
+  PROGRESIVO desde lo ya dibujado hacia fuera, con rachas largas, la ventana y las
+  piezas retiradas lejos. Nacer lejos partía el cuerpo en dos.
+- **Entre paralelos el margen es constante**: «la intención del margen es
+  compartida; luego hay una pequeña vibración que es el signo manual». La
+  ondulación del borde es un CAMPO del lienzo, el mismo para todos los bordes, así
+  dos bordes enfrentados a un pelo reciben el mismo desplazamiento y el canal no
+  cambia; encima, un temblor pequeño e independiente por costado (0,3 del campo,
+  ondas de 1–2 anchuras), cuyo tope va al halo. Antes cada costado llevaba su fase
+  y entre dos arcos de una misma pieza el pelo se abría y cerraba.
+
+Y dos úes que el autor marcó en la hoja, con causa:
+
+- una rama paralela a un brazo de su pieza cerraba una u. La rama solo sale hacia
+  el lado del tramo recto donde el tronco NO tiene celdas.
+- el primer paso de un paseo se contaba como giro, y al crecer por el otro cabo se
+  espejaba ese codo fantasma: una de cada ocho piezas. `ues.js` cuenta sobre celdas y
+  sobre ejes: 0 de 950 tras el arreglo.
+
+El mismo motor, probado con el grosor de las referencias 1 y 3 (`PASEO.recinto`,
+`PASEO.travesia`, solo con `modelo: 'paseo'` forzado): con trazo fino sale un
+cuerpo denso sin marco ni flujo; con trazo gordo y borde siempre, salen barras que
+giran en el canto pero sin la bifurcación ni la curva abierta del cartel. El
+recinto y la travesía siguen con el calco en producción.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
