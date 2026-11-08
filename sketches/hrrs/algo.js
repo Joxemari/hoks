@@ -3045,7 +3045,7 @@
   const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
     bloque: { ancho: [0.085, 0.105], gam: [0.09, 0.13], celdas: [50, 62], cobertura: [0.3, 0.42], aspect: [1.05, 1.3],
-              racha: [3, 7], rachaE: [6, 12], trozo: [3, 6], lleno: 0.8, retira: 0.08, rama: 0.45, ventanas: [1, 2] },
+              racha: [3, 7], rachaE: [8, 14], trozo: [2, 5], lleno: 0.7, retira: 0.18, rama: 0.45, ventanas: [1, 2] },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
               racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
@@ -3151,14 +3151,17 @@
     const dN = c => dCheb(c, nucleo);
     for (let v = 0; v < nV; v++) { let ints = [...cells.values()].filter(interior); if (ints.length < 4) break;
       ints = ints.filter(c => abierto01(c) > 0.45 && dN(c) >= 3); if (ints.length < 2) ints = [...cells.values()].filter(c => interior(c) && dN(c) >= 3); if (ints.length < 2) break;
-      const c0 = ints[rng.int(0, ints.length - 1)], w = 2, h = rng.int(2, 3), sw = rng.bool(0.5);
+      const c0 = ints[rng.int(0, ints.length - 1)], w = rng.int(2, 3), h = rng.int(3, 4), sw = rng.bool(0.5);
       for (let a = 0; a < (sw ? h : w); a++) for (let b = 0; b < (sw ? w : h); b++) cells.delete(key(c0.i + a - ((sw ? h : w) >> 1), c0.j + b - ((sw ? w : h) >> 1))); }
     if (cells.size < 6) return vacio();
     // EL CAMPO LENTO: deforma la rejilla entera (ondas de 9–16 anchuras, amplitud
     // `ladeo` × W); el cizallamiento local abre los ángulos hasta unos 20° y las
     // paralelas siguen paralelas. Su jacobiano decide hacia qué lado gira el paseo.
-    const ladeo = params.ladeo != null ? params.ladeo : rng.range(O.ladeo ? O.ladeo[0] : 0.28, O.ladeo ? O.ladeo[1] : 0.42);
-    const amp = ladeo * W, k1 = 2 * Math.PI / (rng.range(9, 15) * W), k2 = 2 * Math.PI / (rng.range(10, 16) * W), f1 = rng.range(0, 6.28), f2 = rng.range(0, 6.28), f3 = rng.range(0, 6.28);
+    // (el autor: con el campo fuerte «parece que todo se hubiese deformado hacia la
+    // izquierda, una curvatura de conjunto». Queda poco, y de onda corta: no es una
+    // curvatura de la obra sino de cada tramo.)
+    const ladeo = params.ladeo != null ? params.ladeo : rng.range(O.ladeo ? O.ladeo[0] : 0.08, O.ladeo ? O.ladeo[1] : 0.16);
+    const amp = ladeo * W, k1 = 2 * Math.PI / (rng.range(4, 7) * W), k2 = 2 * Math.PI / (rng.range(5, 8) * W), f1 = rng.range(0, 6.28), f2 = rng.range(0, 6.28), f3 = rng.range(0, 6.28);
     // CIZALLA PURA, no estiramiento: x se desplaza según y, e y según x. Así las
     // paralelas no se separan ni se juntan (el margen queda), solo se inclinan.
     const desp = q => ({ x: q.x + amp * Math.sin(k1 * q.y + f1), y: q.y + amp * 0.7 * Math.sin(k2 * q.x + f2) });
@@ -3212,9 +3215,12 @@
     // 4. cortar en piezas, cada una con su codo
     const piezas = [], t0 = O.trozo[0], t1 = O.trozo[1];
     const esCodo = (path, k) => k > 0 && k < path.length - 1 && path[k - 1].i !== path[k + 1].i && path[k - 1].j !== path[k + 1].j;
+    let medianas = 0;
     paseos.forEach((path, pi) => { let i = 0; while (i < path.length) {
       const dMed = path.reduce((a, c) => a + dN(c), 0) / path.length;
-      let n = pi === 0 ? (path.length > 16 ? Math.ceil(path.length / 2) : path.length) : dMed <= 2.5 ? rng.int(3, 5) : rng.int(5, 9);
+      // TAMAÑOS DESIGUALES (el autor: «las piezas son parecidas de tamaño»): la espina
+      // entera (hasta 18 celdas), una o dos medianas de 7–10, y el resto cortas de 2–4
+      let n = pi === 0 ? (path.length > 18 ? Math.ceil(path.length / 2) : path.length) : (medianas < 2 && path.length - i >= 7 && rng.bool(0.5)) ? (medianas++, rng.int(7, 10)) : rng.int(2, 4);
       // EL CORTE CAE JUSTO ANTES DE UN CODO (el autor: «estos huecos no deberían
       // ocurrir»): cortar a mitad de un tramo recto deja una raja entre dos celdas
       // alineadas; cortando antes del codo, el cabo da contra el costado de la pieza
@@ -3301,7 +3307,8 @@
         const nb0 = { x: -best.t.y, y: best.t.x }, sgn = ((e.x - best.sg[0]) * nb0.x + (e.y - best.sg[1]) * nb0.y) >= 0 ? 1 : -1, nb = { x: nb0.x * sgn, y: nb0.y * sgn };
         const dPerp = (e.x - best.sg[0]) * nb.x + (e.y - best.sg[1]) * nb.y, quiero = best.W / 2 + g, cosA = u.x * nb.x + u.y * nb.y;
         if (abs(cosA) > 0.5) { const mueve = (dPerp - quiero) / cosA; const e2 = { x: e.x + u.x * mueve, y: e.y + u.y * mueve }; if (lado) pts[pts.length - 1] = e2; else pts[0] = e2; }
-        tr.caras[lado] = best.t; }
+        // la boca se encara solo si el giro es ligero (≤ 12°); más, sería un inglete
+        if (abs(cosA) > 0.978) tr.caras[lado] = best.t; }
       tr.segs = segsDe(tr.pts); }
     holguras(ctx);
     const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };
