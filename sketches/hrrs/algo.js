@@ -3022,6 +3022,7 @@
   // esquinas vivas, NUNCA un giro de 180° (el giro que repetiría el lado del
   // anterior no existe como opción), y el margen entre vecinas igual en todo el
   // cuadro, que es la rejilla.
+  const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
     bloque: { ancho: [0.085, 0.105], gam: [0.09, 0.13], celdas: [50, 62], cobertura: [0.3, 0.42], aspect: [1.05, 1.3],
               racha: [3, 7], rachaE: [6, 12], trozo: [3, 6], lleno: 0.8, retira: 0.08, rama: 0.45, ventanas: [1, 2] },
@@ -3138,10 +3139,10 @@
       const out = pts.slice(); out[0] = ext(pts[0], pts[1]); out[out.length - 1] = ext(pts[pts.length - 1], pts[pts.length - 2]);
       const simp = [out[0]]; for (let k = 1; k < out.length - 1; k++) { const a = simp[simp.length - 1], b = out[k], c = out[k + 1]; if (abs((b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x)) > 1e-6) simp.push(b); } simp.push(out[out.length - 1]); return simp; };
     // 6. la mano sobre el eje: campo lento común, giro por pieza, desvío por vértice
-    const amp = 0.15 * W, k1 = 2 * Math.PI / (rng.range(7, 12) * W), k2 = 2 * Math.PI / (rng.range(8, 13) * W), f1 = rng.range(0, 6.28), f2 = rng.range(0, 6.28), f3 = rng.range(0, 6.28);
+    const amp = 0.22 * W, k1 = 2 * Math.PI / (rng.range(9, 15) * W), k2 = 2 * Math.PI / (rng.range(10, 16) * W), f1 = rng.range(0, 6.28), f2 = rng.range(0, 6.28), f3 = rng.range(0, 6.28);
     const desp = q => ({ x: q.x + amp * Math.sin(k1 * q.y + f1) * Math.cos(k2 * q.x * 0.5 + f3), y: q.y + amp * Math.sin(k2 * q.x + f2) * Math.cos(k1 * q.y * 0.5 + f1) });
     const giraYdesvia = (pl, rot, cx0, cy0) => pl.map((q, i) => { const x = q.x - cx0, y = q.y - cy0; const p = { x: cx0 + x * Math.cos(rot) - y * Math.sin(rot), y: cy0 + x * Math.sin(rot) + y * Math.cos(rot) };
-      const a = pl[max(0, i - 1)], b = pl[min(pl.length - 1, i + 1)]; const tx = b.x - a.x, ty = b.y - a.y, tm = hypot(tx, ty) || 1e-9, dd = rng.range(-1, 1) * 0.08 * W;
+      const a = pl[max(0, i - 1)], b = pl[min(pl.length - 1, i + 1)]; const tx = b.x - a.x, ty = b.y - a.y, tm = hypot(tx, ty) || 1e-9, dd = rng.range(-1, 1) * DESVIO * W;
       return { x: p.x - ty / tm * dd, y: p.y + tx / tm * dd }; });
     const densa = pl => { const out = [desp(pl[0])]; for (let i = 1; i < pl.length; i++) { const a = pl[i - 1], b = pl[i], n = max(1, Math.round(hypot(b.x - a.x, b.y - a.y) / (W * 0.8))); for (let m = 1; m <= n; m++) out.push(desp({ x: a.x + (b.x - a.x) * m / n, y: a.y + (b.y - a.y) * m / n })); } return out; };
     const ctx = { fw, fh, S, W, g, D: P, mg: S * MARGEN, trazos: [], gubAmp: params.gubia != null ? params.gubia : (rng.bool(P_GUBIA) ? rng.range(GUB_AMP[0], GUB_AMP[1]) : 0), relleno: 1,
@@ -3150,8 +3151,10 @@
       // el giro de la pieza, acotado para que sus cabos no se desplacen más de un
       // cuarto de paso: en una espina de doce celdas, 3° la metían en la vecina
       // (solape.js lo cantó)
-      let pts = ejeDe(pz); const Lp = largoDe(pts) || 1;
-      const rot = rng.range(-1, 1) * min(3 * RAD, Math.atan(0.25 * P / (Lp / 2)));
+      // MÁRGENES IGUALES (el autor): entre dos trazos paralelizados el margen nunca es
+      // desigual. El giro por pieza y el desvío por vértice abrían las vecinas en cuña,
+      // así que se van: la mano es solo el campo común, que curva a las dos juntas.
+      let pts = ejeDe(pz); const rot = 0;
       const cen = pts.reduce((a, q) => ({ x: a.x + q.x / pts.length, y: a.y + q.y / pts.length }), { x: 0, y: 0 });
       pts = densa(giraYdesvia(pts, rot, cen.x, cen.y));
       const ramas = (pz.ramas || []).map(rc => densa(giraYdesvia(ejeDe(rc), rot, cen.x, cen.y)));

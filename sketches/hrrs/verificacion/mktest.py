@@ -98,9 +98,9 @@ elif roto == 'junto':
 elif roto == 'monta':
     # SOLAPE A PROPOSITO: el desvío de cada vértice del paseo, de 0,08 W a 0,6 W, con lo
     # que las piezas se montan unas en otras. `solape.js` tiene que cantar.
-    a = "const a = pl[max(0, i - 1)], b = pl[min(pl.length - 1, i + 1)]; const tx = b.x - a.x, ty = b.y - a.y, tm = hypot(tx, ty) || 1e-9, dd = rng.range(-1, 1) * 0.08 * W;"
+    a = "  const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)"
     assert a in src, 'no encuentro el desvío de vértices del paseo'
-    src = src.replace(a, "const a = pl[max(0, i - 1)], b = pl[min(pl.length - 1, i + 1)]; const tx = b.x - a.x, ty = b.y - a.y, tm = hypot(tx, ty) || 1e-9, dd = rng.range(-1, 1) * 0.6 * W;   // ROTO A PROPOSITO")
+    src = src.replace(a, "  const DESVIO = 0.6;   // ROTO A PROPOSITO")
 
 elif roto == 'halo0':
     # EL HALO DEL PINTOR NATIVO, ROTO: cada trazo borra a su alrededor un pelo de g
