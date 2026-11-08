@@ -3045,7 +3045,7 @@
   const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
     bloque: { ancho: [0.085, 0.105], gam: [0.09, 0.13], celdas: [50, 62], cobertura: [0.3, 0.42], aspect: [1.05, 1.3],
-              racha: [3, 7], rachaE: [8, 14], trozo: [2, 5], lleno: 0.7, retira: 0.18, rama: 0.45, ventanas: [1, 2] },
+              racha: [3, 7], rachaE: [8, 14], trozo: [2, 5], lleno: 0.7, retira: 0.18, rama: 0.45, ventanas: [1, 2], cruza: 0.4 },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
               racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
@@ -3259,6 +3259,23 @@
       const el = cands[rng.int(0, cands.length - 1)], rama = el.rama.slice(0, min(el.rama.length, rng.int(2, 4)));
       for (const r of rama) toma(r.i, r.j, pz); pz.ramas.push([el.c].concat(rama)); }
     vivas = vivas.filter(pz => pz.length >= 2);
+    // 4c. EL CRUCE, solo en el borde (el autor: «trasvases completos solo al final, en el
+    //     borde del canvas; si no, no se dan»). Si el cuerpo toca un borde de salida,
+    //     una pieza que apunta hacia él sigue recta POR ENCIMA de lo que haya en medio
+    //     hasta salir del pliego. Se pinta la última: su halo corta el pelo sobre la
+    //     de debajo, como en el cartel de Múnich.
+    const pCruce = params.cruza != null ? params.cruza : (O.cruza != null ? O.cruza : 0.4);
+    const salidas = Object.keys(bordes).filter(b => bordes[b] === 'sale');
+    if (salidas.length && rng.bool(pCruce)) {
+      const haciaBorde = (c, dir) => { const q = centro(c.i + dir[0] * 3, c.j + dir[1] * 3); return (salidas.includes('izq') && q.x < 0) || (salidas.includes('der') && q.x > fw) || (salidas.includes('arriba') && q.y < 0) || (salidas.includes('abajo') && q.y > fh); };
+      const cands = [];
+      for (const pz of vivas) for (const lado of [0, 1]) { const c = lado ? pz[pz.length - 1] : pz[0], a = lado ? pz[pz.length - 2] : pz[1]; const dir = [c.i - a.i, c.j - a.j];
+        const n1 = key(c.i + dir[0], c.j + dir[1]); if (!ocup.has(n1) || dueno.get(n1) === pz) continue;   // tiene que haber alguien delante
+        if (!haciaBorde(c, dir)) continue; cands.push({ pz, lado, dir }); }
+      if (cands.length) { const el = cands[rng.int(0, cands.length - 1)]; const c0 = el.lado ? el.pz[el.pz.length - 1] : el.pz[0];
+        const extra = []; for (let m = 1; m <= 6; m++) { const q = { i: c0.i + el.dir[0] * m, j: c0.j + el.dir[1] * m }; extra.push(q); const cc = centro(q.i, q.j); if (cc.x < -W || cc.y < -W || cc.x > fw + W || cc.y > fh + W) break; }
+        if (el.lado) el.pz.push(...extra); else el.pz.unshift(...extra.reverse()); el.pz.cruza = true;
+        vivas.splice(vivas.indexOf(el.pz), 1); vivas.push(el.pz); } }
     // 5. de celdas a eje: centros, cabos alargados media celda menos medio pelo, colineales fuera
     const ejeDe = pz => { const pts = pz.map(c => centro(c.i, c.j));
       const ext = (a, b) => { const dx = a.x - b.x, dy = a.y - b.y, m = hypot(dx, dy) || 1e-9, e = Pl / 2 - g / 2; return { x: a.x + dx / m * e, y: a.y + dy / m * e }; };
@@ -3290,7 +3307,7 @@
       const fuera = pts.some(q => q.x < 0 || q.y < 0 || q.x > fw || q.y > fh);
       // GROSOR HOMOGÉNEO (el autor): sin gubia —la deriva de anchura abría cuñas entre
       // paralelas— y ±2 % por pieza
-      ctx.trazos.push({ pts, segs: segsDe(pts), ramas, W: W * rng.range(0.98, 1.02), rel: pz === vivas[0] ? 'espina' : 'paseo', sangra: fuera, cruza: false, gubia: params.gubia ? gubiaDe(rng, ctx) : null, fin: 'paseo', celdas: pz.length });
+      ctx.trazos.push({ pts, segs: segsDe(pts), ramas, W: W * rng.range(0.98, 1.02), rel: pz === vivas[0] ? 'espina' : 'paseo', sangra: fuera, gubia: params.gubia ? gubiaDe(rng, ctx) : null, fin: 'paseo', celdas: pz.length, cruza: !!pz.cruza });
     }
     // LOS CABOS SE ENCARAN: cada cabo que da contra el costado de otra pieza (en te)
     // toma la dirección de ese costado como boca y se pone, a lo largo de su eje, a
