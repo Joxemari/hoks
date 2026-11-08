@@ -1171,17 +1171,26 @@
     const amp = (manoAmp != null ? manoAmp : 1) * MANO_VIB;
     trazos.forEach((tr, k) => {
       const Wt = (tr.W || Wf) * S;
-      const eje = tr.pts.map(p => ({ x: ox + p.x * S, y: p.y * S }));
-      let mano = null;
-      if (rm && amp > 0) {
-        const Lt = largoDe(eje);
-        mano = { vib: amp * Wt, o1: rm.range(MANO_ONDA[0], MANO_ONDA[1]) * Wt / 6.2832, o2: rm.range(MANO_ONDA[0], MANO_ONDA[1]) * Wt / 6.2832,
-                 f1: rm.range(0, 6.2832), f2: rm.range(0, 6.2832), f3: rm.range(0, 6.2832), f4: rm.range(0, 6.2832), funde: null };
-        const fl = rm.range(FUNDE_L[0], FUNDE_L[1]) * Wt, pf = rm.bool(pFunde != null ? pFunde : P_FUNDE);
-        if (pf && Lt > fl + Wt) { const s0 = rm.range(Wt * 0.3, Lt - fl - Wt * 0.3); mano.funde = [s0, s0 + fl]; }
-      }
-      const halo = bandaHalo(eje, Wt, tr.gubia, paso, gpx, mano, 0), banda = bandaHalo(eje, Wt, tr.gubia, paso, 0, mano, esq);
-      if (!halo || !banda) return;
+      // LA PIEZA ES UN ÁRBOL: el tronco (`pts`) y sus ramas (`ramas`, polilíneas que
+      // nacen de su costado, en perpendicular). Una sola tinta: el halo se borra para
+      // todas y la banda se pinta para todas, así entre tronco y rama no hay pelo.
+      // Es lo que el autor vio en la referencia 2: una de cada cuatro piezas se abre.
+      const ejes = [tr.pts].concat(tr.ramas || []).map(pl => pl.map(p => ({ x: ox + p.x * S, y: p.y * S })));
+      const halos = [], bandas = [];
+      ejes.forEach((eje, ri) => {
+        let mano = null;
+        if (rm && amp > 0) {
+          const Lt = largoDe(eje);
+          mano = { vib: amp * Wt, o1: rm.range(MANO_ONDA[0], MANO_ONDA[1]) * Wt / 6.2832, o2: rm.range(MANO_ONDA[0], MANO_ONDA[1]) * Wt / 6.2832,
+                   f1: rm.range(0, 6.2832), f2: rm.range(0, 6.2832), f3: rm.range(0, 6.2832), f4: rm.range(0, 6.2832), funde: null };
+          const fl = rm.range(FUNDE_L[0], FUNDE_L[1]) * Wt, pf = rm.bool(pFunde != null ? pFunde : P_FUNDE);
+          if (ri === 0 && pf && Lt > fl + Wt) { const s0 = rm.range(Wt * 0.3, Lt - fl - Wt * 0.3); mano.funde = [s0, s0 + fl]; }
+        }
+        const h = bandaHalo(eje, Wt, tr.gubia, paso, gpx, mano, 0), b = bandaHalo(eje, Wt, tr.gubia, paso, 0, mano, esq);
+        if (h && b) { halos.push(...h); bandas.push(...b); }
+      });
+      if (!halos.length) return;
+      const halo = halos, banda = bandas;
       c.globalCompositeOperation = 'destination-out'; c.fillStyle = '#000'; poly(halo);
       c.globalCompositeOperation = 'source-over';
       // con etiquetas: cada trazo con su color, en MÚLTIPLOS DE CUATRO: con alfa
@@ -1200,7 +1209,7 @@
 
   function etiquetas(geo, Wpx, Hpx) {
     if (geo.pintor === 'halo') {
-      const trazos = geo.cintas.map((pts, k) => ({ pts, gubia: geo.gubia ? geo.gubia[k] : null, W: geo.anchos ? geo.anchos[k] || undefined : undefined }));
+      const trazos = geo.cintas.map((pts, k) => ({ pts, gubia: geo.gubia ? geo.gubia[k] : null, W: geo.anchos ? geo.anchos[k] || undefined : undefined, ramas: geo.ramas ? geo.ramas[k] : null }));
       const et = new Int32Array(Wpx * Hpx);
       pintarHalo(null, trazos, geo.W, geo.g, geo.S, geo.ox, '#000', Wpx, Hpx, geo.esquina, et, geo.manoSeed, geo.manoAmp, geo.funde);
       return et;
@@ -3565,6 +3574,7 @@
                     // la anchura propia de cada trazo (el calco las tiene distintas); null = la de la obra
                     anchos: best.trazos.map(x => x.W || null),
                     pintor, esquina, manoSeed, manoAmp, funde,
+                    ramas: best.trazos.map(x => x.ramas || null),
                     cierre: best.cierre, rumbos: best.rumbos,
                     // el halo de ESTA obra. Lo mira `canal.js`: la regla vieja -ningun
                     // par por debajo de D- vale donde NO hay halo, y donde lo hay no,
