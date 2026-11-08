@@ -2874,6 +2874,32 @@ media, se suaviza a lo largo del eje con una ventana de tres anchuras, se limita
 pasadas. En bloque, donde los trazos son cortos y van rodeados, el borde sale aún
 algo dentado en las zonas densas: queda.
 
+## Decimotercera vuelta: progresivo, y hasta cubrir un porcentaje
+
+El autor, sobre cómo lo haría Chillida: *«dibuja un trazo primero, y ese mismo ya
+influye al resto en proporciones, direcciones, tamaño, paralelización»*, y
+*«hacerlo progresivo: dibujar un trazo y el siguiente influenciado por el mismo, y
+con eso se va completando hasta rellenar un % variable del canvas»*.
+
+El modelo libre pasa a eso, con dos cambios y nada más:
+
+- **El trazo nuevo nace del anterior**, siete de cada diez veces (`padre()`), no
+  de uno cualquiera: lo acompaña a un canal exacto, o arranca a un pelo de él,
+  paralelo o perpendicular. El primero decide la anchura, los rumbos y la escala,
+  y la obra crece como una cadena.
+- **La obra se detiene por cobertura**, no por cuenta de trazos: cada tipo declara
+  un intervalo de tinta sobre el lienzo (`cobertura`: bloque 22–42 %, haz 15–32 %,
+  recinto 7–14 %) y se añaden trazos hasta llegar; la zona sale de ahí (la masa de
+  la familia tiene en torno a la mitad de tinta, así que su lado es la raíz del
+  doble). La travesía, que va a sangre, sigue siendo 3–5 trazos que cruzan el
+  pliego: ahí la cobertura la decide el formato.
+
+La paralelización de la vuelta anterior corre después y es la que deja el margen
+homogéneo en todo el cuadro. Mirado en hoja: bloque y haz ya se leen como de la
+familia sin calco detrás; el recinto sale pequeño y a palos rectos (los
+acompañantes del marco), y la travesía deja algún tocón. El calco sigue siendo el
+modelo de producción; el libre es el que puede crecer sin deber nada a tres obras.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

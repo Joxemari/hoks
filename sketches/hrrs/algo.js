@@ -450,25 +450,25 @@
                ejes: { ancho: [0.70, 1.00], cruza: 0, orto: 0.9, conc: [0.70, 0.95], seca: 0.9, sangra: [0.1, 0.25],
                        relleno: [2.0, 2.6], pega: [0.8, 1.0], recto: [0.7, 0.95], travesia: 0, patas: 0.2 },
                reja: { n: [5, 8], ancho: [0.085, 0.11], zona: [0.70, 0.85], pega: 0.9, recto: 0.85, cruza: 0, largo: [0.8, 1.8], giros: 3, giro: 4, sangra: false, mano: [0.3, 0.8], ventanas: [0, 2] },
-               libre: { n: [6, 9], ancho: [0.07, 0.10], zona: [0.6, 0.8], pega: 0.85, largo: [5, 12], ang: [40, 90], paso: [1.2, 3.0], alterna: 0.55, cruza: 0, sangra: false, coherente: 0.85, companias: [0.7, 1.0] } },
+               libre: { n: [6, 9], ancho: [0.07, 0.10], zona: [0.6, 0.8], pega: 0.85, largo: [5, 12], ang: [40, 90], paso: [1.2, 3.0], alterna: 0.55, cruza: 0, sangra: false, coherente: 0.85, cobertura: [0.22, 0.42], companias: [0.7, 1.0] } },
     travesia:{ prob: 0.24, n: [4, 6], cerco: [0, 0],
                w: { paralelo: 0.50, abanico: 0.08, tangencia: 0.04, continua: 0.10, caboCabo: 0.04, caboCuerpo: 0.24 },
                ejes: { ancho: [0.80, 1.00], cruza: 0.45, orto: 0.85, conc: [0.30, 0.60], seca: 0.05, sangra: [0.5, 0.9],
                        relleno: [1.6, 2.2], pega: [0.8, 1.0], recto: [0.8, 1.0], travesia: 1, patas: 0.1 },
                reja: { n: [3, 4], ancho: [0.085, 0.11], zona: [1.0, 1.1], pega: 0.4, recto: 0.95, cruza: 0.7, largo: [1.0, 1.6], giros: 2, giro: 3, sangra: true, borde: true, mano: [0.3, 0.7], ventanas: [0, 1] },
-               libre: { n: [3, 5], ancho: [0.08, 0.11], zona: [1.0, 1.0], pega: 0.8, largo: [10, 22], ang: [25, 50], paso: [1.5, 3.0], alterna: 0.8, cruza: 0.6, sangra: true, coherente: 0.5, companias: [0.7, 1.0] } },
+               libre: { n: [3, 5], ancho: [0.08, 0.11], zona: [1.0, 1.0], pega: 0.8, largo: [10, 22], ang: [25, 50], paso: [1.5, 3.0], alterna: 0.8, cruza: 0.6, sangra: true, coherente: 0.5, cobertura: [0.2, 0.38], companias: [0.7, 1.0] } },
     recinto: { prob: 0.28, n: [7, 10], cerco: [3, 4],
                w: { paralelo: 0.52, abanico: 0.08, tangencia: 0.04, continua: 0.14, caboCabo: 0.08, caboCuerpo: 0.14 },
                ejes: { ancho: [0.35, 0.55], cruza: 0, orto: 0.7, conc: [0.80, 0.95], seca: 0.8, sangra: [0.1, 0.3],
                        relleno: [1.6, 2.2], pega: [0.9, 1.0], recto: [0.5, 0.8], travesia: 0, patas: 0.9 },
                reja: { n: [6, 9], ancho: [0.038, 0.052], zona: [0.55, 0.70], pega: 0.95, recto: 0.8, cruza: 0, largo: [0.6, 1.5], giros: 3, giro: 6, sangra: false, lado: 0.3, marco: true, mano: [0.4, 0.9], ventanas: [0, 1] },
-               libre: { n: [12, 18], ancho: [0.025, 0.035], zona: [0.42, 0.55], pega: 0.92, largo: [15, 40], ang: [60, 100], paso: [2.0, 5.0], alterna: 0.6, cruza: 0, sangra: false, lado: 0.3, marco: true, companias: [0.7, 1.0] } },
+               libre: { n: [12, 18], ancho: [0.025, 0.035], zona: [0.42, 0.55], pega: 0.92, largo: [15, 40], ang: [60, 100], paso: [2.0, 5.0], alterna: 0.6, cruza: 0, sangra: false, lado: 0.3, marco: true, cobertura: [0.07, 0.14], companias: [0.7, 1.0] } },
     haz:     { prob: 0.16, n: [5, 8], cerco: [0, 3],
                w: { paralelo: 0.50, abanico: 0.18, tangencia: 0.05, continua: 0.14, caboCabo: 0.06, caboCuerpo: 0.07 },
                ejes: { ancho: [0.6, 1.0], cruza: 0.05, orto: 0.6, conc: [0.6, 0.9], seca: 0.6, sangra: [0.1, 0.4],
                        relleno: [1.8, 2.6], pega: [0.7, 1.0], recto: [0.55, 0.9], travesia: 0.1, patas: 0.4 },
                reja: { n: [6, 9], ancho: [0.06, 0.09], zona: [0.6, 0.8], pega: 0.95, recto: 0.85, cruza: 0.05, largo: [0.5, 1.2], giros: 2, giro: 4, sangra: false, mano: [0.3, 0.8], ventanas: [0, 1] },
-               libre: { n: [6, 10], ancho: [0.05, 0.08], zona: [0.55, 0.75], pega: 0.95, largo: [6, 12], ang: [15, 40], paso: [1.2, 2.6], alterna: 0.8, cruza: 0.05, sangra: false, coherente: 0.9, companias: [0.75, 1.0] } },
+               libre: { n: [6, 10], ancho: [0.05, 0.08], zona: [0.55, 0.75], pega: 0.95, largo: [6, 12], ang: [15, 40], paso: [1.2, 2.6], alterna: 0.8, cruza: 0.05, sangra: false, coherente: 0.9, cobertura: [0.15, 0.32], companias: [0.75, 1.0] } },
   };
   const TIPO_NAMES = Object.keys(TIPOS);
 
@@ -2958,7 +2958,12 @@
     const mano = params.mano != null ? params.mano : rr(lb.mano, [0.3, 0.8]);
     const gubAmp = params.gubia != null ? params.gubia
                  : (rng.bool(P_GUBIA) ? rng.range(GUB_AMP[0], GUB_AMP[1]) * (0.5 + mano) : 0);
-    const zf = sangra ? rr(lb.zona) : clamp(rr(lb.zona) * (1.25 - 0.5 * conc), 0.3, 1 - 2 * MARGEN);
+    // LA OBRA SE DETIENE POR COBERTURA, no por cuenta de trazos: un porcentaje
+    // variable del lienzo en tinta (el autor: «se va completando hasta rellenar un %
+    // variable del canvas»). La zona sale de ahí: la masa de la familia tiene en
+    // torno a la mitad de tinta, así que el lado de la zona es la raíz del doble.
+    const cobertura = params.cobertura != null ? params.cobertura : rr(lb.cobertura || [0.18, 0.4]);
+    const zf = sangra ? rr(lb.zona) : clamp(Math.sqrt(cobertura / 0.5) * (1.15 - 0.3 * conc), 0.3, 1 - 2 * MARGEN);
     const zw = zf * fw, zh = zf * fh;
     const m = MARGEN * S + W / 2, lado = lb.lado != null ? lb.lado : 1;
     const zx0 = sangra ? (fw - zw) / 2 : m + rng.range(0, max(0, fw - 2 * m - zw)) * lado;
@@ -2972,7 +2977,8 @@
     const salido = p => p.x < -W || p.y < -W || p.x > fw + W || p.y > fh + W;
     const ctx = { fw, fh, S, W, g, D, mg: S * MARGEN, trazos: [], gubAmp, relleno: 1,
                   halo: params.halo != null ? params.halo * W : g };
-    const pedidos = params.trazos ? params.trazos : rng.int(lb.n[0], lb.n[1]);
+    const tope = params.trazos ? params.trazos : (sangra ? rng.int(lb.n[0], lb.n[1]) : 40);
+    const tinta = () => ctx.trazos.reduce((a, t) => a + largoDe(t.pts) * W, 0) / (fw * fh);
     // EL COMPAÑERO SE SOLAPA. El canal no se prohíbe, se fabrica: el acompañante va
     // a W + g − SOLAPE·W de eje a eje, y el halo del de encima corta el pelo exacto.
     // Así el blanco mide g aunque la gubia adelgace el trazo: lo que separa es el
@@ -3074,7 +3080,13 @@
       if (fin && !fin.por) fin.por = 'largo';
       return cruceCon;
     };
-    for (let k = 0; k < pedidos; k++) {
+    // PROGRESIVO: el trazo nuevo nace del ANTERIOR (siete de cada diez veces) y
+    // no de uno cualquiera: lo acompaña, o se apoya en él. Así el primero decide
+    // proporciones y rumbos y la obra crece como una cadena, que es como el autor
+    // lee los originales.
+    const padre = () => rng.bool(0.7) ? ctx.trazos[ctx.trazos.length - 1] : ctx.trazos[rng.int(0, ctx.trazos.length - 1)];
+    for (let k = 0; k < tope; k++) {
+      if (!params.trazos && !sangra && ctx.trazos.length >= 2 && tinta() >= cobertura) break;
       let pts = null, companero = -1, cruceCon = -1;
       const largo = W * rr(lb.largo), fin = { por: null };
       // los primeros trazos después del marco van libres: del marco se cuelgan
@@ -3084,7 +3096,7 @@
         // COMPAÑÍA: un desplazado, a un pelo, de un tramo de otro trazo. Por el
         // lado que quepa, y lo que quepa; luego sigue por su cuenta.
         for (let t2 = 0; t2 < 30 && !pts; t2++) {
-          const o = ctx.trazos[rng.int(0, ctx.trazos.length - 1)];
+          const o = padre();
           const fr = rr(o.fin === 'marco' ? [0.25, 0.5] : lb.companias), a0 = rng.range(0, max(0, 1 - fr));
           const sub = trozo(o.pts, a0, min(1, a0 + fr));
           if (sub.length < 2 || largoDe(sub) < W * 2) continue;
@@ -3150,7 +3162,7 @@
         for (let t2 = 0; t2 < 30 && !a; t2++) {
           let c;
           if (ctx.trazos.length) {
-            const o = ctx.trazos[rng.int(0, ctx.trazos.length - 1)], u = rng.range(0, 1);
+            const o = padre(), u = rng.range(0, 1);
             const pq = puntoEn(o.pts, u); const ang = rng.range(0, 360);
             c = { x: pq.x + Math.cos(ang * RAD) * D * rng.range(1.0, 1.6), y: pq.y + Math.sin(ang * RAD) * D * rng.range(1.0, 1.6) };
             dirV = dirEn(o.pts, min(o.pts.length - 2, Math.floor(u * (o.pts.length - 1))));
@@ -3201,7 +3213,7 @@
     return { trazos: ctx.trazos, W, g, D, cerco: 0, patas: 0, masaN: 0, masa: med.ocupacion, objMasa: 0, mano, ventanas: 0,
              pega, recto, vibF: 0, conc, relleno: 1, relCount, vibra: false,
              orto: false, travesia: !!sangra, halo: ctx.halo, cierre: CIERRE_POR, rumbos: [rng.range(0, 180)],
-             modelo: 'libre', pedidos,
+             modelo: 'libre', pedidos: ctx.trazos.length, cobertura, tinta: tinta(),
              ojos: med.ojos, ocupacion: med.ocupacion, pasillos: pas.n, largoPas: pas.largo / W, vert, quiebros,
              largoMax: Ls.length ? Ls[Ls.length - 1] : 0, reparto: lMed > 0 ? Ls[Ls.length - 1] / lMed : 0,
              sangrados: ctx.trazos.filter(x => x.sangra).length };
