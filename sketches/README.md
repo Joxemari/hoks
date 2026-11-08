@@ -125,13 +125,19 @@ cuerpo, suelto— **se declara y se construye**, no se espera a que salga sola. 
 u ocho por obra, encadenados: el tercero acompaña al segundo, que acompaña al
 primero, y de ahí sale el haz.
 
-La regla que la gobierna es NEGATIVA y es una sola: dos tramos que no comparten
-vértice están a `W + g` o más. Y no se persigue con un relajador —`selfAvoid` no se
-porta— sino que se cumple por construcción: el trazo no crece hacia donde no cabe.
-De ahí sale gratis el cabo, que deja de decidirse: **el trazo se acaba donde ya no
-cabe**, y por eso se pide ambicioso y se recorta en el punto exacto en vez de
-rechazarse entero. Lo que fija la escala de la hoja es el primer trazo: los demás
-caen desde lo que él **consiguió**, no desde lo que se le pidió.
+La regla que la gobierna es una sola: entre dos tintas el blanco mide `g`, nunca
+menos. Y no se persigue con un relajador —`selfAvoid` no se porta— sino que se
+**fabrica**: la obra se pinta por campo de distancia y cada trazo lleva un halo que
+corta `g` a su alrededor, así que dos trazos pueden solaparse y el pelo entre ellos
+sigue midiendo lo mismo. El trazo no crece hacia donde no cabe, y de ahí sale
+gratis el cabo: **el trazo se acaba donde ya no cabe**, contra un cuerpo. Desde
+noviembre de 2026 la composición de producción es el modelo **calco**: los ejes y
+anchuras de tres originales de Chillida, calcados automáticamente y embebidos en
+`algo.js`, mutados dentro de su misma lógica (simetrías, trazos que se quitan o se
+añaden como acompañantes, cabos que se alargan hasta donde cabe, codos que se
+redoblan). Son obras derivadas de piezas concretas, y está dicho así en
+`hrrs/README.md`. El modelo libre (escrito con las distribuciones medidas en esos
+calcos), la retícula y los trazos sueltos quedan como modelos de comparación.
 
 Verificada con su propia batería (`hrrs/verificacion/`): 996 obras repartidas entre
 catorce configuraciones, **cero** por debajo del canal, y cada detector con su

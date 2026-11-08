@@ -114,8 +114,10 @@
         <div class="group">
           <span class="lbl">Modelo</span>
           <select id="modelo">
-            <option value="reja">Retícula · bandas a un pelo, giros a escuadra (producción)</option>
-            <option value="trazos">Trazos sueltos · el modelo anterior, para comparar</option>
+            <option value="calco">Calco · variaciones sobre los tres originales (producción)</option>
+            <option value="libre">Libre · la lógica medida en los calcos: compañías a un pelo, quiebros oblicuos</option>
+            <option value="reja">Retícula · bandas a un pelo, giros a escuadra</option>
+            <option value="trazos">Trazos sueltos · el primer modelo, para comparar</option>
           </select>
         </div>
         <div class="group">
@@ -142,6 +144,16 @@
           <span class="lbl">Concentración · <span id="coV">auto</span></span>
           <input type="range" id="co" min="-1" max="100" step="1" value="-1">
           <span class="hintline">100 = la obra apiñada en poco papel</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Mano · <span id="mnV">auto</span></span>
+          <input type="range" id="mn" min="-1" max="100" step="5" value="-1">
+          <span class="hintline">cuánto se curva y tiembla la retícula · 0 = plóter</span>
+        </div>
+        <div class="group">
+          <span class="lbl">Ventanas · <span id="veV">auto</span></span>
+          <input type="range" id="ve" min="-1" max="3" step="1" value="-1">
+          <span class="hintline">blancos cerrados dentro de la masa · 0 = ninguna</span>
         </div>
         <div class="group">
           <span class="lbl">Cruces · <span id="crV">auto</span></span>
@@ -295,6 +307,8 @@ function params() {
     relleno:    autoF($('rl').value, 100),
     modelo:     $('modelo').value,
     cruza:      autoF($('cr').value, 100),
+    mano:       autoF($('mn').value, 100),
+    ventanas:   auto($('ve').value),
     giros:      auto($('gi').value),
     inclina:    auto($('in').value),
   };
@@ -387,9 +401,9 @@ $('sa').oninput = () => { const v = parseInt($('sa').value, 10);
 $('ci').oninput = () => { $('ciV').textContent = $('ci').value === '0' ? 'auto' : $('ci').value; refresh(); };
 $('pl').oninput = () => { $('plV').textContent = $('pl').value === '-1' ? 'auto' : $('pl').value; refresh(); };
 $('an').oninput = () => { $('anV').textContent = parseFloat($('an').value) === 0 ? 'auto' : '×' + parseFloat($('an').value).toFixed(2); refresh(); };
-['pe', 're', 'co', 'ma', 'va', 'rl', 'cr', 'gi', 'in'].forEach(id => {
+['pe', 're', 'co', 'ma', 'va', 'rl', 'cr', 'gi', 'in', 'mn', 've'].forEach(id => {
   $(id).oninput = () => { const v = parseInt($(id).value, 10);
-    $(id + 'V').textContent = v < 0 ? 'auto' : (id === 'va' || id === 'rl' ? '×' + (v / 100).toFixed(2) : id === 'gi' ? String(v) : id === 'in' ? v + '°' : v + '%'); refresh(); };
+    $(id + 'V').textContent = v < 0 ? 'auto' : (id === 'va' || id === 'rl' ? '×' + (v / 100).toFixed(2) : id === 'gi' || id === 've' ? String(v) : id === 'in' ? v + '°' : v + '%'); refresh(); };
 });
 $('ca').oninput = () => { $('caV').textContent = parseFloat($('ca').value) === 0 ? 'auto' : '1/' + Math.round(1 / parseFloat($('ca').value)); refresh(); };
 $('bg').onchange = () => { syncBgAuto(); refresh(); };
