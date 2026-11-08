@@ -3084,6 +3084,44 @@ cuerpo denso sin marco ni flujo; con trazo gordo y borde siempre, salen barras q
 giran en el canto pero sin la bifurcación ni la curva abierta del cartel. El
 recinto y la travesía siguen con el calco en producción.
 
+## Decimonovena vuelta: los ángulos vivos, la boca del cabo y el margen sin cuñas
+
+Lo que decía Chillida de los ángulos, citado de memoria y sin fuente delante: que
+el ángulo recto es un ángulo muerto, y que el de 89 o el de 91 es un ángulo vivo.
+Medido en el calco de la referencia 2: las horizontales van a ±8°, las verticales
+a 90 ± 12°, y los quiebros de 61 a 83° (mediana 77), abiertos en los dos sentidos
+de giro. Se probó una rejilla de paralelogramos (todos los quiebros a 62–84°,
+exactos) y se quitó: todo se inclinaba en el mismo sentido, como una cursiva, y
+el cuerpo se volvía un haz. Lo que queda: la rejilla ortogonal deformada por un
+campo lento de CIZALLA PURA (x según y, y según x: las paralelas se inclinan pero
+no se separan), y en cada quiebro el paseo elige, cuando puede, el lado que el
+campo abre (una zeta se abre entera si su brazo del medio se inclina hacia el lado
+bueno). Con `ladeo` 0,28–0,42 W los quiebros quedan en 77–100 (mediana 89); más
+cizalla abría más (55–105) pero volvían mordiscos y pelos cortos.
+
+Y tres cosas que el autor vio en las hojas, cada una con su causa:
+
+- **«Estos huecos no deberían ocurrir»**: cortes a mitad de un tramo recto, una raja
+  entre dos celdas alineadas. En la referencia 2 no hay ninguno: cada pieza acaba
+  donde el camino gira. El corte cae ahora justo antes de un codo (el más cercano
+  al largo pedido, ±3 celdas), así el cabo da contra el costado de la siguiente.
+- **«Ojo a los mordiscos»**: el halo del cabo, alargado un pelo por delante, con el
+  eje inclinado por el campo entraba en cuña en el cuerpo de enfrente. Acortarlo
+  dejaba cabos a menos de un pelo (`pelo.js`, 30 de 60): el campo inclina la boca y
+  una esquina se acerca más que la otra. La solución es la del autor: **la boca
+  del cabo se corta paralela al cuerpo que tiene delante** («casi rectangulares o
+  con un poco de ángulo, nunca en inglete»). Cada cabo en te toma la dirección de
+  ese costado como cara y se pone, por su eje, a W/2 + g del eje ajeno: el pelo mide
+  g de esquina a esquina. `geo.caras` lo publica y `etiquetas()` lo respeta.
+- **«Ese nivel de irregularidades en los márgenes no se ve en los originales»**:
+  cuñas entre paralelas. Venían de la gubia (la deriva de anchura a lo largo de la
+  pieza) y del temblor independiente por costado. En el paseo la gubia va fuera
+  salvo que el panel la pida, el grosor por pieza es ±2 % y el temblor propio baja
+  a 0,12 del campo.
+
+Medido tras esto: pelo 1 de 60, solapes 0 de 60, úes 0 de 429, margen entre
+paralelas mediana 1,01 canales.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
