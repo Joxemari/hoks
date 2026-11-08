@@ -2979,6 +2979,40 @@ de paso W + g, un paseo que no se cruza y crece por los dos cabos, con espina
 antes de pasear, y la anchura derivada del número de celdas. Es la base del bloque
 que viene; lo siguiente es probar espesores y fijarlos por tipo.
 
+## Decimosexta vuelta: el paseo que rellena, en producción para el bloque y el haz
+
+Lo que el autor fue fijando sobre las hojas, y que el modelo cumple por
+construcción (están en `tramarPaseo`):
+
+- **Progresivo**: un trazo —la espina, larga— y los demás nacen alrededor y
+  crecen por los dos cabos hasta cubrir el porcentaje de lienzo que pide el tipo.
+- **El margen se homogeneiza en todo el cuadro**: es la rejilla de paso W + g.
+- **Grosor homogéneo** (±4 %), **esquinas vivas**, y **nunca un giro de 180°**: el
+  giro que repetiría el lado del anterior no existe como opción; si el otro lado
+  no cabe, el trazo acaba ahí.
+- **Ni rectas exactas ni 90° exactos**: un campo lento común curva todo a la vez
+  (así las vecinas se mueven juntas y el margen no cambia), cada pieza gira ±3° y
+  cada vértice se desvía ±0,08 W; los ángulos quedan en unos 82–98°.
+- **Ramas**: una de cada dos piezas se abre en perpendicular, de la misma tinta,
+  con una rama de 2–4 celdas. Salió del análisis de la referencia 2 (14 piezas,
+  3–4 bifurcaciones, siempre perpendiculares desde el costado de un tronco, rama
+  corta que acaba al aire). El esqueleto automático mete uniones falsas en cada
+  esquina; el recuento se hizo a ojo sobre la máscara numerada.
+- **Interés y asimetría**: un lado del cuerpo es el denso y el otro el abierto; la
+  ventana grande se abre hacia el abierto y ahí se retiran más piezas. Dosificado:
+  una primera versión tiraba la mitad de la obra. El cuerpo es uno (el grupo
+  conexo mayor), salvo que quedarse con él tire más de un tercio.
+- **Se traban**: el corte se elige para que cada pieza lleve un codo.
+
+Lo que se probó y se quitó: una **dirección dominante** (rachas largas en un eje y
+cortas en el otro) daba troncos apilados; el bloque es isótropo. Y el relleno por
+celdas **no es el modelo del recinto**: con trazo fino sale laberinto, no meandros.
+El recinto lleva marco en U y el interior en eses colgadas de la pared de enfrente,
+que es lo que viene. La travesía no es relleno y sigue con su modelo.
+
+Espesores, probados con el mismo motor: 0,10 del lado para el bloque (el que lee
+como la referencia 2), 0,065–0,085 para el haz; a 0,045 ya es laberinto.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

@@ -121,7 +121,9 @@
         <div class="group">
           <span class="lbl">Modelo</span>
           <select id="modelo">
-            <option value="calco">Calco · variaciones sobre los tres originales (producción)</option>
+            <option value="">Auto · paseo para bloque y haz, calco para recinto y travesía (producción)</option>
+            <option value="paseo">Paseo · un camino que rellena, cortado en piezas con codo y ramas</option>
+            <option value="calco">Calco · variaciones sobre los tres originales</option>
             <option value="libre">Libre · la lógica medida en los calcos: compañías a un pelo, quiebros oblicuos</option>
             <option value="reja">Retícula · bandas a un pelo, giros a escuadra</option>
             <option value="trazos">Trazos sueltos · el primer modelo, para comparar</option>
@@ -312,7 +314,7 @@ function params() {
     masa:       autoF($('ma').value, 100),
     vibAmp:     autoF($('va').value, 100),
     relleno:    autoF($('rl').value, 100),
-    modelo:     $('modelo').value,
+    modelo:     $('modelo').value || null,
     pintor:     $('pintor').value,
     cruza:      autoF($('cr').value, 100),
     mano:       autoF($('mn').value, 100),

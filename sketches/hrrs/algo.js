@@ -2998,6 +2998,170 @@
       { W: 0.087, pts: [[0.257,0.156],[0.425,0.152]] } ] }
   };
 
+  // ── El modelo PASEO: un camino que rellena, cortado en piezas con codo ───────
+  //
+  // El bloque (referencia 2), construido como lo haría la mano según el autor: un
+  // trazo primero, y el siguiente nace de él. Una silueta sobre una rejilla de paso
+  // W + g; un paseo que no se cruza recorre las celdas —la ESPINA, larga, primero;
+  // los demás crecen por los dos cabos—, y se corta en piezas de 3–6 celdas (una de
+  // cada cuatro de 7–10) elegidas para que cada pieza lleve un codo y se trabe con
+  // la vecina. Una de cada dos piezas saca una RAMA perpendicular de 2–4 celdas,
+  // fundida con el tronco (lo que el autor vio en la referencia 2). Una ventana
+  // grande se abre antes de pasear, descentrada hacia el lado ABIERTO del cuerpo,
+  // donde además se retiran más piezas: un lado denso y otro con aire. Al final la
+  // mano: un campo lento común curva todo a la vez, cada pieza gira ±3° y cada
+  // vértice se desvía ±0,08 W (ángulos de unos 82–98°, y ninguna recta exacta).
+  //
+  // Las reglas del autor que esto cumple por construcción: grosor homogéneo,
+  // esquinas vivas, NUNCA un giro de 180° (el giro que repetiría el lado del
+  // anterior no existe como opción), y el margen entre vecinas igual en todo el
+  // cuadro, que es la rejilla.
+  const PASEO = {
+    bloque: { ancho: [0.085, 0.105], gam: [0.09, 0.13], celdas: [50, 62], cobertura: [0.3, 0.42], aspect: [1.05, 1.3],
+              racha: [3, 7], rachaE: [6, 12], trozo: [3, 6], lleno: 0.8, retira: 0.08, rama: 0.45, ventanas: [1, 2] },
+    haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
+              racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
+  };
+  function tramarPaseo(rng, fw, fh, tipo, params) {
+    const O = PASEO[tipo] || PASEO.bloque;
+    const S = min(fw, fh), rr = v => rng.range(v[0], v[1]);
+    let W = params.ancho ? S * W_MAX * params.ancho : S * rr(O.ancho);
+    const gam = params.canal ? params.canal : rr(O.gam);
+    let g = W * gam, P = W + g;
+    const nCel = params.trazos ? params.trazos * 6 : rng.int(O.celdas[0], O.celdas[1]);
+    const cob = params.cobertura != null ? params.cobertura : rr(O.cobertura);
+    const recto = params.recto != null ? params.recto : 0.62;
+    // 1. la silueta: un blob de radios suavizados, más ancho que alto, que cabe en el pliego
+    const nR = rng.int(9, 12), base = []; for (let i = 0; i < nR; i++) base.push(rng.range(0.55, 1.45));
+    const sm = base.map((v, i) => (base[(i + nR - 1) % nR] + 2 * v + base[(i + 1) % nR]) / 4);
+    const aspect = rr(O.aspect) * (fw > fh ? 1.1 : fw < fh ? 0.9 : 1), areaObj = cob * S * S / 0.62;
+    let a0 = 0; for (let i = 0; i < nR; i++) a0 += 0.5 * sm[i] * sm[(i + 1) % nR] * Math.sin(2 * Math.PI / nR) * aspect;
+    const R0 = Math.sqrt(areaObj / a0);
+    const cx = fw / 2 + rng.range(-0.04, 0.04) * S, cy = fh / 2 + rng.range(-0.04, 0.04) * S, rot0 = rng.range(-0.25, 0.25);
+    let Rf = R0; { let ext = 0; for (let i = 0; i < nR; i++) { const th = rot0 + i * 2 * Math.PI / nR;
+      ext = max(ext, abs(Math.cos(th) * sm[i] * aspect) / max(0.05, min(cx, fw - cx) / S - MARGEN - 0.01), abs(Math.sin(th) * sm[i]) / max(0.05, min(cy, fh - cy) / S - MARGEN - 0.01)); } Rf = min(R0, S / ext); }
+    const sil = []; for (let i = 0; i < nR; i++) { const th = rot0 + i * 2 * Math.PI / nR; sil.push({ x: cx + Math.cos(th) * Rf * sm[i] * aspect, y: cy + Math.sin(th) * Rf * sm[i] }); }
+    { let A = 0; for (let i = 0; i < nR; i++) { const a = sil[i], b = sil[(i + 1) % nR]; A += a.x * b.y - b.x * a.y; } A = abs(A) / 2;
+      // si en la silueta caben menos celdas de las pedidas, la anchura baja hasta que quepan
+      const Pmax = Math.sqrt(A * 0.92 / nCel); if (P > Pmax) { P = Pmax; W = P / (1 + gam); g = W * gam; } }
+    const inside = (x, y) => { let c = false; for (let i = 0, j = sil.length - 1; i < sil.length; j = i++) { const a = sil[i], b = sil[j]; if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) c = !c; } return c; };
+    // 2. la rejilla, girada unos grados: las celdas cuyo centro cae dentro
+    const th = rng.range(-8, 8) * RAD, ux = Math.cos(th), uy = Math.sin(th), vx = -uy, vy = ux;
+    const ox = rng.range(0, P), oy = rng.range(0, P);
+    const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+    const N = Math.ceil(max(fw, fh) * 1.5 / P), cells = new Map(), key = (i, j) => i + ',' + j;
+    const centro = (i, j) => ({ x: cx + ox + ux * (i * P) + vx * (j * P), y: cy + oy + uy * (i * P) + vy * (j * P) });
+    for (let i = -N; i <= N; i++) for (let j = -N; j <= N; j++) { const c = centro(i, j); if (inside(c.x, c.y)) cells.set(key(i, j), { i, j, used: false }); }
+    const vacio = () => ({ trazos: [], W, g, D: P, cerco: 0, patas: 0, masaN: 0, masa: 0, objMasa: 0, mano: 0, ventanas: 0, pega: 1, recto, vibF: 0, conc: 0, relleno: 1,
+      relCount: { paseo: 0 }, vibra: false, orto: true, travesia: false, halo: g, cierre: CIERRE_POR, rumbos: [0], modelo: 'paseo', pedidos: 0, ojos: [], ocupacion: 0,
+      pasillos: 0, largoPas: 0, vert: 0, quiebros: 0, largoMax: 0, reparto: 0, sangrados: 0 });
+    if (cells.size < 6) return vacio();
+    // 2b. el aire tiene forma: una ventana grande (a veces dos), descentrada hacia el lado abierto
+    const interior = c => DIRS.every(([a, b]) => cells.has(key(c.i + a, c.j + b)));
+    const nV = params.ventanas != null ? params.ventanas : rng.int(O.ventanas[0], O.ventanas[1]);
+    const ladoAb = { ax: rng.bool(0.5) ? 'i' : 'j', sg: rng.bool(0.5) ? 1 : -1 };
+    const coord = c => ladoAb.ax === 'i' ? c.i * ladoAb.sg : c.j * ladoAb.sg;
+    const cs = [...cells.values()].map(coord).sort((a, b) => a - b), cmin = cs[0], cmax = cs[cs.length - 1];
+    const abierto01 = c => (coord(c) - cmin) / max(1, cmax - cmin);
+    for (let v = 0; v < nV; v++) { let ints = [...cells.values()].filter(interior); if (ints.length < 4) break;
+      ints = ints.filter(c => abierto01(c) > 0.45); if (ints.length < 2) ints = [...cells.values()].filter(interior);
+      const c0 = ints[rng.int(0, ints.length - 1)], w = 2, h = rng.int(2, 3), sw = rng.bool(0.5);
+      for (let a = 0; a < (sw ? h : w); a++) for (let b = 0; b < (sw ? w : h); b++) cells.delete(key(c0.i + a - ((sw ? h : w) >> 1), c0.j + b - ((sw ? w : h) >> 1))); }
+    if (cells.size < 6) return vacio();
+    // 3. los paseos
+    const libre = (i, j) => { const c = cells.get(key(i, j)); return c && !c.used; };
+    const grados = c => DIRS.reduce((n, [di, dj]) => n + (libre(c.i + di, c.j + dj) ? 1 : 0), 0);
+    const paseos = []; let guard = 0;
+    while (guard++ < 500) {
+      let cand = [...cells.values()].filter(c => !c.used); if (!cand.length) break;
+      if (1 - cand.length / cells.size >= O.lleno) break;
+      cand.sort((a, b) => grados(a) - grados(b)); const gmin = grados(cand[0]); cand = cand.filter(c => grados(c) <= gmin + (rng.bool(0.5) ? 0 : 1));
+      let c = cand[rng.int(0, cand.length - 1)]; c.used = true;
+      const espina = paseos.length === 0, RA = espina ? O.rachaE : O.racha;
+      let d = rng.int(0, 3), path = [c], racha = 0, maxR = rng.int(RA[0], RA[1]), ultimo = 0, primerGiro = 0, vuelta = false;
+      while (true) {
+        // NUNCA 180°: el giro que repetiría el lado del anterior no existe
+        const ks = [0, 1, 3].filter(k => k !== ultimo).filter(k => { const [di, dj] = DIRS[(d + k) % 4]; return libre(c.i + di, c.j + dj); });
+        if (!ks.length) { if (vuelta || path.length < 2) break;
+          // por el otro cabo: se invierte el camino y se sigue desde el arranque
+          vuelta = true; path = path.slice().reverse(); c = path[path.length - 1]; const p2 = path[path.length - 2];
+          d = DIRS.findIndex(([a, b]) => a === c.i - p2.i && b === c.j - p2.j); racha = 0; ultimo = primerGiro === 1 ? 3 : primerGiro === 3 ? 1 : 0; continue; }
+        const sal = k => { const [di, dj] = DIRS[(d + k) % 4]; const n = cells.get(key(c.i + di, c.j + dj)); return DIRS.reduce((m, [a, b]) => m + (libre(n.i + a, n.j + b) ? 1 : 0), 0); };
+        let k; const giros = ks.filter(x => x !== 0);
+        if (ks.includes(0) && racha < maxR && rng.bool(espina ? 0.92 : recto)) k = 0; else if (giros.length) k = giros[0]; else k = 0;
+        if (sal(k) === 0) { const mejor = ks.filter(x => sal(x) > 0); if (mejor.length) k = mejor[rng.int(0, mejor.length - 1)]; }
+        const d2 = (d + k) % 4, [di, dj] = DIRS[d2], n = cells.get(key(c.i + di, c.j + dj)); n.used = true; path.push(n); c = n;
+        if (k === 0) racha++; else { racha = 0; ultimo = k; if (!primerGiro) primerGiro = k; maxR = rng.int(RA[0], RA[1]); } d = d2; }
+      paseos.push(path); }
+    // 4. cortar en piezas, cada una con su codo
+    const piezas = [], t0 = O.trozo[0], t1 = O.trozo[1];
+    const esCodo = (path, k) => k > 0 && k < path.length - 1 && path[k - 1].i !== path[k + 1].i && path[k - 1].j !== path[k + 1].j;
+    paseos.forEach((path, pi) => { let i = 0; while (i < path.length) {
+      let n = pi === 0 ? rng.int(10, 14) : (rng.bool(0.25) ? rng.int(7, 10) : rng.int(t0, t1));
+      if (pi !== 0) { let tiene = false; for (let k = i + 1; k < min(path.length - 1, i + n - 1); k++) if (esCodo(path, k)) { tiene = true; break; }
+        if (!tiene) for (let k = i + n - 1; k < min(path.length - 1, i + n + 3); k++) if (esCodo(path, k)) { n = k - i + 2; break; } }
+      if (path.length - i - n < t0) n = path.length - i; piezas.push(path.slice(i, i + n)); i += n; } });
+    // retirar: poco, y más en el lado abierto (dosificado: el cuerpo no se rompe)
+    let vivas = piezas.filter(pz => { if (pz.length <= 1) return false; const ab = pz.reduce((a, c) => a + abierto01(c), 0) / pz.length;
+      return !rng.bool(O.retira * (ab > 0.6 ? 2 : ab < 0.35 ? 0.4 : 1)); });
+    // 4a. un solo cuerpo: se queda el grupo conexo mayor, salvo que eso tire más de un tercio
+    { const idx = new Map(); vivas.forEach((pz, n) => pz.forEach(c => idx.set(key(c.i, c.j), n)));
+      const par = vivas.map((_, n) => n), find = x => par[x] === x ? x : (par[x] = find(par[x]));
+      vivas.forEach((pz, n) => pz.forEach(c => { for (const [a, b] of DIRS) { const m = idx.get(key(c.i + a, c.j + b)); if (m != null && m !== n) par[find(m)] = find(n); } }));
+      const cnt = {}; let tot = 0; vivas.forEach((pz, n) => { const r = find(n); cnt[r] = (cnt[r] || 0) + pz.length; tot += pz.length; });
+      const best = +Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+      if (cnt[best] >= tot * 0.66) vivas = vivas.filter((_, n) => find(n) === best); }
+    // 4b. ramas perpendiculares, fundidas con el tronco
+    const ocup = new Set(), dueno = new Map(); for (const pz of vivas) for (const c of pz) { ocup.add(key(c.i, c.j)); dueno.set(key(c.i, c.j), pz); }
+    const libreR = (i, j, yo) => { const k = key(i, j); if (!cells.has(k)) return false; if (!ocup.has(k)) return true;
+      const o = dueno.get(k); if (!o || o === yo || o.length < 4) return false; const c = o[0], d = o[o.length - 1]; return (c.i === i && c.j === j) || (d.i === i && d.j === j); };
+    const toma = (i, j, yo) => { const k = key(i, j); if (ocup.has(k)) { const o = dueno.get(k); const c = o[0]; if (c.i === i && c.j === j) o.shift(); else o.pop(); } ocup.add(k); dueno.set(k, yo); };
+    for (const pz of vivas) { pz.ramas = []; if (pz.length < 4 || !rng.bool(O.rama)) continue;
+      const cands = [];
+      for (let k = 1; k < pz.length - 1; k++) { const c = pz[k], a = pz[k - 1], b = pz[k + 1]; if (a.i !== b.i && a.j !== b.j) continue;
+        const di = a.i === b.i ? 1 : 0, dj = a.i === b.i ? 0 : 1;
+        for (const sg of [1, -1]) { const rama = []; for (let m = 1; m <= 4; m++) { const ii = c.i + di * sg * m, jj = c.j + dj * sg * m; if (!libreR(ii, jj, pz)) break; rama.push({ i: ii, j: jj }); }
+          if (rama.length >= 2) cands.push({ c, rama }); } }
+      if (!cands.length) continue;
+      const el = cands[rng.int(0, cands.length - 1)], rama = el.rama.slice(0, min(el.rama.length, rng.int(2, 4)));
+      for (const r of rama) toma(r.i, r.j, pz); pz.ramas.push([el.c].concat(rama)); }
+    vivas = vivas.filter(pz => pz.length >= 2);
+    // 5. de celdas a eje: centros, cabos alargados media celda menos medio pelo, colineales fuera
+    const ejeDe = pz => { const pts = pz.map(c => centro(c.i, c.j));
+      const ext = (a, b) => { const dx = a.x - b.x, dy = a.y - b.y, m = hypot(dx, dy) || 1e-9, e = P / 2 - g / 2; return { x: a.x + dx / m * e, y: a.y + dy / m * e }; };
+      const out = pts.slice(); out[0] = ext(pts[0], pts[1]); out[out.length - 1] = ext(pts[pts.length - 1], pts[pts.length - 2]);
+      const simp = [out[0]]; for (let k = 1; k < out.length - 1; k++) { const a = simp[simp.length - 1], b = out[k], c = out[k + 1]; if (abs((b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x)) > 1e-6) simp.push(b); } simp.push(out[out.length - 1]); return simp; };
+    // 6. la mano sobre el eje: campo lento común, giro por pieza, desvío por vértice
+    const amp = 0.15 * W, k1 = 2 * Math.PI / (rng.range(7, 12) * W), k2 = 2 * Math.PI / (rng.range(8, 13) * W), f1 = rng.range(0, 6.28), f2 = rng.range(0, 6.28), f3 = rng.range(0, 6.28);
+    const desp = q => ({ x: q.x + amp * Math.sin(k1 * q.y + f1) * Math.cos(k2 * q.x * 0.5 + f3), y: q.y + amp * Math.sin(k2 * q.x + f2) * Math.cos(k1 * q.y * 0.5 + f1) });
+    const giraYdesvia = (pl, rot, cx0, cy0) => pl.map((q, i) => { const x = q.x - cx0, y = q.y - cy0; const p = { x: cx0 + x * Math.cos(rot) - y * Math.sin(rot), y: cy0 + x * Math.sin(rot) + y * Math.cos(rot) };
+      const a = pl[max(0, i - 1)], b = pl[min(pl.length - 1, i + 1)]; const tx = b.x - a.x, ty = b.y - a.y, tm = hypot(tx, ty) || 1e-9, dd = rng.range(-1, 1) * 0.08 * W;
+      return { x: p.x - ty / tm * dd, y: p.y + tx / tm * dd }; });
+    const densa = pl => { const out = [desp(pl[0])]; for (let i = 1; i < pl.length; i++) { const a = pl[i - 1], b = pl[i], n = max(1, Math.round(hypot(b.x - a.x, b.y - a.y) / (W * 0.8))); for (let m = 1; m <= n; m++) out.push(desp({ x: a.x + (b.x - a.x) * m / n, y: a.y + (b.y - a.y) * m / n })); } return out; };
+    const ctx = { fw, fh, S, W, g, D: P, mg: S * MARGEN, trazos: [], gubAmp: params.gubia != null ? params.gubia : (rng.bool(P_GUBIA) ? rng.range(GUB_AMP[0], GUB_AMP[1]) : 0), relleno: 1,
+                  halo: max(g, params.halo != null ? params.halo * W : g) };
+    for (const pz of vivas) {
+      const rot = rng.range(-1, 1) * 3 * RAD; let pts = ejeDe(pz);
+      const cen = pts.reduce((a, q) => ({ x: a.x + q.x / pts.length, y: a.y + q.y / pts.length }), { x: 0, y: 0 });
+      pts = densa(giraYdesvia(pts, rot, cen.x, cen.y));
+      const ramas = (pz.ramas || []).map(rc => densa(giraYdesvia(ejeDe(rc), rot, cen.x, cen.y)));
+      const fuera = pts.some(q => q.x < 0 || q.y < 0 || q.x > fw || q.y > fh);
+      ctx.trazos.push({ pts, segs: segsDe(pts), ramas, W: W * rng.range(0.96, 1.04), rel: pz === vivas[0] ? 'espina' : 'paseo', sangra: fuera, cruza: false, gubia: gubiaDe(rng, ctx), fin: 'paseo', celdas: pz.length });
+    }
+    holguras(ctx);
+    const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };
+    const pas = pasillos(ctx.trazos, W, P);
+    let vert = 0, quiebros = 0; for (const t of ctx.trazos) { vert += t.pts.length; quiebros += max(0, t.pts.length - 2); }
+    const Ls = ctx.trazos.map(t => largoDe(t.pts) / S).sort((a, b) => a - b), lMed = Ls.length ? Ls[Ls.length >> 1] : 0;
+    return { trazos: ctx.trazos, W, g, D: P, cerco: 0, patas: 0, masaN: 0, masa: med.ocupacion, objMasa: 0, mano: 1, ventanas: nV,
+             pega: 1, recto, vibF: 0, conc: 0, relleno: 1, relCount: { paseo: ctx.trazos.length, ramas: ctx.trazos.filter(t => t.ramas.length).length }, vibra: false,
+             orto: true, travesia: false, halo: ctx.halo, cierre: CIERRE_POR, rumbos: [th / RAD],
+             modelo: 'paseo', pedidos: ctx.trazos.length, celdas: cells.size, cobertura: cob,
+             ojos: med.ojos, ocupacion: med.ocupacion, pasillos: pas.n, largoPas: pas.largo / W, vert, quiebros,
+             largoMax: Ls.length ? Ls[Ls.length - 1] : 0, reparto: lMed > 0 ? Ls[Ls.length - 1] / lMed : 0,
+             sangrados: ctx.trazos.filter(x => x.sangra).length };
+  }
+
   function tramarCalco(rng, fw, fh, tipo, params) {
     const base = CALCOS[tipo] ? tipo : 'bloque';
     const calco = CALCOS[base];
@@ -3449,9 +3613,12 @@
       const N = params.trazos ? params.trazos : r2.int(t.n[0], t.n[1]);
       // EL MODELO: la retícula es la de los grabados y la de producción; el de
       // trazos sueltos se queda en el laboratorio para comparar.
-      const modelo = params.modelo || 'calco';
+      // el modelo de producción por tipo: el PASEO para el bloque y el haz (referencia 2);
+      // el calco para el recinto y la travesía, hasta que tengan el suyo
+      const modelo = params.modelo || ((tipo === 'bloque' || tipo === 'haz') ? 'paseo' : 'calco');
       const r3 = new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0);
-      const c = modelo === 'calco' ? tramarCalco(r3, fw, fh, tipo, params)
+      const c = modelo === 'paseo' ? tramarPaseo(r3, fw, fh, tipo, params)
+              : modelo === 'calco' ? tramarCalco(r3, fw, fh, tipo, params)
               : modelo === 'libre' ? tramarLibre(r3, fw, fh, tipo, params)
               : modelo === 'reja' ? tramarReja(r3, fw, fh, tipo, params)
               : tramar(r3, fw, fh, tipo, params);
