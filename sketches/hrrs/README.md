@@ -2837,6 +2837,43 @@ esquina aparece a veces una esquirla blanca (el corte del halo sobre una punta);
 la travesía recorta trozos finos en el borde al pasar de vertical a cuadrado; y
 las variaciones son todavía reconocibles como su original con pocas mutaciones.
 
+## Duodécima vuelta: el margen se homogeneiza
+
+El autor, sobre las hojas del calco: *«cuando trazos de Chillida se paralelizan,
+me da igual si es la 1, 2 o 3, el margen entre trazos se homogeneiza prácticamente
+en todo el cuadro. En tu caso hay distancias grandes y cortas»*. Y la regla que
+propuso: el trazo es un conjunto de puntos, muchos, y cada punto está paralelizado
+o no según la distancia a los trazos de alrededor.
+
+Es `paralelizar()`, y corre después de componer en los modelos calco y libre: cada
+trazo se muestrea a un cuarto de anchura; de cada muestra se busca el tramo de otro
+trazo que corre casi paralelo (menos de 30°) más cercano, y si está a menos de una
+anchura por encima del canal (`CAPTURA`), la muestra se lleva exactamente al canal
+—a `(Wi + Wj)/2 + g` de eje a eje—; si no, queda libre. Los cabos que se encuentran
+en ángulo no se tocan: la regla es de lo que corre junto, no de lo que se apoya.
+
+Medido sobre 24 obras por tipo, con la distancia de cada muestra a su vecino
+paralelo en unidades de su canal:
+
+| | antes (p50 / p75) | después (p50 / p75) | hueco intermedio antes → después |
+|---|---|---|---|
+| bloque | 1,19 / 1,99 | 1,03 / 1,42 | 13,3 % → 7,9 % |
+| recinto | 1,10 / 1,92 | 1,02 / 2,03 | 5,5 % → 2,7 % |
+| travesía | 1,00 / 1,10 | 1,01 / 1,09 | 3,8 % → 3,2 % |
+
+(«Hueco intermedio»: muestras a más de 1,3 canales pero a menos de un canal más
+0,8 anchuras del vecino, o sea el blanco que no es ni pelo ni aire.)
+
+Y la trampa, que costó una hoja entera: **el trazo se mueve como un cuerpo, no
+punto a punto.** La primera versión llevaba cada muestra a su vecino por su
+cuenta; dos muestras seguidas veían dos vecinos distintos, el eje salía como un
+rosario y el campo pintaba esquirlas por toda la obra. Ahora el desplazamiento se
+calcula por muestra, se descartan las rachas capturadas de menos de una anchura y
+media, se suaviza a lo largo del eje con una ventana de tres anchuras, se limita a
+0,3 anchuras por pasada y los cabos heredan el de su primer punto interior. Cuatro
+pasadas. En bloque, donde los trazos son cortos y van rodeados, el borde sale aún
+algo dentado en las zonas densas: queda.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

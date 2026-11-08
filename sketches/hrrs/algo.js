@@ -2671,6 +2671,92 @@
     }
   }
 
+  // ── PARALELIZAR: el margen se homogeneiza en todo el cuadro ─────────────────
+  //
+  // El autor, mirando las hojas: «cuando trazos de Chillida se paralelizan, me da
+  // igual si es la 1, 2 o 3, el margen entre trazos se homogeneiza prácticamente en
+  // todo el cuadro. En tu caso hay distancias grandes y cortas». Y la regla que
+  // propuso: el trazo es un conjunto de puntos, muchos, y cada punto está
+  // paralelizado o no según la distancia a los trazos de alrededor.
+  //
+  // Eso es esto. Cada trazo se muestrea a un cuarto de anchura; de cada punto se
+  // busca el tramo de otro trazo que corre casi paralelo (menos de 30°) más
+  // cercano; si está a menos de `captura` por encima del canal, el punto se lleva
+  // EXACTAMENTE al canal —a (Wi + Wj)/2 + g de eje a eje— y si no, queda libre.
+  // Un punto no se mueve si al moverse se metería en el canal de un tercero. Tres
+  // pasadas, porque al mover uno cambia lo que ve el siguiente; y al final el eje se
+  // simplifica para que el campo pinte tramos y no un rosario de puntos.
+  //
+  // Los cabos que se encuentran en ángulo no se tocan: la regla es de lo que corre
+  // paralelo, no de lo que se cruza o se apoya.
+  const CAPTURA = 1.0;                     // × W: hasta aquí por encima del canal, el punto se pega
+  const PARALELO_ANG = 30;                 // grados: por debajo, dos tramos «corren juntos»
+  function paralelizar(ctx, g, captura) {
+    const T = ctx.trazos; if (T.length < 2) return;
+    const anchoDe = t => t.W || ctx.W;
+    const paso = ctx.W / 4;
+    const remuestrea = pts => { const out = [pts[0]];
+      for (let i = 0; i + 1 < pts.length; i++) { const a = pts[i], b = pts[i + 1]; const L = hypot(b.x - a.x, b.y - a.y); const n = max(1, Math.round(L / paso));
+        for (let m = 1; m <= n; m++) out.push({ x: a.x + (b.x - a.x) * m / n, y: a.y + (b.y - a.y) * m / n, esq: m === n }); }
+      out[0].esq = true; return out; };
+    // EL TRAZO SE MUEVE COMO UN CUERPO, no punto a punto. La primera versión llevaba
+    // cada muestra al vecino más cercano por su cuenta y el eje salía como un
+    // rosario: dos muestras seguidas veían dos vecinos distintos y el campo pintaba
+    // esquirlas. Ahora el desplazamiento de cada muestra se calcula, se descartan las
+    // rachas capturadas de menos de una anchura, se suaviza a lo largo del eje y se
+    // limita a un tercio de anchura por pasada. Cuatro pasadas convergen.
+    const TOPE = ctx.W * 0.3, RADIO = 6, MIN_RACHA = 6;
+    for (let pasada = 0; pasada < 4; pasada++) {
+      for (let k = 0; k < T.length; k++) {
+        const tr = T[k], Wk = anchoDe(tr), dense = remuestrea(tr.pts);
+        const n = dense.length, delta = new Float64Array(n), nxs = new Float64Array(n), nys = new Float64Array(n);
+        for (let i = 0; i < n; i++) {
+          const p = dense[i];
+          const a = dense[max(0, i - 1)], b = dense[min(n - 1, i + 1)];
+          const tx = b.x - a.x, ty = b.y - a.y, tm = hypot(tx, ty) || 1e-9;
+          const ta = Math.atan2(ty, tx);
+          nxs[i] = -ty / tm; nys[i] = tx / tm;
+          let best = Infinity, bq = null, bj = -1;
+          for (let j = 0; j < T.length; j++) { if (j === k) continue;
+            for (const sg of T[j].segs) {
+              const tb = Math.atan2(sg[3] - sg[1], sg[2] - sg[0]);
+              let da = abs(((ta - tb) % Math.PI + Math.PI) % Math.PI); da = min(da, Math.PI - da);
+              if (da > PARALELO_ANG * RAD) continue;
+              const dx = sg[2] - sg[0], dy = sg[3] - sg[1], L2 = dx * dx + dy * dy || 1e-12;
+              const u = clamp(((p.x - sg[0]) * dx + (p.y - sg[1]) * dy) / L2, 0, 1);
+              const qx = sg[0] + u * dx, qy = sg[1] + u * dy, d = hypot(p.x - qx, p.y - qy);
+              if (d < best) { best = d; bq = { x: qx, y: qy }; bj = j; } } }
+          if (bj < 0 || best < 1e-9) continue;
+          const D = (Wk + anchoDe(T[bj])) / 2 + g;
+          if (best >= D + captura) continue;
+          // de qué lado está el vecino, por la normal propia; el desplazamiento es
+          // hacia él si hay hueco de más, y lejos si se mete en su canal
+          const lado = ((p.x - bq.x) * nxs[i] + (p.y - bq.y) * nys[i]) >= 0 ? 1 : -1;
+          delta[i] = lado * (D - best);
+        }
+        // rachas cortas fuera
+        for (let i = 0; i < n;) { if (delta[i] === 0) { i++; continue; } let j = i; while (j < n && delta[j] !== 0) j++; if (j - i < MIN_RACHA) for (let m = i; m < j; m++) delta[m] = 0; i = j; }
+        // los cabos no se doblan: heredan el desplazamiento del primer punto interior
+        if (n > 3) { const c0 = delta[2], c1 = delta[n - 3]; delta[0] = delta[1] = c0; delta[n - 1] = delta[n - 2] = c1; }
+        // suavizado triangular (ventana de ~3 anchuras) y tope
+        const suave = new Float64Array(n);
+        for (let i = 0; i < n; i++) { let acc = 0, wsum = 0; for (let r = -RADIO; r <= RADIO; r++) { const m = i + r; if (m < 0 || m >= n) continue; const w = RADIO + 1 - abs(r); acc += delta[m] * w; wsum += w; } suave[i] = clamp(acc / wsum, -TOPE, TOPE); }
+        let movido = false;
+        for (let i = 0; i < n; i++) {
+          if (abs(suave[i]) < g * 0.05) continue;
+          const p = dense[i], p2 = { x: p.x + nxs[i] * suave[i], y: p.y + nys[i] * suave[i] };
+          // ¿se mete en el canal de un tercero? entonces se queda
+          let libre = true;
+          for (let j = 0; j < T.length && libre; j++) { if (j === k) continue; const Dj = (Wk + anchoDe(T[j])) / 2 + g;
+            for (const sg of T[j].segs) if (pointSegDist(p2.x, p2.y, sg[0], sg[1], sg[2], sg[3]) < Dj * 0.97) { libre = false; break; } }
+          if (!libre) continue;
+          p.x = p2.x; p.y = p2.y; movido = true;
+        }
+        if (movido) { tr.pts = simplificar(dense, g * 0.6); tr.segs = segsDe(tr.pts); }
+      }
+    }
+  }
+
   // ── El modelo CALCO: variaciones sobre los tres originales ──────────────────
   //
   // El autor, con el modelo libre todavía lejos de las referencias, pidió la vía
@@ -2839,6 +2925,7 @@
       const fuera = pts.some(q => q.x < 0 || q.y < 0 || q.x > fw || q.y > fh);
       ctx.trazos.push({ pts, segs: segsDe(pts), W: t.W * Sc, rel: 'calco', sangra: fuera, cruza: false, gubia: gubiaDe(rng, ctx), fin: 'calco' });
     }
+    paralelizar(ctx, gS, (params.captura != null ? params.captura : CAPTURA) * W);
     holguras(ctx);
     const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };
     const pas = pasillos(ctx.trazos, W, D);
@@ -3101,6 +3188,8 @@
       ctx.trazos.push({ pts, segs: segsDe(pts), rel: companero >= 0 ? 'compania' : 'libre', sangra: fuera, cruza: cruceCon >= 0, gubia: gubiaDe(rng, ctx), fin: fin.por || 'compania' });
     }
     if (!sangra) apretar(ctx, D, DC * TOL);
+    // sin halo la regla es exacta sobre los ejes y nadie fabrica el canal: ahí no se paraleliza
+    if (ctx.halo > 0) paralelizar(ctx, g, (params.captura != null ? params.captura : CAPTURA) * W);
     holguras(ctx);
     const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };
     const pas = pasillos(ctx.trazos, W, D);
