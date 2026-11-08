@@ -3161,6 +3161,20 @@ Y lo incorporado en esta vuelta:
 - **El cruce solo por encima de una pieza perpendicular**: pasar por encima de una
   paralela no es un cruce, es un trasvase (`solape.js` lo cantó a 1,38 W²).
 
+## Vigesimoprimera vuelta: el límite como protagonista
+
+«El límite es el verdadero protagonista del espacio» (Chillida, 1988). En el paseo
+el contorno era un residuo del relleno: un blob. Ahora la silueta se decide antes
+de rellenar y lleva una **bahía** (entrante rectangular de 1–2 anchuras de boca y
+2–3 de fondo, nunca más del 35 % del cuerpo en ese eje, para no partirlo) y a veces
+un **saliente** por el otro lado. Sin borde del pliego, el cuerpo se recentra tras
+tallarlo.
+
+Lo que se probó y se recogió: dos bahías profundas más la ventana más el relleno al
+70 % dejaban cuerpos rotos en dos grupos y barras sueltas. Queda una bahía, el
+relleno al 78 % y la retirada al 12 %: el contorno tiene entrantes y el cuerpo
+sigue siendo uno.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

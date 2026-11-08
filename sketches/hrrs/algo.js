@@ -3045,7 +3045,7 @@
   const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
     bloque: { ancho: [0.085, 0.105], gam: [0.09, 0.13], celdas: [50, 62], cobertura: [0.3, 0.42], aspect: [1.05, 1.3],
-              racha: [3, 7], rachaE: [8, 14], trozo: [2, 5], lleno: 0.7, retira: 0.18, rama: 0.45, ventanas: [1, 2], cruza: 0.4 },
+              racha: [3, 7], rachaE: [8, 14], trozo: [2, 5], lleno: 0.78, retira: 0.12, rama: 0.45, ventanas: [1, 2], cruza: 0.4 },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
               racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
@@ -3073,7 +3073,27 @@
     const cx = fw / 2 + rng.range(-0.04, 0.04) * S, cy = fh / 2 + rng.range(-0.04, 0.04) * S, rot0 = rng.range(-0.25, 0.25);
     let Rf = R0; { let ext = 0; for (let i = 0; i < nR; i++) { const th = rot0 + i * 2 * Math.PI / nR;
       ext = max(ext, abs(Math.cos(th) * sm[i] * aspect) / max(0.05, min(cx, fw - cx) / S - MARGEN - 0.01), abs(Math.sin(th) * sm[i]) / max(0.05, min(cy, fh - cy) / S - MARGEN - 0.01)); } Rf = min(R0, S / ext); }
+    Rf *= 1.08;   // lo que se llevan las bahías
     const sil = []; for (let i = 0; i < nR; i++) { const th = rot0 + i * 2 * Math.PI / nR; sil.push({ x: cx + Math.cos(th) * Rf * sm[i] * aspect, y: cy + Math.sin(th) * Rf * sm[i] }); }
+    // EL LÍMITE ES EL PROTAGONISTA (Chillida, 1988). La silueta se decide antes de
+    // rellenar, y no es un blob: lleva ENTRANTES profundos —bahías rectangulares de
+    // 1–2 anchuras de boca y 2–4 de fondo— por el lado abierto, y un saliente por el
+    // denso. Es lo que hace que la referencia 2 tenga el contorno «a mordiscos» y no
+    // redondo. Se guardan como rectángulos que `inside` descuenta o añade.
+    const bahias = [], salientes = [];
+    { const nB = 1, bx0 = min(...sil.map(q => q.x)), bx1 = max(...sil.map(q => q.x)), by0 = min(...sil.map(q => q.y)), by1 = max(...sil.map(q => q.y));
+      // la bahía nunca parte el cuerpo: su fondo no pasa del 40 % del cuerpo en ese eje
+      for (let b = 0; b < nB; b++) { const lado = rng.int(0, 3), boca = P * rng.range(1.2, 2.2), fondo = min(P * rng.range(1.8, 2.8), 0.35 * (lado % 2 === 0 ? by1 - by0 : bx1 - bx0)), u = rng.range(0.25, 0.75);
+        if (lado === 0) bahias.push({ x0: bx0 + (bx1 - bx0) * u - boca / 2, x1: bx0 + (bx1 - bx0) * u + boca / 2, y0: by0 - P, y1: by0 + fondo });
+        else if (lado === 2) bahias.push({ x0: bx0 + (bx1 - bx0) * u - boca / 2, x1: bx0 + (bx1 - bx0) * u + boca / 2, y0: by1 - fondo, y1: by1 + P });
+        else if (lado === 1) bahias.push({ x0: bx1 - fondo, x1: bx1 + P, y0: by0 + (by1 - by0) * u - boca / 2, y1: by0 + (by1 - by0) * u + boca / 2 });
+        else bahias.push({ x0: bx0 - P, x1: bx0 + fondo, y0: by0 + (by1 - by0) * u - boca / 2, y1: by0 + (by1 - by0) * u + boca / 2 }); }
+      if (rng.bool(0.6)) { const lado = rng.int(0, 3), ancho = P * rng.range(1.2, 2.2), largo = P * rng.range(1.5, 3), u = rng.range(0.25, 0.75);
+        if (lado === 0) salientes.push({ x0: bx0 + (bx1 - bx0) * u - ancho / 2, x1: bx0 + (bx1 - bx0) * u + ancho / 2, y0: by0 - largo, y1: by0 + P });
+        else if (lado === 2) salientes.push({ x0: bx0 + (bx1 - bx0) * u - ancho / 2, x1: bx0 + (bx1 - bx0) * u + ancho / 2, y0: by1 - P, y1: by1 + largo });
+        else if (lado === 1) salientes.push({ x0: bx1 - P, x1: bx1 + largo, y0: by0 + (by1 - by0) * u - ancho / 2, y1: by0 + (by1 - by0) * u + ancho / 2 });
+        else salientes.push({ x0: bx0 - largo, x1: bx0 + P, y0: by0 + (by1 - by0) * u - ancho / 2, y1: by0 + (by1 - by0) * u + ancho / 2 }); } }
+    const enRect = (r, x, y) => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1;
     { let A = 0; for (let i = 0; i < nR; i++) { const a = sil[i], b = sil[(i + 1) % nR]; A += a.x * b.y - b.x * a.y; } A = abs(A) / 2;
       // si en la silueta caben menos celdas de las pedidas, la anchura baja hasta que quepan
       const Pmax = Math.sqrt(A * 0.92 / nCel); if (P > Pmax) { P = Pmax; W = P / (1 + gam); g = W * gam; } }
@@ -3103,7 +3123,8 @@
       if (bordes.arriba && bordes.abajo) { const a = -mas(bordes.arriba), b = fh + mas(bordes.abajo), esc = (b - a) / (y1s - y0s); for (const q of sil) q.y = a + (q.y - y0s) * esc; dy = 0; }
       for (const q of sil) { q.x += dx; q.y += dy; }
     }
-    const inside = (x, y) => { let c = false; for (let i = 0, j = sil.length - 1; i < sil.length; j = i++) { const a = sil[i], b = sil[j]; if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) c = !c; } return c; };
+    const insideSil = (x, y) => { let c = false; for (let i = 0, j = sil.length - 1; i < sil.length; j = i++) { const a = sil[i], b = sil[j]; if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) c = !c; } return c; };
+    const inside = (x, y) => (insideSil(x, y) && !bahias.some(r => enRect(r, x, y))) || salientes.some(r => enRect(r, x, y));
     // y lo que cada borde permite al centro de una celda
     const mB = mB0, mM = MARGEN * S + W / 2;
     const cabeBorde = (x, y) => {
@@ -3119,12 +3140,16 @@
     // abre entera si su brazo del medio se inclina hacia el lado bueno).
     const th = rng.range(-1, 1) * (Object.keys(bordes).length ? 2.5 : 8) * RAD;
     const ux = Math.cos(th), uy = Math.sin(th), vx = -uy, vy = ux, Pl = P;
-    const ox = rng.range(0, P), oy = rng.range(0, P);
+    let ox = rng.range(0, P), oy = rng.range(0, P);
     const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
     const N = Math.ceil(max(fw, fh) * 1.5 / P), cells = new Map(), key = (i, j) => i + ',' + j;
     const centro = (i, j) => ({ x: cx + ox + ux * (i * Pl) + vx * (j * Pl), y: cy + oy + uy * (i * Pl) + vy * (j * Pl) });
     let total = 0, enPliego = 0;
     for (let i = -N; i <= N; i++) for (let j = -N; j <= N; j++) { const c = centro(i, j); if (!inside(c.x, c.y)) continue; total++; if (cabeBorde(c.x, c.y)) { cells.set(key(i, j), { i, j, used: false }); if (c.x >= 0 && c.y >= 0 && c.x <= fw && c.y <= fh) enPliego++; } }
+    if (!Object.keys(bordes).length && cells.size) {
+      // sin borde, el cuerpo va centrado en el pliego (las bahías lo descentraban)
+      let sx = 0, sy = 0; for (const c of cells.values()) { const q = centro(c.i, c.j); sx += q.x; sy += q.y; }
+      ox += fw / 2 - sx / cells.size; oy += fh / 2 - sy / cells.size; }
     if (Object.keys(bordes).length && enPliego < total * 0.7) {
       // el borde se comía más de un tercio del cuerpo (la silueta cayó en la esquina): sin borde
       for (const k of Object.keys(bordes)) delete bordes[k];
