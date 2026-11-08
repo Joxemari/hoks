@@ -1032,7 +1032,142 @@
   }
   // El campo de una obra ya hecha, desde su `geo` publicada: las etiquetas por
   // píxel. Lo usa `verificacion/pelo.js`; no pinta nada.
+  // ── El pintor de HALO: el lienzo nativo, en orden ───────────────────────────
+  //
+  // El campo de distancia (`pintarCampo`) pinta el pelo exacto, pero su geometría
+  // de ingletes y cortes deja esquirlas y dientes en cada unión complicada, y
+  // llevábamos tres vueltas peleando con el pintor en vez de con el dibujo. Esto
+  // es el mismo principio del halo con el lienzo del navegador: cada trazo, en
+  // orden, primero BORRA un halo de su anchura más dos pelos (destination-out,
+  // sobre una capa transparente, así vale con cualquier fondo) y luego pinta su
+  // banda. Donde pasa por encima deja el pelo exacto; donde dos corren a un canal
+  // el blanco mide g; donde se funden, se funden. Sin ingletes que calcular.
+  //
+  // Y de paso la mano: el eje se SUAVIZA en las esquinas (radio `esquina` × W) y
+  // la banda se construye muestra a muestra con la anchura de la gubia, así que el
+  // trazo engorda y adelgaza a lo largo y el borde no es una regla. Los cabos van
+  // a escuadra.
+  const ESQUINA = 0;                       // radio de la esquina, × W: 0 = inglete vivo, el de la xilografía
+  function suavizarEje(pts, r) {
+    if (pts.length < 3 || r <= 0) return pts.slice();
+    const out = [pts[0]];
+    for (let i = 1; i < pts.length - 1; i++) {
+      const a = pts[i - 1], p = pts[i], b = pts[i + 1];
+      const la = hypot(p.x - a.x, p.y - a.y), lb = hypot(b.x - p.x, b.y - p.y);
+      const ra = min(r, la * 0.45), rb = min(r, lb * 0.45);
+      const p0 = { x: p.x + (a.x - p.x) / la * ra, y: p.y + (a.y - p.y) / la * ra };
+      const p1 = { x: p.x + (b.x - p.x) / lb * rb, y: p.y + (b.y - p.y) / lb * rb };
+      // bezier cuadrático p0 → p → p1, en 6 pasos
+      for (let t = 0; t <= 1.0001; t += 1 / 6) {
+        const u = 1 - t;
+        out.push({ x: u * u * p0.x + 2 * u * t * p.x + t * t * p1.x, y: u * u * p0.y + 2 * u * t * p.y + t * t * p1.y });
+      }
+    }
+    out.push(pts[pts.length - 1]);
+    return out;
+  }
+  function bandaHalo(pts, Wt, gub, paso, mas) {
+    // la banda como piezas que no se cruzan: RECTÁNGULOS por muestra a lo largo de
+    // cada tramo (con la normal del tramo, así la gubia varía la anchura) y una CUÑA
+    // en cada vértice por el lado exterior —vértice, esquina del tramo que llega, el
+    // inglete (tope MITER; más allá, bisel) y esquina del tramo que sale—. Es la
+    // construcción del campo, hecha con polígonos. Desplazar un eje por su normal
+    // redondeaba toda esquina con radio de media anchura (gusanos) y un solo
+    // polígono se cruzaba a sí mismo por dentro (triángulos vacíos).
+    const n = pts.length; if (n < 2) return null;
+    let tot = 0; const Ls = [];
+    for (let i = 0; i + 1 < n; i++) { const L = hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y); Ls.push(L); tot += L; }
+    if (tot < 1e-9) return null;
+    const out = []; let acc = 0;
+    const normal = i => { const L = Ls[i] || 1e-9; return { x: -(pts[i + 1].y - pts[i].y) / L, y: (pts[i + 1].x - pts[i].x) / L }; };
+    const hEn = f => (Wt + (anchoEn(f, Wt, gub) - Wt) * 0.5) / 2 + mas;
+    for (let i = 0; i + 1 < n; i++) {
+      const L = Ls[i]; if (L < 1e-9) continue;
+      const a = pts[i], b = pts[i + 1], nn = normal(i);
+      const m = max(1, Math.ceil(L / paso));
+      // UN polígono por tramo: el costado izquierdo de ida y el derecho de vuelta,
+      // con la anchura de la gubia en cada muestra. En un tramo recto no se cruza.
+      // Se alarga 0,6 px por los dos cabos interiores para que la junta con el
+      // vecino no deje costura de antialias (trapecios sueltos dejaban dientes).
+      // y en los cabos, el halo se alarga `mas`: un cabo apoyado contra un cuerpo
+      // también deja su pelo (sin esto, pelo.js cantaba el cabo pegado al cuerpo)
+      const ux = (b.x - a.x) / L, uy = (b.y - a.y) / L, e0 = i === 0 ? mas : 0.6, e1 = i + 2 >= n ? mas : 0.6;
+      const izq = [], der = [];
+      for (let k = 0; k <= m; k++) {
+        const t = k / m, h = hEn((acc + L * t) / tot), ext = k === 0 ? -e0 : k === m ? e1 : 0;
+        const px = a.x + (b.x - a.x) * t + ux * ext, py = a.y + (b.y - a.y) * t + uy * ext;
+        izq.push({ x: px + nn.x * h, y: py + nn.y * h }); der.push({ x: px - nn.x * h, y: py - nn.y * h });
+      }
+      out.push(izq.concat(der.reverse()));
+      if (i + 2 < n && Ls[i + 1] > 1e-9) {
+        // la cuña del vértice b, por el lado exterior del giro
+        const n2 = normal(i + 1), h = hEn((acc + L) / tot);
+        const cruz = (b.x - a.x) * (pts[i + 2].y - b.y) - (b.y - a.y) * (pts[i + 2].x - b.x);
+        const sg = cruz > 0 ? -1 : 1;   // exterior: el lado contrario al giro
+        const e1 = { x: b.x + nn.x * h * sg, y: b.y + nn.y * h * sg }, e2 = { x: b.x + n2.x * h * sg, y: b.y + n2.y * h * sg };
+        const bx = (nn.x + n2.x) * sg, by = (nn.y + n2.y) * sg, bm = hypot(bx, by);
+        if (bm > 1e-6) {
+          const cosH = (bx * nn.x * sg + by * nn.y * sg) / bm, esc = 1 / max(1e-6, cosH);
+          if (esc <= MITER) out.push([b, e1, { x: b.x + bx / bm * h * esc, y: b.y + by / bm * h * esc }, e2]);
+          else out.push([b, e1, e2]);   // bisel
+        }
+      }
+      acc += L;
+    }
+    // EL HALO LLEVA UN DISCO EN CADA VÉRTICE. En una horquilla (giro de casi 180°)
+    // la banda hace punta y el halo, que solo ensancha a los lados, no la cubre por
+    // delante: un cuerpo que pase por ahí la toca (pelo.js lo cantó, 20 de 30). El
+    // disco de radio h + g alrededor de cada vértice INTERIOR lo cierra. En los
+    // cabos no: ahí el halo ya se alarga `mas` a escuadra, y un disco dejaba un
+    // mordisco redondo en el cuerpo donde el cabo se apoya, que en los originales
+    // es un corte recto.
+    if (mas > 0) {
+      let acc2 = 0;
+      for (let i = 0; i < n - 1; i++) {
+        acc2 += Ls[i];
+        if (i + 1 >= n - 1) break;
+        const h = hEn(acc2 / tot), q = [];
+        for (let k = 0; k < 16; k++) q.push({ x: pts[i + 1].x + Math.cos(k * Math.PI / 8) * h, y: pts[i + 1].y + Math.sin(k * Math.PI / 8) * h });
+        out.push(q);
+      }
+    }
+    // todas con la misma orientación: nonzero suma, no resta
+    for (let q of out) { let area = 0; for (let k = 0; k < q.length; k++) { const a2 = q[k], b2 = q[(k + 1) % q.length]; area += a2.x * b2.y - b2.x * a2.y; } if (area < 0) q.reverse(); }
+    return out;
+  }
+  function pintarHalo(ctx, trazos, Wf, gf, S, ox, tinta, Wpx, Hpx, esquina, etiquetas) {
+    const capa = document.createElement('canvas'); capa.width = Wpx; capa.height = Hpx;
+    const c = capa.getContext('2d');
+    const poly = (quads) => { c.beginPath(); for (const q of quads) { c.moveTo(q[0].x, q[0].y); for (let i = 1; i < q.length; i++) c.lineTo(q[i].x, q[i].y); c.closePath(); } c.fill(); };
+    const r = (esquina != null ? esquina : ESQUINA) * Wf * S, paso = Wf * S / 6, gpx = gf * S;
+    trazos.forEach((tr, k) => {
+      const Wt = (tr.W || Wf) * S;
+      const eje = suavizarEje(tr.pts.map(p => ({ x: ox + p.x * S, y: p.y * S })), r);
+      const halo = bandaHalo(eje, Wt, tr.gubia, paso, gpx), banda = bandaHalo(eje, Wt, tr.gubia, paso, 0);
+      if (!halo || !banda) return;
+      c.globalCompositeOperation = 'destination-out'; c.fillStyle = '#000'; poly(halo);
+      c.globalCompositeOperation = 'source-over';
+      // con etiquetas: cada trazo con su color, en MÚLTIPLOS DE CUATRO: con alfa
+      // premultiplicada el antialias desplaza el valor en uno o dos, y una etiqueta
+      // contigua se leía como otro trazo pegado (pelo.js cantaba 70 de 75)
+      const lab = (k + 1) * 4;
+      c.fillStyle = etiquetas ? `rgb(${lab & 255},${(lab >> 8) & 255},0)` : tinta; poly(banda);
+    });
+    if (etiquetas) {
+      const d = c.getImageData(0, 0, Wpx, Hpx).data;
+      for (let i = 0; i < Wpx * Hpx; i++) etiquetas[i] = d[i * 4 + 3] > 200 ? Math.round((d[i * 4] + (d[i * 4 + 1] << 8)) / 4) : 0;
+      return;
+    }
+    ctx.drawImage(capa, 0, 0);
+  }
+
   function etiquetas(geo, Wpx, Hpx) {
+    if (geo.pintor === 'halo') {
+      const trazos = geo.cintas.map((pts, k) => ({ pts, gubia: geo.gubia ? geo.gubia[k] : null, W: geo.anchos ? geo.anchos[k] || undefined : undefined }));
+      const et = new Int32Array(Wpx * Hpx);
+      pintarHalo(null, trazos, geo.W, geo.g, geo.S, geo.ox, '#000', Wpx, Hpx, geo.esquina, et);
+      return et;
+    }
     const trazos = geo.cintas.map((pts, k) => ({ pts, gubia: geo.gubia ? geo.gubia[k] : null, W: geo.anchos ? geo.anchos[k] || undefined : undefined }));
     const cruza = new Set();
     if (geo.debajo) geo.debajo.forEach((lst, k) => lst.forEach(j => cruza.add(j * 4096 + k)));
@@ -3362,7 +3497,10 @@
         }
         if (toca) { debajo[k].push(j); cruza.add(j * 4096 + k); }
       }
-    pintarCampo(ctx, best.trazos, best.W, best.g, best.relleno || 1, S, ox, rol.tinta, W, H, cruza);
+    const pintor = params.pintor || 'halo';
+    const esquina = params.esquina != null ? params.esquina : ESQUINA;
+    if (pintor === 'halo') pintarHalo(ctx, best.trazos, best.W, best.g, S, ox, rol.tinta, W, H, esquina);
+    else pintarCampo(ctx, best.trazos, best.W, best.g, best.relleno || 1, S, ox, rol.tinta, W, H, cruza);
 
     E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF), seed);
 
@@ -3388,6 +3526,7 @@
                     gubia: best.trazos.map(x => x.gubia || 0), fin: best.trazos.map(x => x.fin || null), debajo,
                     // la anchura propia de cada trazo (el calco las tiene distintas); null = la de la obra
                     anchos: best.trazos.map(x => x.W || null),
+                    pintor, esquina,
                     cierre: best.cierre, rumbos: best.rumbos,
                     // el halo de ESTA obra. Lo mira `canal.js`: la regla vieja -ningun
                     // par por debajo de D- vale donde NO hay halo, y donde lo hay no,
@@ -3619,5 +3758,5 @@
   // `banda` sale fuera para el DETECTOR, no para dibujar. `pelo.js` tiene que pintar
   // cada trazo con su etiqueta y con los mismos cortes que la obra publicada, y un
   // detector que reimplementa el dibujo mide su copia, no el dibujo.
-  (global.HOKS = global.HOKS || {}).HRRS = { render, componer, traits, TIPOS, RELS, BG_GRADIENT, FORMATS, banda, corte, etiquetas, pintarCampo };
+  (global.HOKS = global.HOKS || {}).HRRS = { render, componer, traits, TIPOS, RELS, BG_GRADIENT, FORMATS, banda, corte, etiquetas, pintarCampo, pintarHalo };
 })(typeof window !== 'undefined' ? window : globalThis);

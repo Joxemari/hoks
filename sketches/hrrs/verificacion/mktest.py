@@ -95,6 +95,15 @@ elif roto == 'junto':
     assert a in src, 'no encuentro la tolerancia del modelo libre'
     src = src.replace(a, "    const TOL = 0.85;   // ROTO A PROPOSITO")
 
+elif roto == 'halo0':
+    # EL HALO DEL PINTOR NATIVO, ROTO: cada trazo borra a su alrededor un pelo de g
+    # antes de pintarse. Con 0,4 g, `pelo.js` tiene que cantar pares por debajo de g.
+    # Es el control del pintor de producción desde la decimocuarta vuelta; `pelo0`
+    # parcheaba el campo de distancia, que ya no se publica.
+    a = "    const r = (esquina != null ? esquina : ESQUINA) * Wf * S, paso = Wf * S / 6, gpx = gf * S;"
+    assert a in src, 'no encuentro el pelo del pintor de halo'
+    src = src.replace(a, "    const r = (esquina != null ? esquina : ESQUINA) * Wf * S, paso = Wf * S / 6, gpx = gf * S * 0.4;   // ROTO A PROPOSITO")
+
 elif roto == 'pelo0':
     # EL PELO DEL CAMPO, ROTO: el canal visible se fabrica en `pintarCampo` como la
     # franja donde d2 - d1 < g. Si se pinta con 0,4 g, el detector `pelo` tiene que

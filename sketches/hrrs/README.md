@@ -2900,6 +2900,55 @@ familia sin calco detrás; el recinto sale pequeño y a palos rectos (los
 acompañantes del marco), y la travesía deja algún tocón. El calco sigue siendo el
 modelo de producción; el libre es el que puede crecer sin deber nada a tres obras.
 
+## Decimocuarta vuelta: el pintor de halo
+
+El autor, sobre las hojas: «mala pinta, ¿qué nos falta?». Lo primero de la lista
+era el pintor: el campo de distancia pinta el pelo exacto, pero su geometría de
+ingletes y cortes dejaba esquirlas y dientes en cada unión complicada, y llevábamos
+tres vueltas peleando con él en vez de con el dibujo.
+
+`pintarHalo` es el mismo principio del halo con el lienzo nativo: sobre una capa
+transparente, cada trazo en orden primero **borra** un halo de su anchura más dos
+pelos (`destination-out`) y luego pinta su banda. Donde pasa por encima deja el pelo
+exacto; donde dos corren a un canal el blanco mide g; donde se funden, se funden.
+`etiquetas()` lo reproduce pintando cada trazo de su color, así que `pelo.js` mide
+lo publicado. Es el pintor de producción; el campo queda en el harness para comparar.
+
+Y lo que costó que la banda saliera limpia, por orden:
+
+- **Desplazar el eje por su normal redondea toda esquina exterior con radio de
+  media anchura**, aunque el eje sea vivo: gusanos. La esquina viva la da el
+  inglete, no el eje.
+- **Un solo polígono (ida por un costado, vuelta por el otro) se cruza a sí mismo
+  en cada esquina interior** y la regla nonzero deja un triángulo vacío. Y el
+  inglete escalado se dispara en los vértices agudos.
+- Así que la banda es la construcción del campo hecha con polígonos: **un
+  polígono por tramo** (los dos costados, con la anchura de la gubia en cada
+  muestra; en un tramo recto no se cruza) y **una cuña por vértice** en el lado
+  exterior, con el inglete a tope `MITER` y bisel más allá. Todas las piezas con
+  la misma orientación, en un solo trazado.
+- Dos bordes coincidentes con antialias dejan una costura clara: cada tramo se
+  alarga 0,6 px por los cabos interiores. Pero alargar trapecios *por muestra*
+  dejaba un diente en cada junta donde cambia la pendiente de la gubia (un peine
+  por todo el costado): de ahí un polígono por tramo y no por muestra.
+
+La gubia va a la mitad de amplitud: con el campo el temblor se leía como textura;
+con el borde limpio la misma amplitud se leía como ondulación.
+
+Y lo que cazó `pelo.js`, que es para lo que está:
+
+- **Las etiquetas van en múltiplos de cuatro.** `etiquetas()` pinta cada trazo de
+  su color y lee la capa; con alfa premultiplicada el antialias desplaza el valor
+  en uno o dos y una etiqueta contigua se leía como otro trazo pegado (70 de 75).
+- **El halo se alarga en los cabos** lo mismo que a los lados: un cabo apoyado
+  contra un cuerpo lo tocaba.
+- **La horquilla.** En un vértice con giro de casi 180° la banda hace punta y el
+  halo, que solo ensancha a los lados, no la cubre por delante. Un disco de halo
+  en cada vértice *interior* lo cierra; en los cabos no, que dejaba un mordisco
+  redondo donde el original corta a escuadra.
+- Y el control: `halo0` (el pelo del pintor a 0,4 g) dispara 56 de 60; `pelo0`
+  parcheaba el campo, que ya no se publica, y se retira del bloque.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
