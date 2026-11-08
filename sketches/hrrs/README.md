@@ -2949,6 +2949,36 @@ Y lo que cazó `pelo.js`, que es para lo que está:
 - Y el control: `halo0` (el pelo del pintor a 0,4 g) dispara 56 de 60; `pelo0`
   parcheaba el campo, que ya no se publica, y se retira del bloque.
 
+## Decimoquinta vuelta: la mano en el pintor, y las reglas del autor
+
+Lo que el autor fijó mirando las hojas, y que manda sobre cualquier medida:
+
+- **El grosor es homogéneo** en toda la obra, salvo la variación mínima natural de
+  cada trazo (±4 %). Había metido piezas un tercio más gruesas: fuera.
+- **Las esquinas son vivas, nunca curvas.** Probé achatar la punta del inglete y
+  redondear el eje: fuera las dos cosas. `ESQUINA = 0`.
+- **Nunca un giro en torno a sí mismo**: el trazo no vuelve sobre su propio
+  cuerpo a un pelo. Las úes existen, pero abiertas.
+
+Y la mano, en `pintarHalo`, con su propio `Rng` sembrado aparte (`manoSeed`) para
+que la composición no cambie con ella:
+
+- cada costado de cada pieza ondula despacio y por su cuenta (dos senos, amplitud
+  `MANO_VIB` = 0,03 W, ondas de 2–4 anchuras). El halo lleva además el tope de esa
+  ondulación, porque el vecino ondula por su cuenta y sin eso se metía en el pelo
+  (`pelo.js` cantó 8 de 75).
+- el **pelo fundido** —un tramo de una anchura donde el halo no corta— está escrito
+  (`params.funde`) pero **apagado**: rompe a propósito la regla de la familia y
+  `pelo.js` lo canta, que es lo que tiene que hacer. Si se enciende, la obra no
+  promete la regla.
+- el control `halo0` se reescribió para la firma nueva del pintor.
+
+Fuera del repo sigue el prototipo del **paseo que rellena**: silueta sobre rejilla
+de paso W + g, un paseo que no se cruza y crece por los dos cabos, con espina
+(el primero, largo), úes (dos giros al mismo lado, nunca tres), una ventana grande
+antes de pasear, y la anchura derivada del número de celdas. Es la base del bloque
+que viene; lo siguiente es probar espesores y fijarlos por tipo.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

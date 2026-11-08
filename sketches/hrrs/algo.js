@@ -1047,7 +1047,19 @@
   // la banda se construye muestra a muestra con la anchura de la gubia, así que el
   // trazo engorda y adelgaza a lo largo y el borde no es una regla. Los cabos van
   // a escuadra.
-  const ESQUINA = 0;                       // radio de la esquina, × W: 0 = inglete vivo, el de la xilografía
+  const ESQUINA = 0;                       // la punta del inglete, entera: las esquinas son vivas, nunca curvas (el autor)
+  // LA MANO. La recta no es recta: cada costado de cada pieza ondula despacio y por
+  // su cuenta (dos senos, amplitud MANO_VIB × W, ondas de 2–4 anchuras), y el pelo
+  // no es perfecto: en una de cada tres piezas hay un tramo de una anchura donde el
+  // halo no corta y las dos tintas se funden. Es lo que delata la mano aunque el
+  // dibujo esté bien, y lo que delataba al ordenador cuando el pelo era perfecto.
+  const MANO_VIB = 0.03;                   // × W
+  const MANO_ONDA = [2.0, 4.0];            // × W
+  // APAGADO por defecto: el pelo fundido rompe a propósito la regla de la familia
+  // (el blanco mide g) y pelo.js lo canta, que es lo que tiene que hacer. Se enciende
+  // con params.funde (probabilidad por pieza), y entonces la obra no promete la regla.
+  const P_FUNDE = 0;                       // piezas con un tramo fundido
+  const FUNDE_L = [0.6, 1.4];              // largo del tramo fundido, × W
   function suavizarEje(pts, r) {
     if (pts.length < 3 || r <= 0) return pts.slice();
     const out = [pts[0]];
@@ -1066,7 +1078,7 @@
     out.push(pts[pts.length - 1]);
     return out;
   }
-  function bandaHalo(pts, Wt, gub, paso, mas) {
+  function bandaHalo(pts, Wt, gub, paso, mas, mano, esq) {
     // la banda como piezas que no se cruzan: RECTÁNGULOS por muestra a lo largo de
     // cada tramo (con la normal del tramo, así la gubia varía la anchura) y una CUÑA
     // en cada vértice por el lado exterior —vértice, esquina del tramo que llega, el
@@ -1080,7 +1092,15 @@
     if (tot < 1e-9) return null;
     const out = []; let acc = 0;
     const normal = i => { const L = Ls[i] || 1e-9; return { x: -(pts[i + 1].y - pts[i].y) / L, y: (pts[i + 1].x - pts[i].x) / L }; };
-    const hEn = f => (Wt + (anchoEn(f, Wt, gub) - Wt) * 0.5) / 2 + mas;
+    // `mano`: { vib, o1, o2, f1..f4, funde: [s0, s1] o null } — la ondulación de cada
+    // costado y el tramo (en longitud de arco) donde el halo no corta
+    // el halo lleva además el tope de la ondulación: el vecino ondula por su cuenta y
+    // sin esto se metía en el pelo (pelo.js: 8 de 75 por debajo de g)
+    const masV = mas > 0 && mano ? mas + mano.vib * 1.5 : mas;
+    const masEn = s => (mas > 0 && mano && mano.funde && s >= mano.funde[0] && s <= mano.funde[1]) ? 0 : masV;
+    const vibI = s => mano ? mano.vib * (Math.sin(s / mano.o1 + mano.f1) + 0.5 * Math.sin(s / mano.o2 + mano.f2)) : 0;
+    const vibD = s => mano ? mano.vib * (Math.sin(s / mano.o2 + mano.f3) + 0.5 * Math.sin(s / mano.o1 + mano.f4)) : 0;
+    const hEn = f => (Wt + (anchoEn(f, Wt, gub) - Wt) * 0.5) / 2;
     for (let i = 0; i + 1 < n; i++) {
       const L = Ls[i]; if (L < 1e-9) continue;
       const a = pts[i], b = pts[i + 1], nn = normal(i);
@@ -1094,21 +1114,27 @@
       const ux = (b.x - a.x) / L, uy = (b.y - a.y) / L, e0 = i === 0 ? mas : 0.6, e1 = i + 2 >= n ? mas : 0.6;
       const izq = [], der = [];
       for (let k = 0; k <= m; k++) {
-        const t = k / m, h = hEn((acc + L * t) / tot), ext = k === 0 ? -e0 : k === m ? e1 : 0;
+        const t = k / m, sArc = acc + L * t, h = hEn(sArc / tot), ext = k === 0 ? -e0 : k === m ? e1 : 0, ms = masEn(sArc);
         const px = a.x + (b.x - a.x) * t + ux * ext, py = a.y + (b.y - a.y) * t + uy * ext;
-        izq.push({ x: px + nn.x * h, y: py + nn.y * h }); der.push({ x: px - nn.x * h, y: py - nn.y * h });
+        const hI = h + ms + vibI(sArc), hD = h + ms + vibD(sArc);
+        izq.push({ x: px + nn.x * hI, y: py + nn.y * hI }); der.push({ x: px - nn.x * hD, y: py - nn.y * hD });
       }
       out.push(izq.concat(der.reverse()));
       if (i + 2 < n && Ls[i + 1] > 1e-9) {
         // la cuña del vértice b, por el lado exterior del giro
-        const n2 = normal(i + 1), h = hEn((acc + L) / tot);
+        const n2 = normal(i + 1), h = hEn((acc + L) / tot) + masEn(acc + L);
         const cruz = (b.x - a.x) * (pts[i + 2].y - b.y) - (b.y - a.y) * (pts[i + 2].x - b.x);
         const sg = cruz > 0 ? -1 : 1;   // exterior: el lado contrario al giro
         const e1 = { x: b.x + nn.x * h * sg, y: b.y + nn.y * h * sg }, e2 = { x: b.x + n2.x * h * sg, y: b.y + n2.y * h * sg };
         const bx = (nn.x + n2.x) * sg, by = (nn.y + n2.y) * sg, bm = hypot(bx, by);
         if (bm > 1e-6) {
           const cosH = (bx * nn.x * sg + by * nn.y * sg) / bm, esc = 1 / max(1e-6, cosH);
-          if (esc <= MITER) out.push([b, e1, { x: b.x + bx / bm * h * esc, y: b.y + by / bm * h * esc }, e2]);
+          if (esc <= MITER) {
+            const mx = b.x + bx / bm * h * esc, my = b.y + by / bm * h * esc;
+            // la punta achatada: dos puntos a `esq` de camino hacia el inglete
+            if (esq > 0) out.push([b, e1, { x: e1.x + (mx - e1.x) * (1 - esq), y: e1.y + (my - e1.y) * (1 - esq) }, { x: e2.x + (mx - e2.x) * (1 - esq), y: e2.y + (my - e2.y) * (1 - esq) }, e2]);
+            else out.push([b, e1, { x: mx, y: my }, e2]);
+          }
           else out.push([b, e1, e2]);   // bisel
         }
       }
@@ -1126,7 +1152,7 @@
       for (let i = 0; i < n - 1; i++) {
         acc2 += Ls[i];
         if (i + 1 >= n - 1) break;
-        const h = hEn(acc2 / tot), q = [];
+        const h = hEn(acc2 / tot) + masEn(acc2), q = [];
         for (let k = 0; k < 16; k++) q.push({ x: pts[i + 1].x + Math.cos(k * Math.PI / 8) * h, y: pts[i + 1].y + Math.sin(k * Math.PI / 8) * h });
         out.push(q);
       }
@@ -1135,15 +1161,26 @@
     for (let q of out) { let area = 0; for (let k = 0; k < q.length; k++) { const a2 = q[k], b2 = q[(k + 1) % q.length]; area += a2.x * b2.y - b2.x * a2.y; } if (area < 0) q.reverse(); }
     return out;
   }
-  function pintarHalo(ctx, trazos, Wf, gf, S, ox, tinta, Wpx, Hpx, esquina, etiquetas) {
+  function pintarHalo(ctx, trazos, Wf, gf, S, ox, tinta, Wpx, Hpx, esquina, etiquetas, manoSeed, manoAmp, pFunde) {
     const capa = document.createElement('canvas'); capa.width = Wpx; capa.height = Hpx;
     const c = capa.getContext('2d');
     const poly = (quads) => { c.beginPath(); for (const q of quads) { c.moveTo(q[0].x, q[0].y); for (let i = 1; i < q.length; i++) c.lineTo(q[i].x, q[i].y); c.closePath(); } c.fill(); };
-    const r = (esquina != null ? esquina : ESQUINA) * Wf * S, paso = Wf * S / 6, gpx = gf * S;
+    const esq = esquina != null ? esquina : ESQUINA, paso = Wf * S / 6, gpx = gf * S;
+    // la mano sale de su propio Rng, sembrado aparte: la composición no cambia con ella
+    const rm = manoSeed != null ? new E.Rng(manoSeed >>> 0) : null;
+    const amp = (manoAmp != null ? manoAmp : 1) * MANO_VIB;
     trazos.forEach((tr, k) => {
       const Wt = (tr.W || Wf) * S;
-      const eje = suavizarEje(tr.pts.map(p => ({ x: ox + p.x * S, y: p.y * S })), r);
-      const halo = bandaHalo(eje, Wt, tr.gubia, paso, gpx), banda = bandaHalo(eje, Wt, tr.gubia, paso, 0);
+      const eje = tr.pts.map(p => ({ x: ox + p.x * S, y: p.y * S }));
+      let mano = null;
+      if (rm && amp > 0) {
+        const Lt = largoDe(eje);
+        mano = { vib: amp * Wt, o1: rm.range(MANO_ONDA[0], MANO_ONDA[1]) * Wt / 6.2832, o2: rm.range(MANO_ONDA[0], MANO_ONDA[1]) * Wt / 6.2832,
+                 f1: rm.range(0, 6.2832), f2: rm.range(0, 6.2832), f3: rm.range(0, 6.2832), f4: rm.range(0, 6.2832), funde: null };
+        const fl = rm.range(FUNDE_L[0], FUNDE_L[1]) * Wt, pf = rm.bool(pFunde != null ? pFunde : P_FUNDE);
+        if (pf && Lt > fl + Wt) { const s0 = rm.range(Wt * 0.3, Lt - fl - Wt * 0.3); mano.funde = [s0, s0 + fl]; }
+      }
+      const halo = bandaHalo(eje, Wt, tr.gubia, paso, gpx, mano, 0), banda = bandaHalo(eje, Wt, tr.gubia, paso, 0, mano, esq);
       if (!halo || !banda) return;
       c.globalCompositeOperation = 'destination-out'; c.fillStyle = '#000'; poly(halo);
       c.globalCompositeOperation = 'source-over';
@@ -1165,7 +1202,7 @@
     if (geo.pintor === 'halo') {
       const trazos = geo.cintas.map((pts, k) => ({ pts, gubia: geo.gubia ? geo.gubia[k] : null, W: geo.anchos ? geo.anchos[k] || undefined : undefined }));
       const et = new Int32Array(Wpx * Hpx);
-      pintarHalo(null, trazos, geo.W, geo.g, geo.S, geo.ox, '#000', Wpx, Hpx, geo.esquina, et);
+      pintarHalo(null, trazos, geo.W, geo.g, geo.S, geo.ox, '#000', Wpx, Hpx, geo.esquina, et, geo.manoSeed, geo.manoAmp, geo.funde);
       return et;
     }
     const trazos = geo.cintas.map((pts, k) => ({ pts, gubia: geo.gubia ? geo.gubia[k] : null, W: geo.anchos ? geo.anchos[k] || undefined : undefined }));
@@ -3499,7 +3536,8 @@
       }
     const pintor = params.pintor || 'halo';
     const esquina = params.esquina != null ? params.esquina : ESQUINA;
-    if (pintor === 'halo') pintarHalo(ctx, best.trazos, best.W, best.g, S, ox, rol.tinta, W, H, esquina);
+    const manoSeed = (seed ^ 0x3A7D1) >>> 0, manoAmp = params.vibra != null ? params.vibra : 1, funde = params.funde != null ? params.funde : P_FUNDE;
+    if (pintor === 'halo') pintarHalo(ctx, best.trazos, best.W, best.g, S, ox, rol.tinta, W, H, esquina, null, manoSeed, manoAmp, funde);
     else pintarCampo(ctx, best.trazos, best.W, best.g, best.relleno || 1, S, ox, rol.tinta, W, H, cruza);
 
     E.grain(ctx, W, H, colors, grainScale, E.unit(W, H, REF), seed);
@@ -3526,7 +3564,7 @@
                     gubia: best.trazos.map(x => x.gubia || 0), fin: best.trazos.map(x => x.fin || null), debajo,
                     // la anchura propia de cada trazo (el calco las tiene distintas); null = la de la obra
                     anchos: best.trazos.map(x => x.W || null),
-                    pintor, esquina,
+                    pintor, esquina, manoSeed, manoAmp, funde,
                     cierre: best.cierre, rumbos: best.rumbos,
                     // el halo de ESTA obra. Lo mira `canal.js`: la regla vieja -ningun
                     // par por debajo de D- vale donde NO hay halo, y donde lo hay no,
