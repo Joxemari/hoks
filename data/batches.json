@@ -279,6 +279,26 @@
         "palSel": "auto",
         "palName": "Marble",
         "addedAt": 1794158489692
+      },
+      {
+        "work": "krrtk",
+        "seed": 1729632855,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Ten",
+        "addedAt": 1794158494109
       }
     ]
   },
