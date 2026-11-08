@@ -3085,20 +3085,23 @@
       cand.sort((a, b) => grados(a) - grados(b)); const gmin = grados(cand[0]); cand = cand.filter(c => grados(c) <= gmin + (rng.bool(0.5) ? 0 : 1));
       let c = cand[rng.int(0, cand.length - 1)]; c.used = true;
       const espina = paseos.length === 0, RA = espina ? O.rachaE : O.racha;
-      let d = rng.int(0, 3), path = [c], racha = 0, maxR = rng.int(RA[0], RA[1]), ultimo = 0, primerGiro = 0, vuelta = false;
+      // `ultimo` = el lado del último giro REAL (−1: ninguno). El primer paso no es un
+      // giro: no hay tramo anterior. Contarlo como giro dejaba pasar úes al crecer por
+      // el otro cabo, porque se espejaba un codo fantasma en vez del primero de verdad.
+      let d = rng.int(0, 3), path = [c], racha = 0, maxR = rng.int(RA[0], RA[1]), ultimo = -1, primerGiro = 0, vuelta = false;
       while (true) {
         // NUNCA 180°: el giro que repetiría el lado del anterior no existe
         const ks = [0, 1, 3].filter(k => k !== ultimo).filter(k => { const [di, dj] = DIRS[(d + k) % 4]; return libre(c.i + di, c.j + dj); });
         if (!ks.length) { if (vuelta || path.length < 2) break;
           // por el otro cabo: se invierte el camino y se sigue desde el arranque
           vuelta = true; path = path.slice().reverse(); c = path[path.length - 1]; const p2 = path[path.length - 2];
-          d = DIRS.findIndex(([a, b]) => a === c.i - p2.i && b === c.j - p2.j); racha = 0; ultimo = primerGiro === 1 ? 3 : primerGiro === 3 ? 1 : 0; continue; }
+          d = DIRS.findIndex(([a, b]) => a === c.i - p2.i && b === c.j - p2.j); racha = 0; ultimo = primerGiro === 1 ? 3 : primerGiro === 3 ? 1 : -1; continue; }
         const sal = k => { const [di, dj] = DIRS[(d + k) % 4]; const n = cells.get(key(c.i + di, c.j + dj)); return DIRS.reduce((m, [a, b]) => m + (libre(n.i + a, n.j + b) ? 1 : 0), 0); };
         let k; const giros = ks.filter(x => x !== 0);
         if (ks.includes(0) && racha < maxR && rng.bool(espina ? 0.92 : recto)) k = 0; else if (giros.length) k = giros[0]; else k = 0;
         if (sal(k) === 0) { const mejor = ks.filter(x => sal(x) > 0); if (mejor.length) k = mejor[rng.int(0, mejor.length - 1)]; }
         const d2 = (d + k) % 4, [di, dj] = DIRS[d2], n = cells.get(key(c.i + di, c.j + dj)); n.used = true; path.push(n); c = n;
-        if (k === 0) racha++; else { racha = 0; ultimo = k; if (!primerGiro) primerGiro = k; maxR = rng.int(RA[0], RA[1]); } d = d2; }
+        if (k === 0 || path.length < 3) racha++; else { racha = 0; ultimo = k; if (!primerGiro) primerGiro = k; maxR = rng.int(RA[0], RA[1]); } d = d2; }
       paseos.push(path); }
     // 4. cortar en piezas, cada una con su codo
     const piezas = [], t0 = O.trozo[0], t1 = O.trozo[1];
@@ -3108,6 +3111,7 @@
       if (pi !== 0) { let tiene = false; for (let k = i + 1; k < min(path.length - 1, i + n - 1); k++) if (esCodo(path, k)) { tiene = true; break; }
         if (!tiene) for (let k = i + n - 1; k < min(path.length - 1, i + n + 3); k++) if (esCodo(path, k)) { n = k - i + 2; break; } }
       if (path.length - i - n < t0) n = path.length - i; piezas.push(path.slice(i, i + n)); i += n; } });
+    const dbg = { paseos: paseos.map(p => p.map(c => [c.i, c.j])), piezas: piezas.map(p => p.map(c => [c.i, c.j])) };
     // retirar: poco, y más en el lado abierto (dosificado: el cuerpo no se rompe)
     let vivas = piezas.filter(pz => { if (pz.length <= 1) return false; const ab = pz.reduce((a, c) => a + abierto01(c), 0) / pz.length;
       return !rng.bool(O.retira * (ab > 0.6 ? 2 : ab < 0.35 ? 0.4 : 1)); });
@@ -3125,9 +3129,13 @@
     const toma = (i, j, yo) => { const k = key(i, j); if (ocup.has(k)) { const o = dueno.get(k); const c = o[0]; if (c.i === i && c.j === j) o.shift(); else o.pop(); } ocup.add(k); dueno.set(k, yo); };
     for (const pz of vivas) { pz.ramas = []; if (pz.length < 4 || !rng.bool(O.rama)) continue;
       const cands = [];
+      // EN U NUNCA (el autor): una rama paralela a un brazo de su propia pieza y hacia
+      // el mismo lado cierra una u. La rama no puede llevar la dirección de ningún
+      // tramo del tronco.
+      const dirs = new Set(); for (let k = 0; k + 1 < pz.length; k++) dirs.add((pz[k + 1].i - pz[k].i) + ',' + (pz[k + 1].j - pz[k].j));
       for (let k = 1; k < pz.length - 1; k++) { const c = pz[k], a = pz[k - 1], b = pz[k + 1]; if (a.i !== b.i && a.j !== b.j) continue;
         const di = a.i === b.i ? 1 : 0, dj = a.i === b.i ? 0 : 1;
-        for (const sg of [1, -1]) { const rama = []; for (let m = 1; m <= 4; m++) { const ii = c.i + di * sg * m, jj = c.j + dj * sg * m; if (!libreR(ii, jj, pz)) break; rama.push({ i: ii, j: jj }); }
+        for (const sg of [1, -1]) { if (dirs.has((di * sg) + ',' + (dj * sg))) continue; const rama = []; for (let m = 1; m <= 4; m++) { const ii = c.i + di * sg * m, jj = c.j + dj * sg * m; if (!libreR(ii, jj, pz)) break; rama.push({ i: ii, j: jj }); }
           if (rama.length >= 2) cands.push({ c, rama }); } }
       if (!cands.length) continue;
       const el = cands[rng.int(0, cands.length - 1)], rama = el.rama.slice(0, min(el.rama.length, rng.int(2, 4)));
@@ -3169,7 +3177,7 @@
     return { trazos: ctx.trazos, W, g, D: P, cerco: 0, patas: 0, masaN: 0, masa: med.ocupacion, objMasa: 0, mano: 1, ventanas: nV,
              pega: 1, recto, vibF: 0, conc: 0, relleno: 1, relCount: { paseo: ctx.trazos.length, ramas: ctx.trazos.filter(t => t.ramas.length).length }, vibra: false,
              orto: true, travesia: false, halo: ctx.halo, cierre: CIERRE_POR, rumbos: [th / RAD],
-             modelo: 'paseo', pedidos: ctx.trazos.length, celdas: cells.size, cobertura: cob,
+             modelo: 'paseo', pedidos: ctx.trazos.length, celdas: cells.size, cobertura: cob, dbg,
              ojos: med.ojos, ocupacion: med.ocupacion, pasillos: pas.n, largoPas: pas.largo / W, vert, quiebros,
              largoMax: Ls.length ? Ls[Ls.length - 1] : 0, reparto: lMed > 0 ? Ls[Ls.length - 1] / lMed : 0,
              sangrados: ctx.trazos.filter(x => x.sangra).length };
@@ -3772,7 +3780,7 @@
                     gubia: best.trazos.map(x => x.gubia || 0), fin: best.trazos.map(x => x.fin || null), debajo,
                     // la anchura propia de cada trazo (el calco las tiene distintas); null = la de la obra
                     anchos: best.trazos.map(x => x.W || null),
-                    pintor, esquina, manoSeed, manoAmp, funde,
+                    pintor, esquina, manoSeed, manoAmp, funde, dbg: best.dbg || null,
                     ramas: best.trazos.map(x => x.ramas || null),
                     cierre: best.cierre, rumbos: best.rumbos,
                     // el halo de ESTA obra. Lo mira `canal.js`: la regla vieja -ningun
