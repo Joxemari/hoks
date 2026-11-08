@@ -533,13 +533,33 @@
 .lab-rasgos .traits { flex-direction:row; flex-wrap:wrap; justify-content:center; gap:4px 16px; }
 .lab-rasgos .traits .t { gap:6px; justify-content:flex-start; }
 .lab-rasgos .traits .t[style] { margin-top:0 !important; border-top:0 !important; padding-top:0 !important; }
-.lab-auto { width:auto; margin-left:auto; flex:0 0 auto; font-size:8px; letter-spacing:0.12em; padding:2px 6px;
-  border:1px solid var(--border,#e7e5df); background:transparent; color:var(--ink3,#8a8983); border-radius:2px; }
+.lab-auto { width:auto; min-width:84px; text-align:center; flex:0 0 auto; font-size:8px; letter-spacing:0.1em; padding:3px 6px;
+  border:1px solid var(--border,#e7e5df); background:transparent; color:var(--ink3,#8a8983); border-radius:2px; white-space:nowrap; }
 .lab-auto.on { background:var(--ink,#0a0a0a); border-color:var(--ink,#0a0a0a); color:#fff; cursor:default; }
-.lab-auto:not(.on):hover { border-color:var(--ink,#0a0a0a); color:var(--ink,#0a0a0a); opacity:1; }
-.lab-lbl-row { display:flex; align-items:center; gap:6px; }
-.lab-reset { margin-top:8px; }
-details.afinado summary .lab-fixed { color:var(--ink,#0a0a0a); }
+.lab-auto:not(.on) { color:var(--ink,#0a0a0a); border-color:var(--ink,#0a0a0a); }
+.lab-auto:not(.on):hover { background:var(--ink,#0a0a0a); color:#fff; opacity:1; }
+/* La columna: un poco más ancha, y cada mando en dos líneas fijas —nombre y
+   valor arriba, mando y auto abajo— en vez de etiquetas que se partían en
+   tres renglones con el chip en medio. */
+body { grid-template-columns: 300px 1fr !important; }
+.lab-lbl-row { display:flex; align-items:baseline; gap:8px; }
+.lab-lbl-row .lbl { flex:1 1 auto; min-width:0; }
+.lab-val { flex:0 0 auto; font-size:10px; font-weight:700; color:var(--ink,#0a0a0a); letter-spacing:0.04em; }
+.lab-val.auto { color:var(--ink3,#8a8983); font-weight:400; }
+.lab-info { display:inline-block; margin-left:4px; cursor:help; color:var(--ink3,#8a8983); font-weight:400; text-transform:none; }
+.lab-ctl-row { display:flex; align-items:center; gap:8px; }
+.lab-ctl-row > input[type=range], .lab-ctl-row > select { flex:1 1 auto; min-width:0; width:auto; }
+.lab-fixed-row { background:color-mix(in srgb, var(--acid,#dcff32) 35%, transparent); margin:0 -6px; padding:4px 6px; border-radius:2px; }
+/* El afinado deja de plegarse: es una sección más, con su cabecera. */
+details.afinado { border-top:1px dashed var(--border,#e7e5df); padding-top:10px; }
+details.afinado > summary { list-style:none; cursor:default; display:flex; align-items:center; gap:8px;
+  font-family:var(--geo); font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink,#0a0a0a); }
+details.afinado > summary::-webkit-details-marker { display:none; }
+details.afinado > summary::before, details.afinado[open] > summary::before { content:'' !important; }
+details.afinado > summary .lab-count { white-space:nowrap; font-family:var(--f); font-size:9px; font-weight:400; letter-spacing:0.06em; text-transform:none; color:var(--ink3,#8a8983); }
+details.afinado > summary .lab-count.fixed { color:var(--ink,#0a0a0a); font-weight:700; }
+details.afinado > summary .lab-reset { white-space:nowrap; flex:0 0 auto; margin-left:auto; width:auto; padding:3px 7px; font-size:8px; letter-spacing:0.1em; }
+details.afinado > .hintline.lab-legend { margin:6px 0 2px; }
 `;
 
   function stageButton(html, title) {
@@ -642,16 +662,19 @@ details.afinado summary .lab-fixed { color:var(--ink,#0a0a0a); }
     mountAutoChips(panel);
   }
 
-  // ── "Auto" en cada mando del afinado ──────────────────────────────────────
+  // ── El afinado: siempre a la vista, cada mando con su "auto" ──────────────
   // Cada mando arranca en lo que hace la obra sola: en unos eso es un sorteo
-  // por seed (0 o −1 = que decida la tirada), en otros es la constante de
-  // producción (el umbral 0,60 de KRRTK). Las dos cosas son "auto": lo que hace
-  // la obra si nadie la toca. El chip dice si el mando está ahí y lo devuelve.
-  // Para la receta no cambia nada: el harness sigue mandando el valor, así que
-  // una constante de producción va escrita, no heredada del código.
-  // Plegado, el afinado escondía si había algo fijado; ahora lo dice el título.
+  // por seed (0, −1 o una opción "auto"/vacía), en otros la constante de
+  // producción (el umbral 0,60 de KRRTK). Las dos cosas son "auto", y el chip
+  // dice cuál. Para la receta no cambia nada: el harness sigue mandando el
+  // valor, así que una constante de producción va escrita, no heredada.
+  // No se pliega: un mando fijado y escondido cambia todas las piezas sin que
+  // se vea. Los fijados, además, se marcan.
   function mountAutoChips(panel) {
     const det = panel.querySelector('details.afinado'); if (!det) return;
+    det.open = true;
+    const summary = det.querySelector(':scope > summary');
+    if (summary) summary.addEventListener('click', e => e.preventDefault());
     // Un select sin ninguna opción marcada `selected` arranca en la primera.
     const defIdx = c => Math.max(0, [...c.options].findIndex(o => o.defaultSelected));
     const isDefault = c => c.tagName === 'SELECT'
@@ -669,37 +692,59 @@ details.afinado summary .lab-fixed { color:var(--ink,#0a0a0a); }
       const lbl = g.querySelector(':scope > .lbl');
       if (ctl.length !== 1 || !lbl) return;   // los pesos de PLLS son varios mandos: se quedan como están
       const c = ctl[0];
+      // Nombre a la izquierda, valor a la derecha. El valor es el mismo span
+      // que actualiza el harness (por id), solo cambia de sitio.
       const row = document.createElement('div'); row.className = 'lab-lbl-row';
       lbl.parentNode.insertBefore(row, lbl); row.appendChild(lbl);
-      // Dos clases de auto, y no se comportan igual al recorrer seeds: o lo
-      // sortea cada seed (el mando arranca en 0, −1 o una opción "auto"/vacía),
-      // o es la constante fija de producción (el umbral 0,60 de KRRTK).
+      const val = lbl.querySelector('span[id]');
+      if (val) {
+        val.classList.add('lab-val'); row.appendChild(val);
+        const t = lbl.lastChild; if (t && t.nodeType === 3) t.textContent = t.textContent.replace(/\s*·\s*$/, '');
+      }
+      // Las explicaciones largas de debajo pasan a un ⓘ: siguen ahí, sin
+      // ocupar media columna.
+      const hints = [...g.querySelectorAll(':scope > .hintline')];
+      if (hints.length) {
+        const info = document.createElement('span'); info.className = 'lab-info'; info.textContent = 'ⓘ';
+        info.title = hints.map(h => h.textContent.replace(/\s+/g, ' ').trim()).join('\n');
+        lbl.appendChild(info);
+        hints.forEach(h => { h.style.display = 'none'; });
+      }
       const sorteo = c.tagName === 'SELECT'
         ? ['', 'auto', '-1'].includes(c.options[defIdx(c)] ? c.options[defIdx(c)].value : '')
         : parseFloat(c.defaultValue) <= 0;
-      const chip = stageButton(sorteo ? 'auto · seed' : 'auto · prod.',
-        sorteo ? 'En auto lo sortea cada seed' : 'En auto vale lo de producción, igual para todas las seeds');
+      const chip = stageButton('', '');
       chip.className = 'lab-auto';
       chip.onclick = () => { if (!isDefault(c)) reset(c); };
-      row.appendChild(chip);
-      const tip = chip.title;
-      const sync = () => { chip.classList.toggle('on', isDefault(c)); chip.title = isDefault(c) ? tip : 'Fijado · pulsa para volver a auto'; syncSummary(); };
+      const cr = document.createElement('div'); cr.className = 'lab-ctl-row';
+      c.parentNode.insertBefore(cr, c); cr.appendChild(c); cr.appendChild(chip);
+      const sync = () => {
+        const on = isDefault(c);
+        chip.classList.toggle('on', on);
+        chip.textContent = on ? (sorteo ? 'auto · seed' : 'auto · prod.') : '↺ auto';
+        chip.title = on ? (sorteo ? 'En auto: lo sortea cada seed' : 'En auto: el valor de producción, igual para todas las seeds')
+                        : 'Fijado para todas las seeds · pulsa para volver a auto';
+        g.classList.toggle('lab-fixed-row', !on);
+        if (val) val.classList.toggle('auto', on && /auto/i.test(val.textContent));
+        syncSummary();
+      };
       c.addEventListener('input', sync); c.addEventListener('change', sync);
       chips.push({ c, sync });
     });
     if (!chips.length) return;
     const help = det.querySelector(':scope > .hintline');
-    if (help) help.textContent = 'auto · seed = lo sortea cada seed · auto · prod. = el valor fijo de producción · mover un mando lo fija para todas las seeds';
-    const summary = det.querySelector('summary');
+    if (help) { help.classList.add('lab-legend'); help.textContent = 'auto · seed: lo sortea cada seed · auto · prod.: el valor de producción · mover un mando lo fija para todas'; }
     const base = summary ? summary.textContent.trim() : 'Afinado';
     const all = stageButton('Todo a auto', 'Devuelve todos los mandos del afinado a lo que hace la obra sola');
     all.className = 'ghost lab-reset';
-    all.onclick = () => chips.forEach(({ c }) => { if (!isDefault(c)) reset(c); });
-    det.appendChild(all);
+    all.onclick = e => { e.preventDefault(); e.stopPropagation(); chips.forEach(({ c }) => { if (!isDefault(c)) reset(c); }); };
+    const count = document.createElement('span'); count.className = 'lab-count';
+    if (summary) { summary.textContent = base; summary.appendChild(count); summary.appendChild(all); }
+    else det.insertBefore(all, det.firstChild);
     function syncSummary() {
-      if (!summary) return;
       const n = chips.filter(({ c }) => !isDefault(c)).length;
-      summary.innerHTML = base + (n ? ` · <span class="lab-fixed">${n} fijado${n > 1 ? 's' : ''}</span>` : ' · todo auto');
+      count.textContent = n ? `${n} fijado${n > 1 ? 's' : ''}` : 'todo auto';
+      count.classList.toggle('fixed', !!n);
       all.disabled = !n;
     }
     chips.forEach(({ sync }) => sync());

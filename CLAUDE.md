@@ -160,8 +160,10 @@ de KRRTK). El valor inicial del mando en el HTML **es** su auto, así que un
 mando nuevo tiene que arrancar ahí. **Dos descargas que no son lo mismo:**
 «PNG de pantalla» saca la vista de 760 px (para mirar o compartir); el archivo
 de impresión sale del lote, «↓ Impresión», re-renderizado al pliego a 300 dpi.
-Publicar va con texto y confirmación porque escribe en `main`. Plegado, el título del afinado dice
-cuántos hay fijados. En el grid se aparta desde el pie de cada pieza.
+Publicar va con texto y confirmación porque escribe en `main`. **El afinado
+no se pliega**: un mando fijado y escondido cambia todas las piezas sin que se
+vea. Su cabecera dice cuántos hay fijados y trae «Todo a auto», y cada mando
+fijado se marca en ácido; las explicaciones largas de cada mando van en un ⓘ. En el grid se aparta desde el pie de cada pieza.
 
 **`_firma.js` — dónde firma la mano.** La firma **no está en el archivo**: va a
 mano sobre la tinta, porque el fondo va a sangre y no hay margen blanco donde
