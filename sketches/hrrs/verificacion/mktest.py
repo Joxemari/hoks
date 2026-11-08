@@ -95,6 +95,13 @@ elif roto == 'junto':
     assert a in src, 'no encuentro la tolerancia del modelo libre'
     src = src.replace(a, "    const TOL = 0.85;   // ROTO A PROPOSITO")
 
+elif roto == 'monta':
+    # SOLAPE A PROPOSITO: el desvío de cada vértice del paseo, de 0,08 W a 0,6 W, con lo
+    # que las piezas se montan unas en otras. `solape.js` tiene que cantar.
+    a = "const a = pl[max(0, i - 1)], b = pl[min(pl.length - 1, i + 1)]; const tx = b.x - a.x, ty = b.y - a.y, tm = hypot(tx, ty) || 1e-9, dd = rng.range(-1, 1) * 0.08 * W;"
+    assert a in src, 'no encuentro el desvío de vértices del paseo'
+    src = src.replace(a, "const a = pl[max(0, i - 1)], b = pl[min(pl.length - 1, i + 1)]; const tx = b.x - a.x, ty = b.y - a.y, tm = hypot(tx, ty) || 1e-9, dd = rng.range(-1, 1) * 0.6 * W;   // ROTO A PROPOSITO")
+
 elif roto == 'halo0':
     # EL HALO DEL PINTOR NATIVO, ROTO: cada trazo borra a su alrededor un pelo de g
     # antes de pintarse. Con 0,4 g, `pelo.js` tiene que cantar pares por debajo de g.

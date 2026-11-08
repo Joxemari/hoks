@@ -3147,7 +3147,11 @@
     const ctx = { fw, fh, S, W, g, D: P, mg: S * MARGEN, trazos: [], gubAmp: params.gubia != null ? params.gubia : (rng.bool(P_GUBIA) ? rng.range(GUB_AMP[0], GUB_AMP[1]) : 0), relleno: 1,
                   halo: max(g, params.halo != null ? params.halo * W : g) };
     for (const pz of vivas) {
-      const rot = rng.range(-1, 1) * 3 * RAD; let pts = ejeDe(pz);
+      // el giro de la pieza, acotado para que sus cabos no se desplacen más de un
+      // cuarto de paso: en una espina de doce celdas, 3° la metían en la vecina
+      // (solape.js lo cantó)
+      let pts = ejeDe(pz); const Lp = largoDe(pts) || 1;
+      const rot = rng.range(-1, 1) * min(3 * RAD, Math.atan(0.25 * P / (Lp / 2)));
       const cen = pts.reduce((a, q) => ({ x: a.x + q.x / pts.length, y: a.y + q.y / pts.length }), { x: 0, y: 0 });
       pts = densa(giraYdesvia(pts, rot, cen.x, cen.y));
       const ramas = (pz.ramas || []).map(rc => densa(giraYdesvia(ejeDe(rc), rot, cen.x, cen.y)));
@@ -3198,6 +3202,14 @@
     for (let k = 0; k < nq && porLargo.length; k++) quitados.add(porLargo.splice(rng.int(0, porLargo.length - 1), 1)[0]);
     const idx = tr.map((t, i) => i);
     for (const t of tr) t.segs = segsDe(t.pts);
+    // LO QUE EL TRAZADOR DEJÓ MONTADO, FUERA: el calco trae algún fragmento corto
+    // tumbado sobre otro trazo (una astilla del esqueleto). De cada par que se pisa
+    // sin cruzarse, se retira el más corto (solape.js lo cantó, 17 de 60).
+    for (let i = 0; i < tr.length; i++) for (let j = 0; j < tr.length; j++) { if (i === j || quitados.has(i) || quitados.has(j)) continue;
+      const a = min(i, j), c = max(i, j); if (cruces0.has(a * 4096 + c)) continue;
+      const Wij = (tr[i].W + tr[j].W) / 2; let toca = false;
+      for (const s1 of tr[i].segs) { for (const s2 of tr[j].segs) if (segSegDist(s1, s2) < Wij * 0.6 && anguloEntre(s1, s2) < CRUCE_MIN) { toca = true; break; } if (toca) break; }
+      if (toca) quitados.add(largoDe(tr[i].pts) < largoDe(tr[j].pts) ? i : j); }
     const cabe = (i, pts) => { const sg = segsDe(pts);
       for (const j of idx) { if (j === i || quitados.has(j)) continue; const a = min(i, j), c = max(i, j); if (cruces0.has(a * 4096 + c)) continue;
         const D = (tr[i].W + tr[j].W) / 2 + g; for (const s1 of sg) for (const s2 of tr[j].segs) if (segSegDist(s1, s2) < D * 0.97) return false; }
@@ -3216,7 +3228,7 @@
       for (const lado of [0, 1]) { if (!rng.bool(0.5)) continue;
         const pts = lado ? t.pts : t.pts.slice().reverse(); const a = pts[pts.length - 2], e = pts[pts.length - 1];
         const u = rng.range(0.6, 1.6); const e2 = { x: a.x + (e.x - a.x) * u, y: a.y + (e.y - a.y) * u };
-        const prueba = q => puntoCabe(i, q) && cabe(i, pts.slice(0, -1).concat([{ x: a.x + (q.x - a.x) * 0.8, y: a.y + (q.y - a.y) * 0.8 }]))
+        const prueba = q => puntoCabe(i, q) && cabe(i, pts.slice(0, -1).concat([q]))
                             && (sangra || (q.x > -0.02 && q.y > -0.02 && q.x < calco.w + 0.02 && q.y < calco.h + 0.02));
         let fin = e2; if (u > 1 && !prueba(e2)) { let lo = 1, hi = u; for (let k = 0; k < 10; k++) { const m = (lo + hi) / 2; const q = { x: a.x + (e.x - a.x) * m, y: a.y + (e.y - a.y) * m }; if (prueba(q)) lo = m; else hi = m; } fin = { x: a.x + (e.x - a.x) * lo, y: a.y + (e.y - a.y) * lo }; }
         pts[pts.length - 1] = fin; t.pts = lado ? pts : pts.reverse(); t.segs = segsDe(t.pts); } }
@@ -3253,6 +3265,17 @@
           if (bien) { if (!ok.length) ok.push(q[k]); ok.push(q[k + 1]); } else if (ok.length >= 2) break; else ok.length = 0; }
         if (ok.length >= 2 && largoDe(ok) >= Wn * 2.5) { cand.pts = ok; cand.segs = segsDe(ok); break; }
         tr.pop(); idx.pop(); } }
+    // LIMPIEZA FINAL, por la regla del autor: ningún par se pisa sin cruzarse. Lo que
+    // las mutaciones hayan dejado montado (un acompañante que se dobla sobre sí
+    // mismo en una esquina cóncava, un cabo alargado de más), se retira: de cada par
+    // que se pisa sin cruce, el más corto; y todo trazo que se corta a sí mismo.
+    for (let i = 0; i < tr.length; i++) { if (quitados.has(i)) continue; const sg = tr[i].segs;
+      let corta = false; for (let a2 = 0; a2 < sg.length && !corta; a2++) for (let b2 = a2 + 2; b2 < sg.length; b2++) if (corteDe(sg[a2], sg[b2])) { corta = true; break; }
+      if (corta) quitados.add(i); }
+    for (let i = 0; i < tr.length; i++) for (let j = i + 1; j < tr.length; j++) { if (quitados.has(i) || quitados.has(j)) continue;
+      if (cruces0.has(i * 4096 + j)) continue; const Wij = (tr[i].W + tr[j].W) / 2; let toca = false;
+      for (const s1 of tr[i].segs) { for (const s2 of tr[j].segs) if (segSegDist(s1, s2) < Wij * 0.6 && anguloEntre(s1, s2) < CRUCE_MIN) { toca = true; break; } if (toca) break; }
+      if (toca) quitados.add(largoDe(tr[i].pts) < largoDe(tr[j].pts) ? i : j); }
     const vivos = tr.filter((t, i) => !quitados.has(i));
     // 7. encuadre: dentro del pliego con margen (recinto, bloque) o a sangre (travesía)
     const m = MARGEN * S;

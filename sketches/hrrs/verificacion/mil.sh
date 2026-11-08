@@ -73,6 +73,18 @@ if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = canal ]; then
   }
 fi
 
+if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = solape ]; then
+  # LA REGLA DEL AUTOR: no hay solape si no es cruce claro. Sobre los ejes, con halo
+  # o sin el, en todas las configuraciones. Control: `monta` (el desvio de vertices
+  # del paseo a 0,6 W).
+  linea "solape · dos tintas no se pisan si no se cruzan · $N obras"
+  corre solape.js hrrs_test.js "$N" 760 ""
+  build monta t_monta.js && {
+    printf '\n  CONTROL monta (tiene que disparar):\n'
+    node solape.js t_monta.js 120 760 "" 2>/dev/null | grep -E "SOLAPE"
+  }
+fi
+
 if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = pelo ]; then
   # DONDE VIVE HOY LA GARANTIA. Con halo el canal no se prohibe, se fabrica al pintar,
   # asi que la afirmacion -el blanco entre dos tintas nunca mide menos de g- ya no es

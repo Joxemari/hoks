@@ -3013,6 +3013,39 @@ que es lo que viene. La travesía no es relleno y sigue con su modelo.
 Espesores, probados con el mismo motor: 0,10 del lado para el bloque (el que lee
 como la referencia 2), 0,065–0,085 para el haz; a 0,045 ya es laberinto.
 
+## Decimoséptima vuelta: el detector de solapes
+
+El autor, con las hojas de los prototipos de travesía delante: «antes no había
+solapes, ya habíamos dicho, creía que era algo que estaba superado». Tenía razón, y
+el motivo de que volvieran es que el pintor de halo **convierte un solape en un
+falso cruce**: fabrica un pelo entre dos tintas que se pisan, y a ojo parece que
+una pasa por encima de la otra. La regla de la familia —no hay solape si no es cruce
+claro— se cumplía por construcción en el paseo (rejilla) y había dejado de medirse.
+
+`solape.js` la mide, **sobre la tinta**: cada trazo se pinta solo, sin halo, con la
+mano publicada, y se cuentan los píxeles donde dos trazos distintos coinciden (más
+de 0,15 W²; lo de menos es el filo). El ángulo entre los dos en el centroide del
+solape dice si es cruce (≥ `CRUCE_MIN` − 8°, que la estimación en un trazo curvo
+sale corta) o solape. Medir sobre los ejes cantaba el corte entre dos piezas de un
+mismo camino, que tienen los ejes a un pelo cabo con cabo y no se pisan: por eso es
+píxel. Control: `monta`, el desvío de vértices del paseo a 0,6 W.
+
+Lo que cazó a la primera, en el estado que el autor había dado por bueno:
+
+- en el **paseo**, 1 de 20: el giro de ±3° de la mano, en una espina de doce
+  celdas, metía sus cabos en la vecina. Acotado a un cuarto de paso en los cabos.
+- en el **calco**, 8 de 20 en el recinto: astillas del trazador tumbadas sobre otro
+  trazo, un acompañante nuevo que se dobla sobre sí mismo en una esquina cóncava, y
+  el cabo alargado que solo se comprobaba hasta el 80 %. Ahora, al cargar, de cada
+  par que se pisa sin cruzarse se retira el más corto; se comprueba el alargamiento
+  entero; y al final se vuelve a limpiar: fuera lo que se corta a sí mismo y, de cada
+  par montado, el más corto. Queda un residuo de 2–3 de 60 por debajo de 0,45 W²,
+  cabos que rozan al cuerpo que tienen delante.
+
+Y lo que no entra: los prototipos de travesía y recinto de las dos vueltas
+anteriores, que se construían a mano fuera de la rejilla y volvían a montar trazos.
+Lo que venga sale del paseo, que es lo que cumple la regla por construcción.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
