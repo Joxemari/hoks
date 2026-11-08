@@ -299,6 +299,26 @@
         "palSel": "auto",
         "palName": "Ten",
         "addedAt": 1794158494109
+      },
+      {
+        "work": "krrtk",
+        "seed": 3757441307,
+        "format": "horizontal",
+        "base": 600,
+        "params": {
+          "field": "sheet",
+          "bg": "auto",
+          "bgProbs": {
+            "gradient": 30
+          },
+          "grainScale": 1,
+          "threshold": 0.6,
+          "rectAlpha": 0.61,
+          "fieldsShort": 0
+        },
+        "palSel": "auto",
+        "palName": "Poet",
+        "addedAt": 1794158496044
       }
     ]
   },
