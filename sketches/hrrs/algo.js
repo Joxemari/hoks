@@ -3058,7 +3058,7 @@
     // fluyen hacia el lado abierto. Sin ventanas ni bahía: el aire es lo que el marco
     // no llena. La silueta es rectangular.
     recinto:  { ancho: [0.03, 0.04], gam: [0.16, 0.24], celdas: [160, 240], cobertura: [0.1, 0.16], aspect: [0.85, 1.1],
-                racha: [5, 12], rachaE: [10, 18], trozo: [8, 20], lleno: 0.5, retira: 0.06, rama: 0.2, ventanas: [0, 0], borde: 0.15, marco: true },
+                racha: [4, 9], rachaE: [10, 18], trozo: [6, 16], lleno: 0.45, retira: 0.06, rama: 0.2, ventanas: [0, 0], borde: 0, marco: true },
     travesia: { ancho: [0.1, 0.125], gam: [0.06, 0.09], celdas: [26, 36], cobertura: [0.3, 0.42], aspect: [0.9, 1.2],
                 racha: [4, 9], rachaE: [8, 14], trozo: [4, 9], lleno: 0.7, retira: 0.15, rama: 0.3, ventanas: [0, 0], borde: 1 },
   };
@@ -3146,7 +3146,7 @@
     // volvía un haz): es la rejilla ortogonal deformada por el campo lento, y en cada
     // quiebro el paseo elige, cuando puede, el lado que ese campo ABRE (una zeta se
     // abre entera si su brazo del medio se inclina hacia el lado bueno).
-    const th = rng.range(-1, 1) * (Object.keys(bordes).length ? 2.5 : 8) * RAD;
+    const th = O.marco ? 0 : rng.range(-1, 1) * (Object.keys(bordes).length ? 2.5 : 8) * RAD;
     const ux = Math.cos(th), uy = Math.sin(th), vx = -uy, vy = ux, Pl = P;
     let ox = rng.range(0, P), oy = rng.range(0, P);
     const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
@@ -3227,15 +3227,26 @@
       else if (abierto === 2) { for (let j = j0; j <= j1; j++) mete(i0, j); for (let i = i0 + 1; i <= i1; i++) mete(i, j1); for (let j = j1 - 1; j >= j0; j--) mete(i1, j); }
       else if (abierto === 1) { for (let i = i1; i >= i0; i--) mete(i, j0); for (let j = j0 + 1; j <= j1; j++) mete(i0, j); for (let i = i0 + 1; i <= i1; i++) mete(i, j1); }
       else { for (let i = i0; i <= i1; i++) mete(i, j0); for (let j = j0 + 1; j <= j1; j++) mete(i1, j); for (let i = i1 - 1; i >= i0; i--) mete(i, j1); }
-      if (marco.length >= 6) { marco.marco = true; paseos.push(marco); } }
+      // contiguo o nada: una celda que falte (silueta que no cae en celdas enteras)
+      // partía el marco y la polilínea saltaba por dentro del cuerpo
+      let ok = marco.length >= 6; for (let k = 1; k < marco.length && ok; k++) if (abs(marco[k].i - marco[k - 1].i) + abs(marco[k].j - marco[k - 1].j) !== 1) ok = false;
+      if (ok) { marco.marco = true; paseos.push(marco); } else { for (const c of marco) c.used = false; marco.length = 0; }
+      // la ABERTURA es aire: el borde abierto y la fila siguiente no se ocupan, así nadie
+      // cierra la caja y los meandros acaban antes de llegar
+      for (const c of [...cells.values()]) { if (c.used) continue; const enAb = abierto === 0 ? c.j >= j1 - 1 : abierto === 2 ? c.j <= j0 + 1 : abierto === 1 ? c.i >= i1 - 1 : c.i <= i0 + 1; if (enAb) cells.delete(key(c.i, c.j)); }
+      // el anillo interior del marco: reservado. Solo se entra desde él en perpendicular
+      // a la pared (el meandro que nace de la pared de enfrente)
+      for (const c of cells.values()) { if (c.used) continue; const toca = DIRS.filter(([a, b]) => { const n = cells.get(key(c.i + a, c.j + b)); return n && n.marcoCel; }); if (toca.length) c.anillo = true; }
+      for (const c of marco) c.marcoCel = true;
+      for (const c of cells.values()) { if (c.used) continue; const w = DIRS.find(([a, b]) => { const n = cells.get(key(c.i + a, c.j + b)); return n && n.marcoCel; }); c.anillo = !!w; c.pared = w ? (w[0] ? 'i' : 'j') : null; } }
     while (guard++ < 500) {
       let cand = [...cells.values()].filter(c => !c.used); if (!cand.length) break;
       if (1 - cand.length / cells.size >= O.lleno) break;
       const espina = paseos.length === 0, nudo = !espina && paseos.length <= 3 && !O.marco;
       if (espina && !nucleo.used) cand = [nucleo];
-      else if (O.marco) { const tocando = cand.filter(c => DIRS.some(([a, b]) => { const n = cells.get(key(c.i + a, c.j + b)); return n && n.used; })); if (tocando.length) cand = tocando;
-        // lejos de la abertura primero: los meandros cuelgan de la pared de enfrente
-        const lejos = c => abierto === 0 ? -c.j : abierto === 2 ? c.j : abierto === 1 ? -c.i : c.i; cand.sort((a, b) => lejos(a) - lejos(b)); cand = cand.slice(0, max(2, Math.ceil(cand.length * 0.3))); }
+      else if (O.marco) { const lejos = c => abierto === 0 ? -c.j : abierto === 2 ? c.j : abierto === 1 ? -c.i : c.i;
+        const pared = cand.filter(c => c.anillo && lejos(c) <= min(...cand.filter(q => q.anillo).map(lejos)) + 1); if (pared.length) cand = pared; else { cand.sort((a, b) => lejos(a) - lejos(b)); cand = cand.slice(0, max(2, Math.ceil(cand.length * 0.3))); }
+        }
       else {
         // PROGRESIVO: cada paseo nace PEGADO a lo ya dibujado (una celda libre con un
         // vecino usado), del centro hacia fuera: el nudo entre los más cercanos al
@@ -3246,15 +3257,20 @@
         cand = cand.slice(0, nudo ? max(1, Math.ceil(cand.length * 0.3)) : max(2, Math.ceil(cand.length * 0.5))); }
       let c = cand[rng.int(0, cand.length - 1)]; c.used = true;
       const RA = espina ? O.rachaE : nudo ? [2, 4] : O.marco ? O.racha : [4, 9];
+      const haciaAb = O.marco && abierto != null ? [1, 0, 3, 2][abierto] : -1;   // dirección de rejilla hacia la abertura
       const maxGirosRecto = O.marco ? 1 : 99;
       // `ultimo` = el lado del último giro REAL (−1: ninguno). El primer paso no es un
       // giro: no hay tramo anterior. Contarlo como giro dejaba pasar úes al crecer por
       // el otro cabo, porque se espejaba un codo fantasma en vez del primero de verdad.
       let d = O.marco && abierto != null ? [1, 0, 3, 2][abierto] : rng.int(0, 3), path = [c], racha = 0, maxR = rng.int(RA[0], RA[1]), ultimo = -1, primerGiro = 0, vuelta = false;
+      if (O.marco && c.anillo) { // nace en el anillo: perpendicular a su pared, hacia dentro
+        const w = DIRS.find(([a, b]) => { const n = cells.get(key(c.i + a, c.j + b)); return n && n.marcoCel; }); if (w) d = DIRS.findIndex(([a, b]) => a === -w[0] && b === -w[1]); }
       while (true) {
         // NUNCA 180°: el giro que repetiría el lado del anterior no existe
         // solo hacia la diagonal abierta: de +i a +j, de +j a +i, de −i a −j, de −j a −i
-        const ks = [0, 1, 3].filter(k => k !== ultimo).filter(k => { const [di, dj] = DIRS[(d + k) % 4]; return libre(c.i + di, c.j + dj); });
+        const ks = [0, 1, 3].filter(k => k !== ultimo).filter(k => { const [di, dj] = DIRS[(d + k) % 4]; const n = cells.get(key(c.i + di, c.j + dj)); if (!n || n.used) return false;
+          // anillo: no se camina a lo largo de la pared; se entra o sale de él en perpendicular
+          if (O.marco && n.anillo && c.anillo && n.pared === c.pared) return false; return true; });
         if (!ks.length) { if (vuelta || path.length < 2) break;
           // por el otro cabo: se invierte el camino y se sigue desde el arranque
           vuelta = true; path = path.slice().reverse(); c = path[path.length - 1]; const p2 = path[path.length - 2];
@@ -3271,7 +3287,7 @@
         else if (giros.length) k = giros[0]; else k = 0;
         if (sal(k) === 0) { const mejor = ks.filter(x => sal(x) > 0); if (mejor.length) k = mejor[rng.int(0, mejor.length - 1)]; }
         const d2 = (d + k) % 4, [di, dj] = DIRS[d2], n = cells.get(key(c.i + di, c.j + dj)); n.used = true; path.push(n); c = n;
-        if (k === 0 || path.length < 3) racha++; else { racha = 0; ultimo = k; if (!primerGiro) primerGiro = k; maxR = rng.int(RA[0], RA[1]); } d = d2; }
+        if (k === 0 || path.length < 3) racha++; else { racha = 0; ultimo = k; if (!primerGiro) primerGiro = k; const haciaA = haciaAb >= 0 && (d2 === haciaAb); maxR = haciaAb >= 0 ? (haciaA ? rng.int(RA[0], RA[1]) : rng.int(1, 3)) : rng.int(RA[0], RA[1]); } d = d2; }
       paseos.push(path); }
     // 4. cortar en piezas, cada una con su codo
     const piezas = [], t0 = O.trozo[0], t1 = O.trozo[1];
@@ -3341,6 +3357,8 @@
       if (!cands.length) continue;
       const el = cands[rng.int(0, cands.length - 1)], rama = el.rama.slice(0, min(el.rama.length, rng.int(2, 4)));
       for (const r of rama) toma(r.i, r.j, pz); pz.ramas.push([el.c].concat(rama)); }
+    // en el recinto, los tocones junto al marco (≤ 3 celdas tocando el anillo) se retiran: eran cuñas
+    if (O.marco) vivas = vivas.filter(pz => pz.marco || pz.length > 3 || !pz.some(c => c.anillo));
     vivas = vivas.filter(pz => pz.length >= 2);
     // 4c. EL CRUCE, solo en el borde (el autor: «trasvases completos solo al final, en el
     //     borde del canvas; si no, no se dan»). Si el cuerpo toca un borde de salida,
@@ -3416,7 +3434,7 @@
       for (const lado of [0, 1]) { const pts = tr.pts, e = lado ? pts[pts.length - 1] : pts[0], a = lado ? pts[pts.length - 2] : pts[1];
         const ux2 = e.x - a.x, uy2 = e.y - a.y, um = hypot(ux2, uy2) || 1e-9, u = { x: ux2 / um, y: uy2 / um };
         let best = null, dm = P * 1.3;
-        for (let j = 0; j < ctx.trazos.length; j++) { if (j === k) continue; for (const sg of ctx.trazos[j].segs) {
+        for (let j = 0; j < ctx.trazos.length; j++) { if (j === k || ctx.trazos[j].marco) continue; for (const sg of ctx.trazos[j].segs) {
           const d = pointSegDist(e.x, e.y, sg[0], sg[1], sg[2], sg[3]); if (d < dm) { const dx = sg[2] - sg[0], dy = sg[3] - sg[1], L = hypot(dx, dy) || 1e-9;
             const t = { x: dx / L, y: dy / L }; if (abs(t.x * u.x + t.y * u.y) < 0.5) { dm = d; best = { sg, t, W: ctx.trazos[j].W || W }; } } } }
         if (!best) continue;
@@ -3912,7 +3930,7 @@
       // trazos sueltos se queda en el laboratorio para comparar.
       // el modelo de producción por tipo: el PASEO para el bloque y el haz (referencia 2);
       // el calco para el recinto y la travesía, hasta que tengan el suyo
-      const modelo = params.modelo || ((tipo === 'bloque' || tipo === 'haz') ? 'paseo' : 'calco');
+      const modelo = params.modelo || (tipo === 'travesia' ? 'calco' : 'paseo');
       const r3 = new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0);
       const c = modelo === 'paseo' ? tramarPaseo(r3, fw, fh, tipo, params)
               : modelo === 'calco' ? tramarCalco(r3, fw, fh, tipo, params)

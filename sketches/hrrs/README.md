@@ -3175,6 +3175,37 @@ Lo que se probó y se recogió: dos bahías profundas más la ventana más el re
 relleno al 78 % y la retirada al 12 %: el contorno tiene entrantes y el cuerpo
 sigue siendo uno.
 
+## Vigesimosegunda vuelta: el borde recto, el contacto, y el recinto sobre el paseo
+
+Tres reglas del autor más, y el recinto:
+
+- **«Los que van por el borde son muy rectos, como si hubiese un límite.»** En las
+  tres referencias. El campo que curva los tramos y la vibración se apagan junto al
+  contorno del cuerpo (a una celda del exterior, nada; a dos, la mitad). El
+  contorno es la regla y el interior, la mano.
+- **Contacto**: en la referencia 2 casi todas las piezas tocan a dos o más vecinas.
+  Una pieza que solo toca a una se funde con ella si son consecutivas del mismo
+  camino (y la unión no hace una u), o se retira si es corta.
+- **El grosor cambia la gramática** (probado con el mismo motor a 0,04, 0,065 y
+  0,09 del lado): fino pide piezas de 8–20 anchuras colgando de un marco con una
+  dirección dominante; medio es el bloque; grueso pide pocos trazos de borde a
+  borde, que es la travesía y sigue con el calco.
+- **Recinto sobre el paseo** (referencia 1), ya en producción: la rejilla no gira y
+  la silueta es rectangular; el MARCO son las celdas del borde por tres lados, en
+  orden, y solo si son contiguas (una celda que faltara partía el marco y la
+  polilínea saltaba por dentro: los solapes de 6 W² que cantó `solape.js`). El
+  cuarto lado es la abertura, y su fila y la siguiente quedan sin celdas: nadie
+  cierra la caja. El anillo interior del marco está reservado: no se camina a lo
+  largo de una pared, solo se entra o sale de él en perpendicular, y un paseo que
+  nace en el anillo arranca hacia dentro. Los meandros nacen en la pared de
+  enfrente y llevan rachas largas hacia la abertura y cortas en el otro eje: caen.
+  Los cabos no se encaran contra el marco; los tocones junto al marco se retiran;
+  el marco se pinta el último. `solape.js` 0 de 40, `pelo.js` 0 de 40.
+
+Lo que le falta al recinto, en hoja: más meandros y más apretados en el nudo (la
+referencia tiene unos diez colgando juntos), y algún trazo que se escape por un
+costado del marco.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
