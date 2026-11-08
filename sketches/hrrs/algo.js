@@ -3278,6 +3278,27 @@
       const cnt = {}; let tot = 0; vivas.forEach((pz, n) => { const r = find(n); cnt[r] = (cnt[r] || 0) + pz.length; tot += pz.length; });
       const best = +Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
       if (cnt[best] >= tot * 0.66) vivas = vivas.filter((_, n) => find(n) === best); }
+    // 4a'. CONTACTO (lo que se ve en la referencia 2: casi todas las piezas tocan a
+    //      dos o más vecinas). Una pieza que solo toca a una se FUNDE con esa vecina si
+    //      son consecutivas del mismo camino (el corte vuelve a unirse); si no, y es
+    //      corta, se retira. Dos pasadas, porque fundir cambia los vecinos.
+    for (let pasada = 0; pasada < 2; pasada++) {
+      const idx = new Map(); vivas.forEach((pz, n) => pz.forEach(c => idx.set(key(c.i, c.j), n)));
+      const vecinos = n => { const v = new Set(); for (const c of vivas[n]) for (const [a, b] of DIRS) { const m = idx.get(key(c.i + a, c.j + b)); if (m != null && m !== n) v.add(m); } return v; };
+      const fuera = new Set();
+      for (let n = 0; n < vivas.length; n++) { if (fuera.has(n)) continue; const v = [...vecinos(n)].filter(m => !fuera.has(m)); if (v.length !== 1) continue;
+        const m = v[0], a = vivas[n], b = vivas[m];
+        const cabo = (p, q) => DIRS.some(([di, dj]) => (p.i + di === q.i && p.j + dj === q.j));
+        // consecutivas del mismo camino: un cabo de una toca un cabo de la otra
+        let unida = null;
+        if (cabo(a[a.length - 1], b[0])) unida = a.concat(b); else if (cabo(b[b.length - 1], a[0])) unida = b.concat(a);
+        else if (cabo(a[a.length - 1], b[b.length - 1])) unida = a.concat(b.slice().reverse()); else if (cabo(a[0], b[0])) unida = a.slice().reverse().concat(b);
+        // y la unión no puede hacer una u (dos giros seguidos al mismo lado): cabos de
+        // caminos distintos que se tocan pueden cerrarla
+        const haceU = cs => { const sg = []; for (let k = 1; k + 1 < cs.length; k++) { const ax = cs[k].i - cs[k - 1].i, ay = cs[k].j - cs[k - 1].j, bx = cs[k + 1].i - cs[k].i, by = cs[k + 1].j - cs[k].j; const cr = ax * by - ay * bx; if (cr) sg.push(Math.sign(cr)); } for (let k = 1; k < sg.length; k++) if (sg[k] === sg[k - 1]) return true; return false; };
+        if (unida && unida.length <= 14 && !haceU(unida)) { vivas[m] = unida; vivas[m].ramas = []; fuera.add(n); for (const c of unida) idx.set(key(c.i, c.j), m); }
+        else if (a.length <= 3 && vivas.length > 4) fuera.add(n); }
+      vivas = vivas.filter((_, n) => !fuera.has(n)); }
     // 4b. ramas perpendiculares, fundidas con el tronco
     const ocup = new Set(), dueno = new Map(); for (const pz of vivas) for (const c of pz) { ocup.add(key(c.i, c.j)); dueno.set(key(c.i, c.j), pz); }
     const libreR = (i, j, yo) => { const k = key(i, j); if (!cells.has(k)) return false; if (!ocup.has(k)) return true;
