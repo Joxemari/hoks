@@ -39,6 +39,11 @@
   color:var(--ink,#111); border-radius:2px; padding:6px 8px; cursor:pointer; }
 .hb-btn:hover { background:var(--surface,#f7f7f7); }
 .hb-btn[disabled] { opacity:0.4; cursor:default; }
+.hb-exprow select { flex:0 0 58px; min-width:0; }
+.hb-exprow .hb-btn { flex:1 1 0; min-width:0; padding:6px 3px; font-size:9px; letter-spacing:0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hb-pubbtn { width:100%; padding:8px; margin-top:4px; border-color:var(--ink,#111); }
+.hb-pubbtn:not([disabled]):hover { background:var(--ink,#111); color:#fff; }
+.hb-export { display:flex; flex-direction:column; gap:6px; }
 .hb-take { width:100%; padding:8px; background:var(--ink,#111); color:#fff; border-color:var(--ink,#111); }
 .hb-take:hover { background:var(--ink,#111); opacity:0.78; }
 .hb-take[disabled] { background:transparent; color:var(--ink3,#bbb); border-color:var(--border,#e8e8e8); opacity:1; }
@@ -247,13 +252,15 @@ figure:hover .hb-add, .hb-add:focus-visible { border-color:var(--ink,#111); colo
       // del panel, así que va en el panel.
       `<button class="hb-btn hb-take" id="hb-add">+ Al lote<kbd>a</kbd></button>` +
       `<div class="hb-strip" id="hb-strip"></div>` +
-      `<div class="hb-row"><select id="hb-res">` +
+      `<div class="hb-row hb-exprow"><select id="hb-res">` +
       global.HOKS.SHEET_IDS.map(id => `<option value="${id}"${id === global.HOKS.DEFAULT_SHEET ? ' selected' : ''} title="${id} a 300 dpi">${id}</option>`).join('') +
-      `</select><button class="hb-btn" id="hb-dl">↓ PNG</button>` +
+      `</select><button class="hb-btn" id="hb-dl" title="El archivo de impresión: cada pieza re-renderizada al pliego elegido, a 300 dpi">↓ Impresión</button>` +
       // La obra y su cartela se imprimen juntas, así que se descargan juntas y
       // al mismo pliego: el selector de arriba manda sobre las dos.
-      `<button class="hb-btn" id="hb-cart" title="Una cartela A5 por pieza">↓ A5</button>` +
-      `<button class="hb-btn" id="hb-pub" title="Publicar a la galería">▲</button></div>` +
+      `<button class="hb-btn" id="hb-cart" title="Una cartela A5 por pieza">↓ Cartelas</button></div>` +
+      // Publicar escribe en main, que es la web: es la acción más seria del
+      // laboratorio y era un triángulo sin texto. Va sola y dice lo que hace.
+      `<button class="hb-btn hb-pubbtn" id="hb-pub">▲ Publicar en la web</button>` +
       `<span class="hb-note" id="hb-note"></span>`;
 
     const $ = id => host.querySelector('#' + id);
@@ -307,9 +314,18 @@ figure:hover .hb-add, .hb-add:focus-visible { border-color:var(--ink,#111); colo
       // Sin lote no se deshabilita: añadir sin lote abre uno (pide nombre) con
       // la pieza ya dentro, que es lo que hace también la tecla a.
       addBtn.title = b ? 'Añade la pieza en pantalla al lote «' + b.name + '» (a)' : 'Crea un lote con esta pieza (a)';
-      if (!b) { strip.innerHTML = '<span class="hb-empty">sin lote abierto</span>'; $('hb-dl').disabled = $('hb-cart').disabled = $('hb-pub').disabled = true; return; }
-      $('hb-dl').disabled = $('hb-cart').disabled = $('hb-pub').disabled = !b.items.length;
-      if (!b.items.length) { strip.innerHTML = '<span class="hb-empty">vacío · «+ al lote» sobre la obra, o la tecla <b>a</b></span>'; return; }
+      // Sin piezas no hay nada que sacar ni publicar: se esconde, en vez de
+      // enseñar cuatro botones apagados.
+      const exportRow = $('hb-res').parentNode, pub = $('hb-pub');
+      const showExport = on => { exportRow.style.display = on ? '' : 'none'; pub.style.display = on ? '' : 'none'; };
+      if (!b) { strip.innerHTML = '<span class="hb-empty">sin lote abierto · «+ al lote» crea uno con la pieza dentro</span>'; showExport(false); return; }
+      if (!b.items.length) { strip.innerHTML = '<span class="hb-empty">vacío · «+ al lote» sobre la obra, o la tecla <b>a</b></span>'; showExport(false); return; }
+      showExport(true);
+      $('hb-dl').disabled = $('hb-cart').disabled = false;
+      const faltan = b.items.filter(it => !it.published).length;
+      pub.disabled = !faltan;
+      pub.textContent = faltan ? `▲ Publicar en la web · ${faltan}` : '✓ Todo publicado';
+      pub.title = faltan ? `Escribe ${faltan} pieza${faltan > 1 ? 's' : ''} en main: salen en hoks.design` : 'Todas las piezas de este lote ya están en la web';
       strip.innerHTML = '';
       if (pendingAlgo(b.items)) ensureWorks(b.items).then(() => renderStrip());
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
@@ -489,7 +505,11 @@ figure:hover .hb-add, .hb-add:focus-visible { border-color:var(--ink,#111); colo
       const b = openBatch(); if (!b || !b.items.length) return;
       const pending = b.items.filter(it => !it.published);
       if (!pending.length) { toast('Todo el lote ya está publicado'); return; }
-      if (!confirm(`¿Publicar ${pending.length} pieza(s) a la galería?`)) return;
+      const fams = [...new Set(pending.map(it => it.work.toUpperCase()))].join(', ');
+      const ya = b.items.length - pending.length;
+      if (!confirm(`¿Publicar en la web ${pending.length} pieza${pending.length > 1 ? 's' : ''} de «${b.name}» (${fams})?\n\n` +
+        `Se escribe directamente en main: salen en hoks.design en cuanto GitHub lo sirva, y quedan en la galería de su familia.` +
+        (ya ? `\n${ya} ya estaba${ya > 1 ? 'n' : ''} publicada${ya > 1 ? 's' : ''} y no se repite${ya > 1 ? 'n' : ''}.` : ''))) return;
       const palettes = opts.getPalettes ? opts.getPalettes() : [];
       const sin = await ensureWorks(pending);
       if (sin.length) { note('⚠ no carga el algoritmo de ' + [...new Set(sin.map(it => it.work))].join(', ') + ': no se publica nada'); return; }
