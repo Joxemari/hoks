@@ -33,7 +33,7 @@
   {
     "id": 3,
     "name": "Paint",
-    "active": false,
+    "active": true,
     "colors": [
       "#b30000",
       "#e6cf00",
@@ -65,7 +65,7 @@
   {
     "id": 5,
     "name": "Evening",
-    "active": false,
+    "active": true,
     "colors": [
       "#ff4f19",
       "#15084d",
@@ -80,7 +80,7 @@
   {
     "id": 6,
     "name": "Marble",
-    "active": false,
+    "active": true,
     "colors": [
       "#218ad4",
       "#76df55",
@@ -129,7 +129,7 @@
   {
     "id": 9,
     "name": "Splash",
-    "active": false,
+    "active": true,
     "colors": [
       "#32312e",
       "#795330",
@@ -145,7 +145,7 @@
   {
     "id": 10,
     "name": "Sheets",
-    "active": false,
+    "active": true,
     "colors": [
       "#025760",
       "#7fd0d3",
@@ -178,7 +178,7 @@
   {
     "id": 12,
     "name": "Fans",
-    "active": false,
+    "active": true,
     "colors": [
       "#000000",
       "#83a6bc",
@@ -194,7 +194,7 @@
   {
     "id": 13,
     "name": "Light",
-    "active": false,
+    "active": true,
     "colors": [
       "#00b2b4",
       "#fdd35b",
@@ -228,7 +228,7 @@
   {
     "id": 15,
     "name": "Play",
-    "active": false,
+    "active": true,
     "colors": [
       "#e20404",
       "#fcd202",
@@ -244,7 +244,7 @@
   {
     "id": 16,
     "name": "Repetition",
-    "active": false,
+    "active": true,
     "colors": [
       "#2c2060",
       "#4bd3e5",
@@ -261,7 +261,7 @@
   {
     "id": 17,
     "name": "North",
-    "active": false,
+    "active": true,
     "colors": [
       "#dc060e",
       "#ffd400",
@@ -278,7 +278,7 @@
   {
     "id": 18,
     "name": "Commit",
-    "active": false,
+    "active": true,
     "colors": [
       "#563d7c",
       "#0096d8",
@@ -294,7 +294,7 @@
   {
     "id": 19,
     "name": "Wheel",
-    "active": false,
+    "active": true,
     "colors": [
       "#ffe140",
       "#ffa922",
@@ -311,7 +311,7 @@
   {
     "id": 20,
     "name": "Edit",
-    "active": false,
+    "active": true,
     "colors": [
       "#1c1c1c",
       "#f47a9d",
@@ -327,7 +327,7 @@
   {
     "id": 21,
     "name": "Optical",
-    "active": false,
+    "active": true,
     "colors": [
       "#f2eb8a",
       "#fed000",
@@ -373,7 +373,7 @@
   {
     "id": 23,
     "name": "Base",
-    "active": false,
+    "active": true,
     "colors": [
       "#f0f0f0",
       "#8c8c8c",
@@ -393,7 +393,7 @@
   {
     "id": 24,
     "name": "Ten",
-    "active": false,
+    "active": true,
     "colors": [
       "#fffbe6",
       "#050505",
@@ -417,7 +417,7 @@
   {
     "id": 25,
     "name": "Iris",
-    "active": false,
+    "active": true,
     "colors": [
       "#ebedec",
       "#71859d",
@@ -433,7 +433,7 @@
   {
     "id": 26,
     "name": "Right",
-    "active": false,
+    "active": true,
     "colors": [
       "#4464a1",
       "#62b6de",
@@ -452,7 +452,7 @@
   {
     "id": 27,
     "name": "Slussen",
-    "active": false,
+    "active": true,
     "colors": [
       "#fafafa",
       "#f398c3",
@@ -505,7 +505,7 @@
   {
     "id": 30,
     "name": "Podcast",
-    "active": false,
+    "active": true,
     "colors": [
       "#584594",
       "#e488b7",
@@ -614,7 +614,7 @@
   {
     "id": 99,
     "name": "Memphis",
-    "active": false,
+    "active": true,
     "colors": [
       "#ff6b6b",
       "#feca57",
