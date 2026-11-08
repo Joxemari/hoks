@@ -671,15 +671,25 @@ details.afinado summary .lab-fixed { color:var(--ink,#0a0a0a); }
       const c = ctl[0];
       const row = document.createElement('div'); row.className = 'lab-lbl-row';
       lbl.parentNode.insertBefore(row, lbl); row.appendChild(lbl);
-      const chip = stageButton('auto', 'Devolver a lo que hace la obra sola');
+      // Dos clases de auto, y no se comportan igual al recorrer seeds: o lo
+      // sortea cada seed (el mando arranca en 0, −1 o una opción "auto"/vacía),
+      // o es la constante fija de producción (el umbral 0,60 de KRRTK).
+      const sorteo = c.tagName === 'SELECT'
+        ? ['', 'auto', '-1'].includes(c.options[defIdx(c)] ? c.options[defIdx(c)].value : '')
+        : parseFloat(c.defaultValue) <= 0;
+      const chip = stageButton(sorteo ? 'auto · seed' : 'auto · prod.',
+        sorteo ? 'En auto lo sortea cada seed' : 'En auto vale lo de producción, igual para todas las seeds');
       chip.className = 'lab-auto';
       chip.onclick = () => { if (!isDefault(c)) reset(c); };
       row.appendChild(chip);
-      const sync = () => { chip.classList.toggle('on', isDefault(c)); chip.title = isDefault(c) ? 'En auto: lo que hace la obra sola' : 'Fijado · pulsa para volver a auto'; syncSummary(); };
+      const tip = chip.title;
+      const sync = () => { chip.classList.toggle('on', isDefault(c)); chip.title = isDefault(c) ? tip : 'Fijado · pulsa para volver a auto'; syncSummary(); };
       c.addEventListener('input', sync); c.addEventListener('change', sync);
       chips.push({ c, sync });
     });
     if (!chips.length) return;
+    const help = det.querySelector(':scope > .hintline');
+    if (help) help.textContent = 'auto · seed = lo sortea cada seed · auto · prod. = el valor fijo de producción · mover un mando lo fija para todas las seeds';
     const summary = det.querySelector('summary');
     const base = summary ? summary.textContent.trim() : 'Afinado';
     const all = stageButton('Todo a auto', 'Devuelve todos los mandos del afinado a lo que hace la obra sola');

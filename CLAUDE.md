@@ -153,9 +153,14 @@ fija encima de ella, y los rasgos debajo de la pieza. Lo monta
 `HOKSLAB.mountStage()` al cargar, sobre los ids que comparten los diez
 harnesses, sin tocar su HTML: si añades un harness, con esos ids basta. Cada
 mando del afinado lleva un chip **auto**: *auto* es lo que hace la obra si
-nadie la toca, sea un sorteo por seed o la constante de producción (el umbral
-de KRRTK); el valor inicial del mando en el HTML **es** su auto, así que un
-mando nuevo tiene que arrancar ahí. Plegado, el título del afinado dice
+nadie la toca, y el chip dice cuál de las dos cosas es — **auto · seed** (lo
+sortea cada seed: el mando arranca en 0, −1 o una opción vacía/`auto`) o
+**auto · prod.** (la constante de producción, igual para todas, como el umbral
+de KRRTK). El valor inicial del mando en el HTML **es** su auto, así que un
+mando nuevo tiene que arrancar ahí. **Dos descargas que no son lo mismo:**
+«PNG de pantalla» saca la vista de 760 px (para mirar o compartir); el archivo
+de impresión sale del lote, «↓ Impresión», re-renderizado al pliego a 300 dpi.
+Publicar va con texto y confirmación porque escribe en `main`. Plegado, el título del afinado dice
 cuántos hay fijados. En el grid se aparta desde el pie de cada pieza.
 
 **`_firma.js` — dónde firma la mano.** La firma **no está en el archivo**: va a
