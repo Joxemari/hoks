@@ -3122,6 +3122,45 @@ Y tres cosas que el autor vio en las hojas, cada una con su causa:
 Medido tras esto: pelo 1 de 60, solapes 0 de 60, úes 0 de 429, margen entre
 paralelas mediana 1,01 canales.
 
+## Vigésima vuelta: lo que dice la obra gráfica, y el espacio encerrado
+
+Se buscó más obra y más pensamiento de Chillida (búsqueda web desde la sesión;
+las páginas no se pudieron leer enteras, solo sus fragmentos: lo no verificado va
+marcado). Lo que vale para el modelo:
+
+- **El ángulo.** Lo que yo citaba de memoria («el recto es un ángulo muerto; el de
+  89 o 91 está vivo») **no está documentado así**. Lo documentado: «tengo problemas
+  con el ángulo recto; creo más en el gnomon de los griegos, el ángulo que hace el
+  hombre con su sombra», y «no sabemos si ese ángulo tenía 90, 89 o 92 grados», con
+  una geometría «orgánica, viva» (Sainsbury Centre, ficha de *Zeihartu IV*). Su
+  nieto Mikel: el recto «no dialoga con ningún otro ángulo» (*Noticias de
+  Navarra*, 2024).
+- **El límite.** «El límite es el verdadero protagonista del espacio, como el
+  presente, otro límite, es el protagonista del tiempo» (conferencia, 1988). «El
+  espacio será anónimo mientras no lo limite» [sin fuente primaria].
+- **La línea blanca no se dibuja**: «líneas gruesas en negro que, al ser colocadas
+  unas cerca de las otras, dibujan entre sí líneas blancas» (Colección BBVA sobre
+  *Inguru III*, 1968). Es el halo, dicho por otro.
+- **El espacio encerrado es la figura**: los negros «encajan como piezas de un
+  puzle, atrapan y encierran espacios» (BBVA sobre *Zeihartu II*, 1973); formas
+  «casi laberínticas» (MGLC sobre *Gezna*, 1969).
+- Las series de gráfica que importan: *Inguru* (1968), *Egokarri*, *Ikur* (1968),
+  *Beltza I–V* (xilografías, 1969), *Gezna*, *Leku* (1969), *Aundi* (1970),
+  *Zeihartu* (1973), *Euzkadi I–VII* (1975–76). *Gravitaciones* y *Lurra* no son
+  grabados. Catálogo razonado: Van der Koelen, *Opus P.I–P.III*.
+- Lo que el autor observó y está implementado (cruces solo en el borde, salida o
+  barrera, núcleo denso y lado abierto) **no lo enuncia ninguna fuente**: es lectura
+  nuestra. Del método en madera no hay nada accesible: que el pelo sea el surco de
+  la gubia es hipótesis.
+
+Y lo incorporado en esta vuelta:
+
+- **La ventana tiene forma propia** (barra de 3–5 celdas, ele de dos brazos, o
+  rectángulo de 2 × 3–4) y se apoya en el núcleo a 2–4 celdas, para que la espina y
+  el nudo la bordeen y la cierren: el espacio atrapado como figura.
+- **El cruce solo por encima de una pieza perpendicular**: pasar por encima de una
+  paralela no es un cruce, es un trasvase (`solape.js` lo cantó a 1,38 W²).
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

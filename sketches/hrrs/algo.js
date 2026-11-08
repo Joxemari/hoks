@@ -3149,10 +3149,22 @@
     let nucleo = null; { let ints = [...cells.values()].filter(c => interior(c) && abierto01(c) < 0.5); if (!ints.length) ints = [...cells.values()];
       nucleo = ints[rng.int(0, ints.length - 1)]; }
     const dN = c => dCheb(c, nucleo);
+    // EL ESPACIO ENCERRADO ES LA FIGURA (Chillida en Zeihartu, según la Colección BBVA:
+    // los negros «encajan como piezas de un puzle, atrapan y encierran espacios»). La
+    // ventana no es un cuadrado de celdas que sobra: tiene forma propia —un rectángulo
+    // largo de 1×3 a 2×5, o una ele de dos brazos— y se apoya en el núcleo por un
+    // lado, para que la espina y el nudo la bordeen y la cierren.
+    const formas = ['barra', 'ele', 'barra', 'rect'];
     for (let v = 0; v < nV; v++) { let ints = [...cells.values()].filter(interior); if (ints.length < 4) break;
-      ints = ints.filter(c => abierto01(c) > 0.45 && dN(c) >= 3); if (ints.length < 2) ints = [...cells.values()].filter(c => interior(c) && dN(c) >= 3); if (ints.length < 2) break;
-      const c0 = ints[rng.int(0, ints.length - 1)], w = rng.int(2, 3), h = rng.int(3, 4), sw = rng.bool(0.5);
-      for (let a = 0; a < (sw ? h : w); a++) for (let b = 0; b < (sw ? w : h); b++) cells.delete(key(c0.i + a - ((sw ? h : w) >> 1), c0.j + b - ((sw ? w : h) >> 1))); }
+      ints = ints.filter(c => abierto01(c) > 0.4 && dN(c) >= 2 && dN(c) <= 4); if (ints.length < 2) ints = [...cells.values()].filter(c => interior(c) && dN(c) >= 2); if (ints.length < 2) break;
+      const c0 = ints[rng.int(0, ints.length - 1)], forma = formas[rng.int(0, formas.length - 1)], sw = rng.bool(0.5);
+      const celdas = [];
+      if (forma === 'barra') { const L = rng.int(3, 5); for (let m = 0; m < L; m++) celdas.push(sw ? [c0.i + m - (L >> 1), c0.j] : [c0.i, c0.j + m - (L >> 1)]); }
+      else if (forma === 'rect') { const w = 2, h = rng.int(3, 4); for (let a2 = 0; a2 < (sw ? h : w); a2++) for (let b2 = 0; b2 < (sw ? w : h); b2++) celdas.push([c0.i + a2 - ((sw ? h : w) >> 1), c0.j + b2 - ((sw ? w : h) >> 1)]); }
+      else { const L1 = rng.int(3, 4), L2 = rng.int(2, 3), s1 = rng.bool(0.5) ? 1 : -1, s2 = rng.bool(0.5) ? 1 : -1;
+        for (let m = 0; m < L1; m++) celdas.push(sw ? [c0.i + s1 * m, c0.j] : [c0.i, c0.j + s1 * m]);
+        for (let m = 1; m < L2; m++) celdas.push(sw ? [c0.i, c0.j + s2 * m] : [c0.i + s2 * m, c0.j]); }
+      for (const [i2, j2] of celdas) cells.delete(key(i2, j2)); }
     if (cells.size < 6) return vacio();
     // EL CAMPO LENTO: deforma la rejilla entera (ondas de 9–16 anchuras, amplitud
     // `ladeo` × W); el cizallamiento local abre los ángulos hasta unos 20° y las
@@ -3271,7 +3283,14 @@
       const cands = [];
       for (const pz of vivas) for (const lado of [0, 1]) { const c = lado ? pz[pz.length - 1] : pz[0], a = lado ? pz[pz.length - 2] : pz[1]; const dir = [c.i - a.i, c.j - a.j];
         const n1 = key(c.i + dir[0], c.j + dir[1]); if (!ocup.has(n1) || dueno.get(n1) === pz) continue;   // tiene que haber alguien delante
-        if (!haciaBorde(c, dir)) continue; cands.push({ pz, lado, dir }); }
+        if (!haciaBorde(c, dir)) continue;
+        // y lo que haya delante tiene que ir PERPENDICULAR: por encima de una pieza
+        // paralela no es un cruce, es un trasvase (solape.js lo cantó, 1,38 W²)
+        let bien = true;
+        for (let m = 1; m <= 6 && bien; m++) { const q = key(c.i + dir[0] * m, c.j + dir[1] * m); if (!ocup.has(q)) continue; const o = dueno.get(q); if (o === pz) { bien = false; break; }
+          const idx = o.findIndex(t => key(t.i, t.j) === q); const a2 = o[max(0, idx - 1)], b2 = o[min(o.length - 1, idx + 1)];
+          const od = [b2.i - a2.i, b2.j - a2.j]; if (abs(od[0] * dir[0] + od[1] * dir[1]) > 0) bien = false; }
+        if (!bien) continue; cands.push({ pz, lado, dir }); }
       if (cands.length) { const el = cands[rng.int(0, cands.length - 1)]; const c0 = el.lado ? el.pz[el.pz.length - 1] : el.pz[0];
         const extra = []; for (let m = 1; m <= 6; m++) { const q = { i: c0.i + el.dir[0] * m, j: c0.j + el.dir[1] * m }; extra.push(q); const cc = centro(q.i, q.j); if (cc.x < -W || cc.y < -W || cc.x > fw + W || cc.y > fh + W) break; }
         if (el.lado) el.pz.push(...extra); else el.pz.unshift(...extra.reverse()); el.pz.cruza = true;
