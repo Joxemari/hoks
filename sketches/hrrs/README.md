@@ -3278,6 +3278,25 @@ la 2 y luego de la 3». Medido en el calco de la 1 contra la hoja del recinto:
 `solape.js` 0 de 40, `pelo.js` 0 de 40, úes solo las del marco (una por obra, que
 es una u por definición).
 
+## Vigesimosexta vuelta: referencia a referencia, la 2 y la 3
+
+**La 2**, medida en su calco contra la hoja del bloque: 14 piezas en un cuerpo de
+14 × 10 anchuras; largos de 5–11 W; tramos rectos de 1–5 W; casi todas con 1–3
+codos; quiebros de 60–97° en los dos sentidos; ninguna barra de 18 celdas. El
+bloque pasa a rejilla más fina (W 0,062–0,075 del lado, 90–120 celdas), rachas de
+1–4, espina de 9–12 celdas con codos, tres medianas de 7–9 y el resto de 4–7,
+cuerpo más ancho que alto (1,3–1,55). Es lo más cerca de la 2 hasta ahora: piezas
+con codo, encajadas, dos direcciones entrelazadas, un cuerpo. Falta aún más aire
+dentro (la ventana grande y los pasillos de la referencia).
+
+**La 3**, medida: tramos de 1–5 W, 4–5 quiebros por trazo de 25–90° en los dos
+sentidos, rumbos que cambian a lo largo (no dos direcciones fijas), y la
+bifurcación. Se probó volver a la rejilla ortogonal con cizalla fuerte de onda
+larga y 3–4 trazos: sin oblicuidad se lee como tuberías, y se recoge. Queda la
+rejilla de paralelogramos, que da codos de 53–68° y bifurcaciones. Lo que le
+falta: que el rumbo cambie dentro del trazo (hoy todos los brazos van en las dos
+mismas direcciones oblicuas), más aire, y el nudo donde los brazos se juntan.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
