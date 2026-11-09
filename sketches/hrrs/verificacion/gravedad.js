@@ -1,6 +1,6 @@
 /* gravedad.js — EL EXPERIMENTO DE LA ATRACCIÓN (vuelta 30), sobre los calcos.
  *
- *   node gravedad.js [alcance=1.5] [alfa=0.9] [salida.png] [beta=0]
+ *   node gravedad.js [alcance=1.5] [alfa=0.9] [salida.png] [beta=0] [--primero]
  *
  * Pregunta: ¿cuánto de cada obra es «primer trazo + atracción» y cuánto es gesto?
  * Cada trazo del calco, menos el primero, se reconstruye como una cadena de puntos
@@ -30,6 +30,28 @@ function reconstruye(S,E,prev,W){const D=W*(1+GAM),paso=W/3;const pts=[[S[0],S[1
  p={x:p.x+dx*paso,y:p.y+dy*paso};pts.push([p.x,p.y]);}pts.push([E[0],E[1]]);return pts;}
 function dist(pts,real){let s=0;for(const q of pts){const r=nearest({x:q[0],y:q[1]},[real]);s+=r.d;}return s/pts.length;}
 function simplifica(pts,tol){if(pts.length<3)return pts;let imax=0,dmax=0;const a=pts[0],b=pts[pts.length-1];for(let i=1;i<pts.length-1;i++){const d=pSeg(pts[i][0],pts[i][1],a[0],a[1],b[0],b[1]).d;if(d>dmax){dmax=d;imax=i;}}if(dmax>tol){const l=simplifica(pts.slice(0,imax+1),tol),r=simplifica(pts.slice(imax),tol);return l.slice(0,-1).concat(r);}return [a,b];}
+// ── ¿CUÁL ES EL PRIMER TRAZO? ─────────────────────────────────────────────────
+// (el autor: «identificar el primer trazo es parte de la clave»). Se prueba CADA
+// trazo como primero; los demás se añaden uno a uno, siempre el que mejor se
+// explica por lo ya dibujado (voraz). El primero verdadero es el que deja más
+// trazos explicados y menor error total; el orden que sale es el orden de dibujo.
+if (process.argv.includes('--primero')) {
+  for (const [name,c] of Object.entries(CALCOS)) {
+    const n=c.trazos.length, res=[];
+    for (let f=0; f<n; f++) {
+      const puestos=[c.trazos[f].pts], quedan=new Set([...Array(n).keys()].filter(i=>i!==f)), orden=[f], errs=[];
+      while (quedan.size) { let best=null;
+        for (const k of quedan) { const t=c.trazos[k], real=t.pts, rec=reconstruye(real[0], real[real.length-1], puestos, t.W), d=dist(rec,real)/(t.W*(1+GAM)); if(!best||d<best.d) best={k,d}; }
+        quedan.delete(best.k); orden.push(best.k); errs.push(best.d); puestos.push(c.trazos[best.k].pts); }
+      res.push({f, explicados: errs.filter(d=>d<0.5).length, errorMedio: +(errs.reduce((a,b)=>a+b,0)/errs.length).toFixed(2), orden, errs: errs.map(e=>+e.toFixed(2))});
+    }
+    res.sort((a,b)=>b.explicados-a.explicados||a.errorMedio-b.errorMedio);
+    console.log(`\n${name}: primero → explicados / error medio`);
+    res.forEach(r=>console.log(`  t${r.f}: ${r.explicados}/${n-1}  ${r.errorMedio}`));
+    const m=res[0]; console.log(`  MEJOR PRIMERO: t${m.f} · orden de dibujo: ${m.orden.map(i=>'t'+i).join(' → ')}\n  errores en ese orden: ${m.errs.join(' ')}`);
+  }
+  process.exit(0);
+}
 const out={};
 for(const [name,c] of Object.entries(CALCOS)){const strokes=[c.trazos[0].pts];const rows=[];const recs=[c.trazos[0].pts];
  for(let k=1;k<c.trazos.length;k++){const t=c.trazos[k];const W=t.W;const real=t.pts;const S=real[0],E=real[real.length-1];

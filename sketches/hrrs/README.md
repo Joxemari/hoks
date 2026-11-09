@@ -3564,6 +3564,50 @@ puesto)` en `tramarHebra`, y los maestros como ahora. El relevo, como gramática
 de la travesía. Y el bloque gana si sus piezas de contorno se dibujan como
 maestros (tres) y el resto como seguidores: es lo que el calco dice que es.
 
+## Trigésima primera vuelta: cuál es el primer trazo
+
+El autor: «identificar el primer trazo es parte de la clave». Se mide
+(`gravedad.js --primero`): se prueba **cada trazo del calco como primero** y los
+demás se añaden uno a uno, siempre el que mejor se explica por lo ya dibujado.
+El primero verdadero es el que deja más trazos explicados; el orden que sale es
+un orden de dibujo posible.
+
+**Referencia 1.** Primero: **el meandro de abajo a la izquierda** (t3 del calco),
+el que baja con dos quiebros y barre en horizontal por la base hasta el límite
+izquierdo del marco. Con él de primero salen 8 de 13 explicados y el error medio
+baja de 0,78 (con el marco de primero) a 0,62. El orden: su paralela de arriba,
+luego la siguiente, y así hacia arriba; **el marco llega el séptimo**, explicado
+a 0,27 D por lo que tiene debajo. Es decir: el marco no engendra el cuerpo; el
+cuerpo engendra el marco. Lo que fija el primer trazo son **la base y el límite
+izquierdo**, y todo lo demás es seguirlo hacia arriba y hacia la derecha.
+
+**Referencia 2.** **Da igual.** Cualquier pieza de primera explica 8 o 9 de 13,
+y el error medio se mueve entre 0,35 y 0,61. El bloque es un sistema de
+contacto mutuo: no tiene primer trazo, tiene regla. La mejor (t6, la ele de
+arriba a la derecha) gana por poco.
+
+**Referencia 3.** Primero: **el trazo que entra por el borde de arriba, baja por
+la columna y sale por el borde derecho** (t3): una ele con el codo abierto en
+dos quiebros, el único trazo que toca dos bordes. Con él: 4 de 6 explicados y
+error 0,55; con la compañera de primera, 0,77–0,87. El orden: el trozo de barra
+de arriba a la izquierda, **el relevo** (el que entra por la derecha y baja), la
+barra de abajo, la barra de arriba a la derecha, y al final las dos compañeras
+que salen por la izquierda, que son el segundo gesto (0,83 y 1,43 D).
+
+**Lo común a 1 y 3.** El primer trazo **une dos límites** —la base con el canto
+izquierdo del marco; el borde de arriba con el borde derecho— y tiene **forma de
+ele**: un tramo largo, un codo oblicuo o en dos pasos, otro tramo largo. No es
+el trazo más largo ni el más central: es el que **fija el sitio de la obra** en
+el pliego. Después vienen sus paralelas (a un lado en la 1, a los dos en la 3) y
+las barras, y lo último es el gesto que se separa.
+
+**Para el generador.** El primer trazo de la 1 nace donde hoy acaba (la base):
+el meandro pesado se dibuja de abajo arriba, con el barrido hasta el canto del
+marco como arranque, y el marco se traza *después*, a D del cuerpo. En la 3 el
+primer trazo es la ele que une dos bordes contiguos, con el codo abierto; las
+compañeras y el relevo se le cuelgan. El bloque se queda como está: ahí el
+orden no es la clave.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
