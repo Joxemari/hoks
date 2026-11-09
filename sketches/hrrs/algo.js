@@ -3048,7 +3048,7 @@
   const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
     bloque: { ancho: [0.062, 0.075], gam: [0.09, 0.13], celdas: [90, 120], cobertura: [0.3, 0.42], aspect: [1.3, 1.55],
-              racha: [1, 4], rachaE: [3, 6], trozo: [4, 7], lleno: 0.8, retira: 0.1, rama: 0.4, ventanas: [1, 2], cruza: 0.4, ladeo: [0.26, 0.36] },
+              racha: [1, 4], rachaE: [3, 6], trozo: [4, 7], lleno: 0.74, retira: 0.12, rama: 0.4, ventanas: [1, 2], cruza: 0.4, ladeo: [0.26, 0.36] },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
               racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
@@ -3121,7 +3121,7 @@
     const enRect = (r, x, y) => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1;
     { let A = 0; for (let i = 0; i < sil.length; i++) { const a = sil[i], b = sil[(i + 1) % sil.length]; A += a.x * b.y - b.x * a.y; } A = abs(A) / 2;
       // si en la silueta caben menos celdas de las pedidas, la anchura baja hasta que quepan
-      const Pmax = Math.sqrt(A * 0.92 / nCel); if (P > Pmax) { P = Pmax; W = P / (1 + gam); g = W * gam; } }
+      const Pmax = Math.sqrt(A * 0.92 / nCel), Wmin = S * O.ancho[0] * 0.9; if (P > Pmax) { P = max(Pmax, Wmin * (1 + gam)); W = P / (1 + gam); g = W * gam; } }
     // EL MARGEN DEL PLIEGO (el autor): a veces es SALIDA —el trazo sigue y el borde lo
     // corta— y a veces BARRERA —el trazo llega hasta él y gira en línea con el canto—.
     // No siempre, pero que exista. Sobre la rejilla: la silueta se empuja hasta
@@ -3144,8 +3144,9 @@
       const mas = m => m === 'sale' ? P * rng.range(0.9, 1.7) : -(mB0 - 0.4 * P);
       let dx = 0, dy = 0;
       if (bordes.izq) dx = -(x0s + mas(bordes.izq)); if (bordes.der) dx = fw - x1s + mas(bordes.der); if (bordes.arriba) dy = -(y0s + mas(bordes.arriba)); if (bordes.abajo) dy = fh - y1s + mas(bordes.abajo);
-      if (bordes.izq && bordes.der) { const a = -mas(bordes.izq), b = fw + mas(bordes.der), esc = (b - a) / (x1s - x0s); for (const q of sil) q.x = a + (q.x - x0s) * esc; dx = 0; }
-      if (bordes.arriba && bordes.abajo) { const a = -mas(bordes.arriba), b = fh + mas(bordes.abajo), esc = (b - a) / (y1s - y0s); for (const q of sil) q.y = a + (q.y - y0s) * esc; dy = 0; }
+      // dos bordes opuestos estiraban la silueta al pliego entero (222 celdas finas): se queda uno
+      if (bordes.izq && bordes.der) { delete bordes[rng.bool(0.5) ? 'izq' : 'der']; dx = bordes.izq ? -(x0s + mas(bordes.izq)) : fw - x1s + mas(bordes.der); }
+      if (bordes.arriba && bordes.abajo) { delete bordes[rng.bool(0.5) ? 'arriba' : 'abajo']; dy = bordes.arriba ? -(y0s + mas(bordes.arriba)) : fh - y1s + mas(bordes.abajo); }
       if (!TRAV) for (const q of sil) { q.x += dx; q.y += dy; }
     }
     const insideSil = (x, y) => { let c = false; for (let i = 0, j = sil.length - 1; i < sil.length; j = i++) { const a = sil[i], b = sil[j]; if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) c = !c; } return c; };
@@ -3172,10 +3173,12 @@
     const centro = (i, j) => ({ x: cx + ox + ux * (i * Pl) + vx * (j * Pl), y: cy + oy + uy * (i * Pl) + vy * (j * Pl) });
     let total = 0, enPliego = 0;
     for (let i = -N; i <= N; i++) for (let j = -N; j <= N; j++) { const c = centro(i, j); if (!inside(c.x, c.y)) continue; total++; if (cabeBorde(c.x, c.y)) { cells.set(key(i, j), { i, j, used: false }); if (c.x >= 0 && c.y >= 0 && c.x <= fw && c.y <= fh) enPliego++; } }
-    if (!Object.keys(bordes).length && cells.size) {
-      // sin borde, el cuerpo va centrado en el pliego (las bahías lo descentraban)
+    if (cells.size) {
+      // el cuerpo va centrado en el pliego; con un borde, solo en el eje paralelo a ese
+      // borde (en el otro, el borde manda)
       let sx = 0, sy = 0; for (const c of cells.values()) { const q = centro(c.i, c.j); sx += q.x; sy += q.y; }
-      ox += fw / 2 - sx / cells.size; oy += fh / 2 - sy / cells.size; }
+      const bx = bordes.izq || bordes.der, by = bordes.arriba || bordes.abajo;
+      if (!bx) ox += fw / 2 - sx / cells.size; if (!by) oy += fh / 2 - sy / cells.size; }
     if (Object.keys(bordes).length && enPliego < total * 0.7) {
       // el borde se comía más de un tercio del cuerpo (la silueta cayó en la esquina): sin borde
       for (const k of Object.keys(bordes)) delete bordes[k];
@@ -3221,9 +3224,9 @@
       ints = ints.filter(c => abierto01(c) > 0.4 && dN(c) >= 2 && dN(c) <= 4); if (ints.length < 2) ints = [...cells.values()].filter(c => interior(c) && dN(c) >= 2); if (ints.length < 2) break;
       const c0 = ints[rng.int(0, ints.length - 1)], forma = formas[rng.int(0, formas.length - 1)], sw = rng.bool(0.5);
       const celdas = [];
-      if (forma === 'barra') { const L = rng.int(3, 5); for (let m = 0; m < L; m++) celdas.push(sw ? [c0.i + m - (L >> 1), c0.j] : [c0.i, c0.j + m - (L >> 1)]); }
-      else if (forma === 'rect') { const w = 2, h = rng.int(3, 4); for (let a2 = 0; a2 < (sw ? h : w); a2++) for (let b2 = 0; b2 < (sw ? w : h); b2++) celdas.push([c0.i + a2 - ((sw ? h : w) >> 1), c0.j + b2 - ((sw ? w : h) >> 1)]); }
-      else { const L1 = rng.int(3, 4), L2 = rng.int(2, 3), s1 = rng.bool(0.5) ? 1 : -1, s2 = rng.bool(0.5) ? 1 : -1;
+      if (forma === 'barra') { const L = rng.int(4, 7); for (let m = 0; m < L; m++) celdas.push(sw ? [c0.i + m - (L >> 1), c0.j] : [c0.i, c0.j + m - (L >> 1)]); }
+      else if (forma === 'rect') { const w = rng.int(2, 3), h = rng.int(3, 5); for (let a2 = 0; a2 < (sw ? h : w); a2++) for (let b2 = 0; b2 < (sw ? w : h); b2++) celdas.push([c0.i + a2 - ((sw ? h : w) >> 1), c0.j + b2 - ((sw ? w : h) >> 1)]); }
+      else { const L1 = rng.int(4, 6), L2 = rng.int(3, 4), s1 = rng.bool(0.5) ? 1 : -1, s2 = rng.bool(0.5) ? 1 : -1;
         for (let m = 0; m < L1; m++) celdas.push(sw ? [c0.i + s1 * m, c0.j] : [c0.i, c0.j + s1 * m]);
         for (let m = 1; m < L2; m++) celdas.push(sw ? [c0.i, c0.j + s2 * m] : [c0.i + s2 * m, c0.j]); }
       for (const [i2, j2] of celdas) cells.delete(key(i2, j2)); }
@@ -4105,7 +4108,11 @@
              ojos: best.ojos, ocupacion: best.ocupacion, esq: 0,
              cierre: best.cierre,
              geo: { cintas: best.trazos.map(x => x.pts), sangra: best.trazos.map(x => !!x.sangra),
-                    relleno: best.trazos.map(x => x.relleno || null),
+                    // la holgura POR VERTICE de cada trazo (lo que `holguras` le permite
+                    // rellenar). Iba en `relleno` y la pisaba el radio del campo de dos
+                    // lineas mas abajo: `canal.js` y `toque.js` leian un numero, no un
+                    // array, y su control `holgura` salia 0 de 120 sin mirar nada.
+                    holgura: best.trazos.map(x => x.relleno || null),
                     lados: best.trazos.map(x => x.lados || null),
                     // el radio de relleno del campo, × media anchura: con esto y los ejes,
                     // `etiquetas()` reconstruye exactamente lo pintado

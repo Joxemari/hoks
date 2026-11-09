@@ -3297,6 +3297,25 @@ rejilla de paralelogramos, que da codos de 53–68° y bifurcaciones. Lo que le
 falta: que el rumbo cambie dentro del trazo (hoy todos los brazos van en las dos
 mismas direcciones oblicuas), más aire, y el nudo donde los brazos se juntan.
 
+**El aire del bloque, y lo que rompió.** Ventanas con forma y más grandes (barra
+de 4–7, rectángulo de 2–3 × 3–5, ele de 4–6 + 3–4), `lleno` 0,74 y `retira` 0,12.
+Al abrir la silueta hacia dos bordes opuestos el cuerpo se estiraba hasta
+adelgazar la anchura a 0,046 del lado con 222 celdas, y el recentrado sólo
+miraba si había borde, no en qué eje. Tres arreglos: suelo de anchura (0,9 del
+mínimo del tipo), recentrado por eje —se centra en el eje que no toca borde— y
+dos bordes opuestos se quedan en uno, al azar.
+
+**Un control que no miraba.** `holgura`, el control de que el relleno de esquina
+no se coma el pelo del vecino, llevaba saliendo 0 de 120 sin mirar nada: el
+algoritmo publicaba la holgura por vértice en `geo.relleno` y dos líneas más
+abajo el radio del campo, con el mismo nombre, la pisaba; `canal.js` y `toque.js`
+leían un número donde esperaban un array y saltaban todas las cintas. Hoy va en
+`geo.holgura`, el control dispara 128 de 128 y el sano sigue en 0. Es el caso
+exacto que la cabecera de `mil.sh` avisa: un cero sin control no significa nada,
+y este tenía control y seguía sin significar nada, porque el control tampoco
+miraba. Se añade la configuración `campo` a la batería —el pintor que no es el de
+producción— para que su código tampoco quede sin medir.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

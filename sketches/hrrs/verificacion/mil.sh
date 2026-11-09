@@ -67,6 +67,10 @@ if [ "$BLOQUE" = todo ] || [ "$BLOQUE" = canal ]; then
     printf '\n  CONTROL %s (tiene que disparar, sin-halo):\n' "$r"
     node canal.js "t_$r.js" 120 760 "sin-halo" 2>/dev/null | grep -E "RENDIJA|^  min"
   done
+  # `holgura` rompe la cuenta de `holguras`, que corre en todos los modelos. Estuvo
+  # saliendo 0 de 120 sin mirar: el algoritmo publicaba la holgura por vertice en
+  # `geo.relleno` y el radio del campo, con el mismo nombre, la pisaba — el detector
+  # leia un numero donde esperaba un array. Hoy va en `geo.holgura`.
   build holgura t_holgura.js && {
     printf '\n  CONTROL holgura (tiene que disparar):\n'
     node canal.js t_holgura.js 120 760 "" 2>/dev/null | grep -E "HOLGURA"

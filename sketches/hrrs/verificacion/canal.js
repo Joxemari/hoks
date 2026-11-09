@@ -112,7 +112,7 @@ function medir({ seed, fmt, params, base }) {
   }
   // ── LA HOLGURA DECLARADA ────────────────────────────────────────────────────
   // El algoritmo se permite RELLENAR la esquina mas alla de W/2, y declara cuanto en
-  // `geo.relleno`. Que la tinta obedezca a ese plan lo comprueba `toque.js` sobre el
+  // `geo.holgura`. Que la tinta obedezca a ese plan lo comprueba `toque.js` sobre el
   // pixel; lo que se comprueba AQUI es que el plan mismo sea legal — que lo que un
   // vertice se permite rellenar nunca se coma el pelo de otro trazo.
   //
@@ -121,7 +121,7 @@ function medir({ seed, fmt, params, base }) {
   // dos tiene que quedar `g`. Sin control, este numero seria palabra del algoritmo
   // sobre si mismo: su control es `holgura`.
   let holgMalos = 0, holgPeor = 0;
-  const rell = g.relleno || [];
+  const rell = g.holgura || [];   // la holgura por vertice; `g.relleno` es el radio del campo
   for (let c = 0; c < g.cintas.length; c++) {
     const r = rell[c]; if (!r) continue;
     const pts = g.cintas[c];

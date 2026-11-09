@@ -144,13 +144,13 @@ function medir({ seed, fmt, params, base, extra }) {
   // incision de anchura fija y la tinta ocupa el resto—, la tinta SI pasa de W/2 del
   // eje, y a proposito. Pero no en cualquier sitio ni en cualquier cantidad: solo
   // alrededor de un vertice, y solo hasta la holgura que el algoritmo calculo y
-  // DECLARA en `geo.relleno`. Asi que el detector no afloja el umbral: comprueba que
+  // DECLARA en `geo.holgura`. Asi que el detector no afloja el umbral: comprueba que
   // la tinta de mas cae dentro de lo declarado, vertice por vertice.
   //
   // Que la propia holgura no se coma el canal de nadie es otra afirmacion, y se
   // comprueba en otro sitio (`canal.js`, sobre la geometria). Aqui solo se mide que
   // el pixel obedece al plan.
-  const rell = g.relleno || [];
+  const rell = g.holgura || [];   // la holgura por vertice; `g.relleno` es el radio del campo
   for (const i of sospechosos) {
     const gx = i % NX, gy = (i - gx) / NX;
     const px = gx + 0.5, py = gy + 0.5;

@@ -43,6 +43,11 @@ const CONFIGS = [
   // los ejes). El calco no la promete -el trazador deja pares a 0,8 D- y por eso
   // exige halo; aqui se mide la regla donde existe.
   { n: 'sin-halo',   fmt: 'square',     p: { halo: 0, modelo: 'libre' } },
+  // EL PINTOR DE CAMPO. Produccion pinta con el halo, y el relleno de esquina con su
+  // cuenta de holgura (`holguras`, `banda`) solo corre con el pintor de campo: el
+  // control `holgura` lo parchea, asi que medido en las configuraciones de halo salia
+  // 0 de 120 sin mirar nada. Se mide aqui, que es donde ese codigo existe.
+  { n: 'campo',      fmt: 'square',     p: { pintor: 'campo' } },
 ];
 
 function configs(only) {
