@@ -48,6 +48,11 @@ const CONFIGS = [
   // control `holgura` lo parchea, asi que medido en las configuraciones de halo salia
   // 0 de 120 sin mirar nada. Se mide aqui, que es donde ese codigo existe.
   { n: 'campo',      fmt: 'square',     p: { pintor: 'campo' } },
+  // EL MODELO DE HEBRA (vuelta 28): el meandro maestro y sus paralelas, para el
+  // recinto y la travesía. Aún no es producción; se mide igual.
+  { n: 'hebra-rec',  fmt: 'square',     p: { modelo: 'hebra', tipo: 'recinto' } },
+  { n: 'hebra-tra',  fmt: 'square',     p: { modelo: 'hebra', tipo: 'travesia' } },
+  { n: 'hebra-apais',fmt: 'horizontal', p: { modelo: 'hebra', tipo: 'recinto' } },
 ];
 
 function configs(only) {

@@ -3362,6 +3362,52 @@ Medido tras retirar la cizalla fuerte, travesía sobre 80 obras: solape 0 de 80
 0 de 120. Batería entera: solape 0/208, pelo 0/50 por debajo, holgura 0/208 con
 su control en 128/128, determinismo 64/64.
 
+## Vigesimoctava vuelta: la hebra — un meandro maestro y sus paralelas
+
+El autor, sobre la hoja anterior: «la referencia 3 está fatal; a la 1 le queda
+mucho desde el punto de vista compositivo, quizá por ángulos». Mirada otra vez la
+1 de cerca: lo que cuelga del marco no son escaleras a escuadra, son **meandros
+con quiebros oblicuos** —35 a 60° respecto a la vertical— y cada vecino es una
+**paralela exacta** del anterior, al mismo margen en todo su recorrido, con los
+cabos escalonados. Eso no sale de una rejilla ni de deformarla (vuelta 27): sale
+de dibujar un meandro y sacar los demás como paralelas suyas, que es lo que hace
+la mano en el original. La 3 es el mismo gesto a otra escala.
+
+**El modelo `hebra`** (`tramarHebra`, elegible en el laboratorio; producción
+sigue en el paseo hasta que el autor lo vea):
+
+- **El meandro maestro**: tramos verticales y quiebros oblicuos a uno y otro
+  lado, con tramo horizontal a veces y barrido final hacia el lado que pesa.
+  **Nunca un ángulo agudo**: el inglete de una paralela exterior crece con
+  1/sin(θ/2) y a 45° una paralela a 4·D sacaba una púa de medio pliego. Tras un
+  horizontal el quiebro sigue al mismo lado, entre dos quiebros hay siempre un
+  vertical, y la deriva acumulada no pasa de 50°.
+- **La paralela** (`paralela`): rectas desplazadas por tramo, vértices en sus
+  intersecciones, esquinas vivas. Un tramo que se ha dado la vuelta es el bucle
+  del lado de dentro y se quita su recta; dos rectas a menos de 12° no se cortan
+  (se irían lejísimos) y se unen por el medio.
+- **El recorte progresivo** (`recortar`): el marco va primero, luego cada haz; el
+  trazo nuevo se corta donde su eje queda a menos de D de lo ya puesto y el cabo
+  cortado avanza hasta dejar W/2 + g —la boca a un pelo—, **como mucho muestra y
+  media**: sin tope, un cabo cortado por un vecino a 0,9 D seguía por papel libre
+  un cuarto de pliego (25 de 50 obras con solape a 0°; con el tope, 0 de 150).
+- **Recinto (1)**: marco de una sola tinta —pata izquierda, barra (partida a veces),
+  pata derecha de largo distinto, nunca la U entera— y dos o tres haces de 2–5
+  hebras colgando de la barra, el más denso al lado que pesa, cabos escalonados.
+- **Travesía (3)**: una hebra maestra que cruza el pliego con tres a cinco quiebros
+  abiertos, una paralela que la acompaña solo un tramo (40–75 %, cabos dentro),
+  un afluente recto que entra por un costado y muere en ella a un pelo, y la barra
+  del canto a veces. Vertical o transpuesta.
+
+Medido: solape 0 de 150 (recinto, travesía, recinto apaisado), pelo 0 por debajo
+de g en 60, determinismo 24/24. Configuraciones `hebra-rec`, `hebra-tra`,
+`hebra-apais` en la batería.
+
+**Lo que le falta, a ojo:** en la 1, los haces se quedan separados y en el original
+se entrelazan abajo; en la 3, el nudo donde el afluente muere en la maestra es
+una te limpia y en el original la hebra se abre (bifurca) — la rama sale del
+mismo gesto. Y decidir si pasa a producción.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

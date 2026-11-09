@@ -3542,6 +3542,216 @@
              sangrados: ctx.trazos.filter(x => x.sangra).length };
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EL MODELO DE HEBRA: un meandro maestro y sus paralelas (referencias 1 y 3)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Mirada otra vez la referencia 1 (vuelta 28): lo que cuelga del marco no son
+  // escaleras a escuadra, son meandros con quiebros OBLICUOS —35 a 60° respecto a la
+  // vertical— y cada vecino es una PARALELA EXACTA del anterior, al mismo margen en
+  // todo su recorrido, con el cabo escalonado. Eso no sale de una rejilla ni de
+  // deformarla (vuelta 27): sale de dibujar un meandro y sacar los demás como
+  // paralelas suyas (offsets a k·D), que es lo que hace la mano en el original. La
+  // referencia 3 es el mismo gesto a otra escala: una curva maestra que cruza el
+  // pliego, una o dos paralelas, y una barra recta por el canto.
+  //
+  // La regla progresiva (el autor: «el primer trazo influye en el resto») se cumple
+  // literalmente: el marco va primero, luego cada haz en orden, y cada trazo nuevo
+  // se RECORTA contra lo que ya hay —donde su eje se acerca a otro a menos de D
+  // se corta, y el cabo que queda avanza hasta dejar exactamente el pelo—. Nada se
+  // solapa porque nada se pinta donde ya hay tinta.
+  const HEBRA = {
+    // recinto (referencia 1): marco fino de dos o tres lados, dos o tres haces de
+    // meandros colgando de la barra, el más denso a un lado (centro de gravedad)
+    recinto: { ancho: [0.024, 0.032], gam: [0.16, 0.24], cuerpo: [0.46, 0.56], alto: [0.42, 0.52],
+               haces: [2, 3], hebras: [2, 5], jog: [35, 60], recto: [2, 6], quiebro: [1.2, 3], marco: true, barrido: [3, 7] },
+    // travesía (referencia 3): dos o tres hebras anchas que cruzan el pliego y salen
+    // por los bordes, con uno o dos quiebros abiertos; una barra recta por un canto
+    travesia: { ancho: [0.10, 0.125], gam: [0.06, 0.09], cuerpo: [1, 1], alto: [1, 1],
+                haces: [1, 2], hebras: [1, 3], jog: [25, 55], recto: [1, 3], quiebro: [1, 2.2], marco: false, barra: 0.7 },
+  };
+  // la paralela de una polilínea a distancia d (positiva: a la izquierda del avance),
+  // con las esquinas VIVAS (inglete) y sin los bucles que deja el lado de dentro
+  // cuando el tramo es más corto que lo que el inglete se come
+  function paralela(pts, d) {
+    if (pts.length < 2) return pts.slice();
+    // una recta desplazada por tramo; los vértices son las intersecciones de rectas
+    // consecutivas. Un tramo cuyo vértice siguiente queda DETRÁS del anterior se ha
+    // dado la vuelta —es el bucle del lado de dentro— y se quita su recta; las dos
+    // de al lado se cortan entre sí. Hasta que no se dé la vuelta ninguno.
+    let L = [];
+    for (let i = 0; i + 1 < pts.length; i++) { const dx = pts[i + 1].x - pts[i].x, dy = pts[i + 1].y - pts[i].y, m = hypot(dx, dy); if (m < 1e-9) continue;
+      const ux = dx / m, uy = dy / m; L.push({ px: pts[i].x - uy * d, py: pts[i].y + ux * d, ux, uy, len: m }); }
+    // dos rectas a menos de ~12° se cortan lejísimos sin darse la vuelta (salían
+    // triángulos de medio pliego): ahí no hay inglete, se unen por el punto medio
+    const corte = (A, B) => { const den = A.ux * B.uy - A.uy * B.ux; if (abs(den) < 0.2) return null;
+      const t = ((B.px - A.px) * B.uy - (B.py - A.py) * B.ux) / den; return { x: A.px + A.ux * t, y: A.py + A.uy * t }; };
+    const vertices = () => { const v = []; for (let i = 0; i < L.length; i++) {
+        const a = i === 0 ? { x: L[0].px, y: L[0].py } : (corte(L[i - 1], L[i]) || { x: (L[i - 1].px + L[i - 1].ux * L[i - 1].len + L[i].px) / 2, y: (L[i - 1].py + L[i - 1].uy * L[i - 1].len + L[i].py) / 2 });
+        v.push(a); }
+      const u = L[L.length - 1]; v.push({ x: u.px + u.ux * u.len, y: u.py + u.uy * u.len }); return v; };
+    for (let guard = 0; guard < pts.length && L.length > 1; guard++) {
+      const v = vertices(); let k = -1, peor = 0;
+      for (let i = 0; i < L.length; i++) { const s2 = (v[i + 1].x - v[i].x) * L[i].ux + (v[i + 1].y - v[i].y) * L[i].uy; if (s2 < peor) { peor = s2; k = i; }
+        // y un tramo que ha crecido más de tres veces el desplazamiento tampoco es
+        // una paralela: se quita la recta más corta de las dos que lo flanquean
+        if (k < 0 && s2 > L[i].len + 3 * abs(d) + 1e-9) { k = i > 0 && L[i - 1].len < L[i].len ? i - 1 : i; peor = -1e-9; } }
+      if (k < 0) break; L.splice(k, 1);
+    }
+    return vertices();
+  }
+  // los puntos de una polilínea a lo largo, cada `paso`
+  function muestrear(pts, paso) {
+    const out = []; if (!pts.length) return out;
+    for (let i = 0; i + 1 < pts.length; i++) { const a = pts[i], b = pts[i + 1], L = hypot(b.x - a.x, b.y - a.y), n = max(1, Math.ceil(L / paso));
+      for (let m = 0; m < n; m++) out.push({ x: a.x + (b.x - a.x) * m / n, y: a.y + (b.y - a.y) * m / n, i }); }
+    const u = pts[pts.length - 1]; out.push({ x: u.x, y: u.y, i: pts.length - 2 }); return out;
+  }
+  // quitar los vértices colineales y los tramos de menos de un pelo
+  function simplificar(pts) {
+    if (pts.length < 3) return pts;
+    const out = [pts[0]];
+    for (let i = 1; i < pts.length - 1; i++) { const a = out[out.length - 1], b = pts[i], c = pts[i + 1];
+      if (hypot(b.x - a.x, b.y - a.y) < 1e-6) continue;
+      if (abs((b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x)) > 1e-7 * (1 + hypot(c.x - a.x, c.y - a.y))) out.push(b); }
+    out.push(pts[pts.length - 1]); return out;
+  }
+  function tramarHebra(rng, fw, fh, tipo, params) {
+    const O = HEBRA[tipo] || HEBRA.recinto, TRAV = !O.marco;
+    const S = min(fw, fh), rr = v => rng.range(v[0], v[1]);
+    const W = params.ancho ? S * W_MAX * params.ancho : S * rr(O.ancho);
+    const g = W * (params.canal ? params.canal : rr(O.gam)), D = W + g, quiero = W / 2 + g;
+    const trazos = [];   // lo ya puesto: { pts, segs, rel }
+    const distA = (x, y, salvo) => { let d = Infinity; for (const t of trazos) { if (t === salvo) continue; for (const sg of t.segs) { const v = pointSegDist(x, y, sg[0], sg[1], sg[2], sg[3]); if (v < d) d = v; } } return d; };
+    // EL RECORTE: un trazo nuevo se corta donde su eje queda a menos de D de lo ya
+    // puesto; cada trozo que sobrevive (≥ minL) avanza su cabo cortado hasta quedar
+    // a W/2 + g del eje ajeno —la boca a un pelo—, y lo que no cabe no se pinta.
+    const recortar = (pts, minL) => {
+      const ms = muestrear(pts, W / 8), ok = ms.map(q => distA(q.x, q.y) >= D * 0.985), piezas = []; let i = 0;
+      while (i < ms.length) { if (!ok[i]) { i++; continue; } let j = i; while (j + 1 < ms.length && ok[j + 1]) j++;
+        // el trozo: muestras i..j, con sus vértices originales de en medio
+        const seg = [ms[i]]; for (let v = ms[i].i + 1; v <= ms[j].i; v++) seg.push(pts[v]); seg.push(ms[j]);
+        let pz = simplificar(seg.map(q => ({ x: q.x, y: q.y })));
+        // el cabo cortado avanza hasta el pelo
+        const avanza = (lado) => { const e = lado ? pz[pz.length - 1] : pz[0], a = lado ? pz[pz.length - 2] : pz[1]; if (!a) return;
+          // el corte está a menos de una muestra del último punto bueno: el cabo avanza
+          // como mucho muestra y media. Sin tope, un cabo cortado por un vecino a 0,9 D
+          // —que no es cruce y no para el avance— seguía por papel libre hasta 0,25 del
+          // lado y volvía a pisar lo cortado (solape.js: 25 de 50, a 0°).
+          const ux = e.x - a.x, uy = e.y - a.y, um = hypot(ux, uy) || 1e-9, dx = ux / um, dy = uy / um; let x = e.x, y = e.y, paso = W / 24, n = 0;
+          while (n++ < 4 && distA(x + dx * paso, y + dy * paso) >= quiero) { x += dx * paso; y += dy * paso; }
+          if (lado) pz[pz.length - 1] = { x, y }; else pz[0] = { x, y }; };
+        if (i > 0) avanza(0); if (j < ms.length - 1) avanza(1);
+        if (pz.length >= 2 && largoDe(pz) >= minL) piezas.push(pz);
+        i = j + 1; }
+      return piezas; };
+    const pon = (pts, rel, minL) => { for (const pz of recortar(pts, minL != null ? minL : W * 2.5)) trazos.push({ pts: pz, segs: segsDe(pz), rel }); };
+    // ── el cuerpo ────────────────────────────────────────────────────────────
+    const ancho = S * rr(O.cuerpo), alto = S * rr(O.alto);
+    const x0 = TRAV ? -W : (fw - ancho) / 2 + rng.range(-0.03, 0.03) * S, y0 = TRAV ? -W : (fh - alto) / 2 - 0.03 * S + rng.range(-0.02, 0.02) * S;
+    const x1 = TRAV ? fw + W : x0 + ancho, y1 = TRAV ? fh + W : y0 + alto;
+    const lado = rng.bool(0.5) ? -1 : 1;   // hacia dónde pesa la obra (centro de gravedad)
+    if (O.marco) {
+      // EL MARCO: la barra arriba y una o dos patas de largo desigual, nunca la U
+      // entera. La barra puede ir partida en dos, como en el original.
+      // una sola tinta con sus esquinas: pata izquierda + barra (+ pata derecha), o
+      // partida en dos piezas por la barra
+      const partida = rng.bool(0.5), xc = x0 + ancho * rng.range(0.4, 0.6);
+      const dos = rng.bool(0.7), li = alto * rng.range(0.3, 0.6), ld = alto * rng.range(0.3, 0.6);
+      const izq = dos || lado > 0, der = dos || lado < 0;
+      const A = [], B = [];
+      if (izq) A.push({ x: x0, y: y0 + li }); A.push({ x: x0, y: y0 });
+      if (partida) { A.push({ x: xc - D / 2, y: y0 }); B.push({ x: xc + D / 2, y: y0 }); }
+      B.push({ x: x1, y: y0 }); if (der) B.push({ x: x1, y: y0 + ld });
+      if (partida) { pon(A, 'marco'); pon(B, 'marco'); } else pon(A.concat(B), 'marco');
+    }
+    // ── los haces ────────────────────────────────────────────────────────────
+    // el meandro maestro: baja desde la barra con tramos verticales y quiebros
+    // oblicuos (jog) a uno y otro lado —nunca dos seguidos al mismo lado más de
+    // 90° acumulados: eso sería la U—, y acaba en un barrido horizontal hacia el
+    // lado que pesa
+    // (`ult` recuerda el lado del último quiebro: el siguiente va al otro lado casi
+    // siempre —un meandro, no una deriva—, y la deriva acumulada nunca pasa de 60°)
+    const meandro = (xs, ys, yFin, haciaLado, conBarrido) => {
+      // NUNCA UN ÁNGULO AGUDO: el inglete de una paralela exterior crece con 1/sin(θ/2)
+      // y a 45° una paralela a 4·D saca una púa de medio pliego. Así que: tras un
+      // tramo horizontal el quiebro sigue hacia el mismo lado; entre dos quiebros
+      // hay siempre un tramo vertical; y la deriva acumulada no pasa de 50°.
+      const pts = [{ x: xs, y: ys }]; let x = xs, y = ys, acum = 0, ult = 0, ultimoH = 0;
+      y += W * rr(O.recto) * 0.7; pts.push({ x, y });
+      let guard = 0;
+      while (y < yFin - W * 2.5 && guard++ < 24) {
+        const th = rr(O.jog) * RAD;
+        const sgn = ultimoH ? ultimoH : acum > 50 * RAD ? -1 : acum < -50 * RAD ? 1 : ult === 0 ? (rng.bool(0.5) ? 1 : -1) : (rng.bool(0.72) ? -ult : ult);
+        const L = W * rr(O.quiebro);
+        x += Math.sin(th) * L * sgn; y += Math.cos(th) * L; pts.push({ x, y }); acum += th * sgn; ult = sgn; ultimoH = 0;
+        if (rng.bool(0.3)) { const Lh = W * rng.range(1.5, 3.5); x += Lh * sgn; pts.push({ x, y }); ultimoH = sgn; }
+        const Lv = W * rr(O.recto); y += Lv; pts.push({ x, y }); acum *= 0.4;
+      }
+      // el barrido final, horizontal, hacia el lado que pesa (nunca contra el último quiebro)
+      if (conBarrido) { const Lb = W * rr(O.barrido || [3, 7]); x += Lb * (ultimoH ? ultimoH : haciaLado); pts.push({ x, y }); }
+      return pts; };
+    const nH = rng.int(O.haces[0], O.haces[1]);
+    if (!TRAV) {
+      // las posiciones de los haces a lo largo de la barra, el más denso al lado que pesa
+      const xsL = []; for (let h = 0; h < nH; h++) xsL.push(x0 + ancho * ((h + 0.5) / nH + rng.range(-0.08, 0.08)));
+      xsL.sort((a, b) => lado > 0 ? b - a : a - b);   // el primero, el del lado que pesa
+      xsL.forEach((xs, h) => {
+        const n = h === 0 ? rng.int(O.hebras[1] - 1, O.hebras[1]) : rng.int(O.hebras[0], O.hebras[0] + 1);
+        const master = meandro(xs, y0, y1, lado, rng.bool(0.75)), ladoPar = rng.bool(0.5) ? 1 : -1;
+        for (let k = 0; k < n; k++) {
+          // las paralelas, a k·D a un lado; el cabo de abajo escalonado
+          let pts = k === 0 ? master : paralela(master, k * D * ladoPar);
+          if (pts.length < 2) continue;
+          const L = largoDe(pts), corta = W * rng.range(0, 5); if (corta > 0 && L > corta + W * 3) { const ms = muestrear(pts, W / 8); const keep = ms.filter((q, i) => { let acc = 0; for (let t = 1; t <= i; t++) acc += hypot(ms[t].x - ms[t - 1].x, ms[t].y - ms[t - 1].y); return acc <= L - corta; }); pts = simplificar(keep.map(q => ({ x: q.x, y: q.y }))); }
+          pon(pts, k === 0 ? 'hebra' : 'paralela', W * 3);
+        } });
+    } else {
+      // TRAVESÍA: la hebra maestra cruza el pliego de un borde al de enfrente con uno
+      // o dos quiebros abiertos; sus paralelas, y una barra recta por un canto
+      // LA REFERENCIA 3, medida: una hebra maestra que cruza el pliego de un borde al
+      // de enfrente con tres a cinco quiebros abiertos; una paralela que la acompaña
+      // SOLO un tramo (del 40 al 75 % de su largo, con los cabos dentro del pliego);
+      // un afluente recto que entra por un costado y muere en ella, a un pelo; y, a
+      // veces, la barra recta por un canto. Vertical o, transpuesto, horizontal.
+      const vertical = rng.bool(0.5);
+      const largo = vertical ? fh : fw, ancho2 = vertical ? fw : fh;
+      const T = q => vertical ? q : { x: q.y, y: q.x };
+      let master = meandro(ancho2 * rng.range(0.3, 0.7), -W * 1.5, largo + W * 3, 1, false).map(T);
+      pon(master, 'hebra', W * 3);
+      if (rng.bool(0.85)) {
+        const par = paralela(master, D * (rng.bool(0.5) ? 1 : -1)), ms = muestrear(par, W / 8), Lp = largoDe(par);
+        const f0 = rng.range(0.05, 0.4), f1 = clamp(f0 + rng.range(0.4, 0.75), 0, 0.97); let acc = 0; const keep = [];
+        for (let i = 0; i < ms.length; i++) { if (i) acc += hypot(ms[i].x - ms[i - 1].x, ms[i].y - ms[i - 1].y); if (acc >= Lp * f0 && acc <= Lp * f1) keep.push({ x: ms[i].x, y: ms[i].y }); }
+        if (keep.length > 2) pon(simplificar(keep), 'paralela', W * 3);
+      }
+      if (rng.bool(0.75)) {
+        // el afluente: recto, desde un costado, a la altura de un tramo recto de la maestra
+        const t = rng.range(0.3, 0.8), desde = rng.bool(0.5) ? -1 : 1, pos = largo * t;
+        const af = vertical ? [{ x: desde < 0 ? -W : fw + W, y: pos }, { x: fw / 2, y: pos + rng.range(-0.08, 0.08) * S }] : [{ x: pos, y: desde < 0 ? -W : fh + W }, { x: pos + rng.range(-0.08, 0.08) * S, y: fh / 2 }];
+        pon(af, 'afluente', W * 2);
+      }
+      if (rng.bool(O.barra)) { const m = W * rng.range(0.6, 1.2), c = rng.int(0, 3);
+        const bar = c === 0 ? [{ x: -W, y: m }, { x: fw + W, y: m }] : c === 1 ? [{ x: -W, y: fh - m }, { x: fw + W, y: fh - m }] : c === 2 ? [{ x: m, y: -W }, { x: m, y: fh + W }] : [{ x: fw - m, y: -W }, { x: fw - m, y: fh + W }];
+        pon(bar, 'barra', W * 3); }
+    }
+    // ── salida, con la forma del paseo ───────────────────────────────────────
+    const ctx = { fw, fh, S, W, g, D, mg: S * MARGEN, trazos: [], gubAmp: 0, relleno: 1, halo: max(g, params.halo != null ? params.halo * W : g) };
+    for (const t of trazos) { const fuera = t.pts.some(q => q.x < 0 || q.y < 0 || q.x > fw || q.y > fh);
+      ctx.trazos.push({ pts: t.pts, segs: t.segs, ramas: [], W: W * rng.range(0.98, 1.02), rel: t.rel, sangra: fuera, gubia: null, fin: 'hebra', celdas: 0, cruza: false, marco: t.rel === 'marco', caras: [null, null] }); }
+    holguras(ctx);
+    const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };
+    const pas = pasillos(ctx.trazos, W, D);
+    let vert = 0, quiebros = 0; for (const t of ctx.trazos) { vert += t.pts.length; quiebros += max(0, t.pts.length - 2); }
+    const Ls = ctx.trazos.map(t => largoDe(t.pts) / S).sort((a, b) => a - b), lMed = Ls.length ? Ls[Ls.length >> 1] : 0;
+    return { trazos: ctx.trazos, W, g, D, cerco: 0, patas: 0, masaN: 0, masa: med.ocupacion, objMasa: 0, mano: 1, ventanas: 0,
+             pega: 1, recto: 0.6, vibF: 0, conc: 0, relleno: 1, relCount: { hebra: ctx.trazos.length }, vibra: false,
+             orto: false, travesia: TRAV, halo: ctx.halo, cierre: CIERRE_POR, rumbos: [0],
+             modelo: 'hebra', pedidos: max(3, ctx.trazos.length), celdas: 0, cobertura: med.ocupacion, dbg: null, bordes: null, ladeo: 0, centros: 1,
+             ojos: med.ojos, ocupacion: med.ocupacion, pasillos: pas.n, largoPas: pas.largo / W, vert, quiebros,
+             largoMax: Ls.length ? Ls[Ls.length - 1] : 0, reparto: lMed > 0 ? Ls[Ls.length - 1] / lMed : 0,
+             sangrados: ctx.trazos.filter(x => x.sangra).length };
+  }
+
   function tramarCalco(rng, fw, fh, tipo, params) {
     const base = CALCOS[tipo] ? tipo : 'bloque';
     const calco = CALCOS[base];
@@ -4017,6 +4227,7 @@
       const modelo = params.modelo || 'paseo';
       const r3 = new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0);
       const c = modelo === 'paseo' ? tramarPaseo(r3, fw, fh, tipo, params)
+              : modelo === 'hebra' ? tramarHebra(r3, fw, fh, tipo, params)
               : modelo === 'calco' ? tramarCalco(r3, fw, fh, tipo, params)
               : modelo === 'libre' ? tramarLibre(r3, fw, fh, tipo, params)
               : modelo === 'reja' ? tramarReja(r3, fw, fh, tipo, params)
