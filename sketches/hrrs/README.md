@@ -3206,6 +3206,29 @@ Lo que le falta al recinto, en hoja: más meandros y más apretados en el nudo (
 referencia tiene unos diez colgando juntos), y algún trazo que se escape por un
 costado del marco.
 
+## Vigesimotercera vuelta: centros de gravedad, y el marco que no es una u
+
+- **«El marco nunca es una u completa»**: en la referencia 1 es un trazo que nace
+  dentro del cuerpo, sube por una pared, recorre el lado de enfrente de la
+  abertura y baja por la otra pared una fracción; a veces solo hace un lado y el
+  de enfrente. Las dos piernas arrancan entre el 30 y el 70 % de la altura y bajan
+  entre el 15 y el 80 %. Los meandros nacen en un tramo contiguo de la pared de
+  enfrente —el lado denso, elegido por obra— uno al lado de otro, y caen juntos:
+  el haz. El otro lado queda vacío.
+- **Centros de gravedad** (el autor: «hay un sitio donde se concentra la gravedad,
+  uno, dos o tres; va dejando huecos y se aligera a medida que se aleja»). El
+  núcleo es el centro mayor; con probabilidad hay un segundo y un tercero más
+  flojos y lejos del primero. La densidad de una celda es la suma de campos que
+  caen con la distancia (radio de 3–5 celdas), y decide dónde nacen los paseos
+  (los más densos primero), hasta dónde se rellena (el paseo para cuando lo que
+  queda libre es poco denso: los huecos quedan lejos de los centros) y qué se
+  retira (más donde la densidad es baja). `params.centros` fija el número.
+- Medido en los calcos, lo que distingue la referencia 3 de la 2: tramos rectos de
+  5–14 anchuras (frente a 1–3) y quiebros de 25–55° encadenados sin rectas entre
+  medias, más la bifurcación a mitad de camino. Gira menos de 90 y más seguido:
+  una curva hecha de codos pequeños. El paseo sobre rejilla ortogonal no la
+  produce; la travesía sigue con el calco hasta tener su gramática.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

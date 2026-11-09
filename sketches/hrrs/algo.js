@@ -3057,8 +3057,8 @@
     // dentro meandros largos (8–20 celdas) que cuelgan de la pared de enfrente y
     // fluyen hacia el lado abierto. Sin ventanas ni bahía: el aire es lo que el marco
     // no llena. La silueta es rectangular.
-    recinto:  { ancho: [0.03, 0.04], gam: [0.16, 0.24], celdas: [160, 240], cobertura: [0.1, 0.16], aspect: [0.85, 1.1],
-                racha: [4, 9], rachaE: [10, 18], trozo: [6, 16], lleno: 0.45, retira: 0.06, rama: 0.2, ventanas: [0, 0], borde: 0, marco: true },
+    recinto:  { ancho: [0.028, 0.036], gam: [0.16, 0.24], celdas: [220, 300], cobertura: [0.1, 0.16], aspect: [0.85, 1.1],
+                racha: [5, 11], rachaE: [10, 18], trozo: [7, 18], lleno: 0.5, retira: 0.05, rama: 0.15, ventanas: [0, 0], borde: 0, marco: true },
     travesia: { ancho: [0.1, 0.125], gam: [0.06, 0.09], celdas: [26, 36], cobertura: [0.3, 0.42], aspect: [0.9, 1.2],
                 racha: [4, 9], rachaE: [8, 14], trozo: [4, 9], lleno: 0.7, retira: 0.15, rama: 0.3, ventanas: [0, 0], borde: 1 },
   };
@@ -3182,6 +3182,17 @@
     let nucleo = null; { let ints = [...cells.values()].filter(c => interior(c) && abierto01(c) < 0.5); if (!ints.length) ints = [...cells.values()];
       nucleo = ints[rng.int(0, ints.length - 1)]; }
     const dN = c => dCheb(c, nucleo);
+    // CENTROS DE GRAVEDAD (el autor: «hay un sitio donde se concentra la gravedad, uno,
+    // dos o tres; va dejando huecos y se aligera a medida que se aleja»). El núcleo
+    // es el centro mayor; con probabilidad hay un segundo y un tercero, más flojos,
+    // lejos del primero. La densidad de una celda es la suma de los campos, que caen
+    // con la distancia (radio de 3–5 celdas). Decide dónde nacen los paseos, hasta
+    // dónde se rellena y qué se retira.
+    const centros = [{ c: nucleo, w: 1, r: rng.range(3, 5) }];
+    { const nC = params.centros != null ? params.centros : (rng.bool(0.55) ? 1 : rng.bool(0.6) ? 2 : 3);
+      const lejos = [...cells.values()].filter(c => dN(c) >= 5);
+      for (let k = 1; k < nC && lejos.length; k++) { const c = lejos[rng.int(0, lejos.length - 1)]; centros.push({ c, w: rng.range(0.4, 0.75), r: rng.range(2.5, 4) }); } }
+    const densidad = c => { let d = 0; for (const z of centros) { const q = dCheb(c, z.c) / z.r; d += z.w * max(0, 1 - q * q * 0.5); } return min(1, d); };
     // EL ESPACIO ENCERRADO ES LA FIGURA (Chillida en Zeihartu, según la Colección BBVA:
     // los negros «encajan como piezas de un puzle, atrapan y encierran espacios»). La
     // ventana no es un cuadrado de celdas que sobra: tiene forma propia —un rectángulo
@@ -3216,17 +3227,23 @@
     const libre = (i, j) => { const c = cells.get(key(i, j)); return c && !c.used; };
     const grados = c => DIRS.reduce((n, [di, dj]) => n + (libre(c.i + di, c.j + dj) ? 1 : 0), 0);
     const paseos = []; let guard = 0;
-    let abierto = null;
+    let abierto = null, hazLado = rng.bool(0.5) ? 1 : -1, ultimoHaz = null;
     if (O.marco) {
       // EL MARCO: las celdas del borde de la rejilla por tres lados, en orden, como un
       // paseo; el cuarto queda abierto (abajo, o un lado al azar)
       abierto = rng.int(0, 3);   // 0: +j (abajo) · 1: +i · 2: −j · 3: −i
       const is = [...cells.values()].map(c => c.i), js = [...cells.values()].map(c => c.j), i0 = min(...is), i1 = max(...is), j0 = min(...js), j1 = max(...js);
+      // EL MARCO NUNCA ES UNA U COMPLETA (el autor): es un trazo que nace DENTRO del
+      // cuerpo, sube por una pared, recorre el lado de enfrente de la abertura entero
+      // y baja por la otra pared una fracción; a veces solo hace un lado y el de
+      // enfrente. Las dos piernas: la primera arranca entre el 30 y el 70 % de la
+      // altura, la segunda baja entre el 15 y el 80 %.
       const marco = [], mete = (i, j) => { const c = cells.get(key(i, j)); if (c && !c.used) { c.used = true; marco.push(c); } };
-      if (abierto === 0) { for (let j = j1; j >= j0; j--) mete(i0, j); for (let i = i0 + 1; i <= i1; i++) mete(i, j0); for (let j = j0 + 1; j <= j1; j++) mete(i1, j); }
-      else if (abierto === 2) { for (let j = j0; j <= j1; j++) mete(i0, j); for (let i = i0 + 1; i <= i1; i++) mete(i, j1); for (let j = j1 - 1; j >= j0; j--) mete(i1, j); }
-      else if (abierto === 1) { for (let i = i1; i >= i0; i--) mete(i, j0); for (let j = j0 + 1; j <= j1; j++) mete(i0, j); for (let i = i0 + 1; i <= i1; i++) mete(i, j1); }
-      else { for (let i = i0; i <= i1; i++) mete(i, j0); for (let j = j0 + 1; j <= j1; j++) mete(i1, j); for (let i = i1 - 1; i >= i0; i--) mete(i, j1); }
+      const H = (abierto % 2 === 0) ? j1 - j0 : i1 - i0, p1 = Math.round(H * rng.range(0.3, 0.7)), p2 = Math.round(H * rng.range(0.15, 0.8)), solo = rng.bool(0.3);
+      if (abierto === 0) { for (let j = j0 + p1; j >= j0; j--) mete(i0, j); for (let i = i0 + 1; i <= i1; i++) mete(i, j0); if (!solo) for (let j = j0 + 1; j <= j0 + p2; j++) mete(i1, j); }
+      else if (abierto === 2) { for (let j = j1 - p1; j <= j1; j++) mete(i0, j); for (let i = i0 + 1; i <= i1; i++) mete(i, j1); if (!solo) for (let j = j1 - 1; j >= j1 - p2; j--) mete(i1, j); }
+      else if (abierto === 1) { for (let i = i0 + p1; i >= i0; i--) mete(i, j0); for (let j = j0 + 1; j <= j1; j++) mete(i0, j); if (!solo) for (let i = i0 + 1; i <= i0 + p2; i++) mete(i, j1); }
+      else { for (let i = i1 - p1; i <= i1; i++) mete(i, j0); for (let j = j0 + 1; j <= j1; j++) mete(i1, j); if (!solo) for (let i = i1 - 1; i >= i1 - p2; i--) mete(i, j1); }
       // contiguo o nada: una celda que falte (silueta que no cae en celdas enteras)
       // partía el marco y la polilínea saltaba por dentro del cuerpo
       let ok = marco.length >= 6; for (let k = 1; k < marco.length && ok; k++) if (abs(marco[k].i - marco[k - 1].i) + abs(marco[k].j - marco[k - 1].j) !== 1) ok = false;
@@ -3242,10 +3259,20 @@
     while (guard++ < 500) {
       let cand = [...cells.values()].filter(c => !c.used); if (!cand.length) break;
       if (1 - cand.length / cells.size >= O.lleno) break;
+      // y se para antes si lo que queda libre es poco denso: los huecos se dejan lejos de los centros
+      if (!O.marco && paseos.length >= 4 && max(...cand.map(densidad)) < 0.25) break;
       const espina = paseos.length === 0, nudo = !espina && paseos.length <= 3 && !O.marco;
       if (espina && !nucleo.used) cand = [nucleo];
       else if (O.marco) { const lejos = c => abierto === 0 ? -c.j : abierto === 2 ? c.j : abierto === 1 ? -c.i : c.i;
-        const pared = cand.filter(c => c.anillo && lejos(c) <= min(...cand.filter(q => q.anillo).map(lejos)) + 1); if (pared.length) cand = pared; else { cand.sort((a, b) => lejos(a) - lejos(b)); cand = cand.slice(0, max(2, Math.ceil(cand.length * 0.3))); }
+        // el haz: solo la mitad densa de la pared de enfrente (hazLado decide cuál),
+        // y de ahí la celda más cercana al último meandro, para que caigan juntos
+        const trans = c => abierto % 2 === 0 ? c.i : c.j;   // coordenada a lo largo de la pared
+        let pared = cand.filter(c => c.anillo && lejos(c) <= min(...cand.filter(q => q.anillo).map(lejos)) + 1);
+        if (pared.length) { const ts = pared.map(trans), t0 = min(...ts), t1 = max(...ts), mid = (t0 + t1) / 2;
+          const denso = pared.filter(c => hazLado > 0 ? trans(c) >= mid - 1 : trans(c) <= mid + 1); if (denso.length) pared = denso;
+          if (ultimoHaz != null) { pared.sort((a, b) => abs(trans(a) - ultimoHaz) - abs(trans(b) - ultimoHaz)); pared = pared.slice(0, 2); }
+          cand = pared; }
+        else { cand.sort((a, b) => lejos(a) - lejos(b)); cand = cand.slice(0, max(2, Math.ceil(cand.length * 0.3))); }
         }
       else {
         // PROGRESIVO: cada paseo nace PEGADO a lo ya dibujado (una celda libre con un
@@ -3253,9 +3280,10 @@
         // núcleo, los demás entre los siguientes. Nacer lejos partía el cuerpo en dos.
         const tocando = cand.filter(c => DIRS.some(([a, b]) => { const n = cells.get(key(c.i + a, c.j + b)); return n && n.used; }));
         if (tocando.length) cand = tocando;
-        cand.sort((a, b) => dN(a) - dN(b) || grados(a) - grados(b));
+        cand.sort((a, b) => densidad(b) - densidad(a) || grados(a) - grados(b));
         cand = cand.slice(0, nudo ? max(1, Math.ceil(cand.length * 0.3)) : max(2, Math.ceil(cand.length * 0.5))); }
       let c = cand[rng.int(0, cand.length - 1)]; c.used = true;
+      if (O.marco && c.anillo) ultimoHaz = abierto % 2 === 0 ? c.i : c.j;
       const RA = espina ? O.rachaE : nudo ? [2, 4] : O.marco ? O.racha : [4, 9];
       const haciaAb = O.marco && abierto != null ? [1, 0, 3, 2][abierto] : -1;   // dirección de rejilla hacia la abertura
       const maxGirosRecto = O.marco ? 1 : 99;
@@ -3310,7 +3338,7 @@
     const dbg = { paseos: paseos.map(p => p.map(c => [c.i, c.j])), piezas: piezas.map(p => p.map(c => [c.i, c.j])) };
     // retirar: poco, y más en el lado abierto (dosificado: el cuerpo no se rompe)
     let vivas = piezas.filter(pz => { if (pz.length <= 1) return false; const ab = pz.reduce((a, c) => a + abierto01(c), 0) / pz.length, dm = pz.reduce((a, c) => a + dN(c), 0) / pz.length;
-      if (pz.marco || dm <= 2.5) return true; return !rng.bool(O.retira * (ab > 0.6 ? 2.5 : 1)); });
+      if (pz.marco || dm <= 2.5) return true; const de = pz.reduce((a, c) => a + densidad(c), 0) / pz.length; return !rng.bool(O.retira * (ab > 0.6 ? 2.5 : 1) * (1.6 - de)); });
     // 4a. un solo cuerpo: se queda el grupo conexo mayor, salvo que eso tire más de un tercio
     { const idx = new Map(); vivas.forEach((pz, n) => pz.forEach(c => idx.set(key(c.i, c.j), n)));
       const par = vivas.map((_, n) => n), find = x => par[x] === x ? x : (par[x] = find(par[x]));
@@ -3452,7 +3480,7 @@
     return { trazos: ctx.trazos, W, g, D: P, cerco: 0, patas: 0, masaN: 0, masa: med.ocupacion, objMasa: 0, mano: 1, ventanas: nV,
              pega: 1, recto, vibF: 0, conc: 0, relleno: 1, relCount: { paseo: ctx.trazos.length, ramas: ctx.trazos.filter(t => t.ramas.length).length }, vibra: false,
              orto: true, travesia: false, halo: ctx.halo, cierre: CIERRE_POR, rumbos: [th / RAD],
-             modelo: 'paseo', pedidos: ctx.trazos.length, celdas: cells.size, cobertura: cob, dbg, bordes, ladeo,
+             modelo: 'paseo', pedidos: ctx.trazos.length, celdas: cells.size, cobertura: cob, dbg, bordes, ladeo, centros: centros.length,
              ojos: med.ojos, ocupacion: med.ocupacion, pasillos: pas.n, largoPas: pas.largo / W, vert, quiebros,
              largoMax: Ls.length ? Ls[Ls.length - 1] : 0, reparto: lMed > 0 ? Ls[Ls.length - 1] / lMed : 0,
              sangrados: ctx.trazos.filter(x => x.sangra).length };
