@@ -3329,7 +3329,7 @@
       while (true) {
         // NUNCA 180°: el giro que repetiría el lado del anterior no existe
         // solo hacia la diagonal abierta: de +i a +j, de +j a +i, de −i a −j, de −j a −i
-        const ks = [0, 1, 3].filter(k => k !== ultimo).filter(k => !O.oblicua || k === 0 || (d % 2 === 0 ? k === 1 : k === 3)).filter(k => { const [di, dj] = DIRS[(d + k) % 4]; const n = cells.get(key(c.i + di, c.j + dj)); if (!n || n.used) return false;
+        let ks = [0, 1, 3].filter(k => k !== ultimo).filter(k => !O.oblicua || k === 0 || (d % 2 === 0 ? k === 1 : k === 3)).filter(k => { const [di, dj] = DIRS[(d + k) % 4]; const n = cells.get(key(c.i + di, c.j + dj)); if (!n || n.used) return false;
           // anillo: no se camina a lo largo de la pared; se entra o sale de él en perpendicular
           if (O.marco && n.anillo && c.anillo && n.pared === c.pared) return false; return true; });
         if (!ks.length) { if (vuelta || path.length < 2) break;
@@ -3447,9 +3447,14 @@
         if (el.lado) el.pz.push(...extra); else el.pz.unshift(...extra.reverse()); el.pz.cruza = true;
         vivas.splice(vivas.indexOf(el.pz), 1); vivas.push(el.pz); } }
     // 5. de celdas a eje: centros, cabos alargados media celda menos medio pelo, colineales fuera
-    const ejeDe = pz => { const pts = pz.map(c => centro(c.i, c.j));
+    // `rama`: la polilínea empieza en la celda del TRONCO y ese cabo no se alarga: se
+    // alargaba Pl/2 − g/2 como los demás y asomaba por el costado de enfrente del
+    // tronco —en la rejilla ortogonal, a ras del borde, y su halo de cabo mordía el
+    // canal del otro lado medio pelo; en la oblicua de la travesía, Pl/2 > W/2 y
+    // salía una V entera en el canal (seed 4260069136)—. Nace en el eje del tronco.
+    const ejeDe = (pz, rama) => { const pts = pz.map(c => centro(c.i, c.j));
       const ext = (a, b) => { const dx = a.x - b.x, dy = a.y - b.y, m = hypot(dx, dy) || 1e-9, e = Pl / 2 - g / 2; return { x: a.x + dx / m * e, y: a.y + dy / m * e }; };
-      const out = pts.slice(); out[0] = ext(pts[0], pts[1]); out[out.length - 1] = ext(pts[pts.length - 1], pts[pts.length - 2]);
+      const out = pts.slice(); if (!rama) out[0] = ext(pts[0], pts[1]); out[out.length - 1] = ext(pts[pts.length - 1], pts[pts.length - 2]);
       const simp = [out[0]]; for (let k = 1; k < out.length - 1; k++) { const a = simp[simp.length - 1], b = out[k], c = out[k + 1]; if (abs((b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x)) > 1e-6) simp.push(b); } simp.push(out[out.length - 1]); return simp; };
     // 6. la mano sobre el eje: campo lento común, giro por pieza, desvío por vértice
     // LOS ÁNGULOS NO SON DE 90° (el autor): medidos en el calco de la referencia 2 van
@@ -3480,12 +3485,16 @@
       let pts = ejeDe(pz); const rot = 0;
       const cen = pts.reduce((a, q) => ({ x: a.x + q.x / pts.length, y: a.y + q.y / pts.length }), { x: 0, y: 0 });
       pts = densa(giraYdesvia(pts, rot, cen.x, cen.y), !!pz.marco);
-      const ramas = (pz.ramas || []).map(rc => densa(giraYdesvia(ejeDe(rc), rot, cen.x, cen.y)));
+      const ramas = (pz.ramas || []).map(rc => densa(giraYdesvia(ejeDe(rc, true), rot, cen.x, cen.y)));
       const fuera = pts.some(q => q.x < 0 || q.y < 0 || q.x > fw || q.y > fh);
       // GROSOR HOMOGÉNEO (el autor): sin gubia —la deriva de anchura abría cuñas entre
       // paralelas— y ±2 % por pieza
       ctx.trazos.push({ pts, segs: segsDe(pts), ramas, W: W * rng.range(0.98, 1.02), rel: pz === vivas[0] ? 'espina' : 'paseo', sangra: fuera, gubia: params.gubia ? gubiaDe(rng, ctx) : null, fin: 'paseo', celdas: pz.length, cruza: !!pz.cruza, marco: !!pz.marco });
     }
+    // (Se probó IGUALAR el margen sobre la geometría ya curvada —cada vértice
+    // empujado hasta dejar el hueco con su vecino paralelo en D— para sostener una
+    // cizalla fuerte en la travesía. Con la cizalla fuerte no bastaba y con la
+    // moderada no hacía falta: sin él, 0 de 80 solapes; con él, 1. Ver README, vuelta 27.)
     // LOS CABOS SE ENCARAN: cada cabo que da contra el costado de otra pieza (en te)
     // toma la dirección de ese costado como boca y se pone, a lo largo de su eje, a
     // W/2 + g del eje ajeno: el pelo mide g de esquina a esquina. Sin esto, el campo
@@ -3498,11 +3507,22 @@
         let best = null, dm = P * 1.3;
         for (let j = 0; j < ctx.trazos.length; j++) { if (j === k || ctx.trazos[j].marco) continue; for (const sg of ctx.trazos[j].segs) {
           const d = pointSegDist(e.x, e.y, sg[0], sg[1], sg[2], sg[3]); if (d < dm) { const dx = sg[2] - sg[0], dy = sg[3] - sg[1], L = hypot(dx, dy) || 1e-9;
-            const t = { x: dx / L, y: dy / L }; if (abs(t.x * u.x + t.y * u.y) < 0.5) { dm = d; best = { sg, t, W: ctx.trazos[j].W || W }; } } } }
+            const t = { x: dx / L, y: dy / L }; if (abs(t.x * u.x + t.y * u.y) < 0.8) { dm = d; best = { sg, t, W: ctx.trazos[j].W || W }; } } } }
         if (!best) continue;
         const nb0 = { x: -best.t.y, y: best.t.x }, sgn = ((e.x - best.sg[0]) * nb0.x + (e.y - best.sg[1]) * nb0.y) >= 0 ? 1 : -1, nb = { x: nb0.x * sgn, y: nb0.y * sgn };
-        const dPerp = (e.x - best.sg[0]) * nb.x + (e.y - best.sg[1]) * nb.y, quiero = best.W / 2 + g, cosA = u.x * nb.x + u.y * nb.y;
-        if (abs(cosA) > 0.5) { const mueve = (dPerp - quiero) / cosA; const e2 = { x: e.x + u.x * mueve, y: e.y + u.y * mueve }; if (lado) pts[pts.length - 1] = e2; else pts[0] = e2; }
+        const cosA = u.x * nb.x + u.y * nb.y, sinA = Math.sqrt(max(0, 1 - cosA * cosA));
+        // el cabo es cuadrado, así que contra un costado OBLICUO (la rejilla de la
+        // travesía, 52–70°) la esquina de dentro llega antes que el centro de la boca:
+        // (W/2)·sin del ángulo más cerca. Sin ese término, 8 de 80 travesías con solape
+        // a 50° (solape.js). La boca retrocede y deja la cuña de aire de la referencia.
+        const dPerp = (e.x - best.sg[0]) * nb.x + (e.y - best.sg[1]) * nb.y, quiero = best.W / 2 + g + (tr.W || W) / 2 * sinA;
+        // (iba con el signo cambiado: doblaba el error en vez de anularlo.) Y la boca
+        // solo AVANZA si el camino está libre: entre el cabo y el costado al que se
+        // encara puede haber el cabo de otra pieza casi colineal (recinto, 3°), y
+        // avanzar hasta el costado era pasarle por encima. Retroceder siempre se puede.
+        if (abs(cosA) > 0.5) { const mueve = (quiero - dPerp) / cosA; const e2 = { x: e.x + u.x * mueve, y: e.y + u.y * mueve };
+          let libreE = true; if (mueve > 0) for (let j = 0; j < ctx.trazos.length && libreE; j++) { if (j === k) continue; for (const sg of ctx.trazos[j].segs) if (pointSegDist(e2.x, e2.y, sg[0], sg[1], sg[2], sg[3]) < quiero - 1e-6) { libreE = false; break; } }
+          if (libreE) { if (lado) pts[pts.length - 1] = e2; else pts[0] = e2; } }
         // la boca se encara solo si el giro es ligero (≤ 12°); más, sería un inglete
         if (abs(cosA) > 0.978) tr.caras[lado] = best.t; }
       tr.segs = segsDe(tr.pts); }
@@ -3514,7 +3534,9 @@
     return { trazos: ctx.trazos, W, g, D: P, cerco: 0, patas: 0, masaN: 0, masa: med.ocupacion, objMasa: 0, mano: 1, ventanas: nV,
              pega: 1, recto, vibF: 0, conc: 0, relleno: 1, relCount: { paseo: ctx.trazos.length, ramas: ctx.trazos.filter(t => t.ramas.length).length }, vibra: false,
              orto: true, travesia: false, halo: ctx.halo, cierre: CIERRE_POR, rumbos: [th / RAD],
-             modelo: 'paseo', pedidos: ctx.trazos.length, celdas: cells.size, cobertura: cob, dbg, bordes, ladeo, centros: centros.length,
+             // la travesía pide tres piezas al menos: con una o dos la hoja está vacía, y
+             // `falta` elige otro intento
+             modelo: 'paseo', pedidos: TRAV ? max(3, ctx.trazos.length) : ctx.trazos.length, celdas: cells.size, cobertura: cob, dbg, bordes, ladeo, centros: centros.length,
              ojos: med.ojos, ocupacion: med.ocupacion, pasillos: pas.n, largoPas: pas.largo / W, vert, quiebros,
              largoMax: Ls.length ? Ls[Ls.length - 1] : 0, reparto: lMed > 0 ? Ls[Ls.length - 1] / lMed : 0,
              sangrados: ctx.trazos.filter(x => x.sangra).length };

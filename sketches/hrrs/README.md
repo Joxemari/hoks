@@ -3316,6 +3316,52 @@ y este tenía control y seguía sin significar nada, porque el control tampoco
 miraba. Se añade la configuración `campo` a la batería —el pintor que no es el de
 producción— para que su código tampoco quede sin medir.
 
+## Vigesimoséptima vuelta: la travesía que dobla, y lo que no aguanta la rejilla
+
+**Lo que se probó.** La referencia 3 tiene rumbos que cambian dentro del trazo y
+las bandas paralelas doblan juntas. Se intentó con lo que ya había: la cizalla
+del campo lento, subida a 0,7–1,1 W con ondas de 14–22 anchuras. Las bandas
+doblan juntas, sí, y se parece más — pero 26 de 80 obras con solape a 2°, y con la
+cizalla pura (sin modulación a lo largo del eje) 41 de 80. El motivo es geometría,
+no un ajuste: al doblar, las paralelas a una dirección se *trasladan*, y la
+distancia entre dos trasladadas de una curva no es la de sus rectas. Un igualado
+posterior del margen (cada vértice empujado hasta dejar D con su vecino paralelo)
+bajó los solapes a 8 y luego, con tres celdas rectas mínimas entre giros, a 0 —
+pero la composición se rompió por otro lado: cabos en cuña contra costados
+oblicuos, trozos de dos celdas sueltos, hojas con una sola pieza. **Se retira**:
+la rejilla no aguanta ese doblez en los contactos, y arreglar el margen a
+empujones no arregla la composición. Si la 3 ha de tener ese doblez, no saldrá de
+deformar la rejilla: saldrá de dibujar la curva maestra y sacar las demás como
+*offsets* suyos, que es lo que hace la mano en el original. Eso es otro modelo,
+y es decisión del autor si merece la pena.
+
+**Lo que se queda, porque era error y no dirección:**
+
+- **La boca iba al revés.** El cabo que da contra un costado se ponía a W/2 + g
+  del eje ajeno… con el signo cambiado: `mueve = (dPerp − quiero)/cosA` doblaba
+  el error del campo en vez de anularlo. En la rejilla ortogonal el error era
+  casi cero y no se notaba; en la oblicua se notaba. Ahora anula, y la boca solo
+  **avanza** si el camino está libre: entre el cabo y el costado puede haber el
+  cabo de otra pieza casi colineal (recinto, 3°), y avanzar era pasarle por
+  encima. Retroceder siempre se puede.
+- **La esquina del cabo contra un costado oblicuo.** El cabo es cuadrado; contra
+  un costado a 52–70° la esquina de dentro llega antes que el centro de la boca,
+  (W/2)·sin del ángulo. Sin ese término, 8 de 80 travesías con solape a 50°. La
+  boca retrocede y deja la cuña de aire de la referencia. El filtro de «a qué
+  costado me encaro» baja de 60° a 37°.
+- **La rama asomaba por detrás del tronco.** Su polilínea empieza en la celda del
+  tronco y ese cabo se alargaba Pl/2 − g/2 como los demás: en la ortogonal, a ras
+  del costado de enfrente, con el halo del cabo mordiendo medio pelo el canal del
+  otro lado; en la oblicua, una V entera en el canal (seed 4260069136). Nace en
+  el eje del tronco y el tronco la tapa.
+- **Tres piezas al menos en la travesía**: `pedidos` pide tres, y `falta` elige
+  otro intento si salen una o dos.
+
+Medido tras retirar la cizalla fuerte, travesía sobre 80 obras: solape 0 de 80
+(antes 1), pelo por debajo de g 2 de 40 (antes 3), y los tres tipos ortogonales
+0 de 120. Batería entera: solape 0/208, pelo 0/50 por debajo, holgura 0/208 con
+su control en 128/128, determinismo 64/64.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
