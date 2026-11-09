@@ -3566,7 +3566,7 @@
                haces: [2, 3], hebras: [2, 5], jog: [35, 60], recto: [2, 6], quiebro: [1.2, 3], marco: true, barrido: [3, 7] },
     // travesía (referencia 3): dos o tres hebras anchas que cruzan el pliego y salen
     // por los bordes, con uno o dos quiebros abiertos; una barra recta por un canto
-    travesia: { ancho: [0.10, 0.125], gam: [0.06, 0.09], cuerpo: [1, 1], alto: [1, 1],
+    travesia: { ancho: [0.10, 0.125], gam: [0.035, 0.05], cuerpo: [1, 1], alto: [1, 1],
                 haces: [1, 2], hebras: [1, 3], jog: [25, 55], recto: [1, 3], quiebro: [1, 2.2], marco: false, barra: 0.7 },
   };
   // la paralela de una polilínea a distancia d (positiva: a la izquierda del avance),
@@ -3662,6 +3662,9 @@
       if (izq) A.push({ x: x0, y: y0 + li }); A.push({ x: x0, y: y0 });
       if (partida) { A.push({ x: xc - D / 2, y: y0 }); B.push({ x: xc + D / 2, y: y0 }); }
       B.push({ x: x1, y: y0 }); if (der) B.push({ x: x1, y: y0 + ld });
+      // el gancho: la pata acaba volviéndose hacia dentro (en el original, la izquierda)
+      if (izq && rng.bool(0.5)) A.unshift({ x: x0 + W * rng.range(1.5, 3), y: y0 + li });
+      if (der && rng.bool(0.35)) B.push({ x: x1 - W * rng.range(1.5, 3), y: y0 + ld });
       if (partida) { pon(A, 'marco'); pon(B, 'marco'); } else pon(A.concat(B), 'marco');
     }
     // ── los haces ────────────────────────────────────────────────────────────
@@ -3671,7 +3674,7 @@
     // lado que pesa
     // (`ult` recuerda el lado del último quiebro: el siguiente va al otro lado casi
     // siempre —un meandro, no una deriva—, y la deriva acumulada nunca pasa de 60°)
-    const meandro = (xs, ys, yFin, haciaLado, conBarrido) => {
+    const meandro = (xs, ys, yFin, haciaLado, conBarrido, xMin, xMax) => {
       // NUNCA UN ÁNGULO AGUDO: el inglete de una paralela exterior crece con 1/sin(θ/2)
       // y a 45° una paralela a 4·D saca una púa de medio pliego. Así que: tras un
       // tramo horizontal el quiebro sigue hacia el mismo lado; entre dos quiebros
@@ -3681,8 +3684,11 @@
       let guard = 0;
       while (y < yFin - W * 2.5 && guard++ < 24) {
         const th = rr(O.jog) * RAD;
-        const sgn = ultimoH ? ultimoH : acum > 50 * RAD ? -1 : acum < -50 * RAD ? 1 : ult === 0 ? (rng.bool(0.5) ? 1 : -1) : (rng.bool(0.72) ? -ult : ult);
+        let sgn = ultimoH ? ultimoH : acum > 50 * RAD ? -1 : acum < -50 * RAD ? 1 : ult === 0 ? (rng.bool(0.5) ? 1 : -1) : (rng.bool(0.72) ? -ult : ult);
         const L = W * rr(O.quiebro);
+        // dentro del recinto: si el quiebro se saldría del marco, va al otro lado (y si
+        // venía de un horizontal hacia fuera, acaba aquí: no hay ángulo agudo que valga)
+        if (xMin != null && (x + Math.sin(th) * (L + 3 * W) * sgn < xMin || x + Math.sin(th) * (L + 3 * W) * sgn > xMax)) { if (ultimoH) break; sgn = -sgn; }
         x += Math.sin(th) * L * sgn; y += Math.cos(th) * L; pts.push({ x, y }); acum += th * sgn; ult = sgn; ultimoH = 0;
         if (rng.bool(0.3)) { const Lh = W * rng.range(1.5, 3.5); x += Lh * sgn; pts.push({ x, y }); ultimoH = sgn; }
         const Lv = W * rr(O.recto); y += Lv; pts.push({ x, y }); acum *= 0.4;
@@ -3693,46 +3699,83 @@
     const nH = rng.int(O.haces[0], O.haces[1]);
     if (!TRAV) {
       // las posiciones de los haces a lo largo de la barra, el más denso al lado que pesa
-      const xsL = []; for (let h = 0; h < nH; h++) xsL.push(x0 + ancho * ((h + 0.5) / nH + rng.range(-0.08, 0.08)));
-      xsL.sort((a, b) => lado > 0 ? b - a : a - b);   // el primero, el del lado que pesa
+      // LOS HACES VAN JUNTOS (el original: los racimos se tocan y se entrelazan abajo,
+      // no quedan separados por aire): cada haz a una o dos D del anterior, contando
+      // sus anchuras. El pesado, en el lado que pesa, llega hasta la base; los otros
+      // se quedan más arriba (0,1–0,3 del alto), y por debajo de ellos pasan los
+      // barridos del pesado. El primero puede nacer de la pata, no de la barra.
+      const ns = []; for (let h = 0; h < nH; h++) ns.push(h === 0 ? rng.int(O.hebras[1] - 1, O.hebras[1]) : rng.int(O.hebras[0], O.hebras[0] + 1));
+      const xsL = []; let xc2 = lado > 0 ? x1 - ancho * rng.range(0.1, 0.2) - ns[0] * D / 2 : x0 + ancho * rng.range(0.1, 0.2) + ns[0] * D / 2;
+      for (let h = 0; h < nH; h++) { xsL.push(xc2); if (h + 1 < nH) xc2 -= lado * ((ns[h] + ns[h + 1]) / 2 * D + D * rng.range(1, 2.5)); }
       xsL.forEach((xs, h) => {
-        const n = h === 0 ? rng.int(O.hebras[1] - 1, O.hebras[1]) : rng.int(O.hebras[0], O.hebras[0] + 1);
-        const master = meandro(xs, y0, y1, lado, rng.bool(0.75)), ladoPar = rng.bool(0.5) ? 1 : -1;
+        const n = ns[h], yFin = h === 0 ? y1 : y1 - alto * rng.range(0.1, 0.3);
+        // la maestra es la de fuera y las paralelas crecen hacia dentro del marco
+        const master = meandro(xs, y0, yFin, lado, h === 0 || rng.bool(0.5), x0 + W * 1.5, x1 - W * 1.5), ladoPar = h === 0 ? lado : (rng.bool(0.5) ? 1 : -1);
         for (let k = 0; k < n; k++) {
           // las paralelas, a k·D a un lado; el cabo de abajo escalonado
           let pts = k === 0 ? master : paralela(master, k * D * ladoPar);
           if (pts.length < 2) continue;
-          const L = largoDe(pts), corta = W * rng.range(0, 5); if (corta > 0 && L > corta + W * 3) { const ms = muestrear(pts, W / 8); const keep = ms.filter((q, i) => { let acc = 0; for (let t = 1; t <= i; t++) acc += hypot(ms[t].x - ms[t - 1].x, ms[t].y - ms[t - 1].y); return acc <= L - corta; }); pts = simplificar(keep.map(q => ({ x: q.x, y: q.y }))); }
+          const L = largoDe(pts), corta = W * rng.range(0, 2.5); if (corta > 0 && L > corta + W * 3) { const ms = muestrear(pts, W / 8); const keep = ms.filter((q, i) => { let acc = 0; for (let t = 1; t <= i; t++) acc += hypot(ms[t].x - ms[t - 1].x, ms[t].y - ms[t - 1].y); return acc <= L - corta; }); pts = simplificar(keep.map(q => ({ x: q.x, y: q.y }))); }
           pon(pts, k === 0 ? 'hebra' : 'paralela', W * 3);
         } });
     } else {
       // TRAVESÍA: la hebra maestra cruza el pliego de un borde al de enfrente con uno
       // o dos quiebros abiertos; sus paralelas, y una barra recta por un canto
-      // LA REFERENCIA 3, medida: una hebra maestra que cruza el pliego de un borde al
-      // de enfrente con tres a cinco quiebros abiertos; una paralela que la acompaña
-      // SOLO un tramo (del 40 al 75 % de su largo, con los cabos dentro del pliego);
-      // un afluente recto que entra por un costado y muere en ella, a un pelo; y, a
-      // veces, la barra recta por un canto. Vertical o, transpuesto, horizontal.
-      const vertical = rng.bool(0.5);
+      // LA REFERENCIA 3, leída entera (vuelta 29): TRES bandas verticales paralelas
+      // —la espina y dos compañeras a un lado— bajan juntas desde la barra de arriba y
+      // se separan: las compañeras giran hacia un costado y salen por el borde como DOS
+      // BRAZOS PARALELOS; la espina sigue hasta abajo. Al otro lado, uno o dos brazos
+      // paralelos salen de la espina en diagonal y mueren en el borde. Dos barras
+      // rectas por los cantos (arriba, abajo) nacen a medio pliego y van hasta el
+      // borde, y la espina las cruza por encima con pelo a los dos lados. Las bandas
+      // ONDULAN (±15–25°, algún quiebro de 45°), el pelo es finísimo (0,03 W) y casi
+      // nada acaba en el aire: todo sale por un borde o muere contra una barra.
+      const vertical = rng.bool(0.6);
       const largo = vertical ? fh : fw, ancho2 = vertical ? fw : fh;
       const T = q => vertical ? q : { x: q.y, y: q.x };
-      let master = meandro(ancho2 * rng.range(0.3, 0.7), -W * 1.5, largo + W * 3, 1, false).map(T);
-      pon(master, 'hebra', W * 3);
-      if (rng.bool(0.85)) {
-        const par = paralela(master, D * (rng.bool(0.5) ? 1 : -1)), ms = muestrear(par, W / 8), Lp = largoDe(par);
-        const f0 = rng.range(0.05, 0.4), f1 = clamp(f0 + rng.range(0.4, 0.75), 0, 0.97); let acc = 0; const keep = [];
-        for (let i = 0; i < ms.length; i++) { if (i) acc += hypot(ms[i].x - ms[i - 1].x, ms[i].y - ms[i - 1].y); if (acc >= Lp * f0 && acc <= Lp * f1) keep.push({ x: ms[i].x, y: ms[i].y }); }
-        if (keep.length > 2) pon(simplificar(keep), 'paralela', W * 3);
+      const xs = ancho2 * rng.range(0.42, 0.6);
+      // la espina: baja entera con una ondulación lenta (dos senos) y un quiebro
+      const A1 = W * rng.range(0.35, 0.6), l1 = W * rng.range(7, 11), f1 = rng.range(0, 6.28), A2 = W * rng.range(0.1, 0.25), l2 = W * rng.range(3, 5), f2 = rng.range(0, 6.28);
+      const yJ = largo * rng.range(0.3, 0.7), dJ = W * rng.range(0.8, 1.6) * (rng.bool(0.5) ? 1 : -1), aJ = W * 1.5;
+      const lateral = y => A1 * Math.sin(6.2832 * y / l1 + f1) + A2 * Math.sin(6.2832 * y / l2 + f2) + dJ * (y < yJ - aJ ? 0 : y > yJ + aJ ? 1 : (q => q * q * (3 - 2 * q))((y - yJ + aJ) / (2 * aJ)));
+      const espina = []; for (let y = -W * 1.5; y < largo + W * 1.5; y += W * rng.range(1.2, 2.2)) espina.push({ x: xs + lateral(y), y }); espina.push({ x: xs + lateral(largo + W * 2), y: largo + W * 2 });
+      // la espina va la PRIMERA: todo lo demás se recorta contra ella —las barras
+      // quedan partidas con el pelo a sus dos lados, que es «cruzar por encima», y los
+      // brazos nacen a un pelo de su costado—. (Iba la última y los brazos, que nacen
+      // en su eje, la pisaban: 13 de 50 con solape.)
+      trazos.push({ pts: espina.map(T), segs: segsDe(espina.map(T)), rel: 'espina' });
+      // un trozo de una polilínea entre dos alturas, por muestras
+      const tramo = (pl, ya, yb) => { const ms = muestrear(pl, W / 8).filter(q => q.y >= ya && q.y <= yb); return ms.length > 2 ? simplificar(ms.map(q => ({ x: q.x, y: q.y }))) : null; };
+      const sL = rng.bool(0.5) ? -1 : 1;   // el costado por donde salen los brazos de las compañeras
+      // (paralela(d > 0) cae al oeste de una banda que baja: el signo de d es −sL)
+      // las compañeras: 1 o 2, paralelas a la espina, que giran hacia sL y salen
+      const nC = rng.int(1, 2), yIni = largo * rng.range(0.1, 0.25), yGiro = largo * rng.range(0.42, 0.68);
+      let P1 = tramo(paralela(espina, -sL * D), yIni, yGiro);
+      if (P1) {
+        // el brazo: un quiebro de 40–55° hacia el costado y luego casi horizontal hasta el borde
+        const e = P1[P1.length - 1], th = rng.range(40, 55) * RAD, Lq = W * rng.range(1.5, 2.5), pend = rng.range(-0.12, 0.12);
+        const q1 = { x: e.x + sL * Math.sin(th) * Lq, y: e.y + Math.cos(th) * Lq };
+        const xFin = sL < 0 ? -W * 1.5 : ancho2 + W * 1.5; const brazo = [q1]; let xq = q1.x, yq = q1.y;
+        while (sL < 0 ? xq > xFin : xq < xFin) { const st = W * rng.range(1.5, 2.5); xq += sL * st; yq += st * (pend + rng.range(-0.06, 0.06)); brazo.push({ x: xq, y: yq }); }
+        P1 = P1.concat(brazo);
+        const comps = [P1];
+        if (nC === 2) { const P2 = paralela(P1, -sL * D); const y2 = yIni + W * rng.range(1, 3); const ms = muestrear(P2, W / 8); let k = 0; while (k < ms.length && ms[k].y < y2 && ms[k].x * sL < (xs + sL * 3 * D) * sL) k++; const rest = ms.slice(k).map(q => ({ x: q.x, y: q.y })); if (rest.length > 2) comps.push(simplificar(rest)); }
+        // de fuera adentro: la exterior primero, así la interior se recorta contra ella y
+        // la espina —que va la última— cruza las barras por encima
+        comps.reverse().forEach(c => pon(c.map(T), 'compañera', W * 3));
       }
-      if (rng.bool(0.75)) {
-        // el afluente: recto, desde un costado, a la altura de un tramo recto de la maestra
-        const t = rng.range(0.3, 0.8), desde = rng.bool(0.5) ? -1 : 1, pos = largo * t;
-        const af = vertical ? [{ x: desde < 0 ? -W : fw + W, y: pos }, { x: fw / 2, y: pos + rng.range(-0.08, 0.08) * S }] : [{ x: pos, y: desde < 0 ? -W : fh + W }, { x: pos + rng.range(-0.08, 0.08) * S, y: fh / 2 }];
-        pon(af, 'afluente', W * 2);
+      // los brazos del otro costado: 0–2, salen de la espina en diagonal y van al borde
+      const nB = rng.bool(0.75) ? (rng.bool(0.35) ? 2 : 1) : 0, sR = -sL, yB = largo * rng.range(0.28, 0.55);
+      for (let b = 0; b < nB; b++) {
+        const ya = yB + b * D * 1.4, x0b = xs + lateral(ya), th = rng.range(35, 50) * RAD * (rng.bool(0.6) ? -1 : 1), Lq = W * rng.range(2, 3.5), pend = rng.range(-0.1, 0.1);
+        const arm = [{ x: x0b, y: ya }, { x: x0b + sR * Math.cos(th) * Lq, y: ya + Math.sin(th) * Lq }]; let xq = arm[1].x, yq = arm[1].y; const xFin = sR < 0 ? -W * 1.5 : ancho2 + W * 1.5;
+        while (sR < 0 ? xq > xFin : xq < xFin) { const st = W * rng.range(1.5, 2.5); xq += sR * st; yq += st * (pend + rng.range(-0.05, 0.05)); arm.push({ x: xq, y: yq }); }
+        pon((b === 0 ? arm : paralela(arm, sR * D)).map(T), 'brazo', W * 3);   // la segunda, por debajo de la primera
       }
-      if (rng.bool(O.barra)) { const m = W * rng.range(0.6, 1.2), c = rng.int(0, 3);
-        const bar = c === 0 ? [{ x: -W, y: m }, { x: fw + W, y: m }] : c === 1 ? [{ x: -W, y: fh - m }, { x: fw + W, y: fh - m }] : c === 2 ? [{ x: m, y: -W }, { x: m, y: fh + W }] : [{ x: fw - m, y: -W }, { x: fw - m, y: fh + W }];
-        pon(bar, 'barra', W * 3); }
+      // las barras de los cantos: nacen cerca de la espina y van al borde contrario a los brazos
+      const sB = -sL;
+      if (rng.bool(0.8)) { const m = W * rng.range(0.9, 1.6), xa = xs + W * rng.range(-3, 0.5) * sB; pon([{ x: xa, y: m }, { x: sB < 0 ? -W : ancho2 + W, y: m + rng.range(-0.02, 0.02) * S }].map(T), 'barra', W * 3); }
+      if (rng.bool(0.5)) { const m = W * rng.range(0.9, 1.6), xa = xs + W * rng.range(-1, 1.5) * sB; pon([{ x: xa, y: largo - m }, { x: sB < 0 ? -W : ancho2 + W, y: largo - m + rng.range(-0.02, 0.02) * S }].map(T), 'barra', W * 3); }
     }
     // ── salida, con la forma del paseo ───────────────────────────────────────
     const ctx = { fw, fh, S, W, g, D, mg: S * MARGEN, trazos: [], gubAmp: 0, relleno: 1, halo: max(g, params.halo != null ? params.halo * W : g) };

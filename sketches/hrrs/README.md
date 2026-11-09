@@ -3408,6 +3408,107 @@ se entrelazan abajo; en la 3, el nudo donde el afluente muere en la maestra es
 una te limpia y en el original la hebra se abre (bifurca) — la rama sale del
 mismo gesto. Y decidir si pasa a producción.
 
+## Vigesimonovena vuelta: las tres referencias leídas a fondo, y la 3 rehecha
+
+El autor: «analiza cada uno contra su referencia… especialmente la 3, creo que no
+estamos acertando, para nada». Lectura a tamaño completo, trazo a trazo. Lo que
+hay en cada original, lo que teníamos y lo que se ha hecho.
+
+### Referencia 3 (Múnich 1972) — lo que hay
+
+1. **Tres bandas verticales paralelas** bajan juntas desde la zona de la barra de
+   arriba: una espina y dos compañeras a su izquierda, a un pelo entre sí. No son
+   una hebra con un afluente: son un **haz** que luego se deshace.
+2. **La bifurcación es una separación**: las dos compañeras giran a la izquierda
+   y salen por el borde como **dos brazos paralelos** (pelo entre ellos); la
+   espina sigue sola hasta abajo. Al otro lado, **uno o dos brazos paralelos**
+   salen de la espina en diagonal ascendente y mueren en el borde derecho.
+3. **Dos barras rectas por los cantos**, arriba y abajo, que **nacen a medio
+   pliego** (no cruzan entero) y van hasta el borde derecho. La espina las
+   **cruza por encima**: pelo a sus dos lados, la barra partida.
+4. **Casi nada acaba en el aire**: todo sale por un borde o muere contra una
+   barra. Los cabos libres son dos, y son cabos de barra.
+5. **Las bandas ondulan**, no son poligonales: ±15–25° de deriva continua con
+   un quiebro de ~45° por banda; los filos son irregulares (mano), las esquinas
+   vivas.
+6. **Grosor 0,10 del ancho, uniforme. Pelo de 0,03 W**: la mitad del que
+   usábamos (0,06–0,09).
+7. **Aire**: ocupación ~35–40 %, con cuatro grandes vacíos (arriba-izquierda,
+   centro-izquierda, abajo-izquierda, abajo-derecha). El peso, arriba-derecha,
+   donde el haz se abre.
+
+**Lo que teníamos**: una hebra diagonal con quiebros, un afluente recto, una barra
+entera. Nada de 1, 2, 3 ni 5. **Lo que hay ahora** (`tramarHebra`, travesía):
+la espina entera con ondulación lenta de dos senos y un quiebro suavizado; una o
+dos compañeras que son su paralela exacta en un tramo y giran hacia un costado
+hasta el borde (la segunda, paralela de la primera entera, nace más abajo); cero,
+uno o dos brazos al otro costado, en diagonal y hasta el borde, el segundo
+paralela del primero; barras arriba (0,8) y abajo (0,5) que nacen junto a la
+espina y van al borde contrario a los brazos. La espina va la **primera** y todo
+se recorta contra ella: las barras quedan partidas con el pelo a sus dos lados
+—eso es «cruzar por encima»— y los brazos nacen a un pelo de su costado (iba la
+última y los brazos la pisaban: 13 de 50 con solape; primera, 0 de 150). Pelo
+0,035–0,05 W.
+
+**Lo que aún no está**: la segunda compañera a veces se queda en un muñón; los
+brazos cortan a las barras formando cruces en te que el original no tiene (ahí
+los brazos y las barras no coinciden en altura); y la ondulación es más
+poligonal que la suya, que es de gubia.
+
+### Referencia 1 (el recinto) — lo que hay
+
+1. **Marco de una tinta**: barra arriba partida en dos (~45 %), pata izquierda
+   corta con **gancho** hacia dentro, pata derecha más larga. Nunca cierra.
+2. **Racimos de meandros paralelos** que cuelgan de la barra: tres racimos de
+   3–5 hebras; cada hebra es la paralela exacta de su vecina. Quiebros oblicuos
+   de 35–60° respecto a la vertical, tramos verticales de 1–3 W, horizontales
+   cortos, y **barrido horizontal al final** hacia la izquierda.
+3. **Los racimos se tocan y se entrelazan abajo**: el de la izquierda, el más
+   denso, llega a la base y sus barridos pasan por debajo del central, que acaba
+   más arriba. **La base es casi una línea**: los cabos de abajo se alinean.
+4. Grosor ~0,035 del ancho del marco, el mismo en marco y hebras; pelo fino.
+5. **Aire**: el rectángulo grande arriba-izquierda dentro del marco, y el hueco
+   bajo la pata derecha. El peso, abajo-izquierda.
+
+**Lo que teníamos** (paseo sobre rejilla): escaleras a escuadra, ningún quiebro
+oblicuo, el marco en U, piezas sueltas. **Lo que hay ahora**: marco de una tinta
+con gancho, racimos de paralelas exactas con quiebros de 35–60° (nunca agudos),
+colocados **a una o dos D** unos de otros —no repartidos por la barra—, el
+pesado hasta la base y los demás más arriba, las paralelas creciendo hacia
+dentro del marco, cabos escalonados poco (0–2,5 W).
+
+**Lo que aún no está**: los barridos del racimo pesado no pasan por debajo del
+vecino con la claridad del original (el recorte los para antes); las hebras que
+nacen de la pata, no de la barra; y las hebras del original son algo menos
+regulares entre sí (dos de cada racimo cambian de quiebro).
+
+### Referencia 2 (el bloque) — lo que hay
+
+1. **Un cuerpo compacto** de 14 piezas, más ancho que alto, con el contorno
+   exterior abombado: las piezas del borde **hacen** el contorno.
+2. Piezas de 1–3 codos, largos de 5–11 W, tramos de 1–5 W; quiebros de 60–97°
+   en los dos sentidos; algunas en **pi** (dos patas cortas). Cabos cuadrados,
+   alguno oblicuo.
+3. **Cada pieza sigue a su vecina**: contacto largo por el costado, pelo
+   constante; dos direcciones entrelazadas.
+4. **Una ventana grande** descentrada y dos o tres pasillos; ocupación ~60 %.
+5. Pelo fino, ~0,04 W; grosor uniforme.
+
+Es la que mejor está (el paseo sobre rejilla con cizalla moderada es casi esto).
+**Lo que le falta**: el contorno abombado (hoy es la silueta del blob y queda
+más recto), la pieza en pi, y el pelo más fino.
+
+### Conclusión
+
+Las tres obras son **haces**: bandas que corren juntas a un pelo y se separan, o
+racimos de paralelas exactas. La rejilla sirve para la 2, donde las piezas son
+cortas y el contacto es por costado; para la 1 y la 3, donde el gesto es la
+**paralela que sigue a su maestra a lo largo de quiebros oblicuos**, hace falta
+el modelo de hebra. Pendiente de que el autor decida si pasa a producción.
+
+Medido: solape 0 de 150 en las tres configuraciones de hebra, pelo 0 por debajo
+de g en 60, determinismo 24/24.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
