@@ -3057,8 +3057,8 @@
     // dentro meandros largos (8–20 celdas) que cuelgan de la pared de enfrente y
     // fluyen hacia el lado abierto. Sin ventanas ni bahía: el aire es lo que el marco
     // no llena. La silueta es rectangular.
-    recinto:  { ancho: [0.028, 0.036], gam: [0.16, 0.24], celdas: [220, 300], cobertura: [0.1, 0.16], aspect: [0.85, 1.1],
-                racha: [5, 11], rachaE: [10, 18], trozo: [7, 18], lleno: 0.5, retira: 0.05, rama: 0.15, ventanas: [0, 0], borde: 0, marco: true },
+    recinto:  { ancho: [0.026, 0.034], gam: [0.16, 0.24], celdas: [220, 300], cobertura: [0.07, 0.11], aspect: [0.85, 1.1],
+                racha: [2, 5], rachaE: [10, 18], trozo: [4, 9], lleno: 0.5, retira: 0.05, rama: 0.15, ventanas: [0, 0], borde: 0, marco: true, ladeo: [0.22, 0.34] },
     // TRAVESÍA (referencia 3), medida en su calco: tramos rectos de 5–14 anchuras y
     // quiebros de 25–55° encadenados, bifurcación a mitad de camino, y el margen del
     // pliego como salida o barrera. No es una rejilla ortogonal: es una rejilla de
@@ -3224,11 +3224,19 @@
     // (el autor: con el campo fuerte «parece que todo se hubiese deformado hacia la
     // izquierda, una curvatura de conjunto». Queda poco, y de onda corta: no es una
     // curvatura de la obra sino de cada tramo.)
-    const ladeo = params.ladeo != null ? params.ladeo : rng.range(O.ladeo ? O.ladeo[0] : 0.08, O.ladeo ? O.ladeo[1] : 0.16);
-    const amp = ladeo * W, k1 = 2 * Math.PI / (rng.range(4, 7) * W), k2 = 2 * Math.PI / (rng.range(5, 8) * W), f1 = rng.range(0, 6.28), f2 = rng.range(0, 6.28), f3 = rng.range(0, 6.28);
+    const ladeo = params.ladeo != null ? params.ladeo : rng.range(O.ladeo ? O.ladeo[0] : 0.2, O.ladeo ? O.ladeo[1] : 0.3);
+    // (en el recinto las ondas son más cortas aún: el quiebro cambia de ángulo dentro del mismo trazo)
+    const onda = O.marco ? [6, 10] : [4, 7];
+    const amp = ladeo * W, k1 = 2 * Math.PI / (rng.range(onda[0], onda[1]) * W), k2 = 2 * Math.PI / (rng.range(onda[0] + 1, onda[1] + 1) * W), f1 = rng.range(0, 6.28), f2 = rng.range(0, 6.28), f3 = rng.range(0, 6.28);
     // CIZALLA PURA, no estiramiento: x se desplaza según y, e y según x. Así las
     // paralelas no se separan ni se juntan (el margen queda), solo se inclinan.
-    const desp = q => ({ x: q.x + amp * Math.sin(k1 * q.y + f1), y: q.y + amp * 0.7 * Math.sin(k2 * q.x + f2) });
+    const desp = q => {
+      // coordenadas de rejilla (a lo largo de u, a lo largo de v)
+      const a = (q.x - cx) * ux + (q.y - cy) * uy, b = (q.x - cx) * vx + (q.y - cy) * vy;
+      // desplazamiento A a lo largo de u, que depende sobre todo de b (entre filas) y poco de a
+      const dA = amp * Math.sin(k1 * b + f1) * (0.6 + 0.4 * Math.cos(k2 * 0.35 * a + f3));
+      const dB = amp * 0.7 * Math.sin(k2 * a + f2) * (0.6 + 0.4 * Math.cos(k1 * 0.35 * b + f1));
+      return { x: q.x + ux * dA + vx * dB, y: q.y + uy * dA + vy * dB }; };
     const jac = (x, y) => { const e = W * 0.1, a = desp({ x: x + e, y }), b = desp({ x: x - e, y }), c2 = desp({ x, y: y + e }), d2 = desp({ x, y: y - e });
       return [(a.x - b.x) / (2 * e), (c2.x - d2.x) / (2 * e), (a.y - b.y) / (2 * e), (c2.y - d2.y) / (2 * e)]; };
     // 3. los paseos
@@ -3337,7 +3345,8 @@
       const dMed = path.reduce((a, c) => a + dN(c), 0) / path.length;
       // TAMAÑOS DESIGUALES (el autor: «las piezas son parecidas de tamaño»): la espina
       // entera (hasta 18 celdas), una o dos medianas de 7–10, y el resto cortas de 2–4
-      let n = O.marco ? rng.int(t0, t1) : pi === 0 ? (path.length > 18 ? Math.ceil(path.length / 2) : path.length) : (medianas < 2 && path.length - i >= 7 && rng.bool(0.5)) ? (medianas++, rng.int(7, 10)) : rng.int(2, 4);
+      // recinto: dos largos (el marco y el meandro maestro, 18–30), tres medianos (8–16), el resto cortos (3–8)
+      let n = O.marco ? (pi === 1 ? rng.int(18, 30) : (medianas < 3 && path.length - i >= 8 && rng.bool(0.6)) ? (medianas++, rng.int(8, 16)) : rng.int(t0, t1)) : pi === 0 ? (path.length > 18 ? Math.ceil(path.length / 2) : path.length) : (medianas < 2 && path.length - i >= 7 && rng.bool(0.5)) ? (medianas++, rng.int(7, 10)) : rng.int(2, 4);
       // EL CORTE CAE JUSTO ANTES DE UN CODO (el autor: «estos huecos no deberían
       // ocurrir»): cortar a mitad de un tramo recto deja una raja entre dos celdas
       // alineadas; cortando antes del codo, el cabo da contra el costado de la pieza
@@ -3444,8 +3453,8 @@
     // exterior no se deforma; a dos celdas, a medias; dentro, entero. Es el límite
     // como protagonista, otra vez: el contorno es la regla y el interior, la mano.
     const bordeDe = (x, y) => { let d = 0; for (; d <= 2; d++) { let fuera = false; for (const [a, b] of DIRS) { const q = { x: x + a * P * (d + 1), y: y + b * P * (d + 1) }; if (!inside(q.x, q.y) || !cabeBorde(q.x, q.y)) { fuera = true; break; } } if (fuera) break; } return d; };
-    const despB = q => { const f = min(1, bordeDe(q.x, q.y) / 2); const r = desp(q); return { x: q.x + (r.x - q.x) * f, y: q.y + (r.y - q.y) * f, borde: f }; };
-    const densa = pl => { const out = [despB(pl[0])]; for (let i = 1; i < pl.length; i++) { const a = pl[i - 1], b = pl[i], n = max(1, Math.round(hypot(b.x - a.x, b.y - a.y) / (W * 0.8))); for (let m = 1; m <= n; m++) out.push(despB({ x: a.x + (b.x - a.x) * m / n, y: a.y + (b.y - a.y) * m / n })); } return out; };
+    const despB = (q, liso) => { const f = min(1, bordeDe(q.x, q.y) / 2), fw2 = liso ? 0 : (O.marco ? 1 : f); const r = desp(q); return { x: q.x + (r.x - q.x) * fw2, y: q.y + (r.y - q.y) * fw2, borde: liso ? 0 : f }; };
+    const densa = (pl, liso) => { const out = [despB(pl[0], liso)]; for (let i = 1; i < pl.length; i++) { const a = pl[i - 1], b = pl[i], n = max(1, Math.round(hypot(b.x - a.x, b.y - a.y) / (W * 0.8))); for (let m = 1; m <= n; m++) out.push(despB({ x: a.x + (b.x - a.x) * m / n, y: a.y + (b.y - a.y) * m / n }, liso)); } return out; };
     const ctx = { fw, fh, S, W, g, D: P, mg: S * MARGEN, trazos: [], gubAmp: params.gubia != null ? params.gubia : (rng.bool(P_GUBIA) ? rng.range(GUB_AMP[0], GUB_AMP[1]) : 0), relleno: 1,
                   halo: max(g, params.halo != null ? params.halo * W : g) };
     for (const pz of vivas) {
@@ -3457,7 +3466,7 @@
       // así que se van: la mano es solo el campo común, que curva a las dos juntas.
       let pts = ejeDe(pz); const rot = 0;
       const cen = pts.reduce((a, q) => ({ x: a.x + q.x / pts.length, y: a.y + q.y / pts.length }), { x: 0, y: 0 });
-      pts = densa(giraYdesvia(pts, rot, cen.x, cen.y));
+      pts = densa(giraYdesvia(pts, rot, cen.x, cen.y), !!pz.marco);
       const ramas = (pz.ramas || []).map(rc => densa(giraYdesvia(ejeDe(rc), rot, cen.x, cen.y)));
       const fuera = pts.some(q => q.x < 0 || q.y < 0 || q.x > fw || q.y > fh);
       // GROSOR HOMOGÉNEO (el autor): sin gubia —la deriva de anchura abría cuñas entre

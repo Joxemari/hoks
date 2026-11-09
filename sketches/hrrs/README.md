@@ -3253,6 +3253,31 @@ Lo que le falta a la travesía, en hoja: a veces salen solo dos trazos y el cuer
 se queda a un lado; el nudo donde los brazos se juntan no siempre existe; y la
 barra que corre por el canto (la barrera) sale poco.
 
+## Vigesimoquinta vuelta: referencia a referencia, la 1
+
+El autor: «vamos referencia a referencia; analiza qué te falta de la 1, luego de
+la 2 y luego de la 3». Medido en el calco de la 1 contra la hoja del recinto:
+
+- **Los quiebros son de muchos ángulos**, 15–95° en los dos sentidos, y cambian
+  dentro del mismo trazo; los nuestros eran todos de 90. La cizalla pasa a ser de
+  REJILLA (cada fila se desplaza entera a lo largo de su dirección, con un
+  desplazamiento que varía entre filas): dos vecinas de la misma fila se mueven
+  juntas y la distancia perpendicular entre filas no cambia, así el margen sigue
+  constante aunque los ángulos se abran. En el recinto no se apaga en el borde
+  (el autor lo pidió para el borde del PLIEGO, y el marco se mantiene liso aparte).
+  Se probó ondas de 2,5–4,5 anchuras y los meandros salían a garabato: quedan de
+  6–10, y el ángulo se abre en pocos sitios por trazo, como en la referencia.
+- **Jerarquía de largos**: en la 1 hay dos trazos de 24–31 anchuras, tres de 8–18 y
+  el resto de 3–8. El recinto corta así: el marco y el meandro maestro enteros
+  (18–30 celdas), tres medianos de 8–16 y el resto de 4–9.
+- **Las rachas rectas son cortas** (1–4 anchuras entre quiebros, mediana 2,5): los
+  meandros giran cada 2–5 celdas.
+- **Más papel**: el cuerpo ocupa el 7–11 % del pliego, no el 10–16.
+- El marco se mantiene **liso** (su eje no se deforma): es el límite.
+
+`solape.js` 0 de 40, `pelo.js` 0 de 40, úes solo las del marco (una por obra, que
+es una u por definición).
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
