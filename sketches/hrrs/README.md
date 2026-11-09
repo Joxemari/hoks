@@ -3509,6 +3509,61 @@ el modelo de hebra. Pendiente de que el autor decida si pasa a producción.
 Medido: solape 0 de 150 en las tres configuraciones de hebra, pelo 0 por debajo
 de g en 60, determinismo 24/24.
 
+## Trigésima vuelta: dibujar las referencias, trazo a trazo, con atracción
+
+El autor: «implementa el primer trazo de cada referencia y luego el resto, cada
+trazo como una serie de puntos paralelizados o no, quizá con una gravedad entre
+puntos; a ver qué conclusión sacas dibujándola». Hecho sobre los calcos
+(`verificacion/gravedad.js`): el primer trazo se da; cada trazo siguiente es una
+**cadena de puntos que solo conoce su inicio, su fin y lo ya dibujado** —avanza
+hacia su meta y, si hay un trazo a menos de 1,5 D, sigue su tangente y un muelle
+lo deja a D—. Se mide la distancia media de la cadena al trazo real, en D.
+
+| referencia | trazos explicados (< 0,5 D) | los que no |
+|---|---|---|
+| 1 · recinto | 7 de 13 | la mitad derecha del marco (4,5 D), los maestros de cada racimo (1,2–1,7 D), dos cabos que giran solos |
+| 2 · bloque | 9 de 13 | la pieza grande de abajo-derecha (1,4 D), la barra de arriba (0,8 D), la pieza interior que cambia de dirección (2,3 D) |
+| 3 · travesía | 4 de 6 | la compañera exterior en su brazo (1,0 D) y el trazo que entra por la derecha y baja por la columna (1,0 D) |
+
+Probado con alcance 1,5–3 D, seguimiento 0,6–0,95 y una gravedad de largo
+alcance: los números se mueven poco y **los no explicados son siempre los
+mismos**. Conclusiones, nuevas respecto a la vuelta 29:
+
+1. **Dos clases de trazo, y nada más.** En las tres obras hay *maestros* —el
+   gesto: el marco, el meandro que abre un racimo, la banda que cruza— y
+   *seguidores*: trazos que, dado dónde empiezan y dónde acaban, **se explican
+   enteros por seguir al vecino a D**. Son el 55–70 % de los trazos en cada obra.
+   Los maestros hay que dibujarlos; los seguidores salen solos.
+2. **Un seguidor se define por dos puntos.** No hace falta copiar la paralela
+   entera: con el inicio (al lado del inicio del vecino, o en el marco, o en el
+   borde) y el fin (el borde, la base común, o a la altura del fin del vecino) la
+   cadena reproduce el trazo real a 0,1–0,4 D, quiebros incluidos. Eso es la
+   «intención del margen compartida» del autor, hecha regla: la mano no copia la
+   forma, sigue al vecino hasta donde quiere llegar.
+3. **La bifurcación es un seguidor con otra meta.** En la 3, la compañera que
+   baja con la espina y sale por la izquierda es una cadena que sigue mientras
+   la meta queda delante y **se suelta cuando la meta tira hacia el lado**: la
+   atracción local no la retiene. Sale a 0,4–0,6 D sin construirla a mano
+   (vuelta 29 la construía tramo + brazo).
+4. **Lo que la atracción no explica es exactamente lo que define cada obra**: en
+   la 1 el marco y los arranques de racimo (cuántos, dónde, hacia dónde caen);
+   en la 2 las tres piezas que hacen el contorno abombado y la ventana; en la 3
+   el trazo que *entra* buscando la columna y la releva. La gravedad de largo
+   alcance (tirar hacia el trazo más cercano estando lejos) **no** reproduce ese
+   último: el trazo no va al vecino más próximo, va a la columna. Es una
+   decisión, no una fuerza.
+5. **El relevo.** El calco de la 3 lo deja claro: la «espina» no es un trazo,
+   son dos que se turnan en la misma columna —uno entra por arriba y sale por la
+   derecha, el otro entra por la derecha y sale por abajo— y corren juntos a D
+   un tramo en medio. Es un patrón distinto de la bifurcación y no lo teníamos.
+
+**Qué cambia en el generador.** La hebra construye los seguidores como
+paralelas completas recortadas; la cadena con inicio y fin es más fiel —hace la
+bifurcación y el escalonado solos— y es la siguiente pieza: `seguir(S, E, lo
+puesto)` en `tramarHebra`, y los maestros como ahora. El relevo, como gramática
+de la travesía. Y el bloque gana si sus piezas de contorno se dibujan como
+maestros (tres) y el resto como seguidores: es lo que el calco dice que es.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
