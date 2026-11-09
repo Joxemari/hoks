@@ -3047,8 +3047,8 @@
   // cuadro, que es la rejilla.
   const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
-    bloque: { ancho: [0.085, 0.105], gam: [0.09, 0.13], celdas: [50, 62], cobertura: [0.3, 0.42], aspect: [1.05, 1.3],
-              racha: [3, 7], rachaE: [8, 14], trozo: [2, 5], lleno: 0.78, retira: 0.12, rama: 0.45, ventanas: [1, 2], cruza: 0.4 },
+    bloque: { ancho: [0.062, 0.075], gam: [0.09, 0.13], celdas: [90, 120], cobertura: [0.3, 0.42], aspect: [1.3, 1.55],
+              racha: [1, 4], rachaE: [3, 6], trozo: [4, 7], lleno: 0.8, retira: 0.1, rama: 0.4, ventanas: [1, 2], cruza: 0.4, ladeo: [0.26, 0.36] },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
               racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
@@ -3346,7 +3346,7 @@
       // TAMAÑOS DESIGUALES (el autor: «las piezas son parecidas de tamaño»): la espina
       // entera (hasta 18 celdas), una o dos medianas de 7–10, y el resto cortas de 2–4
       // recinto: dos largos (el marco y el meandro maestro, 18–30), tres medianos (8–16), el resto cortos (3–8)
-      let n = O.marco ? (pi === 1 ? rng.int(18, 30) : (medianas < 3 && path.length - i >= 8 && rng.bool(0.6)) ? (medianas++, rng.int(8, 16)) : rng.int(t0, t1)) : pi === 0 ? (path.length > 18 ? Math.ceil(path.length / 2) : path.length) : (medianas < 2 && path.length - i >= 7 && rng.bool(0.5)) ? (medianas++, rng.int(7, 10)) : rng.int(2, 4);
+      let n = O.marco ? (pi === 1 ? rng.int(18, 30) : (medianas < 3 && path.length - i >= 8 && rng.bool(0.6)) ? (medianas++, rng.int(8, 16)) : rng.int(t0, t1)) : pi === 0 ? rng.int(9, 12) : (medianas < 3 && path.length - i >= 7 && rng.bool(0.5)) ? (medianas++, rng.int(7, 9)) : rng.int(t0, t1);
       // EL CORTE CAE JUSTO ANTES DE UN CODO (el autor: «estos huecos no deberían
       // ocurrir»): cortar a mitad de un tramo recto deja una raja entre dos celdas
       // alineadas; cortando antes del codo, el cabo da contra el costado de la pieza
