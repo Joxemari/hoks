@@ -3640,24 +3640,45 @@
           const ux = e.x - a.x, uy = e.y - a.y, um = hypot(ux, uy) || 1e-9, dx = ux / um, dy = uy / um; let x = e.x, y = e.y, paso = W / 24, n = 0;
           while (n++ < 4 && distA(x + dx * paso, y + dy * paso) >= quiero) { x += dx * paso; y += dy * paso; }
           if (lado) pz[pz.length - 1] = { x, y }; else pz[0] = { x, y }; };
-        if (i > 0) avanza(0); if (j < ms.length - 1) avanza(1);
+        // el cabo avanza solo si lo que lo cortó está DELANTE (la muestra mala queda a
+        // menos de W/2 + g + W/4 de algo): si lo cortó un vecino que pasaba a 0,9 D de
+        // lado, no hay boca que encarar, y los dos trozos avanzaban el uno hacia el
+        // otro hasta tocarse (seed 2084325969)
+        const delante = q => distA(q.x, q.y) < quiero + W / 4;
+        if (i > 0 && delante(ms[i - 1])) avanza(0); if (j < ms.length - 1 && delante(ms[j + 1])) avanza(1);
         if (pz.length >= 2 && largoDe(pz) >= minL) piezas.push(pz);
         i = j + 1; }
       return piezas; };
+    // EL SEGUIDOR (vueltas 30–32). Sobre los calcos, el 55–70 % de los trazos se
+    // explica con inicio, fin y «sigue al vecino a D» (`verificacion/gravedad.js`).
+    // Aquí se probó tal cual, como cadena de puntos con muelle: decide bien A QUIÉN
+    // se sigue y DÓNDE se suelta, pero dibuja mal —redondea las esquinas, tiembla
+    // alrededor de D y el recorte la trocea—. Así que el seguidor se construye con
+    // la geometría exacta: la PARALELA del tramo que acompaña, entre dos puntos, y
+    // una salida explícita (un quiebro y el camino a su meta).
     const pon = (pts, rel, minL) => { for (const pz of recortar(pts, minL != null ? minL : W * 2.5)) trazos.push({ pts: pz, segs: segsDe(pz), rel }); };
     // ── el cuerpo ────────────────────────────────────────────────────────────
     const ancho = S * rr(O.cuerpo), alto = S * rr(O.alto);
     const x0 = TRAV ? -W : (fw - ancho) / 2 + rng.range(-0.03, 0.03) * S, y0 = TRAV ? -W : (fh - alto) / 2 - 0.03 * S + rng.range(-0.02, 0.02) * S;
     const x1 = TRAV ? fw + W : x0 + ancho, y1 = TRAV ? fh + W : y0 + alto;
     const lado = rng.bool(0.5) ? -1 : 1;   // hacia dónde pesa la obra (centro de gravedad)
+    // (el plan del cuerpo va antes que el marco: cuántas hebras lleva cada racimo)
+    const nH = rng.int(O.haces[0], O.haces[1]);
+    const ns = []; for (let h = 0; h < nH; h++) ns.push(h === 0 ? rng.int(O.hebras[1] - 1, O.hebras[1]) : rng.int(O.hebras[0], O.hebras[0] + 1));
     if (O.marco) {
+      // EL MARCO SALE DEL CUERPO (vuelta 31: en el calco el marco llega el séptimo,
+      // explicado por lo que tiene debajo). Su pata del lado que pesa es corta: acaba
+      // dos D por encima del barrido más alto del primer racimo, que es quien llega
+      // al canto. Se coloca antes solo porque el recorte lo necesita puesto.
       // EL MARCO: la barra arriba y una o dos patas de largo desigual, nunca la U
       // entera. La barra puede ir partida en dos, como en el original.
       // una sola tinta con sus esquinas: pata izquierda + barra (+ pata derecha), o
       // partida en dos piezas por la barra
       const partida = rng.bool(0.5), xc = x0 + ancho * rng.range(0.4, 0.6);
-      const dos = rng.bool(0.7), li = alto * rng.range(0.3, 0.6), ld = alto * rng.range(0.3, 0.6);
-      const izq = dos || lado > 0, der = dos || lado < 0;
+      const topeCanto = max(alto * 0.2, alto - ns[0] * D - 2 * D - W);
+      const dos = rng.bool(0.7); let li = alto * rng.range(0.3, 0.6), ld = alto * rng.range(0.3, 0.6);
+      if (lado < 0) li = min(li, topeCanto); else ld = min(ld, topeCanto);
+      const izq = dos || lado < 0, der = dos || lado > 0;   // la pata del canto está siempre
       const A = [], B = [];
       if (izq) A.push({ x: x0, y: y0 + li }); A.push({ x: x0, y: y0 });
       if (partida) { A.push({ x: xc - D / 2, y: y0 }); B.push({ x: xc + D / 2, y: y0 }); }
@@ -3674,7 +3695,7 @@
     // lado que pesa
     // (`ult` recuerda el lado del último quiebro: el siguiente va al otro lado casi
     // siempre —un meandro, no una deriva—, y la deriva acumulada nunca pasa de 60°)
-    const meandro = (xs, ys, yFin, haciaLado, conBarrido, xMin, xMax) => {
+    const meandro = (xs, ys, yFin, haciaLado, conBarrido, xMin, xMax, sinH) => {
       // NUNCA UN ÁNGULO AGUDO: el inglete de una paralela exterior crece con 1/sin(θ/2)
       // y a 45° una paralela a 4·D saca una púa de medio pliego. Así que: tras un
       // tramo horizontal el quiebro sigue hacia el mismo lado; entre dos quiebros
@@ -3690,92 +3711,117 @@
         // venía de un horizontal hacia fuera, acaba aquí: no hay ángulo agudo que valga)
         if (xMin != null && (x + Math.sin(th) * (L + 3 * W) * sgn < xMin || x + Math.sin(th) * (L + 3 * W) * sgn > xMax)) { if (ultimoH) break; sgn = -sgn; }
         x += Math.sin(th) * L * sgn; y += Math.cos(th) * L; pts.push({ x, y }); acum += th * sgn; ult = sgn; ultimoH = 0;
-        if (rng.bool(0.3)) { const Lh = W * rng.range(1.5, 3.5); x += Lh * sgn; pts.push({ x, y }); ultimoH = sgn; }
+        if (!sinH && rng.bool(0.3)) { const Lh = W * rng.range(1.5, 3.5); x += Lh * sgn; pts.push({ x, y }); ultimoH = sgn; }
         const Lv = W * rr(O.recto); y += Lv; pts.push({ x, y }); acum *= 0.4;
       }
       // el barrido final, horizontal, hacia el lado que pesa (nunca contra el último quiebro)
       if (conBarrido) { const Lb = W * rr(O.barrido || [3, 7]); x += Lb * (ultimoH ? ultimoH : haciaLado); pts.push({ x, y }); }
       return pts; };
-    const nH = rng.int(O.haces[0], O.haces[1]);
     if (!TRAV) {
-      // las posiciones de los haces a lo largo de la barra, el más denso al lado que pesa
-      // LOS HACES VAN JUNTOS (el original: los racimos se tocan y se entrelazan abajo,
-      // no quedan separados por aire): cada haz a una o dos D del anterior, contando
-      // sus anchuras. El pesado, en el lado que pesa, llega hasta la base; los otros
-      // se quedan más arriba (0,1–0,3 del alto), y por debajo de ellos pasan los
-      // barridos del pesado. El primero puede nacer de la pata, no de la barra.
-      const ns = []; for (let h = 0; h < nH; h++) ns.push(h === 0 ? rng.int(O.hebras[1] - 1, O.hebras[1]) : rng.int(O.hebras[0], O.hebras[0] + 1));
-      const xsL = []; let xc2 = lado > 0 ? x1 - ancho * rng.range(0.1, 0.2) - ns[0] * D / 2 : x0 + ancho * rng.range(0.1, 0.2) + ns[0] * D / 2;
-      for (let h = 0; h < nH; h++) { xsL.push(xc2); if (h + 1 < nH) xc2 -= lado * ((ns[h] + ns[h + 1]) / 2 * D + D * rng.range(1, 2.5)); }
-      xsL.forEach((xs, h) => {
-        const n = ns[h], yFin = h === 0 ? y1 : y1 - alto * rng.range(0.1, 0.3);
-        // la maestra es la de fuera y las paralelas crecen hacia dentro del marco
-        const master = meandro(xs, y0, yFin, lado, h === 0 || rng.bool(0.5), x0 + W * 1.5, x1 - W * 1.5), ladoPar = h === 0 ? lado : (rng.bool(0.5) ? 1 : -1);
-        for (let k = 0; k < n; k++) {
-          // las paralelas, a k·D a un lado; el cabo de abajo escalonado
-          let pts = k === 0 ? master : paralela(master, k * D * ladoPar);
-          if (pts.length < 2) continue;
-          const L = largoDe(pts), corta = W * rng.range(0, 2.5); if (corta > 0 && L > corta + W * 3) { const ms = muestrear(pts, W / 8); const keep = ms.filter((q, i) => { let acc = 0; for (let t = 1; t <= i; t++) acc += hypot(ms[t].x - ms[t - 1].x, ms[t].y - ms[t - 1].y); return acc <= L - corta; }); pts = simplificar(keep.map(q => ({ x: q.x, y: q.y }))); }
-          pon(pts, k === 0 ? 'hebra' : 'paralela', W * 3);
-        } });
+      // EL PRIMER TRAZO (vuelta 31, medido en el calco): el meandro que baja hasta la
+      // base y BARRE POR ELLA HASTA EL CANTO del lado que pesa. Fija la base y ese
+      // límite, y todo lo demás lo sigue. Nace lejos del canto (0,35–0,5 del ancho)
+      // para que el barrido sea largo, como en el original.
+      const xCanto = lado < 0 ? x0 : x1;
+      const xs0 = xCanto - lado * ancho * rng.range(0.35, 0.5);
+      // (sin tramos horizontales intermedios: uno que se aleje del canto, la bajada y el
+      // barrido de vuelta hacen una U —la forma que no existe— y las paralelas de dentro
+      // se colapsan en ella: solape.js, 7 de 50)
+      const primero = meandro(xs0, y0 + quiero, y1, lado, false, x0 + W * 1.5, x1 - W * 1.5, true);
+      // el barrido arranca siempre de un tramo vertical: si el meandro acabó en un
+      // horizontal (lo cortó el marco) se quita, y si acabó en quiebro se baja un tramo.
+      // Sin esto el barrido salía de un quiebro en ángulo agudo o daba la vuelta, y
+      // las paralelas se pisaban en la esquina (solape.js: 7 de 50, a 46°).
+      { let u = primero[primero.length - 1], a2 = primero[primero.length - 2];
+        if (abs(u.y - a2.y) < 1e-9 && primero.length > 2) { primero.pop(); u = primero[primero.length - 1]; a2 = primero[primero.length - 2]; }
+        if (abs(u.x - a2.x) > 1e-9) primero.push({ x: u.x, y: u.y + W * rng.range(1.5, 2.5) }); }
+      primero.push({ x: xCanto, y: primero[primero.length - 1].y });
+      pon(primero, 'primero', W * 3);
+      // SUS SEGUIDORES: nacen en la barra a k·D hacia el canto (el lado de dentro del
+      // giro) y quieren llegar al mismo canto, k·D por encima. El camino se lo da
+      // `seguir`: copian el meandro a D quiebro a quiebro y el barrido se apila.
+      // (En el recinto el seguidor es la PARALELA EXACTA, no la cadena: las esquinas son
+      // vivas y la cadena las redondea y tiembla alrededor de D —el recorte la troceaba—.
+      // Aquí el vecino y el lado se conocen; la cadena se queda para la travesía, donde
+      // las bandas ondulan y el seguidor tiene que soltarse.)
+      for (let k = 1; k < ns[0]; k++) pon(paralela(primero, -lado * k * D), 'seguidor', W * 3);
+      // LOS OTROS RACIMOS, hacia el lado contrario al canto: un maestro que baja
+      // menos (0,1–0,3 del alto por encima de la base) y sus seguidores, que nacen a
+      // k·D y acaban a k·D del cabo del maestro
+      let xc2 = xs0 - lado * (D * rng.range(1.5, 3));
+      for (let h = 1; h < nH; h++) {
+        const hacia = -lado, yFin = y1 - alto * rng.range(0.1, 0.3);
+        xc2 -= lado * 0; const m2 = meandro(xc2, y0 + quiero, yFin, lado, rng.bool(0.5), x0 + W * 1.5, x1 - W * 1.5);
+        pon(m2, 'hebra', W * 3);
+        const fin = m2[m2.length - 1], ant = m2[m2.length - 2] || fin, hor = abs(fin.x - ant.x) > abs(fin.y - ant.y);
+        const ladoPar = rng.bool(0.5) ? 1 : -1;
+        for (let k = 1; k < ns[h]; k++) { let pts = paralela(m2, k * D * ladoPar); if (pts.length < 2) continue;
+          // el cabo de abajo, escalonado
+          const L = largoDe(pts), corta = W * rng.range(0, 2.5); if (L > corta + W * 3) { const ms = muestrear(pts, W / 8); let acc = 0; const keep = [ms[0]]; for (let t = 1; t < ms.length; t++) { acc += hypot(ms[t].x - ms[t - 1].x, ms[t].y - ms[t - 1].y); if (acc <= L - corta) keep.push(ms[t]); } pts = simplificar(keep.map(q => ({ x: q.x, y: q.y }))); }
+          pon(pts, 'seguidor', W * 3); }
+        xc2 -= lado * ((ns[h] + (ns[h + 1] || 0)) * D * 0.5 + ns[h] * D * 0.5 + D * rng.range(1, 2.5));
+      }
     } else {
-      // TRAVESÍA: la hebra maestra cruza el pliego de un borde al de enfrente con uno
-      // o dos quiebros abiertos; sus paralelas, y una barra recta por un canto
-      // LA REFERENCIA 3, leída entera (vuelta 29): TRES bandas verticales paralelas
-      // —la espina y dos compañeras a un lado— bajan juntas desde la barra de arriba y
-      // se separan: las compañeras giran hacia un costado y salen por el borde como DOS
-      // BRAZOS PARALELOS; la espina sigue hasta abajo. Al otro lado, uno o dos brazos
-      // paralelos salen de la espina en diagonal y mueren en el borde. Dos barras
-      // rectas por los cantos (arriba, abajo) nacen a medio pliego y van hasta el
-      // borde, y la espina las cruza por encima con pelo a los dos lados. Las bandas
-      // ONDULAN (±15–25°, algún quiebro de 45°), el pelo es finísimo (0,03 W) y casi
-      // nada acaba en el aire: todo sale por un borde o muere contra una barra.
+      // LA TRAVESÍA DESDE SU PRIMER TRAZO (vuelta 31, medido en el calco): LA ELE QUE
+      // UNE DOS BORDES CONTIGUOS. Entra por un borde, baja por la columna ondulando,
+      // dobla con el codo abierto en dos quiebros y sale por el borde de al lado. Es el
+      // único trazo que toca dos bordes y fija el sitio de la obra. Después, en el
+      // orden que dio la medida: EL RELEVO (entra por el mismo costado, a D por debajo
+      // del brazo, lo acompaña hasta la columna y la continúa hasta el borde de
+      // enfrente), las BARRAS de los cantos, y al final las COMPAÑERAS, que bajan con
+      // la columna y se sueltan hacia el otro costado. Relevo y compañeras son
+      // seguidores: solo llevan inicio y fin.
       const vertical = rng.bool(0.6);
       const largo = vertical ? fh : fw, ancho2 = vertical ? fw : fh;
       const T = q => vertical ? q : { x: q.y, y: q.x };
-      const xs = ancho2 * rng.range(0.42, 0.6);
-      // la espina: baja entera con una ondulación lenta (dos senos) y un quiebro
-      const A1 = W * rng.range(0.35, 0.6), l1 = W * rng.range(7, 11), f1 = rng.range(0, 6.28), A2 = W * rng.range(0.1, 0.25), l2 = W * rng.range(3, 5), f2 = rng.range(0, 6.28);
-      const yJ = largo * rng.range(0.3, 0.7), dJ = W * rng.range(0.8, 1.6) * (rng.bool(0.5) ? 1 : -1), aJ = W * 1.5;
-      const lateral = y => A1 * Math.sin(6.2832 * y / l1 + f1) + A2 * Math.sin(6.2832 * y / l2 + f2) + dJ * (y < yJ - aJ ? 0 : y > yJ + aJ ? 1 : (q => q * q * (3 - 2 * q))((y - yJ + aJ) / (2 * aJ)));
-      const espina = []; for (let y = -W * 1.5; y < largo + W * 1.5; y += W * rng.range(1.2, 2.2)) espina.push({ x: xs + lateral(y), y }); espina.push({ x: xs + lateral(largo + W * 2), y: largo + W * 2 });
-      // la espina va la PRIMERA: todo lo demás se recorta contra ella —las barras
-      // quedan partidas con el pelo a sus dos lados, que es «cruzar por encima», y los
-      // brazos nacen a un pelo de su costado—. (Iba la última y los brazos, que nacen
-      // en su eje, la pisaban: 13 de 50 con solape.)
-      trazos.push({ pts: espina.map(T), segs: segsDe(espina.map(T)), rel: 'espina' });
-      // un trozo de una polilínea entre dos alturas, por muestras
+      const ponT = (pts, rel, minL) => pon(pts.map(T), rel, minL);
+      const sR = rng.bool(0.5) ? 1 : -1, sL = -sR;          // sR: el costado por donde sale la ele
+      const xs = ancho2 * (0.5 - sR * rng.range(-0.02, 0.12));
+      const edge = s2 => s2 < 0 ? -W * 1.5 : ancho2 + W * 1.5;
+      const A1 = W * rng.range(0.3, 0.55), l1 = W * rng.range(7, 11), f1 = rng.range(0, 6.28), A2 = W * rng.range(0.1, 0.2), l2 = W * rng.range(3, 5), f2 = rng.range(0, 6.28);
+      const lateral = y => A1 * Math.sin(6.2832 * y / l1 + f1) + A2 * Math.sin(6.2832 * y / l2 + f2);
+      const yCodo = largo * rng.range(0.46, 0.62);
+      const ele = []; for (let y = -W * 1.5; y < yCodo; y += W * rng.range(1.2, 2.2)) ele.push({ x: xs + lateral(y), y });
+      ele.push({ x: xs + lateral(yCodo), y: yCodo }); const iCodo = ele.length - 1; let iBrazo = iCodo;
+      { // el codo en dos quiebros y el brazo: un paso en diagonal, un tramo casi horizontal, a
+        // veces una subida en diagonal (como el original), y hasta el borde
+        let x = xs + lateral(yCodo), y = yCodo; const th = rng.range(40, 55) * RAD, Lq = W * rng.range(1, 1.8);
+        x += sR * Math.sin(th) * Lq; y += Math.cos(th) * Lq; ele.push({ x, y }); iBrazo = ele.length - 1;
+        const Lh = W * rng.range(0.8, 2); x += sR * Lh; y += Lh * rng.range(-0.1, 0.1); ele.push({ x, y });
+        if (rng.bool(0.6)) { const a = rng.range(40, 55) * RAD, Ls = W * rng.range(2, 3.5); x += sR * Math.cos(a) * Ls; y -= Math.sin(a) * Ls; ele.push({ x, y }); }
+        const pend = rng.range(-0.12, 0.08); while (sR < 0 ? x > edge(sR) : x < edge(sR)) { const st = W * rng.range(1.5, 2.5); x += sR * st; y += st * (pend + rng.range(-0.05, 0.05)); ele.push({ x, y }); } }
+      ponT(ele, 'primero', W * 3);
+      // EL RELEVO: entra por el borde por donde salió la ele, a D por DEBAJO de su brazo
+      // (la paralela exacta del brazo, recorrido hacia dentro), y donde el brazo dobla
+      // hacia la columna él sigue hacia abajo, con la misma ondulación, hasta el borde
+      // de enfrente. Releva a la ele en la columna.
+      const brazoIn = ele.slice(iBrazo).reverse();
+      let relevo = paralela(brazoIn, -sR * D);
+      { const u = relevo[relevo.length - 1]; let y = u.y; const xb = u.x - lateral(u.y) * 0.6;
+        for (y += W * rng.range(1.2, 2); y < largo + W * 1.5; y += W * rng.range(1.2, 2.2)) relevo.push({ x: xb + lateral(y) * 0.6, y });
+        relevo.push({ x: xb + lateral(largo + W * 2) * 0.6, y: largo + W * 2 }); }
+      ponT(relevo, 'relevo', W * 3);
+      const xFinCol = relevo[relevo.length - 1].x;
+      // LAS BARRAS de los cantos: nacen junto a la columna y van al borde de la ele; la
+      // columna las parte con el pelo a sus dos lados
+      if (rng.bool(0.8)) { const m = W * rng.range(0.9, 1.5), xa = xs - sR * W * rng.range(1.5, 3); ponT([{ x: xa, y: m }, { x: edge(sR), y: m + rng.range(-0.02, 0.02) * S }], 'barra', W * 2); }
+      if (rng.bool(0.6)) { const m = W * rng.range(0.9, 1.5), xa = xFinCol + sR * W * rng.range(0.6, 1.5); ponT([{ x: xa, y: largo - m }, { x: edge(sR), y: largo - m + rng.range(-0.02, 0.02) * S }], 'barra', W * 2); }
+      // LAS COMPAÑERAS: 1 o 2, al otro costado de la columna. La de dentro nace más
+      // arriba y sale más abajo; la de fuera, a D de ella, nace más abajo y sale a D
+      // por encima. Bajan con la columna y se sueltan cuando la meta tira hacia el borde.
+      const columna = ele.slice(0, iCodo + 1);
       const tramo = (pl, ya, yb) => { const ms = muestrear(pl, W / 8).filter(q => q.y >= ya && q.y <= yb); return ms.length > 2 ? simplificar(ms.map(q => ({ x: q.x, y: q.y }))) : null; };
-      const sL = rng.bool(0.5) ? -1 : 1;   // el costado por donde salen los brazos de las compañeras
-      // (paralela(d > 0) cae al oeste de una banda que baja: el signo de d es −sL)
-      // las compañeras: 1 o 2, paralelas a la espina, que giran hacia sL y salen
-      const nC = rng.int(1, 2), yIni = largo * rng.range(0.1, 0.25), yGiro = largo * rng.range(0.42, 0.68);
-      let P1 = tramo(paralela(espina, -sL * D), yIni, yGiro);
+      // (con W ≈ 0,11 del lado el pliego es corto: nacen justo bajo la barra y giran justo antes del codo de la ele)
+      const nC = rng.int(1, 2), yIni = W * rng.range(2.3, 3), yGiro = yCodo - W * rng.range(0.2, 0.9);
+      let P1 = yGiro > yIni + W * 1.2 ? tramo(paralela(columna, -sL * D), yIni, yGiro) : null;
       if (P1) {
-        // el brazo: un quiebro de 40–55° hacia el costado y luego casi horizontal hasta el borde
-        const e = P1[P1.length - 1], th = rng.range(40, 55) * RAD, Lq = W * rng.range(1.5, 2.5), pend = rng.range(-0.12, 0.12);
-        const q1 = { x: e.x + sL * Math.sin(th) * Lq, y: e.y + Math.cos(th) * Lq };
-        const xFin = sL < 0 ? -W * 1.5 : ancho2 + W * 1.5; const brazo = [q1]; let xq = q1.x, yq = q1.y;
-        while (sL < 0 ? xq > xFin : xq < xFin) { const st = W * rng.range(1.5, 2.5); xq += sL * st; yq += st * (pend + rng.range(-0.06, 0.06)); brazo.push({ x: xq, y: yq }); }
-        P1 = P1.concat(brazo);
-        const comps = [P1];
-        if (nC === 2) { const P2 = paralela(P1, -sL * D); const y2 = yIni + W * rng.range(1, 3); const ms = muestrear(P2, W / 8); let k = 0; while (k < ms.length && ms[k].y < y2 && ms[k].x * sL < (xs + sL * 3 * D) * sL) k++; const rest = ms.slice(k).map(q => ({ x: q.x, y: q.y })); if (rest.length > 2) comps.push(simplificar(rest)); }
-        // de fuera adentro: la exterior primero, así la interior se recorta contra ella y
-        // la espina —que va la última— cruza las barras por encima
-        comps.reverse().forEach(c => pon(c.map(T), 'compañera', W * 3));
+        // la salida: un quiebro de 40–55° hacia el costado y casi horizontal hasta el borde
+        const e = P1[P1.length - 1], th = rng.range(40, 55) * RAD, Lq = W * rng.range(1.5, 2.5), pend = rng.range(-0.05, 0.14);
+        let xq = e.x + sL * Math.sin(th) * Lq, yq = e.y + Math.cos(th) * Lq; P1.push({ x: xq, y: yq });
+        while (sL < 0 ? xq > edge(sL) : xq < edge(sL)) { const st = W * rng.range(1.5, 2.5); xq += sL * st; yq += st * (pend + rng.range(-0.05, 0.05)); P1.push({ x: xq, y: yq }); }
+        ponT(P1, 'compañera', W * 3);
+        if (nC === 2) { const P2 = paralela(P1, -sL * D), y2 = yIni + W * rng.range(1, 2.5), ms = muestrear(P2, W / 8); let k = 0; while (k < ms.length && ms[k].y < y2) k++; const rest = ms.slice(k).map(q => ({ x: q.x, y: q.y })); if (rest.length > 2) ponT(simplificar(rest), 'compañera', W * 3); }
       }
-      // los brazos del otro costado: 0–2, salen de la espina en diagonal y van al borde
-      const nB = rng.bool(0.75) ? (rng.bool(0.35) ? 2 : 1) : 0, sR = -sL, yB = largo * rng.range(0.28, 0.55);
-      for (let b = 0; b < nB; b++) {
-        const ya = yB + b * D * 1.4, x0b = xs + lateral(ya), th = rng.range(35, 50) * RAD * (rng.bool(0.6) ? -1 : 1), Lq = W * rng.range(2, 3.5), pend = rng.range(-0.1, 0.1);
-        const arm = [{ x: x0b, y: ya }, { x: x0b + sR * Math.cos(th) * Lq, y: ya + Math.sin(th) * Lq }]; let xq = arm[1].x, yq = arm[1].y; const xFin = sR < 0 ? -W * 1.5 : ancho2 + W * 1.5;
-        while (sR < 0 ? xq > xFin : xq < xFin) { const st = W * rng.range(1.5, 2.5); xq += sR * st; yq += st * (pend + rng.range(-0.05, 0.05)); arm.push({ x: xq, y: yq }); }
-        pon((b === 0 ? arm : paralela(arm, sR * D)).map(T), 'brazo', W * 3);   // la segunda, por debajo de la primera
-      }
-      // las barras de los cantos: nacen cerca de la espina y van al borde contrario a los brazos
-      const sB = -sL;
-      if (rng.bool(0.8)) { const m = W * rng.range(0.9, 1.6), xa = xs + W * rng.range(-3, 0.5) * sB; pon([{ x: xa, y: m }, { x: sB < 0 ? -W : ancho2 + W, y: m + rng.range(-0.02, 0.02) * S }].map(T), 'barra', W * 3); }
-      if (rng.bool(0.5)) { const m = W * rng.range(0.9, 1.6), xa = xs + W * rng.range(-1, 1.5) * sB; pon([{ x: xa, y: largo - m }, { x: sB < 0 ? -W : ancho2 + W, y: largo - m + rng.range(-0.02, 0.02) * S }].map(T), 'barra', W * 3); }
     }
     // ── salida, con la forma del paseo ───────────────────────────────────────
     const ctx = { fw, fh, S, W, g, D, mg: S * MARGEN, trazos: [], gubAmp: 0, relleno: 1, halo: max(g, params.halo != null ? params.halo * W : g) };

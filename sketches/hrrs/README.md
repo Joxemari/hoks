@@ -3608,6 +3608,47 @@ primer trazo es la ele que une dos bordes contiguos, con el codo abierto; las
 compañeras y el relevo se le cuelgan. El bloque se queda como está: ahí el
 orden no es la clave.
 
+## Trigésima segunda vuelta: el primer trazo en el generador, y el seguidor exacto
+
+Lo medido en las vueltas 30 y 31 pasa al modelo de hebra.
+
+**Recinto, desde su primer trazo.** El meandro que baja hasta la base y **barre
+por ella hasta el canto** del lado que pesa: nace a 0,35–0,5 del ancho del canto
+para que el barrido sea largo, y no lleva tramos horizontales intermedios —uno
+que se aleje del canto, la bajada y el barrido de vuelta hacen una U, la forma
+que no existe, y las paralelas de dentro se colapsan en ella (7 de 50 con
+solape)—. Sus seguidores nacen en la barra hacia el canto y apilan su barrido
+encima, todos hasta el mismo canto. Los otros racimos, al lado contrario, bajan
+menos. **El marco sale del cuerpo**: la pata del lado que pesa es corta y acaba
+dos D por encima del barrido más alto, que es quien llega al canto; la del otro
+lado, libre.
+
+**Travesía, desde su primer trazo.** La **ele que une dos bordes contiguos**:
+entra por un borde, baja por la columna ondulando, dobla con el codo abierto en
+dos quiebros y sale por el borde de al lado (a veces con la subida en diagonal
+del original). Después, en el orden que dio la medida: **el relevo** —la
+paralela exacta de su brazo, por debajo, desde el borde hacia dentro, que donde
+el brazo dobla sigue columna abajo hasta el borde de enfrente—, las **barras**
+de los cantos, y las **compañeras**, una o dos, paralelas exactas de la columna
+al otro costado, que nacen bajo la barra y giran justo antes del codo de la ele
+para salir por su borde (la segunda, paralela entera de la primera).
+
+**El seguidor, exacto.** Se probó la cadena de puntos con muelle tal como se
+midió sobre los calcos. Decide bien *a quién* se sigue y *dónde* se suelta, pero
+dibuja mal: redondea las esquinas, tiembla alrededor de D y el recorte la
+trocea. Queda como instrumento de medida (`gravedad.js`); en el generador el
+seguidor es **la paralela exacta del tramo que acompaña más una salida
+explícita** (un quiebro de 40–55° y el camino a su meta). Es la misma
+definición —inicio, a quién sigue, dónde se suelta, fin— con otra geometría.
+
+**Dos arreglos del recorte.** El cabo cortado solo avanza si lo que lo cortó
+está *delante*; si fue un vecino que pasaba a 0,9 D de lado no hay boca que
+encarar, y los dos trozos avanzaban el uno hacia el otro hasta tocarse.
+
+Medido: solape 0 de 150 en las tres configuraciones de hebra, pelo 0 por debajo
+de g en 60, determinismo 24/24; solape y pelo en las diecinueve configuraciones,
+0 con sus controles disparando.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
