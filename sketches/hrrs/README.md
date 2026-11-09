@@ -3229,6 +3229,30 @@ costado del marco.
   una curva hecha de codos pequeños. El paseo sobre rejilla ortogonal no la
   produce; la travesía sigue con el calco hasta tener su gramática.
 
+## Vigesimocuarta vuelta: la travesía sobre el paseo, oblicua
+
+El autor: «la referencia 3 tiene como más cambios de dirección, o longitud de
+trazo» y «ojo a la lógica de ángulos, muchos no son perpendiculares». Medido en su
+calco: tramos de 5–14 anchuras y quiebros de 25–55° encadenados, sin rectas largas
+entre medias, y la bifurcación a mitad de camino. Gira menos de 90 y más seguido.
+
+La travesía es el paseo sobre una **rejilla de paralelogramos** de ángulo abierto
+(`oblicua`: 52–70°), con giros solo hacia la diagonal abierta, así cada quiebro
+mide ese ángulo. Esto mismo se probó para el bloque y se quitó porque allí todo se
+inclinaba en cursiva; en la 3 es justo lo que hay: todos los brazos van en dos
+direcciones oblicuas. La silueta es el pliego entero; dos bordes, el primero
+siempre de salida; la espina nace en un borde de salida y cruza; 4–6 trazos de
+9–20 celdas; la rama (la bifurcación) sale aunque el tronco tenga brazos hacia ese
+lado —oblicua no es una u— y sigue 4–8 celdas. Los tres tipos corren ya sobre el
+mismo motor; el calco queda en el harness solo para comparar.
+
+Ángulos medidos en 30 obras: quiebros p10–p90 de 53 a 68°. `solape.js` 0 de 40,
+`pelo.js` 1 de 40, úes 0 de 176.
+
+Lo que le falta a la travesía, en hoja: a veces salen solo dos trazos y el cuerpo
+se queda a un lado; el nudo donde los brazos se juntan no siempre existe; y la
+barra que corre por el canto (la barrera) sale poco.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

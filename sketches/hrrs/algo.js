@@ -3059,8 +3059,14 @@
     // no llena. La silueta es rectangular.
     recinto:  { ancho: [0.028, 0.036], gam: [0.16, 0.24], celdas: [220, 300], cobertura: [0.1, 0.16], aspect: [0.85, 1.1],
                 racha: [5, 11], rachaE: [10, 18], trozo: [7, 18], lleno: 0.5, retira: 0.05, rama: 0.15, ventanas: [0, 0], borde: 0, marco: true },
-    travesia: { ancho: [0.1, 0.125], gam: [0.06, 0.09], celdas: [26, 36], cobertura: [0.3, 0.42], aspect: [0.9, 1.2],
-                racha: [4, 9], rachaE: [8, 14], trozo: [4, 9], lleno: 0.7, retira: 0.15, rama: 0.3, ventanas: [0, 0], borde: 1 },
+    // TRAVESÍA (referencia 3), medida en su calco: tramos rectos de 5–14 anchuras y
+    // quiebros de 25–55° encadenados, bifurcación a mitad de camino, y el margen del
+    // pliego como salida o barrera. No es una rejilla ortogonal: es una rejilla de
+    // PARALELOGRAMOS de ángulo abierto (`oblicua`), con giros solo hacia la diagonal
+    // abierta, así cada quiebro mide ese ángulo. Pocos trazos, largos, y el cuerpo
+    // pasado de dos bordes.
+    travesia: { ancho: [0.1, 0.125], gam: [0.06, 0.09], celdas: [40, 60], cobertura: [0.3, 0.42], aspect: [0.9, 1.2],
+                racha: [3, 7], rachaE: [6, 12], trozo: [9, 20], lleno: 0.55, retira: 0.05, rama: 0.8, ventanas: [0, 0], borde: 1, oblicua: [52, 70], cruza: 0.6 },
   };
   function tramarPaseo(rng, fw, fh, tipo, params) {
     const O = PASEO[tipo] || PASEO.bloque;
@@ -3088,7 +3094,8 @@
     // denso. Es lo que hace que la referencia 2 tenga el contorno «a mordiscos» y no
     // redondo. Se guardan como rectángulos que `inside` descuenta o añade.
     const bahias = [], salientes = [];
-    if (O.marco) { const bx0 = min(...sil.map(q => q.x)), bx1 = max(...sil.map(q => q.x)), by0 = min(...sil.map(q => q.y)), by1 = max(...sil.map(q => q.y)); sil.length = 0; sil.push({ x: bx0, y: by0 }, { x: bx1, y: by0 }, { x: bx1, y: by1 }, { x: bx0, y: by1 }); }
+    if (O.oblicua) { sil.length = 0; const m2 = -P * 1.5; sil.push({ x: m2, y: m2 }, { x: fw - m2, y: m2 }, { x: fw - m2, y: fh - m2 }, { x: m2, y: fh - m2 }); }
+    else if (O.marco) { const bx0 = min(...sil.map(q => q.x)), bx1 = max(...sil.map(q => q.x)), by0 = min(...sil.map(q => q.y)), by1 = max(...sil.map(q => q.y)); sil.length = 0; sil.push({ x: bx0, y: by0 }, { x: bx1, y: by0 }, { x: bx1, y: by1 }, { x: bx0, y: by1 }); }
     else { const nB = 1, bx0 = min(...sil.map(q => q.x)), bx1 = max(...sil.map(q => q.x)), by0 = min(...sil.map(q => q.y)), by1 = max(...sil.map(q => q.y));
       // la bahía nunca parte el cuerpo: su fondo no pasa del 40 % del cuerpo en ese eje
       for (let b = 0; b < nB; b++) { const lado = rng.int(0, 3), boca = P * rng.range(1.2, 2.2), fondo = min(P * rng.range(1.8, 2.8), 0.35 * (lado % 2 === 0 ? by1 - by0 : bx1 - bx0)), u = rng.range(0.25, 0.75);
@@ -3115,10 +3122,10 @@
     const bordes = {};   // 'arriba' | 'abajo' | 'izq' | 'der' → 'sale' | 'barrera'
     const mB0 = W * 1.15;
     if (rng.bool(pBorde)) {
-      const lados = ['arriba', 'der', 'abajo', 'izq'], nB = rng.bool(0.65) ? 1 : 2;
-      for (let k = 0; k < nB; k++) { const l = lados.splice(rng.int(0, lados.length - 1), 1)[0]; bordes[l] = rng.bool(0.5) ? 'sale' : 'barrera'; }
+      const lados = ['arriba', 'der', 'abajo', 'izq'], nB = O.oblicua ? 2 : rng.bool(0.65) ? 1 : 2;
+      for (let k = 0; k < nB; k++) { const l = lados.splice(rng.int(0, lados.length - 1), 1)[0]; bordes[l] = O.oblicua ? (k === 0 ? 'sale' : rng.bool(0.6) ? 'sale' : 'barrera') : rng.bool(0.5) ? 'sale' : 'barrera'; }
       // dos salidas a la vez empujan el cuerpo a una esquina: la segunda es barrera
-      const ks = Object.keys(bordes); if (ks.length === 2 && bordes[ks[0]] === 'sale' && bordes[ks[1]] === 'sale') bordes[ks[1]] = 'barrera';
+      const ks = Object.keys(bordes); if (!O.oblicua && ks.length === 2 && bordes[ks[0]] === 'sale' && bordes[ks[1]] === 'sale') bordes[ks[1]] = 'barrera';
       // empujar la silueta hasta pasarse de esos bordes
       let x0s = 1e9, y0s = 1e9, x1s = -1e9, y1s = -1e9; for (const q of sil) { x0s = min(x0s, q.x); y0s = min(y0s, q.y); x1s = max(x1s, q.x); y1s = max(y1s, q.y); }
       // hasta dónde llega la silueta por ese borde: una SALIDA se pasa del canto (y la
@@ -3129,7 +3136,7 @@
       if (bordes.izq) dx = -(x0s + mas(bordes.izq)); if (bordes.der) dx = fw - x1s + mas(bordes.der); if (bordes.arriba) dy = -(y0s + mas(bordes.arriba)); if (bordes.abajo) dy = fh - y1s + mas(bordes.abajo);
       if (bordes.izq && bordes.der) { const a = -mas(bordes.izq), b = fw + mas(bordes.der), esc = (b - a) / (x1s - x0s); for (const q of sil) q.x = a + (q.x - x0s) * esc; dx = 0; }
       if (bordes.arriba && bordes.abajo) { const a = -mas(bordes.arriba), b = fh + mas(bordes.abajo), esc = (b - a) / (y1s - y0s); for (const q of sil) q.y = a + (q.y - y0s) * esc; dy = 0; }
-      for (const q of sil) { q.x += dx; q.y += dy; }
+      if (!O.oblicua) for (const q of sil) { q.x += dx; q.y += dy; }
     }
     const insideSil = (x, y) => { let c = false; for (let i = 0, j = sil.length - 1; i < sil.length; j = i++) { const a = sil[i], b = sil[j]; if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) c = !c; } return c; };
     const inside = (x, y) => (insideSil(x, y) && !bahias.some(r => enRect(r, x, y))) || salientes.some(r => enRect(r, x, y));
@@ -3147,7 +3154,8 @@
     // quiebro el paseo elige, cuando puede, el lado que ese campo ABRE (una zeta se
     // abre entera si su brazo del medio se inclina hacia el lado bueno).
     const th = O.marco ? 0 : rng.range(-1, 1) * (Object.keys(bordes).length ? 2.5 : 8) * RAD;
-    const ux = Math.cos(th), uy = Math.sin(th), vx = -uy, vy = ux, Pl = P;
+    const ang = O.oblicua ? rng.range(O.oblicua[0], O.oblicua[1]) * RAD : Math.PI / 2;
+    const ux = Math.cos(th), uy = Math.sin(th), vx = Math.cos(th + ang), vy = Math.sin(th + ang), Pl = P / Math.sin(ang);
     let ox = rng.range(0, P), oy = rng.range(0, P);
     const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
     const N = Math.ceil(max(fw, fh) * 1.5 / P), cells = new Map(), key = (i, j) => i + ',' + j;
@@ -3188,7 +3196,7 @@
     // lejos del primero. La densidad de una celda es la suma de los campos, que caen
     // con la distancia (radio de 3–5 celdas). Decide dónde nacen los paseos, hasta
     // dónde se rellena y qué se retira.
-    const centros = [{ c: nucleo, w: 1, r: rng.range(3, 5) }];
+    const centros = [{ c: nucleo, w: 1, r: O.oblicua ? 12 : rng.range(3, 5) }];
     { const nC = params.centros != null ? params.centros : (rng.bool(0.55) ? 1 : rng.bool(0.6) ? 2 : 3);
       const lejos = [...cells.values()].filter(c => dN(c) >= 5);
       for (let k = 1; k < nC && lejos.length; k++) { const c = lejos[rng.int(0, lejos.length - 1)]; centros.push({ c, w: rng.range(0.4, 0.75), r: rng.range(2.5, 4) }); } }
@@ -3261,8 +3269,12 @@
       if (1 - cand.length / cells.size >= O.lleno) break;
       // y se para antes si lo que queda libre es poco denso: los huecos se dejan lejos de los centros
       if (!O.marco && paseos.length >= 4 && max(...cand.map(densidad)) < 0.25) break;
+      if (O.oblicua && paseos.length >= (params.trazos || rng.int(4, 6))) break;
       const espina = paseos.length === 0, nudo = !espina && paseos.length <= 3 && !O.marco;
-      if (espina && !nucleo.used) cand = [nucleo];
+      if (espina && O.oblicua) { const sal = Object.keys(bordes).filter(b => bordes[b] === 'sale');
+        const enB = c => { const q = centro(c.i, c.j); return (sal.includes('izq') && q.x < P) || (sal.includes('der') && q.x > fw - P) || (sal.includes('arriba') && q.y < P) || (sal.includes('abajo') && q.y > fh - P); };
+        const b = cand.filter(enB); if (b.length) cand = b; }
+      else if (espina && !nucleo.used) cand = [nucleo];
       else if (O.marco) { const lejos = c => abierto === 0 ? -c.j : abierto === 2 ? c.j : abierto === 1 ? -c.i : c.i;
         // el haz: solo la mitad densa de la pared de enfrente (hazLado decide cuál),
         // y de ahí la celda más cercana al último meandro, para que caigan juntos
@@ -3296,7 +3308,7 @@
       while (true) {
         // NUNCA 180°: el giro que repetiría el lado del anterior no existe
         // solo hacia la diagonal abierta: de +i a +j, de +j a +i, de −i a −j, de −j a −i
-        const ks = [0, 1, 3].filter(k => k !== ultimo).filter(k => { const [di, dj] = DIRS[(d + k) % 4]; const n = cells.get(key(c.i + di, c.j + dj)); if (!n || n.used) return false;
+        const ks = [0, 1, 3].filter(k => k !== ultimo).filter(k => !O.oblicua || k === 0 || (d % 2 === 0 ? k === 1 : k === 3)).filter(k => { const [di, dj] = DIRS[(d + k) % 4]; const n = cells.get(key(c.i + di, c.j + dj)); if (!n || n.used) return false;
           // anillo: no se camina a lo largo de la pared; se entra o sale de él en perpendicular
           if (O.marco && n.anillo && c.anillo && n.pared === c.pared) return false; return true; });
         if (!ks.length) { if (vuelta || path.length < 2) break;
@@ -3380,10 +3392,10 @@
       // (un brazo, aunque sea lejos), rama y brazo cierran una u o un peine.
       for (let k = 1; k < pz.length - 1; k++) { const c = pz[k], a = pz[k - 1], b = pz[k + 1]; if (a.i !== b.i && a.j !== b.j) continue;
         const di = a.i === b.i ? 1 : 0, dj = a.i === b.i ? 0 : 1;
-        for (const sg of [1, -1]) { if (pz.some(t => ((t.i - c.i) * di + (t.j - c.j) * dj) * sg > 0)) continue; const rama = []; for (let m = 1; m <= 4; m++) { const ii = c.i + di * sg * m, jj = c.j + dj * sg * m; if (!libreR(ii, jj, pz)) break; rama.push({ i: ii, j: jj }); }
-          if (rama.length >= 2) cands.push({ c, rama }); } }
+        for (const sg of [1, -1]) { if (!O.oblicua && pz.some(t => ((t.i - c.i) * di + (t.j - c.j) * dj) * sg > 0)) continue; const rama = []; for (let m = 1; m <= (O.oblicua ? 8 : 4); m++) { const ii = c.i + di * sg * m, jj = c.j + dj * sg * m; if (!libreR(ii, jj, pz)) break; rama.push({ i: ii, j: jj }); }
+          if (rama.length >= (O.oblicua ? 3 : 2)) cands.push({ c, rama }); } }
       if (!cands.length) continue;
-      const el = cands[rng.int(0, cands.length - 1)], rama = el.rama.slice(0, min(el.rama.length, rng.int(2, 4)));
+      const el = cands[rng.int(0, cands.length - 1)], rama = el.rama.slice(0, min(el.rama.length, O.oblicua ? rng.int(4, 8) : rng.int(2, 4)));
       for (const r of rama) toma(r.i, r.j, pz); pz.ramas.push([el.c].concat(rama)); }
     // en el recinto, los tocones junto al marco (≤ 3 celdas tocando el anillo) se retiran: eran cuñas
     if (O.marco) vivas = vivas.filter(pz => pz.marco || pz.length > 3 || !pz.some(c => c.anillo));
@@ -3958,7 +3970,7 @@
       // trazos sueltos se queda en el laboratorio para comparar.
       // el modelo de producción por tipo: el PASEO para el bloque y el haz (referencia 2);
       // el calco para el recinto y la travesía, hasta que tengan el suyo
-      const modelo = params.modelo || (tipo === 'travesia' ? 'calco' : 'paseo');
+      const modelo = params.modelo || 'paseo';
       const r3 = new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0);
       const c = modelo === 'paseo' ? tramarPaseo(r3, fw, fh, tipo, params)
               : modelo === 'calco' ? tramarCalco(r3, fw, fh, tipo, params)
