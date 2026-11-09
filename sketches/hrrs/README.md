@@ -3649,6 +3649,72 @@ Medido: solape 0 de 150 en las tres configuraciones de hebra, pelo 0 por debajo
 de g en 60, determinismo 24/24; solape y pelo en las diecinueve configuraciones,
 0 con sus controles disparando.
 
+## Trigésima tercera vuelta: la paralela es una racha, no un trazo; centros y ocupación
+
+El autor: «las paralelizaciones son relaciones entre puntos de trazos
+subsiguientes, pero pocas veces todos los puntos son paralelos. Si no, estás
+dibujando trazos completamente paralelos en todo su recorrido, son repetidos, no
+tiene sentido. Y revisa la lógica compositiva analizando centros de densidad que
+generen gravedad; la atracción entre puntos es otro factor. Habría esas dos
+variables, y quizá una adicional de % del canvas relleno».
+
+**Medido** (`verificacion/paralelo.js`; una muestra va paralelizada si el tramo
+ajeno más cercano corre a menos de 30° y a 0,75–1,4 D):
+
+| | largo paralelizado | rachas (W) | vecinos por trazo | trazos > 90 % | ocupación |
+|---|---|---|---|---|---|
+| calco 1 · recinto | 65 % | 3,3 – 4,0 – 5,5 | 2 a 4 | 5 de 14 | 52 % de su caja · 9 % del pliego |
+| calco 2 · bloque | 53 % | 1,5 – 2,0 – 2,5 | 2 a 6 | 3 de 14 | 55 % de su caja · 24 % |
+| calco 3 · travesía | 70 % | 7,5 – 10 | 1 a 3 | 1 de 7 | 36 % del pliego |
+| hebra recinto, vuelta 32 | 80 % | 5 – 11,8 – 20,5 | 1 | **77 %** | 13 % |
+| **hebra recinto, ahora** | 55 % | 2,0 – 4,0 – 6,3 | 1 a 3 | 14 % | 12 % |
+| **hebra travesía, ahora** | 59 % | 3,3 – 6,0 – 7,8 | 1 a 2 | 17 % | 36 % |
+| paseo bloque | 67 % | 1,5 – 3,0 – 4,5 | 1 a 3 | 31 % | 20 % |
+
+El autor tenía razón con número: en la vuelta 32 tres de cada cuatro trazos del
+recinto eran copias enteras de su vecino. En el original un trazo va pegado a
+otro unas cuatro anchuras y **cambia de vecino o se va solo**.
+
+**Las tres variables, en el recinto** (`crecer`, en `tramarHebra`):
+
+1. **El enganche** (atracción entre tramos). El trazo crece por tramos; si pasa
+   junto a uno puesto que corre casi paralelo (< 40°, a menos de 2,5 D) entra en
+   diagonal a su paralela exacta, la sigue una racha de 3,3–6 W y se suelta
+   hacia fuera con un quiebro. El siguiente enganche es con otro.
+2. **La gravedad** (centros de densidad). Suelto, elige entre bajar, quebrar en
+   oblicuo o barrer el rumbo que más lo acerca a su centro; llegado a él barre
+   hacia el canto. Un centro pesado abajo, del lado del canto (el calco: la
+   densidad máxima está en la esquina de abajo del lado que pesa), y a veces otro
+   a media altura; arriba, dentro del marco, el vacío.
+3. **La ocupación**. Se añaden trazos —colgando de la barra sobre la vertical de
+   su centro, naciendo de la pata, o al costado de uno puesto— hasta llenar el
+   40–54 % de la caja.
+
+Sin ángulos agudos ni U (dos giros seguidos al mismo lado no pasan de 135°), y
+cada tramo se comprueba contra lo puesto antes de añadirse.
+
+**En la travesía** las compañeras y el relevo ya eran rachas (acompañan y se
+sueltan). Se añade la ocupación objetivo (30–40 % del pliego): si falta, entran
+seguidores parciales de 4–7 W por el costado libre de un trazo, que salen hacia
+el borde. El centro de densidad es el codo de la ele: ahí giran las compañeras y
+por debajo pasa el relevo.
+
+**Soltarse de un vecino que está a un pelo.** Una esquina viva que se aleja saca
+su inglete *hacia* el vecino: 0,04 W a 45°, 0,2 W a 90°, y el pelo de la travesía
+es 0,07 W. Regla: primero un quiebro leve (12–18°) de algo más de una anchura,
+y luego el giro grande. Y un tramo paralelo no acaba en un vértice del vecino:
+se corta 0,6 W antes.
+
+**El bloque** está sobre-paralelizado (67 % frente a 53 %, rachas de 3 W frente
+a 2): es lo siguiente.
+
+Medido: solape 0 de 150 en hebra y 0 en las demás configuraciones con halo (la
+`sin-halo`, modelo libre de laboratorio, da 1 de 10 y ya lo daba antes);
+determinismo 57/57. **Abierto**: en una de cada diez travesías el canal visible
+baja a 0,8–0,9 g en alguna esquina (el halo del pintor no cubre el inglete
+entero); la travesía sobre rejilla tenía el mismo nivel. El pelo se queda en
+0,065–0,085 W; el del original (0,03) pide una mano con menos temblor.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
