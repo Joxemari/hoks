@@ -1174,6 +1174,10 @@
             const u1x = -nn.y, u1y = nn.x, u2x = -n2.y, u2y = n2.x, den = u1x * u2y - u1y * u2x;
             let mx, my; if (abs(den) > 1e-6) { const t = ((e2.x - e1.x) * u2y - (e2.y - e1.y) * u2x) / den; mx = e1.x + u1x * t; my = e1.y + u1y * t; }
             else { mx = (e1.x + e2.x) / 2; my = (e1.y + e2.y) / 2; }
+            // (dos filos casi paralelos se cortan lejos: si la punta se va a más de lo que
+            // daría el inglete nominal más media anchura, vale el inglete nominal —salía
+            // una púa suelta en un recinto vertical—)
+            { const hx = (h + h2) / 2 * esc; if (hypot(mx - b.x, my - b.y) > hx + (h + h2) / 4) { mx = b.x + bx / bm * hx; my = b.y + by / bm * hx; } }
             // la punta achatada: dos puntos a `esq` de camino hacia el inglete
             if (esq > 0) out.push([b, e1, { x: e1.x + (mx - e1.x) * (1 - esq), y: e1.y + (my - e1.y) * (1 - esq) }, { x: e2.x + (mx - e2.x) * (1 - esq), y: e2.y + (my - e2.y) * (1 - esq) }, e2]);
             else out.push([b, e1, { x: mx, y: my }, e2]);
@@ -3587,7 +3591,7 @@
                haces: [2, 3], hebras: [2, 5], jog: [35, 60], recto: [2, 6], quiebro: [1.2, 3], marco: true, barrido: [3, 7],
                // el crecimiento: rachas enganchadas (medidas: 3,3–5,5 W), tramos sueltos, largo del trazo y
                // fracción de la caja que se llena (el calco: 52 %)
-               racha: [3.3, 6], libre: [1.2, 2.8], largo: [10, 22], lleno: [0.42, 0.54] },
+               racha: [3.5, 7], libre: [1.2, 2.8], largo: [10, 22], lleno: [0.42, 0.54] },
     // bloque (referencia 2), con las tres variables de la vuelta 33 y lo medido en su
     // calco: piezas gruesas de 5–11 W con 1–3 codos casi a escuadra (60–97°), pegadas
     // al vecino en rachas CORTAS (1,5–2,5 W) y a 2–6 vecinos distintos; un cuerpo más
@@ -3709,9 +3713,15 @@
     const sinCortos = pl => { const o = pl.slice(); for (let guard = 0; guard < 40 && o.length > 2; guard++) { let k = -1;
         for (let i = 0; i + 1 < o.length; i++) if (hypot(o[i + 1].x - o[i].x, o[i + 1].y - o[i].y) < W * 0.5) { k = i; break; }
         if (k < 0) break; o.splice(k + 1 < o.length - 1 ? k + 1 : k, 1); } return o; };
-    const pon = (pts0, rel, minL) => { const pts = sinCortos(pts0); for (const pz of recortar(pts, minL != null ? minL : W * 2.5)) trazos.push({ pts: pz, segs: segsDe(pz), rel }); };
+    // el recorte puede dejar en un cabo un muñón de menos de 0,9 W antes del primer
+    // quiebro: es una uña, y se quita (el trazo empieza en el quiebro)
+    const sinMunon = pz => { while (pz.length > 2 && hypot(pz[1].x - pz[0].x, pz[1].y - pz[0].y) < W * 0.9) pz.shift(); while (pz.length > 2 && hypot(pz[pz.length - 1].x - pz[pz.length - 2].x, pz[pz.length - 1].y - pz[pz.length - 2].y) < W * 0.9) pz.pop(); return pz; };
+    const pon = (pts0, rel, minL) => { const pts = sinCortos(pts0); for (const pz0 of recortar(pts, minL != null ? minL : W * 2.5)) { const pz = sinMunon(pz0); if (largoDe(pz) < (minL != null ? minL : W * 2.5)) continue; trazos.push({ pts: pz, segs: segsDe(pz), rel }); } };
     // ── el cuerpo ────────────────────────────────────────────────────────────
-    const ancho = S * rr(O.cuerpo), alto = S * rr(O.alto);
+    // LA CAJA RECOMPONE CON EL PLIEGO: en apaisado se ensancha y en vertical se alarga
+    // (el lado largo a la potencia 0,7: crece con el papel sin llenarlo). Antes medía
+    // lo mismo en los tres formatos y la obra era la del cuadrado, centrada.
+    const ancho = S * rr(O.cuerpo) * Math.pow(fw / S, 0.7), alto = S * rr(O.alto) * Math.pow(fh / S, 0.7);
     const x0 = TRAV ? -W : (fw - ancho) / 2 + rng.range(-0.03, 0.03) * S, y0 = TRAV ? -W : (fh - alto) / 2 - 0.03 * S + rng.range(-0.02, 0.02) * S;
     const x1 = TRAV ? fw + W : x0 + ancho, y1 = TRAV ? fh + W : y0 + alto;
     const lado = rng.bool(0.5) ? -1 : 1;   // hacia dónde pesa la obra (centro de gravedad)
@@ -3811,12 +3821,18 @@
       //     hacia el canto.
       // Y una tercera variable para la obra entera: se añaden trazos hasta llenar la
       // fracción de la caja que se pide (en el calco, el 52 %).
+      const ALC = BL ? 2.5 : 3.5;   // hasta dónde ve un vecino al que engancharse, en D (el recinto, más lejos: 3,5)
       const vecino = (q, hx, hy, salvo) => { let best = null; for (const t of trazos) { if (t === salvo) continue; const ac = arco(t.pts);
           for (let i = 0; i + 1 < t.pts.length; i++) { const a = t.pts[i], b = t.pts[i + 1], dx = b.x - a.x, dy = b.y - a.y, L = hypot(dx, dy) || 1e-9, ux = dx / L, uy = dy / L, c = ux * hx + uy * hy;
             if (abs(c) < 0.766) continue; const u = (q.x - a.x) * ux + (q.y - a.y) * uy; if (u < -0.5 * W || u > L + 0.5 * W) continue; const uc = clamp(u, 0, L), d = hypot(q.x - a.x - ux * uc, q.y - a.y - uy * uc);
-            if (d < 0.5 * D || d > 2.5 * D) continue; if (!best || d < best.d) best = { t, s: ac[i] + uc, sentido: c > 0 ? 1 : -1, d, total: ac[ac.length - 1] }; } } return best; };
+            if (d < 0.5 * D || d > ALC * D) continue; if (!best || d < best.d) best = { t, s: ac[i] + uc, sentido: c > 0 ? 1 : -1, d, total: ac[ac.length - 1] }; } } return best; };
       // un tramo cabe si su eje queda a D de todo lo puesto (salvo cerca de su propio arranque, que nace del marco)
-      const cabeTramo = (a, b, p0) => { const L = hypot(b.x - a.x, b.y - a.y), n = max(1, Math.ceil(L / (W / 4))); for (let m = 1; m <= n; m++) { const x = a.x + (b.x - a.x) * m / n, y = a.y + (b.y - a.y) * m / n; if (hypot(x - p0.x, y - p0.y) < D * 1.1) continue; if (distA(x, y) < D * 0.985) return false; } return true; };
+      // ...y a D de SÍ MISMO: el trazo que crece no está aún entre los puestos, y sin esta
+      // cuenta se anudaba sobre su propio recorrido (una punta de flecha en un recinto
+      // vertical, seed 3003). `propio` son sus puntos hasta ahora; el último tramo no cuenta.
+      const cabeTramo = (a, b, p0, propio) => { const L = hypot(b.x - a.x, b.y - a.y), n = max(1, Math.ceil(L / (W / 4))); for (let m = 1; m <= n; m++) { const x = a.x + (b.x - a.x) * m / n, y = a.y + (b.y - a.y) * m / n;
+          if (propio) for (let j = 0; j + 2 < propio.length; j++) if (pointSegDist(x, y, propio[j].x, propio[j].y, propio[j + 1].x, propio[j + 1].y) < D * 0.985) return false;
+          if (hypot(x - p0.x, y - p0.y) < D * 1.1) continue; if (distA(x, y) < D * 0.985) return false; } return true; };
       // (el cuerpo del bloque no es un rectángulo: su contorno se abomba. La caja es una
       // superelipse de exponente 3,5, con el centro algo corrido en cada obra)
       const bcx = (x0 + x1) / 2 + rng.range(-0.04, 0.04) * ancho * (BL ? 1 : 0), bcy = (y0 + y1) / 2 + rng.range(-0.04, 0.04) * alto * (BL ? 1 : 0);
@@ -3838,11 +3854,14 @@
               let off = paralela(sub, lado2 * D); const gap = abs(nb.d - D);
               // la entrada: en diagonal (35–55°) hasta la paralela; si ya está en ella, sigue
               if (gap > W * 0.2) { const a2 = gap / Math.tan(rng.range(35, 55) * RAD), Lo = largoDe(off); off = a2 < Lo - W * 1.2 ? subPoli(off, a2, Lo) : null; } else if (off.length) off = off.slice(1);
-              if (off && off.length) { let ok = 0; for (const o of off) { if (!dentro(o) || !cabeTramo(q, o, p0)) break; L += hypot(o.x - q.x, o.y - q.y); pts.push(o); q = o; ok++; }
+              // la entrada al enganche tampoco puede ser un ángulo agudo ni una U
+              if (off && off.length) { let g0 = Math.atan2(off[0].y - q.y, off[0].x - q.x) - ang; while (g0 > Math.PI) g0 -= 2 * Math.PI; while (g0 < -Math.PI) g0 += 2 * Math.PI;
+                if (pts.length > 1 && (abs(g0) > 95 * RAD || (ultGiro && g0 * ultGiro > 0 && abs(g0) + abs(ultGiro) > 135 * RAD))) off = null; }
+              if (off && off.length) { let ok = 0; for (const o of off) { if (!dentro(o) || !cabeTramo(q, o, p0, pts)) break; L += hypot(o.x - q.x, o.y - q.y); pts.push(o); q = o; ok++; }
                 if (ok) { const a = pts[pts.length - 2]; ang = Math.atan2(q.y - a.y, q.x - a.x); socio = t; ultGiro = 0;
                   // se suelta hacia fuera del vecino: un quiebro de 35–55° al lado contrario
                   const th = rng.range(35, 55) * RAD * lado2, Ls = W * rng.range(1.2, 2.5), o2 = { x: q.x + Math.cos(ang + th) * Ls, y: q.y + Math.sin(ang + th) * Ls };
-                  if (!BL && ok === off.length && dentro(o2) && cabeTramo(q, o2, p0) && rng.bool(0.6)) { pts.push(o2); L += Ls; q = o2; ang += th; ultGiro = th; }
+                  if (!BL && ok === off.length && dentro(o2) && cabeTramo(q, o2, p0, pts) && rng.bool(0.6)) { pts.push(o2); L += Ls; q = o2; ang += th; ultGiro = th; }
                   continue; } } } }
           // 2. la gravedad: rumbos posibles —bajar, quebrar en oblicuo, barrer— y el que más acerca al centro
           const th = rr(O.jog) * RAD, obj = barre ? { x: xCanto, y: q.y } : centroAct;
@@ -3854,7 +3873,7 @@
             if (abs(g2) < 20 * RAD || abs(g2) > 95 * RAD) continue;                                   // ni seguir recto ni ángulo agudo
             if (ultGiro && g2 * ultGiro > 0 && abs(g2) + abs(ultGiro) > 135 * RAD) continue;          // ni U
             for (const f of [1, 0.6]) { const Ls = W * rr(O.libre) * f, o = { x: q.x + Math.cos(r) * Ls, y: q.y + Math.sin(r) * Ls };
-              if (!dentro(o) || !cabeTramo(q, o, p0)) continue; const sc = hypot(o.x - obj.x, o.y - obj.y) + rng.range(0, 2.5) * W; if (!mejor || sc < mejor.sc) mejor = { o, r, g2, Ls, sc }; break; } }
+              if (!dentro(o) || !cabeTramo(q, o, p0, pts)) continue; const sc = hypot(o.x - obj.x, o.y - obj.y) + rng.range(0, 2.5) * W; if (!mejor || sc < mejor.sc) mejor = { o, r, g2, Ls, sc }; break; } }
           if (!mejor) break;
           pts.push(mejor.o); L += mejor.Ls; q = mejor.o; ang = mejor.r; ultGiro = mejor.g2; socio = null;
           if (barre && abs(q.x - xCanto) < W * 1.5) break;
@@ -3862,6 +3881,10 @@
         // una cola de menos de 1,2 W tras el último quiebro es una punta de flecha (el quiebro
         // de entrada a un enganche que no tuvo sitio): se quita
         while (pts.length > 2 && hypot(pts[pts.length - 1].x - pts[pts.length - 2].x, pts[pts.length - 1].y - pts[pts.length - 2].y) < W * 1.2) pts.pop();
+        // y ningún giro de más de 100°: si lo hay (dentro de un enganche, que copia al
+        // vecino), el trazo acaba en ese vértice
+        for (let i = 1; i + 1 < pts.length; i++) { const ux = pts[i].x - pts[i - 1].x, uy = pts[i].y - pts[i - 1].y, vx = pts[i + 1].x - pts[i].x, vy = pts[i + 1].y - pts[i].y;
+          if ((ux * vx + uy * vy) / ((hypot(ux, uy) * hypot(vx, vy)) || 1e-9) < Math.cos(100 * RAD)) { pts.length = i + 1; break; } }
         q = pts[pts.length - 1];
         if (BL && pts.length > 1) { // acabar contra algo: si a menos de 2,5 W por delante hay tinta, se llega hasta ella (recortar deja el pelo)
           const a = pts[pts.length - 2], hx = (q.x - a.x) / (hypot(q.x - a.x, q.y - a.y) || 1e-9), hy = (q.y - a.y) / (hypot(q.x - a.x, q.y - a.y) || 1e-9);
@@ -3881,17 +3904,17 @@
         let p0, a0; const modo = BL ? (trazos.length ? 0.9 : -1) : rng.range(0, 1);
         if (modo < 0) { // (bloque) nace suelto, junto a un centro, en uno de los cuatro rumbos
           p0 = { x: c.x + rng.range(-2.5, 2.5) * W, y: c.y + rng.range(-2.5, 2.5) * W }; if (!dentro(p0) || distA(p0.x, p0.y) < D * 0.985) continue; a0 = giroObra + rng.int(0, 3) * Math.PI / 2; }
-        else if (modo < 0.5) { // cuelga de la barra: cerca de la vertical de su centro, o a D de otro cuelgue
+        else if (modo < 0.34) { // cuelga de la barra: cerca de la vertical de su centro, o a D de otro cuelgue
           let x = c.x + rng.range(-3.5, 3.5) * W; const cerca = cuelgues.find(v => abs(v - x) < D * 2.2); if (cerca != null) x = cerca + (x >= cerca ? 1 : -1) * D;
           x = clamp(x, x0 + W * 2, x1 - W * 2); if (cuelgues.some(v => abs(v - x) < D * 0.98)) continue; p0 = { x, y: y0 }; a0 = Math.PI / 2; }
-        else if (modo < 0.62) { if (!pataEnfrente) continue; p0 = { x: lado > 0 ? x0 : x1, y: y0 + alto * rng.range(0.15, 0.3) }; a0 = lado > 0 ? 0 : Math.PI; }   // nace de la pata de enfrente, si la hay
+        else if (modo < 0.42) { if (!pataEnfrente) continue; p0 = { x: lado > 0 ? x0 : x1, y: y0 + alto * rng.range(0.15, 0.3) }; a0 = lado > 0 ? 0 : Math.PI; }   // nace de la pata de enfrente, si la hay
         else { // nace junto a un trazo puesto, a D de su costado, y arranca enganchado a él
           const cand = trazos.filter(t => t.rel !== 'marco'); if (!cand.length) continue; const t = cand[rng.int(0, cand.length - 1)], ac = arco(t.pts), sv = rng.range(0.1, 0.8) * ac[ac.length - 1];
           const sp = subPoli(t.pts, sv, min(ac[ac.length - 1], sv + W)); if (sp.length < 2) continue; const ux = sp[1].x - sp[0].x, uy = sp[1].y - sp[0].y, um = hypot(ux, uy) || 1e-9, sd = rng.bool(0.5) ? 1 : -1;
           p0 = { x: sp[0].x - uy / um * D * sd, y: sp[0].y + ux / um * D * sd }; if (!dentro(p0) || distA(p0.x, p0.y) < D * 0.985) continue; a0 = Math.atan2(uy, ux); if (BL ? rng.bool(0.5) : Math.sin(a0) < -0.3) a0 += Math.PI; }
         const pts = crecer(p0, a0, c, W * rr(O.largo)), minP = W * (BL ? 3.5 : 4);
         if (pts.length < 2 || largoDe(pts) < minP) continue;
-        const antes = trazos.length; pon(pts, 'hebra', minP); if (trazos.length > antes && modo < 0.5) cuelgues.push(p0.x);
+        const antes = trazos.length; pon(pts, 'hebra', minP); if (trazos.length > antes && modo >= 0 && modo < 0.34) cuelgues.push(p0.x);
       }
     } else {
       // LA TRAVESÍA DESDE SU PRIMER TRAZO (vuelta 31, medido en el calco): LA ELE QUE

@@ -3815,6 +3815,34 @@ a 0,988: era el mismo defecto, más pequeño porque allí los giros son a escuad
 sobre puntos densos. A la escala de impresión (A2, 300 dpi) el escalón habría
 medido unos 2,5 mm.
 
+## Trigésima séptima vuelta: los tres formatos, y el trazo que no se anuda
+
+**Los tres formatos.** El modelo de hebra solo se había mirado en cuadrado. En
+apaisado y vertical la travesía recomponía (trabaja sobre el pliego), pero el
+recinto y el bloque salían idénticos al cuadrado, centrados: su caja se medía
+contra el lado corto. Ahora **la caja crece con el lado largo** (a la potencia
+0,7: crece con el papel sin llenarlo): el bloque se ensancha en apaisado y se
+alarga en vertical, y el recinto igual. Configuraciones `hebra-blo-h` y
+`hebra-tra-h` en la batería.
+
+**El trazo que no se anuda.** En un recinto vertical apareció una punta de
+flecha: un trazo anudado sobre sí mismo. El crecimiento comprobaba cada tramo
+contra los trazos puestos, pero el que crece aún no está entre ellos. Tres
+reglas más en `crecer`: cada tramo queda a D **de su propio recorrido**; la
+entrada a un enganche no puede ser un ángulo agudo ni cerrar una U; y si un
+enganche —que copia al vecino— trae un giro de más de 100°, el trazo acaba en
+ese vértice. En `pon`, el recorte ya no deja muñones de menos de 0,9 W en un
+cabo. Medido sobre 540 obras (tres formatos × 60 × tres tipos): **0 trazos que
+se crucen a sí mismos**; giros de más de 97°, 6 de 2.328 en el recinto y 0 en
+bloque y travesía.
+
+Eso quitó enganche al recinto (44 % paralelizado); se recupera viendo vecinos
+hasta 3,5 D y naciendo más veces al costado de un trazo puesto: 52 %, rachas de
+4,0 W de mediana (el calco: 65 % y 4,0).
+
+Medido: solape 0 de 220 con halo, pelo 0 por debajo de g en las veintidós
+configuraciones (mínimo 1,107), determinismo 44/44.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
