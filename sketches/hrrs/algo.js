@@ -1159,12 +1159,21 @@
         // pelo.js a doble resolución, 0,62 g, siempre en una esquina—. Toma el mismo
         // desplazamiento que el filo de su lado en el vértice.
         const fbv = fb(i, 1), h = hm + (sg > 0 ? (campo(b.x + nn.x * h0, b.y + nn.y * h0) + propio(acc + L, 1)) : (-campo(b.x - nn.x * h0, b.y - nn.y * h0) + propio(acc + L, -1))) * fbv;
-        const e1 = { x: b.x + nn.x * h * sg, y: b.y + nn.y * h * sg }, e2 = { x: b.x + n2.x * h * sg, y: b.y + n2.y * h * sg };
+        // ...y por el otro lado, el del tramo que SALE: su mano en el vértice es otra
+        // (el campo se evalúa en b + n2·h0, no en b + nn·h0, y con ondas de 2–4 W media
+        // anchura de distancia ya cambia), así que la cuña empalmaba con el tramo
+        // siguiente en un escalón recto —visto a doble resolución, 0,8 g—. La punta es
+        // el corte de los dos filos desplazados, cada uno con su mano.
+        const h2 = hm + (sg > 0 ? (campo(b.x + n2.x * h0, b.y + n2.y * h0) + propio(acc + L, 1)) : (-campo(b.x - n2.x * h0, b.y - n2.y * h0) + propio(acc + L, -1))) * fb(i + 1, 0);
+        const e1 = { x: b.x + nn.x * h * sg, y: b.y + nn.y * h * sg }, e2 = { x: b.x + n2.x * h2 * sg, y: b.y + n2.y * h2 * sg };
         const bx = (nn.x + n2.x) * sg, by = (nn.y + n2.y) * sg, bm = hypot(bx, by);
         if (bm > 1e-6) {
           const cosH = (bx * nn.x * sg + by * nn.y * sg) / bm, esc = 1 / max(1e-6, cosH);
           if (esc <= MITER) {
-            const mx = b.x + bx / bm * h * esc, my = b.y + by / bm * h * esc;
+            // los dos filos: por e1 con el rumbo del tramo que llega, por e2 con el del que sale
+            const u1x = -nn.y, u1y = nn.x, u2x = -n2.y, u2y = n2.x, den = u1x * u2y - u1y * u2x;
+            let mx, my; if (abs(den) > 1e-6) { const t = ((e2.x - e1.x) * u2y - (e2.y - e1.y) * u2x) / den; mx = e1.x + u1x * t; my = e1.y + u1y * t; }
+            else { mx = (e1.x + e2.x) / 2; my = (e1.y + e2.y) / 2; }
             // la punta achatada: dos puntos a `esq` de camino hacia el inglete
             if (esq > 0) out.push([b, e1, { x: e1.x + (mx - e1.x) * (1 - esq), y: e1.y + (my - e1.y) * (1 - esq) }, { x: e2.x + (mx - e2.x) * (1 - esq), y: e2.y + (my - e2.y) * (1 - esq) }, e2]);
             else out.push([b, e1, { x: mx, y: my }, e2]);

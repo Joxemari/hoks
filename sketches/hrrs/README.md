@@ -3793,6 +3793,28 @@ como antes); determinismo 60/60; pelo a 760 px, 0 por debajo en hebra. En el
 modelo de rejilla queda un seed a 0,988 g; la versión anterior daba 0,964 en
 otro seed del mismo tipo: es el mismo nivel, no una regresión.
 
+## Trigésima sexta vuelta: el escalón, cerrado
+
+Quedaba un escalón a doble resolución (0,80 g, seed 1753514820). Ampliado: un
+filo recto, perpendicular al trazo, a media anchura del vértice. No era el disco
+de halo (se probó quitándole el desplazamiento: seguía). Era **la cuña otra
+vez**: la vuelta 35 le dio la mano del tramo que *llega*, pero la cuña empalma
+por su otro lado con el tramo que *sale*, cuya mano en el vértice es distinta
+—el campo se evalúa en b + n₂·h, no en b + n₁·h, y con ondas de 2–4 W media
+anchura ya cambia—. Ahora cada lado de la cuña lleva el desplazamiento de su
+tramo y la punta es el corte de los dos filos desplazados.
+
+| pelo, mínimo sobre g | vuelta 34 | vuelta 35 | ahora |
+|---|---|---|---|
+| travesía hebra, 760 px | 0,72 | 1,01 | 1,11 |
+| travesía hebra, 1520 px | 0,62 | 0,80 | 1,11 |
+| las veinte configuraciones, 760 px | — | 0,988 | 1,107 |
+
+Cero por debajo de g en todo, incluido el seed del modelo de rejilla que estaba
+a 0,988: era el mismo defecto, más pequeño porque allí los giros son a escuadra
+sobre puntos densos. A la escala de impresión (A2, 300 dpi) el escalón habría
+medido unos 2,5 mm.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
