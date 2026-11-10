@@ -4239,6 +4239,52 @@ de abajo del recinto, no un ajuste, y queda para decidir con el autor.
 Estado tras retirar: el de la vuelta 45 (contacto 85 %, núcleo 17 %, gemelos
 0,08 pares por obra, solape 0 de 220, determinismo 44/44).
 
+## Cuadragésima séptima vuelta: el núcleo primero
+
+El autor: «sigue lejos, las zonas de densidad sin aire siguen sin existir de
+manera evidente».
+
+Primero se descartó lo fácil: **no es el ancho del pelo**. Con el canal a la
+mitad (0,07 W) el núcleo mayor apenas sube en ninguno de los tres tipos (recinto
+17 → 20 %, bloque 35 → 39 %, travesía 25 → 27 %).
+
+Es estructural, y se hace lo que la vuelta 46 dejó propuesto, acotado a la zona
+de abajo del lado grande del recinto: **la zona se define antes y se llena
+entera; después se parte en trazos**.
+
+- *La zona*: del límite del lado grande a la columna de la bajada, y del fondo
+  del lazo a la base. Sus niveles son los carriles 1..n sobre el barrido de la
+  ele de fuera, encadenados (cada uno paralelo del anterior).
+- *Se llena*: todos los carriles, de punta a punta. Ninguna pieza se descarta
+  por corta: el mínimo baja a 1,1 W, porque dentro de una masa una pieza corta
+  no es una pizca suelta.
+- *Se parte*: el carril 1 es la ele de dentro, con su vertical; entre el 2 y el
+  3, un escalón y dos piezas que mueren contra él; el de arriba lo toma la banda
+  que entra desde el límite al nivel del fondo del lazo y baja; los demás,
+  enteros.
+
+**Dos cosas que se probaron y no.** Partir *cada* carril en dos con los cortes
+alternados: salen más gemelos (1,08 pares por obra), porque las piezas cortas se
+parecen entre sí. Y desgemelar al final recortando un tercio: sumado a la poda,
+vuelve a vaciar la zona. **En una zona sin aire, quitar o recortar por parecido
+deshace la masa.** El calco tiene un par de gemelos con esta misma medida (sus
+dos eles anidadas); aquí quedan 0,7 pares por obra y se aceptan.
+
+| recinto | vuelta 45 | ahora | calco |
+|---|---|---|---|
+| contacto mediano | 85 % | 88 % | 100 % |
+| trazos sueltos (obras) | 1 de 60 | 0 de 60 | 0 |
+| núcleo mayor | 17 % | 18 % | 33 % |
+| gemelos, pares por obra | 0,08 | 0,70 | 1 |
+
+A la vista la zona ya es una masa cerrada con sus pelos. **La medida del núcleo
+no sube** porque esa zona es pequeña (unas 6 × 5 anchuras) y no llega a unirse
+en una sola mancha con el haz central y con el nido: en el calco las tres cosas
+son una. Falta la masa bajo el nudo y a la altura del cinturón.
+
+Medido: solape 0 de 220 con halo, pelo 0 por debajo de g a 760 y 1520 px,
+determinismo 44/44, ningún trazo se cruza a sí mismo.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

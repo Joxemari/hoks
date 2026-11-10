@@ -3924,18 +3924,37 @@
           // dentro baja por la columna de la bajada, entra al carril 1 y a medio camino
           // SUBE al 2; por arriba, la banda que entra desde el límite por el carril más
           // alto BAJA al de debajo (el escalón del calco). Lo demás lo llena lo que quepa.
-          const sw0 = eo.sw, lane = cadena(sw0, 1), nLan = clamp(Math.floor((sw0[0].y - (ygA + D * 1.1)) / D), 1, 5);
+          // ── EL NÚCLEO PRIMERO (vuelta 47; el autor: «las zonas de densidad sin aire siguen sin
+          // existir de manera evidente»). Hasta aquí la masa era lo que quedaba después de
+          // colocar trazos y de que el recorte decidiera; salía partida y con huecos. Ahora la
+          // zona se define ANTES y se llena ENTERA: todos sus niveles, de punta a punta, a un
+          // pelo; y solo después se decide por dónde se parte en trazos.
+          //   la zona   · del límite del lado grande a la columna de la bajada, y del fondo
+          //               del lazo a la base: los carriles 1..n sobre el barrido de la ele;
+          //   se parte  · carril 1: la ele de dentro, entera, con su vertical;
+          //             · carriles 2 y 3 (si los hay): UN escalón entre los dos y dos piezas
+          //               que mueren contra él; así ninguno de los dos va de punta a punta;
+          //             · carril de arriba: la banda que entra desde el límite al nivel del
+          //               fondo del lazo y baja a él, y una pieza al otro lado del escalón;
+          //             · un carril que quede entero entre dos partidos se deja entero.
+          // Ninguna pieza se descarta por corta ni por gemela: no las hay iguales por construcción.
+          const sw0 = eo.sw, lane = cadena(sw0, 1), nLan = clamp(Math.floor((sw0[0].y - (ygA + D * 1.05)) / D), 1, 6), hs = D * 0.7, gB = g * 0.6 + W * 0.05;
+          const pieza = (pl, rel) => { if (pl && pl.length > 1 && largoDe(pl) > W * 1.1) pon(M(pl), rel, W * 1.1); };
+          // el cabo este de un carril: a un pelo de la columna de la bajada (por donde baja la ele de dentro)
+          const desdeEste = (pl, y) => { const xl = xEn(col(-1), y) - D * 1.05, ms = muestrear(pl, W / 6); let k = 0; while (k < ms.length && ms[k].x > xl) k++; return k < ms.length - 2 ? simplificar(ms.slice(k).map(q => ({ x: q.x, y: q.y }))) : null; };
           const y1l = lane(1)[0].y, vI = cortaY(col(-1), V(kv + rng.range(0.07, 0.1)), y1l - ch);
-          { const l1 = lane(1), L1 = largoDe(l1), f = rng.range(0.35, 0.6), hs = D * 0.7; let pl = (vI || []).concat(subPoli(l1, vI ? W : 0, L1 * f - hs));
-            if (nLan >= 2) { const l2 = lane(2), L2 = largoDe(l2); pl = pl.concat(subPoli(l2, L2 * f + hs, L2)); }
-            pon(M(pl), 'ele', W * 3); }
-          // LA BANDA DEL CALCO (t6): entra desde el límite AL NIVEL DEL FONDO DEL LAZO, por el
-          // triángulo que queda entre el límite y su diagonal, baja un escalón y sigue por el
-          // carril más alto hasta el nudo. Llena la fila que quedaba en gris bajo el lazo.
-          if (nLan >= 2) { const lt = lane(nLan), ms = muestrear(lt, W / 4), xa = xgA - D * 1.9, yT = ygA, xj = xa + (lt[0].y - yT) / Math.tan(50 * RAD);
-            let k = 0; while (k < ms.length && ms[k].x > xj) k++; const este = ms.slice(0, k).map(q => ({ x: q.x, y: q.y }));
-            if (este.length > 2 && xa - x0 > W) pon(M([{ x: x0, y: yT }, { x: xa, y: yT }].concat(simplificar(este).reverse())), 'escalon', W * 2.5); }
-          for (let j = 1; j <= nLan; j++) llena(lane(j), j); }
+          pieza((vI || []).concat(vI ? subPoli(lane(1), W, largoDe(lane(1))) : lane(1)), 'ele');
+          const top = nLan >= 2 ? nLan : 0, usados = new Set([1]);
+          if (nLan >= 4) { // el escalón entre el 2 y el 3
+            const l2 = desdeEste(lane(2), lane(2)[0].y), l3 = desdeEste(lane(3), lane(3)[0].y);
+            if (l2 && l3) { const L2 = largoDe(l2), L3 = largoDe(l3), f = rng.range(0.4, 0.6), sube = rng.bool(0.5), A = sube ? l2 : l3, B = sube ? l3 : l2, LA = sube ? L2 : L3, LB = sube ? L3 : L2;
+              pieza(subPoli(A, 0, LA * f - hs).concat(subPoli(B, LB * f + hs, LB)), 'escalon');      // entra por un carril, sale por el otro
+              pieza(subPoli(B, 0, LB * f - hs - gB), 'carril'); pieza(subPoli(A, LA * f + hs + gB, LA), 'carril'); usados.add(2); usados.add(3); } }
+          if (top) { // la banda que entra desde el límite, por el triángulo bajo la diagonal del lazo, y baja al carril de arriba
+            const lt = desdeEste(lane(top), lane(top)[0].y); if (lt) { const ms = muestrear(lt, W / 6), xa = xgA - D * 1.9, yT = ygA, xj = xa + (lt[0].y - yT) / Math.tan(50 * RAD);
+              let k = 0; while (k < ms.length && ms[k].x > xj) k++; const este = simplificar(ms.slice(0, max(2, k)).map(q => ({ x: q.x, y: q.y })));
+              if (k > 3 && xa - x0 > W) { pieza([{ x: x0, y: yT }, { x: xa, y: yT }].concat(este.reverse()), 'escalon'); const oeste = ms.slice(k + Math.round((hs + gB) / (W / 6))).map(q => ({ x: q.x, y: q.y })); if (oeste.length > 2) pieza(simplificar(oeste), 'carril'); usados.add(top); } } }
+          for (let j = 2; j <= nLan; j++) if (!usados.has(j)) pieza(desdeEste(lane(j), lane(j)[0].y), 'carril'); }
       }
       }
       // ── EL CRECIMIENTO (vuelta 33) ─────────────────────────────────────────
@@ -4168,6 +4187,10 @@
         if (a > b) { trazos.splice(k, 1); continue; }
         const ka = max(0, a - Math.round(maxLibre * 4)), kb = min(ms.length - 1, b + Math.round(maxLibre * 4)); if (ka === 0 && kb === ms.length - 1) continue;
         const pl = simplificar(ms.slice(ka, kb + 1).map(q => ({ x: q.x, y: q.y }))); if (pl.length < 2 || largoDe(pl) < W * 1.4) { trazos.splice(k, 1); continue; } t.pts = pl; t.segs = segsDe(pl); } };
+    // (Vuelta 47: se probó desgemelar al final —recortar un tercio del trazo que tuviera un
+    // gemelo— y, sumado a la poda, volvía a vaciar la zona llena. En una zona sin aire, quitar
+    // o recortar por parecido deshace la masa. El calco tiene un par de gemelos con esta misma
+    // medida (sus dos eles anidadas); aquí quedan 0,7 pares por obra y se aceptan.)
     if (O.marco) podar(2.5); else if (BL) podar(1.5);   // (bloque: una pieza no se va sola al blanco más de anchura y media)
     // ── salida, con la forma del paseo ───────────────────────────────────────
     const ctx = { fw, fh, S, W, g, D, mg: S * MARGEN, trazos: [], gubAmp: 0, relleno: 1, halo: max(g, params.halo != null ? params.halo * W : g) };
