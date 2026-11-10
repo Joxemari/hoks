@@ -4154,6 +4154,54 @@ contacto** (53 % y 72 %): en la travesía los brazos salen solos al borde. La
 regla —núcleo denso, y lo que sale, sale acompañado— hay que llevarla a los
 tres tipos como principio de construcción, no como recorte al final.
 
+## Cuadragésima quinta vuelta: el contacto como regla, en la travesía y el bloque
+
+El autor: «en el referente 1 hay dos zonas, en el 2 hay una marcada y otras dos
+medias, y en el 3 hay una. Más o menos, a modo orientativo. Prácticamente no hay
+trazos sueltos, inconexos. Los solapes deben suponer un % alto de cada trazo.
+Será un rango».
+
+Lo que el autor llama solape es lo que `conexion.js` mide como **contacto**: la
+parte del largo de un trazo que va a un pelo de otro. Trazo a trazo, los calcos:
+
+- calco 1: 23 · 49 (los dos marcos) y el resto 88–100;
+- calco 2: 100 ×9 y cinco entre 39 y 88;
+- calco 3: 98 · 96 · 86 · 100 (los cuatro trazos principales) y 19 · 39 · 100
+  (las tres barras de canto).
+
+La regla tiene excepciones que el original enseña: **el marco y las barras de
+canto van solos**; todo lo demás va acompañado casi entero.
+
+| contacto medio, por papel | antes | ahora | calco |
+|---|---|---|---|
+| travesía · primer trazo | 80 % | 90 % | 86–100 % |
+| travesía · relevo | 70 % | 82 % | 86–100 % |
+| travesía · compañeras | 77 % | 94 % | 86–100 % |
+| travesía · barras | 16 % | 23 % | 19–39 % |
+| bloque · mediana | 72 % | 79 % | 100 % |
+| recinto · mediana | 85 % | 85 % | 100 % |
+
+**Travesía: acompañar lo que va solo.** Antes de dar la obra por llena se busca
+el tramo más largo de cualquier trazo principal que no tiene a nadie a un pelo y
+se le pone un acompañante en ese tramo, por el costado que esté libre. Un
+acompañante no pasa de la mitad del trazo al que sigue —serían gemelos— así que
+un trazo largo y solo recibe dos, en tramos distintos. Las barras no se
+acompañan. Gemelos: 0,20 pares por obra, como antes (el calco tiene uno).
+
+**Bloque: un núcleo marcado y uno o dos medios.** Los centros de densidad dejan
+de pesar igual: el primero atrae el 55 % de las piezas. El paso suelto de una
+pieza prefiere el rumbo que acaba a un pelo de otro trazo antes que el que sale
+al blanco, y `podar` recorta los cabos que se van solos más de anchura y media.
+Celdas llenas 32 % (calco 27 %), gemelos 0,07 pares por obra.
+
+Medido: solape 0 de 220 con halo, pelo 0 por debajo de g a 760 y 1520 px,
+determinismo 44/44.
+
+**Lo que falta.** El tamaño del núcleo: recinto 17 % de la caja frente a 33 %,
+bloque 36 % frente a 53 %, travesía 24 % frente a 34 %. En los tres la masa
+existe pero partida en dos o tres manchas; en el original es una mancha grande
+por núcleo. Y el bloque sigue a 79 % de contacto.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

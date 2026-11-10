@@ -3721,6 +3721,9 @@
     // quiebro: es una uña, y se quita (el trazo empieza en el quiebro)
     const sinMunon = pz => { while (pz.length > 2 && hypot(pz[1].x - pz[0].x, pz[1].y - pz[0].y) < W * 0.9) pz.shift(); while (pz.length > 2 && hypot(pz[pz.length - 1].x - pz[pz.length - 2].x, pz[pz.length - 1].y - pz[pz.length - 2].y) < W * 0.9) pz.pop(); return pz; };
     const pon = (pts0, rel, minL) => { const pts = sinCortos(pts0); for (const pz0 of recortar(pts, minL != null ? minL : W * 2.5)) { const pz = sinMunon(pz0); if (largoDe(pz) < (minL != null ? minL : W * 2.5)) continue; trazos.push({ pts: pz, segs: segsDe(pz), rel }); } };
+    // gemelo: una polilínea y un trazo puesto que corren paralelos el uno al otro en el 65 % o más
+    const fracPar = (A, B) => { const ms = muestrear(A, W / 3); let n = 0; for (const q of ms) { let ok = false; for (let i = 0; i + 1 < B.length && !ok; i++) { const d = pointSegDist(q.x, q.y, B[i].x, B[i].y, B[i + 1].x, B[i + 1].y); if (d > 0.75 * D && d < 1.4 * D) ok = true; } if (ok) n++; } return n / (ms.length || 1); };
+    const esGemelo = pts => trazos.some(t => fracPar(pts, t.pts) >= 0.62 && fracPar(t.pts, pts) >= 0.62);
     // ── el cuerpo ────────────────────────────────────────────────────────────
     // LA CAJA RECOMPONE CON EL PLIEGO: en apaisado se ensancha y en vertical se alarga
     // (el lado largo a la potencia 0,7: crece con el papel sin llenarlo). Antes medía
@@ -4001,7 +4004,7 @@
             if (abs(g2) < 20 * RAD || abs(g2) > 95 * RAD) continue;                                   // ni seguir recto ni ángulo agudo
             if (ultGiro && g2 * ultGiro > 0 && abs(g2) + abs(ultGiro) > 135 * RAD) continue;          // ni U
             for (const f of [1, 0.6]) { const Ls = W * rr(O.libre) * f, o = { x: q.x + Math.cos(r) * Ls, y: q.y + Math.sin(r) * Ls };
-              if (!dentro(o) || !cabeTramo(q, o, p0, pts)) continue; const sc = hypot(o.x - obj.x, o.y - obj.y) + rng.range(0, 2.5) * W; if (!mejor || sc < mejor.sc) mejor = { o, r, g2, Ls, sc }; break; } }
+              if (!dentro(o) || !cabeTramo(q, o, p0, pts)) continue; const sc = hypot(o.x - obj.x, o.y - obj.y) + rng.range(0, 2.5) * W - (BL && distA(o.x, o.y) < 1.4 * D ? W * 3.5 : 0)   /* (bloque: el rumbo que acaba a un pelo de otro trazo, antes que el que sale al blanco) */; if (!mejor || sc < mejor.sc) mejor = { o, r, g2, Ls, sc }; break; } }
           if (!mejor) break;
           pts.push(mejor.o); L += mejor.Ls; q = mejor.o; ang = mejor.r; ultGiro = mejor.g2; socio = null;
           if (barre && abs(q.x - xCanto) < W * 1.5) break;
@@ -4028,7 +4031,7 @@
       const lleno = params.cobertura != null ? params.cobertura : rr(O.lleno);
       const cuelgues = primero ? [primero[0].x] : [];
       for (let intento = 0; BL && intento < 500 && tinta() < lleno; intento++) {   // (el recinto ya no crece: tiene su gramática)
-        const c = BL ? centros[rng.int(0, centros.length - 1)] : centros.length > 1 && !rng.bool(centros[0].w) ? centros[1] : centros[0];
+        const c = BL ? (rng.bool(0.55) ? centros[0] : centros[rng.int(1, centros.length - 1)]) :   /* (un núcleo marcado y uno o dos medios) */ centros.length > 1 && !rng.bool(centros[0].w) ? centros[1] : centros[0];
         let p0, a0; const modo = BL ? (trazos.length ? 0.9 : -1) : rng.range(0, 1);
         if (modo < 0) { // (bloque) nace suelto, junto a un centro, en uno de los cuatro rumbos
           p0 = { x: c.x + rng.range(-2.5, 2.5) * W, y: c.y + rng.range(-2.5, 2.5) * W }; if (!dentro(p0) || distA(p0.x, p0.y) < D * 0.985) continue; a0 = giroObra + rng.int(0, 3) * Math.PI / 2; }
@@ -4135,20 +4138,26 @@
       // esté libre, y se sueltan con un quiebro hacia el borde. Nunca el trazo entero.
       const tintaT = () => trazos.reduce((a2, t) => a2 + muestrear(t.pts, W / 4).filter(q => q.x >= 0 && q.y >= 0 && q.x <= fw && q.y <= fh).length * (W / 4) * W, 0) / (fw * fh),   // solo lo que cae dentro del pliego
              llenoT = params.cobertura != null ? params.cobertura : rr(O.lleno);
-      for (let intento = 0; intento < 24 && tintaT() < llenoT; intento++) {
-        const cand = trazos.filter(t => t.rel !== 'barra'); const t = cand[rng.int(0, cand.length - 1)], ac = arco(t.pts), tot = ac[ac.length - 1], run = W * rr(O.racha);
-        if (tot < run + W) continue; const sv = rng.range(0, tot - run), sub = rng.bool(0.5) ? subPoli(t.pts, sv, sv + run) : subPoli(t.pts, sv, sv + run).reverse(), sd = rng.bool(0.5) ? 1 : -1;
-        const off = paralela(sub, sd * D); if (off.length < 2) continue;
-        // el costado tiene que estar libre en toda la racha
-        if (muestrear(off, W / 4).some(q => distA(q.x, q.y, t) < D * 0.985 || q.x < 0 || q.y < 0 || q.x > fw || q.y > fh)) continue;
-        // la salida: un quiebro de 40–55° hacia fuera del vecino y recto hasta salir del pliego
-        const ang = suelta(off, sd * rng.range(40, 55) * RAD); let x = off[off.length - 1].x, y = off[off.length - 1].y;
-        for (let n = 0; n < 12 && x > -W * 1.5 && y > -W * 1.5 && x < fw + W * 1.5 && y < fh + W * 1.5; n++) { const st = W * rng.range(1.5, 2.5); x += Math.cos(ang + rng.range(-0.06, 0.06)) * st; y += Math.sin(ang + rng.range(-0.06, 0.06)) * st; off.push({ x, y }); }
-        // CASI NADA ACABA EN EL AIRE (referencia 3): el seguidor entra solo si queda de una
-        // pieza y su cabo sale del pliego o muere contra tinta, a un pelo
-        const pzs = recortar(sinCortos(off), W * 4); if (pzs.length !== 1) continue; const fin = pzs[0][pzs[0].length - 1];
-        const fuera = fin.x < 0 || fin.y < 0 || fin.x > fw || fin.y > fh; if (!fuera && distA(fin.x, fin.y) > quiero + W * 0.3) continue;
-        trazos.push({ pts: pzs[0], segs: segsDe(pzs[0]), rel: 'seguidor' });
+      // EL TRAMO A UN PELO DE OTRO DEBE SER UNA PARTE ALTA DE CADA TRAZO (vuelta 45; el autor).
+      // En el calco, el 96 %; aquí era el 53 %: los brazos salían solos al borde. Antes de
+      // llenar al azar, se ACOMPAÑA LO QUE VA SOLO: se busca el tramo más largo de cualquier
+      // trazo que no tiene a nadie a un pelo y se le pone al lado un acompañante de ese
+      // tramo (o de sus dos tercios, si el tramo es casi el trazo entero: no gemelos). Hasta
+      // que no queden tramos solos de más de 3 W o no quepa.
+      const soloDe = t => { const ms = muestrear(t.pts, W / 4), ac = [0]; for (let i = 1; i < ms.length; i++) ac.push(ac[i - 1] + hypot(ms[i].x - ms[i - 1].x, ms[i].y - ms[i - 1].y));
+        let best = null, a = -1; for (let i = 0; i <= ms.length; i++) { const q = ms[i], libre = i < ms.length && q.x > 0 && q.y > 0 && q.x < fw && q.y < fh && distA(q.x, q.y, t) >= 1.35 * D;
+          if (libre) { if (a < 0) a = i; } else if (a >= 0) { const len = ac[i - 1] - ac[a]; if (!best || len > best.len) best = { s0: ac[a], s1: ac[i - 1], len, tot: ac[ac.length - 1] }; a = -1; } } return best; };
+      const hechos = new Set();
+      // (un acompañante no pasa de la mitad del trazo al que acompaña —si no, serían gemelos—,
+      // así que un trazo largo y solo recibe dos, en tramos distintos)
+      for (let intento = 0; intento < 18 && tintaT() < llenoT + 0.1; intento++) {
+        // (las barras de canto no: en el calco van solas —19 y 39 % de contacto— y es lo suyo)
+        let t = null, sl = null; for (const u of trazos) { if (hechos.has(u) || u.rel === 'barra') continue; const r = soloDe(u); if (r && r.len >= W * 2.2 && (!sl || r.len > sl.len)) { t = u; sl = r; } }
+        if (!t) break; hechos.add(t);
+        let s0 = sl.s0, s1 = sl.s1; if (sl.len > sl.tot * 0.55) { const k = min(sl.len, sl.tot * rng.range(0.42, 0.55)), o = rng.range(0, sl.len - k); s0 += o; s1 = s0 + k; }
+        for (const sd of rng.bool(0.5) ? [1, -1] : [-1, 1]) { const off = sinCortos(paralela(subPoli(t.pts, s0, s1), sd * D)); if (off.length < 2) continue;
+          const pzs = recortar(off, W * 2).filter(pz => largoDe(pz) >= (s1 - s0) * 0.5); if (pzs.length !== 1 || esGemelo(pzs[0])) continue;
+          trazos.push({ pts: pzs[0], segs: segsDe(pzs[0]), rel: 'seguidor' }); hechos.delete(t); break; }
       }
     }
     // NADA CORRE SOLO (vuelta 44). Los cabos que se alejan de todo —un trazo que sigue por el
@@ -4159,7 +4168,7 @@
         if (a > b) { trazos.splice(k, 1); continue; }
         const ka = max(0, a - Math.round(maxLibre * 4)), kb = min(ms.length - 1, b + Math.round(maxLibre * 4)); if (ka === 0 && kb === ms.length - 1) continue;
         const pl = simplificar(ms.slice(ka, kb + 1).map(q => ({ x: q.x, y: q.y }))); if (pl.length < 2 || largoDe(pl) < W * 1.4) { trazos.splice(k, 1); continue; } t.pts = pl; t.segs = segsDe(pl); } };
-    if (O.marco) podar(2.5);
+    if (O.marco) podar(2.5); else if (BL) podar(1.5);   // (bloque: una pieza no se va sola al blanco más de anchura y media)
     // ── salida, con la forma del paseo ───────────────────────────────────────
     const ctx = { fw, fh, S, W, g, D, mg: S * MARGEN, trazos: [], gubAmp: 0, relleno: 1, halo: max(g, params.halo != null ? params.halo * W : g) };
     for (const t of trazos) { const fuera = t.pts.some(q => q.x < 0 || q.y < 0 || q.x > fw || q.y > fh);
