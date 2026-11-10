@@ -4053,6 +4053,59 @@ Medido: solape 0 de 220 con halo, pelo 0 por debajo de g a 760 y 1520 px,
 determinismo 44/44, ningún trazo se cruza a sí mismo. Gemelos: recinto 0,23
 pares por obra, bloque 0, travesía 0,20 (los calcos: 1, 0, 1).
 
+## Cuadragésima tercera vuelta: zonas de densidad y zonas vacías
+
+El autor: «queda definir mejor zonas de densidad y las que no».
+`verificacion/densidad.js` rasteriza la tinta sobre la caja del cuerpo en una
+rejilla de 8 × 8 y cuenta celdas **vacías** (< 10 %), **llenas** (> 70 %) y
+**medias** (el gris: ni masa ni aire), el mayor vacío conexo y la ocupación.
+
+| | vacías | llenas | medias | ocupación |
+|---|---|---|---|---|
+| calco 1 | 16 % | 30 % | 55 % | 47 % |
+| recinto, vuelta 42 | 15 % | 17 % | 68 % | 45 % |
+| **recinto, ahora** | 21 % | 17 % | 62 % | 43 % |
+| calco 2 / bloque | 16 / 17 % | 27 / 30 % | 58 / 53 % | 50 / 49 % |
+| calco 3 / travesía | 31 / 40 % | 19 / 26 % | 50 / 35 % | 36 / 37 % |
+
+Bloque y travesía reparten masa y aire como sus calcos. El recinto tenía dos
+problemas distintos:
+
+**Una zona al revés.** En el calco la esquina de abajo del lado pequeño es
+vacío puro (cuatro celdas a 0) y la vuelta 42 la llenaba: mandaba allí un
+barrido por la base. En el original el trazo que sale a ese lado lo hace a
+media altura, justo bajo la bajada del marco B.
+
+**Las zonas, declaradas** en `tramarHebra`:
+
+- *vacías*: la ventana del lazo; bajo la barra, entre las dos bajadas, por
+  encima de los cabos; la esquina de abajo del lado pequeño. `vacios` es una
+  lista de predicados y `recortar` no deja entrar a ningún trazo en ellas;
+- *llenas*: el cinturón del nudo de lado a lado; todo el abajo del lado grande;
+  el nido bajo la pata de B.
+
+Y las columnas se reordenan: la 1 es la **quilla**, que baja recta casi hasta
+la base; la 2 baja hasta el nivel del nido y **sale al lado pequeño** —ese
+barrido es el cinturón de ese lado—; debajo queda medio carril pegado al nudo y
+luego nada. En el lado grande, la banda que entra desde el límite lo hace **al
+nivel del fondo del lazo**, por el triángulo entre el límite y su diagonal, baja
+un escalón y sigue por el carril más alto (el t6 del calco): llena la fila que
+quedaba en gris bajo el lazo.
+
+**Le falta masa.** Mismas vacías, la mitad de llenas. Se buscó la causa
+midiendo, y dos hipótesis resultaron falsas (se dejan dichas): que la paralela
+lejana de un zigzag se deformara —los carriles se encadenan ahora, cada uno
+paralelo del anterior, pero no era eso— y que la limpieza de vértices
+desajustara carril y trazo —tampoco—. Lo que había: los carriles **sí** estaban
+ocupados, por las bandas con escalón; lo que quedaba en blanco eran los restos
+a cada lado del escalón, de unas dos anchuras, descartados por cortos. Se
+conservan desde 1,4 W, salvo que sean gemelos de un trazo puesto. Aun así las
+celdas llenas no suben: el cuerpo de abajo tiene cuatro o cinco niveles donde el
+original tiene seis, y es la siguiente cosa a mirar.
+
+Gemelos tras esta vuelta: 0,02 pares por obra (1 de 60). Solape 0 de 220 con
+halo, pelo 0 por debajo de g a 760 y 1520 px, determinismo 44/44.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

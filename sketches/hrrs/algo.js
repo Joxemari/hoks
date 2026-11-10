@@ -3672,12 +3672,15 @@
     const W = params.ancho ? S * W_MAX * params.ancho : S * rr(O.ancho);
     const g = W * (params.canal ? params.canal : rr(O.gam)), D = W + g, quiero = W / 2 + g;
     const trazos = [];   // lo ya puesto: { pts, segs, rel }
+    // LAS ZONAS VACÍAS (vuelta 43): predicados sobre un punto; `recortar` no deja que ningún
+    // trazo entre en ellas. Cada tipo declara las suyas.
+    const vacios = [];
     const distA = (x, y, salvo) => { let d = Infinity; for (const t of trazos) { if (t === salvo) continue; for (const sg of t.segs) { const v = pointSegDist(x, y, sg[0], sg[1], sg[2], sg[3]); if (v < d) d = v; } } return d; };
     // EL RECORTE: un trazo nuevo se corta donde su eje queda a menos de D de lo ya
     // puesto; cada trozo que sobrevive (≥ minL) avanza su cabo cortado hasta quedar
     // a W/2 + g del eje ajeno —la boca a un pelo—, y lo que no cabe no se pinta.
     const recortar = (pts, minL) => {
-      const ms = muestrear(pts, W / 8), ok = ms.map(q => distA(q.x, q.y) >= D * 0.985), piezas = []; let i = 0;
+      const ms = muestrear(pts, W / 8), ok = ms.map(q => distA(q.x, q.y) >= D * 0.985 && !vacios.some(f => f(q))), piezas = []; let i = 0;
       while (i < ms.length) { if (!ok[i]) { i++; continue; } let j = i; while (j + 1 < ms.length && ok[j + 1]) j++;
         // el trozo: muestras i..j, con sus vértices originales de en medio
         const seg = [ms[i]]; for (let v = ms[i].i + 1; v <= ms[j].i; v++) seg.push(pts[v]); seg.push(ms[j]);
@@ -3804,7 +3807,11 @@
       const ch = W * rng.range(1.1, 1.6);
       // una ele: la vertical `vert` hasta el nivel y, el chaflán, y el barrido en zigzag hasta el límite
       const ele = (vert, y, sgn) => { const v = cortaY(vert, -1e9, y - ch); if (!v) return null; const e = v[v.length - 1], p1 = { x: e.x + sgn * ch, y };
-        const lim = sgn < 0 ? x0 : x1, sw = zig(p1, sgn < 0 ? Math.PI : 0, abs(lim - p1.x) - W, [28, 45], [1, 2.4]); sw.push({ x: lim, y: sw[sw.length - 1].y }); const pl = v.concat(sw); pl.sw = sw; return pl; };
+        const lim = sgn < 0 ? x0 : x1, sw = zig(p1, sgn < 0 ? Math.PI : 0, abs(lim - p1.x) - W, [28, 45], [1, 2.4]); sw.push({ x: lim, y: sw[sw.length - 1].y });
+        // (el barrido se limpia AQUÍ con la misma regla que aplica `pon`: los carriles se sacan de
+        // él, y si `pon` le quitaba luego un vértice, el carril quedaba a menos de un pelo del
+        // trazo colocado y el recorte lo troceaba — se pintaba el 29 % de cada carril)
+        const sw2 = sinCortos(sw), pl = v.concat(sw2); pl.sw = sw2; return pl; };
       const c = rng.range(0.34, 0.4), kv = rng.range(0.6, 0.66), yK = V(kv), lb = rng.range(0.22, 0.28);
       // EL CENTRO ES UN HAZ A UN PELO: la bajada de A, tres o cuatro verticales y la bajada de B
       // son paralelas entre sí (en el calco, seis verticales seguidas); lo que cambia es dónde
@@ -3824,8 +3831,17 @@
       // se reparten de modo que de cada dos carriles vecinos al menos uno esté interrumpido.
       // (Se probó partir cada carril en dos piezas: sin gemelos, pero las piezas cortas se
       // perdían en el recorte y la obra volvía a quedar rala.)
-      const llena = (pl, j) => pon(M(pl), 'carril', W * 2);
-      const carriles = (base, sg, n, pasos, cabeza) => { const lane = j => j === 0 ? base : paralela(base, sg * j * D), hs = D * 0.7;
+      // (mínimo 1,4 W: lo que queda de un carril a cada lado de un escalón mide unas dos
+      // anchuras, y descartarlo dejaba medio carril en blanco)
+      const llena = (pl, j) => { const n0 = trazos.length; pon(M(pl), 'carril', W * 1.4);
+        // ...pero un resto no entra si es gemelo de un trazo ya puesto
+        const frac = (A, B) => { const ms = muestrear(A, W / 3); let n = 0; for (const q of ms) { let ok = false; for (let i = 0; i + 1 < B.length && !ok; i++) { const d = pointSegDist(q.x, q.y, B[i].x, B[i].y, B[i + 1].x, B[i + 1].y); if (d > 0.75 * D && d < 1.4 * D) ok = true; } if (ok) n++; } return n / (ms.length || 1); };
+        for (let i = trazos.length - 1; i >= n0; i--) if (trazos.some((t, k) => k !== i && frac(trazos[i].pts, t.pts) >= 0.65 && frac(t.pts, trazos[i].pts) >= 0.65)) trazos.splice(i, 1); };
+      // (cada carril es la paralela DEL ANTERIOR, no de la base: la paralela lejana de un
+      // zigzag de tramos cortos se deforma y deja de ir a un pelo de su vecina; encadenadas,
+      // dos carriles seguidos distan D por construcción)
+      const cadena = (base, sg) => { const L = [sinCortos(base)]; return j => { while (L.length <= j) L.push(sinCortos(paralela(L[L.length - 1], sg * D * 1.01))); return L[j]; }; };
+      const carriles = (base, sg, n, pasos, cabeza) => { const lane = cadena(base, sg), hs = D * 0.7;
         for (const [a, b] of pasos) { if (max(a, b) > n) continue; const la = lane(a), lb2 = lane(b), La = largoDe(la), Lb = largoDe(lb2), f = rng.range(0.32, 0.62);
           if (La * f < W * 1.6 || Lb * (1 - f) < W * 1.6) continue;
           const pl = subPoli(la, 0, La * f - hs).concat(subPoli(lb2, Lb * f + hs, Lb));
@@ -3838,7 +3854,7 @@
         A.push({ x: xg, y: yg }, P(0, la), P(0, 0), P(c, 0));
         pon(M(A.concat(baja.slice(1))), 'marco', W * 3);
         // 5a. LA BANDA QUE ENTRA DESDE EL LÍMITE con un escalón, bajo el fondo del lazo, y la corta de en medio
-        var ygA = yg; }
+        var ygA = yg, xgA = xg; }
       // 2. EL MARCO B, que entra y baja al nudo
       const vBfin = kv + rng.range(0, 0.04);
       { const bj = cortaY(paralela(bajaL, -(nC + 1) * D), V(lb + rng.range(0.015, 0.035)), V(vBfin)) || [P(uB, lb + 0.03), P(uB, vBfin)];
@@ -3865,15 +3881,32 @@
       //  · las demás siguen muriendo en el nudo, cortas: el contraste.
       // Los cabos de arriba alternan (una asoma mucho, la siguiente poco) para que dos
       // vecinas no sean gemelas.
-      const alt = rng.int(0, 1), topDe = k => (k + alt) % 2 ? rng.range(0.18, 0.25) : rng.range(0.36, 0.44), vt0 = topDe(0), yBase = V(rng.range(0.9, 0.97));
-      { const e1 = ele(cortaY(col(larga), V(topDe(larga)), 1e9) || [P(c, 0.3), P(c, 1)], yBase, 1); if (e1) pon(M(e1), 'primero', W * 3); }
-      for (let k = 2; k < nC; k++) { const pl = cortaY(col(k), V(topDe(k)), k === 2 ? yBase - D * 1.3 - alto * rng.range(0, 0.05) : V(kv - rng.range(0, 0.04))); if (pl) pon(M(pl), 'vertical', W * 2.5); }
+      const alt = rng.int(0, 1), topDe = k => (k + alt) % 2 ? rng.range(0.18, 0.25) : rng.range(0.36, 0.44), vt0 = topDe(0), yS = V(vBfin) + D * 1.2;
+      // ── ZONAS (vuelta 43; el autor: «queda definir mejor zonas de densidad y las que no»).
+      // Medido con `densidad.js` sobre el calco, en rejilla de 8 × 8 de la caja:
+      //   VACÍAS  · la ventana del lazo (arriba, lado grande) · bajo la barra, entre las dos
+      //             bajadas, por encima de los cabos · LA ESQUINA DE ABAJO DEL LADO PEQUEÑO
+      //   LLENAS  · el cinturón del nudo, de lado a lado · todo el abajo del lado grande
+      //             (cinco niveles a un pelo) · el nido bajo la pata de B
+      // El calco tiene 16 % de celdas vacías y 30 % de llenas; la vuelta 42 tenía las
+      // mismas vacías y la mitad de llenas, y llenaba la esquina que debe quedar vacía:
+      // mandaba allí un barrido por la base. En el original el trazo que sale a ese lado
+      // lo hace a media altura, justo bajo la bajada de B.
+      vacios.push(q => { const u = lado < 0 ? (q.x - x0) / ancho : (x1 - q.x) / ancho; return u > uB + 0.01 && q.y > yS + D * 1.7; });
+      //  · columna 1: la quilla, baja recta casi hasta la base;
+      //  · columna 2: baja hasta el nivel del nido y SALE al lado pequeño (ese barrido es el
+      //    cinturón de ese lado); debajo sigue, en su columna, una pieza corta;
+      //  · las demás mueren en el nudo.
+      { const q1 = cortaY(col(1), V(topDe(1)), V(rng.range(0.86, 0.94))); if (q1) pon(M(q1), 'primero', W * 3); }
+      const e2 = ele(cortaY(col(2), V(topDe(2)), 1e9) || [P(c + 3 * D / ancho, 0.3), P(c + 3 * D / ancho, 1)], yS, 1); if (e2) pon(M(e2), 'ele', W * 3);
+      { const r2 = cortaY(col(2), yS + D * 1.3, V(rng.range(0.9, 0.97))); if (r2) pon(M(r2), 'relleno', W * 1.8); }
+      for (let k = 3; k < nC; k++) { const pl = cortaY(col(k), V(topDe(k)), V(kv - rng.range(0, 0.04))); if (pl) pon(M(pl), 'vertical', W * 2.5); }
       // 4. EL NIDO bajo la pata de B: una ele que baja a D de la bajada de B y sale al límite; una barra suelta; y un barrido por debajo
       { const vert = cortaY(paralela(bajaL, -(nC + 2) * D), V(lb) + D * 1.25, 1e9) || [P(uB, lb + 0.1), P(uB, 1)], e5 = ele(vert, V(kv - rng.range(0.02, 0.06)), 1);   // (paralela de la bajada de B: con zigzag propio chocaban y se troceaba)
         if (e5) pon(M(e5), 'ele', W * 3);
         if (rng.bool(0.8)) { const ys = V(lb) + D * 1.25 + alto * rng.range(0, 0.02); pon(M([{ x: x1, y: ys }, { x: xEn(vert, ys) + D * 0.5, y: ys + alto * jt() }]), 'suelta', W * 1.8); }   // la barra suelta del nido: del límite hasta la ele, a un pelo bajo la pata
-        // los barridos que entran desde el límite por debajo de la bajada de B y mueren contra la columna 2
-        const yS = V(vBfin) + D * 1.2, sw = zig({ x: x1, y: yS }, Math.PI, x1 - xEn(col(larga + 1), yS), [25, 40], [1, 2.4]); carriles(sw, -1, clamp(Math.floor((yBase - yS) / D) - 1, 1, 3), [[0, 1], [3, 2]], 0); }
+        // bajo el barrido de la columna 2, medio carril más pegado al nudo; lo demás es la esquina vacía
+        if (e2 && rng.bool(0.6)) { const l1 = paralela(e2.sw, D), L1 = largoDe(l1); pon(M(subPoli(l1, 0, L1 * rng.range(0.35, 0.55))), 'carril', W * 2); } }
       // 5. EL LADO GRANDE, abajo: las eles que nacen EN el nudo, bajan y barren hasta el límite (anidadas, la de dentro más corta)
       { const vert = cortaY(col(0), V(vt0), 1e9) || [P(c + D / ancho, vt0), P(c + D / ancho, 1)], eo = ele(vert, V(rng.range(0.94, 0.99)), -1);
         if (eo) { pon(M(eo), 'ele', W * 3);
@@ -3881,13 +3914,17 @@
           // dentro baja por la columna de la bajada, entra al carril 1 y a medio camino
           // SUBE al 2; por arriba, la banda que entra desde el límite por el carril más
           // alto BAJA al de debajo (el escalón del calco). Lo demás lo llena lo que quepa.
-          const sw0 = eo.sw, lane = j => paralela(sw0, j * D), nLan = clamp(Math.floor((sw0[0].y - (ygA + D * 1.1)) / D), 1, 5);
+          const sw0 = eo.sw, lane = cadena(sw0, 1), nLan = clamp(Math.floor((sw0[0].y - (ygA + D * 1.1)) / D), 1, 5);
           const y1l = lane(1)[0].y, vI = cortaY(col(-1), V(kv + rng.range(0.07, 0.1)), y1l - ch);
           { const l1 = lane(1), L1 = largoDe(l1), f = rng.range(0.35, 0.6), hs = D * 0.7; let pl = (vI || []).concat(subPoli(l1, vI ? W : 0, L1 * f - hs));
             if (nLan >= 2) { const l2 = lane(2), L2 = largoDe(l2); pl = pl.concat(subPoli(l2, L2 * f + hs, L2)); }
             pon(M(pl), 'ele', W * 3); }
-          if (nLan >= 4) { const lt = lane(nLan), lu = lane(nLan - 1), Lt = largoDe(lt), Lu = largoDe(lu), f = rng.range(0.4, 0.7), hs = D * 0.7;
-            pon(M(subPoli(lt, Lt * f + hs, Lt).reverse().concat(subPoli(lu, 0, Lu * f - hs).reverse())), 'escalon', W * 2.5); }
+          // LA BANDA DEL CALCO (t6): entra desde el límite AL NIVEL DEL FONDO DEL LAZO, por el
+          // triángulo que queda entre el límite y su diagonal, baja un escalón y sigue por el
+          // carril más alto hasta el nudo. Llena la fila que quedaba en gris bajo el lazo.
+          if (nLan >= 2) { const lt = lane(nLan), ms = muestrear(lt, W / 4), xa = xgA - D * 1.9, yT = ygA, xj = xa + (lt[0].y - yT) / Math.tan(50 * RAD);
+            let k = 0; while (k < ms.length && ms[k].x > xj) k++; const este = ms.slice(0, k).map(q => ({ x: q.x, y: q.y }));
+            if (este.length > 2 && xa - x0 > W) pon(M([{ x: x0, y: yT }, { x: xa, y: yT }].concat(simplificar(este).reverse())), 'escalon', W * 2.5); }
           for (let j = 1; j <= nLan; j++) llena(lane(j), j); }
       }
       }
