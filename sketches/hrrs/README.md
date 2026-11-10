@@ -3969,6 +3969,55 @@ determinismo 44/44, ningún trazo se cruza a sí mismo; 20 giros de más de 97°
 trazos son paralelos casi enteros (calco: 36 %), porque las columnas son
 paralelas exactas de una sola maestra; y la vuelta por abajo de t2.
 
+## Cuadragésima primera vuelta: ningún trazo gemelo
+
+El autor: «que sean paralelas en un tramo no importa, pero no quiere decir que
+tengan que ser iguales. Haces muchas que son prácticamente gemelas, muchos
+trazos que son gemelos, y en Chillida ninguno es gemelo, no hay dos trazos
+iguales, y eso a nivel compositivo cambia muchísimo».
+
+Es más preciso que la vara de la vuelta 33 (cuánto del largo va paralelizado):
+lo que no existe es **dos trazos con la misma forma y el mismo tamaño, uno al
+lado del otro**. `verificacion/gemelos.js` lo mide: dos trazos son gemelos si
+*cada uno* corre paralelo *al otro* en el 70 % o más de su largo. Un trazo corto
+pegado a uno largo no lo es, ni dos que comparten un tramo y se separan.
+
+| | pares de gemelos por obra | trazos con gemelo | obras con algún par |
+|---|---|---|---|
+| calco 1 | 1 | 2 de 14 | — |
+| calco 2 | 0 | 0 | — |
+| calco 3 | 1 | 2 de 7 | — |
+| recinto, vuelta 40 | 2,07 | 30 % | 54 de 60 |
+| **recinto, ahora** | 0,27 | 4 % | 13 de 60 |
+| travesía (hebra) | 0,20 | 9 % | 12 de 60 |
+| bloque (hebra) | 0,52 | 11 % | 24 de 60 |
+
+El recinto los fabricaba por construcción: las bandas de cada abanico eran
+paralelas enteras de una maestra.
+
+**Cómo los evita el original sin perder el pelo: el escalón.** En el calco, la
+banda que entra desde el límite corre por un nivel, baja un escalón y sigue por
+el de debajo; el hueco que deja arriba lo ocupa otra banda corta, y el de abajo,
+otra que viene del otro lado. Todas a un pelo, ninguna igual.
+
+**En el generador** (`carriles`, y el lado grande del recinto): los niveles de
+un abanico son *carriles* —las paralelas de un barrido a j·D—; unas bandas
+**cambian de carril** a medio camino (la ele de dentro sube del 1 al 2; la que
+entra por arriba baja al de debajo; bajo el marco B, una baja del 0 al 1 y otra
+sube del 3 al 2); y lo que queda libre de cada carril lo llena una banda que
+`pon` recorta alrededor de los escalones. La regla: **nunca dos carriles
+enteros seguidos**. En el haz central, las verticales alternan largo: una asoma
+mucho y la siguiente poco.
+
+Se probó partir cada carril en dos piezas enfrentadas: sin gemelos, pero las
+piezas cortas se perdían en el recorte y la obra volvía a quedar rala.
+
+Medido: solape 0 de 220 con halo, pelo 0 por debajo de g a 760 y 1520 px,
+determinismo 44/44, ningún trazo se cruza a sí mismo. 12,8 trazos por obra,
+48 % paralelizado.
+
+**Pendiente**: el bloque tiene gemelos en 24 de 60 obras y su calco ninguno.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

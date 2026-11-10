@@ -3804,13 +3804,33 @@
       const ch = W * rng.range(1.1, 1.6);
       // una ele: la vertical `vert` hasta el nivel y, el chaflán, y el barrido en zigzag hasta el límite
       const ele = (vert, y, sgn) => { const v = cortaY(vert, -1e9, y - ch); if (!v) return null; const e = v[v.length - 1], p1 = { x: e.x + sgn * ch, y };
-        const lim = sgn < 0 ? x0 : x1, sw = zig(p1, sgn < 0 ? Math.PI : 0, abs(lim - p1.x) - W, [28, 45], [1, 2.4]); sw.push({ x: lim, y: sw[sw.length - 1].y }); return v.concat(sw); };
+        const lim = sgn < 0 ? x0 : x1, sw = zig(p1, sgn < 0 ? Math.PI : 0, abs(lim - p1.x) - W, [28, 45], [1, 2.4]); sw.push({ x: lim, y: sw[sw.length - 1].y }); const pl = v.concat(sw); pl.sw = sw; return pl; };
       const c = rng.range(0.34, 0.4), kv = rng.range(0.6, 0.66), yK = V(kv), lb = rng.range(0.22, 0.28);
       // EL CENTRO ES UN HAZ A UN PELO: la bajada de A, tres o cuatro verticales y la bajada de B
       // son paralelas entre sí (en el calco, seis verticales seguidas); lo que cambia es dónde
       // empieza y dónde acaba cada una
       const nC = rng.int(3, 4), uB = c + (nC + 1) * D / ancho;
-      // 1. EL MARCO A, el lazo
+      // NINGÚN TRAZO GEMELO (vuelta 41; el autor: «que sean paralelas en un tramo no importa,
+      // pero no tienen que ser iguales; en Chillida no hay dos trazos iguales»). Medido con
+      // `gemelos.js`: los calcos, 0–1 pares; el recinto, 2,1 por obra. Las bandas de un
+      // abanico eran paralelas enteras de una maestra: gemelas por construcción. El original
+      // lo evita con EL ESCALÓN: una banda corre por un carril, sube o baja al de al lado
+      // y sigue; el hueco que deja lo ocupa otra que entra desde el otro lado. Todas a un
+      // pelo, ninguna igual. `carriles` hace eso: los carriles son las paralelas de `base` a
+      // j·D (j ≥ 1; el 0 es la propia base, ya puesta); `pasos` dice qué bandas cambian de
+      // carril ([de, a]); y lo que queda libre de cada carril lo llena `pon`, que recorta.
+      // Un carril se llena entero y `pon` lo recorta alrededor de los escalones. Lo que no
+      // puede haber es DOS CARRILES ENTEROS SEGUIDOS (serían gemelos): por eso los escalones
+      // se reparten de modo que de cada dos carriles vecinos al menos uno esté interrumpido.
+      // (Se probó partir cada carril en dos piezas: sin gemelos, pero las piezas cortas se
+      // perdían en el recorte y la obra volvía a quedar rala.)
+      const llena = (pl, j) => pon(M(pl), 'carril', W * 2);
+      const carriles = (base, sg, n, pasos, cabeza) => { const lane = j => j === 0 ? base : paralela(base, sg * j * D), hs = D * 0.7;
+        for (const [a, b] of pasos) { if (max(a, b) > n) continue; const la = lane(a), lb2 = lane(b), La = largoDe(la), Lb = largoDe(lb2), f = rng.range(0.32, 0.62);
+          if (La * f < W * 1.6 || Lb * (1 - f) < W * 1.6) continue;
+          const pl = subPoli(la, 0, La * f - hs).concat(subPoli(lb2, Lb * f + hs, Lb));
+          pon(M(pl), 'escalon', W * 2.5); }
+        for (let j = cabeza === 0 ? 0 : 1; j <= n; j++) llena(lane(j), j); };   // (cabeza === 0: la base no está puesta aún y también se llena)
       const bajaL = zig(P(c, 0), Math.PI / 2, alto * 1.05, [18, 32], [1.5, 3.5]), baja = cortaY(bajaL, -1e9, V(kv - rng.range(0.02, 0.05))) || bajaL;
       { const la = rng.range(0.34, 0.42), yg = V(kv - rng.range(0.03, 0.06)), xg = U(rng.range(0.15, 0.2)), A = [];
         const xb = xEn(baja, yg) - 2 * D - W * rng.range(0, 0.5), yt = yg - W * rng.range(3, 4);
@@ -3818,7 +3838,7 @@
         A.push({ x: xg, y: yg }, P(0, la), P(0, 0), P(c, 0));
         pon(M(A.concat(baja.slice(1))), 'marco', W * 3);
         // 5a. LA BANDA QUE ENTRA DESDE EL LÍMITE con un escalón, bajo el fondo del lazo, y la corta de en medio
-        var ya6 = yg + D * 1.15, yb6 = ya6 + alto * rng.range(0.09, 0.13); }
+        var ygA = yg; }
       // 2. EL MARCO B, que entra y baja al nudo
       const vBfin = kv + rng.range(0, 0.04);
       { const bj = cortaY(paralela(bajaL, -(nC + 1) * D), V(lb + rng.range(0.015, 0.035)), V(vBfin)) || [P(uB, lb + 0.03), P(uB, vBfin)];
@@ -3836,28 +3856,33 @@
       // ciegas chocaban y el recorte se comía la mitad (se midió: 56 % de las verticales,
       // 16 % de las sueltas).
       const col = k => k < 0 ? bajaL : paralela(bajaL, -(k + 1) * D), larga = 1;
-      for (let k = 0; k < nC; k++) { const vt = rng.range(0.2, 0.4), vf = k === larga ? rng.range(0.88, 0.96) : kv - rng.range(0, 0.04);
+      // (largos ALTERNOS: dos verticales vecinas del mismo largo son gemelas; una asoma mucho y la siguiente poco)
+      const alt = rng.int(0, 1);
+      for (let k = 0; k < nC; k++) { const vt = (k + alt) % 2 ? rng.range(0.18, 0.25) : rng.range(0.38, 0.46), vf = k === larga ? rng.range(0.88, 0.96) : kv - rng.range(0, 0.04);
         const pl = cortaY(col(k), V(vt), V(vf)); if (pl) pon(M(pl), k === larga ? 'primero' : 'vertical', W * 2.5); }
       // 4. EL NIDO bajo la pata de B: una ele que baja a D de la bajada de B y sale al límite; una barra suelta; y un barrido por debajo
       { const vert = cortaY(paralela(bajaL, -(nC + 2) * D), V(lb) + D * 1.25, 1e9) || [P(uB, lb + 0.1), P(uB, 1)], e5 = ele(vert, V(kv - rng.range(0.02, 0.06)), 1);   // (paralela de la bajada de B: con zigzag propio chocaban y se troceaba)
         if (e5) pon(M(e5), 'ele', W * 3);
         if (rng.bool(0.8)) { const ys = V(lb) + D * 1.25 + alto * rng.range(0, 0.02); pon(M([{ x: x1, y: ys }, { x: xEn(vert, ys) + D * 0.5, y: ys + alto * jt() }]), 'suelta', W * 1.8); }   // la barra suelta del nido: del límite hasta la ele, a un pelo bajo la pata
         // la pieza de relleno de la columna siguiente a la larga, bajo el nudo
-        const rl = cortaY(col(larga + 1), V(kv + rng.range(0.06, 0.09)), V(rng.range(0.88, 0.98))); if (rl) pon(M(rl), 'relleno', W * 2);
+        const rl = cortaY(col(larga + 1), V(kv + rng.range(0.08, 0.12)), V(rng.range(0.78, 0.86))); if (rl) pon(M(rl), 'relleno', W * 2);
         // los barridos que entran desde el límite por debajo de la bajada de B y mueren contra el relleno
-        const yS = V(vBfin) + D * 1.2, sw = zig({ x: x1, y: yS }, Math.PI, x1 - xEn(col(larga + 1), yS), [25, 40], [1, 2.4]); pon(M(sw), 'abanico', W * 2.5);
-        for (let k = 1; k <= 2; k++) if (rng.bool(0.75)) pon(M(acorta(paralela(sw, -k * D), W * rng.range(0, 1.5), 0)), 'abanico', W * 2.5); }
+        const yS = V(vBfin) + D * 1.2, sw = zig({ x: x1, y: yS }, Math.PI, x1 - xEn(col(larga + 1), yS), [25, 40], [1, 2.4]); carriles(sw, -1, rng.int(2, 3), [[0, 1], [3, 2]], 0); }
       // 5. EL LADO GRANDE, abajo: las eles que nacen EN el nudo, bajan y barren hasta el límite (anidadas, la de dentro más corta)
-      { const uo = c + D / ancho, vert = cortaY(col(0), V(kv + rng.range(0.06, 0.09)), 1e9) || [P(uo, kv + 0.07), P(uo, 1)], eo = ele(vert, V(rng.range(0.94, 0.99)), -1);
-        // (orden del calco: la ele de fuera y UNA de dentro nacen en el nudo; luego la banda que
-        // entra desde el límite con su escalón, que muere contra la ele de dentro; y los niveles
-        // que quedan entre las dos los llenan más paralelas de la ele, que `pon` recorta bajo la
-        // banda: eles de vertical corta que mueren a un pelo de ella. Antes iban todas enteras y
-        // sus verticales troceaban la banda, que desaparecía.)
-        if (eo) { pon(M(eo), 'ele', W * 3); pon(M(acorta(paralela(eo, D), W * rng.range(0, 1), W * rng.range(0.8, 2.5))), 'ele', W * 3); }
-        pon(M([{ x: x0, y: ya6 }, { x: U(rng.range(0.06, 0.08)), y: ya6 + alto * jt() }, { x: U(rng.range(0.14, 0.17)), y: yb6 }, { x: U(c), y: yb6 - alto * rng.range(0, 0.02) }]), 'abanico', W * 2.5);
-        if (eo) { const yBarr = eo[eo.length - 1].y, nF = clamp(Math.floor((yBarr - yb6) / D) - 2, 0, 3);
-          for (let k = 2; k < 2 + nF; k++) pon(M(acorta(paralela(eo, k * D), 0, rng.bool(0.5) ? W * rng.range(0.8, 3) : 0)), 'ele', W * 2.5); }
+      { const vert = cortaY(col(0), V(kv + rng.range(0.06, 0.09)), 1e9) || [P(c + D / ancho, kv + 0.07), P(c + D / ancho, 1)], eo = ele(vert, V(rng.range(0.94, 0.99)), -1);
+        if (eo) { pon(M(eo), 'ele', W * 3);
+          // los carriles sobre el barrido de la ele de fuera, hasta el fondo del lazo. La de
+          // dentro baja por la columna de la bajada, entra al carril 1 y a medio camino
+          // SUBE al 2; por arriba, la banda que entra desde el límite por el carril más
+          // alto BAJA al de debajo (el escalón del calco). Lo demás lo llena lo que quepa.
+          const sw0 = eo.sw, lane = j => paralela(sw0, j * D), nLan = clamp(Math.floor((sw0[0].y - (ygA + D * 1.1)) / D), 1, 5);
+          const y1l = lane(1)[0].y, vI = cortaY(col(-1), V(kv + rng.range(0.07, 0.1)), y1l - ch);
+          { const l1 = lane(1), L1 = largoDe(l1), f = rng.range(0.35, 0.6), hs = D * 0.7; let pl = (vI || []).concat(subPoli(l1, vI ? W : 0, L1 * f - hs));
+            if (nLan >= 2) { const l2 = lane(2), L2 = largoDe(l2); pl = pl.concat(subPoli(l2, L2 * f + hs, L2)); }
+            pon(M(pl), 'ele', W * 3); }
+          if (nLan >= 4) { const lt = lane(nLan), lu = lane(nLan - 1), Lt = largoDe(lt), Lu = largoDe(lu), f = rng.range(0.4, 0.7), hs = D * 0.7;
+            pon(M(subPoli(lt, Lt * f + hs, Lt).reverse().concat(subPoli(lu, 0, Lu * f - hs).reverse())), 'escalon', W * 2.5); }
+          for (let j = 1; j <= nLan; j++) llena(lane(j), j); }
       }
       }
       // ── EL CRECIMIENTO (vuelta 33) ─────────────────────────────────────────
