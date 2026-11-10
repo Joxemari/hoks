@@ -3787,50 +3787,66 @@
         return pts; };
       const xEn = (pl, y) => { for (let i = 0; i + 1 < pl.length; i++) { const a = pl[i], b = pl[i + 1]; if ((a.y - y) * (b.y - y) <= 0 && abs(b.y - a.y) > 1e-9) return a.x + (b.x - a.x) * (y - a.y) / (b.y - a.y); } return pl[y < pl[0].y ? 0 : pl.length - 1].x; };
       const acorta = (pl, ini, fin) => { const Lt = largoDe(pl); return Lt > ini + fin + W * 3 ? subPoli(pl, ini, Lt - fin) : pl; };
-      const c = rng.range(0.36, 0.46), kv = rng.range(0.52, 0.6), yK = V(kv);
-      // 1. EL MARCO A: (diagonal hacia el nudo) + pata + barra hasta el centro + LA BAJADA
-      //    en zigzag hasta justo encima del nudo
-      { const la = rng.range(0.3, 0.42), A = [];
-        // (la diagonal de la pata acaba por encima del abanico: llega al nudo, no lo pisa)
-        if (rng.bool(0.7)) { const dg = min(alto * rng.range(0.12, 0.2), yK - D * 1.3 - V(la)); if (dg > W * 1.5) A.push({ x: U(0) + dg * rng.range(0.6, 0.9), y: V(la) + dg }); }
-        A.push({ x: U(0), y: V(la) }, { x: U(0), y: V(0) }, { x: U(c), y: V(0) });
-        const baja = zig({ x: U(c), y: V(0) }, Math.PI / 2, max(W * 4, yK - y0 - D * 1.5 - alto * rng.range(0, 0.05)), [20, 35], [1.5, 4]);
-        pon(M(A.concat(baja.slice(1))), 'marco', W * 3); }
-      // 2. EL MARCO B: el resto de la barra, la otra pata y, a veces, el gancho hacia dentro
-      const lb = rng.range(0.24, 0.34);
-      { const B = [{ x: U(c) + D, y: V(0) }, { x: U(1), y: V(0) }, { x: U(1), y: V(lb) }];
-        if (rng.bool(0.55)) B.push({ x: U(1) - ancho * rng.range(0.14, 0.24), y: V(lb) + alto * rng.range(0.005, 0.05) });
-        pon(M(B), 'marco', W * 3); }
-      // 3. EL NUDO: LAS VERTICALES DOBLAN Y SON LOS ABANICOS. En el original las bandas
-      //    que bajan juntas por el centro se abren abajo: unas doblan a un lado y barren
-      //    hasta el límite del cuadrado, las otras al otro. Cada trazo es una ELE con el
-      //    codo en chaflán, y cambia de vecinos: arriba corre con todas las verticales,
-      //    al barrer solo con las de su lado. Las eles de un mismo lado van anidadas (la
-      //    de fuera, a D), con el cabo de arriba escalonado: lo que asoma en el vacío.
-      const nvL = rng.int(2, 3), nvR = rng.int(1, 2), nT = nvL + nvR, xv = U(c) + D * rng.range(1.6, 2.4), yTop = V(kv - rng.range(0.3, 0.4));
-      const mV = zig({ x: xv, y: yTop }, Math.PI / 2, y1 - yTop, [30, 50], [1.5, 4]);
+      // ── VUELTA 39: LOS CATORCE TRAZOS DEL CALCO, LEÍDOS UNO A UNO ───────────────
+      // (el autor, sobre la 38: «aún lejos»). En la caja del calco, de 17,5 × 16,2 W:
+      //  · el marco A es un LAZO de 33 W: baja de la barra al nudo en zigzag y, por el otro
+      //    cabo, pata + diagonal + fondo + un GANCHO que sube pegado a esa bajada;
+      //  · el marco B ENTRA: barra, pata corta, gira hacia dentro y baja hasta el nudo;
+      //  · entre las dos bajadas, VERTICALES con el cabo de arriba a distinta altura: una
+      //    sigue hasta la base, las otras mueren en el nudo con un quiebro;
+      //  · bajo la pata de B, anidada, una ELE que baja y sale al límite, y una barra suelta;
+      //  · abajo, al lado grande, ELES que nacen EN el nudo, bajan y barren al límite;
+      //    encima una banda que entra desde el límite con un escalón, y otra corta;
+      //  · bajo el nudo, piezas cortas de relleno.
+      // Las verticales de arriba NO son las que barren (eso hacía la vuelta 38).
+      const P = (u, v) => ({ x: U(u), y: V(v) }), jt = () => rng.range(-0.012, 0.012);
       const cortaY = (pl, ya, yb) => { const ms = muestrear(pl, W / 8).filter(q => q.y >= ya && q.y <= yb); return ms.length > 2 ? simplificar(ms.map(q => ({ x: q.x, y: q.y }))) : null; };
       const ch = W * rng.range(1.1, 1.6);
-      // la ele maestra de un lado: la vertical `vert` hasta el nivel y, el chaflán, y el barrido en zigzag hasta el límite
+      // una ele: la vertical `vert` hasta el nivel y, el chaflán, y el barrido en zigzag hasta el límite
       const ele = (vert, y, sgn) => { const v = cortaY(vert, -1e9, y - ch); if (!v) return null; const e = v[v.length - 1], p1 = { x: e.x + sgn * ch, y };
-        const lim = sgn < 0 ? x0 : x1, sw = zig(p1, sgn < 0 ? Math.PI : 0, abs(lim - p1.x) - W, [25, 40], [1.5, 3.2]); sw.push({ x: lim, y: sw[sw.length - 1].y }); const pl = v.concat(sw); pl.sw = sw; return pl; };
-      const L0 = ele(mV, yK, -1), yR = yK + D * rng.range(-0.5, 1.5), R0 = ele(paralela(mV, -(nT - 1) * D), yR, 1);
-      const packs = [[L0, nvL, -1], [R0, nvR, 1]];
-      for (const [e0, n, sgn] of packs) { if (!e0) continue;
-        for (let k = 0; k < n; k++) { let pl = k === 0 ? e0 : paralela(e0, sgn * k * D);   // (bajando: d < 0 cae al este, la de fuera de un giro al oeste; y al revés)
-          pl = acorta(pl, W * rng.range(0, 1) + k * W * rng.range(0.6, 1.8), k && rng.bool(0.3) ? W * rng.range(1.5, 4) : 0); pon(M(pl), k === 0 && sgn < 0 ? 'primero' : 'ele', W * 3); } }
-      // 4. LAS BANDAS SUELTAS del abanico grande, debajo de las eles: acompañan al barrido
-      //    una racha y no nacen del nudo; la de más abajo, tras su racha, se va por su cuenta
-      if (L0) { const barr = L0.sw, nE = rng.int(2, 3);   // (el barrido tal cual: filtrarlo por altura lo troceaba, el zigzag sube y baja)
-        for (let e = 0; e < nE; e++) { let pl = paralela(barr, -(nvL + e) * D); const Lt = largoDe(pl);
-          if (e === nE - 1 && Lt > W * 7) { // la última: una racha de 4–6 W y luego su propio zigzag, bajando
-            const run = W * rng.range(4, 6), ini = W * rng.range(0, 2); pl = subPoli(pl, ini, min(Lt, ini + run)); const u = pl[pl.length - 1], th = rng.range(18, 30) * RAD;
-            const Lz = min((u.x - x0) / Math.cos(th), (y1 + W - u.y) / Math.sin(th)) - W; if (Lz > W * 2) pl = pl.concat(zig(u, Math.PI - th, Lz, [20, 35], [1.5, 3]).slice(1)); }
-          else pl = acorta(pl, W * rng.range(0, 3), rng.bool(0.4) ? W * rng.range(1.5, 4) : 0);
-          pon(M(pl), 'abanico', W * 3); } }
-      // 5. y una o dos sueltas al otro lado
-      if (R0) { const barr = R0.sw, nE = rng.int(0, 2);
-        for (let e = 0; e < nE; e++) pon(M(acorta(paralela(barr, (nvR + e) * D), W * rng.range(0, 3), rng.bool(0.4) ? W * rng.range(1.5, 4) : 0)), 'abanico', W * 3); }
+        const lim = sgn < 0 ? x0 : x1, sw = zig(p1, sgn < 0 ? Math.PI : 0, abs(lim - p1.x) - W, [28, 45], [1, 2.4]); sw.push({ x: lim, y: sw[sw.length - 1].y }); return v.concat(sw); };
+      const c = rng.range(0.34, 0.4), kv = rng.range(0.6, 0.66), yK = V(kv), lb = rng.range(0.22, 0.28);
+      // EL CENTRO ES UN HAZ A UN PELO: la bajada de A, tres o cuatro verticales y la bajada de B
+      // son paralelas entre sí (en el calco, seis verticales seguidas); lo que cambia es dónde
+      // empieza y dónde acaba cada una
+      const nC = rng.int(3, 4), uB = c + (nC + 1) * D / ancho;
+      // 1. EL MARCO A, el lazo
+      const bajaL = zig(P(c, 0), Math.PI / 2, alto * 1.05, [18, 32], [1.5, 3.5]), baja = cortaY(bajaL, -1e9, V(kv - rng.range(0.02, 0.05))) || bajaL;
+      { const la = rng.range(0.34, 0.42), yg = V(kv - rng.range(0.03, 0.06)), xg = U(rng.range(0.15, 0.2)), A = [];
+        const xb = xEn(baja, yg) - 2 * D - W * rng.range(0, 0.5), yt = yg - W * rng.range(3, 4);
+        if (xb - xg > W * 1.2) A.push({ x: xEn(baja, yt) - D * 1.15, y: yt }, { x: xb + W * rng.range(0, 0.3), y: yg - W * rng.range(1.3, 1.8) }, { x: xb, y: yg });   // el gancho, de arriba abajo
+        A.push({ x: xg, y: yg }, P(0, la), P(0, 0), P(c, 0));
+        pon(M(A.concat(baja.slice(1))), 'marco', W * 3);
+        // 5a. LA BANDA QUE ENTRA DESDE EL LÍMITE con un escalón, bajo el fondo del lazo, y la corta de en medio
+        var ya6 = yg + D * 1.15, yb6 = ya6 + alto * rng.range(0.13, 0.17); }
+      // 2. EL MARCO B, que entra y baja al nudo
+      const vBfin = kv + rng.range(0, 0.04);
+      { const bj = cortaY(paralela(bajaL, -(nC + 1) * D), V(lb + rng.range(0.015, 0.035)), V(vBfin)) || [P(uB, lb + 0.03), P(uB, vBfin)];
+        // (si la bajada arranca en un quiebro que vuelve hacia la pata, el empalme con el
+        // brazo sería un ángulo agudo: se quitan sus primeros puntos hasta que no lo sea)
+        const leg = P(1, lb), agudo = () => { if (bj.length < 2) return false; const ux = bj[0].x - leg.x, uy = bj[0].y - leg.y, vx = bj[1].x - bj[0].x, vy = bj[1].y - bj[0].y; return (ux * vx + uy * vy) / ((hypot(ux, uy) * hypot(vx, vy)) || 1e-9) < Math.cos(93 * RAD); };
+        while (bj.length > 2 && agudo()) bj.shift();
+        pon(M([{ x: U(c) + D, y: V(0) }, P(1, 0), leg].concat(bj)), 'marco', W * 3); }
+      // 3. LAS VERTICALES entre las dos bajadas: cabos de arriba escalonados; una sigue hasta la base
+      const larga = rng.int(1, nC - 1);
+      for (let k = 0; k < nC; k++) { const vt = rng.range(0.26, 0.42), vf = k === larga ? rng.range(0.86, 0.93) : kv - rng.range(0, 0.05);
+        const pl = cortaY(paralela(bajaL, -(k + 1) * D), V(vt), V(vf)); if (!pl) continue;
+        if (k !== larga) { const e = pl[pl.length - 1], a = (90 + rng.range(35, 50)) * RAD, Lq = W * rng.range(1.5, 2.5); pl.push({ x: e.x + Math.cos(a) * Lq, y: e.y + Math.sin(a) * Lq }); }   // muere con un quiebro hacia el lado grande
+        pon(M(pl), k === larga ? 'primero' : 'vertical', W * 3); }
+      // 4. EL NIDO bajo la pata de B: una ele que baja a D de la bajada de B y sale al límite; una barra suelta; y un barrido por debajo
+      { const vert = zig({ x: U(uB) + D * 1.05, y: V(lb) + D * 1.2 }, Math.PI / 2, alto * 0.6, [10, 22], [2, 4]), e5 = ele(vert, V(kv - rng.range(0.02, 0.06)), 1);
+        if (e5) pon(M(e5), 'ele', W * 3);
+        if (rng.bool(0.75)) pon(M([P(1, lb + 0.075 + jt()), P(1 - rng.range(0.14, 0.2), lb + 0.07 + jt())]), 'suelta', W * 2.2);
+        const yS = V(vBfin) + D * 1.2, sw = zig({ x: x1, y: yS }, Math.PI, ancho * rng.range(0.24, 0.34), [25, 40], [1, 2.4]); pon(M(sw), 'abanico', W * 3);
+        if (rng.bool(0.7)) pon(M(acorta(paralela(sw, -D), W * rng.range(0, 1.5), W * rng.range(0, 2))), 'abanico', W * 3); }
+      // 5. EL LADO GRANDE, abajo: las eles que nacen EN el nudo, bajan y barren hasta el límite (anidadas, la de dentro más corta)
+      { const uo = rng.range(0.43, 0.47), vert = zig(P(uo, kv + rng.range(0.05, 0.08)), Math.PI / 2, alto * 0.5, [10, 20], [2, 4]), eo = ele(vert, V(rng.range(0.94, 0.99)), -1);
+        if (eo) { pon(M(eo), 'ele', W * 3); const yBarr = eo[eo.length - 1].y, nI = clamp(Math.floor((yBarr - yb6) / D) - 1, 1, 3);   // tantas como quepan hasta la banda de arriba
+          for (let k = 1; k <= nI; k++) pon(M(acorta(paralela(eo, k * D), W * rng.range(0, 1), W * rng.range(0.8, 3) * k)), 'ele', W * 3); }
+        pon(M([{ x: x0, y: ya6 }, { x: U(rng.range(0.06, 0.08)), y: ya6 + alto * jt() }, { x: U(rng.range(0.14, 0.17)), y: yb6 }, { x: U(rng.range(0.34, 0.38)), y: yb6 - alto * rng.range(0, 0.02) }]), 'abanico', W * 3);
+        pon(M([{ x: U(rng.range(0.19, 0.22)), y: yb6 - D * 1.1 }, { x: U(rng.range(0.4, 0.44)), y: yb6 - D * 1.1 + alto * jt() }]), 'suelta', W * 2.2);
+        // 6. el relleno bajo el nudo: dos piezas cortas con un quiebro
+        for (const u of [uo + D * 1.1 / ancho + rng.range(0.01, 0.04), rng.range(0.64, 0.7)]) pon(M(zig(P(u, kv + rng.range(0.05, 0.09)), Math.PI / 2, W * rng.range(3, 5), [25, 45], [1, 2])), 'relleno', W * 2.5); }
       }
       // ── EL CRECIMIENTO (vuelta 33) ─────────────────────────────────────────
       // Medido en los calcos: un trazo va paralelizado el 65 % de su largo, pero en

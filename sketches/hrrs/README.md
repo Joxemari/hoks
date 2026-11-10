@@ -3889,6 +3889,45 @@ suyo se enreda (bandas que suben, bajan y se relevan); las verticales no
 siguen por debajo del nudo hasta la base; y sigue habiendo más trazos
 paralelos enteros (55 %) que en el calco (5 de 14).
 
+## Trigésima novena vuelta: el recinto desde los catorce trazos del calco
+
+El autor, sobre la 38: «aún lejos». En vez de mirar la foto, se leyeron los
+catorce trazos del calco con sus coordenadas, en la caja de 17,5 × 16,2 W:
+
+| trazo | largo | qué es |
+|---|---|---|
+| t0 | 32,6 W | **el marco A es un lazo**: baja de la barra al nudo en zigzag y, por el otro cabo, pata + diagonal + fondo + un gancho de 3,5 W que sube pegado a esa bajada. Casi cierra la ventana |
+| t1 | 25,1 W | **el marco B entra**: barra, pata corta (0,25), gira hacia dentro y baja hasta el nudo |
+| t8, t2, t10 | 4–18 W | **verticales entre las dos bajadas**, cabos de arriba a 0,33 · 0,38 · 0,44; t2 sigue hasta la base, las otras mueren en el nudo con un quiebro |
+| t5, t13 | 8,6 · 3,1 W | **el nido bajo la pata de B**: una ele que baja a D de la bajada y sale al límite; una barra corta suelta |
+| t3, t4 | 11,6 · 8,2 W | **eles que nacen EN el nudo**, bajan 2–4 W y barren al límite; anidadas, la de dentro más corta |
+| t6, t11, t7 | 4,5–8 W | bandas que **entran desde el límite** hacia el nudo: una con un escalón, una corta en medio |
+| t9, t12 | 4–5 W | **relleno bajo el nudo**: piezas cortas con un quiebro |
+
+El error de la 38: hacía que las verticales de arriba fueran las que barrían.
+En el original las verticales mueren en el nudo y las que barren nacen en él.
+
+**La gramática** (`tramarHebra`, recinto) sigue esa tabla. Dos decisiones:
+
+- **El centro es un haz a un pelo**: la bajada de A, tres o cuatro verticales y
+  la bajada de B son paralelas entre sí (en el calco, seis verticales seguidas);
+  cambia dónde empieza y dónde acaba cada una. Colocadas por coordenadas
+  quedaban con aire entre ellas y se leía ralo.
+- **Las eles de abajo se anidan hasta llenar**: tantas como quepan entre el
+  barrido de fuera y la banda que entra desde el límite.
+
+Medido: ningún trazo se cruza a sí mismo; 16 giros de más de 97° en 2.024
+trazos (el empalme del brazo de B); solape 0 de 220 con halo; pelo 0 por debajo
+de g; determinismo 44/44. Paralelizado 40 % (calco 65 %), rachas de 3,8 W
+(calco 4,0), trazos > 90 %: 33 % (calco 36 %).
+
+**Lo que falta, dicho claro.** La estructura ya es la del original, pero la
+obra sale **rala**: va paralelizada al 40 % frente al 65 %, es decir, hay aire
+donde el original tiene pelo. El nudo de abajo no se cierra —las bandas del
+lado grande son cortas y sueltas—, las eles no siempre llegan al límite, y
+falta la vuelta por abajo de t2 (baja, gira y sube antes de salir). Los seeds
+2074, 3003 y 2259 son los que más se acercan.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
