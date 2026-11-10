@@ -4202,6 +4202,43 @@ bloque 36 % frente a 53 %, travesía 24 % frente a 34 %. En los tres la masa
 existe pero partida en dos o tres manchas; en el original es una mancha grande
 por núcleo. Y el bloque sigue a 79 % de contacto.
 
+## Cuadragésima sexta vuelta: el tamaño del núcleo del recinto — tres intentos que no
+
+Objetivo: el núcleo mayor del recinto mide el 17 % de la caja y el del calco el
+33 %. Un mapa de celdas llenas (12 × 12) del calco frente a la frecuencia en lo
+generado enseña dónde: **en el calco la mitad de abajo es una sola mancha de
+lado a lado** (del límite del lado grande hasta tres cuartos del ancho, del 55 %
+de la altura hasta la base); aquí son dos —el haz central y la esquina de abajo
+del lado grande— con un hueco entre ellas, bajo el lazo, y el fondo bajo el nudo
+vacío.
+
+Se probaron tres cosas, se midieron y **se retiraron las tres** (no mejoran el
+núcleo y empeoran otra cosa):
+
+1. **Sacar el barrido del lado pequeño desde la última columna** para que las
+   de en medio bajen hasta la base. Núcleo 17 → 16 %; vuelven gemelos (0,08 →
+   0,52 pares por obra): las piezas bajo el nudo se copian entre sí.
+2. **Recortar el gemelo en vez de quitarlo** (pierde un tercio por un cabo), para
+   no abrir huecos. Gemelos a 0, pero el núcleo no sube (15 %) y los trazos
+   cortos pasan del 28 al 34 %.
+3. **Subir el nudo** (del 60–66 % al 52–59 % de la altura) y poner cuatro o
+   cinco columnas. Núcleo 14 %, tinta 113 → 108 W, y a la vista peor: menos
+   verticales y más piezas rotas.
+
+**Lo que se aprende.** El problema no es de parámetros. El recinto se construye
+*trazo a trazo* —marco, columnas, eles, carriles— y la masa es lo que resulta de
+que quepan; cada ajuste que llena un sitio rompe otro, porque el recorte y el
+filtro de gemelos deciden al final. El original funciona al revés, y es lo que
+el autor describió: **primero hay una zona sin aire, y los trazos son la manera
+de partirla**. Para llegar al 33 % hay que construir así: fijar la zona densa
+(su contorno y su superficie, variables), llenarla entera de bandas a un pelo, y
+decidir después por dónde corre cada trazo dentro de ella —dónde dobla, dónde
+hace el escalón, dónde acaba— y por dónde sale. Es una reescritura de la mitad
+de abajo del recinto, no un ajuste, y queda para decidir con el autor.
+
+Estado tras retirar: el de la vuelta 45 (contacto 85 %, núcleo 17 %, gemelos
+0,08 pares por obra, solape 0 de 220, determinismo 44/44).
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
