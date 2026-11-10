@@ -145,7 +145,7 @@ function medir({ seed, fmt, params, base }) {
   // distancias es lo que separa a esos dos trazos. El minimo de todas es la cifra,
   // y no tiene puntas: es una distancia entre dos conjuntos, no la anchura de un
   // hueco que se acaba.
-  let min = Infinity, quien = null;
+  let min = Infinity, quien = null, donde = null;   // `donde`: el pixel del minimo, en fraccion del lienzo (para ir a mirarlo)
   for (let y = 0; y < H - 1; y++) for (let x = 0; x < W - 1; x++) {
     const k = y * W + x, a = lab[k];
     if (!a) continue;
@@ -153,11 +153,11 @@ function medir({ seed, fmt, params, base }) {
       const b2 = lab[nb];
       if (!b2 || b2 === a) continue;
       const v = dt[k] + dt[nb] + 3;
-      if (v < min) { min = v; quien = a + '/' + b2; }
+      if (v < min) { min = v; quien = a + '/' + b2; donde = (x / W).toFixed(3) + ',' + (y / H).toFixed(3); }
     }
   }
   return { seed, pelo: min === Infinity ? null : (min / 3) / Math.max(1e-9, g),
-           gpx: g, n, quien, conHalo };
+           gpx: g, n, quien, donde, conHalo };
 }
 
 (async () => {
@@ -180,7 +180,7 @@ function medir({ seed, fmt, params, base }) {
   if (s) console.log(`  pelo (canal visible / g)   min ${s.min.toFixed(3)}   p50 ${s.p50.toFixed(3)}   max ${s.max.toFixed(3)}`);
   console.log(`  por debajo de g: ${malas.length}`);
   malas.sort((a, b) => a.pelo - b.pelo).slice(0, 6).forEach(r =>
-    console.log(`    ${r.cfg} seed ${r.seed}  pelo ${r.pelo.toFixed(3)}  trazos ${r.quien}  g ${r.gpx.toFixed(1)} px`));
+    console.log(`    ${r.cfg} seed ${r.seed}  pelo ${r.pelo.toFixed(3)}  trazos ${r.quien}  en ${r.donde}  g ${r.gpx.toFixed(1)} px`));
   if (sin.length) {
     const ss = stats(sin.map(r => r.pelo));
     console.log(`  sin halo (${sin.length} obras, descriptivo: ahi el cruce SE FUNDE y no deja blanco):`);

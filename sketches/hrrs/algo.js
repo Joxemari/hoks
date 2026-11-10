@@ -1150,9 +1150,15 @@
       out.push(izq.concat(der.reverse()));
       if (i + 2 < n && Ls[i + 1] > 1e-9) {
         // la cuña del vértice b, por el lado exterior del giro
-        const n2 = normal(i + 1), h = hEn((acc + L) / tot) + masEn(acc + L);
+        const n2 = normal(i + 1), h0 = hEn((acc + L) / tot), hm = h0 + masEn(acc + L);
         const cruz = (b.x - a.x) * (pts[i + 2].y - b.y) - (b.y - a.y) * (pts[i + 2].x - b.x);
         const sg = cruz > 0 ? -1 : 1;   // exterior: el lado contrario al giro
+        // LA CUÑA LLEVA LA MANO DEL FILO. Los filos de cada tramo se desplazan con el
+        // campo y el temblor; la cuña se pintaba con la anchura nominal y en el vértice
+        // el filo hacía un ESCALÓN del tamaño de la mano —en la travesía, medio pelo:
+        // pelo.js a doble resolución, 0,62 g, siempre en una esquina—. Toma el mismo
+        // desplazamiento que el filo de su lado en el vértice.
+        const fbv = fb(i, 1), h = hm + (sg > 0 ? (campo(b.x + nn.x * h0, b.y + nn.y * h0) + propio(acc + L, 1)) : (-campo(b.x - nn.x * h0, b.y - nn.y * h0) + propio(acc + L, -1))) * fbv;
         const e1 = { x: b.x + nn.x * h * sg, y: b.y + nn.y * h * sg }, e2 = { x: b.x + n2.x * h * sg, y: b.y + n2.y * h * sg };
         const bx = (nn.x + n2.x) * sg, by = (nn.y + n2.y) * sg, bm = hypot(bx, by);
         if (bm > 1e-6) {
@@ -1180,8 +1186,11 @@
       for (let i = 0; i < n - 1; i++) {
         acc2 += Ls[i];
         if (i + 1 >= n - 1) break;
-        const h = hEn(acc2 / tot) + masEn(acc2), q = [];
-        for (let k = 0; k < 16; k++) q.push({ x: pts[i + 1].x + Math.cos(k * Math.PI / 8) * h, y: pts[i + 1].y + Math.sin(k * Math.PI / 8) * h });
+        // (el disco se centra donde la mano ha llevado la banda en ese vértice: el eje
+        // desplazado por el campo, no el nominal; si no, por un lado se queda corto)
+        const v = pts[i + 1], nv = normal(i), hv = hEn(acc2 / tot), cv = campo(v.x, v.y) * fb(i, 1);
+        const h = hv + masEn(acc2) + abs(propio(acc2, 1)) + abs(propio(acc2, -1)), q = [];
+        for (let k = 0; k < 16; k++) q.push({ x: v.x + nv.x * cv + Math.cos(k * Math.PI / 8) * h, y: v.y + nv.y * cv + Math.sin(k * Math.PI / 8) * h });
         out.push(q);
       }
     }
@@ -1215,7 +1224,10 @@
           const Lt = largoDe(eje), fl = rm.range(FUNDE_L[0], FUNDE_L[1]) * Wt, pf = rm.bool(pFunde != null ? pFunde : P_FUNDE);
           if (ri === 0 && pf && Lt > fl + Wt) { const s0 = rm.range(Wt * 0.3, Lt - fl - Wt * 0.3); mano.funde = [s0, s0 + fl]; } }
         const caras = ri === 0 && tr.caras ? tr.caras : null;
-        const h = bandaHalo(eje, Wt, tr.gubia, paso, gpx, mano, 0, tr.caboHalo != null ? tr.caboHalo * gpx : null, caras), b = bandaHalo(eje, Wt, tr.gubia, paso, 0, mano, esq, 0, caras);
+        // (el halo corta el canal MÁS 0,35 px: es holgura de trama —el antialias y la
+        // cuña con mano pueden asomar décimas de píxel— para que «el pelo nunca mide
+        // menos de g» se cumpla también sobre el píxel y no solo sobre el polígono)
+        const h = bandaHalo(eje, Wt, tr.gubia, paso, gpx + 0.35, mano, 0, tr.caboHalo != null ? tr.caboHalo * gpx + 0.35 : null, caras), b = bandaHalo(eje, Wt, tr.gubia, paso, 0, mano, esq, 0, caras);
         if (h && b) { halos.push(...h); bandas.push(...b); }
       });
       if (!halos.length) return;
@@ -3575,7 +3587,7 @@
     // (la caja del calco mide 14,6 × 10 anchuras)
     bloque: { ancho: [0.056, 0.066], gam: [0.065, 0.09], cuerpo: [0.8, 0.9], alto: [0.54, 0.64],
               haces: [1, 1], hebras: [1, 1], jog: [35, 55], recto: [1.5, 4], quiebro: [1, 2], marco: false, bloque: true,
-              racha: [1.5, 2.6], libre: [1.5, 3.2], largo: [6, 12], lleno: [0.50, 0.58] },
+              racha: [1.5, 2.6], libre: [1.5, 3.2], largo: [8, 15], lleno: [0.50, 0.58] },
     // travesía (referencia 3): dos o tres hebras anchas que cruzan el pliego y salen
     // por los bordes, con uno o dos quiebros abiertos; una barra recta por un canto
     // (el pelo del original es 0,03 W; a 760 px eso son 2,5 px y el temblor de la mano se lo
@@ -3603,7 +3615,15 @@
     const corte = (A, B) => { const den = A.ux * B.uy - A.uy * B.ux; if (abs(den) < 0.2) return null;
       const t = ((B.px - A.px) * B.uy - (B.py - A.py) * B.ux) / den; return { x: A.px + A.ux * t, y: A.py + A.uy * t }; };
     const vertices = () => { const v = []; for (let i = 0; i < L.length; i++) {
-        const a = i === 0 ? { x: L[0].px, y: L[0].py } : (corte(L[i - 1], L[i]) || { x: (L[i - 1].px + L[i - 1].ux * L[i - 1].len + L[i].px) / 2, y: (L[i - 1].py + L[i - 1].uy * L[i - 1].len + L[i].py) / 2 });
+        // dos rectas casi paralelas: si comparten vértice (son tramos seguidos del
+        // original) el inglete se saca por la bisectriz, exacto —el punto medio se queda
+        // corto D·θ²/4, medio píxel con bandas de 90 px, y era el canal a 0,92 g de la ele
+        // y su relevo—; si no lo comparten (se quitó una recta entre medias), el medio
+        const casi = (A, B) => { const ex = A.px + A.ux * A.len, ey = A.py + A.uy * A.len;
+          const vx = ex + A.uy * d, vy = ey - A.ux * d, wx = B.px + B.uy * d, wy = B.py - B.ux * d;   // el vértice original visto desde cada recta
+          if (hypot(vx - wx, vy - wy) < 1e-6 * (1 + abs(d))) { const nx = -A.uy - B.uy, ny = A.ux + B.ux, nm = hypot(nx, ny) || 1e-9, c2 = nm / 2; return { x: vx + nx / nm * d / c2, y: vy + ny / nm * d / c2 }; }
+          return { x: (ex + B.px) / 2, y: (ey + B.py) / 2 }; };
+        const a = i === 0 ? { x: L[0].px, y: L[0].py } : (corte(L[i - 1], L[i]) || casi(L[i - 1], L[i]));
         v.push(a); }
       const u = L[L.length - 1]; v.push({ x: u.px + u.ux * u.len, y: u.py + u.uy * u.len }); return v; };
     for (let guard = 0; guard < pts.length && L.length > 1; guard++) {
@@ -3673,7 +3693,14 @@
     // alrededor de D y el recorte la trocea—. Así que el seguidor se construye con
     // la geometría exacta: la PARALELA del tramo que acompaña, entre dos puntos, y
     // una salida explícita (un quiebro y el camino a su meta).
-    const pon = (pts, rel, minL) => { for (const pz of recortar(pts, minL != null ? minL : W * 2.5)) trazos.push({ pts: pz, segs: segsDe(pz), rel }); };
+    // NINGÚN TRAMO DE MENOS DE MEDIA ANCHURA. Un tramo cortísimo con otro rumbo —el cabo
+    // de un trozo de paralela que cae junto a un vértice, dos muestras casi juntas— se
+    // pinta como un escalón en el filo, y en la travesía un escalón es medio pelo. Se
+    // funde con su vecino quitando el vértice de en medio. Todo trazo pasa por aquí.
+    const sinCortos = pl => { const o = pl.slice(); for (let guard = 0; guard < 40 && o.length > 2; guard++) { let k = -1;
+        for (let i = 0; i + 1 < o.length; i++) if (hypot(o[i + 1].x - o[i].x, o[i + 1].y - o[i].y) < W * 0.5) { k = i; break; }
+        if (k < 0) break; o.splice(k + 1 < o.length - 1 ? k + 1 : k, 1); } return o; };
+    const pon = (pts0, rel, minL) => { const pts = sinCortos(pts0); for (const pz of recortar(pts, minL != null ? minL : W * 2.5)) trazos.push({ pts: pz, segs: segsDe(pz), rel }); };
     // ── el cuerpo ────────────────────────────────────────────────────────────
     const ancho = S * rr(O.cuerpo), alto = S * rr(O.alto);
     const x0 = TRAV ? -W : (fw - ancho) / 2 + rng.range(-0.03, 0.03) * S, y0 = TRAV ? -W : (fh - alto) / 2 - 0.03 * S + rng.range(-0.02, 0.02) * S;
@@ -3781,7 +3808,11 @@
             if (d < 0.5 * D || d > 2.5 * D) continue; if (!best || d < best.d) best = { t, s: ac[i] + uc, sentido: c > 0 ? 1 : -1, d, total: ac[ac.length - 1] }; } } return best; };
       // un tramo cabe si su eje queda a D de todo lo puesto (salvo cerca de su propio arranque, que nace del marco)
       const cabeTramo = (a, b, p0) => { const L = hypot(b.x - a.x, b.y - a.y), n = max(1, Math.ceil(L / (W / 4))); for (let m = 1; m <= n; m++) { const x = a.x + (b.x - a.x) * m / n, y = a.y + (b.y - a.y) * m / n; if (hypot(x - p0.x, y - p0.y) < D * 1.1) continue; if (distA(x, y) < D * 0.985) return false; } return true; };
-      const dentro = q => q.x > x0 + W && q.x < x1 - W && q.y < y1 + W * 0.5 && q.y > y0 + (BL ? W * 0.5 : 0);
+      // (el cuerpo del bloque no es un rectángulo: su contorno se abomba. La caja es una
+      // superelipse de exponente 3,5, con el centro algo corrido en cada obra)
+      const bcx = (x0 + x1) / 2 + rng.range(-0.04, 0.04) * ancho * (BL ? 1 : 0), bcy = (y0 + y1) / 2 + rng.range(-0.04, 0.04) * alto * (BL ? 1 : 0);
+      const dentro = q => BL ? Math.pow(abs(q.x - bcx) / (ancho / 2), 3.5) + Math.pow(abs(q.y - bcy) / (alto / 2), 3.5) < 1
+                             : q.x > x0 + W && q.x < x1 - W && q.y < y1 + W * 0.5 && q.y > y0;
       // el bloque no cuelga ni barre: sus rumbos son los cuatro de una escuadra algo girada
       const giroObra = BL ? rng.range(-6, 6) * RAD : 0;
       const crecer = (p0, ang0, centro, Lmax) => {
@@ -3819,6 +3850,10 @@
           pts.push(mejor.o); L += mejor.Ls; q = mejor.o; ang = mejor.r; ultGiro = mejor.g2; socio = null;
           if (barre && abs(q.x - xCanto) < W * 1.5) break;
         }
+        // una cola de menos de 1,2 W tras el último quiebro es una punta de flecha (el quiebro
+        // de entrada a un enganche que no tuvo sitio): se quita
+        while (pts.length > 2 && hypot(pts[pts.length - 1].x - pts[pts.length - 2].x, pts[pts.length - 1].y - pts[pts.length - 2].y) < W * 1.2) pts.pop();
+        q = pts[pts.length - 1];
         if (BL && pts.length > 1) { // acabar contra algo: si a menos de 2,5 W por delante hay tinta, se llega hasta ella (recortar deja el pelo)
           const a = pts[pts.length - 2], hx = (q.x - a.x) / (hypot(q.x - a.x, q.y - a.y) || 1e-9), hy = (q.y - a.y) / (hypot(q.x - a.x, q.y - a.y) || 1e-9);
           for (let st = W * 0.25; st <= W * 2.5; st += W * 0.25) { const o = { x: q.x + hx * st, y: q.y + hy * st }; if (!dentro(o)) break; if (distA(o.x, o.y) < D * 0.985) { pts[pts.length - 1] = o; break; } } }
@@ -3845,7 +3880,7 @@
           const cand = trazos.filter(t => t.rel !== 'marco'); if (!cand.length) continue; const t = cand[rng.int(0, cand.length - 1)], ac = arco(t.pts), sv = rng.range(0.1, 0.8) * ac[ac.length - 1];
           const sp = subPoli(t.pts, sv, min(ac[ac.length - 1], sv + W)); if (sp.length < 2) continue; const ux = sp[1].x - sp[0].x, uy = sp[1].y - sp[0].y, um = hypot(ux, uy) || 1e-9, sd = rng.bool(0.5) ? 1 : -1;
           p0 = { x: sp[0].x - uy / um * D * sd, y: sp[0].y + ux / um * D * sd }; if (!dentro(p0) || distA(p0.x, p0.y) < D * 0.985) continue; a0 = Math.atan2(uy, ux); if (BL ? rng.bool(0.5) : Math.sin(a0) < -0.3) a0 += Math.PI; }
-        const pts = crecer(p0, a0, c, W * rr(O.largo)), minP = W * (BL ? 2.6 : 4);
+        const pts = crecer(p0, a0, c, W * rr(O.largo)), minP = W * (BL ? 3.5 : 4);
         if (pts.length < 2 || largoDe(pts) < minP) continue;
         const antes = trazos.length; pon(pts, 'hebra', minP); if (trazos.length > antes && modo < 0.5) cuelgues.push(p0.x);
       }
@@ -3870,6 +3905,10 @@
       const lateral = y => A1 * Math.sin(6.2832 * y / l1 + f1) + A2 * Math.sin(6.2832 * y / l2 + f2);
       const yCodo = largo * rng.range(0.46, 0.62);
       const ele = []; for (let y = -W * 1.5; y < yCodo; y += W * rng.range(1.2, 2.2)) ele.push({ x: xs + lateral(y), y });
+      // (si el último punto de la columna cae a menos de 0,8 W del codo se quita: dejaba
+      // un tramo de una décima de anchura con otro rumbo, un escalón que las paralelas
+      // copiaban —pelo.js a doble resolución, 0,83 g—)
+      if (ele.length > 2 && yCodo - ele[ele.length - 1].y < W * 0.8) ele.pop();
       ele.push({ x: xs + lateral(yCodo), y: yCodo }); const iCodo = ele.length - 1; let iBrazo = iCodo;
       { // el codo en dos quiebros y el brazo: un paso en diagonal, un tramo casi horizontal, a
         // veces una subida en diagonal (como el original), y hasta el borde
@@ -3941,7 +3980,11 @@
         // la salida: un quiebro de 40–55° hacia fuera del vecino y recto hasta salir del pliego
         const ang = suelta(off, sd * rng.range(40, 55) * RAD); let x = off[off.length - 1].x, y = off[off.length - 1].y;
         for (let n = 0; n < 12 && x > -W * 1.5 && y > -W * 1.5 && x < fw + W * 1.5 && y < fh + W * 1.5; n++) { const st = W * rng.range(1.5, 2.5); x += Math.cos(ang + rng.range(-0.06, 0.06)) * st; y += Math.sin(ang + rng.range(-0.06, 0.06)) * st; off.push({ x, y }); }
-        pon(off, 'seguidor', W * 4);
+        // CASI NADA ACABA EN EL AIRE (referencia 3): el seguidor entra solo si queda de una
+        // pieza y su cabo sale del pliego o muere contra tinta, a un pelo
+        const pzs = recortar(sinCortos(off), W * 4); if (pzs.length !== 1) continue; const fin = pzs[0][pzs[0].length - 1];
+        const fuera = fin.x < 0 || fin.y < 0 || fin.x > fw || fin.y > fh; if (!fuera && distA(fin.x, fin.y) > quiero + W * 0.3) continue;
+        trazos.push({ pts: pzs[0], segs: segsDe(pzs[0]), rel: 'seguidor' });
       }
     }
     // ── salida, con la forma del paseo ───────────────────────────────────────

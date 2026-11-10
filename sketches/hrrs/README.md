@@ -3748,6 +3748,51 @@ debajo de g en 80, determinismo 24/24. Configuración `hebra-blo` en la batería
 (aquí salen algunas de un solo codo); sigue algo sobre-paralelizado; y el
 contorno del cuerpo es la caja, no el abombado que hacen sus piezas de borde.
 
+## Trigésima quinta vuelta: el escalón de la esquina, y el bloque afinado
+
+**El canal fino de la travesía era del pintor.** Llevaba tres vueltas abierto
+(«0,8–0,9 g en una esquina de una de cada diez travesías») y se le echó la culpa
+al ancho del pelo, a la variación de anchura y al temblor. Medido a doble
+resolución salía *peor* (0,62 g), así que era geometría; y ampliado se ve: **el
+canal hace un escalón en cada vértice**. La mano desplaza los filos de cada
+tramo (el campo común y el temblor propio), pero la **cuña** que rellena la
+esquina y el **disco** de halo del vértice se pintaban con la anchura nominal,
+sin ese desplazamiento: en el vértice el filo saltaba lo que mide la mano, y con
+un pelo de 0,07 W eso es medio canal. Ahora la cuña toma el desplazamiento del
+filo de su lado y el disco se centra donde la mano ha llevado la banda. Además
+el halo corta el canal más 0,35 px, holgura de trama.
+
+Es un arreglo del pintor, común a todos los modelos. `pelo.js` dice ahora
+**dónde** está el mínimo (`en x,y`), que es lo que permitió encontrarlo.
+
+| travesía (hebra) | antes | ahora |
+|---|---|---|
+| a 760 px, por debajo de g | 3–7 de 40 (mín. 0,72–0,92) | 0 de 40 (mín. 1,01) |
+| a 1520 px, mínimo | 0,62 | 0,80 |
+
+A doble resolución queda un escalón en una de cada diez (seed 1753514820, en
+0,672 · 0,732, entre las dos compañeras): abierto.
+
+**Otros arreglos por el camino**, todos del modelo de hebra: la paralela une dos
+rectas casi paralelas por el inglete exacto cuando comparten vértice (el punto
+medio se quedaba corto D·θ²/4); ningún tramo de menos de media anchura llega a
+pintarse (`sinCortos`: un tramo cortísimo con otro rumbo es un escalón en el
+filo); y la columna de la ele no deja un punto a una décima de anchura del codo.
+
+**El bloque.** Piezas de 8–15 W (antes 6–12) y mínimo de 3,5 W; **contorno
+abombado**: la caja es una superelipse de exponente 3,5 con el centro algo
+corrido, no un rectángulo; y las **puntas de flecha** fuera: una cola de menos
+de 1,2 W tras el último quiebro —el quiebro de entrada a un enganche que no tuvo
+sitio— se quita.
+
+**La travesía.** Un seguidor parcial solo entra si queda de una pieza y su cabo
+sale del pliego o muere contra tinta: casi nada acaba en el aire.
+
+Medido: solape 0 de 200 en las configuraciones con halo (la `sin-halo`, 1 de 10,
+como antes); determinismo 60/60; pelo a 760 px, 0 por debajo en hebra. En el
+modelo de rejilla queda un seed a 0,988 g; la versión anterior daba 0,964 en
+otro seed del mismo tipo: es el mismo nivel, no una regresión.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
