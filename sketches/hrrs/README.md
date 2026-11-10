@@ -3843,6 +3843,52 @@ hasta 3,5 D y naciendo más veces al costado de un trazo puesto: 52 %, rachas de
 Medido: solape 0 de 220 con halo, pelo 0 por debajo de g en las veintidós
 configuraciones (mínimo 1,107), determinismo 44/44.
 
+## Trigésima octava vuelta: el recinto, leído otra vez — un nudo y sus abanicos
+
+El autor: «referente 2 y 3 bastante conseguidos, el 1 no tiene buena pinta».
+Ampliada la referencia 1 hasta ver cada banda, la lectura que venía usando
+estaba mal desde la base, y la vara de la paralelización no lo decía:
+
+| | lo que hacía | lo que hay |
+|---|---|---|
+| del marco | ocho o diez hebras colgando de la barra, una cortina | **un solo trazo**: la barra dobla en el centro y baja al nudo |
+| el cuerpo | meandros verticales | **un nudo** en la mitad de abajo, y abanicos que barren a los dos lados hasta los límites del cuadrado |
+| el trazo | un meandro vertical y sus vecinos | **una ele**: baja con las demás verticales y dobla en chaflán para barrer; arriba corre con unas vecinas, al barrer con otras |
+| lo que asoma | — | los cabos de arriba de las verticales, escalonados en el vacío |
+| el peso | pelo de 0,16–0,24 W: alambre | pelo de 0,11 W y W = 0,063 del cuerpo: **masa** |
+
+**La gramática nueva** (`tramarHebra`, recinto; en coordenadas canónicas, y
+`lado` la espeja):
+
+1. **Marco A**: (diagonal hacia el nudo) + pata + barra hasta el centro + **la
+   bajada** en zigzag hasta 1,5 D por encima del nudo. Una sola tinta.
+2. **Marco B**: el resto de la barra, la otra pata y, a veces, un gancho.
+3. **Las eles**: una vertical maestra en zigzag; dos o tres doblan al lado
+   grande y una o dos al otro, anidadas a D, con el cabo de arriba escalonado.
+   Cada una es vertical + chaflán + barrido en zigzag hasta el límite.
+4. **Bandas sueltas** bajo las eles del lado grande: acompañan al barrido una
+   racha; la última, tras 4–6 W, se va por su cuenta bajando.
+5. Una o dos sueltas al otro lado.
+
+El recinto deja de usar el crecimiento por enganche (queda para el bloque).
+
+**Lo que se probó por el camino**: verticales y abanicos como piezas separadas
+(se leía la masa, pero el 68 % de los trazos eran paralelos enteros: otra vez
+trazos repetidos); con las eles baja al 55 %. Y un fallo propio: separar el
+barrido de la ele filtrando por altura lo troceaba, porque el zigzag sube y
+baja.
+
+Medido: 0 giros de más de 97° salvo 1 en 1.594 trazos, ningún trazo se cruza a
+sí mismo, solape 0 de 220 con halo, pelo 0 por debajo de g a 760 y a 1520 px,
+determinismo 44/44. Tres obras de 110 salen con el pelo por debajo de 3 px a
+760 px (aviso de `pelo.js`: ahí manda la trama).
+
+**Lo que le falta, a ojo**: los barridos son más largos y rectos que los del
+original, que zigzaguea más y con bandas más cortas; el nudo es limpio y el
+suyo se enreda (bandas que suben, bajan y se relevan); las verticales no
+siguen por debajo del nudo hasta la base; y sigue habiendo más trazos
+paralelos enteros (55 %) que en el calco (5 de 14).
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

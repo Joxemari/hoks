@@ -3587,7 +3587,8 @@
   const HEBRA = {
     // recinto (referencia 1): marco fino de dos o tres lados, dos o tres haces de
     // meandros colgando de la barra, el más denso a un lado (centro de gravedad)
-    recinto: { ancho: [0.024, 0.032], gam: [0.16, 0.24], cuerpo: [0.46, 0.56], alto: [0.42, 0.52],
+    // (vuelta 38: masa, no alambre. En el original W es 0,063 del ancho del cuerpo y el pelo 0,11 W)
+    recinto: { ancho: [0.029, 0.035], gam: [0.12, 0.16], cuerpo: [0.48, 0.56], alto: [0.46, 0.54],
                haces: [2, 3], hebras: [2, 5], jog: [35, 60], recto: [2, 6], quiebro: [1.2, 3], marco: true, barrido: [3, 7],
                // el crecimiento: rachas enganchadas (medidas: 3,3–5,5 W), tramos sueltos, largo del trazo y
                // fracción de la caja que se llena (el calco: 52 %)
@@ -3729,30 +3730,6 @@
     let pataEnfrente = false;   // si existe la pata del lado contrario al canto (de ella pueden nacer trazos)
     const nH = rng.int(O.haces[0], O.haces[1]);
     const ns = []; for (let h = 0; h < nH; h++) ns.push(h === 0 ? rng.int(O.hebras[1] - 1, O.hebras[1]) : rng.int(O.hebras[0], O.hebras[0] + 1));
-    if (O.marco) {
-      // EL MARCO SALE DEL CUERPO (vuelta 31: en el calco el marco llega el séptimo,
-      // explicado por lo que tiene debajo). Su pata del lado que pesa es corta: acaba
-      // dos D por encima del barrido más alto del primer racimo, que es quien llega
-      // al canto. Se coloca antes solo porque el recorte lo necesita puesto.
-      // EL MARCO: la barra arriba y una o dos patas de largo desigual, nunca la U
-      // entera. La barra puede ir partida en dos, como en el original.
-      // una sola tinta con sus esquinas: pata izquierda + barra (+ pata derecha), o
-      // partida en dos piezas por la barra
-      const partida = rng.bool(0.5), xc = x0 + ancho * rng.range(0.4, 0.6);
-      const topeCanto = max(alto * 0.2, alto - ns[0] * D - 2 * D - W);
-      const dos = rng.bool(0.7); let li = alto * rng.range(0.3, 0.6), ld = alto * rng.range(0.3, 0.6);
-      if (lado < 0) li = min(li, topeCanto); else ld = min(ld, topeCanto);
-      const izq = dos || lado < 0, der = dos || lado > 0;   // la pata del canto está siempre
-      pataEnfrente = lado > 0 ? izq : der;
-      const A = [], B = [];
-      if (izq) A.push({ x: x0, y: y0 + li }); A.push({ x: x0, y: y0 });
-      if (partida) { A.push({ x: xc - D / 2, y: y0 }); B.push({ x: xc + D / 2, y: y0 }); }
-      B.push({ x: x1, y: y0 }); if (der) B.push({ x: x1, y: y0 + ld });
-      // el gancho: la pata acaba volviéndose hacia dentro (en el original, la izquierda)
-      if (izq && rng.bool(0.5)) A.unshift({ x: x0 + W * rng.range(1.5, 3), y: y0 + li });
-      if (der && rng.bool(0.35)) B.push({ x: x1 - W * rng.range(1.5, 3), y: y0 + ld });
-      if (partida) { pon(A, 'marco'); pon(B, 'marco'); } else pon(A.concat(B), 'marco');
-    }
     // ── los haces ────────────────────────────────────────────────────────────
     // el meandro maestro: baja desde la barra con tramos verticales y quiebros
     // oblicuos (jog) a uno y otro lado —nunca dos seguidos al mismo lado más de
@@ -3792,20 +3769,68 @@
       // para que el barrido sea largo, como en el original.
       const xCanto = lado < 0 ? x0 : x1; let primero = null;
       if (O.marco) {
-      const xs0 = xCanto - lado * ancho * rng.range(0.35, 0.5);
-      // (sin tramos horizontales intermedios: uno que se aleje del canto, la bajada y el
-      // barrido de vuelta hacen una U —la forma que no existe— y las paralelas de dentro
-      // se colapsan en ella: solape.js, 7 de 50)
-      primero = meandro(xs0, y0 + quiero, y1, lado, false, x0 + W * 1.5, x1 - W * 1.5, true);
-      // el barrido arranca siempre de un tramo vertical: si el meandro acabó en un
-      // horizontal (lo cortó el marco) se quita, y si acabó en quiebro se baja un tramo.
-      // Sin esto el barrido salía de un quiebro en ángulo agudo o daba la vuelta, y
-      // las paralelas se pisaban en la esquina (solape.js: 7 de 50, a 46°).
-      { let u = primero[primero.length - 1], a2 = primero[primero.length - 2];
-        if (abs(u.y - a2.y) < 1e-9 && primero.length > 2) { primero.pop(); u = primero[primero.length - 1]; a2 = primero[primero.length - 2]; }
-        if (abs(u.x - a2.x) > 1e-9) primero.push({ x: u.x, y: u.y + W * rng.range(1.5, 2.5) }); }
-      primero.push({ x: xCanto, y: primero[primero.length - 1].y });
-      pon(primero, 'primero', W * 3);
+      // ── EL RECINTO, LEÍDO OTRA VEZ (vuelta 38) ──────────────────────────────
+      // El autor: «el 1 no tiene buena pinta». Ampliada la referencia, lo que hay no
+      // es una cortina de hebras colgando de la barra: es UN NUDO en la mitad de abajo
+      // del que salen ABANICOS —cuatro bandas en zigzag que barren a un lado hasta el
+      // límite del cuadrado, dos o tres al otro, y tres verticales cuyos cabos de
+      // arriba asoman escalonados en el vacío—, y del marco baja UN solo trazo: la
+      // barra, que dobla en el centro y entra en el nudo. Y es masa, no alambre: el
+      // pelo mide 0,11 W. Se dibuja en coordenadas canónicas (el abanico grande a la
+      // izquierda) y `lado` lo espeja.
+      const M = pl => lado < 0 ? pl : pl.map(q => ({ x: x0 + x1 - q.x, y: q.y }));
+      const U = u => x0 + u * ancho, V = v => y0 + v * alto;
+      // un zigzag: tramos rectos en el rumbo `a` y quiebros oblicuos a uno y otro lado
+      const zig = (p0, a, L, jr, sr) => { const pts = [{ x: p0.x, y: p0.y }]; let x = p0.x, y = p0.y, d = 0, sg = rng.bool(0.5) ? 1 : -1;
+        while (d < L) { const st = min(W * rr(sr), L - d); x += Math.cos(a) * st; y += Math.sin(a) * st; d += st; pts.push({ x, y }); if (L - d < W * 2.5) break;
+          const th = rr(jr) * RAD * sg, jl = W * rng.range(1.1, 2); x += Math.cos(a + th) * jl; y += Math.sin(a + th) * jl; d += Math.cos(th) * jl; pts.push({ x, y }); sg = rng.bool(0.8) ? -sg : sg; }
+        return pts; };
+      const xEn = (pl, y) => { for (let i = 0; i + 1 < pl.length; i++) { const a = pl[i], b = pl[i + 1]; if ((a.y - y) * (b.y - y) <= 0 && abs(b.y - a.y) > 1e-9) return a.x + (b.x - a.x) * (y - a.y) / (b.y - a.y); } return pl[y < pl[0].y ? 0 : pl.length - 1].x; };
+      const acorta = (pl, ini, fin) => { const Lt = largoDe(pl); return Lt > ini + fin + W * 3 ? subPoli(pl, ini, Lt - fin) : pl; };
+      const c = rng.range(0.36, 0.46), kv = rng.range(0.52, 0.6), yK = V(kv);
+      // 1. EL MARCO A: (diagonal hacia el nudo) + pata + barra hasta el centro + LA BAJADA
+      //    en zigzag hasta justo encima del nudo
+      { const la = rng.range(0.3, 0.42), A = [];
+        // (la diagonal de la pata acaba por encima del abanico: llega al nudo, no lo pisa)
+        if (rng.bool(0.7)) { const dg = min(alto * rng.range(0.12, 0.2), yK - D * 1.3 - V(la)); if (dg > W * 1.5) A.push({ x: U(0) + dg * rng.range(0.6, 0.9), y: V(la) + dg }); }
+        A.push({ x: U(0), y: V(la) }, { x: U(0), y: V(0) }, { x: U(c), y: V(0) });
+        const baja = zig({ x: U(c), y: V(0) }, Math.PI / 2, max(W * 4, yK - y0 - D * 1.5 - alto * rng.range(0, 0.05)), [20, 35], [1.5, 4]);
+        pon(M(A.concat(baja.slice(1))), 'marco', W * 3); }
+      // 2. EL MARCO B: el resto de la barra, la otra pata y, a veces, el gancho hacia dentro
+      const lb = rng.range(0.24, 0.34);
+      { const B = [{ x: U(c) + D, y: V(0) }, { x: U(1), y: V(0) }, { x: U(1), y: V(lb) }];
+        if (rng.bool(0.55)) B.push({ x: U(1) - ancho * rng.range(0.14, 0.24), y: V(lb) + alto * rng.range(0.005, 0.05) });
+        pon(M(B), 'marco', W * 3); }
+      // 3. EL NUDO: LAS VERTICALES DOBLAN Y SON LOS ABANICOS. En el original las bandas
+      //    que bajan juntas por el centro se abren abajo: unas doblan a un lado y barren
+      //    hasta el límite del cuadrado, las otras al otro. Cada trazo es una ELE con el
+      //    codo en chaflán, y cambia de vecinos: arriba corre con todas las verticales,
+      //    al barrer solo con las de su lado. Las eles de un mismo lado van anidadas (la
+      //    de fuera, a D), con el cabo de arriba escalonado: lo que asoma en el vacío.
+      const nvL = rng.int(2, 3), nvR = rng.int(1, 2), nT = nvL + nvR, xv = U(c) + D * rng.range(1.6, 2.4), yTop = V(kv - rng.range(0.3, 0.4));
+      const mV = zig({ x: xv, y: yTop }, Math.PI / 2, y1 - yTop, [30, 50], [1.5, 4]);
+      const cortaY = (pl, ya, yb) => { const ms = muestrear(pl, W / 8).filter(q => q.y >= ya && q.y <= yb); return ms.length > 2 ? simplificar(ms.map(q => ({ x: q.x, y: q.y }))) : null; };
+      const ch = W * rng.range(1.1, 1.6);
+      // la ele maestra de un lado: la vertical `vert` hasta el nivel y, el chaflán, y el barrido en zigzag hasta el límite
+      const ele = (vert, y, sgn) => { const v = cortaY(vert, -1e9, y - ch); if (!v) return null; const e = v[v.length - 1], p1 = { x: e.x + sgn * ch, y };
+        const lim = sgn < 0 ? x0 : x1, sw = zig(p1, sgn < 0 ? Math.PI : 0, abs(lim - p1.x) - W, [25, 40], [1.5, 3.2]); sw.push({ x: lim, y: sw[sw.length - 1].y }); const pl = v.concat(sw); pl.sw = sw; return pl; };
+      const L0 = ele(mV, yK, -1), yR = yK + D * rng.range(-0.5, 1.5), R0 = ele(paralela(mV, -(nT - 1) * D), yR, 1);
+      const packs = [[L0, nvL, -1], [R0, nvR, 1]];
+      for (const [e0, n, sgn] of packs) { if (!e0) continue;
+        for (let k = 0; k < n; k++) { let pl = k === 0 ? e0 : paralela(e0, sgn * k * D);   // (bajando: d < 0 cae al este, la de fuera de un giro al oeste; y al revés)
+          pl = acorta(pl, W * rng.range(0, 1) + k * W * rng.range(0.6, 1.8), k && rng.bool(0.3) ? W * rng.range(1.5, 4) : 0); pon(M(pl), k === 0 && sgn < 0 ? 'primero' : 'ele', W * 3); } }
+      // 4. LAS BANDAS SUELTAS del abanico grande, debajo de las eles: acompañan al barrido
+      //    una racha y no nacen del nudo; la de más abajo, tras su racha, se va por su cuenta
+      if (L0) { const barr = L0.sw, nE = rng.int(2, 3);   // (el barrido tal cual: filtrarlo por altura lo troceaba, el zigzag sube y baja)
+        for (let e = 0; e < nE; e++) { let pl = paralela(barr, -(nvL + e) * D); const Lt = largoDe(pl);
+          if (e === nE - 1 && Lt > W * 7) { // la última: una racha de 4–6 W y luego su propio zigzag, bajando
+            const run = W * rng.range(4, 6), ini = W * rng.range(0, 2); pl = subPoli(pl, ini, min(Lt, ini + run)); const u = pl[pl.length - 1], th = rng.range(18, 30) * RAD;
+            const Lz = min((u.x - x0) / Math.cos(th), (y1 + W - u.y) / Math.sin(th)) - W; if (Lz > W * 2) pl = pl.concat(zig(u, Math.PI - th, Lz, [20, 35], [1.5, 3]).slice(1)); }
+          else pl = acorta(pl, W * rng.range(0, 3), rng.bool(0.4) ? W * rng.range(1.5, 4) : 0);
+          pon(M(pl), 'abanico', W * 3); } }
+      // 5. y una o dos sueltas al otro lado
+      if (R0) { const barr = R0.sw, nE = rng.int(0, 2);
+        for (let e = 0; e < nE; e++) pon(M(acorta(paralela(barr, (nvR + e) * D), W * rng.range(0, 3), rng.bool(0.4) ? W * rng.range(1.5, 4) : 0)), 'abanico', W * 3); }
       }
       // ── EL CRECIMIENTO (vuelta 33) ─────────────────────────────────────────
       // Medido en los calcos: un trazo va paralelizado el 65 % de su largo, pero en
@@ -3899,7 +3924,7 @@
       const tinta = () => trazos.reduce((a, t) => a + largoDe(t.pts) * W, 0) / (ancho * alto);
       const lleno = params.cobertura != null ? params.cobertura : rr(O.lleno);
       const cuelgues = primero ? [primero[0].x] : [];
-      for (let intento = 0; intento < (BL ? 500 : 140) && tinta() < lleno; intento++) {
+      for (let intento = 0; BL && intento < 500 && tinta() < lleno; intento++) {   // (el recinto ya no crece: tiene su gramática)
         const c = BL ? centros[rng.int(0, centros.length - 1)] : centros.length > 1 && !rng.bool(centros[0].w) ? centros[1] : centros[0];
         let p0, a0; const modo = BL ? (trazos.length ? 0.9 : -1) : rng.range(0, 1);
         if (modo < 0) { // (bloque) nace suelto, junto a un centro, en uno de los cuatro rumbos
