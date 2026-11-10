@@ -4106,6 +4106,54 @@ original tiene seis, y es la siguiente cosa a mirar.
 Gemelos tras esta vuelta: 0,02 pares por obra (1 de 60). Solape 0 de 220 con
 halo, pelo 0 por debajo de g a 760 y 1520 px, determinismo 44/44.
 
+## Cuadragésima cuarta vuelta: núcleos sin aire, y salir en haz
+
+El autor: «es raro que haya trazos inconexos; en la mayoría de los grabados hay
+espacios sin aire donde se concentran muchos trazos (alta densidad, aunque puede
+que con algún huequillo) y de ahí salen para fuera. En cada cuadro puede haber
+uno o más de un espacio de alta densidad, y su superficie es variable».
+
+`verificacion/conexion.js` mide tres cosas: si los trazos se tocan (ejes a menos
+de 1,35 D), **cuánto del largo de cada trazo va a un pelo de otro** (contacto), y
+los **núcleos**: manchas conexas de celdas llenas en rejilla de 12 × 12.
+
+| | contacto mediano | núcleo mayor | núcleos | de una pieza |
+|---|---|---|---|---|
+| calco 1 | 100 % | 33 % de la caja | 3 | sí |
+| calco 2 | 100 % | 53 % | 1 | sí |
+| calco 3 | 96 % | 34 % | 1 | sí |
+| recinto, vuelta 43 | 74 % | 16 % | 3,2 | 51 de 60 |
+| **recinto, ahora** | 85 % | 17 % | 3,4 | 59 de 60 |
+| bloque (hebra) | 72 % | 37 % | 2,4 | 60 de 60 |
+| travesía (hebra) | 53 % | 23 % | 2,3 | 60 de 60 |
+
+La lectura del autor es exacta y la medida la afina: los trazos generados casi
+siempre se tocan en algún punto —no están sueltos del todo—, pero **solo una
+parte de su largo va acompañada**. En el original un trazo va a un pelo de otro
+prácticamente entero: cuando sale del núcleo hacia fuera, **sale en haz**, con
+otro al lado. Aquí salían solos y cruzaban el blanco. Y el núcleo, que en el
+original es una mancha grande, aquí son tres o cuatro pequeñas.
+
+**En el recinto:**
+
+- **Salir en haz.** Al lado pequeño salen ahora dos trazos juntos: la ele del
+  nido y, un carril por debajo de su barrido, la columna 2, que dobla, pasa bajo
+  el cabo del marco B y sigue pegada a ella hasta el límite.
+- **Nada corre solo** (`podar`): los cabos que siguen por el blanco sin nadie a
+  un pelo se recortan hasta dejar como mucho 2,5 anchuras libres —lo que asoma
+  una vertical por encima de sus vecinas—; un trazo que no toca a nadie se
+  quita. El marco no se toca.
+
+Medido: solape 0 de 220 con halo, pelo 0 por debajo de g a 760 y 1520 px,
+determinismo 44/44; gemelos 0,08 pares por obra.
+
+**Lo que falta, y es lo principal.** El núcleo sigue siendo la mitad del del
+original (17 % frente a 33 %): la masa está repartida en manchas pequeñas en vez
+de concentrada. Y **la travesía y el bloque tienen el mismo problema de
+contacto** (53 % y 72 %): en la travesía los brazos salen solos al borde. La
+regla —núcleo denso, y lo que sale, sale acompañado— hay que llevarla a los
+tres tipos como principio de construcción, no como recorte al final.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

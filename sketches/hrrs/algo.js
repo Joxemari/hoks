@@ -3898,15 +3898,22 @@
       //    cinturón de ese lado); debajo sigue, en su columna, una pieza corta;
       //  · las demás mueren en el nudo.
       { const q1 = cortaY(col(1), V(topDe(1)), V(rng.range(0.86, 0.94))); if (q1) pon(M(q1), 'primero', W * 3); }
-      const e2 = ele(cortaY(col(2), V(topDe(2)), 1e9) || [P(c + 3 * D / ancho, 0.3), P(c + 3 * D / ancho, 1)], yS, 1); if (e2) pon(M(e2), 'ele', W * 3);
+      // SALIR EN HAZ (vuelta 44; el autor: «hay espacios sin aire donde se concentran muchos
+      // trazos, y de ahí salen para fuera»). Medido con `conexion.js`: en los calcos un trazo
+      // va a un pelo de otro en el 96–100 % de su largo; aquí, en el 74 %: los que salían del
+      // nudo lo hacían SOLOS, cruzando el blanco. Al lado pequeño salen ahora dos juntos: la
+      // ele del nido y, un carril por debajo, la columna 2.
+      // 4. EL NIDO bajo la pata de B: una ele que baja a D de la bajada de B y sale al límite, y una barra suelta
+      const vertN = cortaY(paralela(bajaL, -(nC + 2) * D), V(lb) + D * 1.25, 1e9) || [P(uB, lb + 0.1), P(uB, 1)], e5 = ele(vertN, yS - D, 1);
+      if (e5) pon(M(e5), 'ele', W * 3);
+      if (rng.bool(0.8)) { const ys = V(lb) + D * 1.25 + alto * rng.range(0, 0.02); pon(M([{ x: x1, y: ys }, { x: xEn(vertN, ys) + D * 0.5, y: ys + alto * jt() }]), 'suelta', W * 1.8); }
+      // la columna 2: baja, dobla, pasa bajo el cabo de B y bajo el codo de la ele del nido, y sigue POR EL CARRIL de debajo de su barrido
+      let e2 = null;
+      { const v = cortaY(col(2), V(topDe(2)), yS - ch); if (v && e5) { const e = v[v.length - 1], p1 = { x: e.x + ch, y: yS }, l1 = paralela(e5.sw, D).filter(q => q.x > p1.x + W * 0.6); if (l1.length > 1) { e2 = v.concat([p1], l1); e2.sw = [p1].concat(l1); pon(M(e2), 'ele', W * 3); } } }
       { const r2 = cortaY(col(2), yS + D * 1.3, V(rng.range(0.9, 0.97))); if (r2) pon(M(r2), 'relleno', W * 1.8); }
       for (let k = 3; k < nC; k++) { const pl = cortaY(col(k), V(topDe(k)), V(kv - rng.range(0, 0.04))); if (pl) pon(M(pl), 'vertical', W * 2.5); }
-      // 4. EL NIDO bajo la pata de B: una ele que baja a D de la bajada de B y sale al límite; una barra suelta; y un barrido por debajo
-      { const vert = cortaY(paralela(bajaL, -(nC + 2) * D), V(lb) + D * 1.25, 1e9) || [P(uB, lb + 0.1), P(uB, 1)], e5 = ele(vert, V(kv - rng.range(0.02, 0.06)), 1);   // (paralela de la bajada de B: con zigzag propio chocaban y se troceaba)
-        if (e5) pon(M(e5), 'ele', W * 3);
-        if (rng.bool(0.8)) { const ys = V(lb) + D * 1.25 + alto * rng.range(0, 0.02); pon(M([{ x: x1, y: ys }, { x: xEn(vert, ys) + D * 0.5, y: ys + alto * jt() }]), 'suelta', W * 1.8); }   // la barra suelta del nido: del límite hasta la ele, a un pelo bajo la pata
-        // bajo el barrido de la columna 2, medio carril más pegado al nudo; lo demás es la esquina vacía
-        if (e2 && rng.bool(0.6)) { const l1 = paralela(e2.sw, D), L1 = largoDe(l1); pon(M(subPoli(l1, 0, L1 * rng.range(0.35, 0.55))), 'carril', W * 2); } }
+      // bajo ese barrido, medio carril más pegado al nudo; lo demás es la esquina vacía
+      if (e2 && rng.bool(0.6)) { const l1 = paralela(e2.sw, D), L1 = largoDe(l1); pon(M(subPoli(l1, 0, L1 * rng.range(0.35, 0.55))), 'carril', W * 2); }
       // 5. EL LADO GRANDE, abajo: las eles que nacen EN el nudo, bajan y barren hasta el límite (anidadas, la de dentro más corta)
       { const vert = cortaY(col(0), V(vt0), 1e9) || [P(c + D / ancho, vt0), P(c + D / ancho, 1)], eo = ele(vert, V(rng.range(0.94, 0.99)), -1);
         if (eo) { pon(M(eo), 'ele', W * 3);
@@ -4144,6 +4151,15 @@
         trazos.push({ pts: pzs[0], segs: segsDe(pzs[0]), rel: 'seguidor' });
       }
     }
+    // NADA CORRE SOLO (vuelta 44). Los cabos que se alejan de todo —un trazo que sigue por el
+    // blanco sin nadie a un pelo— se recortan hasta dejar como mucho `maxLibre` anchuras
+    // libres; un trazo que no toca a nadie, se quita. El marco no se toca.
+    const podar = maxLibre => { for (let pasada = 0; pasada < 2; pasada++) for (let k = trazos.length - 1; k >= 0; k--) { const t = trazos[k]; if (t.rel === 'marco') continue;
+        const ms = muestrear(t.pts, W / 4), ac = ms.map(q => distA(q.x, q.y, t) < 1.35 * D); let a = 0, b = ms.length - 1; while (a < ms.length && !ac[a]) a++; while (b >= 0 && !ac[b]) b--;
+        if (a > b) { trazos.splice(k, 1); continue; }
+        const ka = max(0, a - Math.round(maxLibre * 4)), kb = min(ms.length - 1, b + Math.round(maxLibre * 4)); if (ka === 0 && kb === ms.length - 1) continue;
+        const pl = simplificar(ms.slice(ka, kb + 1).map(q => ({ x: q.x, y: q.y }))); if (pl.length < 2 || largoDe(pl) < W * 1.4) { trazos.splice(k, 1); continue; } t.pts = pl; t.segs = segsDe(pl); } };
+    if (O.marco) podar(2.5);
     // ── salida, con la forma del paseo ───────────────────────────────────────
     const ctx = { fw, fh, S, W, g, D, mg: S * MARGEN, trazos: [], gubAmp: 0, relleno: 1, halo: max(g, params.halo != null ? params.halo * W : g) };
     for (const t of trazos) { const fuera = t.pts.some(q => q.x < 0 || q.y < 0 || q.x > fw || q.y > fh);
