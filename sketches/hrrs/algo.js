@@ -3601,7 +3601,7 @@
     // (la caja del calco mide 14,6 × 10 anchuras)
     bloque: { ancho: [0.056, 0.066], gam: [0.065, 0.09], cuerpo: [0.8, 0.9], alto: [0.54, 0.64],
               haces: [1, 1], hebras: [1, 1], jog: [35, 55], recto: [1.5, 4], quiebro: [1, 2], marco: false, bloque: true,
-              racha: [1.5, 2.6], libre: [1.5, 3.2], largo: [8, 15], lleno: [0.50, 0.58] },
+              racha: [1.5, 2.6], libre: [1.5, 3.2], largo: [10, 19], lleno: [0.52, 0.6] },
     // travesía (referencia 3): dos o tres hebras anchas que cruzan el pliego y salen
     // por los bordes, con uno o dos quiebros abiertos; una barra recta por un canto
     // (el pelo del original es 0,03 W; a 760 px eso son 2,5 px y el temblor de la mano se lo
@@ -3856,20 +3856,26 @@
       // ciegas chocaban y el recorte se comía la mitad (se midió: 56 % de las verticales,
       // 16 % de las sueltas).
       const col = k => k < 0 ? bajaL : paralela(bajaL, -(k + 1) * D), larga = 1;
-      // (largos ALTERNOS: dos verticales vecinas del mismo largo son gemelas; una asoma mucho y la siguiente poco)
-      const alt = rng.int(0, 1);
-      for (let k = 0; k < nC; k++) { const vt = (k + alt) % 2 ? rng.range(0.18, 0.25) : rng.range(0.38, 0.46), vf = k === larga ? rng.range(0.88, 0.96) : kv - rng.range(0, 0.04);
-        const pl = cortaY(col(k), V(vt), V(vf)); if (pl) pon(M(pl), k === larga ? 'primero' : 'vertical', W * 2.5); }
+      // MÁS LARGOS E INTEGRADOS (vuelta 42; el autor). Medido: el trazo mediano del calco
+      // mide 7,4 W y solo el 14 % baja de 4 W; aquí, 6,1 W y el 26 %, porque una vertical
+      // moría en el nudo y debajo, en la misma columna, empezaba otro trazo. Ahora:
+      //  · la columna 0 es UN trazo: asoma arriba, cruza el nudo y barre al lado grande;
+      //  · la columna 1 es UN trazo: baja hasta la base y allí dobla y barre al otro lado;
+      //  · la columna 2 baja de un tirón hasta un pelo por encima de ese barrido;
+      //  · las demás siguen muriendo en el nudo, cortas: el contraste.
+      // Los cabos de arriba alternan (una asoma mucho, la siguiente poco) para que dos
+      // vecinas no sean gemelas.
+      const alt = rng.int(0, 1), topDe = k => (k + alt) % 2 ? rng.range(0.18, 0.25) : rng.range(0.36, 0.44), vt0 = topDe(0), yBase = V(rng.range(0.9, 0.97));
+      { const e1 = ele(cortaY(col(larga), V(topDe(larga)), 1e9) || [P(c, 0.3), P(c, 1)], yBase, 1); if (e1) pon(M(e1), 'primero', W * 3); }
+      for (let k = 2; k < nC; k++) { const pl = cortaY(col(k), V(topDe(k)), k === 2 ? yBase - D * 1.3 - alto * rng.range(0, 0.05) : V(kv - rng.range(0, 0.04))); if (pl) pon(M(pl), 'vertical', W * 2.5); }
       // 4. EL NIDO bajo la pata de B: una ele que baja a D de la bajada de B y sale al límite; una barra suelta; y un barrido por debajo
       { const vert = cortaY(paralela(bajaL, -(nC + 2) * D), V(lb) + D * 1.25, 1e9) || [P(uB, lb + 0.1), P(uB, 1)], e5 = ele(vert, V(kv - rng.range(0.02, 0.06)), 1);   // (paralela de la bajada de B: con zigzag propio chocaban y se troceaba)
         if (e5) pon(M(e5), 'ele', W * 3);
         if (rng.bool(0.8)) { const ys = V(lb) + D * 1.25 + alto * rng.range(0, 0.02); pon(M([{ x: x1, y: ys }, { x: xEn(vert, ys) + D * 0.5, y: ys + alto * jt() }]), 'suelta', W * 1.8); }   // la barra suelta del nido: del límite hasta la ele, a un pelo bajo la pata
-        // la pieza de relleno de la columna siguiente a la larga, bajo el nudo
-        const rl = cortaY(col(larga + 1), V(kv + rng.range(0.08, 0.12)), V(rng.range(0.78, 0.86))); if (rl) pon(M(rl), 'relleno', W * 2);
-        // los barridos que entran desde el límite por debajo de la bajada de B y mueren contra el relleno
-        const yS = V(vBfin) + D * 1.2, sw = zig({ x: x1, y: yS }, Math.PI, x1 - xEn(col(larga + 1), yS), [25, 40], [1, 2.4]); carriles(sw, -1, rng.int(2, 3), [[0, 1], [3, 2]], 0); }
+        // los barridos que entran desde el límite por debajo de la bajada de B y mueren contra la columna 2
+        const yS = V(vBfin) + D * 1.2, sw = zig({ x: x1, y: yS }, Math.PI, x1 - xEn(col(larga + 1), yS), [25, 40], [1, 2.4]); carriles(sw, -1, clamp(Math.floor((yBase - yS) / D) - 1, 1, 3), [[0, 1], [3, 2]], 0); }
       // 5. EL LADO GRANDE, abajo: las eles que nacen EN el nudo, bajan y barren hasta el límite (anidadas, la de dentro más corta)
-      { const vert = cortaY(col(0), V(kv + rng.range(0.06, 0.09)), 1e9) || [P(c + D / ancho, kv + 0.07), P(c + D / ancho, 1)], eo = ele(vert, V(rng.range(0.94, 0.99)), -1);
+      { const vert = cortaY(col(0), V(vt0), 1e9) || [P(c + D / ancho, vt0), P(c + D / ancho, 1)], eo = ele(vert, V(rng.range(0.94, 0.99)), -1);
         if (eo) { pon(M(eo), 'ele', W * 3);
           // los carriles sobre el barrido de la ele de fuera, hasta el fondo del lazo. La de
           // dentro baja por la columna de la bajada, entra al carril 1 y a medio camino
@@ -3992,6 +3998,10 @@
           p0 = { x: sp[0].x - uy / um * D * sd, y: sp[0].y + ux / um * D * sd }; if (!dentro(p0) || distA(p0.x, p0.y) < D * 0.985) continue; a0 = Math.atan2(uy, ux); if (BL ? rng.bool(0.5) : Math.sin(a0) < -0.3) a0 += Math.PI; }
         const pts = crecer(p0, a0, c, W * rr(O.largo)), minP = W * (BL ? 3.5 : 4);
         if (pts.length < 2 || largoDe(pts) < minP) continue;
+        // NINGÚN GEMELO (vuelta 41): si la pieza nueva y una ya puesta corren paralelas la
+        // una a la otra en el 65 % o más de su largo, la nueva no entra
+        { const frac = (A, B) => { const ms = muestrear(A, W / 3); let n = 0; for (const q of ms) { let ok = false; for (let i = 0; i + 1 < B.length && !ok; i++) { const d = pointSegDist(q.x, q.y, B[i].x, B[i].y, B[i + 1].x, B[i + 1].y); if (d > 0.75 * D && d < 1.4 * D) ok = true; } if (ok) n++; } return n / (ms.length || 1); };
+          if (trazos.some(t => frac(pts, t.pts) >= 0.65 && frac(t.pts, pts) >= 0.65)) continue; }
         const antes = trazos.length; pon(pts, 'hebra', minP); if (trazos.length > antes && modo >= 0 && modo < 0.34) cuelgues.push(p0.x);
       }
     } else {

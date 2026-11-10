@@ -4018,6 +4018,41 @@ determinismo 44/44, ningún trazo se cruza a sí mismo. 12,8 trazos por obra,
 
 **Pendiente**: el bloque tiene gemelos en 24 de 60 obras y su calco ninguno.
 
+## Cuadragésima segunda vuelta: más largos e integrados
+
+El autor: «sigue, más largos e integrados». Medido:
+
+| | trazo mediano | cortos (< 4 W) | tinta por obra |
+|---|---|---|---|
+| calco 1 | 7,4 W | 14 % | 149 W |
+| recinto, vuelta 41 | 6,1 W | 26 % | 113 W |
+| **recinto, ahora** | 7,1 W | 24 % | 120 W |
+
+El recinto estaba troceado: una vertical moría en el nudo y debajo, en la misma
+columna y a un pelo, empezaba otro trazo. En el calco los trazos grandes del
+cuerpo atraviesan dos zonas. Ahora:
+
+- **la columna 0 es un solo trazo**: asoma arriba, cruza el nudo y barre hasta
+  el límite del lado grande (unas 16 W);
+- **la columna 1 es un solo trazo**: baja hasta la base y allí dobla en chaflán
+  y barre al otro lado (sin la vuelta en U de t2: baja y sale);
+- **la columna 2** baja de un tirón hasta un pelo por encima de ese barrido, y
+  contra ella mueren los carriles que entran bajo el marco B;
+- las demás columnas siguen muriendo en el nudo, cortas: el contraste.
+
+El cuartil alto de largos pasa de 9,9 a 17,1 W. Los cortos apenas bajan: son
+las piezas de carril, que el recorte deja pequeñas.
+
+**El bloque, sin gemelos.** Su calco no tiene ninguno y él tenía 0,45 pares por
+obra (21 de 60), siempre una pieza que nace pegada a otra y la copia. Ahora la
+pieza nueva no entra si ella y una ya puesta corren paralelas la una a la otra
+en el 65 % o más: **0 de 60**. De paso se acerca a su calco en paralelización
+(59 % frente a 53 %; antes 65 %).
+
+Medido: solape 0 de 220 con halo, pelo 0 por debajo de g a 760 y 1520 px,
+determinismo 44/44, ningún trazo se cruza a sí mismo. Gemelos: recinto 0,23
+pares por obra, bloque 0, travesía 0,20 (los calcos: 1, 0, 1).
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
