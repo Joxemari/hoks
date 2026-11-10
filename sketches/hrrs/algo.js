@@ -3818,7 +3818,7 @@
         A.push({ x: xg, y: yg }, P(0, la), P(0, 0), P(c, 0));
         pon(M(A.concat(baja.slice(1))), 'marco', W * 3);
         // 5a. LA BANDA QUE ENTRA DESDE EL LÍMITE con un escalón, bajo el fondo del lazo, y la corta de en medio
-        var ya6 = yg + D * 1.15, yb6 = ya6 + alto * rng.range(0.13, 0.17); }
+        var ya6 = yg + D * 1.15, yb6 = ya6 + alto * rng.range(0.09, 0.13); }
       // 2. EL MARCO B, que entra y baja al nudo
       const vBfin = kv + rng.range(0, 0.04);
       { const bj = cortaY(paralela(bajaL, -(nC + 1) * D), V(lb + rng.range(0.015, 0.035)), V(vBfin)) || [P(uB, lb + 0.03), P(uB, vBfin)];
@@ -3828,25 +3828,37 @@
         while (bj.length > 2 && agudo()) bj.shift();
         pon(M([{ x: U(c) + D, y: V(0) }, P(1, 0), leg].concat(bj)), 'marco', W * 3); }
       // 3. LAS VERTICALES entre las dos bajadas: cabos de arriba escalonados; una sigue hasta la base
-      const larga = rng.int(1, nC - 1);
-      for (let k = 0; k < nC; k++) { const vt = rng.range(0.26, 0.42), vf = k === larga ? rng.range(0.86, 0.93) : kv - rng.range(0, 0.05);
-        const pl = cortaY(paralela(bajaL, -(k + 1) * D), V(vt), V(vf)); if (!pl) continue;
-        if (k !== larga) { const e = pl[pl.length - 1], a = (90 + rng.range(35, 50)) * RAD, Lq = W * rng.range(1.5, 2.5); pl.push({ x: e.x + Math.cos(a) * Lq, y: e.y + Math.sin(a) * Lq }); }   // muere con un quiebro hacia el lado grande
-        pon(M(pl), k === larga ? 'primero' : 'vertical', W * 3); }
+      // EL NUDO SE ORDENA POR COLUMNAS (vuelta 40). `col(k)` es la columna k del haz: la
+      // paralela de la bajada a (k+1)·D; col(-1) es la bajada misma. Arriba, cada columna
+      // lleva una vertical que muere en el nudo; abajo, en la MISMA columna y a un pelo,
+      // nace otro trazo: en las dos primeras, las eles que barren al lado grande; en la
+      // tercera sigue la vertical larga; en la cuarta, una pieza de relleno. Colocadas a
+      // ciegas chocaban y el recorte se comía la mitad (se midió: 56 % de las verticales,
+      // 16 % de las sueltas).
+      const col = k => k < 0 ? bajaL : paralela(bajaL, -(k + 1) * D), larga = 1;
+      for (let k = 0; k < nC; k++) { const vt = rng.range(0.2, 0.4), vf = k === larga ? rng.range(0.88, 0.96) : kv - rng.range(0, 0.04);
+        const pl = cortaY(col(k), V(vt), V(vf)); if (pl) pon(M(pl), k === larga ? 'primero' : 'vertical', W * 2.5); }
       // 4. EL NIDO bajo la pata de B: una ele que baja a D de la bajada de B y sale al límite; una barra suelta; y un barrido por debajo
-      { const vert = zig({ x: U(uB) + D * 1.05, y: V(lb) + D * 1.2 }, Math.PI / 2, alto * 0.6, [10, 22], [2, 4]), e5 = ele(vert, V(kv - rng.range(0.02, 0.06)), 1);
+      { const vert = cortaY(paralela(bajaL, -(nC + 2) * D), V(lb) + D * 1.25, 1e9) || [P(uB, lb + 0.1), P(uB, 1)], e5 = ele(vert, V(kv - rng.range(0.02, 0.06)), 1);   // (paralela de la bajada de B: con zigzag propio chocaban y se troceaba)
         if (e5) pon(M(e5), 'ele', W * 3);
-        if (rng.bool(0.75)) pon(M([P(1, lb + 0.075 + jt()), P(1 - rng.range(0.14, 0.2), lb + 0.07 + jt())]), 'suelta', W * 2.2);
-        const yS = V(vBfin) + D * 1.2, sw = zig({ x: x1, y: yS }, Math.PI, ancho * rng.range(0.24, 0.34), [25, 40], [1, 2.4]); pon(M(sw), 'abanico', W * 3);
-        if (rng.bool(0.7)) pon(M(acorta(paralela(sw, -D), W * rng.range(0, 1.5), W * rng.range(0, 2))), 'abanico', W * 3); }
+        if (rng.bool(0.8)) { const ys = V(lb) + D * 1.25 + alto * rng.range(0, 0.02); pon(M([{ x: x1, y: ys }, { x: xEn(vert, ys) + D * 0.5, y: ys + alto * jt() }]), 'suelta', W * 1.8); }   // la barra suelta del nido: del límite hasta la ele, a un pelo bajo la pata
+        // la pieza de relleno de la columna siguiente a la larga, bajo el nudo
+        const rl = cortaY(col(larga + 1), V(kv + rng.range(0.06, 0.09)), V(rng.range(0.88, 0.98))); if (rl) pon(M(rl), 'relleno', W * 2);
+        // los barridos que entran desde el límite por debajo de la bajada de B y mueren contra el relleno
+        const yS = V(vBfin) + D * 1.2, sw = zig({ x: x1, y: yS }, Math.PI, x1 - xEn(col(larga + 1), yS), [25, 40], [1, 2.4]); pon(M(sw), 'abanico', W * 2.5);
+        for (let k = 1; k <= 2; k++) if (rng.bool(0.75)) pon(M(acorta(paralela(sw, -k * D), W * rng.range(0, 1.5), 0)), 'abanico', W * 2.5); }
       // 5. EL LADO GRANDE, abajo: las eles que nacen EN el nudo, bajan y barren hasta el límite (anidadas, la de dentro más corta)
-      { const uo = rng.range(0.43, 0.47), vert = zig(P(uo, kv + rng.range(0.05, 0.08)), Math.PI / 2, alto * 0.5, [10, 20], [2, 4]), eo = ele(vert, V(rng.range(0.94, 0.99)), -1);
-        if (eo) { pon(M(eo), 'ele', W * 3); const yBarr = eo[eo.length - 1].y, nI = clamp(Math.floor((yBarr - yb6) / D) - 1, 1, 3);   // tantas como quepan hasta la banda de arriba
-          for (let k = 1; k <= nI; k++) pon(M(acorta(paralela(eo, k * D), W * rng.range(0, 1), W * rng.range(0.8, 3) * k)), 'ele', W * 3); }
-        pon(M([{ x: x0, y: ya6 }, { x: U(rng.range(0.06, 0.08)), y: ya6 + alto * jt() }, { x: U(rng.range(0.14, 0.17)), y: yb6 }, { x: U(rng.range(0.34, 0.38)), y: yb6 - alto * rng.range(0, 0.02) }]), 'abanico', W * 3);
-        pon(M([{ x: U(rng.range(0.19, 0.22)), y: yb6 - D * 1.1 }, { x: U(rng.range(0.4, 0.44)), y: yb6 - D * 1.1 + alto * jt() }]), 'suelta', W * 2.2);
-        // 6. el relleno bajo el nudo: dos piezas cortas con un quiebro
-        for (const u of [uo + D * 1.1 / ancho + rng.range(0.01, 0.04), rng.range(0.64, 0.7)]) pon(M(zig(P(u, kv + rng.range(0.05, 0.09)), Math.PI / 2, W * rng.range(3, 5), [25, 45], [1, 2])), 'relleno', W * 2.5); }
+      { const uo = c + D / ancho, vert = cortaY(col(0), V(kv + rng.range(0.06, 0.09)), 1e9) || [P(uo, kv + 0.07), P(uo, 1)], eo = ele(vert, V(rng.range(0.94, 0.99)), -1);
+        // (orden del calco: la ele de fuera y UNA de dentro nacen en el nudo; luego la banda que
+        // entra desde el límite con su escalón, que muere contra la ele de dentro; y los niveles
+        // que quedan entre las dos los llenan más paralelas de la ele, que `pon` recorta bajo la
+        // banda: eles de vertical corta que mueren a un pelo de ella. Antes iban todas enteras y
+        // sus verticales troceaban la banda, que desaparecía.)
+        if (eo) { pon(M(eo), 'ele', W * 3); pon(M(acorta(paralela(eo, D), W * rng.range(0, 1), W * rng.range(0.8, 2.5))), 'ele', W * 3); }
+        pon(M([{ x: x0, y: ya6 }, { x: U(rng.range(0.06, 0.08)), y: ya6 + alto * jt() }, { x: U(rng.range(0.14, 0.17)), y: yb6 }, { x: U(c), y: yb6 - alto * rng.range(0, 0.02) }]), 'abanico', W * 2.5);
+        if (eo) { const yBarr = eo[eo.length - 1].y, nF = clamp(Math.floor((yBarr - yb6) / D) - 2, 0, 3);
+          for (let k = 2; k < 2 + nF; k++) pon(M(acorta(paralela(eo, k * D), 0, rng.bool(0.5) ? W * rng.range(0.8, 3) : 0)), 'ele', W * 2.5); }
+      }
       }
       // ── EL CRECIMIENTO (vuelta 33) ─────────────────────────────────────────
       // Medido en los calcos: un trazo va paralelizado el 65 % de su largo, pero en

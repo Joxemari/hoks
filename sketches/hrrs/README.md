@@ -3928,6 +3928,47 @@ lado grande son cortas y sueltas—, las eles no siempre llegan al límite, y
 falta la vuelta por abajo de t2 (baja, gira y sube antes de salir). Los seeds
 2074, 3003 y 2259 son los que más se acercan.
 
+## Cuadragésima vuelta: el nudo por columnas
+
+La 39 salía rala. En vez de suponer por qué, se midió **cuánto de cada trazo
+pedido llega a pintarse** (un `pon` instrumentado): el recorte se comía el 84 %
+de las piezas sueltas y de relleno y el 44 % de las verticales, y en total se
+pintaban unas 100 anchuras de trazo frente a las 147 del calco. No era un
+ajuste: en el nudo se colocaban cosas a ciegas y chocaban.
+
+El calco trae la regla que lo ordena: **abajo, cada trazo nace en la columna
+donde arriba murió una vertical, a un pelo**. La ele de fuera (x = 0,45) está
+bajo la primera vertical; la de dentro (0,39), bajo la bajada del marco.
+
+`col(k)` es la columna k del haz central —la paralela de la bajada a (k+1)·D;
+`col(-1)` es la bajada—. Arriba cada columna lleva su vertical, con el cabo
+escalonado. Abajo:
+
+- columnas −1 y 0: **las dos eles** que barren al lado grande;
+- columna 1: **la vertical larga**, que no se interrumpe;
+- columna 2: **una pieza de relleno** hasta cerca de la base;
+- la **ele del nido** es la columna siguiente a la bajada de B (con zigzag
+  propio chocaba con ella y se troceaba);
+- los **barridos** que entran por debajo de B mueren contra el relleno;
+- en el lado grande, tras las dos eles, **la banda que entra desde el límite**
+  con su escalón, y luego más paralelas de la ele que `pon` recorta bajo ella
+  (antes iban enteras y sus verticales troceaban la banda, que desaparecía).
+
+| | vuelta 39 | ahora | calco |
+|---|---|---|---|
+| largo de trazo pintado, por obra | ~100 W | ~115 W | 147 W |
+| trazos por obra | 9,8 | 12,5 | 14 |
+| largo paralelizado | 40 % | 52 % | 65 % |
+| racha mediana | 3,8 W | 3,8 W | 4,0 W |
+
+Medido: solape 0 de 220 con halo, pelo 0 por debajo de g a 760 y 1520 px,
+determinismo 44/44, ningún trazo se cruza a sí mismo; 20 giros de más de 97° en
+2.369 trazos (el empalme del brazo de B).
+
+**Lo que falta**: aún un cuarto menos de tinta que el original; el 54 % de los
+trazos son paralelos casi enteros (calco: 36 %), porque las columnas son
+paralelas exactas de una sola maestra; y la vuelta por abajo de t2.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
