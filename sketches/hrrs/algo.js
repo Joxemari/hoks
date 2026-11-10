@@ -3567,6 +3567,15 @@
                // el crecimiento: rachas enganchadas (medidas: 3,3–5,5 W), tramos sueltos, largo del trazo y
                // fracción de la caja que se llena (el calco: 52 %)
                racha: [3.3, 6], libre: [1.2, 2.8], largo: [10, 22], lleno: [0.42, 0.54] },
+    // bloque (referencia 2), con las tres variables de la vuelta 33 y lo medido en su
+    // calco: piezas gruesas de 5–11 W con 1–3 codos casi a escuadra (60–97°), pegadas
+    // al vecino en rachas CORTAS (1,5–2,5 W) y a 2–6 vecinos distintos; un cuerpo más
+    // ancho que alto que llena el 55 % de su caja; dos o tres centros de densidad y,
+    // entre ellos, las ventanas. No tiene primer trazo (vuelta 31: da igual cuál).
+    // (la caja del calco mide 14,6 × 10 anchuras)
+    bloque: { ancho: [0.056, 0.066], gam: [0.065, 0.09], cuerpo: [0.8, 0.9], alto: [0.54, 0.64],
+              haces: [1, 1], hebras: [1, 1], jog: [35, 55], recto: [1.5, 4], quiebro: [1, 2], marco: false, bloque: true,
+              racha: [1.5, 2.6], libre: [1.5, 3.2], largo: [6, 12], lleno: [0.50, 0.58] },
     // travesía (referencia 3): dos o tres hebras anchas que cruzan el pliego y salen
     // por los bordes, con uno o dos quiebros abiertos; una barra recta por un canto
     // (el pelo del original es 0,03 W; a 760 px eso son 2,5 px y el temblor de la mano se lo
@@ -3574,7 +3583,7 @@
     // pelo.js: 4 de 40 por debajo con 0,035–0,05, con 0,045–0,06 y con 0,055–0,07. Se queda en
     // 0,065–0,085, que es lo que aguanta la mano; el pelo del original pide otra mano, no otro número.)
     travesia: { ancho: [0.10, 0.125], gam: [0.065, 0.085], cuerpo: [1, 1], alto: [1, 1],
-                haces: [1, 2], hebras: [1, 3], jog: [25, 55], recto: [1, 3], quiebro: [1, 2.2], marco: false, barra: 0.7,
+                haces: [1, 2], hebras: [1, 3], jog: [25, 55], recto: [1, 3], quiebro: [1, 2.2], marco: false, travesia: true, barra: 0.7,
                 racha: [4, 7], lleno: [0.30, 0.40] },
   };
   // la paralela de una polilínea a distancia d (positiva: a la izquierda del avance),
@@ -3624,7 +3633,7 @@
     out.push(pts[pts.length - 1]); return out;
   }
   function tramarHebra(rng, fw, fh, tipo, params) {
-    const O = HEBRA[tipo] || HEBRA.recinto, TRAV = !O.marco;
+    const O = HEBRA[tipo] || HEBRA.recinto, TRAV = !!O.travesia, BL = !!O.bloque;
     const S = min(fw, fh), rr = v => rng.range(v[0], v[1]);
     const W = params.ancho ? S * W_MAX * params.ancho : S * rr(O.ancho);
     const g = W * (params.canal ? params.canal : rr(O.gam)), D = W + g, quiero = W / 2 + g;
@@ -3735,12 +3744,13 @@
       // base y BARRE POR ELLA HASTA EL CANTO del lado que pesa. Fija la base y ese
       // límite, y todo lo demás lo sigue. Nace lejos del canto (0,35–0,5 del ancho)
       // para que el barrido sea largo, como en el original.
-      const xCanto = lado < 0 ? x0 : x1;
+      const xCanto = lado < 0 ? x0 : x1; let primero = null;
+      if (O.marco) {
       const xs0 = xCanto - lado * ancho * rng.range(0.35, 0.5);
       // (sin tramos horizontales intermedios: uno que se aleje del canto, la bajada y el
       // barrido de vuelta hacen una U —la forma que no existe— y las paralelas de dentro
       // se colapsan en ella: solape.js, 7 de 50)
-      const primero = meandro(xs0, y0 + quiero, y1, lado, false, x0 + W * 1.5, x1 - W * 1.5, true);
+      primero = meandro(xs0, y0 + quiero, y1, lado, false, x0 + W * 1.5, x1 - W * 1.5, true);
       // el barrido arranca siempre de un tramo vertical: si el meandro acabó en un
       // horizontal (lo cortó el marco) se quita, y si acabó en quiebro se baja un tramo.
       // Sin esto el barrido salía de un quiebro en ángulo agudo o daba la vuelta, y
@@ -3750,6 +3760,7 @@
         if (abs(u.x - a2.x) > 1e-9) primero.push({ x: u.x, y: u.y + W * rng.range(1.5, 2.5) }); }
       primero.push({ x: xCanto, y: primero[primero.length - 1].y });
       pon(primero, 'primero', W * 3);
+      }
       // ── EL CRECIMIENTO (vuelta 33) ─────────────────────────────────────────
       // Medido en los calcos: un trazo va paralelizado el 65 % de su largo, pero en
       // RACHAS de 3,3–5,5 W y con 2 a 4 vecinos distintos; solo 5 de 14 lo van en más
@@ -3770,9 +3781,11 @@
             if (d < 0.5 * D || d > 2.5 * D) continue; if (!best || d < best.d) best = { t, s: ac[i] + uc, sentido: c > 0 ? 1 : -1, d, total: ac[ac.length - 1] }; } } return best; };
       // un tramo cabe si su eje queda a D de todo lo puesto (salvo cerca de su propio arranque, que nace del marco)
       const cabeTramo = (a, b, p0) => { const L = hypot(b.x - a.x, b.y - a.y), n = max(1, Math.ceil(L / (W / 4))); for (let m = 1; m <= n; m++) { const x = a.x + (b.x - a.x) * m / n, y = a.y + (b.y - a.y) * m / n; if (hypot(x - p0.x, y - p0.y) < D * 1.1) continue; if (distA(x, y) < D * 0.985) return false; } return true; };
-      const dentro = q => q.x > x0 + W && q.x < x1 - W && q.y < y1 + W * 0.5 && q.y > y0;
+      const dentro = q => q.x > x0 + W && q.x < x1 - W && q.y < y1 + W * 0.5 && q.y > y0 + (BL ? W * 0.5 : 0);
+      // el bloque no cuelga ni barre: sus rumbos son los cuatro de una escuadra algo girada
+      const giroObra = BL ? rng.range(-6, 6) * RAD : 0;
       const crecer = (p0, ang0, centro, Lmax) => {
-        const pts = [{ x: p0.x, y: p0.y }]; let q = pts[0], ang = ang0, L = 0, socio = null, ultGiro = 0, barre = false, guard = 0;
+        const pts = [{ x: p0.x, y: p0.y }]; let q = pts[0], ang = ang0, L = 0, socio = null, ultGiro = 0, barre = false, guard = 0, centroAct = centro;
         while (L < Lmax && guard++ < 22) {
           const hx = Math.cos(ang), hy = Math.sin(ang);
           // 1. el enganche
@@ -3789,12 +3802,13 @@
                 if (ok) { const a = pts[pts.length - 2]; ang = Math.atan2(q.y - a.y, q.x - a.x); socio = t; ultGiro = 0;
                   // se suelta hacia fuera del vecino: un quiebro de 35–55° al lado contrario
                   const th = rng.range(35, 55) * RAD * lado2, Ls = W * rng.range(1.2, 2.5), o2 = { x: q.x + Math.cos(ang + th) * Ls, y: q.y + Math.sin(ang + th) * Ls };
-                  if (ok === off.length && dentro(o2) && cabeTramo(q, o2, p0) && rng.bool(0.6)) { pts.push(o2); L += Ls; q = o2; ang += th; ultGiro = th; }
+                  if (!BL && ok === off.length && dentro(o2) && cabeTramo(q, o2, p0) && rng.bool(0.6)) { pts.push(o2); L += Ls; q = o2; ang += th; ultGiro = th; }
                   continue; } } } }
           // 2. la gravedad: rumbos posibles —bajar, quebrar en oblicuo, barrer— y el que más acerca al centro
-          const th = rr(O.jog) * RAD, obj = barre ? { x: xCanto, y: q.y } : centro;
-          if (!barre && hypot(q.x - centro.x, q.y - centro.y) < W * 2.5) barre = true;
-          const rumbos = [Math.PI / 2, Math.PI / 2 + th, Math.PI / 2 - th, lado > 0 ? 0 : Math.PI, lado > 0 ? Math.PI : 0];
+          const th = rr(O.jog) * RAD, obj = barre ? { x: xCanto, y: q.y } : centroAct;
+          // llegado a su centro: en el recinto barre hacia el canto; en el bloque se va a otro centro
+          if (!barre && hypot(q.x - centroAct.x, q.y - centroAct.y) < W * 2.5) { if (BL) { const otros = centros.filter(c2 => c2 !== centroAct); if (otros.length) centroAct = otros[rng.int(0, otros.length - 1)]; } else barre = true; }
+          const rumbos = BL ? [0, 1, 2, 3].map(k => giroObra + k * Math.PI / 2 + rng.range(-3, 3) * RAD) : [Math.PI / 2, Math.PI / 2 + th, Math.PI / 2 - th, lado > 0 ? 0 : Math.PI, lado > 0 ? Math.PI : 0];
           let mejor = null;
           for (const r of rumbos) { let g2 = r - ang; while (g2 > Math.PI) g2 -= 2 * Math.PI; while (g2 < -Math.PI) g2 += 2 * Math.PI;
             if (abs(g2) < 20 * RAD || abs(g2) > 95 * RAD) continue;                                   // ni seguir recto ni ángulo agudo
@@ -3805,28 +3819,35 @@
           pts.push(mejor.o); L += mejor.Ls; q = mejor.o; ang = mejor.r; ultGiro = mejor.g2; socio = null;
           if (barre && abs(q.x - xCanto) < W * 1.5) break;
         }
+        if (BL && pts.length > 1) { // acabar contra algo: si a menos de 2,5 W por delante hay tinta, se llega hasta ella (recortar deja el pelo)
+          const a = pts[pts.length - 2], hx = (q.x - a.x) / (hypot(q.x - a.x, q.y - a.y) || 1e-9), hy = (q.y - a.y) / (hypot(q.x - a.x, q.y - a.y) || 1e-9);
+          for (let st = W * 0.25; st <= W * 2.5; st += W * 0.25) { const o = { x: q.x + hx * st, y: q.y + hy * st }; if (!dentro(o)) break; if (distA(o.x, o.y) < D * 0.985) { pts[pts.length - 1] = o; break; } } }
         return pts; };
       // LOS CENTROS DE DENSIDAD: el pesado, abajo y del lado del canto; a veces otro a
       // media altura. Arriba, dentro del marco, queda el vacío.
-      const centros = [{ x: xCanto - lado * ancho * rng.range(0.2, 0.35), y: y1 - alto * rng.range(0.12, 0.25), w: 0.65 }];
-      if (rng.bool(0.65)) centros.push({ x: x0 + ancho * rng.range(0.35, 0.65), y: y0 + alto * rng.range(0.45, 0.65), w: 0.35 });
+      const centros = BL ? [] : [{ x: xCanto - lado * ancho * rng.range(0.2, 0.35), y: y1 - alto * rng.range(0.12, 0.25), w: 0.65 }];
+      if (!BL && rng.bool(0.65)) centros.push({ x: x0 + ancho * rng.range(0.35, 0.65), y: y0 + alto * rng.range(0.45, 0.65), w: 0.35 });
+      // el bloque: dos o tres centros repartidos a lo ancho (uno, dos o tres centros de gravedad, dijo el autor)
+      if (BL) { const nc = rng.int(2, 3); for (let k = 0; k < nc; k++) centros.push({ x: x0 + ancho * ((k + 0.5) / nc + rng.range(-0.1, 0.1)), y: y0 + alto * rng.range(0.3, 0.7), w: 1 / nc }); }
       const tinta = () => trazos.reduce((a, t) => a + largoDe(t.pts) * W, 0) / (ancho * alto);
       const lleno = params.cobertura != null ? params.cobertura : rr(O.lleno);
-      const cuelgues = [primero[0].x];
-      for (let intento = 0; intento < 140 && tinta() < lleno; intento++) {
-        const c = centros.length > 1 && !rng.bool(centros[0].w) ? centros[1] : centros[0];
-        let p0, a0; const modo = rng.range(0, 1);
-        if (modo < 0.5) { // cuelga de la barra: cerca de la vertical de su centro, o a D de otro cuelgue
+      const cuelgues = primero ? [primero[0].x] : [];
+      for (let intento = 0; intento < (BL ? 500 : 140) && tinta() < lleno; intento++) {
+        const c = BL ? centros[rng.int(0, centros.length - 1)] : centros.length > 1 && !rng.bool(centros[0].w) ? centros[1] : centros[0];
+        let p0, a0; const modo = BL ? (trazos.length ? 0.9 : -1) : rng.range(0, 1);
+        if (modo < 0) { // (bloque) nace suelto, junto a un centro, en uno de los cuatro rumbos
+          p0 = { x: c.x + rng.range(-2.5, 2.5) * W, y: c.y + rng.range(-2.5, 2.5) * W }; if (!dentro(p0) || distA(p0.x, p0.y) < D * 0.985) continue; a0 = giroObra + rng.int(0, 3) * Math.PI / 2; }
+        else if (modo < 0.5) { // cuelga de la barra: cerca de la vertical de su centro, o a D de otro cuelgue
           let x = c.x + rng.range(-3.5, 3.5) * W; const cerca = cuelgues.find(v => abs(v - x) < D * 2.2); if (cerca != null) x = cerca + (x >= cerca ? 1 : -1) * D;
           x = clamp(x, x0 + W * 2, x1 - W * 2); if (cuelgues.some(v => abs(v - x) < D * 0.98)) continue; p0 = { x, y: y0 }; a0 = Math.PI / 2; }
         else if (modo < 0.62) { if (!pataEnfrente) continue; p0 = { x: lado > 0 ? x0 : x1, y: y0 + alto * rng.range(0.15, 0.3) }; a0 = lado > 0 ? 0 : Math.PI; }   // nace de la pata de enfrente, si la hay
         else { // nace junto a un trazo puesto, a D de su costado, y arranca enganchado a él
           const cand = trazos.filter(t => t.rel !== 'marco'); if (!cand.length) continue; const t = cand[rng.int(0, cand.length - 1)], ac = arco(t.pts), sv = rng.range(0.1, 0.8) * ac[ac.length - 1];
           const sp = subPoli(t.pts, sv, min(ac[ac.length - 1], sv + W)); if (sp.length < 2) continue; const ux = sp[1].x - sp[0].x, uy = sp[1].y - sp[0].y, um = hypot(ux, uy) || 1e-9, sd = rng.bool(0.5) ? 1 : -1;
-          p0 = { x: sp[0].x - uy / um * D * sd, y: sp[0].y + ux / um * D * sd }; if (!dentro(p0) || distA(p0.x, p0.y) < D * 0.985) continue; a0 = Math.atan2(uy, ux); if (Math.sin(a0) < -0.3) a0 += Math.PI; }
-        const pts = crecer(p0, a0, c, W * rr(O.largo));
-        if (pts.length < 2 || largoDe(pts) < W * 4) continue;
-        const antes = trazos.length; pon(pts, 'hebra', W * 4); if (trazos.length > antes && modo < 0.5) cuelgues.push(p0.x);
+          p0 = { x: sp[0].x - uy / um * D * sd, y: sp[0].y + ux / um * D * sd }; if (!dentro(p0) || distA(p0.x, p0.y) < D * 0.985) continue; a0 = Math.atan2(uy, ux); if (BL ? rng.bool(0.5) : Math.sin(a0) < -0.3) a0 += Math.PI; }
+        const pts = crecer(p0, a0, c, W * rr(O.largo)), minP = W * (BL ? 2.6 : 4);
+        if (pts.length < 2 || largoDe(pts) < minP) continue;
+        const antes = trazos.length; pon(pts, 'hebra', minP); if (trazos.length > antes && modo < 0.5) cuelgues.push(p0.x);
       }
     } else {
       // LA TRAVESÍA DESDE SU PRIMER TRAZO (vuelta 31, medido en el calco): LA ELE QUE

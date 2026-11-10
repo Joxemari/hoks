@@ -53,6 +53,7 @@ const CONFIGS = [
   { n: 'hebra-rec',  fmt: 'square',     p: { modelo: 'hebra', tipo: 'recinto' } },
   { n: 'hebra-tra',  fmt: 'square',     p: { modelo: 'hebra', tipo: 'travesia' } },
   { n: 'hebra-apais',fmt: 'horizontal', p: { modelo: 'hebra', tipo: 'recinto' } },
+  { n: 'hebra-blo',  fmt: 'square',     p: { modelo: 'hebra', tipo: 'bloque' } },
 ];
 
 function configs(only) {

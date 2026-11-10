@@ -3715,6 +3715,39 @@ baja a 0,8–0,9 g en alguna esquina (el halo del pintor no cubre el inglete
 entero); la travesía sobre rejilla tenía el mismo nivel. El pelo se queda en
 0,065–0,085 W; el del original (0,03) pide una mano con menos temblor.
 
+## Trigésima cuarta vuelta: el bloque con las tres variables
+
+El mismo crecimiento (`crecer`) con los números del calco de la referencia 2:
+
+- **Enganche**: rachas cortas, de 1,5–2,6 W (el calco: 1,5–2,5), y luego suelto.
+- **Gravedad**: dos o tres centros repartidos a lo ancho de la caja; la pieza va
+  a uno y, llegada, a otro. Entre centros quedan las ventanas.
+- **Ocupación**: 50–58 % de una caja de 14,6 × 10 anchuras, que es la del calco.
+
+Lo propio del bloque: cuatro rumbos de una escuadra algo girada (±6° la obra,
+±3° cada tramo), codos de 20–95° sin U, piezas de 6–12 W. **Solo la primera
+pieza nace suelta**; las demás nacen al costado de una puesta —en la 2 casi
+todo borde es un pelo, el aire está en las ventanas— y, acabado su largo, la
+pieza sigue recta hasta dar con tinta si la hay a menos de 2,5 W: la boca a un
+pelo, no un cabo en el aire. No tiene primer trazo (vuelta 31: da igual cuál).
+
+| | largo paralelizado | rachas (W) | vecinos por trazo | piezas | ocupación del pliego |
+|---|---|---|---|---|---|
+| calco 2 | 53 % | 1,5 – 2,0 – 2,5 | 2 a 6 | 14 | 24 % |
+| paseo (rejilla) | 67 % | 1,5 – 3,0 – 4,5 | 1 a 3 | 8,4 | 20 % |
+| **hebra** | 65 % | 1,3 – 2,3 – 3,8 | 1 a 3 | 10,9 | 26 % |
+
+Lo que se probó y no: nacer suelto junto a un centro una de cada cuatro piezas
+(daba piezas sueltas con huecos desiguales, que la 2 no tiene) y más inclinación
+por tramo (±7°: el bloque se deshilachaba).
+
+Medido: solape 0 de 200 en las cuatro configuraciones de hebra, pelo 0 por
+debajo de g en 80, determinismo 24/24. Configuración `hebra-blo` en la batería.
+
+**Lo que le falta**: las piezas del original son más largas y con menos muñones
+(aquí salen algunas de un solo codo); sigue algo sobre-paralelizado; y el
+contorno del cuerpo es la caja, no el abombado que hacen sus piezas de borde.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
