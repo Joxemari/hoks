@@ -4285,6 +4285,45 @@ son una. Falta la masa bajo el nudo y a la altura del cinturón.
 Medido: solape 0 de 220 con halo, pelo 0 por debajo de g a 760 y 1520 px,
 determinismo 44/44, ningún trazo se cruza a sí mismo.
 
+## Cuadragésima octava vuelta: en la zona densa los trazos se entrelazan
+
+El autor: «en la zona densa, los trazos torsionan y entrelazan como pueden».
+
+La vuelta 47 llenaba la zona con bandas paralelas: un rayado. En el original,
+dentro de la zona los trazos doblan y se encajan unos en otros hasta que no
+queda sitio. Eso es exactamente lo que hace el **modelo de rejilla** (el paseo
+que llena y se corta en piezas con codo), que es además el de producción. Se
+midió apretado al máximo en el bloque, y sale el calco casi número por número:
+
+| bloque | hebra (v. 45) | rejilla, antes | **rejilla, ahora** | calco 2 |
+|---|---|---|---|---|
+| trazos | 9,3 | 8,4 | 12,7 | 14 |
+| contacto mediano | 79 % | 87 % | 98 % | 100 % |
+| núcleo mayor | 36 % | 36 % | 53 % | 53 % |
+| núcleos | 2,3 | 1,6 | 1,3 | 1 |
+| ocupación de la caja | 49 % | 41 % | 51 % | 50 % |
+| de una pieza | 60 de 60 | 38 de 40 | 40 de 40 | sí |
+| gemelos, pares por obra | 0,07 | — | 0,68 | 0 |
+
+**Lo que cambia** (`PASEO.bloque`): `lleno` 0,74 → 0,97 y `retira` 0,12 → 0,02
+—la zona se llena y no se le quitan piezas—; tramos rectos más cortos (`racha`
+1–3) y piezas más largas (`trozo` 5–11); y las ventanas pasan a ser
+**huequillos** de dos a cuatro celdas (`hueco`), de una a tres por obra.
+
+**Los gemelos, sin abrir la masa.** Un camino que llena la rejilla hace idas y
+vueltas y al cortarlo salen filas de barras iguales: 2,25 pares por obra. No se
+quita ninguna pieza —eso abre un hueco—: **se mueve el corte** entre la pieza
+gemela y su vecina de camino, un tercio de su largo, de modo que una crece y la
+otra mengua. Quedan 0,68 pares por obra con la masa intacta.
+
+Medido: solape 0 de 220 con halo, pelo 0 por debajo de g, determinismo 44/44,
+ninguna forma en U en 839 piezas.
+
+**Consecuencia.** El motor de la zona densa es la rejilla, no las paralelas. El
+recinto y la travesía tienen que tomar de ahí su núcleo: una zona de rejilla
+llena, con el contorno y la superficie de cada tipo, y los trazos que salen de
+ella hacia el marco o hacia los bordes. Eso no está hecho.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

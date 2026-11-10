@@ -3073,7 +3073,7 @@
   const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
     bloque: { ancho: [0.062, 0.075], gam: [0.09, 0.13], celdas: [90, 120], cobertura: [0.3, 0.42], aspect: [1.3, 1.55],
-              racha: [1, 4], rachaE: [3, 6], trozo: [4, 7], lleno: 0.74, retira: 0.12, rama: 0.4, ventanas: [1, 2], cruza: 0.4, ladeo: [0.26, 0.36] },
+              racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, cruza: 0.4, ladeo: [0.26, 0.36] },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
               racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
@@ -3249,9 +3249,10 @@
       ints = ints.filter(c => abierto01(c) > 0.4 && dN(c) >= 2 && dN(c) <= 4); if (ints.length < 2) ints = [...cells.values()].filter(c => interior(c) && dN(c) >= 2); if (ints.length < 2) break;
       const c0 = ints[rng.int(0, ints.length - 1)], forma = formas[rng.int(0, formas.length - 1)], sw = rng.bool(0.5);
       const celdas = [];
-      if (forma === 'barra') { const L = rng.int(4, 7); for (let m = 0; m < L; m++) celdas.push(sw ? [c0.i + m - (L >> 1), c0.j] : [c0.i, c0.j + m - (L >> 1)]); }
-      else if (forma === 'rect') { const w = rng.int(2, 3), h = rng.int(3, 5); for (let a2 = 0; a2 < (sw ? h : w); a2++) for (let b2 = 0; b2 < (sw ? w : h); b2++) celdas.push([c0.i + a2 - ((sw ? h : w) >> 1), c0.j + b2 - ((sw ? w : h) >> 1)]); }
-      else { const L1 = rng.int(4, 6), L2 = rng.int(3, 4), s1 = rng.bool(0.5) ? 1 : -1, s2 = rng.bool(0.5) ? 1 : -1;
+      // (en una zona sin aire el hueco es un HUEQUILLO: `O.hueco` lo deja en dos a cuatro celdas)
+      if (forma === 'barra') { const L = O.hueco ? rng.int(2, 3) : rng.int(4, 7); for (let m = 0; m < L; m++) celdas.push(sw ? [c0.i + m - (L >> 1), c0.j] : [c0.i, c0.j + m - (L >> 1)]); }
+      else if (forma === 'rect') { const w = O.hueco ? rng.int(1, 2) : rng.int(2, 3), h = O.hueco ? 2 : rng.int(3, 5); for (let a2 = 0; a2 < (sw ? h : w); a2++) for (let b2 = 0; b2 < (sw ? w : h); b2++) celdas.push([c0.i + a2 - ((sw ? h : w) >> 1), c0.j + b2 - ((sw ? w : h) >> 1)]); }
+      else { const L1 = O.hueco ? rng.int(2, 3) : rng.int(4, 6), L2 = O.hueco ? 2 : rng.int(3, 4), s1 = rng.bool(0.5) ? 1 : -1, s2 = rng.bool(0.5) ? 1 : -1;
         for (let m = 0; m < L1; m++) celdas.push(sw ? [c0.i + s1 * m, c0.j] : [c0.i, c0.j + s1 * m]);
         for (let m = 1; m < L2; m++) celdas.push(sw ? [c0.i, c0.j + s2 * m] : [c0.i + s2 * m, c0.j]); }
       for (const [i2, j2] of celdas) cells.delete(key(i2, j2)); }
@@ -3393,7 +3394,26 @@
       { let mejor = -1, dm = 1e9; for (let k = max(i + t0, i + n - 3); k <= min(path.length - 1, i + n + 3); k++) if (esCodo(path, k) && abs(k - (i + n)) < dm) { dm = abs(k - (i + n)); mejor = k; }
         if (mejor < 0) { for (let k = i + t0; k < path.length - 1; k++) if (esCodo(path, k)) { mejor = k; break; } }
         n = mejor < 0 ? path.length - i : mejor - i; }
-      if (path.length - i - n < t0) n = path.length - i; piezas.push(path.slice(i, i + n)); i += n; } });
+      if (path.length - i - n < t0) n = path.length - i; { const pz = path.slice(i, i + n); pz.pi = pi; piezas.push(pz); } i += n; } });
+    // 4·0. NINGÚN GEMELO, SIN ABRIR LA MASA (vuelta 48). Un camino que llena la rejilla hace
+    // idas y vueltas, y al cortarlo salen filas de barras iguales una junto a otra. No se
+    // quita ninguna —en una zona sin aire eso abre un hueco—: SE MUEVE EL CORTE entre la
+    // pieza gemela y su vecina de camino, un tercio de su largo, de modo que una crece y la
+    // otra mengua. Dos piezas son gemelas si el 70 % o más de las celdas de cada una tiene
+    // al lado una celda de la otra.
+    { const junto = (A, B) => { const set = new Set(B.map(c => key(c.i, c.j))); let n = 0; for (const c of A) if (DIRS.some(([a, b]) => set.has(key(c.i + a, c.j + b)))) n++; return n / A.length; };
+      const gemelas = (A, B) => A.length > 1 && B.length > 1 && junto(A, B) >= 0.55 && junto(B, A) >= 0.55;
+      const sinArreglo = new Set();   // pares que no tienen vecina de camino a la que mover el corte: se dejan y se sigue
+      for (let vuelta = 0; vuelta < 200; vuelta++) { let par = null;
+        for (let a = 0; a < piezas.length && !par; a++) for (let b = a + 1; b < piezas.length; b++) if (!sinArreglo.has(a + ',' + b) && !piezas[a].marco && !piezas[b].marco && gemelas(piezas[a], piezas[b])) { par = [a, b]; break; }
+        if (!par) break; let hecho = false;
+        for (const a of rng.bool(0.5) ? par : [par[1], par[0]]) { const A = piezas[a], m = max(1, Math.round(A.length * rng.range(0.3, 0.45)));
+          for (const v of rng.bool(0.5) ? [a + 1, a - 1] : [a - 1, a + 1]) { const B = piezas[v]; if (!B || B.marco || B.pi !== A.pi) continue; const tras = v > a;
+            if (B.length - m >= 2) { const mov = tras ? B.splice(0, m) : B.splice(B.length - m, m); if (tras) A.push(...mov); else A.unshift(...mov); hecho = true; }        // A crece a costa de su vecina
+            else if (A.length - m >= 2) { const mov = tras ? A.splice(A.length - m, m) : A.splice(0, m); if (tras) B.unshift(...mov); else B.push(...mov); hecho = true; }   // o mengua
+            if (hecho) break; }
+          if (hecho) break; }
+        if (!hecho) sinArreglo.add(min(par[0], par[1]) + ',' + max(par[0], par[1])); } }
     const dbg = { paseos: paseos.map(p => p.map(c => [c.i, c.j])), piezas: piezas.map(p => p.map(c => [c.i, c.j])) };
     // retirar: poco, y más en el lado abierto (dosificado: el cuerpo no se rompe)
     let vivas = piezas.filter(pz => { if (pz.length <= 1) return false; const ab = pz.reduce((a, c) => a + abierto01(c), 0) / pz.length, dm = pz.reduce((a, c) => a + dN(c), 0) / pz.length;
