@@ -3082,8 +3082,8 @@
     // dentro meandros largos (8–20 celdas) que cuelgan de la pared de enfrente y
     // fluyen hacia el lado abierto. Sin ventanas ni bahía: el aire es lo que el marco
     // no llena. La silueta es rectangular.
-    recinto:  { ancho: [0.026, 0.034], gam: [0.16, 0.24], celdas: [220, 300], cobertura: [0.07, 0.11], aspect: [0.85, 1.1],
-                racha: [2, 5], rachaE: [10, 18], trozo: [4, 9], lleno: 0.5, retira: 0.05, rama: 0.15, ventanas: [0, 0], borde: 0, marco: true, ladeo: [0.22, 0.34] },
+    recinto:  { ancho: [0.028, 0.036], gam: [0.13, 0.17], celdas: [200, 270], cobertura: [0.07, 0.11], aspect: [0.85, 1.1],
+                racha: [1, 3], rachaE: [10, 18], trozo: [5, 11], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [1, 2], hueco: true, zonas: true, borde: 0, marco: true, ladeo: [0.22, 0.34] },
     // TRAVESÍA (referencia 3), medida en su calco: tramos rectos de 5–14 anchuras y
     // quiebros de 25–55° encadenados, bifurcación a mitad de camino, y el margen del
     // pliego como salida o barrera. No es una rejilla ortogonal: es una rejilla de
@@ -3212,6 +3212,17 @@
       relCount: { paseo: 0 }, vibra: false, orto: true, travesia: false, halo: g, cierre: CIERRE_POR, rumbos: [0], modelo: 'paseo', pedidos: 0, ojos: [], ocupacion: 0,
       pasillos: 0, largoPas: 0, vert: 0, quiebros: 0, largoMax: 0, reparto: 0, sangrados: 0 });
     if (cells.size < 6) return vacio();
+    // 2a. LAS ZONAS VACÍAS DEL RECINTO (vuelta 49). Apretar la rejilla como en el bloque llena
+    // el marco entero: un laberinto, 68 % de ocupación y ninguna ventana. Al recinto le hacen
+    // falta las dos cosas: la masa abajo y, arriba, el aire. Se quitan de la rejilla, antes de
+    // caminarla, dos ventanas —la grande del lado que pesa y otra menor bajo la barra al otro
+    // lado— dejando entre ellas un corredor por donde bajan las verticales, y una fila de
+    // celdas junto al marco. Lo que queda es la zona densa, y se llena.
+    if (O.zonas && cells.size) { let bx0 = 1e9, by0 = 1e9, bx1 = -1e9, by1 = -1e9; for (const c of cells.values()) { const q = centro(c.i, c.j); bx0 = min(bx0, q.x); bx1 = max(bx1, q.x); by0 = min(by0, q.y); by1 = max(by1, q.y); }
+      const esp = rng.bool(0.5), m = 1.5 * P / (bx1 - bx0), mv = 1.5 * P / (by1 - by0);
+      const u1 = rng.range(0.36, 0.46), v1 = rng.range(0.42, 0.55), u2 = u1 + rng.range(0.18, 0.28), v2 = rng.range(0.24, 0.38);
+      for (const [k, c] of [...cells.entries()]) { const q = centro(c.i, c.j); let u = (q.x - bx0) / (bx1 - bx0); const v = (q.y - by0) / (by1 - by0); if (esp) u = 1 - u;
+        if ((u > m && u < u1 && v > mv && v < v1) || (u > u2 && u < 1 - m && v > mv && v < v2)) cells.delete(k); } }
     // 2b. el aire tiene forma: una ventana grande (a veces dos), descentrada hacia el lado abierto
     const interior = c => DIRS.every(([a, b]) => cells.has(key(c.i + a, c.j + b)));
     const nV = params.ventanas != null ? params.ventanas : rng.int(O.ventanas[0], O.ventanas[1]);
@@ -3287,6 +3298,7 @@
       // EL MARCO: las celdas del borde de la rejilla por tres lados, en orden, como un
       // paseo; el cuarto queda abierto (abajo, o un lado al azar)
       abierto = rng.int(0, 3);   // 0: +j (abajo) · 1: +i · 2: −j · 3: −i
+      if (O.zonas) abierto = 0;   // con zonas, el marco se abre por abajo: las ventanas van arriba, bajo la barra
       const is = [...cells.values()].map(c => c.i), js = [...cells.values()].map(c => c.j), i0 = min(...is), i1 = max(...is), j0 = min(...js), j1 = max(...js);
       // EL MARCO NUNCA ES UNA U COMPLETA (el autor): es un trazo que nace DENTRO del
       // cuerpo, sube por una pared, recorre el lado de enfrente de la abertura entero
@@ -4705,7 +4717,10 @@
       // trazos sueltos se queda en el laboratorio para comparar.
       // el modelo de producción por tipo: el PASEO para el bloque y el haz (referencia 2);
       // el calco para el recinto y la travesía, hasta que tengan el suyo
-      const modelo = params.modelo || 'paseo';
+      // PRODUCCIÓN POR TIPO (vuelta 49): la rejilla llena para el bloque y el recinto, que es
+      // quien da la zona densa entrelazada; la hebra para la travesía, que es un haz que
+      // se deshace y no un cuerpo que se llena.
+      const modelo = params.modelo || (tipo === 'travesia' ? 'hebra' : 'paseo');
       const r3 = new E.Rng((seed ^ (0x51E7 * (i + 1))) >>> 0);
       const c = modelo === 'paseo' ? tramarPaseo(r3, fw, fh, tipo, params)
               : modelo === 'hebra' ? tramarHebra(r3, fw, fh, tipo, params)

@@ -4324,6 +4324,48 @@ recinto y la travesía tienen que tomar de ahí su núcleo: una zona de rejilla
 llena, con el contorno y la superficie de cada tipo, y los trazos que salen de
 ella hacia el marco o hacia los bordes. Eso no está hecho.
 
+## Cuadragésima novena vuelta: las tres referencias sobre el motor que les toca
+
+El autor: «vamos mejorando, revisa las tres referencias».
+
+Medido el modelo de rejilla (producción) contra los calcos, con la vara de
+contacto y núcleo:
+
+| | contacto | núcleo mayor | ocupación de la caja | de una pieza |
+|---|---|---|---|---|
+| calco 1 | 100 % | 33 % | 47 % | sí |
+| recinto, rejilla antes | 65 % | 11 % | 38 % | 40 de 40 |
+| **recinto, rejilla ahora** | 98 % | 36 % | 53 % | 40 de 40 |
+| calco 2 / **bloque** | 100 / 98 % | 53 / 53 % | 50 / 51 % | sí |
+| calco 3 | 96 % | 34 % | 36 % | sí |
+| travesía, rejilla | 81 % | 31 % | 38 % | 39 de 40 |
+| **travesía, hebra** | 77 % | 25 % | 39 % | 60 de 60 |
+
+**Recinto.** Apretar la rejilla como en el bloque (lleno 0,93, sin retirar,
+tramos rectos de 1–3, piezas de 5–11, huequillos) llenaba el marco entero: un
+laberinto, 68 % de ocupación, ninguna ventana. Al recinto le hacen falta las dos
+cosas. Se declaran las **zonas vacías antes de caminar la rejilla**: se quitan
+dos ventanas —la grande de un lado y otra menor bajo la barra al otro— dejando
+un corredor entre ellas por donde bajan las verticales; lo que queda es la zona
+densa y se llena. Con zonas, el marco se abre por abajo. Pelo 0,13–0,17 W.
+
+**Travesía.** La rejilla da paralelas en cursiva y un 43 % de trazos gemelos:
+la travesía no es un cuerpo que se llena, es un haz que se deshace. Su
+producción pasa al modelo de hebra (la ele que une dos bordes, el relevo, las
+compañeras, las barras de canto, y los acompañantes de lo que va solo).
+
+**Producción por tipo**: rejilla llena para bloque y recinto; hebra para la
+travesía. El haz (el cuarto tipo) sigue en la rejilla sin tocar.
+
+Medido: solape 0 con halo, pelo 0 por debajo de g, holgura 0 con su control en
+110/110, determinismo 66/66.
+
+**Lo que falta.** Recinto: las piezas salen pequeñas y muchas (16 a 25 trazos
+frente a 14, con el pelo por debajo de 3 px a 760 en algunas obras); la zona
+densa es más ortogonal que la del original, que barre en oblicuo; el marco hace
+todavía una U en 21 de 1.696 piezas (ya lo hacía antes: 22 de 840); y 0,65
+pares de gemelos por obra. Travesía: núcleo 25 % frente a 34 %.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
