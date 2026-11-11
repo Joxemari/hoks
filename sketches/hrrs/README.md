@@ -4439,6 +4439,55 @@ zona densa del recinto no sea una rejilla de cuadrados. Abierto.
 
 Medido: solape 0 con halo, pelo 0 por debajo de g, holgura 0, determinismo 66/66.
 
+## Quincuagésima segunda vuelta: cuántas secciones hay en cada ángulo
+
+El autor: «saca el dato de cuántas secciones hay en cada ángulo y compara con tu
+motor, veo mucho vertical y horizontal. Puede haber marco pero puede no llegar a
+completarse entero».
+
+`verificacion/secciones.js`: cada trazo se simplifica (quita la mano, deja el
+dibujo) y cada tramo recto de más de 0,8 W es una sección; se cuenta por
+orientación en doce franjas de 15° (0° horizontal, 90° vertical). «A eje» son las
+cuatro franjas pegadas a 0° y a 90°. % de secciones:
+
+| franja | 0–15 | 15–30 | 30–45 | 45–60 | 60–75 | 75–90 | 90–105 | 105–120 | 120–135 | 135–150 | 150–165 | 165–180 | a eje |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| calco 1 | 10 | 6 | 0 | 2 | 10 | 10 | 22 | 4 | 6 | 8 | 4 | 18 | **60 %** |
+| recinto, antes | 28 | 0 | 0 | 0 | 0 | 20 | 26 | 0 | 0 | 0 | 0 | 25 | 100 % |
+| **recinto, ahora** | 25 | 0 | 0 | 2 | 13 | 10 | 9 | 14 | 3 | 0 | 0 | 25 | 68 % |
+| calco 2 | 13 | 6 | 0 | 0 | 3 | 23 | 26 | 3 | 0 | 0 | 0 | 26 | **87 %** |
+| bloque, vuelta 51 | 27 | 0 | 0 | 0 | 11 | 9 | 13 | 14 | 0 | 0 | 0 | 25 | 74 % |
+| **bloque, ahora** | 27 | 0 | 0 | 0 | 3 | 18 | 24 | 4 | 0 | 0 | 0 | 25 | 93 % |
+| calco 3 | 4 | 4 | 12 | 0 | 0 | 19 | 8 | 8 | 4 | 15 | 4 | 23 | **54 %** |
+| travesía | 15 | 1 | 7 | 9 | 1 | 15 | 15 | 2 | 8 | 9 | 2 | 17 | 62 % |
+
+**Lo que dice.** El recinto no tenía ni una sección oblicua. Y la vuelta 51 se
+pasó con el bloque: el calco 2 es casi todo a eje con desviaciones pequeñas
+(sus codos miden 73° porque los tramos van a ±8°, no a 20°).
+
+**Recinto: el zigzag de la zona densa.** La rejilla de la zona se cizalla por
+bandas: cada dos a cuatro filas se inclina 20–30° a un lado, la siguiente al
+otro, y alguna se queda recta. Las verticales pasan a ser zigzags; las
+horizontales siguen horizontales. Para que dos oblicuas vecinas no se junten
+—la distancia entre dos verticales cizalladas θ baja a cos θ— toda la rejilla se
+ensancha 1/cos θ. Por encima de la zona el zigzag vale cero y el marco sigue
+recto. Solapes: 0 (la cizalla continua de la vuelta 51 los traía; por bandas y
+con el ensanche, no).
+
+**Bloque.** El sesgo de la rejilla baja a 3–13° (antes 8–22°).
+
+**Marco incompleto.** La barra llega al canto la mitad de las veces (antes dos
+de cada tres); si no, se queda entre el 30 y el 80 % del camino. La pata, cuando
+la hay, mide del 15 al 60 % del alto.
+
+Medido: solape 0 con halo, pelo 0 por debajo de g, holgura 0, determinismo 66/66.
+
+**Lo que falta.** En el recinto las horizontales siguen todas a eje (50 % en
+0–15 y 165–180, frente al 28 % del calco) y no hay nada entre 120 y 165°; en el
+bloque falta la franja de 15–30°; el contador de úes marca 5 piezas de 838 en el
+recinto —la pieza de marco que es bajada + barra + pata, que es la forma del
+marco A del calco— y hay que decidir con el autor si esa cuenta como U.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

@@ -3073,7 +3073,7 @@
   const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
     bloque: { ancho: [0.062, 0.075], gam: [0.09, 0.13], celdas: [90, 120], cobertura: [0.3, 0.42], aspect: [1.3, 1.55],
-              racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, bifurca: [2, 4], sesgo: [68, 82], cruza: 0.4, ladeo: [0.16, 0.24] },
+              racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, bifurca: [2, 4], sesgo: [77, 87], cruza: 0.4, ladeo: [0.2, 0.3] },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
               racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
@@ -3084,7 +3084,7 @@
     // no llena. La silueta es rectangular.
     // (vuelta 50: menos celdas y más gordas, piezas más largas: el calco tiene 14 trazos de 7,4 W de mediana)
     recinto:  { ancho: [0.031, 0.038], gam: [0.13, 0.17], celdas: [150, 200], cobertura: [0.07, 0.11], aspect: [0.85, 1.1],
-                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, bifurca: [1, 3], borde: 0, marco: true, ladeo: [0.22, 0.34] },
+                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, zigzag: [20, 30], bifurca: [1, 3], borde: 0, marco: true, ladeo: [0.22, 0.34] },
     // TRAVESÍA (referencia 3), medida en su calco: tramos rectos de 5–14 anchuras y
     // quiebros de 25–55° encadenados, bifurcación a mitad de camino, y el margen del
     // pliego como salida o barrera. No es una rejilla ortogonal: es una rejilla de
@@ -3293,7 +3293,19 @@
       // desplazamiento A a lo largo de u, que depende sobre todo de b (entre filas) y poco de a
       const dA = amp * Math.sin(k1 * b + f1) * (0.6 + 0.4 * Math.cos(k2 * 0.35 * a + f3));
       const dB = amp * 0.7 * Math.sin(k2 * a + f2) * (0.6 + 0.4 * Math.cos(k1 * 0.35 * b + f1));
-      return { x: q.x + ux * dA + vx * dB, y: q.y + uy * dA + vy * dB }; };
+      // EL ZIGZAG DE LA ZONA DENSA (vuelta 52; el autor: «veo mucho vertical y horizontal»). En
+      // el calco 1 el 40 % de las secciones son oblicuas y aquí ninguna. La rejilla de la zona
+      // se CIZALLA POR BANDAS: cada dos a cuatro filas se inclina a un lado, a la siguiente al
+      // otro, y alguna se queda recta; las verticales pasan a ser zigzags y las horizontales
+      // siguen siéndolo. Para que las oblicuas no se junten (la distancia entre dos verticales
+      // cizalladas un ángulo θ baja a cos θ), toda la rejilla se ensancha 1/cos θ.
+      let zx = 0; if (zig) { let k = 0; while (k + 1 < zig.b.length && zig.b[k + 1] <= b) k++; zx = zig.z[k] + (b > zig.b[k] ? (b - zig.b[k]) * zig.s[k] : 0) + a * (zig.esc - 1); }
+      return { x: q.x + ux * (dA + zx) + vx * dB, y: q.y + uy * (dA + zx) + vy * dB }; };
+    let zig = null;
+    if (O.zigzag && zon) { const th = rng.range(O.zigzag[0], O.zigzag[1]) * RAD, t = Math.tan(th), bz = zon.by0 + min(zon.v1, zon.v2) * (zon.by1 - zon.by0) - cy;
+      zig = { b: [bz], z: [0], s: [], esc: 1 / Math.cos(th) }; let sg = rng.bool(0.5) ? 1 : -1, zc = 0;
+      for (let bb = bz, n = 0; n < 12; n++) { const h = P * rng.int(2, 4), sl = rng.bool(0.22) ? 0 : (abs(zc) > 1.2 * P ? -Math.sign(zc) : sg) * t; zig.s.push(sl); zc += sl * h; bb += h; zig.b.push(bb); zig.z.push(zc); if (sl) sg = -Math.sign(sl); }
+      zig.s.push(0); }
     const jac = (x, y) => { const e = W * 0.1, a = desp({ x: x + e, y }), b = desp({ x: x - e, y }), c2 = desp({ x, y: y + e }), d2 = desp({ x, y: y - e });
       return [(a.x - b.x) / (2 * e), (c2.x - d2.x) / (2 * e), (a.y - b.y) / (2 * e), (c2.y - d2.y) / (2 * e)]; };
     // 3. los paseos
@@ -3331,12 +3343,13 @@
           let jd = j0; while (jd < j1 && vDe(jd + 1) < max(zon.v1, zon.v2) + rng.range(0, 0.12)) jd++;   // hasta dónde baja: dentro de la zona densa
           const A = nuevo(); let bien = true; for (let j = jd; j >= j0 && bien; j--) bien = A.mete(ic, j);
           // la barra hacia la ventana grande: hasta el canto (y entonces, quizá, pata) o solo un tramo
-          const iCanto = sB < 0 ? i0 : i1, entera = rng.bool(0.65), iFin = entera ? iCanto : ic + sB * max(3, Math.round(abs(iCanto - ic) * rng.range(0.45, 0.8)));
+          // (vuelta 52; el autor: «puede haber marco pero puede no llegar a completarse entero»: la barra llega al canto la mitad de las veces)
+          const iCanto = sB < 0 ? i0 : i1, entera = rng.bool(0.5), iFin = entera ? iCanto : ic + sB * max(2, Math.round(abs(iCanto - ic) * rng.range(0.3, 0.8)));
           for (let i = ic + sB; bien && (sB < 0 ? i >= iFin : i <= iFin); i += sB) bien = A.mete(i, j0);
-          if (bien && entera && rng.bool(0.75)) { const p = Math.round(H * rng.range(0.25, 0.6)); for (let j = j0 + 1; j <= j0 + p; j++) if (!A.mete(iCanto, j)) break; }
+          if (bien && entera && rng.bool(0.65)) { const p = Math.round(H * rng.range(0.15, 0.6)); for (let j = j0 + 1; j <= j0 + p; j++) if (!A.mete(iCanto, j)) break; }
           cierra(A);
           // la otra pieza: la barra del otro lado, a un pelo de la primera, y a veces su pata
-          if (rng.bool(0.6)) { const B = nuevo(), iC2 = sB < 0 ? i1 : i0, ent2 = rng.bool(0.7), iF2 = ent2 ? iC2 : ic - sB * max(3, Math.round(abs(iC2 - ic) * rng.range(0.45, 0.8))); let b2 = true;
+          if (rng.bool(0.6)) { const B = nuevo(), iC2 = sB < 0 ? i1 : i0, ent2 = rng.bool(0.5), iF2 = ent2 ? iC2 : ic - sB * max(2, Math.round(abs(iC2 - ic) * rng.range(0.3, 0.8))); let b2 = true;
             for (let i = ic - sB; b2 && (sB < 0 ? i <= iF2 : i >= iF2); i -= sB) b2 = B.mete(i, j0);
             if (b2 && ent2 && rng.bool(0.7)) { const p = Math.round(H * rng.range(0.2, 0.55)); for (let j = j0 + 1; j <= j0 + p; j++) if (!B.mete(iC2, j)) break; }
             cierra(B); } }
@@ -3609,7 +3622,7 @@
       // así que se van: la mano es solo el campo común, que curva a las dos juntas.
       let pts = ejeDe(pz); const rot = 0;
       const cen = pts.reduce((a, q) => ({ x: a.x + q.x / pts.length, y: a.y + q.y / pts.length }), { x: 0, y: 0 });
-      pts = densa(giraYdesvia(pts, rot, cen.x, cen.y), !!pz.marco);
+      pts = densa(giraYdesvia(pts, rot, cen.x, cen.y), !!pz.marco && !zig);   // (con zigzag el marco se deforma con la rejilla: por encima de la zona sigue recto, porque ahí el zigzag vale cero)
       const ramas = (pz.ramas || []).map(rc => densa(giraYdesvia(ejeDe(rc, true), rot, cen.x, cen.y)));
       const fuera = pts.some(q => q.x < 0 || q.y < 0 || q.x > fw || q.y > fh);
       // GROSOR HOMOGÉNEO (el autor): sin gubia —la deriva de anchura abría cuñas entre
