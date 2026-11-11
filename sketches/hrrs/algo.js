@@ -3073,7 +3073,7 @@
   const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
     bloque: { ancho: [0.062, 0.075], gam: [0.09, 0.13], celdas: [90, 120], cobertura: [0.3, 0.42], aspect: [1.3, 1.55],
-              racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, bifurca: [2, 4], sesgo: [77, 87], cruza: 0.4, ladeo: [0.2, 0.3] },
+              racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, bifurca: [2, 4], sesgo: [72, 87], cruza: 0.4, ladeo: [0.2, 0.3] },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
               racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
@@ -3084,7 +3084,8 @@
     // no llena. La silueta es rectangular.
     // (vuelta 50: menos celdas y más gordas, piezas más largas: el calco tiene 14 trazos de 7,4 W de mediana)
     recinto:  { ancho: [0.031, 0.038], gam: [0.13, 0.17], celdas: [150, 200], cobertura: [0.07, 0.11], aspect: [0.85, 1.1],
-                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, zigzag: [20, 30], bifurca: [1, 3], borde: 0, marco: true, ladeo: [0.22, 0.34] },
+                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, zigzag: [20, 30], zigzag2: [0, 0],   /* zigzag2 (inclinar también las horizontales, 8–16°) se probó en la vuelta 53: 13 de 200 con solape y la medida casi no se mueve. Queda a cero. */
+                bifurca: [1, 3], borde: 0, marco: true, ladeo: [0.22, 0.34] },
     // TRAVESÍA (referencia 3), medida en su calco: tramos rectos de 5–14 anchuras y
     // quiebros de 25–55° encadenados, bifurcación a mitad de camino, y el margen del
     // pliego como salida o barrera. No es una rejilla ortogonal: es una rejilla de
@@ -3299,13 +3300,27 @@
       // otro, y alguna se queda recta; las verticales pasan a ser zigzags y las horizontales
       // siguen siéndolo. Para que las oblicuas no se junten (la distancia entre dos verticales
       // cizalladas un ángulo θ baja a cos θ), toda la rejilla se ensancha 1/cos θ.
-      let zx = 0; if (zig) { let k = 0; while (k + 1 < zig.b.length && zig.b[k + 1] <= b) k++; zx = zig.z[k] + (b > zig.b[k] ? (b - zig.b[k]) * zig.s[k] : 0) + a * (zig.esc - 1); }
-      return { x: q.x + ux * (dA + zx) + vx * dB, y: q.y + uy * (dA + zx) + vy * dB }; };
+      let zx = 0, zy = 0; if (zig) { let k = 0; while (k + 1 < zig.b.length && zig.b[k + 1] <= b) k++; zx = zig.z[k] + (b > zig.b[k] ? (b - zig.b[k]) * zig.s[k] : 0) + a * (zig.esc - 1);
+        // (vuelta 53) y las HORIZONTALES también: bandas de columnas inclinadas 8–16° a un lado y
+        // a otro, solo dentro de la zona (por encima se apaga en dos filas, y la barra del marco
+        // sigue recta). En el calco 1 la mitad de las horizontales no van a eje.
+        let k2 = 0; while (k2 + 1 < zig.a.length && zig.a[k2 + 1] <= a) k2++; const rampa = clamp((b - zig.b[0]) / (2 * P), 0, 1);
+        zy = (zig.za[k2] + (a > zig.a[k2] ? (a - zig.a[k2]) * zig.sa[k2] : 0)) * rampa + b * (zig.escB - 1); }
+      return { x: q.x + ux * (dA + zx) + vx * (dB + zy), y: q.y + uy * (dA + zx) + vy * (dB + zy) }; };
     let zig = null;
     if (O.zigzag && zon) { const th = rng.range(O.zigzag[0], O.zigzag[1]) * RAD, t = Math.tan(th), bz = zon.by0 + min(zon.v1, zon.v2) * (zon.by1 - zon.by0) - cy;
       zig = { b: [bz], z: [0], s: [], esc: 1 / Math.cos(th) }; let sg = rng.bool(0.5) ? 1 : -1, zc = 0;
       for (let bb = bz, n = 0; n < 12; n++) { const h = P * rng.int(2, 4), sl = rng.bool(0.22) ? 0 : (abs(zc) > 1.2 * P ? -Math.sign(zc) : sg) * t; zig.s.push(sl); zc += sl * h; bb += h; zig.b.push(bb); zig.z.push(zc); if (sl) sg = -Math.sign(sl); }
-      zig.s.push(0); }
+      zig.s.push(0);
+      const th2 = rng.range(O.zigzag2[0], O.zigzag2[1]) * RAD, t2 = Math.tan(th2), a0 = zon.bx0 - cx - 2 * P;
+      zig.a = [a0]; zig.za = [0]; zig.sa = []; let sg2 = rng.bool(0.5) ? 1 : -1, zc2 = 0;
+      for (let aa = a0, n = 0; n < 14; n++) { const w = P * rng.int(2, 5), sl = rng.bool(0.3) ? 0 : (abs(zc2) > 0.9 * P ? -Math.sign(zc2) : sg2) * t2; zig.sa.push(sl); zc2 += sl * w; aa += w; zig.a.push(aa); zig.za.push(zc2); if (sl) sg2 = -Math.sign(sl); }
+      zig.sa.push(0);
+      // con las dos cizallas a la vez el margen ya no se conserva solo con 1/cos de cada una: las
+      // dos escalas se suben juntas hasta que la distancia entre dos oblicuas vecinas, en el peor
+      // caso (las dos inclinaciones del mismo signo), vuelve a ser la de la rejilla
+      let e1 = 1 / Math.cos(th), e2 = 1 / Math.cos(th2); for (let n = 0; n < 60 && (e1 * e2 - t * t2 < hypot(t, e2) || e1 * e2 - t * t2 < hypot(t2, e1)); n++) { e1 *= 1.004; e2 *= 1.004; }
+      zig.esc = e1; zig.escB = e2; }
     const jac = (x, y) => { const e = W * 0.1, a = desp({ x: x + e, y }), b = desp({ x: x - e, y }), c2 = desp({ x, y: y + e }), d2 = desp({ x, y: y - e });
       return [(a.x - b.x) / (2 * e), (c2.x - d2.x) / (2 * e), (a.y - b.y) / (2 * e), (c2.y - d2.y) / (2 * e)]; };
     // 3. los paseos
@@ -3788,7 +3803,7 @@
     // LAS ZONAS VACÍAS (vuelta 43): predicados sobre un punto; `recortar` no deja que ningún
     // trazo entre en ellas. Cada tipo declara las suyas.
     const vacios = [];
-    const distA = (x, y, salvo) => { let d = Infinity; for (const t of trazos) { if (t === salvo) continue; for (const sg of t.segs) { const v = pointSegDist(x, y, sg[0], sg[1], sg[2], sg[3]); if (v < d) d = v; } } return d; };
+    const distA = (x, y, salvo) => { let d = Infinity; for (const t of trazos) { if (t === salvo) continue; for (const sg of t.segs) { const v = pointSegDist(x, y, sg[0], sg[1], sg[2], sg[3]); if (v < d) d = v; } if (t.rsegs) for (const sg of t.rsegs) { const v = pointSegDist(x, y, sg[0], sg[1], sg[2], sg[3]); if (v < d) d = v; } } return d; };
     // EL RECORTE: un trazo nuevo se corta donde su eje queda a menos de D de lo ya
     // puesto; cada trozo que sobrevive (≥ minL) avanza su cabo cortado hasta quedar
     // a W/2 + g del eje ajeno —la boca a un pelo—, y lo que no cabe no se pinta.
@@ -4291,6 +4306,17 @@
           const pzs = recortar(off, W * 2).filter(pz => largoDe(pz) >= (s1 - s0) * 0.5); if (pzs.length !== 1 || esGemelo(pzs[0])) continue;
           trazos.push({ pts: pzs[0], segs: segsDe(pzs[0]), rel: 'seguidor' }); hechos.delete(t); break; }
       }
+      // LA BIFURCACIÓN (vuelta 53; el autor: «no veo ningún trazo que bifurque en dos»). En la
+      // travesía todo iba a un pelo y nada en la misma tinta. De un trazo principal sale una
+      // RAMA: nace en su eje, casi en perpendicular (±20°), por el costado que esté libre, y
+      // sigue recta hasta salir del pliego o hasta quedar a un pelo de otra tinta. Tres
+      // anchuras como mínimo. Se pinta con su tronco, sin pelo entre los dos.
+      if (rng.bool(O.bifurca != null ? O.bifurca : 0.6)) { const cand = trazos.filter(t => t.rel === 'primero' || t.rel === 'relevo' || t.rel === 'compañera');
+        for (let it = 0; it < 16 && cand.length; it++) { const t = cand[rng.int(0, cand.length - 1)], ac = arco(t.pts), tot = ac[ac.length - 1], sv = rng.range(0.15, 0.85) * tot, sp = subPoli(t.pts, sv, min(tot, sv + W * 0.5)); if (sp.length < 2) continue;
+          const p0 = sp[0]; if (p0.x < W || p0.y < W || p0.x > fw - W || p0.y > fh - W) continue;
+          const ang = Math.atan2(sp[1].y - p0.y, sp[1].x - p0.x) + (rng.bool(0.5) ? 1 : -1) * (90 + rng.range(-20, 20)) * RAD, cx2 = Math.cos(ang), sy2 = Math.sin(ang), st = W / 4; let x = p0.x, y = p0.y, L = 0;
+          for (let n = 0; n < 120; n++) { const nx = x + cx2 * st, ny = y + sy2 * st; if (L + st > D * 1.05 && distA(nx, ny) < D * 0.985) break; x = nx; y = ny; L += st; if (x < -W || y < -W || x > fw + W || y > fh + W) break; }
+          if (L < W * 3) continue; const pl = [{ x: p0.x, y: p0.y }, { x, y }]; t.ramas = [pl]; t.rsegs = segsDe(pl); break; } }
     }
     // NADA CORRE SOLO (vuelta 44). Los cabos que se alejan de todo —un trazo que sigue por el
     // blanco sin nadie a un pelo— se recortan hasta dejar como mucho `maxLibre` anchuras
@@ -4311,7 +4337,7 @@
       // (la anchura varía ±2 % por trazo; en la travesía, con el pelo a 0,04 W, eso se
       // comía medio canal, y aun ±0,5 % de una banda de 82 px es medio píxel por filo:
       // ahí la anchura es la misma en todos los trazos)
-      ctx.trazos.push({ pts: t.pts, segs: t.segs, ramas: [], W: W * (TRAV ? 1 : rng.range(0.98, 1.02)), rel: t.rel, sangra: fuera, gubia: null, fin: 'hebra', celdas: 0, cruza: false, marco: t.rel === 'marco', caras: [null, null] }); }
+      ctx.trazos.push({ pts: t.pts, segs: t.segs, ramas: t.ramas || [], W: W * (TRAV ? 1 : rng.range(0.98, 1.02)), rel: t.rel, sangra: fuera, gubia: null, fin: 'hebra', celdas: 0, cruza: false, marco: t.rel === 'marco', caras: [null, null] }); }
     holguras(ctx);
     const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };
     const pas = pasillos(ctx.trazos, W, D);

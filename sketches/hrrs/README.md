@@ -4488,6 +4488,22 @@ bloque falta la franja de 15–30°; el contador de úes marca 5 piezas de 838 e
 recinto —la pieza de marco que es bajada + barra + pata, que es la forma del
 marco A del calco— y hay que decidir con el autor si esa cuenta como U.
 
+## Quincuagésima tercera vuelta: la rama de la travesía, el bloque en su sitio
+
+- **Travesía: la bifurcación.** Iba a cero: todo a un pelo, nada en la misma
+  tinta. De un trazo principal sale ahora una rama: nace en su eje, casi en
+  perpendicular (±20°), por el costado libre, y sigue recta hasta salir del
+  pliego o quedar a un pelo de otra tinta; tres anchuras como mínimo. 0,42 por
+  obra (el bloque 1,05, el recinto 0,54).
+- **Bloque: el sesgo.** De 3–13° a 3–18°: aparece la franja de 60–75° y
+  105–120° y queda en 86 % de secciones a eje (calco 87 %); codo mediano 84°
+  (calco 73°), codos a escuadra 16 % (calco 10 %).
+- **Recinto: las horizontales, probado y retirado.** Inclinarlas en bandas de
+  columnas (8–16°) trae solapes (13 de 200) y casi no mueve la medida, porque
+  la franja de 0–15° las sigue contando a eje. `zigzag2` queda a cero.
+
+Medido: solape 0 con halo, pelo 0 por debajo de g, holgura 0, determinismo 66/66.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
