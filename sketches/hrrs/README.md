@@ -4504,6 +4504,50 @@ marco A del calco— y hay que decidir con el autor si esa cuenta como U.
 
 Medido: solape 0 con halo, pelo 0 por debajo de g, holgura 0, determinismo 66/66.
 
+## Quincuagésima cuarta vuelta: la ficha de patrones, y menos gemelos
+
+El autor: «identifica patrones y compara contra los originales».
+
+`verificacion/patrones.js` reúne en una tabla por referencia todo lo medido
+hasta aquí, con las mismas definiciones, sobre el modelo de producción de cada
+tipo (60 obras). Calco / motor:
+
+| patrón | recinto | bloque | travesía |
+|---|---|---|---|
+| trazos por obra | 14 / 12 | 14 / 13 | 7 / 5 |
+| largo mediano del trazo (W) | 7,7 / 7,8 | 6,4 / 5,9 | 11,8 / 8,7 |
+| trazos cortos, < 4 W | 14 / 16 % | 29 / 27 % | 14 / 14 % |
+| parte del trazo a un pelo de otro | 100 / 95 % | 100 / 99 % | 96 / **80 %** |
+| pares de gemelos | 1 / 0,33 | 0 / 0,53 | 1 / 0,20 |
+| secciones a eje | 60 / 70 % | 87 / 86 % | 54 / 61 % |
+| codo mediano | 53 / **82°** | 77 / 88° | 53 / 43° |
+| codos a escuadra | 14 / 16 % | 6 / 15 % | 5 / 0 % |
+| ocupación de la caja | 49 / 43 % | 56 / 57 % | 37 / 40 % |
+| celdas vacías | 26 / 37 % | 22 / 24 % | 48 / 43 % |
+| núcleos densos | 3 / 2,0 | 1 / 1,2 | 1 / **2,1** |
+| núcleo mayor (de la caja) | 33 / 34 % | 53 / 53 % | 34 / 26 % |
+| **coinciden · cerca · lejos** | 5 · 6 · 1 | 10 · 2 · 0 | 2 · 8 · 2 |
+
+(Bifurcaciones por obra: 0,52 · 1,08 · 0,45; no se comparan porque el calco
+traza cada rama como trazo aparte.)
+
+**Lectura.** El bloque es el calco en diez de doce patrones. Al recinto le
+falta uno claro: sus codos son demasiado abiertos (82° frente a 53°: el original
+quiebra en oblicuo dentro del trazo, y aquí casi todo quiebro es de rejilla).
+**La travesía es ahora la más lejana**: va menos acompañada (80 % frente a
+96 %), su masa está partida en dos núcleos donde el original tiene uno, y tiene
+menos trazos y más cortos.
+
+**Gemelos.** Los pares que quedaban en la rejilla eran casi todos de piezas
+cortas (3–5 celdas), que no se pueden partir. Segunda pasada, sobre las piezas
+ya hechas: si la más larga tiene seis celdas o más se parte por la mitad; si no,
+una de las dos **se une** con la pieza que tiene cabo con cabo —se quita un
+corte—, siempre que la unión no haga una U, no pase de 14 celdas y no vuelva a
+ser gemela. Bloque 0,83 → 0,53 pares por obra, recinto 0,58 → 0,33, con la masa
+intacta (contacto 98 y 94 %).
+
+Medido: solape 0 con halo, pelo 0 por debajo de g, holgura 0, determinismo 66/66.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

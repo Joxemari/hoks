@@ -3498,6 +3498,11 @@
             else if (A.length - m >= 2) { const mov = tras ? A.splice(A.length - m, m) : A.splice(0, m); if (tras) B.unshift(...mov); else B.push(...mov); hecho = true; }   // o mengua
             if (hecho) break; }
           if (hecho) break; }
+        // (vuelta 54) si no hay vecina de camino a la que mover el corte, la más larga de las dos
+        // SE PARTE POR LA MITAD: no se abre ningún hueco —solo aparece un pelo más dentro de la
+        // masa— y cada mitad ya solo acompaña a media gemela
+        if (!hecho) { const a = piezas[par[0]].length >= piezas[par[1]].length ? par[0] : par[1], A = piezas[a];
+          if (A.length >= 6) { const h = A.length >> 1, B = A.splice(h); B.pi = A.pi; piezas.splice(a + 1, 0, B); sinArreglo.clear(); hecho = true; } }
         if (!hecho) sinArreglo.add(min(par[0], par[1]) + ',' + max(par[0], par[1])); } }
     const dbg = { paseos: paseos.map(p => p.map(c => [c.i, c.j])), piezas: piezas.map(p => p.map(c => [c.i, c.j])) };
     // retirar: poco, y más en el lado abierto (dosificado: el cuerpo no se rompe)
@@ -3572,6 +3577,30 @@
           const rama = seq.slice(0, m); A.ramas.push([A[k]].concat(rama)); for (const c of rama) dueno.set(key(c.i, c.j), A);
           if (m === seq.length) vivas.splice(vivas.indexOf(B), 1); else { if (inv) B.splice(B.length - m, m); else B.splice(0, m); }
           hechas++; break; } } }
+    // 4b''. LOS GEMELOS QUE NACEN DESPUÉS (vuelta 54). El paso 4·0 los rompe al cortar, pero la
+    // fusión por contacto y las ramas vuelven a hacer piezas iguales una junto a otra: medido,
+    // 0,6–0,8 pares por obra. Segunda pasada sobre las piezas ya hechas: de cada par, la más
+    // larga se parte por la mitad (si tiene seis celdas o más y no lleva rama).
+    if (O.hueco) { const junto2 = (A, B) => { const set = new Set(B.map(c => key(c.i, c.j))); let n = 0; for (const c of A) if (DIRS.some(([x, y]) => set.has(key(c.i + x, c.j + y)))) n++; return n / A.length; };
+      // Medido: casi todos los pares que quedan son de piezas CORTAS (3–5 celdas), que no se
+      // pueden partir. A esas se les hace lo contrario: una de las dos SE UNE con la pieza que
+      // tiene cabo con cabo (se quita un corte), si la unión no hace una U, no pasa de 14
+      // celdas y no vuelve a ser gemela de la otra.
+      const cabo2 = (p, q) => DIRS.some(([di, dj]) => p.i + di === q.i && p.j + dj === q.j);
+      const haceU2 = cs => { const sg = []; for (let k = 1; k + 1 < cs.length; k++) { const cr = (cs[k].i - cs[k - 1].i) * (cs[k + 1].j - cs[k].j) - (cs[k].j - cs[k - 1].j) * (cs[k + 1].i - cs[k].i); if (cr) sg.push(Math.sign(cr)); } for (let k = 1; k < sg.length; k++) if (sg[k] === sg[k - 1]) return true; return false; };
+      const sinRama = z => !(z.ramas && z.ramas.length), gem2 = (A, B) => junto2(A, B) >= 0.6 && junto2(B, A) >= 0.6, vistos = new Set();
+      for (let vuelta = 0; vuelta < 60; vuelta++) { let hecho = false;
+        for (let x = 0; x < vivas.length && !hecho; x++) for (let y = x + 1; y < vivas.length && !hecho; y++) { const A = vivas[x], B = vivas[y]; if (A.marco || B.marco || A.length < 2 || B.length < 2 || vistos.has(A) && vistos.has(B)) continue;
+          if (!gem2(A, B)) continue; const G = A.length >= B.length ? A : B;
+          if (G.length >= 6 && sinRama(G)) { const N = G.splice(G.length >> 1); N.ramas = []; N.pi = G.pi; vivas.push(N); hecho = true; continue; }
+          for (const [S, O2] of A.length <= B.length ? [[A, B], [B, A]] : [[B, A], [A, B]]) { if (!sinRama(S)) continue;
+            for (const C of vivas) { if (C === S || C === O2 || C.marco || !sinRama(C)) continue; let u = null;
+              if (cabo2(S[S.length - 1], C[0])) u = S.concat(C); else if (cabo2(C[C.length - 1], S[0])) u = C.concat(S); else if (cabo2(S[S.length - 1], C[C.length - 1])) u = S.concat(C.slice().reverse()); else if (cabo2(S[0], C[0])) u = S.slice().reverse().concat(C);
+              if (!u || u.length > 14 || haceU2(u) || gem2(u, O2)) continue;
+              u.ramas = []; u.pi = S.pi; vivas.splice(vivas.indexOf(C), 1); vivas[vivas.indexOf(S)] = u; hecho = true; break; }
+            if (hecho) break; }
+          if (!hecho) { vistos.add(A); vistos.add(B); } }
+        if (!hecho) break; } }
     // en el recinto, los tocones junto al marco (≤ 3 celdas tocando el anillo) se retiran: eran cuñas
     if (O.marco) vivas = vivas.filter(pz => pz.marco || pz.length > 3 || !pz.some(c => c.anillo));
     vivas = vivas.filter(pz => pz.length >= 2);
