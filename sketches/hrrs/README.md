@@ -4668,6 +4668,29 @@ Pendiente de la regla del autor: el recinto no toca el borde del pliego (su
 caja va centrada), así que «sale o paraleliza» no llega a aplicarse; si se le
 deja tocar el borde, habrá que hacerlo.
 
+## Quincuagésima novena vuelta: el filo, en facetas
+
+El autor: «el de Chillida tiene curvas, pero no son curvas: son como pequeños
+segmentos de recta, y no son paralelos dentro del trazo. La parte derecha e
+izquierda del trazo no son exactamente paralelas. Por lo demás, está cogiendo
+buena pinta».
+
+Es del pintor. La mano tenía dos partes: un campo común a toda la obra (0,03 W,
+ondas de 2–4 anchuras), que mueve los dos filos a la vez, y un temblor propio de
+cada filo que era un seno de **0,004 W**. Resultado: filos curvos y paralelos.
+
+Ahora el temblor propio es una **poligonal por filo**: nudos cada 0,8–2,4
+anchuras (`FACETA_L`), cada uno desviado hasta ±0,045 W (`FACETA`), y recta
+entre nudo y nudo. Los nudos de un filo no coinciden con los del otro, así que
+la anchura del trazo respira (hasta ±0,09 W) y el filo se lee como una sucesión
+de tramos rectos. El campo común sigue: es lo que hace que dos vecinos se
+muevan juntos.
+
+El pelo no cambia: el halo se corta con el mismo filo que se pinta. Medido:
+pelo 0 por debajo de g a 760 px (240 obras) y a 1520 px (90), solape 0 de 300,
+determinismo 66/66 — las facetas salen del mismo generador sembrado que la
+mano, así que misma seed, mismo filo.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

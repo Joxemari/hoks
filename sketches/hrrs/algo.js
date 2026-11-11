@@ -1054,6 +1054,8 @@
   // halo no corta y las dos tintas se funden. Es lo que delata la mano aunque el
   // dibujo esté bien, y lo que delataba al ordenador cuando el pelo era perfecto.
   const MANO_VIB = 0.03;                   // × W
+  const FACETA = 0.045;                    // × W · cuánto se desvía cada nudo del filo (cada filo por su cuenta)
+  const FACETA_L = [0.8, 2.4];             // × W · distancia entre nudos
   const MANO_ONDA = [2.0, 4.0];            // × W
   // APAGADO por defecto: el pelo fundido rompe a propósito la regla de la familia
   // (el blanco mide g) y pelo.js lo canta, que es lo que tiene que hacer. Se enciende
@@ -1113,7 +1115,15 @@
     // y encima, el signo manual (el autor): una vibración pequeña e independiente por
     // costado, que no comparte nadie. La INTENCIÓN del margen es compartida (el campo);
     // la mano tiembla un poco por su cuenta.
-    const propio = (s, lado) => mano && mano.p ? mano.p.amp * Math.sin(s / mano.p.o + (lado > 0 ? mano.p.fa : mano.p.fb)) : 0;
+    // EL FILO, EN FACETAS (vuelta 59; el autor: «tiene curvas, pero no son curvas: son como
+    // pequeños segmentos de recta, y no son paralelos dentro del trazo; la parte derecha e
+    // izquierda no son exactamente paralelas»). El temblor propio de cada filo era un seno de
+    // 0,004 W: curvo y tan pequeño que los dos filos iban paralelos. Ahora cada filo lleva
+    // su propia poligonal: nudos cada 0,8–2,4 anchuras, cada uno con su desviación, y RECTA
+    // entre nudo y nudo. Los nudos de un filo no coinciden con los del otro, así que la
+    // anchura del trazo respira. El pelo no cambia: el halo se corta con el mismo filo.
+    const propio = (s, lado) => { if (!mano || !mano.p) return 0; const K = lado > 0 ? mano.p.ka : mano.p.kb; if (!K) return mano.p.amp * Math.sin(s / mano.p.o + (lado > 0 ? mano.p.fa : mano.p.fb));
+      let i = 0; while (i + 2 < K.length && K[i + 1][0] <= s) i++; const a = K[i], b = K[i + 1], t = clamp((s - a[0]) / ((b[0] - a[0]) || 1e-9), 0, 1); return a[1] + (b[1] - a[1]) * t; };
     // y el factor de borde del eje (1 dentro, 0 en el contorno): la vibración se apaga ahí
     const fb = (i, t) => { const a = pts[i].borde, b = pts[i + 1].borde; if (a == null && b == null) return 1; return (a == null ? 1 : a) * (1 - t) + (b == null ? 1 : b) * t; };
     const hEn = f => (Wt + (anchoEn(f, Wt, gub) - Wt) * 0.5) / 2;
@@ -1235,6 +1245,7 @@
         let mano = null;
         if (manoObra) { mano = Object.assign({ funde: null, p: { amp: manoObra.vib * 0.12, o: rm.range(1.2, 2.5) * Wt / 6.2832, fa: rm.range(0, 6.2832), fb: rm.range(0, 6.2832) } }, manoObra);
           const Lt = largoDe(eje), fl = rm.range(FUNDE_L[0], FUNDE_L[1]) * Wt, pf = rm.bool(pFunde != null ? pFunde : P_FUNDE);
+          { const fam = FACETA * Wt * (manoAmp != null ? manoAmp : 1), nudos = () => { const K = [[-Wt, rm.range(-1, 1) * fam]]; let sv = -Wt; while (sv < Lt + Wt) { sv += rm.range(FACETA_L[0], FACETA_L[1]) * Wt; K.push([sv, rm.range(-1, 1) * fam]); } return K; }; mano.p.ka = nudos(); mano.p.kb = nudos(); }
           if (ri === 0 && pf && Lt > fl + Wt) { const s0 = rm.range(Wt * 0.3, Lt - fl - Wt * 0.3); mano.funde = [s0, s0 + fl]; } }
         const caras = ri === 0 && tr.caras ? tr.caras : null;
         // (el halo corta el canal MÁS 0,35 px: es holgura de trama —el antialias y la
