@@ -3073,7 +3073,7 @@
   const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
     bloque: { ancho: [0.062, 0.075], gam: [0.09, 0.13], celdas: [90, 120], cobertura: [0.3, 0.42], aspect: [1.3, 1.55],
-              racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, cruza: 0.4, ladeo: [0.26, 0.36] },
+              racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, bifurca: [2, 4], sesgo: [68, 82], cruza: 0.4, ladeo: [0.16, 0.24] },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
               racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
@@ -3084,7 +3084,7 @@
     // no llena. La silueta es rectangular.
     // (vuelta 50: menos celdas y más gordas, piezas más largas: el calco tiene 14 trazos de 7,4 W de mediana)
     recinto:  { ancho: [0.031, 0.038], gam: [0.13, 0.17], celdas: [150, 200], cobertura: [0.07, 0.11], aspect: [0.85, 1.1],
-                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, borde: 0, marco: true, ladeo: [0.22, 0.34] },
+                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, bifurca: [1, 3], borde: 0, marco: true, ladeo: [0.22, 0.34] },
     // TRAVESÍA (referencia 3), medida en su calco: tramos rectos de 5–14 anchuras y
     // quiebros de 25–55° encadenados, bifurcación a mitad de camino, y el margen del
     // pliego como salida o barrera. No es una rejilla ortogonal: es una rejilla de
@@ -3191,7 +3191,11 @@
     // quiebro el paseo elige, cuando puede, el lado que ese campo ABRE (una zeta se
     // abre entera si su brazo del medio se inclina hacia el lado bueno).
     const th = O.marco ? 0 : rng.range(-1, 1) * (Object.keys(bordes).length ? 2.5 : 8) * RAD;
-    const ang = O.oblicua ? rng.range(O.oblicua[0], O.oblicua[1]) * RAD : Math.PI / 2;
+    // EL SESGO (vuelta 51; el autor: «sigue todo horizontal o vertical»). Medido: en el calco 2
+    // el codo típico mide 73° y solo el 10 % son a escuadra; aquí 88° y el 40 %. La rejilla deja
+    // de ser de cuadrados: es de PARALELOGRAMOS de ángulo `sesgo`, hacia un lado o hacia el
+    // otro, sin la gramática de la travesía que lleva `oblicua`.
+    const ang = O.oblicua ? rng.range(O.oblicua[0], O.oblicua[1]) * RAD : O.sesgo ? (rng.bool(0.5) ? 1 : -1) * rng.range(90 - O.sesgo[1], 90 - O.sesgo[0]) * RAD + Math.PI / 2 : Math.PI / 2;
     const ux = Math.cos(th), uy = Math.sin(th), vx = Math.cos(th + ang), vy = Math.sin(th + ang), Pl = P / Math.sin(ang);
     let ox = rng.range(0, P), oy = rng.range(0, P);
     const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
@@ -3219,11 +3223,13 @@
     // caminarla, dos ventanas —la grande del lado que pesa y otra menor bajo la barra al otro
     // lado— dejando entre ellas un corredor por donde bajan las verticales, y una fila de
     // celdas junto al marco. Lo que queda es la zona densa, y se llena.
+    let zon = null;
     if (O.zonas && cells.size) { let bx0 = 1e9, by0 = 1e9, bx1 = -1e9, by1 = -1e9; for (const c of cells.values()) { const q = centro(c.i, c.j); bx0 = min(bx0, q.x); bx1 = max(bx1, q.x); by0 = min(by0, q.y); by1 = max(by1, q.y); }
       const esp = rng.bool(0.5), m = 1.5 * P / (bx1 - bx0), mv = 1.5 * P / (by1 - by0);
       const u1 = rng.range(0.36, 0.46), v1 = rng.range(0.42, 0.55), u2 = u1 + rng.range(0.18, 0.28), v2 = rng.range(0.24, 0.38);
       for (const [k, c] of [...cells.entries()]) { const q = centro(c.i, c.j); let u = (q.x - bx0) / (bx1 - bx0); const v = (q.y - by0) / (by1 - by0); if (esp) u = 1 - u;
-        if ((u > m && u < u1 && v > mv && v < v1) || (u > u2 && u < 1 - m && v > mv && v < v2)) cells.delete(k); } }
+        if ((u > m && u < u1 && v > mv && v < v1) || (u > u2 && u < 1 - m && v > mv && v < v2)) cells.delete(k); }
+      zon = { u1, u2, v1, v2, esp, bx0, bx1, by0, by1 }; }
     // 2b. el aire tiene forma: una ventana grande (a veces dos), descentrada hacia el lado abierto
     const interior = c => DIRS.every(([a, b]) => cells.has(key(c.i + a, c.j + b)));
     const nV = params.ventanas != null ? params.ventanas : rng.int(O.ventanas[0], O.ventanas[1]);
@@ -3306,6 +3312,39 @@
       // y baja por la otra pared una fracción; a veces solo hace un lado y el de
       // enfrente. Las dos piernas: la primera arranca entre el 30 y el 70 % de la
       // altura, la segunda baja entre el 15 y el 80 %.
+      // EL MARCO NACE DE LA ZONA DENSA (vuelta 51; el autor: «no siempre hay arco ni empieza del
+      // extremo; nace de los trazos que salen de la zona densa, pero no en el extremo
+      // necesariamente»). Con zonas, el marco deja de ser un anillo que se traza desde la
+      // esquina: es LA PROLONGACIÓN DE UN TRAZO QUE SUBE de la zona densa por el corredor,
+      // llega arriba y dobla en barra hacia un lado —entera o solo un tramo—, y si llega al
+      // canto, a veces baja en pata. A veces otra pieza hace la barra del otro lado, a un
+      // pelo. Y una de cada cuatro obras no tiene marco: solo la zona densa y lo que sale.
+      if (O.zonas && zon) { const uDe = i => { const q = centro(i, j0), u = (q.x - zon.bx0) / (zon.bx1 - zon.bx0); return zon.esp ? 1 - u : u; }, vDe = j => (centro(i0, j).y - zon.by0) / (zon.by1 - zon.by0);
+        const corr = []; for (let i = i0; i <= i1; i++) { const u = uDe(i); if (u >= zon.u1 && u <= zon.u2) corr.push(i); }
+        const sB = corr.length && uDe(corr[0]) < uDe(corr[corr.length - 1]) ? -1 : 1;   // hacia dónde cae la ventana grande, en i
+        const nuevo = () => { const a = []; a.mete = (i, j) => { const c = cells.get(key(i, j)); if (c && !c.used) { c.used = true; a.push(c); return true; } return false; }; return a; };
+        const cierra = a => { let ok2 = a.length >= 5; for (let k = 1; k < a.length && ok2; k++) if (abs(a[k].i - a[k - 1].i) + abs(a[k].j - a[k - 1].j) !== 1) ok2 = false;
+          if (ok2) { a.marco = true; paseos.push(a); } else for (const c of a) c.used = false; return ok2; };
+        if (corr.length && rng.bool(0.75)) { const H = j1 - j0;
+          // la columna por la que sube: la del corredor pegada a la ventana grande, o la siguiente
+          const ic = sB < 0 ? corr[0] + (corr.length > 2 && rng.bool(0.4) ? 1 : 0) : corr[corr.length - 1] - (corr.length > 2 && rng.bool(0.4) ? 1 : 0);
+          let jd = j0; while (jd < j1 && vDe(jd + 1) < max(zon.v1, zon.v2) + rng.range(0, 0.12)) jd++;   // hasta dónde baja: dentro de la zona densa
+          const A = nuevo(); let bien = true; for (let j = jd; j >= j0 && bien; j--) bien = A.mete(ic, j);
+          // la barra hacia la ventana grande: hasta el canto (y entonces, quizá, pata) o solo un tramo
+          const iCanto = sB < 0 ? i0 : i1, entera = rng.bool(0.65), iFin = entera ? iCanto : ic + sB * max(3, Math.round(abs(iCanto - ic) * rng.range(0.45, 0.8)));
+          for (let i = ic + sB; bien && (sB < 0 ? i >= iFin : i <= iFin); i += sB) bien = A.mete(i, j0);
+          if (bien && entera && rng.bool(0.75)) { const p = Math.round(H * rng.range(0.25, 0.6)); for (let j = j0 + 1; j <= j0 + p; j++) if (!A.mete(iCanto, j)) break; }
+          cierra(A);
+          // la otra pieza: la barra del otro lado, a un pelo de la primera, y a veces su pata
+          if (rng.bool(0.6)) { const B = nuevo(), iC2 = sB < 0 ? i1 : i0, ent2 = rng.bool(0.7), iF2 = ent2 ? iC2 : ic - sB * max(3, Math.round(abs(iC2 - ic) * rng.range(0.45, 0.8))); let b2 = true;
+            for (let i = ic - sB; b2 && (sB < 0 ? i <= iF2 : i >= iF2); i -= sB) b2 = B.mete(i, j0);
+            if (b2 && ent2 && rng.bool(0.7)) { const p = Math.round(H * rng.range(0.2, 0.55)); for (let j = j0 + 1; j <= j0 + p; j++) if (!B.mete(iC2, j)) break; }
+            cierra(B); } }
+        // la orilla de las ventanas que no es marco es AIRE: si se deja, los paseos la llenan y
+        // vuelven a enmarcar la obra entera, con marco o sin él
+        for (const [k, c] of [...cells.entries()]) { if (c.used) continue; const q = centro(c.i, c.j); let u = (q.x - zon.bx0) / (zon.bx1 - zon.bx0); const v = (q.y - zon.by0) / (zon.by1 - zon.by0); if (zon.esp) u = 1 - u;
+          if ((u < zon.u1 && v < zon.v1) || (u > zon.u2 && v < zon.v2)) cells.delete(k); }
+      } else {
       const marco = [], mete = (i, j) => { const c = cells.get(key(i, j)); if (c && !c.used) { c.used = true; marco.push(c); } };
       const H = (abierto % 2 === 0) ? j1 - j0 : i1 - i0, p1 = Math.round(H * rng.range(0.3, 0.7)), p2 = Math.round(H * rng.range(0.15, 0.8)), solo = rng.bool(0.3);
       if (abierto === 0) { for (let j = j0 + p1; j >= j0; j--) mete(i0, j); for (let i = i0 + 1; i <= i1; i++) mete(i, j0); if (!solo) for (let j = j0 + 1; j <= j0 + p2; j++) mete(i1, j); }
@@ -3320,14 +3359,14 @@
       // barra y la otra media barra + pata, a un pelo. Se parte entre el 35 y el 65 % de la barra.
       if (ok && !solo && marco.length >= 10) { const bar0 = p1 + 1, barN = marco.length - p2 - bar0, k = bar0 + Math.round(barN * rng.range(0.35, 0.65));
         if (k > 2 && k < marco.length - 2) { const A = marco.slice(0, k), B = marco.slice(k); A.marco = B.marco = true; paseos.push(A, B); ok = null; } }
-      if (ok) { marco.marco = true; paseos.push(marco); } else if (ok === false) { for (const c of marco) c.used = false; marco.length = 0; }
+      if (ok) { marco.marco = true; paseos.push(marco); } else if (ok === false) { for (const c of marco) c.used = false; marco.length = 0; } }
       // la ABERTURA es aire: el borde abierto y la fila siguiente no se ocupan, así nadie
       // cierra la caja y los meandros acaban antes de llegar
       for (const c of [...cells.values()]) { if (c.used) continue; const enAb = abierto === 0 ? c.j >= j1 - 1 : abierto === 2 ? c.j <= j0 + 1 : abierto === 1 ? c.i >= i1 - 1 : c.i <= i0 + 1; if (enAb) cells.delete(key(c.i, c.j)); }
       // el anillo interior del marco: reservado. Solo se entra desde él en perpendicular
       // a la pared (el meandro que nace de la pared de enfrente)
       for (const c of cells.values()) { if (c.used) continue; const toca = DIRS.filter(([a, b]) => { const n = cells.get(key(c.i + a, c.j + b)); return n && n.marcoCel; }); if (toca.length) c.anillo = true; }
-      for (const c of marco) c.marcoCel = true;
+      for (const pm of paseos) if (pm.marco) for (const c of pm) c.marcoCel = true;
       for (const c of cells.values()) { if (c.used) continue; const w = DIRS.find(([a, b]) => { const n = cells.get(key(c.i + a, c.j + b)); return n && n.marcoCel; }); c.anillo = !!w; c.pared = w ? (w[0] ? 'i' : 'j') : null; } }
     while (guard++ < 500) {
       let cand = [...cells.values()].filter(c => !c.used); if (!cand.length) break;
@@ -3482,6 +3521,29 @@
       if (!cands.length) continue;
       const el = cands[rng.int(0, cands.length - 1)], rama = el.rama.slice(0, min(el.rama.length, TRAV ? rng.int(4, 8) : rng.int(2, 4)));
       for (const r of rama) toma(r.i, r.j, pz); pz.ramas.push([el.c].concat(rama)); }
+    // 4b'. LA BIFURCACIÓN POR FUSIÓN (vuelta 51; el autor: «no veo ningún trazo que bifurque en
+    // dos»). Las ramas de arriba piden celdas libres junto al tronco, y en la zona llena no
+    // queda ninguna: salían 0,07–0,28 por obra. En una zona sin aire la bifurcación no se
+    // añade, SE FUNDE: una pieza corta y recta cuyo cabo da en perpendicular contra un tramo
+    // recto de otra pasa a ser su rama —una sola tinta, sin pelo entre las dos—. Solo hacia el
+    // lado donde el tronco no tiene celdas (ni U ni peine), y una rama por tronco.
+    if (O.bifurca) { const objetivo = rng.int(O.bifurca[0], O.bifurca[1]); let hechas = vivas.reduce((a, p2) => a + p2.ramas.length, 0);
+      const orden = vivas.slice(); for (let i = orden.length - 1; i > 0; i--) { const j = rng.int(0, i), t = orden[i]; orden[i] = orden[j]; orden[j] = t; }
+      // (la pieza no tiene que ser corta y recta entera —de esas casi no hay—: basta con que su
+      // CABO dé en perpendicular. Se le toman las dos a cuatro celdas rectas del cabo, que pasan
+      // a ser la rama del tronco, y el resto sigue siendo su pieza si le quedan tres o más.)
+      for (const B of orden) { if (hechas >= objetivo) break; if (B.marco || B.ramas.length || B.length < 2 || !vivas.includes(B)) continue;
+        for (const inv of [false, true]) { const seq = inv ? B.slice().reverse() : B, e = seq[0], n = seq[1], di = e.i - n.i, dj = e.j - n.j, A = dueno.get(key(e.i + di, e.j + dj));
+          if (!A || A === B || A.marco || A.ramas.length || A.length < 4 || !vivas.includes(A)) continue;
+          const k = A.findIndex(c => c.i === e.i + di && c.j === e.j + dj); if (k <= 0 || k >= A.length - 1) continue; const a = A[k - 1], b = A[k + 1];
+          if (di !== 0 ? a.i !== b.i : a.j !== b.j) continue;                                         // el tronco pasa recto y en perpendicular a la rama
+          // el tronco no dobla hacia ese lado CERCA (a menos de cuatro celdas a lo largo): eso sería una U o un peine. Más lejos no se lee como tal.
+          if (A.some((t, q) => abs(q - k) <= 2 && ((t.i - A[k].i) * -di + (t.j - A[k].j) * -dj) > 0)) continue;
+          let r = 1; while (r < seq.length && seq[r].i - seq[r - 1].i === -di && seq[r].j - seq[r - 1].j === -dj) r++;   // el tramo recto del cabo
+          let m = min(r, rng.int(2, 4)); if (seq.length - m < 2) { if (seq.length <= 5 && r === seq.length) m = seq.length; else continue; } if (m < 2) continue;
+          const rama = seq.slice(0, m); A.ramas.push([A[k]].concat(rama)); for (const c of rama) dueno.set(key(c.i, c.j), A);
+          if (m === seq.length) vivas.splice(vivas.indexOf(B), 1); else { if (inv) B.splice(B.length - m, m); else B.splice(0, m); }
+          hechas++; break; } } }
     // en el recinto, los tocones junto al marco (≤ 3 celdas tocando el anillo) se retiran: eran cuñas
     if (O.marco) vivas = vivas.filter(pz => pz.marco || pz.length > 3 || !pz.some(c => c.anillo));
     vivas = vivas.filter(pz => pz.length >= 2);

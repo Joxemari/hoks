@@ -4391,6 +4391,54 @@ Medido: solape 0 con halo, pelo 0 por debajo de g, determinismo 66/66.
 Queda: ahora las piezas son algo más largas y pocas que las del calco; la zona
 densa es a escuadra y la suya barre en oblicuo; 0,78 pares de gemelos por obra.
 
+## Quincuagésima primera vuelta: el marco que nace de la zona densa, la bifurcación y los ángulos
+
+Tres observaciones del autor, las tres medidas.
+
+**1. «En la 1 no siempre hay arco ni empieza del extremo; nace de los trazos que
+salen de la zona densa, pero no en el extremo necesariamente».** El marco del
+recinto deja de ser un anillo trazado desde la esquina. Es la **prolongación de
+un trazo que sube** de la zona densa por el corredor entre las ventanas, llega
+arriba y dobla en barra hacia un lado —entera o solo un tramo—; si llega al
+canto, a veces baja en pata. A veces otra pieza hace la barra del otro lado, a
+un pelo. Sobre 200 obras: sin marco 63, una pieza 69, dos piezas 68. La orilla
+de las ventanas que no es marco se quita de la rejilla: si se deja, los paseos
+la llenan y vuelven a enmarcarlo todo.
+
+**2. «No veo ningún trazo que bifurque en dos».** Cierto: 0,28 ramas por obra en
+el bloque, 0,07 en el recinto, 0 en la travesía. La causa era la zona llena:
+las ramas se colocaban en celdas libres junto al tronco y ya no queda ninguna.
+En una zona sin aire la bifurcación **se funde**: el cabo recto (dos a cuatro
+celdas) de una pieza que da en perpendicular contra un tramo recto de otra pasa
+a ser rama de esta —una sola tinta, sin pelo—. Solo si el tronco no dobla hacia
+ese lado a menos de dos celdas (ni U ni peine), y una por tronco. Ahora: bloque
+1,05 por obra (en 71 de 100), recinto 0,54 (en 48 de 100). Úes en el bloque: 0.
+
+**3. «Revisa los ángulos de las secciones, sigue todo horizontal o vertical».**
+`verificacion/angulos.js` mide la desviación de cada tramo respecto a la
+horizontal o la vertical y el giro de cada codo:
+
+| | largo a escuadra (< 5°) | a más de 15° | codo mediano | codos a escuadra |
+|---|---|---|---|---|
+| calco 2 | 55 % | 6 % | 73° | 10 % |
+| bloque, antes | 57 % | 5 % | 88° | 40 % |
+| **bloque, ahora** | 39 % | 23 % | 79° | 4 % |
+| calco 1 | 45 % | 31 % | 34° | 7 % |
+| **recinto** | 61 % | 1 % | 89° | 42 % |
+| calco 3 / travesía | 32 / 49 % | 35 / 30 % | 42 / 39° | 4 / 0 % |
+
+En el bloque la rejilla pasa a ser de **paralelogramos** (`sesgo` 68–82°, hacia
+un lado o el otro) y la cizalla baja (0,16–0,24): los ángulos salen del sesgo,
+no de curvar. Queda algo pasado en inclinación de tramos.
+
+**El recinto sigue a escuadra, y no se ha resuelto.** Se probó más cizalla
+(0,3–0,8 W): apenas mueve los ángulos y trae solapes (8 de 30 con 0,55–0,8; 1
+de 220 aún con 0,3–0,4); se retiró. Sus codos son de 34° en el original: no es
+una rejilla girada, son quiebros oblicuos dentro del trazo, y eso pide que la
+zona densa del recinto no sea una rejilla de cuadrados. Abierto.
+
+Medido: solape 0 con halo, pelo 0 por debajo de g, holgura 0, determinismo 66/66.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
