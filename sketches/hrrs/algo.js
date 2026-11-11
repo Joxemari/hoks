@@ -3084,7 +3084,7 @@
     // no llena. La silueta es rectangular.
     // (vuelta 50: menos celdas y más gordas, piezas más largas: el calco tiene 14 trazos de 7,4 W de mediana)
     recinto:  { ancho: [0.031, 0.038], gam: [0.13, 0.17], celdas: [150, 200], cobertura: [0.07, 0.11], aspect: [0.85, 1.1],
-                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, zigzag: [20, 30], zigAlto: [2, 3], zigCero: 0.1, zigzag2: [0, 0],   /* inclinar también las horizontales se probó dos veces (vueltas 53 y 56): 13 de 300 con solape. La causa es la rampa entre la zona inclinada y la barra recta del marco, que comprime las filas de en medio. Queda a cero. */
+                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, zigzag: [20, 30], zigAlto: [2, 3], zigCero: 0.1, zigzag2: [5, 12],   /* (vuelta 58; el autor: la barra «puede ir inclinada, aunque si toca el borde del cuadro o sale o paraleliza con el borde». Las horizontales se inclinan por bandas en todo el recinto, barra incluida, sin la rampa que comprimía las filas y daba solapes.) */
                 bifurca: [1, 3], borde: 0, marco: true, ladeo: [0.22, 0.34] },
     // TRAVESÍA (referencia 3), medida en su calco: tramos rectos de 5–14 anchuras y
     // quiebros de 25–55° encadenados, bifurcación a mitad de camino, y el margen del
@@ -3317,7 +3317,7 @@
       const zA = O.zigAlto || [2, 4], zC = O.zigCero != null ? O.zigCero : 0.22;
       for (let bb = bz, n = 0; n < 16; n++) { const h = P * rng.int(zA[0], zA[1]), sl = rng.bool(zC) ? 0 : (abs(zc) > 1.2 * P ? -Math.sign(zc) : sg) * t; zig.s.push(sl); zc += sl * h; bb += h; zig.b.push(bb); zig.z.push(zc); if (sl) sg = -Math.sign(sl); }
       zig.s.push(0);
-      const th2 = rng.range(O.zigzag2[0], O.zigzag2[1]) * RAD, t2 = Math.tan(th2), a0 = zon ? zon.bx0 - cx - 2 * P : aMin - P * rng.range(0.5, 2.5); zig.conRampa = !!zon;
+      const th2 = rng.range(O.zigzag2[0], O.zigzag2[1]) * RAD, t2 = Math.tan(th2), a0 = zon ? zon.bx0 - cx - 2 * P : aMin - P * rng.range(0.5, 2.5); zig.conRampa = false;
       zig.a = [a0]; zig.za = [0]; zig.sa = []; let sg2 = rng.bool(0.5) ? 1 : -1, zc2 = 0;
       for (let aa = a0, n = 0; n < 14; n++) { const w = P * rng.int(2, 5), sl = rng.bool(O.zigCero != null ? O.zigCero : 0.3) ? 0 : (abs(zc2) > 0.9 * P ? -Math.sign(zc2) : sg2) * t2; zig.sa.push(sl); zc2 += sl * w; aa += w; zig.a.push(aa); zig.za.push(zc2); if (sl) sg2 = -Math.sign(sl); }
       zig.sa.push(0);
@@ -3711,7 +3711,7 @@
         let best = null, dm = P * 1.3;
         for (let j = 0; j < ctx.trazos.length; j++) { if (j === k || ctx.trazos[j].marco) continue; for (const sg of segsCon(ctx.trazos[j])) {
           const d = pointSegDist(e.x, e.y, sg[0], sg[1], sg[2], sg[3]); if (d < dm) { const dx = sg[2] - sg[0], dy = sg[3] - sg[1], L = hypot(dx, dy) || 1e-9;
-            const t = { x: dx / L, y: dy / L }; if (abs(t.x * u.x + t.y * u.y) < 0.8) { dm = d; best = { sg, t, W: ctx.trazos[j].W || W }; } } } }
+            const t = { x: dx / L, y: dy / L }; if (abs(t.x * u.x + t.y * u.y) < 0.88) { dm = d; best = { sg, t, W: ctx.trazos[j].W || W }; } } } }   /* (0,88: costados hasta a 28° del cabo; con las bandas en los dos ejes los hay a menos de 37° y quedaban sin encarar) */
         if (!best) continue;
         const nb0 = { x: -best.t.y, y: best.t.x }, sgn = ((e.x - best.sg[0]) * nb0.x + (e.y - best.sg[1]) * nb0.y) >= 0 ? 1 : -1, nb = { x: nb0.x * sgn, y: nb0.y * sgn };
         const cosA = u.x * nb.x + u.y * nb.y, sinA = Math.sqrt(max(0, 1 - cosA * cosA));
@@ -3724,7 +3724,7 @@
         // solo AVANZA si el camino está libre: entre el cabo y el costado al que se
         // encara puede haber el cabo de otra pieza casi colineal (recinto, 3°), y
         // avanzar hasta el costado era pasarle por encima. Retroceder siempre se puede.
-        if (abs(cosA) > 0.5) { const mueve = (quiero - dPerp) / cosA; const e2 = { x: e.x + u.x * mueve, y: e.y + u.y * mueve };
+        if (abs(cosA) > 0.42) { const mueve = clamp((quiero - dPerp) / cosA, -1.2 * W, 1.2 * W); const e2 = { x: e.x + u.x * mueve, y: e.y + u.y * mueve };
           let libreE = true; if (mueve > 0) for (let j = 0; j < ctx.trazos.length && libreE; j++) { if (j === k) continue; for (const sg of segsCon(ctx.trazos[j])) if (pointSegDist(e2.x, e2.y, sg[0], sg[1], sg[2], sg[3]) < quiero - 1e-6) { libreE = false; break; } }
           if (libreE) { if (lado) pts[pts.length - 1] = e2; else pts[0] = e2; } }
         // la boca se encara solo si el giro es ligero (≤ 12°); más, sería un inglete

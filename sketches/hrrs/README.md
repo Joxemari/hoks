@@ -4637,6 +4637,37 @@ Medido con 300 obras por tipo: **solape 0 de 900**, pelo 0 por debajo de g en
 240, determinismo 66/66. Ficha (60 obras): recinto 6 coinciden · 5 cerca · 1
 lejos; bloque 8 · 3 · 1; travesía 3 · 7 · 2.
 
+## Quincuagésima octava vuelta: la barra puede inclinarse
+
+El autor: la barra del marco «puede ir inclinada, aunque si toca el borde del
+cuadro o sale o paraleliza con el borde».
+
+Eso quita la rampa que hacía falta para mantener la barra recta y que daba
+solapes (vueltas 53 y 56). Las horizontales del recinto se inclinan por bandas
+de columnas (5–12°) en todo el cuerpo, barra incluida.
+
+| recinto | antes | ahora | calco 1 |
+|---|---|---|---|
+| horizontales: dispersión | 2,5° | 5,9° | 9,6° |
+| horizontales: al mismo lado | 71 % | 65 % | 51 % |
+| verticales: dispersión | 16,0° | 16,7° | 13,4° |
+| codo mediano | 82° | 78° | 53° |
+
+**Los cabos, contra costados más oblicuos.** Con bandas en los dos ejes hay
+costados a menos de 37° de la dirección del cabo, y esos no se encaraban (1 de
+300 con solape a 37°). El filtro pasa de 37° a 28°, y el ajuste del cabo se
+acota a ±1,2 W.
+
+Medido con 300 obras por tipo: **solape 0 de 900**, pelo 0 por debajo de g en
+240, determinismo 66/66. Ficha: recinto 6 coinciden · 5 cerca · 1 lejos (el codo
+mediano); bloque 8 · 3 · 1 (codos a escuadra); travesía 4 · 6 · 2 (contacto y
+número de núcleos). En la ficha, tener menos gemelos que el calco ya no cuenta
+como «lejos».
+
+Pendiente de la regla del autor: el recinto no toca el borde del pliego (su
+caja va centrada), así que «sale o paraleliza» no llega a aplicarse; si se le
+deja tocar el borde, habrá que hacerlo.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
