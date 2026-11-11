@@ -4621,6 +4621,22 @@ Medido con 300 obras por tipo: solape 1 de 900 (el mismo recinto de la vuelta
 55, 0,16 W² entre las dos piezas del marco), pelo 0 por debajo de g,
 determinismo 66/66.
 
+## Quincuagésima séptima vuelta: bandas por tipo
+
+El alto de las bandas inclinadas y cuántas quedan sin inclinar van ahora por
+tipo (`zigAlto`, `zigCero`).
+
+- **Bloque**: solo el 6 % de las bandas queda recta (antes 22–30 %). Dispersión
+  de las verticales 8,9° (calco 9,1°), de las horizontales 4,8° (calco 5,5°);
+  al mismo lado 66 y 74 % (calco 53 y 54 %).
+- **Recinto**: bandas de dos o tres filas y el 10 % rectas. Con bandas de una
+  fila los codos bajaban a 78° pero volvían solapes a 40° (2 de 300); con dos o
+  tres, 0 de 300.
+
+Medido con 300 obras por tipo: **solape 0 de 900**, pelo 0 por debajo de g en
+240, determinismo 66/66. Ficha (60 obras): recinto 6 coinciden · 5 cerca · 1
+lejos; bloque 8 · 3 · 1; travesía 3 · 7 · 2.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

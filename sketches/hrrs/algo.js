@@ -3073,7 +3073,7 @@
   const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
     bloque: { ancho: [0.062, 0.075], gam: [0.09, 0.13], celdas: [90, 120], cobertura: [0.3, 0.42], aspect: [1.3, 1.55],
-              racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, bifurca: [2, 4], zigzag: [7, 16], zigzag2: [4, 10], cruza: 0.4, ladeo: [0.2, 0.3] },
+              racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, bifurca: [2, 4], zigzag: [7, 16], zigzag2: [4, 10], zigCero: 0.06, cruza: 0.4, ladeo: [0.2, 0.3] },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
               racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
@@ -3084,7 +3084,7 @@
     // no llena. La silueta es rectangular.
     // (vuelta 50: menos celdas y más gordas, piezas más largas: el calco tiene 14 trazos de 7,4 W de mediana)
     recinto:  { ancho: [0.031, 0.038], gam: [0.13, 0.17], celdas: [150, 200], cobertura: [0.07, 0.11], aspect: [0.85, 1.1],
-                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, zigzag: [20, 30], zigzag2: [0, 0],   /* inclinar también las horizontales se probó dos veces (vueltas 53 y 56): 13 de 300 con solape. La causa es la rampa entre la zona inclinada y la barra recta del marco, que comprime las filas de en medio. Queda a cero. */
+                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, zigzag: [20, 30], zigAlto: [2, 3], zigCero: 0.1, zigzag2: [0, 0],   /* inclinar también las horizontales se probó dos veces (vueltas 53 y 56): 13 de 300 con solape. La causa es la rampa entre la zona inclinada y la barra recta del marco, que comprime las filas de en medio. Queda a cero. */
                 bifurca: [1, 3], borde: 0, marco: true, ladeo: [0.22, 0.34] },
     // TRAVESÍA (referencia 3), medida en su calco: tramos rectos de 5–14 anchuras y
     // quiebros de 25–55° encadenados, bifurcación a mitad de camino, y el margen del
@@ -3313,11 +3313,13 @@
     if (O.zigzag) { let aMin = 1e9, bMin = 1e9; for (const c of cells.values()) { const q = centro(c.i, c.j); aMin = min(aMin, (q.x - cx) * ux + (q.y - cy) * uy); bMin = min(bMin, (q.x - cx) * vx + (q.y - cy) * vy); }
       const th = rng.range(O.zigzag[0], O.zigzag[1]) * RAD, t = Math.tan(th), bz = zon ? zon.by0 + min(zon.v1, zon.v2) * (zon.by1 - zon.by0) - cy : bMin - P * rng.range(0.5, 2.5);
       zig = { b: [bz], z: [0], s: [], esc: 1 / Math.cos(th) }; let sg = rng.bool(0.5) ? 1 : -1, zc = 0;
-      for (let bb = bz, n = 0; n < 12; n++) { const h = P * rng.int(2, 4), sl = rng.bool(0.22) ? 0 : (abs(zc) > 1.2 * P ? -Math.sign(zc) : sg) * t; zig.s.push(sl); zc += sl * h; bb += h; zig.b.push(bb); zig.z.push(zc); if (sl) sg = -Math.sign(sl); }
+      // (vuelta 57: el alto de las bandas y cuántas quedan sin inclinar van por tipo)
+      const zA = O.zigAlto || [2, 4], zC = O.zigCero != null ? O.zigCero : 0.22;
+      for (let bb = bz, n = 0; n < 16; n++) { const h = P * rng.int(zA[0], zA[1]), sl = rng.bool(zC) ? 0 : (abs(zc) > 1.2 * P ? -Math.sign(zc) : sg) * t; zig.s.push(sl); zc += sl * h; bb += h; zig.b.push(bb); zig.z.push(zc); if (sl) sg = -Math.sign(sl); }
       zig.s.push(0);
       const th2 = rng.range(O.zigzag2[0], O.zigzag2[1]) * RAD, t2 = Math.tan(th2), a0 = zon ? zon.bx0 - cx - 2 * P : aMin - P * rng.range(0.5, 2.5); zig.conRampa = !!zon;
       zig.a = [a0]; zig.za = [0]; zig.sa = []; let sg2 = rng.bool(0.5) ? 1 : -1, zc2 = 0;
-      for (let aa = a0, n = 0; n < 14; n++) { const w = P * rng.int(2, 5), sl = rng.bool(0.3) ? 0 : (abs(zc2) > 0.9 * P ? -Math.sign(zc2) : sg2) * t2; zig.sa.push(sl); zc2 += sl * w; aa += w; zig.a.push(aa); zig.za.push(zc2); if (sl) sg2 = -Math.sign(sl); }
+      for (let aa = a0, n = 0; n < 14; n++) { const w = P * rng.int(2, 5), sl = rng.bool(O.zigCero != null ? O.zigCero : 0.3) ? 0 : (abs(zc2) > 0.9 * P ? -Math.sign(zc2) : sg2) * t2; zig.sa.push(sl); zc2 += sl * w; aa += w; zig.a.push(aa); zig.za.push(zc2); if (sl) sg2 = -Math.sign(sl); }
       zig.sa.push(0);
       // con las dos cizallas a la vez el margen ya no se conserva solo con 1/cos de cada una: las
       // dos escalas se suben juntas hasta que la distancia entre dos oblicuas vecinas, en el peor
