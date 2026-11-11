@@ -4366,6 +4366,31 @@ densa es más ortogonal que la del original, que barre en oblicuo; el marco hace
 todavía una U en 21 de 1.696 piezas (ya lo hacía antes: 22 de 840); y 0,65
 pares de gemelos por obra. Travesía: núcleo 25 % frente a 34 %.
 
+## Quincuagésima vuelta: afinar el recinto
+
+El autor: «falta un poco, afina». Tres cosas señaladas en la vuelta 49:
+
+- **El marco ya no es una U.** Con las dos patas lo era (21 de 1.696 piezas). El
+  calco lo resuelve partiendo la barra: una pieza es pata + media barra, la otra
+  media barra + pata, a un pelo. Se parte entre el 35 y el 65 % de la barra.
+  Úes: 0 de 1.233.
+- **Piezas más grandes y menos.** Menos celdas y más gordas (150–200, anchura
+  0,031–0,038) y piezas de 7–14 celdas.
+
+| recinto | vuelta 49 | ahora | calco |
+|---|---|---|---|
+| trazos por obra | 16,1 | 11,2 | 14 |
+| trazo mediano | — | 9,9 W | 7,4 W |
+| cortos (< 4 W) | — | 9 % | 14 % |
+| contacto | 98 % | 90 % | 100 % |
+| núcleo mayor | 36 % | 42 % | 33 % |
+| obras con pelo < 3 px a 760 | 8 de 50 | 1 de 50 | — |
+
+Medido: solape 0 con halo, pelo 0 por debajo de g, determinismo 66/66.
+
+Queda: ahora las piezas son algo más largas y pocas que las del calco; la zona
+densa es a escuadra y la suya barre en oblicuo; 0,78 pares de gemelos por obra.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

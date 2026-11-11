@@ -3082,8 +3082,9 @@
     // dentro meandros largos (8–20 celdas) que cuelgan de la pared de enfrente y
     // fluyen hacia el lado abierto. Sin ventanas ni bahía: el aire es lo que el marco
     // no llena. La silueta es rectangular.
-    recinto:  { ancho: [0.028, 0.036], gam: [0.13, 0.17], celdas: [200, 270], cobertura: [0.07, 0.11], aspect: [0.85, 1.1],
-                racha: [1, 3], rachaE: [10, 18], trozo: [5, 11], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [1, 2], hueco: true, zonas: true, borde: 0, marco: true, ladeo: [0.22, 0.34] },
+    // (vuelta 50: menos celdas y más gordas, piezas más largas: el calco tiene 14 trazos de 7,4 W de mediana)
+    recinto:  { ancho: [0.031, 0.038], gam: [0.13, 0.17], celdas: [150, 200], cobertura: [0.07, 0.11], aspect: [0.85, 1.1],
+                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, borde: 0, marco: true, ladeo: [0.22, 0.34] },
     // TRAVESÍA (referencia 3), medida en su calco: tramos rectos de 5–14 anchuras y
     // quiebros de 25–55° encadenados, bifurcación a mitad de camino, y el margen del
     // pliego como salida o barrera. No es una rejilla ortogonal: es una rejilla de
@@ -3314,7 +3315,12 @@
       // contiguo o nada: una celda que falte (silueta que no cae en celdas enteras)
       // partía el marco y la polilínea saltaba por dentro del cuerpo
       let ok = marco.length >= 6; for (let k = 1; k < marco.length && ok; k++) if (abs(marco[k].i - marco[k - 1].i) + abs(marco[k].j - marco[k - 1].j) !== 1) ok = false;
-      if (ok) { marco.marco = true; paseos.push(marco); } else { for (const c of marco) c.used = false; marco.length = 0; }
+      // EL MARCO, EN DOS PIEZAS (vuelta 50). Con las dos patas era una U entera, que el autor
+      // dijo que no existe; el calco lo resuelve partiendo la barra: una pieza es pata + media
+      // barra y la otra media barra + pata, a un pelo. Se parte entre el 35 y el 65 % de la barra.
+      if (ok && !solo && marco.length >= 10) { const bar0 = p1 + 1, barN = marco.length - p2 - bar0, k = bar0 + Math.round(barN * rng.range(0.35, 0.65));
+        if (k > 2 && k < marco.length - 2) { const A = marco.slice(0, k), B = marco.slice(k); A.marco = B.marco = true; paseos.push(A, B); ok = null; } }
+      if (ok) { marco.marco = true; paseos.push(marco); } else if (ok === false) { for (const c of marco) c.used = false; marco.length = 0; }
       // la ABERTURA es aire: el borde abierto y la fila siguiente no se ocupan, así nadie
       // cierra la caja y los meandros acaban antes de llegar
       for (const c of [...cells.values()]) { if (c.used) continue; const enAb = abierto === 0 ? c.j >= j1 - 1 : abierto === 2 ? c.j <= j0 + 1 : abierto === 1 ? c.i >= i1 - 1 : c.i <= i0 + 1; if (enAb) cells.delete(key(c.i, c.j)); }
@@ -3397,7 +3403,7 @@
       // TAMAÑOS DESIGUALES (el autor: «las piezas son parecidas de tamaño»): la espina
       // entera (hasta 18 celdas), una o dos medianas de 7–10, y el resto cortas de 2–4
       // recinto: dos largos (el marco y el meandro maestro, 18–30), tres medianos (8–16), el resto cortos (3–8)
-      let n = O.marco ? (pi === 1 ? rng.int(18, 30) : (medianas < 3 && path.length - i >= 8 && rng.bool(0.6)) ? (medianas++, rng.int(8, 16)) : rng.int(t0, t1)) : pi === 0 ? rng.int(9, 12) : (medianas < 3 && path.length - i >= 7 && rng.bool(0.5)) ? (medianas++, rng.int(7, 9)) : rng.int(t0, t1);
+      let n = O.marco ? (pi === paseos.filter(q => q.marco).length ? rng.int(18, 30) : (medianas < 3 && path.length - i >= 8 && rng.bool(0.6)) ? (medianas++, rng.int(8, 16)) : rng.int(t0, t1)) : pi === 0 ? rng.int(9, 12) : (medianas < 3 && path.length - i >= 7 && rng.bool(0.5)) ? (medianas++, rng.int(7, 9)) : rng.int(t0, t1);
       // EL CORTE CAE JUSTO ANTES DE UN CODO (el autor: «estos huecos no deberían
       // ocurrir»): cortar a mitad de un tramo recto deja una raja entre dos celdas
       // alineadas; cortando antes del codo, el cabo da contra el costado de la pieza
