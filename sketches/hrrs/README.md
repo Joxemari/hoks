@@ -4424,7 +4424,7 @@ horizontal o la vertical y el giro de cada codo:
 | bloque, antes | 57 % | 5 % | 88° | 40 % |
 | **bloque, ahora** | 39 % | 23 % | 79° | 4 % |
 | calco 1 | 45 % | 31 % | 34° | 7 % |
-| **recinto** | 61 % | 1 % | 89° | 42 % |
+| **recinto** | 75 % | 0 % | 89° | 56 % |
 | calco 3 / travesía | 32 / 49 % | 35 / 30 % | 42 / 39° | 4 / 0 % |
 
 En el bloque la rejilla pasa a ser de **paralelogramos** (`sesgo` 68–82°, hacia
