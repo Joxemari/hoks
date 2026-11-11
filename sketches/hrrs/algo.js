@@ -3086,7 +3086,12 @@
     bloque: { ancho: [0.062, 0.075], gam: [0.09, 0.13], celdas: [90, 120], cobertura: [0.3, 0.42], aspect: [1.3, 1.55],
               racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, bifurca: [2, 4], zigzag: [7, 16], zigzag2: [4, 10], zigCero: 0.06, cruza: 0.4, ladeo: [0.2, 0.3] },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
-              racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
+              // (vuelta 60: el haz no tiene referencia propia, pero salía en una de cada seis obras del
+              // sorteo con todo lo que se ha ido corrigiendo en los demás —a escuadra, tiradas largas
+              // paralelas, gemelos—. Recibe las mismas reglas: lleno, inclinación por bandas en los dos
+              // ejes, bifurcación por fusión y la pasada de gemelos. Conserva lo suyo: tiradas largas.)
+              racha: [3, 7], rachaE: [6, 12], trozo: [5, 10], lleno: 0.93, retira: 0.04, rama: 0.35, ventanas: [0, 2], hueco: true, bifurca: [1, 3],
+              zigzag: [7, 16], zigzag2: [4, 10], zigCero: 0.06 },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
     // celdas (recinto), trazo gordo, pocas celdas y siempre borde (travesía)
     // RECINTO (referencia 1): trazo fino, un MARCO en u de tres lados como espina y
