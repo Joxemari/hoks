@@ -4603,6 +4603,24 @@ y la travesía (80 % al mismo lado frente a 52 %) tienen el mismo defecto, más
 suave; en el bloque los codos a escuadra suben al 29 % (calco 6 %) por las
 bandas sin inclinar.
 
+## Quincuagésima sexta vuelta: la inclinación en la travesía; el recinto, no
+
+- **Travesía.** La onda de la columna pasa de 7–11 W a 4,5–7 W: con una onda
+  del tamaño del pliego la columna entera se inclinaba a un lado y con ella todo
+  el haz. Dispersión de las verticales 7,6° → 10,6° (calco 10,0°), de las
+  horizontales 7,1° → 8,6° (calco 15,4°). «Mismo lado» apenas baja (80 → 78 %,
+  calco 52 %): con cinco trazos por obra la medida es ruidosa.
+- **Recinto: las horizontales, segundo intento, retirado.** Inclinarlas por
+  bandas de columnas da 4,8° de dispersión (calco 9,6°) pero 13 de 300 obras con
+  solape. La causa, identificada: la rampa entre la zona inclinada y la barra
+  recta del marco cambia la separación de las filas de en medio hasta un 45 %.
+  Para hacerlo bien la barra tendría que inclinarse con la zona o la zona
+  empezar lejos de ella. Queda a cero.
+
+Medido con 300 obras por tipo: solape 1 de 900 (el mismo recinto de la vuelta
+55, 0,16 W² entre las dos piezas del marco), pelo 0 por debajo de g,
+determinismo 66/66.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

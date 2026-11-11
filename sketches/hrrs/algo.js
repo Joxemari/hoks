@@ -3084,7 +3084,7 @@
     // no llena. La silueta es rectangular.
     // (vuelta 50: menos celdas y más gordas, piezas más largas: el calco tiene 14 trazos de 7,4 W de mediana)
     recinto:  { ancho: [0.031, 0.038], gam: [0.13, 0.17], celdas: [150, 200], cobertura: [0.07, 0.11], aspect: [0.85, 1.1],
-                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, zigzag: [20, 30], zigzag2: [0, 0],   /* zigzag2 (inclinar también las horizontales, 8–16°) se probó en la vuelta 53: 13 de 200 con solape y la medida casi no se mueve. Queda a cero. */
+                racha: [1, 3], rachaE: [10, 18], trozo: [7, 14], lleno: 0.93, retira: 0.02, rama: 0.15, ventanas: [0, 1], hueco: true, zonas: true, zigzag: [20, 30], zigzag2: [0, 0],   /* inclinar también las horizontales se probó dos veces (vueltas 53 y 56): 13 de 300 con solape. La causa es la rampa entre la zona inclinada y la barra recta del marco, que comprime las filas de en medio. Queda a cero. */
                 bifurca: [1, 3], borde: 0, marco: true, ladeo: [0.22, 0.34] },
     // TRAVESÍA (referencia 3), medida en su calco: tramos rectos de 5–14 anchuras y
     // quiebros de 25–55° encadenados, bifurcación a mitad de camino, y el margen del
@@ -4264,7 +4264,7 @@
       const sR = rng.bool(0.5) ? 1 : -1, sL = -sR;          // sR: el costado por donde sale la ele
       const xs = ancho2 * (0.5 - sR * rng.range(-0.02, 0.12));
       const edge = s2 => s2 < 0 ? -W * 1.5 : ancho2 + W * 1.5;
-      const A1 = W * rng.range(0.3, 0.55), l1 = W * rng.range(7, 11), f1 = rng.range(0, 6.28), A2 = W * rng.range(0.1, 0.2), l2 = W * rng.range(3, 5), f2 = rng.range(0, 6.28);
+      /* (vuelta 56: la onda de la columna, más corta —4,5 a 7 W en vez de 7 a 11—: con una onda del tamaño del pliego la columna entera se inclinaba hacia un lado, y con ella el haz) */ const A1 = W * rng.range(0.3, 0.55), l1 = W * rng.range(4.5, 7), f1 = rng.range(0, 6.28), A2 = W * rng.range(0.1, 0.2), l2 = W * rng.range(3, 5), f2 = rng.range(0, 6.28);
       const lateral = y => A1 * Math.sin(6.2832 * y / l1 + f1) + A2 * Math.sin(6.2832 * y / l2 + f2);
       const yCodo = largo * rng.range(0.46, 0.62);
       const ele = []; for (let y = -W * 1.5; y < yCodo; y += W * rng.range(1.2, 2.2)) ele.push({ x: xs + lateral(y), y });
