@@ -3073,7 +3073,7 @@
   const DESVIO = 0;                        // × W, desvío por vértice: 0 (abría los márgenes en cuña)
   const PASEO = {
     bloque: { ancho: [0.062, 0.075], gam: [0.09, 0.13], celdas: [90, 120], cobertura: [0.3, 0.42], aspect: [1.3, 1.55],
-              racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, bifurca: [2, 4], sesgo: [72, 87], cruza: 0.4, ladeo: [0.2, 0.3] },
+              racha: [1, 3], rachaE: [2, 4], trozo: [5, 11], lleno: 0.97, retira: 0.02, rama: 0.4, ventanas: [1, 3], hueco: true, bifurca: [2, 4], zigzag: [7, 16], zigzag2: [4, 10], cruza: 0.4, ladeo: [0.2, 0.3] },
     haz:    { ancho: [0.065, 0.085], gam: [0.1, 0.14], celdas: [60, 80], cobertura: [0.28, 0.38], aspect: [0.95, 1.25],
               racha: [4, 9], rachaE: [8, 14], trozo: [4, 8], lleno: 0.78, retira: 0.1, rama: 0.35, ventanas: [0, 1] },
     // las otras dos referencias con el mismo motor, para probar: trazo fino y muchas
@@ -3191,7 +3191,8 @@
     // volvía un haz): es la rejilla ortogonal deformada por el campo lento, y en cada
     // quiebro el paseo elige, cuando puede, el lado que ese campo ABRE (una zeta se
     // abre entera si su brazo del medio se inclina hacia el lado bueno).
-    const th = O.marco ? 0 : rng.range(-1, 1) * (Object.keys(bordes).length ? 2.5 : 8) * RAD;
+    // (con bandas, el giro del conjunto se queda en ±3°: más, y vuelven a inclinarse todos al mismo lado)
+    const th = O.marco ? 0 : rng.range(-1, 1) * (Object.keys(bordes).length ? 2.5 : O.zigzag ? 3 : 8) * RAD;
     // EL SESGO (vuelta 51; el autor: «sigue todo horizontal o vertical»). Medido: en el calco 2
     // el codo típico mide 73° y solo el 10 % son a escuadra; aquí 88° y el 40 %. La rejilla deja
     // de ser de cuadrados: es de PARALELOGRAMOS de ángulo `sesgo`, hacia un lado o hacia el
@@ -3300,19 +3301,21 @@
       // otro, y alguna se queda recta; las verticales pasan a ser zigzags y las horizontales
       // siguen siéndolo. Para que las oblicuas no se junten (la distancia entre dos verticales
       // cizalladas un ángulo θ baja a cos θ), toda la rejilla se ensancha 1/cos θ.
-      let zx = 0, zy = 0; if (zig) { let k = 0; while (k + 1 < zig.b.length && zig.b[k + 1] <= b) k++; zx = zig.z[k] + (b > zig.b[k] ? (b - zig.b[k]) * zig.s[k] : 0) + a * (zig.esc - 1);
-        // (vuelta 53) y las HORIZONTALES también: bandas de columnas inclinadas 8–16° a un lado y
-        // a otro, solo dentro de la zona (por encima se apaga en dos filas, y la barra del marco
-        // sigue recta). En el calco 1 la mitad de las horizontales no van a eje.
-        let k2 = 0; while (k2 + 1 < zig.a.length && zig.a[k2 + 1] <= a) k2++; const rampa = clamp((b - zig.b[0]) / (2 * P), 0, 1);
-        zy = (zig.za[k2] + (a > zig.a[k2] ? (a - zig.a[k2]) * zig.sa[k2] : 0)) * rampa + b * (zig.escB - 1); }
-      return { x: q.x + ux * (dA + zx) + vx * (dB + zy), y: q.y + uy * (dA + zx) + vy * (dB + zy) }; };
+      return { x: q.x + ux * dA + vx * dB, y: q.y + uy * dA + vy * dB }; };
+
     let zig = null;
-    if (O.zigzag && zon) { const th = rng.range(O.zigzag[0], O.zigzag[1]) * RAD, t = Math.tan(th), bz = zon.by0 + min(zon.v1, zon.v2) * (zon.by1 - zon.by0) - cy;
+    // (vuelta 55; el autor: «todos tienden a inclinarse hacia el mismo sitio… como si todos
+    // estuviesen a 90 y de repente hayan girado un poco hacia la izquierda». Medido con
+    // `inclinacion.js`: en el calco 2 la mitad de los trazos se inclina a cada lado y varían
+    // 9° entre sí; con la rejilla sesgada entera, el 99 % al mismo lado y 2,7°. El sesgo
+    // global se quita: la inclinación va POR BANDAS, a un lado, al otro o ninguna, también
+    // fuera del recinto, y en los dos ejes.)
+    if (O.zigzag) { let aMin = 1e9, bMin = 1e9; for (const c of cells.values()) { const q = centro(c.i, c.j); aMin = min(aMin, (q.x - cx) * ux + (q.y - cy) * uy); bMin = min(bMin, (q.x - cx) * vx + (q.y - cy) * vy); }
+      const th = rng.range(O.zigzag[0], O.zigzag[1]) * RAD, t = Math.tan(th), bz = zon ? zon.by0 + min(zon.v1, zon.v2) * (zon.by1 - zon.by0) - cy : bMin - P * rng.range(0.5, 2.5);
       zig = { b: [bz], z: [0], s: [], esc: 1 / Math.cos(th) }; let sg = rng.bool(0.5) ? 1 : -1, zc = 0;
       for (let bb = bz, n = 0; n < 12; n++) { const h = P * rng.int(2, 4), sl = rng.bool(0.22) ? 0 : (abs(zc) > 1.2 * P ? -Math.sign(zc) : sg) * t; zig.s.push(sl); zc += sl * h; bb += h; zig.b.push(bb); zig.z.push(zc); if (sl) sg = -Math.sign(sl); }
       zig.s.push(0);
-      const th2 = rng.range(O.zigzag2[0], O.zigzag2[1]) * RAD, t2 = Math.tan(th2), a0 = zon.bx0 - cx - 2 * P;
+      const th2 = rng.range(O.zigzag2[0], O.zigzag2[1]) * RAD, t2 = Math.tan(th2), a0 = zon ? zon.bx0 - cx - 2 * P : aMin - P * rng.range(0.5, 2.5); zig.conRampa = !!zon;
       zig.a = [a0]; zig.za = [0]; zig.sa = []; let sg2 = rng.bool(0.5) ? 1 : -1, zc2 = 0;
       for (let aa = a0, n = 0; n < 14; n++) { const w = P * rng.int(2, 5), sl = rng.bool(0.3) ? 0 : (abs(zc2) > 0.9 * P ? -Math.sign(zc2) : sg2) * t2; zig.sa.push(sl); zc2 += sl * w; aa += w; zig.a.push(aa); zig.za.push(zc2); if (sl) sg2 = -Math.sign(sl); }
       zig.sa.push(0);
@@ -3321,7 +3324,19 @@
       // caso (las dos inclinaciones del mismo signo), vuelve a ser la de la rejilla
       let e1 = 1 / Math.cos(th), e2 = 1 / Math.cos(th2); for (let n = 0; n < 60 && (e1 * e2 - t * t2 < hypot(t, e2) || e1 * e2 - t * t2 < hypot(t2, e1)); n++) { e1 *= 1.004; e2 *= 1.004; }
       zig.esc = e1; zig.escB = e2; }
-    const jac = (x, y) => { const e = W * 0.1, a = desp({ x: x + e, y }), b = desp({ x: x - e, y }), c2 = desp({ x, y: y + e }), d2 = desp({ x, y: y - e });
+    // la inclinación por bandas, aparte del campo: NO se atenúa junto al contorno (el campo sí).
+    // Atenuada a medias, el ensanche que conserva el margen quedaba a medias y las bandas se
+    // pisaban (45 de 50 bloques con solape).
+    const zigDe = q => { const a = (q.x - cx) * ux + (q.y - cy) * uy, b = (q.x - cx) * vx + (q.y - cy) * vy;
+      let zx = 0, zy = 0; if (zig) { let k = 0; while (k + 1 < zig.b.length && zig.b[k + 1] <= b) k++; zx = zig.z[k] + (b > zig.b[k] ? (b - zig.b[k]) * zig.s[k] : 0) + a * (zig.esc - 1);
+        // (vuelta 53) y las HORIZONTALES también: bandas de columnas inclinadas 8–16° a un lado y
+        // a otro, solo dentro de la zona (por encima se apaga en dos filas, y la barra del marco
+        // sigue recta). En el calco 1 la mitad de las horizontales no van a eje.
+        let k2 = 0; while (k2 + 1 < zig.a.length && zig.a[k2 + 1] <= a) k2++; const rampa = zig.conRampa ? clamp((b - zig.b[0]) / (2 * P), 0, 1) : 1;
+        zy = (zig.za[k2] + (a > zig.a[k2] ? (a - zig.a[k2]) * zig.sa[k2] : 0)) * rampa + b * (zig.escB - 1); }
+      return { x: ux * zx + vx * zy, y: uy * zx + vy * zy }; };
+    const despT = q => { const r = desp(q), z = zigDe(q); return { x: r.x + z.x, y: r.y + z.y }; };   // el campo y las bandas juntos: lo que decide hacia dónde abre un giro
+    const jac = (x, y) => { const e = W * 0.1, a = despT({ x: x + e, y }), b = despT({ x: x - e, y }), c2 = despT({ x, y: y + e }), d2 = despT({ x, y: y - e });
       return [(a.x - b.x) / (2 * e), (c2.x - d2.x) / (2 * e), (a.y - b.y) / (2 * e), (c2.y - d2.y) / (2 * e)]; };
     // 3. los paseos
     const libre = (i, j) => { const c = cells.get(key(i, j)); return c && !c.used; };
@@ -3653,7 +3668,7 @@
     // exterior no se deforma; a dos celdas, a medias; dentro, entero. Es el límite
     // como protagonista, otra vez: el contorno es la regla y el interior, la mano.
     const bordeDe = (x, y) => { let d = 0; for (; d <= 2; d++) { let fuera = false; for (const [a, b] of DIRS) { const q = { x: x + a * P * (d + 1), y: y + b * P * (d + 1) }; if (!inside(q.x, q.y) || !cabeBorde(q.x, q.y)) { fuera = true; break; } } if (fuera) break; } return d; };
-    const despB = (q, liso) => { const f = min(1, bordeDe(q.x, q.y) / 2), fw2 = liso ? 0 : (O.marco ? 1 : f); const r = desp(q); return { x: q.x + (r.x - q.x) * fw2, y: q.y + (r.y - q.y) * fw2, borde: liso ? 0 : f }; };
+    const despB = (q, liso) => { const f = min(1, bordeDe(q.x, q.y) / 2), fw2 = liso ? 0 : (O.marco ? 1 : f); const r = desp(q), z = liso ? { x: 0, y: 0 } : zigDe(q); return { x: q.x + (r.x - q.x) * fw2 + z.x, y: q.y + (r.y - q.y) * fw2 + z.y, borde: liso ? 0 : f }; };
     const densa = (pl, liso) => { const out = [despB(pl[0], liso)]; for (let i = 1; i < pl.length; i++) { const a = pl[i - 1], b = pl[i], n = max(1, Math.round(hypot(b.x - a.x, b.y - a.y) / (W * 0.8))); for (let m = 1; m <= n; m++) out.push(despB({ x: a.x + (b.x - a.x) * m / n, y: a.y + (b.y - a.y) * m / n }, liso)); } return out; };
     const ctx = { fw, fh, S, W, g, D: P, mg: S * MARGEN, trazos: [], gubAmp: params.gubia != null ? params.gubia : (rng.bool(P_GUBIA) ? rng.range(GUB_AMP[0], GUB_AMP[1]) : 0), relleno: 1,
                   halo: max(g, params.halo != null ? params.halo * W : g) };
@@ -3683,11 +3698,16 @@
     // inclinaba la boca y una esquina quedaba a menos de un pelo (pelo.js, 30 de 60).
     // el marco se pinta el último: su halo corta a quien se le arrime
     { const im = ctx.trazos.findIndex(t => t.marco); if (im >= 0) { const [m] = ctx.trazos.splice(im, 1); ctx.trazos.push(m); } }
+    // (vuelta 55) LAS RAMAS TAMBIÉN: su cabo libre se encara igual que los demás, y los cabos de
+    // los otros ven las ramas ajenas como costado. No lo hacían, y con la rejilla inclinada
+    // por bandas una rama daba contra un costado oblicuo sin retroceder: con 300 obras por
+    // tipo, 14 recintos y 9 bloques con solape (la batería, con 10 por configuración, no los veía).
+    const segsCon = t => (t.ramas && t.ramas.length) ? t.segs.concat(...t.ramas.map(r => segsDe(r))) : t.segs;
     for (let k = 0; k < ctx.trazos.length; k++) { const tr = ctx.trazos[k]; tr.caras = [null, null]; if (tr.marco) continue;
-      for (const lado of [0, 1]) { const pts = tr.pts, e = lado ? pts[pts.length - 1] : pts[0], a = lado ? pts[pts.length - 2] : pts[1];
+      for (const [pts, lado, esRama] of [[tr.pts, 0, false], [tr.pts, 1, false]].concat((tr.ramas || []).map(r => [r, 1, true]))) { const e = lado ? pts[pts.length - 1] : pts[0], a = lado ? pts[pts.length - 2] : pts[1];
         const ux2 = e.x - a.x, uy2 = e.y - a.y, um = hypot(ux2, uy2) || 1e-9, u = { x: ux2 / um, y: uy2 / um };
         let best = null, dm = P * 1.3;
-        for (let j = 0; j < ctx.trazos.length; j++) { if (j === k || ctx.trazos[j].marco) continue; for (const sg of ctx.trazos[j].segs) {
+        for (let j = 0; j < ctx.trazos.length; j++) { if (j === k || ctx.trazos[j].marco) continue; for (const sg of segsCon(ctx.trazos[j])) {
           const d = pointSegDist(e.x, e.y, sg[0], sg[1], sg[2], sg[3]); if (d < dm) { const dx = sg[2] - sg[0], dy = sg[3] - sg[1], L = hypot(dx, dy) || 1e-9;
             const t = { x: dx / L, y: dy / L }; if (abs(t.x * u.x + t.y * u.y) < 0.8) { dm = d; best = { sg, t, W: ctx.trazos[j].W || W }; } } } }
         if (!best) continue;
@@ -3703,10 +3723,10 @@
         // encara puede haber el cabo de otra pieza casi colineal (recinto, 3°), y
         // avanzar hasta el costado era pasarle por encima. Retroceder siempre se puede.
         if (abs(cosA) > 0.5) { const mueve = (quiero - dPerp) / cosA; const e2 = { x: e.x + u.x * mueve, y: e.y + u.y * mueve };
-          let libreE = true; if (mueve > 0) for (let j = 0; j < ctx.trazos.length && libreE; j++) { if (j === k) continue; for (const sg of ctx.trazos[j].segs) if (pointSegDist(e2.x, e2.y, sg[0], sg[1], sg[2], sg[3]) < quiero - 1e-6) { libreE = false; break; } }
+          let libreE = true; if (mueve > 0) for (let j = 0; j < ctx.trazos.length && libreE; j++) { if (j === k) continue; for (const sg of segsCon(ctx.trazos[j])) if (pointSegDist(e2.x, e2.y, sg[0], sg[1], sg[2], sg[3]) < quiero - 1e-6) { libreE = false; break; } }
           if (libreE) { if (lado) pts[pts.length - 1] = e2; else pts[0] = e2; } }
         // la boca se encara solo si el giro es ligero (≤ 12°); más, sería un inglete
-        if (abs(cosA) > 0.978) tr.caras[lado] = best.t; }
+        if (!esRama && abs(cosA) > 0.978) tr.caras[lado] = best.t; }
       tr.segs = segsDe(tr.pts); }
     holguras(ctx);
     const med = ctx.trazos.length ? medir(ctx.trazos, W, fw, fh) : { ojos: [], ocupacion: 0 };

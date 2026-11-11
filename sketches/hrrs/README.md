@@ -4548,6 +4548,61 @@ intacta (contacto 98 y 94 %).
 
 Medido: solape 0 con halo, pelo 0 por debajo de g, holgura 0, determinismo 66/66.
 
+## Quincuagésima quinta vuelta: no todos se inclinan hacia el mismo sitio
+
+El autor: «parece que todos tienden a inclinarse hacia el mismo sitio, cuando en
+los originales no. Es como si todos estuviesen a 90 y de repente hayan girado un
+poco hacia la izquierda y todos están paralelizados».
+
+Exacto, y era consecuencia de la vuelta 51: el bloque iba sobre una rejilla
+sesgada *entera*, así que todo trazo tenía una de dos direcciones.
+`verificacion/inclinacion.js` lo mide dentro de cada obra, por separado para las
+secciones casi verticales y casi horizontales: cuánto varía la inclinación
+(dispersión) y qué parte se inclina hacia el lado mayoritario.
+
+| | verticales: dispersión · mismo lado | horizontales: dispersión · mismo lado |
+|---|---|---|
+| calco 2 | 9,1° · 53 % | 5,5° · 54 % |
+| bloque, antes | 2,7° · **99 %** | 1,7° · **95 %** |
+| **bloque, ahora** | 7,9° · 70 % | 4,5° · 72 % |
+| calco 1 | 13,4° · 66 % | 9,6° · 51 % |
+| recinto | 16,9° · 66 % | 2,5° · 71 % |
+| calco 3 | 10,0° · 52 % | 15,4° · 70 % |
+| travesía | 7,6° · 80 % | 7,1° · 79 % |
+
+**Bloque.** El sesgo global se quita. La inclinación va **por bandas**, como en
+el recinto pero en los dos ejes: bandas de filas inclinan las verticales
+(7–16°) a un lado, al otro o nada; bandas de columnas inclinan las horizontales
+(4–10°). El giro del conjunto se queda en ±3°. Las dos escalas de la rejilla se
+suben lo justo para que el margen entre dos oblicuas vecinas no baje.
+
+Dos cosas que hubo que arreglar para que eso no trajera solapes:
+
+- **La inclinación por bandas no se atenúa junto al contorno.** El campo de la
+  mano sí se apaga en el borde del cuerpo (el borde es recto); las bandas, no:
+  atenuadas a medias, el ensanche que conserva el margen quedaba a medias y las
+  bandas se pisaban (45 de 50).
+- **Los cabos de las ramas se encaran.** Y esto destapó un fallo anterior: **las
+  versiones de las vueltas 51 a 54 tenían solapes que la batería no veía**. Con
+  10 obras por configuración salía 0; con 300 por tipo, 14 recintos y 9 bloques
+  (2–5 %). La causa: el cabo libre de una rama no se ajustaba contra el costado
+  que tiene delante, ni los cabos de los demás veían las ramas ajenas; con la
+  rejilla inclinada una rama daba contra un costado oblicuo sin retroceder.
+  Arreglado: **1 de 900** (300 por tipo; un recinto, 0,16 W² entre las dos
+  piezas del marco).
+
+**Lección para la batería**: `mil.sh` reparte N entre veinte configuraciones;
+un defecto del 2 % pasa. Los tres tipos de producción hay que medirlos además
+con 300 obras cada uno (`node solape.js hrrs_test.js 900 760 "bloque,recinto,travesia"`).
+
+Medido: solape 1 de 900 con halo, pelo 0 por debajo de g, determinismo 66/66,
+0 úes en el bloque.
+
+**Lo que falta**: el recinto (horizontales todas paralelas: 2,5° frente a 9,6°)
+y la travesía (80 % al mismo lado frente a 52 %) tienen el mismo defecto, más
+suave; en el bloque los codos a escuadra suben al 29 % (calco 6 %) por las
+bandas sin inclinar.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
