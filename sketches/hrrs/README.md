@@ -4691,6 +4691,27 @@ pelo 0 por debajo de g a 760 px (240 obras) y a 1520 px (90), solape 0 de 300,
 determinismo 66/66 — las facetas salen del mismo generador sembrado que la
 mano, así que misma seed, mismo filo.
 
+## Sexagésima vuelta: el cuarto tipo, y un barrido que no compensa
+
+**El haz.** El sorteo de producción reparte entre cuatro tipos (bloque 32 %,
+recinto 28 %, travesía 24 %, haz 16 %) y el cuarto no se había tocado desde la
+vuelta 25: a escuadra, tiradas largas paralelas, gemelos. No tiene referencia
+propia, pero las reglas del autor son generales. Recibe las mismas: rejilla
+llena (0,93, casi sin retirar), inclinación por bandas en los dos ejes,
+bifurcación por fusión, huequillos y la pasada de gemelos. Conserva lo suyo, las
+tiradas largas (rachas de 3–7). Contacto 90 → 97 %, núcleo mayor 45 → 51 %,
+0 úes en 637 piezas.
+
+**Los codos a escuadra del bloque, barrido y dejado.** Sobran (28 % frente a
+6 %) porque cuando las inclinaciones de verticales y horizontales van en sentido
+contrario se anulan. Separar los rangos (verticales 11–18°, horizontales 2–5°)
+los baja al 18 %, pero las horizontales vuelven a quedar casi paralelas (2,8° de
+dispersión frente a 5,5° del calco), que es lo que el autor señaló. No compensa.
+
+Medido con 300 obras por tipo: solape 0 de 1.200 (bloque, recinto, travesía,
+haz) y 0 de 300 en el sorteo y los apaisados; pelo 0 por debajo de g;
+determinismo 66/66.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
