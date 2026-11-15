@@ -4780,6 +4780,63 @@ anidadas y los brazos salen de dos en dos pegados al nudo; aquí la masa se repa
 el haz de arriba, los brazos de un costado y los del otro, con celdas a medio llenar en
 la junta. Cerrar los codos no bastó. Queda abierto.
 
+### Sexagésima tercera vuelta — la travesía: cómo acaba cada trazo
+
+El autor, sobre la referencia 3: «todas impactan contra la otra o acaban saliendo del
+marco… En las que tú haces quedan muchas rotas y cuando se juntan no se juntan limpio,
+línea contra línea: se juntan haciendo ingletes raros, quedando espacios muy extraños».
+
+**La medida** (`verificacion/cabos.js`, nueva). Clasifica cada cabo: sale del pliego,
+choca de frente contra otro trazo, acaba pegado al costado de otro (a media carrera) o
+se queda en el blanco. De las juntas mide el hueco en las dos esquinas de la boca: si son
+iguales la boca va paralela al filo; si no, hay cuña. Sobre 200 obras:
+
+| | antes | ahora |
+|---|---|---|
+| salen del pliego | 66 % | 72 % |
+| chocan de frente | 11 % | 26 % |
+| acaban pegados de costado (rotos) | 21 % | 2 % |
+| en el blanco | 2 % | 0 % |
+| cuña mediana de la junta | 0,12 W | 0,01 W |
+| juntas con cuña > 0,25 W | 21 % | 7 % |
+
+**De dónde salían los rotos** (por papel del trazo): 355 de 372 arranques de compañera
+(nacían en el aire junto a la columna), 94 de 95 arranques de seguidor y 24 de sus
+finales (se cortaban a media carrera), y 22 de 29 ramas del primer trazo (paraban con el
+eje a D de otra tinta: media anchura de blanco delante).
+
+**Lo hecho.**
+
+- **El remate** (`rematar`, `soltarCabo`): un cabo solo tiene dos finales. Marcha recto y
+  o sale del pliego, o choca contra un costado — y entonces su último tramo se pone a
+  escuadra con ese costado (corrige hasta 30°) y la boca queda a un pelo, entera sobre
+  ese costado y no sobre su esquina. Si va acompañando a otro, antes se suelta de él (un
+  quiebro leve y el giro). Si no puede, se retira hasta cuatro anchuras y lo intenta
+  desde ahí. Lo que no se puede rematar no se pone.
+- **El dintel.** En el original las compañeras nacen debajo de una barra corta que sale de
+  la columna. Aquí: una barra por su costado, de la columna al borde, y cada compañera
+  empieza con la boca a un pelo de su filo de abajo. Como el recorte retoca el primer
+  punto después, ya puestas se encajan: el primer tramo se alarga o acorta sobre su línea
+  y, si hace falta, gira hasta 25° para llegar en perpendicular. Si el dintel no cabe, la
+  compañera entra desde fuera del pliego.
+- **Las barras salen a escuadra de la columna** y evitan sus vértices: la boca cae sobre un
+  tramo recto.
+- **La segunda compañera** es la paralela de la primera tal como quedó puesta, no de su
+  borrador: la del borrador caía a menos de D en el codo y el recorte la partía en dos,
+  con dos cabos rotos junto al nudo.
+- **Los seguidores entran por el borde** con el tramo que acompañan (como el relevo): un
+  cabo sale y solo el otro se remata. Quedan 0,2 por obra (antes 0,5).
+- **La rama** se remata igual: sale o choca a escuadra.
+- Barras de canto: de 0,8 y 0,6 a 0,45 y 0,4 (con el dintel ya hay una casi siempre).
+
+**Lo que ha costado.** La parte del trazo que va a un pelo de otro baja del 91 % al 73 %
+(calco 96): hay menos seguidores y más barras, y una barra va sola por naturaleza. El
+núcleo no mejora (16 % de la caja; calco 34). Ficha: 6 coinciden · 2 cerca · 4 lejos
+(antes 6 · 4 · 2). Es una regresión en esas dos medidas a cambio de juntas limpias.
+
+Solape 0 de 300, pelo 0 por debajo de g, batería N=220 igual que antes (el único solape
+es el de la configuración sin halo).
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

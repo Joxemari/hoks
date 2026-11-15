@@ -3921,6 +3921,47 @@
     // gemelo: una polilínea y un trazo puesto que corren paralelos el uno al otro en el 65 % o más
     const fracPar = (A, B) => { const ms = muestrear(A, W / 3); let n = 0; for (const q of ms) { let ok = false; for (let i = 0; i + 1 < B.length && !ok; i++) { const d = pointSegDist(q.x, q.y, B[i].x, B[i].y, B[i + 1].x, B[i + 1].y); if (d > 0.75 * D && d < 1.4 * D) ok = true; } if (ok) n++; } return n / (ms.length || 1); };
     const esGemelo = pts => trazos.some(t => fracPar(pts, t.pts) >= 0.62 && fracPar(t.pts, pts) >= 0.62);
+    // EL REMATE (vuelta 63; el autor: «todas impactan contra la otra o acaban saliendo del
+    // marco… las tuyas quedan muchas rotas, y cuando se juntan no se juntan limpio, línea
+    // contra línea»). `cabos.js` lo midió: 21 % de los cabos acababan pegados al costado de
+    // otro trazo, a media carrera. Un cabo solo tiene dos finales: SALE del pliego, o CHOCA
+    // contra el costado de otro —y entonces su último tramo va a escuadra con ese costado,
+    // para que la boca quede paralela al filo y entre los dos solo haya un pelo, no una cuña—.
+    // `cercaDe` separa lo que el cabo lleva DE LADO (casi paralelo a su rumbo) de lo que
+    // tiene DELANTE; `rematar` marcha recto desde un punto y devuelve el final, o null.
+    const cercaDe = (x, y, ux, uy, salvo) => { let lat = Infinity, fr = Infinity, sf = null; for (const t of trazos) { if (t === salvo) continue; for (const Ls of [t.segs, t.rsegs || []]) for (const sg of Ls) { const d = pointSegDist(x, y, sg[0], sg[1], sg[2], sg[3]); if (d > D * 1.7) continue;
+          const lx = sg[2] - sg[0], ly = sg[3] - sg[1], c = abs(ux * lx + uy * ly) / (hypot(lx, ly) || 1e-9); if (c > 0.5) { if (d < lat) lat = d; } else if (d < fr) { fr = d; sf = sg; } } } return { lat, fr, sf }; };
+    const dentroH = (x, y, m) => x > -m && y > -m && x < fw + m && y < fh + m;
+    const marcha = (p0, ux, uy, salvo) => { for (let s = W / 8; s < W * 14; s += W / 8) { const x = p0.x + ux * s, y = p0.y + uy * s; if (!dentroH(x, y, W * 1.2)) return { tipo: 'sale', x, y, L: s };
+        if (vacios.some(f => f({ x, y }))) return null; const c = cercaDe(x, y, ux, uy, salvo); if (s > W * 0.6 && c.lat < D * 0.985) return null; if (c.fr < D * 0.985) return { tipo: 'frente', sg: c.sf, L: s }; } return null; };
+    const rematar = (p0, ux, uy, salvo, cMin) => { const r = marcha(p0, ux, uy, salvo); if (!r) return null; if (r.tipo === 'sale') return { x: r.x, y: r.y, tipo: 'sale' };
+      const sg = r.sg, lx0 = sg[2] - sg[0], ly0 = sg[3] - sg[1], lm = hypot(lx0, ly0) || 1e-9, lx = lx0 / lm, ly = ly0 / lm; let nx = -ly, ny = lx; if (nx * ux + ny * uy < 0) { nx = -nx; ny = -ny; }
+      if (nx * ux + ny * uy < (cMin || 0.866)) return null;                                  // más de 30° de corrección: no es un choque, es un roce
+      const dl = (sg[0] - p0.x) * nx + (sg[1] - p0.y) * ny, L = dl - (W / 2 + g * 1.05); if (L < W * 0.9) return null;
+      const E = { x: p0.x + nx * L, y: p0.y + ny * L, tipo: 'junta' };
+      for (const k of [-1, 1]) { const u = ((E.x + k * lx * W / 2 - sg[0]) * lx + (E.y + k * ly * W / 2 - sg[1]) * ly) / lm; if (u < 0.02 || u > 0.98) return null; }   // la boca entera cae sobre ese costado, no en su esquina
+      for (let s = W / 8; s < L; s += W / 8) { const x = p0.x + nx * s, y = p0.y + ny * s; if (vacios.some(f => f({ x, y }))) return null; const c = cercaDe(x, y, nx, ny, salvo); if (s > W * 0.6 && c.lat < D * 0.985) return null; if (c.fr < W / 2 + g && c.sf !== sg) return null; }
+      const cE = cercaDe(E.x, E.y, nx, ny, salvo); if (cE.lat < D * 0.985 || cE.fr < W / 2 + g) return null; return E; };
+    // el cabo de un trazo que acompaña a otro: se suelta de él —un quiebro leve y luego el
+    // giro, como las compañeras— y sigue recto hasta salir o chocar. Si ya tiene tinta
+    // delante (lo cortó un trazo de frente) o ya está fuera, se deja.
+    const soltarCabo = (pl, sinRetiro) => { const e = pl[pl.length - 1], a = pl[pl.length - 2], m = hypot(e.x - a.x, e.y - a.y) || 1e-9, ux = (e.x - a.x) / m, uy = (e.y - a.y) / m;
+      if (!dentroH(e.x, e.y, -W * 0.3)) return pl;
+      { const c = cercaDe(e.x, e.y, ux, uy); if (c.sf && c.fr < (W / 2 + g) * 1.3) { const lx = c.sf[2] - c.sf[0], ly = c.sf[3] - c.sf[1]; if (abs(ux * lx + uy * ly) / (hypot(lx, ly) || 1e-9) < 0.2) return pl; } }   /* ya choca de frente y a escuadra: se deja */
+      let nx = -uy, ny = ux; if (distA(e.x + nx * W * 0.3, e.y + ny * W * 0.3) < distA(e.x - nx * W * 0.3, e.y - ny * W * 0.3)) { nx = -nx; ny = -ny; }
+      { const r0 = rematar(e, ux, uy); if (r0) return pl.concat([{ x: r0.x, y: r0.y }]); }   /* primero, recto: si delante hay un costado donde chocar limpio o el borde, no hace falta soltarse */
+      const sg = ux * ny - uy * nx >= 0 ? 1 : -1, rot = q => ({ x: ux * Math.cos(q) - uy * Math.sin(q), y: ux * Math.sin(q) + uy * Math.cos(q) });
+      for (let k = 0; k < 5; k++) { const d1 = rot(sg * rng.range(12, 18) * RAD), L1 = W * rng.range(1.1, 1.5), d2 = rot(sg * rng.range(38, 64) * RAD), p1 = { x: e.x + d1.x * L1, y: e.y + d1.y * L1 };
+        let ok = true; for (let s = W / 4; s <= L1 && ok; s += W / 8) if (distA(e.x + d1.x * s, e.y + d1.y * s) < D * 0.985) ok = false; if (!ok) continue;
+        const r = rematar(p1, d2.x, d2.y); if (r) return pl.concat([p1, { x: r.x, y: r.y }]); }
+      // el cabo metido en una horquilla (lo cortó un trazo que le viene en diagonal): se
+      // retira una anchura o dos y desde ahí dobla —hasta 50°— para chocar a escuadra
+      { const tot = largoDe(pl); for (const rec of [1, 1.6, 2.2]) { if (tot - W * rec < W * 2) break; const p2 = subPoli(pl, 0, tot - W * rec); if (p2.length < 2) continue; const e2 = p2[p2.length - 1], a2 = p2[p2.length - 2], m2 = hypot(e2.x - a2.x, e2.y - a2.y) || 1e-9;
+          const r = rematar(e2, (e2.x - a2.x) / m2, (e2.y - a2.y) / m2, null, 0.64); if (r && r.tipo === 'junta') return p2.concat([{ x: r.x, y: r.y }]); } }
+      // y si tampoco: se retira más —hasta cuatro anchuras— y desde ahí se suelta hacia fuera
+      if (!sinRetiro) { const tot = largoDe(pl); for (const rec of [1.5, 2.5, 3.5, 4.5]) { if (tot - W * rec < W * 2.5) break; const p2 = subPoli(pl, 0, tot - W * rec); if (p2.length < 2) continue; const r = soltarCabo(p2, true); if (r && r !== p2) return r; } }
+      return null; };
+    const soltarCabos = pl => { const a = soltarCabo(pl); if (!a) return null; const b = soltarCabo(a.slice().reverse()); return b ? b.reverse() : null; };
     // ── el cuerpo ────────────────────────────────────────────────────────────
     // LA CAJA RECOMPONE CON EL PLIEGO: en apaisado se ensancha y en vertical se alarga
     // (el lado largo a la potencia 0,7: crece con el papel sin llenarlo). Antes medía
@@ -4342,15 +4383,25 @@
       // columna la que la corta. Ahora se construye desde el eje de la columna hacia fuera:
       // empieza donde su boca —centro y dos esquinas— queda a un pelo del filo, y se elige
       // la altura donde la columna va más derecha, para que el pelo no sea una cuña.)
-      const xEn = (pl, y) => { for (let i = 0; i + 1 < pl.length; i++) { const a = pl[i], b = pl[i + 1]; if ((a.y - y) * (b.y - y) <= 0 && a.y !== b.y) return { x: a.x + (b.x - a.x) * (y - a.y) / (b.y - a.y), m: abs((b.x - a.x) / (b.y - a.y)) }; } return null; };
-      const barra = (pl, ya, yb, s2) => { let mejor = null; for (let k = 0; k < 7; k++) { const y = ya + (yb - ya) * (k + rng.range(0, 1)) / 7, r = xEn(pl, y); if (r && (!mejor || r.m < mejor.m)) mejor = { y, x: r.x, m: r.m }; }
-        if (!mejor) return; const y = mejor.y, boca = x => [-W / 2, 0, W / 2].every(dy => { const q = T({ x, y: y + dy }); return distA(q.x, q.y) >= W / 2 + g * 1.05; });
-        let x = mejor.x, n = 0; while (!boca(x) && n++ < 240) x += s2 * W / 24; if (n >= 240) return;
-        const xe = edge(s2); if (abs(xe - x) < W * 2) return; const pz = [{ x, y }, { x: xe, y: y + rng.range(-0.02, 0.02) * S }];
-        if (muestrear(pz, W / 4).some(q => { if (abs(q.x - x) < W * 0.75) return false; const u = T(q); return distA(u.x, u.y) < D * 0.985 || vacios.some(f => f(u)); })) return;
-        const pt = pz.map(T); trazos.push({ pts: pt, segs: segsDe(pt), rel: 'barra' }); };
-      if (rng.bool(0.8)) barra(ele, W * 0.8, W * 2.2, sR);
-      if (rng.bool(0.6)) barra(relevo, largo - W * 2.2, largo - W * 0.8, sR);
+      const xEn = (pl, y) => { for (let i = 0; i + 1 < pl.length; i++) { const a = pl[i], b = pl[i + 1]; if ((a.y - y) * (b.y - y) <= 0 && a.y !== b.y) { const sl = (b.x - a.x) / (b.y - a.y); return { x: a.x + sl * (y - a.y), m: abs(sl) + (min(abs(y - a.y), abs(b.y - y)) < W * 0.75 ? 9 : 0), sl }; } } return null; };   /* (a menos de 0,75 W de un vértice de la columna la boca cae sobre un quiebro: se penaliza) */
+      // (vuelta 63: la barra sale A ESCUADRA de la columna —su boca paralela al filo: un
+      // pelo, no una cuña—. Si la columna va casi derecha, la barra entera lleva esa
+      // inclinación hasta el borde; si no, da un primer paso a escuadra y luego endereza.
+      // `geo`: solo devuelve la geometría; `holg`: lo que exige al resto de su recorrido.)
+      const barraGeo = (pl, ya, yb, s2) => { let mejor = null; for (let k = 0; k < 7; k++) { const y = ya + (yb - ya) * (k + rng.range(0, 1)) / 7, r = xEn(pl, y); if (r && (!mejor || r.m < mejor.m)) mejor = { y, x: r.x, m: r.m, sl: r.sl }; }
+        if (!mejor) return null; const nn = hypot(mejor.sl, 1), cx = mejor.sl / nn, cy = 1 / nn, px = s2 / nn, py = -s2 * mejor.sl / nn;
+        const boca = s => [-W / 2, 0, W / 2].every(k => { const q = T({ x: mejor.x + px * s + cx * k, y: mejor.y + py * s + cy * k }); return distA(q.x, q.y) >= W / 2 + g * 1.05; });
+        let s = 0, n = 0; while (!boca(s) && n++ < 240) s += W / 24; if (n >= 240) return null;
+        const p0 = { x: mejor.x + px * s, y: mejor.y + py * s }, xe = edge(s2); if (abs(xe - p0.x) < W * 2) return null;
+        if (Math.atan(abs(mejor.sl)) <= 10 * RAD) { const L = (xe - p0.x) / px; return [p0, { x: xe, y: p0.y + py * L }]; }
+        const L1 = W * rng.range(1.3, 2), p1 = { x: p0.x + px * L1, y: p0.y + py * L1 }; return [p0, p1, { x: xe, y: p1.y + rng.range(-0.02, 0.02) * S }]; };
+      const barraCabe = (pz, holg) => { if (!pz) return false; let ac = 0; const ms = muestrear(pz, W / 4);
+        for (let i = 0; i < ms.length; i++) { if (i) ac += hypot(ms[i].x - ms[i - 1].x, ms[i].y - ms[i - 1].y); if (ac < W * 0.75) continue; const u = T(ms[i]); if (distA(u.x, u.y) < holg || vacios.some(f => f(u))) return false; } return true; };
+      const barraPon = (pz, holg) => { if (!barraCabe(pz, holg)) return false;
+        const pt = pz.map(T); trazos.push({ pts: pt, segs: segsDe(pt), rel: 'barra' }); return true; };
+      /* (vuelta 63: con el dintel ya hay una barra casi siempre; las de canto bajan de 0,8 y 0,6 a 0,45 y 0,4 para que las barras —que van solas— no pasen de dos por obra) */
+      if (rng.bool(0.45)) barraPon(barraGeo(ele, W * 0.8, W * 2.2, sR), D * 0.985);
+      if (rng.bool(0.4)) barraPon(barraGeo(relevo, largo - W * 2.2, largo - W * 0.8, sR), D * 0.985);
       // LAS COMPAÑERAS: 1 o 2, al otro costado de la columna. La de dentro nace más
       // arriba y sale más abajo; la de fuera, a D de ella, nace más abajo y sale a D
       // por encima. Bajan con la columna y se sueltan cuando la meta tira hacia el borde.
@@ -4359,16 +4410,53 @@
       // (con W ≈ 0,11 del lado el pliego es corto: nacen justo bajo la barra y giran justo antes del codo de la ele)
       // (vuelta 61: casi siempre dos compañeras: el núcleo de la travesía es el haz de tres o cuatro bandas a un pelo)
       const nC = rng.bool(0.8) ? 2 : 1, yIni = W * rng.range(0.7, 1.6), yGiro = yCodo - W * rng.range(0.2, 0.9);   /* (vuelta 62: nacen arriba, a una anchura del borde, no a tres: así el haz baja junto casi medio pliego, como en el calco) */
-      let P1 = yGiro > yIni + W * 1.2 ? tramo(paralela(columna, -sL * D), yIni, yGiro) : null;
+      // EL DINTEL (vuelta 63). Las compañeras nacían en el aire, con la boca al blanco, al
+      // costado de la columna: 355 de 372 cabos. En el original nacen DEBAJO de una barra
+      // corta que sale de la columna: la barra las tapa y su boca queda a un pelo de ella.
+      // Aquí: una barra por su costado, de la columna al borde; cada compañera empieza donde
+      // su boca —centro y dos esquinas— queda a un pelo del filo de abajo de esa barra. La
+      // barra se pone DESPUÉS de ellas. Si no cabe, la compañera entra desde fuera del pliego.
+      let dintel = barraGeo(ele, W * 0.8, W * 2.2, sL); if (!barraCabe(dintel, D * 0.985)) dintel = null;
+      const bajoDintel = pl => { if (!dintel) return pl; const ms = muestrear(pl, W / 16); for (let i = 1; i < ms.length; i++) { const q = ms[i], a = ms[i - 1], m = hypot(q.x - a.x, q.y - a.y) || 1e-9, fx = -(q.y - a.y) / m, fy = (q.x - a.x) / m;
+          let dm = Infinity, yb = -Infinity; for (const k of [-W / 2, 0, W / 2]) for (let j = 0; j + 1 < dintel.length; j++) { dm = min(dm, pointSegDist(q.x + fx * k, q.y + fy * k, dintel[j].x, dintel[j].y, dintel[j + 1].x, dintel[j + 1].y)); yb = max(yb, dintel[j].y, dintel[j + 1].y); }
+          if (dm >= W / 2 + g * 1.05 && q.y > yb - W) { if (dm > W / 2 + g * 1.6) continue; const rest = ms.slice(i).map(p => ({ x: p.x, y: p.y })); return rest.length > 2 ? simplificar(rest) : null; } } return null; };
+      let P1 = yGiro > yIni + W * 1.2 ? tramo(paralela(columna, -sL * D), dintel ? -W * 1.5 : -W * 1.5, yGiro) : null;
+      if (P1 && dintel) P1 = bajoDintel(P1);
       if (P1) {
         // la salida: un quiebro de 40–55° hacia el costado y casi horizontal hasta el borde
         const th = rng.range(48, 74) * RAD, Lq = W * rng.range(1.1, 1.9), pend = rng.range(-0.05, 0.14);
         suelta(P1, -sL * th);   // (bajando, girar hacia sL es girar −sL en ángulo: y hacia abajo)
         let xq = P1[P1.length - 1].x + sL * Math.sin(th) * Lq, yq = P1[P1.length - 1].y + Math.cos(th) * Lq; P1.push({ x: xq, y: yq });
         while (sL < 0 ? xq > edge(sL) : xq < edge(sL)) { const st = W * rng.range(1.5, 2.5); xq += sL * st; yq += st * (pend + rng.range(-0.05, 0.05)); P1.push({ x: xq, y: yq }); }
-        ponT(P1, 'compañera', W * 3);
-        if (nC === 2) { const P2 = paralela(P1, -sL * D), y2 = yIni + W * rng.range(1, 2.5), ms = muestrear(P2, W / 8); let k = 0; while (k < ms.length && ms[k].y < y2) k++; const rest = ms.slice(k).map(q => ({ x: q.x, y: q.y })); if (rest.length > 2) ponT(simplificar(rest), 'compañera', W * 3); }
+        const nAntes = trazos.length; ponT(P1, 'compañera', W * 3);
+        // (la segunda: la paralela de la primera TAL COMO QUEDÓ PUESTA —el recorte y la limpieza la retocan, y la paralela del borrador
+        // caía a menos de D en el codo: `recortar` la partía en dos y dejaba dos cabos rotos junto al nudo—, alargada hacia arriba para
+        // que también nazca bajo el dintel; sin dintel no se pone —nacería en el aire—. Si sale partida, no se pone.)
+        if (nC === 2 && dintel && trazos.length === nAntes + 1) { const Q = trazos[nAntes].pts.map(T), a0 = Q[0], a1 = Q[1], m0 = hypot(a1.x - a0.x, a1.y - a0.y) || 1e-9, P2 = bajoDintel(paralela([{ x: a0.x - (a1.x - a0.x) / m0 * W * 3, y: a0.y - (a1.y - a0.y) / m0 * W * 3 }].concat(Q), -sL * D));
+          if (P2) { const n2 = trazos.length; ponT(P2, 'compañera', W * 3); if (trazos.length > n2 + 1) trazos.length = n2; } }
       }
+      // (el recorte y la limpieza de muñones mueven el primer punto de una compañera después
+      // de calculado; así que, ya puestas, se ENCAJAN: el primer tramo se alarga o se acorta
+      // sobre su propia línea hasta que la boca queda a un pelo del dintel)
+      if (dintel) { const dT = dintel.map(T), aD = (x, y) => { let d = Infinity; for (let j = 0; j + 1 < dT.length; j++) d = min(d, pointSegDist(x, y, dT[j].x, dT[j].y, dT[j + 1].x, dT[j + 1].y)); return d; };
+        for (const t of trazos) { if (t.rel !== 'compañera') continue; let pts = t.pts.slice(); const u = pts[pts.length - 1]; if (aD(u.x, u.y) < aD(pts[0].x, pts[0].y)) pts.reverse();
+          for (let guard = 0; guard < 4 && pts.length >= 2; guard++) { const a = pts[1], m = hypot(pts[0].x - a.x, pts[0].y - a.y) || 1e-9, dx = (pts[0].x - a.x) / m, dy = (pts[0].y - a.y) / m;
+            const libre = s => [-W / 2, 0, W / 2].every(k => aD(a.x + dx * s - dy * k, a.y + dy * s + dx * k) >= W / 2 + g * 1.05);
+            let s = 0, tope = false; while (s < m + W * 3) { if (!libre(s + W / 32)) { tope = true; break; } s += W / 32; }
+            if (!tope) break;                                   // el dintel no le queda delante: se deja como está
+            if (s < W * 0.6 && pts.length > 2) { pts.shift(); continue; }
+            let ok = true; for (let q = m; q <= s && ok; q += W / 8) if (distA(a.x + dx * q, a.y + dy * q, t) < D * 0.985) ok = false;   // lo que se alarga no pisa a nadie
+            if (ok) { pts[0] = { x: a.x + dx * s, y: a.y + dy * s }; t.pts = pts; t.segs = segsDe(pts);
+              // A ESCUADRA: si la boca no queda paralela al dintel, el primer tramo gira (hasta 25°) para llegarle en perpendicular
+              let jb = 0, db = Infinity; for (let j = 0; j + 1 < dT.length; j++) { const d = pointSegDist(pts[0].x, pts[0].y, dT[j].x, dT[j].y, dT[j + 1].x, dT[j + 1].y); if (d < db) { db = d; jb = j; } }
+              const A = dT[jb], B = dT[jb + 1], lm = hypot(B.x - A.x, B.y - A.y) || 1e-9, lx = (B.x - A.x) / lm, ly = (B.y - A.y) / lm; let nx = -ly, ny = lx; if ((a.x - A.x) * nx + (a.y - A.y) * ny < 0) { nx = -nx; ny = -ny; }
+              const h = (a.x - A.x) * nx + (a.y - A.y) * ny, Ls = h - (W / 2 + g * 1.05), E = { x: a.x - nx * Ls, y: a.y - ny * Ls };
+              if (Ls >= W * 0.6 && -(nx * dx + ny * dy) >= 0.906 && -(nx * dx + ny * dy) < 0.9985 && [-1, 1].every(k => { const u = ((E.x + k * lx * W / 2 - A.x) * lx + (E.y + k * ly * W / 2 - A.y) * ly) / lm; return u > 0.01 && u < 0.99; })) {
+                let ok2 = true; for (let q = W / 8; q <= Ls && ok2; q += W / 8) if (distA(a.x - nx * q, a.y - ny * q, t) < D * 0.985) ok2 = false;
+                if (ok2) { pts[0] = E; t.pts = pts; t.segs = segsDe(pts); } } } break; } } }
+      // (si al final el dintel no cabe, las compañeras que nacían bajo él se alargan hasta salir del pliego; la que no puede, se quita)
+      if (dintel && !barraPon(dintel, W / 2 + g)) { for (let k = trazos.length - 1; k >= 0; k--) { const t = trazos[k]; if (t.rel !== 'compañera') continue; const a = t.pts[1], e = t.pts[0], m = hypot(e.x - a.x, e.y - a.y) || 1e-9, r = marcha(e, (e.x - a.x) / m, (e.y - a.y) / m, t);
+          if (r && r.tipo === 'sale') { t.pts[0] = { x: r.x, y: r.y }; t.segs = segsDe(t.pts); } else trazos.splice(k, 1); } }
       // LA OCUPACIÓN (vuelta 33): la tercera variable. El calco llena el 36 % del pliego;
       // si la obra se queda por debajo de su objetivo, se añaden SEGUIDORES PARCIALES:
       // acompañan a un trazo puesto una racha (medida: 5–9 W), a D, por el costado que
@@ -4392,9 +4480,14 @@
         let t = null, sl = null; for (const u of trazos) { if (hechos.has(u) || u.rel === 'barra') continue; const r = soloDe(u); if (r && r.len >= W * 3 && (!sl || r.len > sl.len)) { t = u; sl = r; } }   /* (un acompañante de menos de tres anchuras es un trozo suelto, no un trazo: no se pone) */
         if (!t) break; hechos.add(t);
         let s0 = sl.s0, s1 = sl.s1; if (sl.len > sl.tot * 0.55) { const k = min(sl.len, sl.tot * rng.range(0.42, 0.55)), o = rng.range(0, sl.len - k); s0 += o; s1 = s0 + k; }
+        // (vuelta 63: el acompañante ENTRA POR EL BORDE con el tramo que va solo —como el relevo—: así un cabo sale del pliego y solo
+        // el otro hay que rematarlo. Un acompañante con los dos cabos dentro casi nunca se podía rematar limpio.)
+        if (TRAV) { const sp = subPoli(t.pts, sl.s0, sl.s1), pA = sp[0], pB = sp[sp.length - 1], bA = !dentroH(pA.x, pA.y, -W * 0.9), bB = !dentroH(pB.x, pB.y, -W * 0.9); if (!bA && !bB) continue;
+          const k = min(sl.len, sl.tot * rng.range(0.42, 0.6)); if (bB) { s1 = sl.tot; s0 = max(0, sl.s1 - k); } else { s0 = 0; s1 = min(sl.tot, sl.s0 + k); } }
         for (const sd of rng.bool(0.5) ? [1, -1] : [-1, 1]) { const off = sinCortos(paralela(subPoli(t.pts, s0, s1), sd * D)); if (off.length < 2) continue;
           const pzs = recortar(off, W * 2.8).filter(pz => largoDe(pz) >= (s1 - s0) * 0.5); if (pzs.length !== 1 || esGemelo(pzs[0])) continue;
-          trazos.push({ pts: pzs[0], segs: segsDe(pzs[0]), rel: 'seguidor' }); hechos.delete(t); break; }
+          const pzR = soltarCabos(pzs[0]); if (!pzR || esGemelo(pzR)) continue;   /* (vuelta 63: sus dos cabos se rematan —salen o chocan—; el que no puede, no se pone) */
+          trazos.push({ pts: pzR, segs: segsDe(pzR), rel: 'seguidor' }); hechos.delete(t); break; }
       }
       // LA BIFURCACIÓN (vuelta 53; el autor: «no veo ningún trazo que bifurque en dos»). En la
       // travesía todo iba a un pelo y nada en la misma tinta. De un trazo principal sale una
@@ -4404,9 +4497,11 @@
       if (rng.bool(O.bifurca != null ? O.bifurca : 0.6)) { const cand = trazos.filter(t => t.rel === 'primero' || t.rel === 'relevo' || t.rel === 'compañera');
         for (let it = 0; it < 16 && cand.length; it++) { const t = cand[rng.int(0, cand.length - 1)], ac = arco(t.pts), tot = ac[ac.length - 1], sv = rng.range(0.15, 0.85) * tot, sp = subPoli(t.pts, sv, min(tot, sv + W * 0.5)); if (sp.length < 2) continue;
           const p0 = sp[0]; if (p0.x < W || p0.y < W || p0.x > fw - W || p0.y > fh - W) continue;
-          const ang = Math.atan2(sp[1].y - p0.y, sp[1].x - p0.x) + (rng.bool(0.5) ? 1 : -1) * (90 + rng.range(-20, 20)) * RAD, cx2 = Math.cos(ang), sy2 = Math.sin(ang), st = W / 4; let x = p0.x, y = p0.y, L = 0;
-          for (let n = 0; n < 120; n++) { const nx = x + cx2 * st, ny = y + sy2 * st; if (L + st > D * 1.05 && distA(nx, ny) < D * 0.985) break; x = nx; y = ny; L += st; if (x < -W || y < -W || x > fw + W || y > fh + W) break; }
-          if (L < W * 3 || L > W * 6.5) continue;   /* (vuelta 62: una rama de nueve anchuras que cruza el blanco hasta el borde es una regla, no una rama: entre tres y seis anchuras y media) */
+          const ang = Math.atan2(sp[1].y - p0.y, sp[1].x - p0.x) + (rng.bool(0.5) ? 1 : -1) * (90 + rng.range(-20, 20)) * RAD;
+          // (vuelta 63: la rama paraba al quedar su EJE a D de otra tinta —media anchura de blanco delante: un cabo roto—. Ahora se remata: sale, o choca a escuadra y a un pelo)
+          const rr2 = rematar(p0, Math.cos(ang), Math.sin(ang), t); if (!rr2) continue; const x = rr2.x, y = rr2.y, L = hypot(x - p0.x, y - p0.y), rx = (x - p0.x) / L, ry = (y - p0.y) / L;
+          if (L < W * 3 || L > W * 6.5) continue;
+          { let mal = false; for (let s = D * 1.05; s < L && !mal; s += W / 4) for (const sg of t.segs) if (pointSegDist(p0.x + rx * s, p0.y + ry * s, sg[0], sg[1], sg[2], sg[3]) < D * 0.985) { mal = true; break; } if (mal) continue; }   /* no vuelve sobre su propio tronco */
           const pl = [{ x: p0.x, y: p0.y }, { x, y }]; t.ramas = [pl]; t.rsegs = segsDe(pl); break; } }
     }
     // NADA CORRE SOLO (vuelta 44). Los cabos que se alejan de todo —un trazo que sigue por el
