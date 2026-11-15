@@ -4333,9 +4333,12 @@
       // alto— y siguen bajando. Ese paso es lo que hace ancho el nudo: el haz ocupa cinco
       // anchuras de pliego con tres trazos, y todo lo que lo acompaña quiebra con él. Aquí
       // la columna solo ondulaba (media anchura) y el haz medía lo que sus trazos.
-      const qJ = rng.bool(O.quiebro != null ? O.quiebro : 0.75), aJ = (rng.bool(0.5) ? 1 : -1) * W * rng.range(1.2, 2), hJ = abs(aJ) / Math.tan(rng.range(45, 62) * RAD), yJ0 = W * 2.6, yJ1 = yCodo - W * 2.4 - hJ,
+      const qJ = rng.bool(O.quiebro != null ? O.quiebro : 0.75), aJ = (rng.bool(0.5) ? 1 : -1) * W * rng.range(1.2, 2), hJ = abs(aJ) / Math.tan(rng.range(45, 62) * RAD), yTop = W * rng.range(3, 3.4), yJ0 = yTop + W * 0.8, yJ1 = yCodo - W * 2.4 - hJ,
             yJ = qJ && yJ1 > yJ0 ? rng.range(yJ0, yJ1) : null, jog = y => yJ == null || y <= yJ ? 0 : y >= yJ + hJ ? aJ : aJ * (y - yJ) / hJ, col = y => xs + lateral(y) + jog(y);
-      let hechoJ = false; const ele = []; for (let y = -W * 1.5; y < yCodo; y += W * rng.range(1.2, 2.2)) { if (yJ != null && !hechoJ && y > yJ - W * 0.9) { hechoJ = true; ele.push({ x: col(yJ), y: yJ }, { x: col(yJ + hJ), y: yJ + hJ }); y = yJ + hJ; continue; } ele.push({ x: col(y), y }); }
+      // (vuelta 64: el PRIMER TRAMO de la columna es recto, desde fuera del pliego hasta 3–3,4 W: ahí nacen las barras y, bajo el
+      // dintel, las compañeras. Con la columna quebrando en esa zona, la barra salía a escuadra de un tramo y la compañera bajaba
+      // paralela a otro: la boca no quedaba paralela al filo y la junta era una cuña.)
+      let hechoJ = false; const ele = [{ x: col(-W * 1.5), y: -W * 1.5 }]; for (let y = min(yTop, yCodo - W); y < yCodo; y += W * rng.range(1.2, 2.2)) { if (yJ != null && !hechoJ && y > yJ - W * 0.9) { hechoJ = true; ele.push({ x: col(yJ), y: yJ }, { x: col(yJ + hJ), y: yJ + hJ }); y = yJ + hJ; continue; } ele.push({ x: col(y), y }); }
       // (si el último punto de la columna cae a menos de 0,8 W del codo se quita: dejaba
       // un tramo de una décima de anchura con otro rumbo, un escalón que las paralelas
       // copiaban —pelo.js a doble resolución, 0,83 g—)
@@ -4343,7 +4346,7 @@
       ele.push({ x: col(yCodo), y: yCodo }); const iCodo = ele.length - 1; let iBrazo = iCodo;
       { // el codo en dos quiebros y el brazo: un paso en diagonal, un tramo casi horizontal, a
         // veces una subida en diagonal (como el original), y hasta el borde
-        let x = col(yCodo), y = yCodo; const th = rng.range(48, 74) * RAD, Lq = W * rng.range(0.9, 1.5);   /* (vuelta 62: el codo, más cerrado —antes 40–55°—: en el original los trazos doblan junto al nudo casi de golpe, y un giro lento deja una cuña de blanco entre los que se separan) */
+        let x = col(yCodo), y = yCodo; const th = rng.range(40, 55) * RAD, Lq = W * rng.range(1, 1.8);   /* (vuelta 64: se retira el codo cerrado de la vuelta 62 —48–74°—: a 74° el inglete de la esquina saca 0,13 W hacia el relevo y el pelo mide 0,075 W; las dos tintas se tocaban medio ancho junto al nudo) */
         x += sR * Math.sin(th) * Lq; y += Math.cos(th) * Lq; ele.push({ x, y }); iBrazo = ele.length - 1;
         const Lh = W * rng.range(0.8, 2); x += sR * Lh; y += Lh * rng.range(-0.1, 0.1); ele.push({ x, y });
         if (rng.bool(0.6)) { const a = rng.range(40, 55) * RAD, Ls = W * rng.range(2, 3.5); x += sR * Math.cos(a) * Ls; y -= Math.sin(a) * Ls; ele.push({ x, y }); }
@@ -4388,19 +4391,20 @@
       // pelo, no una cuña—. Si la columna va casi derecha, la barra entera lleva esa
       // inclinación hasta el borde; si no, da un primer paso a escuadra y luego endereza.
       // `geo`: solo devuelve la geometría; `holg`: lo que exige al resto de su recorrido.)
-      const barraGeo = (pl, ya, yb, s2) => { let mejor = null; for (let k = 0; k < 7; k++) { const y = ya + (yb - ya) * (k + rng.range(0, 1)) / 7, r = xEn(pl, y); if (r && (!mejor || r.m < mejor.m)) mejor = { y, x: r.x, m: r.m, sl: r.sl }; }
+      const barraGeo = (pl, ya, yb, s2, recta) => { let mejor = null; for (let k = 0; k < 7; k++) { const y = ya + (yb - ya) * (k + rng.range(0, 1)) / 7, r = xEn(pl, y); if (r && (!mejor || r.m < mejor.m)) mejor = { y, x: r.x, m: r.m, sl: r.sl }; }
         if (!mejor) return null; const nn = hypot(mejor.sl, 1), cx = mejor.sl / nn, cy = 1 / nn, px = s2 / nn, py = -s2 * mejor.sl / nn;
         const boca = s => [-W / 2, 0, W / 2].every(k => { const q = T({ x: mejor.x + px * s + cx * k, y: mejor.y + py * s + cy * k }); return distA(q.x, q.y) >= W / 2 + g * 1.05; });
-        let s = 0, n = 0; while (!boca(s) && n++ < 240) s += W / 24; if (n >= 240) return null;
+        let s = 0, n = 0; while (!boca(s) && n++ < 240) s += W / 24; if (n >= 240) return null; { let k = 0; while (k++ < 12 && s > W / 192 && boca(s - W / 192)) s -= W / 192; }   /* afina: el hueco de la junta es el pelo, no pelo y medio */
+        if (recta && (mejor.m > 0.2 || mejor.m >= 9)) return null;
         const p0 = { x: mejor.x + px * s, y: mejor.y + py * s }, xe = edge(s2); if (abs(xe - p0.x) < W * 2) return null;
-        if (Math.atan(abs(mejor.sl)) <= 10 * RAD) { const L = (xe - p0.x) / px; return [p0, { x: xe, y: p0.y + py * L }]; }
+        if (recta || Math.atan(abs(mejor.sl)) <= 10 * RAD) { const L = (xe - p0.x) / px; return [p0, { x: xe, y: p0.y + py * L }]; }
         const L1 = W * rng.range(1.3, 2), p1 = { x: p0.x + px * L1, y: p0.y + py * L1 }; return [p0, p1, { x: xe, y: p1.y + rng.range(-0.02, 0.02) * S }]; };
       const barraCabe = (pz, holg) => { if (!pz) return false; let ac = 0; const ms = muestrear(pz, W / 4);
         for (let i = 0; i < ms.length; i++) { if (i) ac += hypot(ms[i].x - ms[i - 1].x, ms[i].y - ms[i - 1].y); if (ac < W * 0.75) continue; const u = T(ms[i]); if (distA(u.x, u.y) < holg || vacios.some(f => f(u))) return false; } return true; };
       const barraPon = (pz, holg) => { if (!barraCabe(pz, holg)) return false;
         const pt = pz.map(T); trazos.push({ pts: pt, segs: segsDe(pt), rel: 'barra' }); return true; };
       /* (vuelta 63: con el dintel ya hay una barra casi siempre; las de canto bajan de 0,8 y 0,6 a 0,45 y 0,4 para que las barras —que van solas— no pasen de dos por obra) */
-      if (rng.bool(0.45)) barraPon(barraGeo(ele, W * 0.8, W * 2.2, sR), D * 0.985);
+      if (rng.bool(0.45)) barraPon(barraGeo(ele, W * 0.8, W * 1.5, sR, true), D * 0.985);
       if (rng.bool(0.4)) barraPon(barraGeo(relevo, largo - W * 2.2, largo - W * 0.8, sR), D * 0.985);
       // LAS COMPAÑERAS: 1 o 2, al otro costado de la columna. La de dentro nace más
       // arriba y sale más abajo; la de fuera, a D de ella, nace más abajo y sale a D
@@ -4416,7 +4420,7 @@
       // Aquí: una barra por su costado, de la columna al borde; cada compañera empieza donde
       // su boca —centro y dos esquinas— queda a un pelo del filo de abajo de esa barra. La
       // barra se pone DESPUÉS de ellas. Si no cabe, la compañera entra desde fuera del pliego.
-      let dintel = barraGeo(ele, W * 0.8, W * 2.2, sL); if (!barraCabe(dintel, D * 0.985)) dintel = null;
+      let dintel = barraGeo(ele, W * 0.8, W * 1.2, sL, true); if (!barraCabe(dintel, D * 0.985)) dintel = null;
       const bajoDintel = pl => { if (!dintel) return pl; const ms = muestrear(pl, W / 16); for (let i = 1; i < ms.length; i++) { const q = ms[i], a = ms[i - 1], m = hypot(q.x - a.x, q.y - a.y) || 1e-9, fx = -(q.y - a.y) / m, fy = (q.x - a.x) / m;
           let dm = Infinity, yb = -Infinity; for (const k of [-W / 2, 0, W / 2]) for (let j = 0; j + 1 < dintel.length; j++) { dm = min(dm, pointSegDist(q.x + fx * k, q.y + fy * k, dintel[j].x, dintel[j].y, dintel[j + 1].x, dintel[j + 1].y)); yb = max(yb, dintel[j].y, dintel[j + 1].y); }
           if (dm >= W / 2 + g * 1.05 && q.y > yb - W) { if (dm > W / 2 + g * 1.6) continue; const rest = ms.slice(i).map(p => ({ x: p.x, y: p.y })); return rest.length > 2 ? simplificar(rest) : null; } } return null; };
@@ -4424,7 +4428,7 @@
       if (P1 && dintel) P1 = bajoDintel(P1);
       if (P1) {
         // la salida: un quiebro de 40–55° hacia el costado y casi horizontal hasta el borde
-        const th = rng.range(48, 74) * RAD, Lq = W * rng.range(1.1, 1.9), pend = rng.range(-0.05, 0.14);
+        const th = rng.range(40, 55) * RAD, Lq = W * rng.range(1.5, 2.5), pend = rng.range(-0.05, 0.14);
         suelta(P1, -sL * th);   // (bajando, girar hacia sL es girar −sL en ángulo: y hacia abajo)
         let xq = P1[P1.length - 1].x + sL * Math.sin(th) * Lq, yq = P1[P1.length - 1].y + Math.cos(th) * Lq; P1.push({ x: xq, y: yq });
         while (sL < 0 ? xq > edge(sL) : xq < edge(sL)) { const st = W * rng.range(1.5, 2.5); xq += sL * st; yq += st * (pend + rng.range(-0.05, 0.05)); P1.push({ x: xq, y: yq }); }
@@ -4444,6 +4448,7 @@
             const libre = s => [-W / 2, 0, W / 2].every(k => aD(a.x + dx * s - dy * k, a.y + dy * s + dx * k) >= W / 2 + g * 1.05);
             let s = 0, tope = false; while (s < m + W * 3) { if (!libre(s + W / 32)) { tope = true; break; } s += W / 32; }
             if (!tope) break;                                   // el dintel no le queda delante: se deja como está
+            { let k = 0; while (k++ < 10 && libre(s + W / 256)) s += W / 256; }
             if (s < W * 0.6 && pts.length > 2) { pts.shift(); continue; }
             let ok = true; for (let q = m; q <= s && ok; q += W / 8) if (distA(a.x + dx * q, a.y + dy * q, t) < D * 0.985) ok = false;   // lo que se alarga no pisa a nadie
             if (ok) { pts[0] = { x: a.x + dx * s, y: a.y + dy * s }; t.pts = pts; t.segs = segsDe(pts);
@@ -4494,7 +4499,9 @@
       // RAMA: nace en su eje, casi en perpendicular (±20°), por el costado que esté libre, y
       // sigue recta hasta salir del pliego o hasta quedar a un pelo de otra tinta. Tres
       // anchuras como mínimo. Se pinta con su tronco, sin pelo entre los dos.
-      if (rng.bool(O.bifurca != null ? O.bifurca : 0.6)) { const cand = trazos.filter(t => t.rel === 'primero' || t.rel === 'relevo' || t.rel === 'compañera');
+      // (vuelta 64: en la travesía, sin rama por defecto. El calco no tiene ninguna —0,00— y aquí salía pegada a otro trazo, dejando
+      // un pico y un triángulo fino de blanco. Sigue disponible con `bifurca` para el laboratorio.)
+      if (rng.bool(O.bifurca != null ? O.bifurca : 0)) { const cand = trazos.filter(t => t.rel === 'primero' || t.rel === 'relevo' || t.rel === 'compañera');
         for (let it = 0; it < 16 && cand.length; it++) { const t = cand[rng.int(0, cand.length - 1)], ac = arco(t.pts), tot = ac[ac.length - 1], sv = rng.range(0.15, 0.85) * tot, sp = subPoli(t.pts, sv, min(tot, sv + W * 0.5)); if (sp.length < 2) continue;
           const p0 = sp[0]; if (p0.x < W || p0.y < W || p0.x > fw - W || p0.y > fh - W) continue;
           const ang = Math.atan2(sp[1].y - p0.y, sp[1].x - p0.x) + (rng.bool(0.5) ? 1 : -1) * (90 + rng.range(-20, 20)) * RAD;

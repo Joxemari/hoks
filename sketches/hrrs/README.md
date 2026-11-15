@@ -4837,6 +4837,37 @@ núcleo no mejora (16 % de la caja; calco 34). Ficha: 6 coinciden · 2 cerca · 
 Solape 0 de 300, pelo 0 por debajo de g, batería N=220 igual que antes (el único solape
 es el de la configuración sin halo).
 
+### Sexagésima cuarta vuelta — la travesía: juntas limpias
+
+El autor: «no limpias aún». Ampliadas (3040 px), las juntas de la vuelta 63 tenían tres
+defectos: la boca no quedaba paralela al filo (cuña), el hueco era más ancho que el pelo
+entre trazos paralelos, y las ramas salían pegadas a otro trazo dejando un pico y un
+triángulo fino de blanco.
+
+- **El primer tramo de la columna es recto**, de fuera del pliego hasta 3–3,4 W. Ahí
+  nacen las barras y, bajo el dintel, las compañeras. Antes la columna quebraba en esa
+  zona: la barra salía a escuadra de un tramo y la compañera bajaba paralela a otro.
+- **Las barras de arriba son una sola recta a escuadra de ese tramo** (si la columna se
+  inclina más de 11°, no hay barra). El quiebro en diagonal del haz empieza después.
+- **El hueco de la junta es el pelo.** La marcha que busca la boca avanzaba a pasos de
+  W/24 y W/32 y se quedaba hasta medio pelo corta; ahora afina a W/192 y W/256.
+- **Sin rama en la travesía por defecto.** El calco tiene 0,00. Sigue en `bifurca`.
+- **Se retira el codo cerrado de la vuelta 62** (48–74° → 40–55°). A 74° el inglete de la
+  esquina saca 0,13 W hacia el relevo y el pelo mide 0,075 W: en la ampliación de la
+  #3001 las dos tintas se tocaban medio ancho junto al nudo. Ni `solape.js` ni `pelo.js`
+  lo señalaron: es un hueco de la batería, anotado abajo.
+
+`cabos.js`, 200 obras: salen 70 % · chocan de frente 30 % · pegados de costado **0 %** ·
+en el blanco 0 % · juntas con cuña > 0,25 W **2 %** (cuña mediana 0,00 W).
+
+Ficha: 5 coinciden · 3 cerca · 4 lejos. Lejos: parte del trazo a un pelo de otro 76 %
+(calco 96), núcleos 2,8 (1), núcleo mayor 17 % (34), trazos cortos 0 % (14).
+Solape 0 de 300, pelo 0 por debajo de g, batería N=220 como antes.
+
+**Hueco de la batería.** Dos tintas que se tocan por el inglete de una esquina, a lo
+largo de medio ancho, no las ve ningún detector. Hace falta uno que mida el canal en los
+vértices, no solo a lo largo de los tramos.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
