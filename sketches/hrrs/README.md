@@ -4852,10 +4852,9 @@ triángulo fino de blanco.
 - **El hueco de la junta es el pelo.** La marcha que busca la boca avanzaba a pasos de
   W/24 y W/32 y se quedaba hasta medio pelo corta; ahora afina a W/192 y W/256.
 - **Sin rama en la travesía por defecto.** El calco tiene 0,00. Sigue en `bifurca`.
-- **Se retira el codo cerrado de la vuelta 62** (48–74° → 40–55°). A 74° el inglete de la
-  esquina saca 0,13 W hacia el relevo y el pelo mide 0,075 W: en la ampliación de la
-  #3001 las dos tintas se tocaban medio ancho junto al nudo. Ni `solape.js` ni `pelo.js`
-  lo señalaron: es un hueco de la batería, anotado abajo.
+- **Se retira el codo cerrado de la vuelta 62** (48–74° → 40–55°). No había movido la
+  medida del núcleo y el valor anterior es el probado. (Aquí se escribió que con el codo
+  cerrado dos tintas se tocaban junto al nudo: **era falso**, ver la vuelta 65.)
 
 `cabos.js`, 200 obras: salen 70 % · chocan de frente 30 % · pegados de costado **0 %** ·
 en el blanco 0 % · juntas con cuña > 0,25 W **2 %** (cuña mediana 0,00 W).
@@ -4864,9 +4863,26 @@ Ficha: 5 coinciden · 3 cerca · 4 lejos. Lejos: parte del trazo a un pelo de ot
 (calco 96), núcleos 2,8 (1), núcleo mayor 17 % (34), trazos cortos 0 % (14).
 Solape 0 de 300, pelo 0 por debajo de g, batería N=220 como antes.
 
-**Hueco de la batería.** Dos tintas que se tocan por el inglete de una esquina, a lo
-largo de medio ancho, no las ve ningún detector. Hace falta uno que mida el canal en los
-vértices, no solo a lo largo de los tramos.
+### Sexagésima quinta vuelta — la travesía: el espejo del relevo
+
+**Una corrección primero.** En la vuelta 64 se anotó que, con el codo cerrado, dos tintas
+se tocaban medio ancho junto al nudo (#3001) y que la batería no lo veía. Reampliado ese
+punto a 3040 px con aquel mismo código, el canal es continuo: no se tocaban. Fue una mala
+lectura de una ampliación con poco aumento. No hay hueco en la batería por ese lado: con
+halo, el canal lo fabrica el pintado y `pelo.js` lo mide.
+
+**El espejo del relevo.** El relevo entra bajo el brazo de la ele y baja por la columna;
+por el costado de las compañeras nadie hacía lo mismo y la columna bajaba sola medio
+pliego. El trazo nuevo (`segunda`) entra por el borde a un pelo bajo el brazo de la
+compañera de dentro, sigue recto donde ella dobla hacia arriba, y al llegar a la columna
+dobla y baja pegado a ella hasta salir por abajo. Sus dos cabos salen del pliego. Entre
+él, la diagonal de la compañera y la columna queda un blanco cerrado, rodeado de tinta.
+Solo se pone si sale entero (una pieza, los dos cabos fuera): 0,4 por obra.
+
+Medido: el relevo va a un pelo de otro en el 84 % de su largo (antes 78); la mediana por
+trazo, 79 % (antes 76; calco 96). `cabos.js`: pegados de costado 0 %, juntas con cuña
+2 %. Ficha: 5 · 3 · 4. Núcleo mayor 18 % (calco 34): sin cambio.
+Solape 0 de 300, pelo 0 por debajo de g, batería N=220 como antes.
 
 ## Lo que queda abierto
 

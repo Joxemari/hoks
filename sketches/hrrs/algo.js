@@ -4462,6 +4462,30 @@
       // (si al final el dintel no cabe, las compañeras que nacían bajo él se alargan hasta salir del pliego; la que no puede, se quita)
       if (dintel && !barraPon(dintel, W / 2 + g)) { for (let k = trazos.length - 1; k >= 0; k--) { const t = trazos[k]; if (t.rel !== 'compañera') continue; const a = t.pts[1], e = t.pts[0], m = hypot(e.x - a.x, e.y - a.y) || 1e-9, r = marcha(e, (e.x - a.x) / m, (e.y - a.y) / m, t);
           if (r && r.tipo === 'sale') { t.pts[0] = { x: r.x, y: r.y }; t.segs = segsDe(t.pts); } else trazos.splice(k, 1); } }
+      // LA SEGUNDA DEL OTRO COSTADO (vuelta 65). El relevo entra bajo el brazo de la ele y baja por la columna; por el costado
+      // de las compañeras no había nadie que hiciera lo mismo, y la columna bajaba sola la mitad del pliego (el relevo iba a un
+      // pelo de otro solo en el 79 % de su largo). Este trazo es su espejo: entra por el borde A UN PELO BAJO EL BRAZO de la
+      // compañera de dentro, llega al nudo y dobla hacia abajo pegado a la columna hasta salir por el borde de abajo. Sus dos
+      // cabos salen del pliego: no hay nada que rematar. Se construye con las dos paralelas exactas —la del brazo y la de la
+      // columna— cortadas donde se cruzan.
+      if (rng.bool(O.segunda != null ? O.segunda : 0.7)) { const cs = trazos.filter(t => t.rel === 'compañera'), rl = trazos.filter(t => t.rel === 'relevo');
+        if (cs.length && rl.length === 1) { const Q = cs[0].pts.map(T), R = rl[0].pts.map(T); if (Q[0].y > Q[Q.length - 1].y) Q.reverse(); if (R[0].y > R[R.length - 1].y) R.reverse();
+          // (las paralelas por dentro de un codo se pliegan sobre sí mismas: se muestrean y se tira lo que queda a menos de D de su guía)
+          const dP = (q, pl) => { let d = Infinity; for (let k = 0; k + 1 < pl.length; k++) d = min(d, pointSegDist(q.x, q.y, pl[k].x, pl[k].y, pl[k + 1].x, pl[k + 1].y)); return d; };
+          const yArm = Q[Q.length - 1].y, As = muestrear(paralela(Q, sL * D).reverse(), W / 8).filter(q => dP(q, Q) >= D * 0.985), Bs = muestrear(paralela(R, -sL * D), W / 8).filter(q => dP(q, R) >= D * 0.985);
+          // el brazo, del borde hacia dentro, hasta quedar a un pelo de la columna de abajo; si se acaba antes, sigue recto hasta tres anchuras
+          // (la compañera dobla antes de llegar a la columna de abajo —su diagonal la separa una o dos anchuras—: el brazo se sigue
+          // mientras va hacia dentro y, donde su guía dobla hacia arriba, este trazo sigue RECTO hasta quedar a un pelo de la columna.
+          // Entre él, la diagonal de la compañera y la columna queda un blanco cerrado, rodeado de tinta.)
+          let arm = null, n = 0; { const h0 = Math.atan2(As[4].y - As[0].y, As[4].x - As[0].x); while (n + 5 < As.length) { let dh = Math.atan2(As[n + 5].y - As[n + 1].y, As[n + 5].x - As[n + 1].x) - h0; while (dh > Math.PI) dh -= 2 * Math.PI; while (dh < -Math.PI) dh += 2 * Math.PI; if (abs(dh) > 25 * RAD || dP(As[n], R) <= D * 1.02) break; n++; } }
+          if (n > 8) { if (dP(As[n], R) <= D * 1.02) arm = As.slice(0, n + 1); else { const e = As[n], a = As[n - 6], m = hypot(e.x - a.x, e.y - a.y) || 1e-9, ux = (e.x - a.x) / m, uy = (e.y - a.y) / m;
+              for (let s = W / 8; s <= W * 3.5; s += W / 16) { const q = { x: e.x + ux * s, y: e.y + uy * s }; if (dP(q, R) <= D * 1.15) { arm = As.slice(0, n + 1).concat([q]); break; } } } }
+          if (arm) { const X = arm[arm.length - 1]; let kb = -1, db = Infinity; for (let k = 0; k < Bs.length; k++) { const d = hypot(Bs[k].x - X.x, Bs[k].y - X.y); if (d < db) { db = d; kb = k; } }
+            // (la esquina: se baja a la paralela de la columna por una cuerda que no entra en el pelo del codo del relevo)
+            let baja = Bs.slice(kb).filter(q => q.y > X.y + W * 0.9); { let k = 0; const libre = q => { for (let s = 1; s < 8; s++) if (dP({ x: X.x + (q.x - X.x) * s / 8, y: X.y + (q.y - X.y) * s / 8 }, R) < D * 0.995) return false; return true; }; while (k < baja.length && k < 24 && !libre(baja[k])) k++; baja = k < baja.length && k < 24 ? baja.slice(k) : []; }
+            if (db < W * 0.9 && baja.length > 8) { const S2 = sinCortos(simplificar(arm.map(q => ({ x: q.x, y: q.y }))).concat(simplificar(baja.map(q => ({ x: q.x, y: q.y }))))); const n0 = trazos.length; ponT(S2, 'segunda', W * 3);
+              // solo vale entera: una pieza, con los dos cabos fuera del pliego
+              if (trazos.length !== n0 + 1 || [trazos[n0].pts[0], trazos[n0].pts[trazos[n0].pts.length - 1]].some(q => dentroH(q.x, q.y, -W * 0.3))) trazos.length = n0; } } } }
       // LA OCUPACIÓN (vuelta 33): la tercera variable. El calco llena el 36 % del pliego;
       // si la obra se queda por debajo de su objetivo, se añaden SEGUIDORES PARCIALES:
       // acompañan a un trazo puesto una racha (medida: 5–9 W), a D, por el costado que
