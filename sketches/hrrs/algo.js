@@ -3803,7 +3803,9 @@
     // come: el temblor propio de cada trazo es independiente y mueve cada filo ~0,7 px. Medido con
     // pelo.js: 4 de 40 por debajo con 0,035–0,05, con 0,045–0,06 y con 0,055–0,07. Se queda en
     // 0,065–0,085, que es lo que aguanta la mano; el pelo del original pide otra mano, no otro número.)
-    travesia: { ancho: [0.10, 0.125], gam: [0.065, 0.085], cuerpo: [1, 1], alto: [1, 1],
+    // (vuelta 61: la anchura del calco, 0,087–0,092 del ancho: antes 0,10–0,125. Con ella caben los
+    // trazos del original —seis o siete— y la parte acompañada sube del 81 al 90 %.)
+    travesia: { ancho: [0.086, 0.1], gam: [0.065, 0.085], cuerpo: [1, 1], alto: [1, 1],
                 haces: [1, 2], hebras: [1, 3], jog: [25, 55], recto: [1, 3], quiebro: [1, 2.2], marco: false, travesia: true, barra: 0.7,
                 racha: [4, 7], lleno: [0.30, 0.40] },
   };
@@ -4335,7 +4337,8 @@
       const columna = ele.slice(0, iCodo + 1);
       const tramo = (pl, ya, yb) => { const ms = muestrear(pl, W / 8).filter(q => q.y >= ya && q.y <= yb); return ms.length > 2 ? simplificar(ms.map(q => ({ x: q.x, y: q.y }))) : null; };
       // (con W ≈ 0,11 del lado el pliego es corto: nacen justo bajo la barra y giran justo antes del codo de la ele)
-      const nC = rng.int(1, 2), yIni = W * rng.range(2.3, 3), yGiro = yCodo - W * rng.range(0.2, 0.9);
+      // (vuelta 61: casi siempre dos compañeras: el núcleo de la travesía es el haz de tres o cuatro bandas a un pelo)
+      const nC = rng.bool(0.8) ? 2 : 1, yIni = W * rng.range(2.3, 3), yGiro = yCodo - W * rng.range(0.2, 0.9);
       let P1 = yGiro > yIni + W * 1.2 ? tramo(paralela(columna, -sL * D), yIni, yGiro) : null;
       if (P1) {
         // la salida: un quiebro de 40–55° hacia el costado y casi horizontal hasta el borde
@@ -4366,11 +4369,11 @@
       // así que un trazo largo y solo recibe dos, en tramos distintos)
       for (let intento = 0; intento < 18 && tintaT() < llenoT + 0.1; intento++) {
         // (las barras de canto no: en el calco van solas —19 y 39 % de contacto— y es lo suyo)
-        let t = null, sl = null; for (const u of trazos) { if (hechos.has(u) || u.rel === 'barra') continue; const r = soloDe(u); if (r && r.len >= W * 2.2 && (!sl || r.len > sl.len)) { t = u; sl = r; } }
+        let t = null, sl = null; for (const u of trazos) { if (hechos.has(u) || u.rel === 'barra') continue; const r = soloDe(u); if (r && r.len >= W * 3 && (!sl || r.len > sl.len)) { t = u; sl = r; } }   /* (un acompañante de menos de tres anchuras es un trozo suelto, no un trazo: no se pone) */
         if (!t) break; hechos.add(t);
         let s0 = sl.s0, s1 = sl.s1; if (sl.len > sl.tot * 0.55) { const k = min(sl.len, sl.tot * rng.range(0.42, 0.55)), o = rng.range(0, sl.len - k); s0 += o; s1 = s0 + k; }
         for (const sd of rng.bool(0.5) ? [1, -1] : [-1, 1]) { const off = sinCortos(paralela(subPoli(t.pts, s0, s1), sd * D)); if (off.length < 2) continue;
-          const pzs = recortar(off, W * 2).filter(pz => largoDe(pz) >= (s1 - s0) * 0.5); if (pzs.length !== 1 || esGemelo(pzs[0])) continue;
+          const pzs = recortar(off, W * 2.8).filter(pz => largoDe(pz) >= (s1 - s0) * 0.5); if (pzs.length !== 1 || esGemelo(pzs[0])) continue;
           trazos.push({ pts: pzs[0], segs: segsDe(pzs[0]), rel: 'seguidor' }); hechos.delete(t); break; }
       }
       // LA BIFURCACIÓN (vuelta 53; el autor: «no veo ningún trazo que bifurque en dos»). En la

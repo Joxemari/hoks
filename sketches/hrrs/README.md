@@ -4712,6 +4712,39 @@ Medido con 300 obras por tipo: solape 0 de 1.200 (bloque, recinto, travesía,
 haz) y 0 de 300 en el sorteo y los apaisados; pelo 0 por debajo de g;
 determinismo 66/66.
 
+## Sexagésima primera vuelta: la travesía, con la anchura del calco
+
+La travesía era la más lejana en la ficha. Su anchura de trazo estaba por encima
+de la del calco (0,10–0,125 del lado frente a 0,087–0,092), y con trazos tan
+gordos no caben los del original.
+
+- **Anchura 0,086–0,10**, la del calco.
+- **Casi siempre dos compañeras** (80 %): el núcleo es el haz de tres o cuatro
+  bandas a un pelo.
+- **Sin trozos sueltos**: un acompañante solo entra si el tramo que acompaña
+  mide tres anchuras o más.
+
+| travesía | antes | ahora | calco 3 |
+|---|---|---|---|
+| trazos por obra | 5 | 6 | 7 |
+| largo mediano (W) | 8,9 | 10,1 | 11,8 |
+| parte del trazo a un pelo de otro | 81 % | 85 % | 96 % |
+| ocupación | 40 % | 38 % | 37 % |
+| ficha: coinciden · cerca · lejos | 4 · 6 · 2 | 5 · 5 · 2 | — |
+
+Se probaron dos variantes más y se dejaron: una anchura intermedia con filtro
+fuerte de trozos (menos de 4,5 W fuera) deja la obra en cinco trazos y el
+contacto en 75 %; la anchura del calco sin filtro da 90 % de contacto pero con
+trozos de 3,5 W sueltos por el pliego.
+
+**Sigue lejos: el núcleo.** El calco tiene una sola masa (34 % del pliego) y
+aquí salen 2,8 manchas, la mayor del 19 %. Las bandas del haz corren juntas
+menos trecho que en el original, donde bajan pegadas casi medio pliego antes de
+separarse.
+
+Medido: solape 0 de 300 en travesía y 0 de 400 en sorteo y apaisados, pelo 0
+por debajo de g, determinismo 66/66.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de
