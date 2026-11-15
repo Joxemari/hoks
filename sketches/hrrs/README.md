@@ -4745,6 +4745,41 @@ separarse.
 Medido: solape 0 de 300 en travesía y 0 de 400 en sorteo y apaisados, pelo 0
 por debajo de g, determinismo 66/66.
 
+### Sexagésima segunda vuelta — la travesía: el nudo
+
+Pedido: «sigue mejorando». La ficha señalaba el núcleo de la travesía como lo más lejano.
+
+- **La ficha medía mal.** El original es un pliego vertical (1 : 1,352) y las obras se
+  medían en cuadrado. `patrones.js` genera ahora la travesía en el formato de su calco.
+  Con la medida corregida la distancia era mayor de lo que decía: núcleo mayor 17 % de la
+  caja frente a 34 %.
+- **Las barras de canto estaban sueltas.** Nacían a 1,5–3 W de la columna y el recorte
+  solo acerca un cabo W/6: 351 de 419 barras tenían menos de un 35 % de su largo a un pelo
+  de otra tinta, y a la vista flotaban en el blanco. Ahora se construyen desde el eje de
+  la columna hacia fuera: la boca (centro y dos esquinas) queda a un pelo del filo, y se
+  elige la altura donde la columna va más derecha para que el pelo no sea una cuña.
+- **El quiebro de la columna.** En el original los tres trazos del haz bajan, dan un paso
+  en diagonal (1,8 W de lado en 1 W de alto) y siguen bajando; es lo que hace ancho el
+  nudo. La columna solo ondulaba. Tres de cada cuatro veces da ahora ese paso (1,2–2 W, a
+  45–62° de la vertical) y las compañeras, que son su paralela, quiebran con ella.
+- **Las compañeras nacen arriba** (a 0,7–1,6 W del borde, antes 2,3–3): el haz baja junto
+  más tramo.
+- **Codos más cerrados junto al nudo** (48–74°, antes 40–55°) en la ele y en la salida de
+  las compañeras: un giro lento dejaba una cuña de blanco entre los que se separan.
+- **La rama, de 3 a 6,5 W.** Una rama de nueve anchuras que cruzaba el blanco hasta el
+  borde se leía como una regla.
+
+Medido (60 obras, formato vertical): coinciden 6 · cerca 4 · lejos 2 (antes 5 · 5 · 2);
+parte del trazo a un pelo de otro 91 % (calco 96); núcleo mayor **18 %** (calco 34) y
+2,5 núcleos (calco 1). Solape 0 de 300, pelo 0 por debajo de g, batería N=220 limpia
+(el único solape es el de la configuración sin halo, 1 de 10, que ya estaba).
+
+**Lo que no ha salido.** El núcleo apenas se mueve en la medida (17 → 18 %) aunque a la
+vista el nudo esté más apretado. La causa que queda: en el original las tres eses van
+anidadas y los brazos salen de dos en dos pegados al nudo; aquí la masa se reparte entre
+el haz de arriba, los brazos de un costado y los del otro, con celdas a medio llenar en
+la junta. Cerrar los codos no bastó. Queda abierto.
+
 ## Lo que queda abierto
 
 - **El reparto de tamaños de los ojos no está verificado.** Es el criterio de

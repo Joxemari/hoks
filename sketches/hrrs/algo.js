@@ -4287,15 +4287,22 @@
       /* (vuelta 56: la onda de la columna, más corta —4,5 a 7 W en vez de 7 a 11—: con una onda del tamaño del pliego la columna entera se inclinaba hacia un lado, y con ella el haz) */ const A1 = W * rng.range(0.3, 0.55), l1 = W * rng.range(4.5, 7), f1 = rng.range(0, 6.28), A2 = W * rng.range(0.1, 0.2), l2 = W * rng.range(3, 5), f2 = rng.range(0, 6.28);
       const lateral = y => A1 * Math.sin(6.2832 * y / l1 + f1) + A2 * Math.sin(6.2832 * y / l2 + f2);
       const yCodo = largo * rng.range(0.46, 0.62);
-      const ele = []; for (let y = -W * 1.5; y < yCodo; y += W * rng.range(1.2, 2.2)) ele.push({ x: xs + lateral(y), y });
+      // EL QUIEBRO DE LA COLUMNA (vuelta 62). En el original los tres trazos del haz no bajan
+      // derechos: bajan, dan un paso en diagonal hacia un costado —1,8 W de lado en 1 W de
+      // alto— y siguen bajando. Ese paso es lo que hace ancho el nudo: el haz ocupa cinco
+      // anchuras de pliego con tres trazos, y todo lo que lo acompaña quiebra con él. Aquí
+      // la columna solo ondulaba (media anchura) y el haz medía lo que sus trazos.
+      const qJ = rng.bool(O.quiebro != null ? O.quiebro : 0.75), aJ = (rng.bool(0.5) ? 1 : -1) * W * rng.range(1.2, 2), hJ = abs(aJ) / Math.tan(rng.range(45, 62) * RAD), yJ0 = W * 2.6, yJ1 = yCodo - W * 2.4 - hJ,
+            yJ = qJ && yJ1 > yJ0 ? rng.range(yJ0, yJ1) : null, jog = y => yJ == null || y <= yJ ? 0 : y >= yJ + hJ ? aJ : aJ * (y - yJ) / hJ, col = y => xs + lateral(y) + jog(y);
+      let hechoJ = false; const ele = []; for (let y = -W * 1.5; y < yCodo; y += W * rng.range(1.2, 2.2)) { if (yJ != null && !hechoJ && y > yJ - W * 0.9) { hechoJ = true; ele.push({ x: col(yJ), y: yJ }, { x: col(yJ + hJ), y: yJ + hJ }); y = yJ + hJ; continue; } ele.push({ x: col(y), y }); }
       // (si el último punto de la columna cae a menos de 0,8 W del codo se quita: dejaba
       // un tramo de una décima de anchura con otro rumbo, un escalón que las paralelas
       // copiaban —pelo.js a doble resolución, 0,83 g—)
       if (ele.length > 2 && yCodo - ele[ele.length - 1].y < W * 0.8) ele.pop();
-      ele.push({ x: xs + lateral(yCodo), y: yCodo }); const iCodo = ele.length - 1; let iBrazo = iCodo;
+      ele.push({ x: col(yCodo), y: yCodo }); const iCodo = ele.length - 1; let iBrazo = iCodo;
       { // el codo en dos quiebros y el brazo: un paso en diagonal, un tramo casi horizontal, a
         // veces una subida en diagonal (como el original), y hasta el borde
-        let x = xs + lateral(yCodo), y = yCodo; const th = rng.range(40, 55) * RAD, Lq = W * rng.range(1, 1.8);
+        let x = col(yCodo), y = yCodo; const th = rng.range(48, 74) * RAD, Lq = W * rng.range(0.9, 1.5);   /* (vuelta 62: el codo, más cerrado —antes 40–55°—: en el original los trazos doblan junto al nudo casi de golpe, y un giro lento deja una cuña de blanco entre los que se separan) */
         x += sR * Math.sin(th) * Lq; y += Math.cos(th) * Lq; ele.push({ x, y }); iBrazo = ele.length - 1;
         const Lh = W * rng.range(0.8, 2); x += sR * Lh; y += Lh * rng.range(-0.1, 0.1); ele.push({ x, y });
         if (rng.bool(0.6)) { const a = rng.range(40, 55) * RAD, Ls = W * rng.range(2, 3.5); x += sR * Math.cos(a) * Ls; y -= Math.sin(a) * Ls; ele.push({ x, y }); }
@@ -4329,8 +4336,21 @@
       const xFinCol = relevo[relevo.length - 1].x;
       // LAS BARRAS de los cantos: nacen junto a la columna y van al borde de la ele; la
       // columna las parte con el pelo a sus dos lados
-      if (rng.bool(0.8)) { const m = W * rng.range(0.9, 1.5), xa = xs - sR * W * rng.range(1.5, 3); ponT([{ x: xa, y: m }, { x: edge(sR), y: m + rng.range(-0.02, 0.02) * S }], 'barra', W * 2); }
-      if (rng.bool(0.6)) { const m = W * rng.range(0.9, 1.5), xa = xFinCol + sR * W * rng.range(0.6, 1.5); ponT([{ x: xa, y: largo - m }, { x: edge(sR), y: largo - m + rng.range(-0.02, 0.02) * S }], 'barra', W * 2); }
+      // (vuelta 62: la barra nacía a 1,5–3 W de la columna y `recortar` solo acerca un cabo
+      // W/6: quedaba suelta en el blanco, sin tocar nada —351 de 419 barras con menos de un
+      // 35 % a un pelo de otra tinta—. En el original la barra LLEGA a la columna y es la
+      // columna la que la corta. Ahora se construye desde el eje de la columna hacia fuera:
+      // empieza donde su boca —centro y dos esquinas— queda a un pelo del filo, y se elige
+      // la altura donde la columna va más derecha, para que el pelo no sea una cuña.)
+      const xEn = (pl, y) => { for (let i = 0; i + 1 < pl.length; i++) { const a = pl[i], b = pl[i + 1]; if ((a.y - y) * (b.y - y) <= 0 && a.y !== b.y) return { x: a.x + (b.x - a.x) * (y - a.y) / (b.y - a.y), m: abs((b.x - a.x) / (b.y - a.y)) }; } return null; };
+      const barra = (pl, ya, yb, s2) => { let mejor = null; for (let k = 0; k < 7; k++) { const y = ya + (yb - ya) * (k + rng.range(0, 1)) / 7, r = xEn(pl, y); if (r && (!mejor || r.m < mejor.m)) mejor = { y, x: r.x, m: r.m }; }
+        if (!mejor) return; const y = mejor.y, boca = x => [-W / 2, 0, W / 2].every(dy => { const q = T({ x, y: y + dy }); return distA(q.x, q.y) >= W / 2 + g * 1.05; });
+        let x = mejor.x, n = 0; while (!boca(x) && n++ < 240) x += s2 * W / 24; if (n >= 240) return;
+        const xe = edge(s2); if (abs(xe - x) < W * 2) return; const pz = [{ x, y }, { x: xe, y: y + rng.range(-0.02, 0.02) * S }];
+        if (muestrear(pz, W / 4).some(q => { if (abs(q.x - x) < W * 0.75) return false; const u = T(q); return distA(u.x, u.y) < D * 0.985 || vacios.some(f => f(u)); })) return;
+        const pt = pz.map(T); trazos.push({ pts: pt, segs: segsDe(pt), rel: 'barra' }); };
+      if (rng.bool(0.8)) barra(ele, W * 0.8, W * 2.2, sR);
+      if (rng.bool(0.6)) barra(relevo, largo - W * 2.2, largo - W * 0.8, sR);
       // LAS COMPAÑERAS: 1 o 2, al otro costado de la columna. La de dentro nace más
       // arriba y sale más abajo; la de fuera, a D de ella, nace más abajo y sale a D
       // por encima. Bajan con la columna y se sueltan cuando la meta tira hacia el borde.
@@ -4338,11 +4358,11 @@
       const tramo = (pl, ya, yb) => { const ms = muestrear(pl, W / 8).filter(q => q.y >= ya && q.y <= yb); return ms.length > 2 ? simplificar(ms.map(q => ({ x: q.x, y: q.y }))) : null; };
       // (con W ≈ 0,11 del lado el pliego es corto: nacen justo bajo la barra y giran justo antes del codo de la ele)
       // (vuelta 61: casi siempre dos compañeras: el núcleo de la travesía es el haz de tres o cuatro bandas a un pelo)
-      const nC = rng.bool(0.8) ? 2 : 1, yIni = W * rng.range(2.3, 3), yGiro = yCodo - W * rng.range(0.2, 0.9);
+      const nC = rng.bool(0.8) ? 2 : 1, yIni = W * rng.range(0.7, 1.6), yGiro = yCodo - W * rng.range(0.2, 0.9);   /* (vuelta 62: nacen arriba, a una anchura del borde, no a tres: así el haz baja junto casi medio pliego, como en el calco) */
       let P1 = yGiro > yIni + W * 1.2 ? tramo(paralela(columna, -sL * D), yIni, yGiro) : null;
       if (P1) {
         // la salida: un quiebro de 40–55° hacia el costado y casi horizontal hasta el borde
-        const th = rng.range(40, 55) * RAD, Lq = W * rng.range(1.5, 2.5), pend = rng.range(-0.05, 0.14);
+        const th = rng.range(48, 74) * RAD, Lq = W * rng.range(1.1, 1.9), pend = rng.range(-0.05, 0.14);
         suelta(P1, -sL * th);   // (bajando, girar hacia sL es girar −sL en ángulo: y hacia abajo)
         let xq = P1[P1.length - 1].x + sL * Math.sin(th) * Lq, yq = P1[P1.length - 1].y + Math.cos(th) * Lq; P1.push({ x: xq, y: yq });
         while (sL < 0 ? xq > edge(sL) : xq < edge(sL)) { const st = W * rng.range(1.5, 2.5); xq += sL * st; yq += st * (pend + rng.range(-0.05, 0.05)); P1.push({ x: xq, y: yq }); }
@@ -4386,7 +4406,8 @@
           const p0 = sp[0]; if (p0.x < W || p0.y < W || p0.x > fw - W || p0.y > fh - W) continue;
           const ang = Math.atan2(sp[1].y - p0.y, sp[1].x - p0.x) + (rng.bool(0.5) ? 1 : -1) * (90 + rng.range(-20, 20)) * RAD, cx2 = Math.cos(ang), sy2 = Math.sin(ang), st = W / 4; let x = p0.x, y = p0.y, L = 0;
           for (let n = 0; n < 120; n++) { const nx = x + cx2 * st, ny = y + sy2 * st; if (L + st > D * 1.05 && distA(nx, ny) < D * 0.985) break; x = nx; y = ny; L += st; if (x < -W || y < -W || x > fw + W || y > fh + W) break; }
-          if (L < W * 3) continue; const pl = [{ x: p0.x, y: p0.y }, { x, y }]; t.ramas = [pl]; t.rsegs = segsDe(pl); break; } }
+          if (L < W * 3 || L > W * 6.5) continue;   /* (vuelta 62: una rama de nueve anchuras que cruza el blanco hasta el borde es una regla, no una rama: entre tres y seis anchuras y media) */
+          const pl = [{ x: p0.x, y: p0.y }, { x, y }]; t.ramas = [pl]; t.rsegs = segsDe(pl); break; } }
     }
     // NADA CORRE SOLO (vuelta 44). Los cabos que se alejan de todo —un trazo que sigue por el
     // blanco sin nadie a un pelo— se recortan hasta dejar como mucho `maxLibre` anchuras
